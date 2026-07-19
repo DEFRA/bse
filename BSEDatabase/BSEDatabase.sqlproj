@@ -1,0 +1,1031 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <Name>BSEDatabase</Name>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectVersion>4.1</ProjectVersion>
+    <ProjectGuid>{43d43c33-a9ad-4815-87dc-c969fb704772}</ProjectGuid>
+    <DSP>Microsoft.Data.Tools.Schema.Sql.Sql130DatabaseSchemaProvider</DSP>
+    <OutputType>Database</OutputType>
+    <RootPath>
+    </RootPath>
+    <RootNamespace>BSEDatabase</RootNamespace>
+    <AssemblyName>BSEDatabase</AssemblyName>
+    <ModelCollation>1033,CI</ModelCollation>
+    <DefaultFileStructure>BySchemaAndSchemaType</DefaultFileStructure>
+    <DeployToDatabase>True</DeployToDatabase>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetLanguage>CS</TargetLanguage>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <SqlServerVerification>False</SqlServerVerification>
+    <IncludeCompositeObjects>True</IncludeCompositeObjects>
+    <TargetDatabaseSet>True</TargetDatabaseSet>
+    <DefaultCollation>Latin1_General_CI_AS</DefaultCollation>
+    <DefaultFilegroup>PRIMARY</DefaultFilegroup>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>bin\Release\</OutputPath>
+    <BuildScriptName>$(MSBuildProjectName).sql</BuildScriptName>
+    <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineDebug>false</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>bin\Debug\</OutputPath>
+    <BuildScriptName>$(MSBuildProjectName).sql</BuildScriptName>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineDebug>true</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">11.0</VisualStudioVersion>
+    <!-- Default to the v11.0 targets path if the targets file for the current VS version is not found -->
+    <SSDTExists Condition="Exists('$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets')">True</SSDTExists>
+    <VisualStudioVersion Condition="'$(SSDTExists)' == ''">11.0</VisualStudioVersion>
+  </PropertyGroup>
+  <Import Condition="'$(SQLDBExtensionsRefPath)' != ''" Project="$(SQLDBExtensionsRefPath)\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
+  <Import Condition="'$(SQLDBExtensionsRefPath)' == ''" Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
+  <ItemGroup>
+    <Folder Include="Properties" />
+    <Folder Include="Legacy" />
+    <Folder Include="Legacy\Change Scripts %28Stored Procedure)" />
+    <Folder Include="Legacy\Change Scripts %28Table)" />
+    <Folder Include="Legacy\Create Scripts %28Stored Procedure)" />
+    <Folder Include="Legacy\Create Scripts %28Table)" />
+    <Folder Include="Legacy\GSI_Changes" />
+    <Folder Include="Release Scripts" />
+    <Folder Include="Release Scripts\Bovine Eartag Changes" />
+    <Folder Include="dbo\" />
+    <Folder Include="dbo\Tables\" />
+    <Folder Include="dbo\Views\" />
+    <Folder Include="Security\" />
+    <Folder Include="dbo\Functions\" />
+    <Folder Include="dbo\Stored Procedures\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\AddCase.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\AddCaseRelation.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\AddNonGBCase.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\CaseWorkEntry.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\ChangeRBSE.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\CopyCaseToExportTable.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\CopyRelationToExportTable.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\DeleteCase.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\EditCase.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\EditCaseFinalResult.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\EditCaseRelation.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\GetBSESSCheckByDate.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\GetBSESSCheckByRBSE.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\GetCaseByRBSE.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\GetCaseDetailsByRBSE.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\GetCaseFarmByBatchID.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\GetDamDetailsByRBSE.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\GetDamSireDetailsByBatchID.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\GetDamSireDetailsMatches.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\GetFinalResultByRBSE.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\GetRelationDetailsOfRelatedCase.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\GetRelationsByBatchID.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\GetRelationsByRBSE.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\GetSearchCase.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\GetSearchCaseByCPHH.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\GetSearchCaseByEartagHerdmark.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\GetSearchOutstandingBSE1s.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\GetSearchOutstandingFates.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\GetSearchOutstandingResults.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\GetSearchRelatedAnimals.sql" />
+    <None Include="Legacy\Change Scripts %28Stored Procedure)\GetSireDetailsByRBSE.sql" />
+    <None Include="Legacy\Change Scripts %28Table)\BSESSImport.sql" />
+    <None Include="Legacy\Change Scripts %28Table)\Case.sql" />
+    <None Include="Legacy\Change Scripts %28Table)\CaseRelation.sql" />
+    <None Include="Legacy\Change Scripts %28Table)\EditableLookup.sql" />
+    <None Include="Legacy\Create Scripts %28Stored Procedure)\AddCaseWork.sql" />
+    <None Include="Legacy\Create Scripts %28Stored Procedure)\AddluBSEForm.sql" />
+    <None Include="Legacy\Create Scripts %28Stored Procedure)\AddluRegionalLab.sql" />
+    <None Include="Legacy\Create Scripts %28Stored Procedure)\DeleteluBSEForm.sql" />
+    <None Include="Legacy\Create Scripts %28Stored Procedure)\DeleteluRegionalLab.sql" />
+    <None Include="Legacy\Create Scripts %28Stored Procedure)\EditCaseWork.sql" />
+    <None Include="Legacy\Create Scripts %28Stored Procedure)\EditCaseWorkEntry.sql" />
+    <None Include="Legacy\Create Scripts %28Stored Procedure)\EditLastADNSReference.sql" />
+    <None Include="Legacy\Create Scripts %28Stored Procedure)\EditluBSEForm.sql" />
+    <None Include="Legacy\Create Scripts %28Stored Procedure)\EditluRegionalLab.sql" />
+    <None Include="Legacy\Create Scripts %28Stored Procedure)\GetCaseWorkByRBSE.sql" />
+    <None Include="Legacy\Create Scripts %28Stored Procedure)\GetCaseWorkEntryByRBSE.sql" />
+    <None Include="Legacy\Create Scripts %28Stored Procedure)\GetClosedCaseReportData.sql" />
+    <None Include="Legacy\Create Scripts %28Stored Procedure)\GetLastADNSReferenceByArea.sql" />
+    <None Include="Legacy\Create Scripts %28Stored Procedure)\GetluBSEForm.sql" />
+    <None Include="Legacy\Create Scripts %28Stored Procedure)\GetluRegionalLab.sql" />
+    <None Include="Legacy\Create Scripts %28Stored Procedure)\GetMinuteDetails.sql" />
+    <None Include="Legacy\Create Scripts %28Stored Procedure)\GetOpenCaseReportData.sql" />
+    <None Include="Legacy\Create Scripts %28Stored Procedure)\SetMinuteSentDate.sql" />
+    <None Include="Legacy\Create Scripts %28Stored Procedure)\TseTestingSite.sql" />
+    <None Include="Legacy\Create Scripts %28Table)\ADNSArea.sql" />
+    <None Include="Legacy\Create Scripts %28Table)\CaseWork.sql" />
+    <None Include="Legacy\Create Scripts %28Table)\luAHRO.sql" />
+    <None Include="Legacy\Create Scripts %28Table)\luBSEForm.sql" />
+    <None Include="Legacy\Create Scripts %28Table)\luRegionalLab.sql" />
+    <None Include="Legacy\Create Scripts %28Table)\luTseTestingSite.sql" />
+    <None Include="Legacy\GSI_Changes\update_email_addresses.sql" />
+    <None Include="Legacy\CreateBSESystemUser.sql" />
+    <None Include="Legacy\ProcessEartags.sql" />
+    <None Include="Release Scripts\Bovine Eartag Changes\rollout.sql" />
+    <None Include="Release Scripts\Bovine Eartag Changes\rollback.sql" />
+    <None Include="UAT BSESS Import.dtsx" />
+    <None Include="UAT BSE Access Export.dtsx" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Legacy\BSESS Import.dts" />
+  </ItemGroup>
+  <ItemGroup>
+    <Build Include="dbo\Tables\Farm.sql" />
+    <Build Include="dbo\Tables\FarmHistorical.sql" />
+    <Build Include="dbo\Tables\FarmRelation.sql" />
+    <Build Include="dbo\Tables\HerdSize.sql" />
+    <Build Include="dbo\Tables\OtherOwner.sql" />
+    <Build Include="dbo\Tables\Pedigree.sql" />
+    <Build Include="dbo\Tables\User.sql" />
+    <Build Include="dbo\Tables\VetnetHerdmark.sql" />
+    <Build Include="dbo\Tables\lnkBatchCase.sql" />
+    <Build Include="dbo\Tables\tmpCaseADNSBackup.sql" />
+    <Build Include="dbo\Tables\luADNSRegion.sql" />
+    <Build Include="dbo\Tables\ADNSArea.sql" />
+    <Build Include="dbo\Tables\luAHO.sql" />
+    <Build Include="dbo\Tables\luAnimalOrigin.sql" />
+    <Build Include="dbo\Tables\luAnimalStatus.sql" />
+    <Build Include="dbo\Tables\luBSEForm.sql" />
+    <Build Include="dbo\Tables\luAuthority.sql" />
+    <Build Include="dbo\Tables\luAuthorityCounty.sql" />
+    <Build Include="dbo\Tables\luRegionalLab.sql" />
+    <Build Include="dbo\Tables\luAuthorityRegion.sql" />
+    <Build Include="dbo\Tables\luBSECounty.sql" />
+    <Build Include="dbo\Tables\CaseWork.sql" />
+    <Build Include="dbo\Tables\luBSERegion.sql" />
+    <Build Include="dbo\Tables\luBirthDateSource.sql" />
+    <Build Include="dbo\Tables\luBreed.sql" />
+    <Build Include="dbo\Tables\luCaseFate.sql" />
+    <Build Include="dbo\Tables\luCountry.sql" />
+    <Build Include="dbo\Tables\luCounty.sql" />
+    <Build Include="dbo\Tables\luDocumentType.sql" />
+    <Build Include="dbo\Tables\luFeedRisk.sql" />
+    <Build Include="dbo\Tables\luHerdType.sql" />
+    <Build Include="dbo\Tables\luHorizontalRisk.sql" />
+    <Build Include="dbo\Tables\luMapReference.sql" />
+    <Build Include="dbo\Tables\luCaseType.sql" />
+    <Build Include="dbo\Tables\luMaternalRisk.sql" />
+    <Build Include="dbo\Tables\luOwnerType.sql" />
+    <Build Include="dbo\Tables\luParish.sql" />
+    <Build Include="dbo\Tables\luParishMapReference.sql" />
+    <Build Include="dbo\Tables\luPedigreeType.sql" />
+    <Build Include="dbo\Tables\luRationType.sql" />
+    <Build Include="dbo\Tables\luRelationFate.sql" />
+    <Build Include="dbo\Tables\luRelationType.sql" />
+    <Build Include="dbo\Tables\luReportedLocation.sql" />
+    <Build Include="dbo\Tables\luSex.sql" />
+    <Build Include="dbo\Tables\luSupplier.sql" />
+    <Build Include="dbo\Tables\luSurvey.sql" />
+    <Build Include="dbo\Tables\luTestResult.sql" />
+    <Build Include="dbo\Tables\luTestType.sql" />
+    <Build Include="dbo\Tables\luUserGroup.sql" />
+    <Build Include="dbo\Tables\luValuationAge.sql" />
+    <Build Include="dbo\Tables\expCase.sql" />
+    <Build Include="dbo\Tables\expAge.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Tables\expFarm.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Tables\expRelation.sql" />
+    <Build Include="dbo\Tables\BSESSImport.sql" />
+    <Build Include="dbo\Tables\luTseTestingSite.sql" />
+    <Build Include="dbo\Tables\luAHRO.sql" />
+    <Build Include="dbo\Tables\AuditLog.sql" />
+    <Build Include="dbo\Tables\CaseTest.sql" />
+    <Build Include="dbo\Tables\Batch.sql" />
+    <Build Include="dbo\Tables\Case.sql" />
+    <Build Include="dbo\Tables\CaseBAB.sql" />
+    <Build Include="dbo\Tables\CaseClinical.sql" />
+    <Build Include="dbo\Tables\CaseFeed.sql" />
+    <Build Include="dbo\Tables\CaseHistorical.sql" />
+    <Build Include="dbo\Tables\CaseRelation.sql" />
+    <Build Include="dbo\Tables\ClinicalVisit.sql" />
+    <Build Include="dbo\Tables\EditableLookup.sql" />
+    <Build Include="dbo\Views\Breed.sql" />
+    <Build Include="dbo\Views\COUNTY.sql" />
+    <Build Include="dbo\Functions\udfYearsAndMonths.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Functions\IsIsoEarTag.sql" />
+    <Build Include="dbo\Stored Procedures\DeleteTest.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetHerdSizeByCPHH.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddluAnimalStatus.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditTest.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetLatestBatchNumbers.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddluBSECounty.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\DeleteCase.sql">
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetLatestDBSEForYear.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddluBirthDateSource.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddCase.sql" />
+    <Build Include="dbo\Stored Procedures\GetLatestRBSEForYear.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddluBreed.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\ChangeRBSE.sql" />
+    <Build Include="dbo\Stored Procedures\GetMapReferenceByCountyParish.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddluCaseFate.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditCase.sql" />
+    <Build Include="dbo\Stored Procedures\GetNonGBCounty.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddluDocumentType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetCaseByRBSE.sql" />
+    <Build Include="dbo\Stored Procedures\GetNumberOfCasesByCPHH.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddluFeedRisk.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetFinalResultByRBSE.sql" />
+    <Build Include="dbo\Stored Procedures\GetNumberOfConfirmedCases.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddluHerdType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetOSSExportByRBSE.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddluHorizontalRisk.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetOtherOwnerByRBSE.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddluMaternalRisk.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetParishByCountyParish.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddluOwnerType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetPossibleSuppliers.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddluPedigreeType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetPrefixCodeByXYReference.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddluRationType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetRelatedFarm.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddluRelationFate.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetRelationDetailsOfRelatedCase.sql" />
+    <Build Include="dbo\Stored Procedures\AddluRelationType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetRelationsByBatchID.sql" />
+    <Build Include="dbo\Stored Procedures\AddluReportedLocation.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetRelationsByRBSE.sql" />
+    <Build Include="dbo\Stored Procedures\AddluSex.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetRelationsDetailsByRBSE.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddluSupplier.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetSearchCase.sql" />
+    <Build Include="dbo\Stored Procedures\AddluSurvey.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetSearchCaseByCPHH.sql" />
+    <Build Include="dbo\Stored Procedures\AddluTestResult.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetSearchCaseByEartagHerdmark.sql" />
+    <Build Include="dbo\Stored Procedures\AddluTestType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetSearchFarm.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddluUserGroup.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetSearchOutstandingBSE1s.sql" />
+    <Build Include="dbo\Stored Procedures\AddluValuationAge.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetSearchOutstandingFates.sql" />
+    <Build Include="dbo\Stored Procedures\ChangeCPHH.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetSearchOutstandingResults.sql" />
+    <Build Include="dbo\Stored Procedures\GetSearchRelatedAnimals.sql" />
+    <Build Include="dbo\Stored Procedures\CopyCaseToExportTable.sql" />
+    <Build Include="dbo\Stored Procedures\GetSireDetailsByRBSE.sql" />
+    <Build Include="dbo\Stored Procedures\CopyFarmToExportTable.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetSupplierByName.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\CopyHerdSizeToExportTable.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetUserByNTLogin.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\CopyRelationToExportTable.sql" />
+    <Build Include="dbo\Stored Procedures\GetUsers.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetVetnetDetailsByCPHH.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\DeleteCaseFeed.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetXYReferenceByPrefixCode.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\DeleteCaseRelation.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluADNSRegion.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\DeleteClinicalVisit.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluADNSRegionByAuthority.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddluCaseType.sql" />
+    <Build Include="dbo\Stored Procedures\DeleteFarmRelation.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluAHO.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\DeleteluCaseType.sql" />
+    <Build Include="dbo\Stored Procedures\DeleteHerdSize.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluAnimalOrigin.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditluCaseType.sql" />
+    <Build Include="dbo\Stored Procedures\DeleteOtherOwner.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluAnimalStatus.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluCaseType.sql" />
+    <Build Include="dbo\Stored Procedures\DeleteluADNSRegion.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluAuthorityByAuthorityCounty.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\DeleteluAHO.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluAuthorityCountyAll.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\DeleteluAnimalOrigin.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluBSECounty.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\DeleteluAnimalStatus.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluBSERegion.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\DeleteluBSECounty.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluBirthDateSource.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\DeleteluBirthDateSource.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluBreed.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\DeleteluBreed.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluCaseFate.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\DeleteluCaseFate.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluDocumentType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddCaseWork.sql" />
+    <Build Include="dbo\Stored Procedures\DeleteluDocumentType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluFeedRisk.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddluBSEForm.sql" />
+    <Build Include="dbo\Stored Procedures\DeleteluFeedRisk.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluHerdType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddluRegionalLab.sql" />
+    <Build Include="dbo\Stored Procedures\DeleteluHerdType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluHorizontalRisk.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\DeleteluBSEForm.sql" />
+    <Build Include="dbo\Stored Procedures\DeleteluHorizontalRisk.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluMaternalRisk.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\DeleteluRegionalLab.sql" />
+    <Build Include="dbo\Stored Procedures\DeleteluMaternalRisk.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluOwnerType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditCaseWork.sql" />
+    <Build Include="dbo\Stored Procedures\DeleteluOwnerType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluPedigreeType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditCaseWorkEntry.sql" />
+    <Build Include="dbo\Stored Procedures\DeleteluPedigreeType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluRationType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditLastADNSReference.sql" />
+    <Build Include="dbo\Stored Procedures\DeleteluRationType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluRelationFate.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditluBSEForm.sql" />
+    <Build Include="dbo\Stored Procedures\DeleteluRelationFate.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluRelationType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditluRegionalLab.sql" />
+    <Build Include="dbo\Stored Procedures\DeleteluRelationType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluReportedLocation.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetCaseWorkByRBSE.sql" />
+    <Build Include="dbo\Stored Procedures\DeleteluReportedLocation.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluSex.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetCaseWorkEntryByRBSE.sql" />
+    <Build Include="dbo\Stored Procedures\DeleteluSex.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluSupplier.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetClosedCaseReportData.sql" />
+    <Build Include="dbo\Stored Procedures\DeleteluSupplier.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluSurvey.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetLastADNSReferenceByArea.sql" />
+    <Build Include="dbo\Stored Procedures\DeleteluSurvey.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluTestResult.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluBSEForm.sql" />
+    <Build Include="dbo\Stored Procedures\DeleteluTestResult.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluTestType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluRegionalLab.sql" />
+    <Build Include="dbo\Stored Procedures\DeleteluTestType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetCPHHRBSEForBatch.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluUserGroup.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\DeleteluValuationAge.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetCPHHBatchForRBSE.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluValuationAge.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetOpenCaseReportData.sql" />
+    <Build Include="dbo\Stored Procedures\GetCPHHOtherOwnerForRBSE.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\MoveCase.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\SetMinuteSentDate.sql" />
+    <Build Include="dbo\Stored Procedures\EditCaseADNS.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditCaseBAB.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetCaseFarmByBatchID.sql" />
+    <Build Include="dbo\Stored Procedures\EditCaseClinical.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetPreviousOwnerByBatchID.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditCaseFeed.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditCaseFinalResult.sql" />
+    <Build Include="dbo\Stored Procedures\EditCaseRelation.sql" />
+    <Build Include="dbo\Stored Procedures\EditClinicalVisit.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditFarm.sql" />
+    <Build Include="dbo\Stored Procedures\EditFarmRelation.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditHerdSize.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditOtherOwner.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditUser.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditluADNSRegion.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditluAHO.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditluAnimalOrigin.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditluAnimalStatus.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditluBSECounty.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditluBirthDateSource.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditluBreed.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditluCaseFate.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditluDocumentType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditluFeedRisk.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditluHerdType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditluHorizontalRisk.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetMinuteDetails.sql" />
+    <Build Include="dbo\Stored Procedures\EditluMaternalRisk.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditluOwnerType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditluPedigreeType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditluRationType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditluRelationFate.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditluRelationType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditluReportedLocation.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditluSex.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditluSupplier.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditluSurvey.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditluTestResult.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluAHOCode.sql" />
+    <Build Include="dbo\Stored Procedures\EditluTestType.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluTSETestingSite.sql" />
+    <Build Include="dbo\Stored Procedures\EditluValuationAge.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddluTSETestingSite.sql" />
+    <Build Include="dbo\Stored Procedures\GetADNSCasesForGB.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditluTSETestingSite.sql" />
+    <Build Include="dbo\Stored Procedures\GetAuditLogByCase.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\DeleteluTSETestingSite.sql" />
+    <Build Include="dbo\Stored Procedures\GetAuditLogByDate.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetAuditLogByFarm.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetAuditLogByUser.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetAuditLogCPHHChanges.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluAHROCode.sql" />
+    <Build Include="dbo\Stored Procedures\GetAuditLogCaseMoves.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetluAHRO.sql" />
+    <Build Include="dbo\Stored Procedures\GetAuditLogNewFarms.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddluAHRO.sql" />
+    <Build Include="dbo\Stored Procedures\GetAuditLogRBSEChanges.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\EditluAHRO.sql" />
+    <Build Include="dbo\Stored Procedures\GetBABByRBSE.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\DeleteluAHRO.sql" />
+    <Build Include="dbo\Stored Procedures\GetBSESSCheckByDate.sql" />
+    <Build Include="dbo\Stored Procedures\GetBSESSCheckByRBSE.sql" />
+    <Build Include="dbo\Stored Procedures\GetBatchIDForBatch.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetBatchNumberByRBSE.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetCPHHRBSEForBatchID.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetCaseByBatchID.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddBatchNumber.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddBatchNumber1989.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddBatchNumberLink.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetClinicalByBatchID.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetClinicalByRBSE.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddCaseBAB.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetClinicalVisitByRBSE.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddCaseClinical.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetDamDetailsByRBSE.sql" />
+    <Build Include="dbo\Stored Procedures\AddCaseFeed.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetDamSireDetailsByBatchID.sql" />
+    <Build Include="dbo\Stored Procedures\AddCaseRelation.sql" />
+    <Build Include="dbo\Stored Procedures\GetDamSireDetailsMatches.sql" />
+    <Build Include="dbo\Stored Procedures\AddClinicalVisit.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetEditableLookupProcs.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddEditDamSireDetails.sql" />
+    <Build Include="dbo\Stored Procedures\GetEditableLookups.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddFarm.sql" />
+    <Build Include="dbo\Stored Procedures\GetFarmByCPHH.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddFarmRelation.sql">
+      <AnsiNulls>Off</AnsiNulls>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetFarmDetailsByCPHH.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddHerdSize.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetFarmsByCPH.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddNonGBCase.sql" />
+    <Build Include="dbo\Stored Procedures\GetFeedByRBSE.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddOtherOwner.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetFeedsByBatchID.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddUser.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetTestByRBSE.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddluADNSRegion.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetCaseDetailsByRBSE.sql" />
+    <Build Include="dbo\Stored Procedures\GetGroupForUser.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddluAHO.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddTest.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\GetHerdDetailByBatchID.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AddluAnimalOrigin.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+  </ItemGroup>
+</Project>

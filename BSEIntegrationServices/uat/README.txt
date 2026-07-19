@@ -1,0 +1,1 @@
+These files have been added to the BSEDatabase project, but duplicate package names are not allowed, and we need the same package for Prod and UAT. The SSIS packages within the BSEIntegrationServices project are for Prod.

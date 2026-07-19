@@ -1,0 +1,6 @@
+﻿CREATE TABLE [dbo].[luCaseFate] (
+    [Code]        VARCHAR (4)  NOT NULL,
+    [Description] VARCHAR (50) NOT NULL,
+    CONSTRAINT [PK_luFate] PRIMARY KEY CLUSTERED ([Code] ASC) WITH (FILLFACTOR = 90)
+);
+

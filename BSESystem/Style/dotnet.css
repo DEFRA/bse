@@ -1,0 +1,89 @@
+a.leftnavlinks
+{
+    font-size: 90%;
+    text-decoration: none;	
+}
+
+.XPButton
+{
+	font-family: Verdana;
+	font-size: 1px;
+	margin: 0px;
+	padding: 0px;
+}
+
+.XPButtonTopLeft
+{
+	font-size: 1px;
+	background: URL(/CommonCode/images/XPButton/TopLeft.bmp);
+	background-repeat: no-repeat;
+	margin: 0px;
+	padding: 0px;
+}
+
+.XPButtonTop
+{
+	font-size: 1px;
+	background: URL(/CommonCode/images/XPButton/Top.bmp);
+	margin: 0px;
+	padding: 0px;
+}
+
+.XPButtonTopRight
+{
+	font-size: 1px;
+	background: URL(/CommonCode/images/XPButton/TopRight.bmp);
+	background-repeat: no-repeat;
+	margin: 0px;
+	padding: 0px;
+
+}
+
+.XPButtonLeft
+{
+	font-size: 1px;
+	background: URL(/CommonCode/images/XPButton/Left.bmp);
+	margin: 0px;
+	padding: 0px;
+}
+
+.XPButtonRight
+{
+	font-size: 1px;
+	background: URL(/CommonCode/images/XPButton/Right.bmp);
+	margin: 0px;
+	padding: 0px;
+}
+
+.XPButtonBottomLeft
+{
+	font-size: 1px;
+	background: URL(/CommonCode/images/XPButton/BottomLeft.bmp);
+	background-repeat: no-repeat;
+	margin: 0px;
+	padding: 0px;
+}
+
+.XPButtonBottom
+{
+	font-size: 1px;
+	background: URL(/CommonCode/images/XPButton/Bottom.bmp);
+	margin: 0px;
+	padding: 0px;
+}
+
+.XPButtonBottomRight
+{
+	font-size: 1px;
+	background: URL(/CommonCode/images/XPButton/BottomRight.bmp);
+	background-repeat: no-repeat;
+	margin: 0px;
+	padding: 0px;
+}
+
+.XPButtonText
+{
+	font-size: 85%;
+	color: Black;
+	text-decoration: none;
+}

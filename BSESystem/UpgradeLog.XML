@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type='text/xsl' href='_UpgradeReport_Files/UpgradeReport.xslt'?><UpgradeLog>
+<Properties><Property Name="Solution" Value="BSESystem">
+</Property><Property Name="Solution File" Value="C:\Projects\VLA15_v2\BSESystem.sln">
+</Property><Property Name="Date" Value="17 December 2007">
+</Property><Property Name="Time" Value="09:43">
+</Property></Properties><Event ErrorLevel="0" Project="BSELib" Source="BSELib\BSELib.vbproj" Description="Project converted successfully">
+</Event><Event ErrorLevel="3" Project="BSELib" Source="BSELib\BSELib.vbproj" Description="Converted">
+</Event><Event ErrorLevel="0" Project="libDataAccess" Source="DataAccessLib\libDataAccess.vbproj" Description="Project converted successfully">
+</Event><Event ErrorLevel="3" Project="libDataAccess" Source="DataAccessLib\libDataAccess.vbproj" Description="Converted">
+</Event><Event ErrorLevel="0" Project="" Source="BSESystem.sln" Description="Solution converted successfully">
+</Event><Event ErrorLevel="3" Project="" Source="BSESystem.sln" Description="Converted">
+</Event><Event ErrorLevel="0" Project="BSESystem" Source="Global.asax.vb.old" Description="backup file created">
+</Event><Event ErrorLevel="3" Project="BSESystem" Source="Global.asax.vb" Description="file converted">
+</Event><Event ErrorLevel="3" Project="BSESystem" Source="BSESystem.vbproj" Description="Converted">
+</Event><Event ErrorLevel="0" Project="BSESystem" Source="BSESystem.vbproj" Description="You have completed the first step in converting your Visual Studio .NET 2003 web project. To complete the conversion, please select your project in the Solution Explorer and choose the 'Convert to Web Application' context menu item.">
+</Event><Event ErrorLevel="0" Project="BSELib" Source="BSELib\BSELib.vbproj" Description="Scan complete: Upgrade not required for project files.">
+</Event><Event ErrorLevel="0" Project="libDataAccess" Source="DataAccessLib\libDataAccess.vbproj" Description="Scan complete: Upgrade not required for project files.">
+</Event></UpgradeLog>

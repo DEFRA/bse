@@ -1,0 +1,12 @@
+﻿
+CREATE PROCEDURE GetluADNSRegion AS
+
+SELECT
+	[ID],
+	[Name]
+FROM
+	luADNSRegion
+ORDER BY
+	[Name]
+
+RETURN

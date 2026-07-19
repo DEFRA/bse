@@ -1,0 +1,9 @@
+SCC = This is a Source Code Control file
+
+[BSESystem.sln]
+SCC_Aux_Path = "\\banana\Sourcesafe\VLA"
+SCC_Project_Name = "$/VLA15", VVBAAAAA
+
+[BSESystem.vbproj]
+SCC_Aux_Path = "\\banana\Sourcesafe\VLA"
+SCC_Project_Name = "$/VLA15", VVBAAAAA

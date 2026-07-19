@@ -1,0 +1,639 @@
+body
+{
+	font-weight: normal;
+	color: #000000;
+	background-color: #ffffff;
+	font-family: arial, helvetica, sans-serif;
+	text-decoration: none;
+}
+
+body, p, ol, ul, li, dt, dd, dl, th, tr, td
+{
+	font-family: Arial, Helvetica, sans-serif;
+	color: black;
+}
+
+body, body p, body ol, body li, body dt, body dd, body dl, body th, body tr, body td
+{
+	font-size: x-small;
+}
+
+html > body, html > body p, html > body ol, html > body li, html > body dt, html > body dd, html > body dl, html > body th, html > body tr, html > body td
+{
+	font-size: small;
+}
+
+input
+{
+	font-size: 90%;
+}
+
+textarea
+{
+	font-size: 90%;
+}
+
+a:link
+{
+	color: #003399;
+	text-decoration: underline;
+}
+
+a:visited
+{
+	color: #003399;
+	text-decoration: underline;
+}
+
+a:hover
+{
+	color: #003399;
+	text-decoration: underline;
+}
+
+a:active
+{
+	color: #003399;
+	text-decoration: underline;
+}
+
+h2
+{
+	font-weight: normal;
+	color: #993399;
+	margin: 0px;
+}
+
+h3
+{
+	font-weight: normal;
+	color: #cc6600;
+	margin: 0px;
+}
+
+h4
+{
+	font-weight: bold;
+	color: #cc6600;
+	margin: 10px 0px 10px 0px;
+}
+h5
+{
+	font-weight: bold;
+	color: #cc6600;
+	margin: 10px 0px 10px 0px;
+}
+
+h6
+{
+	font-weight: bold;
+	margin: 10px 0px 10px 0px;
+}
+
+.skiplink
+{
+	display: none;
+}
+
+.smalltext
+{
+	font-size: 85%;
+	font-family: Arial, Helvetica, sans-serif;
+}
+
+form
+{
+	font-size: 90%;
+	margin: 0px;
+	font-family: arial, helvetica, sans-serif;
+}
+
+
+.topnavlinks
+{
+	font-weight: bold;
+	font-family: arial, helvetica, sans-serif;
+	text-decoration: none;
+	background-color: #003399;
+	color: #ffffff;
+}
+
+a.topnavlinks:link
+{
+	color: #ffffff;
+	text-decoration: none;
+}
+
+a.topnavlinks:visited
+{
+	color: #ffffff;
+	text-decoration: none;
+}
+
+a.topnavlinks:hover
+{
+	color: #ffffff;
+	text-decoration: underline;
+}
+
+a.topnavlinks:active
+{
+	color: #ffffff;
+	text-decoration: none;
+}
+
+.topnavhere
+{
+	font-weight: bold;
+	font-size: 85%;
+	font-family: arial, helvetica, sans-serif;
+	text-decoration: none;
+	color: #660066;
+}
+
+.topnavtext
+{
+	font-weight: normal;
+	font-size: 85%;
+	font-family: arial, helvetica, sans-serif;
+	text-decoration: none;
+	color: #003399;
+}
+
+.TopNavErrorText
+{
+	font-size: 115%;
+	color: Red;
+}
+
+.bottomnavlink
+{
+	font-weight: bold;
+	font-size: 85%;
+	font-family: arial, helvetica, sans-serif;
+	color: #ffffff;
+	background-color: #003399;
+}
+
+a.bottomnavlink:link
+{
+	font-size: 85%;
+	text-decoration: none;
+	color: #ffffff;
+}
+
+a.bottomnavlink:visited
+{
+	font-size: 85%;
+	text-decoration: none;
+	color: #ffffff;
+}
+
+a.bottomnavlink:hover
+{
+	font-size: 85%;
+	text-decoration: underline;
+	color: #ffffff;
+}
+
+a.bottomnavlink:active
+{
+	font-size: 85%;
+	text-decoration: none;
+	color: #ffffff;
+}
+
+.bottomnavtext
+{
+	font-weight: normal;
+	font-size: 85%;
+	font-family: arial, helvetica, sans-serif;
+	text-decoration: none;
+	color: #003399;
+}
+
+.leftnavlinks
+{
+	font-weight: normal;
+	font-size: 90%;
+	font-family: arial, helvetica, sans-serif;
+	color: #660066;
+}
+
+a.leftnavlinks:link
+{
+	font-size: 90%;
+	text-decoration: none;
+}
+
+a.leftnavlinks:visited
+{
+	font-size: 90%;
+	text-decoration: none;
+}
+
+a.leftnavlinks:hover
+{
+	font-size: 90%;
+	text-decoration: underline;
+}
+
+a.leftnavlinks:active
+{
+	font-size: 90%;
+	text-decoration: none;
+}
+
+.leftnavhere
+{
+	font-weight: bold;
+	font-size: 90%;
+	font-family: arial, helvetica, sans-serif;
+	color: #660066;
+	text-decoration: none;
+}
+
+.leftnavhead
+{
+	font-weight: bold;
+	font-size: 90%;
+	font-family: arial, helvetica, sans-serif;
+	text-decoration: none;
+	color: #cc0066;
+}
+
+.AppTitle
+{
+	font: Bold x-large 'Verdana' , 'Arial' , 'Sans-Serif' , 'Times New Roman';
+	color: #33CCFF;
+	filter: shadow(Color=#003399, Direction=120, Strength=4); /*padding : 5pt 12pt;*/
+	height: 50;
+	position: relative;
+	left: 0;
+	top: 0;
+	margin: 0px;
+}
+
+.PageTitle
+{
+	font-size: 160%;
+	font-weight: normal;
+	margin: 0px;
+}
+
+DIV.SelectedTabTitle
+{
+	border-right: black 1px solid;
+	border-top: black 1px solid;
+	border-left: black 1px solid;
+	border-bottom: medium none; /*    border-right: none;     border-top: none;     border-left: none;     border-bottom: black 1px solid; */
+	margin-top: 2px;
+	font-weight: bolder;
+	color: #0000cc;
+	text-align: center;
+}
+
+DIV.UnselectedTabTitle
+{
+	color: #0000cc;
+	text-align: center;
+	margin-top: 2px;
+	border-right: black 1px solid;
+	border-top: black 1px solid;
+	border-left: black 1px solid; /*    border-right: none;     border-top: none;     border-left: none; */
+	border-bottom: black 1px solid;
+}
+
+DIV.TabEnd
+{
+	border-bottom: black 1px solid;
+}
+
+a.TabLink:link
+{
+	color: #0000cc;
+	text-decoration: none;
+}
+
+a.TabLink:visited
+{
+	color: #0000cc;
+	text-decoration: none;
+}
+
+a.TabLink:hover
+{
+	color: #0000cc;
+	text-decoration: underline;
+}
+
+a.TabLink:active
+{
+	color: #0000cc;
+	text-decoration: none;
+}
+
+.LargerText
+{
+	font-size: 115%;
+}
+
+.ErrorText
+{
+	font-size: 115%;
+	color: Red;
+}
+
+.ValidatorText
+{
+	font-size: 300%;
+	color: Red;
+}
+
+.GridHeader
+{
+	font-weight: bold;
+	color: white;
+	background-color: #003399;
+}
+
+.GridHeader td
+{
+	font-weight: bold;
+	color: white;
+	border-right: #cccccc 1px solid;
+	padding-right: 1px;
+	border-top: #cccccc 1px solid;
+	padding-left: 1px;
+	padding-bottom: 1px;
+	border-left: #cccccc 1px solid;
+	padding-top: 1px;
+	border-bottom: #cccccc 1px solid;
+}
+
+.GridHeader a:link
+{
+	color: white;
+	text-decoration: underline;
+}
+
+.GridHeader a:visited
+{
+	color: white;
+	text-decoration: underline;
+}
+
+.GridHeader a:hover
+{
+	color: white;
+	text-decoration: underline;
+}
+
+.GridHeader a:active
+{
+	color: white;
+	text-decoration: underline;
+}
+
+.GridItem
+{
+}
+
+.GridItem td
+{
+	border-right: #cccccc 1px solid;
+	padding-right: 1px;
+	border-top: #cccccc 1px solid;
+	padding-left: 1px;
+	padding-bottom: 1px;
+	border-left: #cccccc 1px solid;
+	padding-top: 1px;
+	border-bottom: #cccccc 1px solid;
+}
+
+.GridItem img
+{
+	border: none;
+}
+
+.GridSelectedItem
+{
+	background-color: #33CCFF;
+}
+
+.GridSelectedItem td
+{
+	color: Black;
+	border-right: #cccccc 1px solid;
+	padding-right: 1px;
+	border-top: #cccccc 1px solid;
+	padding-left: 1px;
+	padding-bottom: 1px;
+	border-left: #cccccc 1px solid;
+	padding-top: 1px;
+	border-bottom: #cccccc 1px solid;
+}
+
+.GridSelectedItem img
+{
+	border: none;
+}
+
+.GridEditItem
+{
+	background-color: #33CCFF;
+}
+
+.GridEditItem td
+{
+	color: Black;
+	border-right: #cccccc 1px solid;
+	padding-right: 1px;
+	border-top: #cccccc 1px solid;
+	padding-left: 1px;
+	padding-bottom: 1px;
+	border-left: #cccccc 1px solid;
+	padding-top: 1px;
+	border-bottom: #cccccc 1px solid;
+}
+
+.GridEditItem img
+{
+	border: none;
+}
+
+.GridPagerErrorText
+{
+	color: Red;
+}
+
+.GridPagerNavLinks
+{
+	font-weight: normal;
+	font-size: 90%;
+	color: #003399;
+}
+
+a.GridPagerNavLinks:link
+{
+	font-size: 90%;
+	color: #003399;
+	text-decoration: none;
+}
+
+a.GridPagerNavLinks:visited
+{
+	font-size: 90%;
+	color: #003399;
+	text-decoration: none;
+}
+
+a.GridPagerNavLinks:hover
+{
+	font-size: 90%;
+	color: #003399;
+	text-decoration: underline;
+}
+
+a.GridPagerNavLinks:active
+{
+	font-size: 90%;
+	color: #003399;
+	text-decoration: none;
+}
+
+.GridPagerPageNum
+{
+	font-size: 90%;
+	color: #003399;
+}
+
+.GridItemSmall
+{
+}
+
+.GridItemSmall td
+{
+	font-size: 90%;
+	border-right: #cccccc 1px solid;
+	padding-right: 1px;
+	border-top: #cccccc 1px solid;
+	padding-left: 1px;
+	padding-bottom: 1px;
+	border-left: #cccccc 1px solid;
+	padding-top: 1px;
+	border-bottom: #cccccc 1px solid;
+}
+
+.GridItemSmall img
+{
+	border: none;
+}
+
+.GridSelectedItemSmall
+{
+	background-color: #33CCFF;
+}
+
+.GridSelectedItemSmall td
+{
+	font-size: 90%;
+	color: Black;
+	border-right: #cccccc 1px solid;
+	padding-right: 1px;
+	border-top: #cccccc 1px solid;
+	padding-left: 1px;
+	padding-bottom: 1px;
+	border-left: #cccccc 1px solid;
+	padding-top: 1px;
+	border-bottom: #cccccc 1px solid;
+}
+
+.GridSelectedItemSmall img
+{
+	border: none;
+}
+
+.GridEditItemSmall
+{
+	background-color: #33CCFF;
+}
+
+.GridEditItemSmall td
+{
+	font-size: 90%;
+	color: Black;
+	border-right: #cccccc 1px solid;
+	padding-right: 1px;
+	border-top: #cccccc 1px solid;
+	padding-left: 1px;
+	padding-bottom: 1px;
+	border-left: #cccccc 1px solid;
+	padding-top: 1px;
+	border-bottom: #cccccc 1px solid;
+}
+
+.GridEditItemSmall img
+{
+	border: none;
+}
+
+.GridEditItemSmallWithValidation
+{
+	background-color: #33CCFF;
+}
+
+.GridEditItemSmallWithValidation td
+{
+	font-size: 90%;
+	color: Black;
+	border-right: #33CCFF 1px solid;
+	padding-right: 1px;
+	border-top: #33CCFF 1px solid;
+	padding-left: 1px;
+	padding-bottom: 1px;
+	border-left: #33CCFF 1px solid;
+	padding-top: 1px;
+	border-bottom: #33CCFF 1px solid;
+}
+
+.GridEditItemSmallWithValidation img
+{
+	border: none;
+}
+
+.BoldBlueText
+{
+	font-weight: bold;
+	color: #003399;
+}
+
+.WarningText
+{
+	color: Red;
+}
+
+/*classes to format AutoComplete Extender control*/
+.AutoExtender
+{
+	font-weight: normal;
+	border: solid 1px #006699; /*line-height: 20px;*/
+	padding-top: 25px;
+	padding-left: 5px;
+	background-color: White; 	
+	margin-left:0px;
+	list-style: none;
+	overflow: auto;
+}
+.listItem
+{
+	color: #666666;
+	border-bottom: dotted 1px #006699;
+}
+.AutoExtenderHighlight
+{
+	color: White;
+	background-color: #006699;
+	cursor: pointer;
+}
+/*classes to format AutoComplete Extender control END*/

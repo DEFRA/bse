@@ -1,0 +1,376 @@
+body
+{
+    font-weight: normal;
+	color: #000000;
+    background-color: #ffffff;
+    font-family: arial, helvetica, sans-serif;
+    text-decoration: none;
+}
+
+ body, p, ol, ul, li, dt, dd, dl, th, tr, td {
+	font-family:  Arial, Helvetica, sans-serif;
+	color: black;
+}
+
+body, body p, body ol, body li, body dt, body dd, body dl, body th, body tr, body td    {
+
+             /* more specific to override rule in importing sheet */
+    font-size:    x-small;      
+             /* false value for WinIE4/5 */
+    voice-family: "\"}\"";   
+             /* trick WinIE4/5 into thinking the rule is over */
+    voice-family: inherit;   
+             /* recover from trick */
+    font-size:    x-small         
+             /* intended value for better browsers */
+    }
+
+html>body, html>body p, html>body ol, html>body li, html>body dt, html>body dd, html>body dl, html>body th, html>body tr, html>body td {
+	font-size: small
+}
+
+h2 {
+    font-weight: normal; 
+    color: #993399;
+		margin: 0px;
+}
+
+h3 {
+		font-weight: normal; 
+		color: #cc6600;
+		margin: 0px;
+}
+
+h4 {
+    font-weight: bold;
+    color: #cc6600;
+		margin: 10px 0px 10px 0px;
+}
+h5 {
+    font-weight: bold; 
+    color: #cc6600;
+		margin: 10px 0px 10px 0px;
+}
+
+h6 {
+    font-weight: bold; 
+	margin: 10px 0px 10px 0px;
+}
+
+.skiplink 
+{
+    display:none
+}
+
+.smalltext 
+{
+    font-size: 85%;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+form {
+    font-size: 90%;
+    margin: 0px;
+    font-family: arial, helvetica, sans-serif;
+}
+
+.greenborder
+{
+    border-style: solid;    
+    border-width: 1px;
+    border-color: #666600;		
+}
+
+.lightgreenborder
+{
+    border-style: solid;
+    border-width: 2px;
+    border-color: #cccc99;
+	padding: 5px;
+	margin: 10px;
+}
+
+.lightgreenbox
+{
+    border: solid;
+    border-width: 1px;
+    border-color: #cccc99;
+    background-color: #cccc99;
+}
+
+.fullgreen
+{
+    border: solid;
+    border-width: 1px;
+    border-color: #666600;
+    background-color: #666600;
+}
+
+.blueborder
+{
+    border-style: solid;    
+    border-width: 1px;
+    border-color: #660066;		
+}
+
+.lightblueborder
+{
+    border-style: solid;
+    border-width: 2px;
+    border-color: #cc99cc;
+	padding: 5px;
+	margin: 10px;
+}
+
+.lightbluebox
+{
+    border: solid;
+    border-width: 1px;
+    border-color: #cc99cc;
+    background-color: #cc99cc;
+}
+
+.fullblue
+{
+    border: solid;
+    border-width: 1px;
+    border-color: #660066;
+    background-color: #660066;
+}
+
+.whitenavlinks
+{
+	    font-weight: normal;
+	    font-size: 85%;
+	    font-family: arial, helvetica, sans-serif;
+	    text-decoration: none;    	
+	    line-height: 150%;
+	    color: #ffffff;
+}
+
+a.whitenavlinks:link
+{
+	    font-size: 85%;
+	    text-decoration: none; 
+}
+
+a.whitenavlinks:visited
+{
+	    font-size: 85%;
+	    text-decoration: none; 
+}
+
+a.whitenavlinks:hover
+	{
+	    font-size: 85%;
+	    text-decoration: underline;	
+	}
+	
+a.whitenavlinks:active
+	{
+	    font-size: 85%;
+	    text-decoration: none; 	
+	}
+
+.whitenavlinkshere
+{
+	    font-weight: bold;
+	    font-size: 85%;
+	    font-family: arial, helvetica, sans-serif;
+	    text-decoration: none;
+	    color: #ffffff;
+}
+
+.whitenavtext
+{
+	    font-weight: normal;
+	    font-size: 85%;
+	    font-family: arial, helvetica, sans-serif;
+	    text-decoration: none;
+	    color: #ffffff;
+}
+
+.breadcrumblinks
+{
+    font-weight: normal;
+    font-size: 85%;
+    font-family: arial, helvetica, sans-serif;
+    text-decoration: none;
+    color: #660066;
+}
+
+a.breadcrumblinks:link
+{
+    font-size: 85%;
+    text-decoration: none;
+}
+
+a.breadcrumblinks:visited
+{
+    font-size: 85%;
+    text-decoration: none;
+}
+
+a.breadcrumblinks:hover
+{
+    font-size: 85%;
+    text-decoration: underline;	
+}
+
+a.breadcrumblinks:active
+{
+    font-size: 85%;
+    text-decoration: none;
+}
+
+.breadcrumbhere
+{
+    font-weight: bold;
+    font-size: 85%;
+    font-family: arial, helvetica, sans-serif;
+    text-decoration: none;
+    color: #660066;
+}
+
+.topnavlinks
+{
+    font-weight: normal;
+    font-size: 85%;
+    font-family: arial, helvetica, sans-serif;
+    text-decoration: none;	
+    background-color: #ffffff;
+    color: #660066;
+}
+
+a.topnavlinks:link
+{
+    font-size: 85%;
+    text-decoration: none;
+}
+
+a.topnavlinks:visited
+{
+    font-size: 85%;
+    text-decoration: none;
+}
+
+a.topnavlinks:hover
+{
+    font-size: 85%;
+    text-decoration: underline;	
+}
+
+a.topnavlinks:active
+{
+    font-size: 85%;
+    text-decoration: none;	
+}
+
+.topnavhere
+{
+    font-weight: bold;
+    font-size: 85%;
+    font-family: arial, helvetica, sans-serif;
+    text-decoration: none;
+    color: #660066;
+}
+
+.topnavtext
+{
+    font-weight: normal;
+    font-size: 85%;
+    font-family: arial, helvetica, sans-serif;
+    text-decoration: none;
+    color: #660066;
+}
+
+.bottomnavlink
+{
+    font-weight: normal;
+    font-size: 85%;
+    font-family: arial, helvetica, sans-serif;
+    color: #660066;
+}
+
+a.bottomnavlink:link
+{
+    font-size: 85%;
+    text-decoration: none;
+}
+
+a.bottomnavlink:visited
+{
+    font-size: 85%;
+    text-decoration: none;
+}
+
+a.bottomnavlink:hover
+{
+    font-size: 85%;
+    text-decoration: underline;	
+}
+
+a.bottomnavlink:active
+{
+    font-size: 85%;
+    text-decoration: none;
+}
+
+.bottomnavtext
+{
+    font-weight: normal;
+    font-size: 85%;
+    font-family: arial, helvetica, sans-serif;
+    text-decoration: none;	
+    color: #660066;
+}
+
+.leftnavlinks
+{
+    font-weight: normal;
+    font-size: 90%;
+    font-family: arial, helvetica, sans-serif;
+    color: #660066;
+}
+
+a.leftnavlinks:link
+{
+    font-size: 90%;
+    text-decoration: none;
+}
+
+a.leftnavlinks:visited
+{
+    font-size: 90%;
+    text-decoration: none;
+}
+
+a.leftnavlinks:hover
+{
+    font-size: 90%;	
+    text-decoration: underline;
+}
+
+a.leftnavlinks:active
+{
+    font-size: 90%;
+    text-decoration: none;	
+}
+
+.leftnavhere
+{
+    font-weight: bold;
+    font-size: 90%;
+    font-family: arial, helvetica, sans-serif;
+    color: #660066;
+    text-decoration: none;	
+}
+
+.leftnavhead
+{
+    font-weight: bold;
+    font-size: 90%;
+    font-family: arial, helvetica, sans-serif;
+    text-decoration: none;	
+    color: #cc0066;
+}

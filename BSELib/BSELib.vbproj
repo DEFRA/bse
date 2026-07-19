@@ -1,0 +1,189 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="14.0">
+  <PropertyGroup>
+    <ProjectType>Local</ProjectType>
+    <ProductVersion>9.0.21022</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{05808DC1-1A42-4C74-AA36-39DDDF8B2FE3}</ProjectGuid>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ApplicationIcon>
+    </ApplicationIcon>
+    <AssemblyKeyContainerName>
+    </AssemblyKeyContainerName>
+    <AssemblyName>BSELib</AssemblyName>
+    <AssemblyOriginatorKeyFile>
+    </AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyMode>None</AssemblyOriginatorKeyMode>
+    <DefaultClientScript>JScript</DefaultClientScript>
+    <DefaultHTMLPageLayout>Grid</DefaultHTMLPageLayout>
+    <DefaultTargetSchema>IE50</DefaultTargetSchema>
+    <DelaySign>false</DelaySign>
+    <OutputType>Library</OutputType>
+    <OptionCompare>Binary</OptionCompare>
+    <OptionExplicit>On</OptionExplicit>
+    <OptionStrict>On</OptionStrict>
+    <RootNamespace>BSELib</RootNamespace>
+    <StartupObject>
+    </StartupObject>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <MyType>Windows</MyType>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
+    <OldToolsVersion>3.5</OldToolsVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>bin\</OutputPath>
+    <DocumentationFile>BSELib.xml</DocumentationFile>
+    <BaseAddress>285212672</BaseAddress>
+    <ConfigurationOverrideFile>
+    </ConfigurationOverrideFile>
+    <DefineConstants>
+    </DefineConstants>
+    <DefineDebug>true</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <DebugSymbols>true</DebugSymbols>
+    <Optimize>false</Optimize>
+    <RegisterForComInterop>false</RegisterForComInterop>
+    <RemoveIntegerChecks>false</RemoveIntegerChecks>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningLevel>1</WarningLevel>
+    <NoWarn>42016,42017,42018,42019,42032,42353,42354,42355</NoWarn>
+    <DebugType>full</DebugType>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>bin\</OutputPath>
+    <DocumentationFile>BSELib.xml</DocumentationFile>
+    <BaseAddress>285212672</BaseAddress>
+    <ConfigurationOverrideFile>
+    </ConfigurationOverrideFile>
+    <DefineConstants>
+    </DefineConstants>
+    <DefineDebug>false</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <DebugSymbols>false</DebugSymbols>
+    <Optimize>true</Optimize>
+    <RegisterForComInterop>false</RegisterForComInterop>
+    <RemoveIntegerChecks>false</RemoveIntegerChecks>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningLevel>1</WarningLevel>
+    <NoWarn>42016,42017,42018,42019,42032,42353,42354,42355</NoWarn>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System">
+      <Name>System</Name>
+    </Reference>
+    <Reference Include="System.configuration" />
+    <Reference Include="System.Data">
+      <Name>System.Data</Name>
+    </Reference>
+    <Reference Include="System.Web">
+      <Name>System.Web</Name>
+    </Reference>
+    <Reference Include="System.Xml">
+      <Name>System.XML</Name>
+    </Reference>
+    <ProjectReference Include="..\DataAccessLib\libDataAccess.vbproj">
+      <Name>libDataAccess</Name>
+      <Project>{BF2E778F-F483-4448-A14A-EE3ABDD4830F}</Project>
+      <Package>{F184B08F-C81C-45F6-A57F-5ABD9991F28F}</Package>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Import Include="Microsoft.VisualBasic" />
+    <Import Include="System" />
+    <Import Include="System.Collections" />
+    <Import Include="System.Data" />
+    <Import Include="System.Diagnostics" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\SharedAssemblyInfo.vb">
+      <Link>SharedAssemblyInfo.vb</Link>
+    </Compile>
+    <Compile Include="clsADNSReport.vb">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="clsAuditLog.vb">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="clsBatch.vb">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="clsBSESS.vb">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="clsCase.vb">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="clsDataCheck.vb">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="clsFarm.vb">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="clsLog.vb">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="clsOSSExport.vb">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="clsRelations.vb">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="clsSearch.vb">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="clsUser.vb">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="EartagValidation\Eartag.vb" />
+    <Compile Include="EartagValidation\EartagFormat\IUKEartagFormat.vb" />
+    <Compile Include="EartagValidation\EartagFormat\UKEartagFormat.vb" />
+    <Compile Include="EartagValidation\EartagFormat\IsoEarTagFormat.vb" />
+    <Compile Include="EartagValidation\EartagFormat\IsoAlphaNumericCountryEartagFormat.vb" />
+    <Compile Include="EartagValidation\EartagFormat\IsoNumericCountryEartagFormat.vb" />
+    <Compile Include="EartagValidation\ECEartag.vb" />
+    <Compile Include="EartagValidation\EartagFormat\EartagFormatBase.vb" />
+    <Compile Include="EartagValidation\EartagFormat\ECEartagFormat.vb" />
+    <Compile Include="EartagValidation\EartagFormat\FreeEartagFormat.vb" />
+    <Compile Include="EartagValidation\EartagFormat\GBAlphaNumericEartagFormat.vb" />
+    <Compile Include="EartagValidation\EartagFormat\GBNumericEartagFormat.vb" />
+    <Compile Include="EartagValidation\EartagFormat\GuernseyAlphaNumericEartagFormat.vb" />
+    <Compile Include="EartagValidation\EartagFormat\GuernseyNumericEartagFormat.vb" />
+    <Compile Include="EartagValidation\EartagFormat\IEartagFormat.vb" />
+    <Compile Include="EartagValidation\EartagFormat\IsleOfManAlphaNumericEartagFormat.vb" />
+    <Compile Include="EartagValidation\EartagFormat\IsleOfManNumericEartagFormat.vb" />
+    <Compile Include="EartagValidation\EartagFormat\JerseyAlphaNumericEartagFormat.vb" />
+    <Compile Include="EartagValidation\EartagFormat\JerseyNumericEartagFormat.vb" />
+    <Compile Include="EartagValidation\EartagFormat\NIAlphaNumericEartagFormat.vb" />
+    <Compile Include="EartagValidation\EartagFormat\NIEartagFormat.vb" />
+    <Compile Include="EartagValidation\EartagFormat\NINumericEartagFormat.vb" />
+    <Compile Include="EartagValidation\EartagFormat\PreBarimoEartagFormat.vb" />
+    <Compile Include="EartagValidation\EartagFormat\UKNonNIAlphaNumericEartagFormat.vb" />
+    <Compile Include="EartagValidation\EartagFormat\UKNonNINumericEartagFormat.vb" />
+    <Compile Include="EartagValidation\NoCountryEartag.vb" />
+    <Compile Include="EartagValidation\IsoEarTag.vb" />
+    <Compile Include="EartagValidation\UKEartag.vb" />
+    <Compile Include="LookupData.vb">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="My Project\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.VisualBasic.targets" />
+  <PropertyGroup>
+    <PreBuildEvent>
+    </PreBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
+</Project>

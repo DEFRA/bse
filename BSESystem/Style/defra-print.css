@@ -1,0 +1,25 @@
+td.spaceprint{
+	display: none;
+	width: 0;
+}
+
+td.navprint{
+	display: none;
+	width: 0;
+}
+
+td.mainprint{
+	width: 100%;
+}
+
+.breadcrumbprint{
+	display: none;
+}
+
+a:link{
+	text-decoration: underline;
+}
+
+a:visited{
+	text-decoration: underline;
+}

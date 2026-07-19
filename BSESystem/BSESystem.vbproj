@@ -1,0 +1,1399 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="14.0">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <ProductVersion>9.0.21022</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{1314A0C5-D871-419F-B287-DBFB51DFD086}</ProjectGuid>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+    <ProjectTypeGuids>{349c5851-65df-11da-9384-00065b846f21};{F184B08F-C81C-45F6-A57F-5ABD9991F28F}</ProjectTypeGuids>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ApplicationIcon>
+    </ApplicationIcon>
+    <AssemblyKeyContainerName>
+    </AssemblyKeyContainerName>
+    <AssemblyName>BSESystem</AssemblyName>
+    <AssemblyOriginatorKeyFile>
+    </AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyMode>None</AssemblyOriginatorKeyMode>
+    <DefaultClientScript>JScript</DefaultClientScript>
+    <DefaultHTMLPageLayout>Grid</DefaultHTMLPageLayout>
+    <DefaultTargetSchema>IE50</DefaultTargetSchema>
+    <DelaySign>false</DelaySign>
+    <OutputType>Library</OutputType>
+    <OptionCompare>Binary</OptionCompare>
+    <OptionExplicit>On</OptionExplicit>
+    <OptionStrict>Off</OptionStrict>
+    <RootNamespace>BSESystem</RootNamespace>
+    <StartupObject>
+    </StartupObject>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <MyType>Windows</MyType>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
+    <OldToolsVersion>3.5</OldToolsVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <UseIISExpress>false</UseIISExpress>
+    <IISExpressSSLPort />
+    <IISExpressAnonymousAuthentication />
+    <IISExpressWindowsAuthentication />
+    <IISExpressUseClassicPipelineMode />
+    <UseGlobalApplicationHostFile />
+    <TargetFrameworkProfile />
+    <Use64BitIISExpress />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>bin\</OutputPath>
+    <DocumentationFile>BSESystem.xml</DocumentationFile>
+    <BaseAddress>285212672</BaseAddress>
+    <ConfigurationOverrideFile>
+    </ConfigurationOverrideFile>
+    <DefineConstants>
+    </DefineConstants>
+    <DefineDebug>true</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <DebugSymbols>true</DebugSymbols>
+    <Optimize>false</Optimize>
+    <RegisterForComInterop>false</RegisterForComInterop>
+    <RemoveIntegerChecks>false</RemoveIntegerChecks>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningLevel>1</WarningLevel>
+    <NoWarn>42353,42354,42355</NoWarn>
+    <DebugType>full</DebugType>
+    <WarningsAsErrors>
+    </WarningsAsErrors>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>bin\</OutputPath>
+    <DocumentationFile>BSESystem.xml</DocumentationFile>
+    <BaseAddress>285212672</BaseAddress>
+    <ConfigurationOverrideFile>
+    </ConfigurationOverrideFile>
+    <DefineConstants>
+    </DefineConstants>
+    <DefineDebug>false</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <DebugSymbols>false</DebugSymbols>
+    <Optimize>true</Optimize>
+    <RegisterForComInterop>false</RegisterForComInterop>
+    <RemoveIntegerChecks>false</RemoveIntegerChecks>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningLevel>1</WarningLevel>
+    <NoWarn>42353,42354,42355</NoWarn>
+    <DebugType>none</DebugType>
+    <WarningsAsErrors>
+    </WarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="AjaxControlToolkit">
+      <HintPath>..\packages\AjaxControlToolkit.17.1.1.0\lib\net40\AjaxControlToolkit.dll</HintPath>
+    </Reference>
+    <Reference Include="System">
+      <Name>System</Name>
+    </Reference>
+    <Reference Include="System.Data">
+      <Name>System.Data</Name>
+    </Reference>
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Drawing">
+      <Name>System.Drawing</Name>
+    </Reference>
+    <Reference Include="System.Web">
+      <Name>System.Web</Name>
+    </Reference>
+    <Reference Include="System.Web.ApplicationServices" />
+    <Reference Include="System.Web.DynamicData" />
+    <Reference Include="System.Web.Entity" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Web.Services" />
+    <Reference Include="System.Xml">
+      <Name>System.XML</Name>
+    </Reference>
+    <ProjectReference Include="..\BSELib\BSELib.vbproj">
+      <Name>BSELib</Name>
+      <Project>{05808DC1-1A42-4C74-AA36-39DDDF8B2FE3}</Project>
+      <Package>{F184B08F-C81C-45F6-A57F-5ABD9991F28F}</Package>
+    </ProjectReference>
+    <Reference Include="System.Xml.Linq" />
+  </ItemGroup>
+  <ItemGroup>
+    <Import Include="Microsoft.VisualBasic" />
+    <Import Include="System" />
+    <Import Include="System.Collections" />
+    <Import Include="System.Configuration" />
+    <Import Include="System.Data" />
+    <Import Include="System.Drawing" />
+    <Import Include="System.Web" />
+    <Import Include="System.Web.UI" />
+    <Import Include="System.Web.UI.HtmlControls" />
+    <Import Include="System.Web.UI.WebControls" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="ActiveMemo.aspx" />
+    <Content Include="ADNSExportCI.aspx" />
+    <Content Include="ADNSExportGB.aspx" />
+    <Content Include="ADNSExportMenu.aspx" />
+    <Content Include="ADNSExportNI.aspx" />
+    <Content Include="ADNSReference.ascx" />
+    <Content Include="AnnexA.aspx" />
+    <Content Include="AnnexB.aspx" />
+    <Content Include="AnnexC.aspx" />
+    <Content Include="AnnexD.aspx" />
+    <Content Include="AppError.aspx" />
+    <Content Include="AuditLogByDate.aspx" />
+    <Content Include="AuditLogByUser.aspx" />
+    <Content Include="AuditLogCaseMoves.aspx" />
+    <Content Include="AuditLogCPHHChanges.aspx" />
+    <Content Include="AuditLogMenu.aspx" />
+    <Content Include="AuditLogNewFarms.aspx" />
+    <Content Include="AuditLogRBSEChanges.aspx" />
+    <Content Include="BatchNumber.ascx" />
+    <Content Include="BatchNumberDisplay.ascx" />
+    <Content Include="BatchNumberDisplayPopup.aspx" />
+    <Content Include="BSESSCheckByDate.aspx" />
+    <Content Include="BSESSCheckByRBSE.aspx" />
+    <Content Include="BSESSMenu.aspx" />
+    <Content Include="CalendarDate.ascx" />
+    <Content Include="CalendarPopup.aspx" />
+    <Content Include="CaseAuditLogReport.aspx" />
+    <Content Include="CaseEntryBAB.aspx" />
+    <Content Include="CaseEntryClinical.aspx" />
+    <Content Include="CaseEntryDEFRA.aspx" />
+    <Content Include="CaseEntryFarm.aspx" />
+    <Content Include="CaseEntryFeeds.aspx" />
+    <Content Include="CaseEntryRelations.aspx" />
+    <Content Include="CaseEntrySave.aspx" />
+    <Content Include="CaseEntryVLA.aspx" />
+    <Content Include="CaseWorkClosedReport.aspx" />
+    <Content Include="CaseWorkEntry.aspx" />
+    <Content Include="CaseWorkMenu.aspx" />
+    <Content Include="CaseWorkMinuteConfirmation.aspx" />
+    <Content Include="CaseWorkOpenReport.aspx" />
+    <Content Include="ActiveMemoFallenStock.aspx" />
+    <Content Include="CPHH.ascx" />
+    <Content Include="CPHHChange.aspx" />
+    <Content Include="DataGridPager.ascx" />
+    <Content Include="DeleteCase.aspx" />
+    <Content Include="Eartag.ascx" />
+    <Content Include="ExcelExport.aspx" />
+    <Content Include="ExitConfirmation.ascx" />
+    <Content Include="ExitConfirmationPopup.aspx" />
+    <Content Include="FarmAuditLogReport.aspx" />
+    <Content Include="FinalResultConfirmation.aspx" />
+    <Content Include="FinalResultEntry.aspx" />
+    <Content Include="Global.asax" />
+    <Content Include="Help.aspx" />
+    <Content Include="help.htm" />
+    <Content Include="Home.aspx" />
+    <Content Include="images\btnDisabled.gif" />
+    <Content Include="images\btnDown.gif" />
+    <Content Include="images\btnDownload.gif" />
+    <Content Include="images\btnDownloadDisabled.gif" />
+    <Content Include="images\btnDownloadPressed.gif" />
+    <Content Include="images\btnUp.gif" />
+    <Content Include="images\calendar.gif" />
+    <Content Include="images\calendarClose.gif" />
+    <Content Include="images\calendarCloseUp.gif" />
+    <Content Include="images\calendarDisabled.gif" />
+    <Content Include="images\calendarOpen.gif" />
+    <Content Include="images\calendarOpenDown.gif" />
+    <Content Include="images\GridPager\cancel.gif" />
+    <Content Include="images\GridPager\del.gif" />
+    <Content Include="images\GridPager\del_disabled.gif" />
+    <Content Include="images\GridPager\edit.gif" />
+    <Content Include="images\GridPager\edit_disabled.gif" />
+    <Content Include="images\GridPager\ffwd.gif" />
+    <Content Include="images\GridPager\ffwd_disabled.gif" />
+    <Content Include="images\GridPager\frew.gif" />
+    <Content Include="images\GridPager\frew_disabled.gif" />
+    <Content Include="images\GridPager\fwd.gif" />
+    <Content Include="images\GridPager\fwd_disabled.gif" />
+    <Content Include="images\GridPager\new.gif" />
+    <Content Include="images\GridPager\new_disabled.gif" />
+    <Content Include="images\GridPager\ok.gif" />
+    <Content Include="images\GridPager\rew.gif" />
+    <Content Include="images\GridPager\rew_disabled.gif" />
+    <Content Include="images\GridPager\sel.gif" />
+    <Content Include="images\GridPager\sel_disabled.gif" />
+    <Content Include="images\GridPager\sel_reverse.gif" />
+    <Content Include="images\GridPager\sel_reverse_disabled.gif" />
+    <Content Include="images\spacer.gif" />
+    <Content Include="images\vlalogo.gif" />
+    <Content Include="images\vlalogo2.gif" />
+    <Content Include="images\vlalogo3.gif" />
+    <Content Include="images\vlatxt.gif" />
+    <Content Include="MaintenanceConfirmation.aspx" />
+    <Content Include="MapReference.ascx" />
+    <Content Include="MoveCase.aspx" />
+    <Content Include="MoveCaseNewFarm.aspx" />
+    <Content Include="NewFarm.aspx" />
+    <Content Include="NonGBCaseCreation.aspx" />
+    <Content Include="OSSExportBSE1.aspx" />
+    <Content Include="OSSExportBSE1b.aspx" />
+    <Content Include="OSSExportBSE1Download.aspx" />
+    <Content Include="OSSExportMenu.aspx" />
+    <Content Include="PartialDate.ascx" />
+    <Content Include="PickFarm.aspx" />
+    <Content Include="PickListMaintenance.aspx" />
+    <Content Include="PickListMaintenanceAHO.aspx" />
+    <Content Include="PicklistMaintenanceAHRO.aspx" />
+    <Content Include="PickListMaintenanceBreed.aspx" />
+    <Content Include="PickListMaintenanceBSECounty.aspx" />
+    <Content Include="PickListMaintenanceRelationFate.aspx" />
+    <Content Include="PickListMaintenanceSupplier.aspx" />
+    <Content Include="PickListMaintenanceTestType.aspx" />
+    <Content Include="PickListMaintenanceTSETestingSite.aspx" />
+    <Content Include="PickSireDam.aspx" />
+    <Content Include="PickSupplier.aspx" />
+    <Content Include="PrintBatch.aspx" />
+    <Content Include="RBSE.ascx" />
+    <Content Include="RBSEChange.aspx" />
+    <Content Include="Redirect.aspx" />
+    <Content Include="RelationsPopup.aspx" />
+    <Content Include="ReportCaseFarm.aspx" />
+    <Content Include="ReportClinical.aspx" />
+    <Content Include="ReportFeeds.aspx" />
+    <Content Include="ReportOffspring.aspx" />
+    <Content Include="ReportPedigree.aspx" />
+    <Content Include="ResultMemo.aspx" />
+    <Content Include="SearchCase.aspx" />
+    <Content Include="SearchCaseByHerdmark.aspx" />
+    <Content Include="SearchCPHH.aspx" />
+    <Content Include="SearchFarm.aspx" />
+    <Content Include="SearchMenu.aspx" />
+    <Content Include="SearchOutstandingData.aspx" />
+    <Content Include="SearchRelatedAnimal.aspx" />
+    <Content Include="SessionError.aspx" />
+    <Content Include="ShowCase.aspx" />
+    <Content Include="Styles.css" />
+    <Content Include="Style\defra-ie.css" />
+    <Content Include="Style\defra-ns4.css" />
+    <Content Include="Style\defra-print.css" />
+    <Content Include="Style\dotnet.css" />
+    <Content Include="Style\vla-ie.css" />
+    <Content Include="ThreePartEartag.ascx" />
+    <Content Include="unauthorized.htm" />
+    <Content Include="UserMaintenance.aspx" />
+    <Content Include="VLAFooter.ascx" />
+    <Content Include="VLAHeader.ascx" />
+    <Content Include="Web.config">
+      <SubType>Designer</SubType>
+    </Content>
+    <Compile Include="..\SharedAssemblyInfo.vb">
+      <Link>SharedAssemblyInfo.vb</Link>
+    </Compile>
+    <Compile Include="ActiveMemo.aspx.designer.vb">
+      <DependentUpon>ActiveMemo.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="ActiveMemo.aspx.vb">
+      <SubType>ASPXCodebehind</SubType>
+      <DependentUpon>ActiveMemo.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="ADNSExportCI.aspx.designer.vb">
+      <DependentUpon>ADNSExportCI.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="ADNSExportCI.aspx.vb">
+      <DependentUpon>ADNSExportCI.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="ADNSExportGB.aspx.designer.vb">
+      <DependentUpon>ADNSExportGB.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="ADNSExportGB.aspx.vb">
+      <DependentUpon>ADNSExportGB.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="ADNSExportMenu.aspx.designer.vb">
+      <DependentUpon>ADNSExportMenu.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="ADNSExportMenu.aspx.vb">
+      <DependentUpon>ADNSExportMenu.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="ADNSExportNI.aspx.designer.vb">
+      <DependentUpon>ADNSExportNI.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="ADNSExportNI.aspx.vb">
+      <DependentUpon>ADNSExportNI.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="ADNSReference.ascx.designer.vb">
+      <DependentUpon>ADNSReference.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="ADNSReference.ascx.vb">
+      <DependentUpon>ADNSReference.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="AnnexA.aspx.designer.vb">
+      <DependentUpon>AnnexA.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="AnnexA.aspx.vb">
+      <SubType>ASPXCodebehind</SubType>
+      <DependentUpon>AnnexA.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="AnnexB.aspx.designer.vb">
+      <DependentUpon>AnnexB.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="AnnexB.aspx.vb">
+      <SubType>ASPXCodebehind</SubType>
+      <DependentUpon>AnnexB.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="AnnexC.aspx.designer.vb">
+      <DependentUpon>AnnexC.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="AnnexC.aspx.vb">
+      <SubType>ASPXCodebehind</SubType>
+      <DependentUpon>AnnexC.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="AnnexD.aspx.designer.vb">
+      <DependentUpon>AnnexD.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="AnnexD.aspx.vb">
+      <SubType>ASPXCodebehind</SubType>
+      <DependentUpon>AnnexD.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="AppError.aspx.designer.vb">
+      <DependentUpon>AppError.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="AppError.aspx.vb">
+      <DependentUpon>AppError.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="AuditLogByDate.aspx.designer.vb">
+      <DependentUpon>AuditLogByDate.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="AuditLogByDate.aspx.vb">
+      <DependentUpon>AuditLogByDate.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="AuditLogByUser.aspx.designer.vb">
+      <DependentUpon>AuditLogByUser.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="AuditLogByUser.aspx.vb">
+      <DependentUpon>AuditLogByUser.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="AuditLogCaseMoves.aspx.designer.vb">
+      <DependentUpon>AuditLogCaseMoves.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="AuditLogCaseMoves.aspx.vb">
+      <DependentUpon>AuditLogCaseMoves.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="AuditLogCPHHChanges.aspx.designer.vb">
+      <DependentUpon>AuditLogCPHHChanges.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="AuditLogCPHHChanges.aspx.vb">
+      <DependentUpon>AuditLogCPHHChanges.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="AuditLogMenu.aspx.designer.vb">
+      <DependentUpon>AuditLogMenu.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="AuditLogMenu.aspx.vb">
+      <DependentUpon>AuditLogMenu.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="AuditLogNewFarms.aspx.designer.vb">
+      <DependentUpon>AuditLogNewFarms.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="AuditLogNewFarms.aspx.vb">
+      <DependentUpon>AuditLogNewFarms.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="AuditLogRBSEChanges.aspx.designer.vb">
+      <DependentUpon>AuditLogRBSEChanges.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="AuditLogRBSEChanges.aspx.vb">
+      <DependentUpon>AuditLogRBSEChanges.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="BatchNumber.ascx.designer.vb">
+      <DependentUpon>BatchNumber.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="BatchNumber.ascx.vb">
+      <DependentUpon>BatchNumber.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="BatchNumberDisplay.ascx.designer.vb">
+      <DependentUpon>BatchNumberDisplay.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="BatchNumberDisplay.ascx.vb">
+      <DependentUpon>BatchNumberDisplay.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="BatchNumberDisplayPopup.aspx.designer.vb">
+      <DependentUpon>BatchNumberDisplayPopup.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="BatchNumberDisplayPopup.aspx.vb">
+      <DependentUpon>BatchNumberDisplayPopup.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="BSESSCheckByDate.aspx.designer.vb">
+      <DependentUpon>BSESSCheckByDate.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="BSESSCheckByDate.aspx.vb">
+      <DependentUpon>BSESSCheckByDate.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="BSESSCheckByRBSE.aspx.designer.vb">
+      <DependentUpon>BSESSCheckByRBSE.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="BSESSCheckByRBSE.aspx.vb">
+      <DependentUpon>BSESSCheckByRBSE.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="BSESSMenu.aspx.designer.vb">
+      <DependentUpon>BSESSMenu.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="BSESSMenu.aspx.vb">
+      <DependentUpon>BSESSMenu.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="CalendarDate.ascx.designer.vb">
+      <DependentUpon>CalendarDate.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="CalendarDate.ascx.vb">
+      <DependentUpon>CalendarDate.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="CalendarPopup.aspx.designer.vb">
+      <DependentUpon>CalendarPopup.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="CalendarPopup.aspx.vb">
+      <DependentUpon>CalendarPopup.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="CaseAuditLogReport.aspx.designer.vb">
+      <DependentUpon>CaseAuditLogReport.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="CaseAuditLogReport.aspx.vb">
+      <DependentUpon>CaseAuditLogReport.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="CaseEntryBAB.aspx.designer.vb">
+      <DependentUpon>CaseEntryBAB.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="CaseEntryBAB.aspx.vb">
+      <DependentUpon>CaseEntryBAB.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="CaseEntryClinical.aspx.designer.vb">
+      <DependentUpon>CaseEntryClinical.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="CaseEntryClinical.aspx.vb">
+      <DependentUpon>CaseEntryClinical.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="CaseEntryDEFRA.aspx.designer.vb">
+      <DependentUpon>CaseEntryDEFRA.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="CaseEntryDEFRA.aspx.vb">
+      <DependentUpon>CaseEntryDEFRA.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="CaseEntryFarm.aspx.designer.vb">
+      <DependentUpon>CaseEntryFarm.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="CaseEntryFarm.aspx.vb">
+      <DependentUpon>CaseEntryFarm.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="CaseEntryFeeds.aspx.designer.vb">
+      <DependentUpon>CaseEntryFeeds.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="CaseEntryFeeds.aspx.vb">
+      <DependentUpon>CaseEntryFeeds.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="CaseEntryRelations.aspx.designer.vb">
+      <DependentUpon>CaseEntryRelations.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="CaseEntryRelations.aspx.vb">
+      <DependentUpon>CaseEntryRelations.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="CaseEntrySave.aspx.designer.vb">
+      <DependentUpon>CaseEntrySave.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="CaseEntrySave.aspx.vb">
+      <DependentUpon>CaseEntrySave.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="CaseEntryVLA.aspx.designer.vb">
+      <DependentUpon>CaseEntryVLA.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="CaseEntryVLA.aspx.vb">
+      <DependentUpon>CaseEntryVLA.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="CaseWorkClosedReport.aspx.designer.vb">
+      <DependentUpon>CaseWorkClosedReport.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="CaseWorkClosedReport.aspx.vb">
+      <SubType>ASPXCodebehind</SubType>
+      <DependentUpon>CaseWorkClosedReport.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="CaseWorkEntry.aspx.designer.vb">
+      <DependentUpon>CaseWorkEntry.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="CaseWorkEntry.aspx.vb">
+      <SubType>ASPXCodebehind</SubType>
+      <DependentUpon>CaseWorkEntry.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="CaseWorkMenu.aspx.designer.vb">
+      <DependentUpon>CaseWorkMenu.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="CaseWorkMenu.aspx.vb">
+      <SubType>ASPXCodebehind</SubType>
+      <DependentUpon>CaseWorkMenu.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="CaseWorkMinuteConfirmation.aspx.designer.vb">
+      <DependentUpon>CaseWorkMinuteConfirmation.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="CaseWorkMinuteConfirmation.aspx.vb">
+      <SubType>ASPXCodebehind</SubType>
+      <DependentUpon>CaseWorkMinuteConfirmation.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="CaseWorkOpenReport.aspx.designer.vb">
+      <DependentUpon>CaseWorkOpenReport.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="CaseWorkOpenReport.aspx.vb">
+      <SubType>ASPXCodebehind</SubType>
+      <DependentUpon>CaseWorkOpenReport.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="clsAppError.vb">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Common.vb">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ActiveMemoFallenStock.aspx.designer.vb">
+      <DependentUpon>ActiveMemoFallenStock.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="ActiveMemoFallenStock.aspx.vb">
+      <DependentUpon>ActiveMemoFallenStock.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="CPHH.ascx.designer.vb">
+      <DependentUpon>CPHH.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="CPHH.ascx.vb">
+      <DependentUpon>CPHH.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="CPHHChange.aspx.designer.vb">
+      <DependentUpon>CPHHChange.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="CPHHChange.aspx.vb">
+      <DependentUpon>CPHHChange.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="DataGridPager.ascx.designer.vb">
+      <DependentUpon>DataGridPager.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="DataGridPager.ascx.vb">
+      <DependentUpon>DataGridPager.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="DeleteCase.aspx.designer.vb">
+      <DependentUpon>DeleteCase.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="DeleteCase.aspx.vb">
+      <DependentUpon>DeleteCase.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Eartag.ascx.designer.vb">
+      <DependentUpon>Eartag.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="Eartag.ascx.vb">
+      <DependentUpon>Eartag.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="EartagValidation.vb">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ExcelExport.aspx.designer.vb">
+      <DependentUpon>ExcelExport.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="ExcelExport.aspx.vb">
+      <DependentUpon>ExcelExport.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="ExitConfirmation.ascx.designer.vb">
+      <DependentUpon>ExitConfirmation.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="ExitConfirmation.ascx.vb">
+      <DependentUpon>ExitConfirmation.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="ExitConfirmationPopup.aspx.designer.vb">
+      <DependentUpon>ExitConfirmationPopup.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="ExitConfirmationPopup.aspx.vb">
+      <DependentUpon>ExitConfirmationPopup.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="FarmAuditLogReport.aspx.designer.vb">
+      <DependentUpon>FarmAuditLogReport.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="FarmAuditLogReport.aspx.vb">
+      <DependentUpon>FarmAuditLogReport.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="FinalResultConfirmation.aspx.designer.vb">
+      <DependentUpon>FinalResultConfirmation.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="FinalResultConfirmation.aspx.vb">
+      <DependentUpon>FinalResultConfirmation.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="FinalResultEntry.aspx.designer.vb">
+      <DependentUpon>FinalResultEntry.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="FinalResultEntry.aspx.vb">
+      <DependentUpon>FinalResultEntry.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Global.asax.vb">
+      <DependentUpon>Global.asax</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Help.aspx.designer.vb">
+      <DependentUpon>Help.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Help.aspx.vb">
+      <DependentUpon>Help.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Home.aspx.designer.vb">
+      <DependentUpon>Home.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Home.aspx.vb">
+      <DependentUpon>Home.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="MaintenanceConfirmation.aspx.designer.vb">
+      <DependentUpon>MaintenanceConfirmation.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="MaintenanceConfirmation.aspx.vb">
+      <DependentUpon>MaintenanceConfirmation.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="MapReference.ascx.designer.vb">
+      <DependentUpon>MapReference.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="MapReference.ascx.vb">
+      <DependentUpon>MapReference.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="MoveCase.aspx.designer.vb">
+      <DependentUpon>MoveCase.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="MoveCase.aspx.vb">
+      <DependentUpon>MoveCase.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="MoveCaseNewFarm.aspx.designer.vb">
+      <DependentUpon>MoveCaseNewFarm.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="MoveCaseNewFarm.aspx.vb">
+      <DependentUpon>MoveCaseNewFarm.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="NewFarm.aspx.designer.vb">
+      <DependentUpon>NewFarm.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="NewFarm.aspx.vb">
+      <DependentUpon>NewFarm.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="NonGBCaseCreation.aspx.designer.vb">
+      <DependentUpon>NonGBCaseCreation.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="NonGBCaseCreation.aspx.vb">
+      <DependentUpon>NonGBCaseCreation.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="OSSExportBSE1.aspx.designer.vb">
+      <DependentUpon>OSSExportBSE1.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="OSSExportBSE1.aspx.vb">
+      <DependentUpon>OSSExportBSE1.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="OSSExportBSE1b.aspx.designer.vb">
+      <DependentUpon>OSSExportBSE1b.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="OSSExportBSE1b.aspx.vb">
+      <DependentUpon>OSSExportBSE1b.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="OSSExportBSE1Download.aspx.designer.vb">
+      <DependentUpon>OSSExportBSE1Download.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="OSSExportBSE1Download.aspx.vb">
+      <DependentUpon>OSSExportBSE1Download.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="OSSExportMenu.aspx.designer.vb">
+      <DependentUpon>OSSExportMenu.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="OSSExportMenu.aspx.vb">
+      <DependentUpon>OSSExportMenu.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="PartialDate.ascx.designer.vb">
+      <DependentUpon>PartialDate.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="PartialDate.ascx.vb">
+      <DependentUpon>PartialDate.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="PickFarm.aspx.designer.vb">
+      <DependentUpon>PickFarm.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="PickFarm.aspx.vb">
+      <DependentUpon>PickFarm.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="PickListMaintenance.aspx.designer.vb">
+      <DependentUpon>PickListMaintenance.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="PickListMaintenance.aspx.vb">
+      <DependentUpon>PickListMaintenance.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="PickListMaintenanceAHO.aspx.designer.vb">
+      <DependentUpon>PickListMaintenanceAHO.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="PickListMaintenanceAHO.aspx.vb">
+      <DependentUpon>PickListMaintenanceAHO.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="PicklistMaintenanceAHRO.aspx.designer.vb">
+      <DependentUpon>PicklistMaintenanceAHRO.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="PicklistMaintenanceAHRO.aspx.vb">
+      <DependentUpon>PicklistMaintenanceAHRO.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="PickListMaintenanceBreed.aspx.designer.vb">
+      <DependentUpon>PickListMaintenanceBreed.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="PickListMaintenanceBreed.aspx.vb">
+      <DependentUpon>PickListMaintenanceBreed.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="PickListMaintenanceBSECounty.aspx.designer.vb">
+      <DependentUpon>PickListMaintenanceBSECounty.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="PickListMaintenanceBSECounty.aspx.vb">
+      <DependentUpon>PickListMaintenanceBSECounty.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="PickListMaintenanceRelationFate.aspx.designer.vb">
+      <DependentUpon>PickListMaintenanceRelationFate.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="PickListMaintenanceRelationFate.aspx.vb">
+      <DependentUpon>PickListMaintenanceRelationFate.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="PickListMaintenanceSupplier.aspx.designer.vb">
+      <DependentUpon>PickListMaintenanceSupplier.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="PickListMaintenanceSupplier.aspx.vb">
+      <DependentUpon>PickListMaintenanceSupplier.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="PickListMaintenanceTestType.aspx.designer.vb">
+      <DependentUpon>PickListMaintenanceTestType.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="PickListMaintenanceTestType.aspx.vb">
+      <DependentUpon>PickListMaintenanceTestType.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="PickListMaintenanceTSETestingSite.aspx.designer.vb">
+      <DependentUpon>PickListMaintenanceTSETestingSite.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="PickListMaintenanceTSETestingSite.aspx.vb">
+      <DependentUpon>PickListMaintenanceTSETestingSite.aspx</DependentUpon>
+      <SubType>ASPXCodebehind</SubType>
+    </Compile>
+    <Compile Include="PickSireDam.aspx.designer.vb">
+      <DependentUpon>PickSireDam.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="PickSireDam.aspx.vb">
+      <DependentUpon>PickSireDam.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="PickSupplier.aspx.designer.vb">
+      <DependentUpon>PickSupplier.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="PickSupplier.aspx.vb">
+      <DependentUpon>PickSupplier.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="PrintBatch.aspx.designer.vb">
+      <DependentUpon>PrintBatch.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="PrintBatch.aspx.vb">
+      <DependentUpon>PrintBatch.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="RBSE.ascx.designer.vb">
+      <DependentUpon>RBSE.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="RBSE.ascx.vb">
+      <DependentUpon>RBSE.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="RBSEChange.aspx.designer.vb">
+      <DependentUpon>RBSEChange.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="RBSEChange.aspx.vb">
+      <DependentUpon>RBSEChange.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="Redirect.aspx.designer.vb">
+      <DependentUpon>Redirect.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="Redirect.aspx.vb">
+      <DependentUpon>Redirect.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="RelationsPopup.aspx.designer.vb">
+      <DependentUpon>RelationsPopup.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="RelationsPopup.aspx.vb">
+      <DependentUpon>RelationsPopup.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="ReportCaseFarm.aspx.designer.vb">
+      <DependentUpon>ReportCaseFarm.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="ReportCaseFarm.aspx.vb">
+      <DependentUpon>ReportCaseFarm.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="ReportClinical.aspx.designer.vb">
+      <DependentUpon>ReportClinical.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="ReportClinical.aspx.vb">
+      <DependentUpon>ReportClinical.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="ReportFeeds.aspx.designer.vb">
+      <DependentUpon>ReportFeeds.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="ReportFeeds.aspx.vb">
+      <DependentUpon>ReportFeeds.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="ReportOffspring.aspx.designer.vb">
+      <DependentUpon>ReportOffspring.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="ReportOffspring.aspx.vb">
+      <DependentUpon>ReportOffspring.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="ReportPedigree.aspx.designer.vb">
+      <DependentUpon>ReportPedigree.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="ReportPedigree.aspx.vb">
+      <DependentUpon>ReportPedigree.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="ResultMemo.aspx.designer.vb">
+      <DependentUpon>ResultMemo.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="ResultMemo.aspx.vb">
+      <DependentUpon>ResultMemo.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="SearchCase.aspx.designer.vb">
+      <DependentUpon>SearchCase.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="SearchCase.aspx.vb">
+      <DependentUpon>SearchCase.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="SearchCaseByHerdmark.aspx.designer.vb">
+      <DependentUpon>SearchCaseByHerdmark.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="SearchCaseByHerdmark.aspx.vb">
+      <DependentUpon>SearchCaseByHerdmark.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="SearchCPHH.aspx.designer.vb">
+      <DependentUpon>SearchCPHH.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="SearchCPHH.aspx.vb">
+      <DependentUpon>SearchCPHH.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="SearchFarm.aspx.designer.vb">
+      <DependentUpon>SearchFarm.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="SearchFarm.aspx.vb">
+      <DependentUpon>SearchFarm.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="SearchMenu.aspx.designer.vb">
+      <DependentUpon>SearchMenu.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="SearchMenu.aspx.vb">
+      <DependentUpon>SearchMenu.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="SearchOutstandingData.aspx.designer.vb">
+      <DependentUpon>SearchOutstandingData.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="SearchOutstandingData.aspx.vb">
+      <DependentUpon>SearchOutstandingData.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="SearchRelatedAnimal.aspx.designer.vb">
+      <DependentUpon>SearchRelatedAnimal.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="SearchRelatedAnimal.aspx.vb">
+      <DependentUpon>SearchRelatedAnimal.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="SessionError.aspx.designer.vb">
+      <DependentUpon>SessionError.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="SessionError.aspx.vb">
+      <DependentUpon>SessionError.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="SessionVars.vb">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ShowCase.aspx.designer.vb">
+      <DependentUpon>ShowCase.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="ShowCase.aspx.vb">
+      <DependentUpon>ShowCase.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="ThreePartEartag.ascx.designer.vb">
+      <DependentUpon>ThreePartEartag.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="ThreePartEartag.ascx.vb">
+      <DependentUpon>ThreePartEartag.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="UserMaintenance.aspx.designer.vb">
+      <DependentUpon>UserMaintenance.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="UserMaintenance.aspx.vb">
+      <DependentUpon>UserMaintenance.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="VLAFooter.ascx.designer.vb">
+      <DependentUpon>VLAFooter.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="VLAFooter.ascx.vb">
+      <DependentUpon>VLAFooter.ascx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="VLAHeader.ascx.designer.vb">
+      <DependentUpon>VLAHeader.ascx</DependentUpon>
+    </Compile>
+    <Compile Include="VLAHeader.ascx.vb">
+      <DependentUpon>VLAHeader.ascx</DependentUpon>
+    </Compile>
+    <EmbeddedResource Include="ADNSExportCI.aspx.resx">
+      <DependentUpon>ADNSExportCI.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ADNSExportGB.aspx.resx">
+      <DependentUpon>ADNSExportGB.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ADNSExportMenu.aspx.resx">
+      <DependentUpon>ADNSExportMenu.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ADNSExportNI.aspx.resx">
+      <DependentUpon>ADNSExportNI.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ADNSReference.ascx.resx">
+      <DependentUpon>ADNSReference.ascx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="AppError.aspx.resx">
+      <DependentUpon>AppError.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="AuditLogByDate.aspx.resx">
+      <DependentUpon>AuditLogByDate.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="AuditLogByUser.aspx.resx">
+      <DependentUpon>AuditLogByUser.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="AuditLogCaseMoves.aspx.resx">
+      <DependentUpon>AuditLogCaseMoves.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="AuditLogCPHHChanges.aspx.resx">
+      <DependentUpon>AuditLogCPHHChanges.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="AuditLogMenu.aspx.resx">
+      <DependentUpon>AuditLogMenu.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="AuditLogNewFarms.aspx.resx">
+      <DependentUpon>AuditLogNewFarms.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="AuditLogRBSEChanges.aspx.resx">
+      <DependentUpon>AuditLogRBSEChanges.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="BatchNumber.ascx.resx">
+      <DependentUpon>BatchNumber.ascx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="BatchNumberDisplay.ascx.resx">
+      <DependentUpon>BatchNumberDisplay.ascx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="BatchNumberDisplayPopup.aspx.resx">
+      <DependentUpon>BatchNumberDisplayPopup.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="BSESSCheckByDate.aspx.resx">
+      <DependentUpon>BSESSCheckByDate.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="BSESSCheckByRBSE.aspx.resx">
+      <DependentUpon>BSESSCheckByRBSE.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="BSESSMenu.aspx.resx">
+      <DependentUpon>BSESSMenu.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="CalendarDate.ascx.resx">
+      <DependentUpon>CalendarDate.ascx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="CalendarPopup.aspx.resx">
+      <DependentUpon>CalendarPopup.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="CaseAuditLogReport.aspx.resx">
+      <DependentUpon>CaseAuditLogReport.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="CaseEntryBAB.aspx.resx">
+      <DependentUpon>CaseEntryBAB.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="CaseEntryClinical.aspx.resx">
+      <DependentUpon>CaseEntryClinical.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="CaseEntryDEFRA.aspx.resx">
+      <DependentUpon>CaseEntryDEFRA.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="CaseEntryFarm.aspx.resx">
+      <DependentUpon>CaseEntryFarm.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="CaseEntryFeeds.aspx.resx">
+      <DependentUpon>CaseEntryFeeds.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="CaseEntryRelations.aspx.resx">
+      <DependentUpon>CaseEntryRelations.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="CaseEntrySave.aspx.resx">
+      <DependentUpon>CaseEntrySave.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="CaseEntryVLA.aspx.resx">
+      <DependentUpon>CaseEntryVLA.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="CPHH.ascx.resx">
+      <DependentUpon>CPHH.ascx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="CPHHChange.aspx.resx">
+      <DependentUpon>CPHHChange.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="DataGridPager.ascx.resx">
+      <DependentUpon>DataGridPager.ascx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="DeleteCase.aspx.resx">
+      <DependentUpon>DeleteCase.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Eartag.ascx.resx">
+      <DependentUpon>Eartag.ascx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ExcelExport.aspx.resx">
+      <DependentUpon>ExcelExport.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ExitConfirmation.ascx.resx">
+      <DependentUpon>ExitConfirmation.ascx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ExitConfirmationPopup.aspx.resx">
+      <DependentUpon>ExitConfirmationPopup.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FarmAuditLogReport.aspx.resx">
+      <DependentUpon>FarmAuditLogReport.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FinalResultConfirmation.aspx.resx">
+      <DependentUpon>FinalResultConfirmation.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FinalResultEntry.aspx.resx">
+      <DependentUpon>FinalResultEntry.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Global.asax.resx">
+      <DependentUpon>Global.asax.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Help.aspx.resx">
+      <DependentUpon>Help.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Home.aspx.resx">
+      <DependentUpon>Home.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MaintenanceConfirmation.aspx.resx">
+      <DependentUpon>MaintenanceConfirmation.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MapReference.ascx.resx">
+      <DependentUpon>MapReference.ascx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MoveCase.aspx.resx">
+      <DependentUpon>MoveCase.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MoveCaseNewFarm.aspx.resx">
+      <DependentUpon>MoveCaseNewFarm.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NewFarm.aspx.resx">
+      <DependentUpon>NewFarm.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="NonGBCaseCreation.aspx.resx">
+      <DependentUpon>NonGBCaseCreation.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="OSSExportBSE1.aspx.resx">
+      <DependentUpon>OSSExportBSE1.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="OSSExportBSE1b.aspx.resx">
+      <DependentUpon>OSSExportBSE1b.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="OSSExportBSE1Download.aspx.resx">
+      <DependentUpon>OSSExportBSE1Download.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="OSSExportMenu.aspx.resx">
+      <DependentUpon>OSSExportMenu.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PartialDate.ascx.resx">
+      <DependentUpon>PartialDate.ascx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PickFarm.aspx.resx">
+      <DependentUpon>PickFarm.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PickListMaintenance.aspx.resx">
+      <DependentUpon>PickListMaintenance.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PickListMaintenanceAHO.aspx.resx">
+      <DependentUpon>PickListMaintenanceAHO.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PickListMaintenanceBreed.aspx.resx">
+      <DependentUpon>PickListMaintenanceBreed.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PickListMaintenanceBSECounty.aspx.resx">
+      <DependentUpon>PickListMaintenanceBSECounty.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PickListMaintenanceRelationFate.aspx.resx">
+      <DependentUpon>PickListMaintenanceRelationFate.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PickListMaintenanceSupplier.aspx.resx">
+      <DependentUpon>PickListMaintenanceSupplier.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PickListMaintenanceTestType.aspx.resx">
+      <DependentUpon>PickListMaintenanceTestType.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PickSireDam.aspx.resx">
+      <DependentUpon>PickSireDam.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PickSupplier.aspx.resx">
+      <DependentUpon>PickSupplier.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PrintBatch.aspx.resx">
+      <DependentUpon>PrintBatch.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="RBSE.ascx.resx">
+      <DependentUpon>RBSE.ascx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="RBSEChange.aspx.resx">
+      <DependentUpon>RBSEChange.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Redirect.aspx.resx">
+      <DependentUpon>Redirect.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="RelationsPopup.aspx.resx">
+      <DependentUpon>RelationsPopup.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ReportCaseFarm.aspx.resx">
+      <DependentUpon>ReportCaseFarm.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ReportClinical.aspx.resx">
+      <DependentUpon>ReportClinical.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ReportFeeds.aspx.resx">
+      <DependentUpon>ReportFeeds.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ReportOffspring.aspx.resx">
+      <DependentUpon>ReportOffspring.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ReportPedigree.aspx.resx">
+      <DependentUpon>ReportPedigree.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ResultMemo.aspx.resx">
+      <DependentUpon>ResultMemo.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SearchCase.aspx.resx">
+      <DependentUpon>SearchCase.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SearchCaseByHerdmark.aspx.resx">
+      <DependentUpon>SearchCaseByHerdmark.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SearchCPHH.aspx.resx">
+      <DependentUpon>SearchCPHH.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SearchFarm.aspx.resx">
+      <DependentUpon>SearchFarm.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SearchMenu.aspx.resx">
+      <DependentUpon>SearchMenu.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SearchOutstandingData.aspx.resx">
+      <DependentUpon>SearchOutstandingData.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SearchRelatedAnimal.aspx.resx">
+      <DependentUpon>SearchRelatedAnimal.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SessionError.aspx.resx">
+      <DependentUpon>SessionError.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ShowCase.aspx.resx">
+      <DependentUpon>ShowCase.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="UserMaintenance.aspx.resx">
+      <DependentUpon>UserMaintenance.aspx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="VLAFooter.ascx.resx">
+      <DependentUpon>VLAFooter.ascx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="VLAHeader.ascx.resx">
+      <DependentUpon>VLAHeader.ascx.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <None Include="BSESystem.vsdisco" />
+    <Content Include="packages.config" />
+    <None Include="My Project\PublishProfiles\FolderProfile.pubxml" />
+  </ItemGroup>
+  <ItemGroup />
+  <PropertyGroup>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+  </PropertyGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.VisualBasic.targets" />
+  <PropertyGroup>
+    <PreBuildEvent>
+    </PreBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
+  <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v10.0\WebApplications\Microsoft.WebApplication.targets" Condition="false" />
+  <ProjectExtensions>
+    <VisualStudio>
+      <FlavorProperties GUID="{349c5851-65df-11da-9384-00065b846f21}">
+        <WebProjectProperties>
+          <UseIIS>True</UseIIS>
+          <AutoAssignPort>True</AutoAssignPort>
+          <DevelopmentServerPort>4208</DevelopmentServerPort>
+          <DevelopmentServerVPath>/</DevelopmentServerVPath>
+          <IISUrl>http://localhost/BSESystem</IISUrl>
+          <NTLMAuthentication>False</NTLMAuthentication>
+          <UseCustomServer>False</UseCustomServer>
+          <CustomServerUrl>
+          </CustomServerUrl>
+          <SaveServerSettingsInUserFile>False</SaveServerSettingsInUserFile>
+        </WebProjectProperties>
+      </FlavorProperties>
+    </VisualStudio>
+  </ProjectExtensions>
+</Project>

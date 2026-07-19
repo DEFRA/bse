@@ -1,0 +1,13 @@
+﻿
+CREATE PROCEDURE GetNumberOfCasesByCPHH
+	@CPHH char(11)
+AS
+
+SELECT
+	COUNT(*)
+FROM
+	[CASE]
+WHERE
+	[CPHH] = @CPHH
+
+RETURN
