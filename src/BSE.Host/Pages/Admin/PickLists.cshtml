@@ -1,0 +1,35 @@
+@page
+@model PickListsModel
+@{
+    ViewData["Title"] = "Pick Lists";
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Pick Lists</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a asp-page="/Home">Home</a></li>
+        <li class="breadcrumb-item active">Pick Lists</li>
+    </ol>
+
+    <div class="card mb-4">
+        <div class="card-header">Editable Reference Tables</div>
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr><th>ID</th><th>Table</th><th>Description</th><th></th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var lookup in Model.Lookups)
+                    {
+                        <tr>
+                            <td>@lookup.Id</td>
+                            <td>@lookup.TableName</td>
+                            <td>@lookup.Description</td>
+                            <td><a asp-page="/Admin/PickListEdit" asp-route-tableId="@lookup.Id" class="btn btn-sm btn-outline-primary">Edit</a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

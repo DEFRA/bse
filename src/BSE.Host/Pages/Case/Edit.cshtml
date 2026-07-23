@@ -1,0 +1,240 @@
+@page "{rbse}"
+@model EditModel
+@{
+    ViewData["Title"] = $"Edit Case — {Model.Case.Rbse}";
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Edit Case — @Model.Case.Rbse</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a asp-page="/Home">Home</a></li>
+        <li class="breadcrumb-item"><a asp-page="/Case/Details" asp-route-rbse="@Model.Case.Rbse">@Model.Case.Rbse</a></li>
+        <li class="breadcrumb-item active">Edit</li>
+    </ol>
+
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger" style="display:@(ViewData.ModelState.IsValid ? "none" : "block")"></div>
+
+    @if (!string.IsNullOrEmpty(Model.ConcurrencyError))
+    {
+        <div class="alert alert-warning">
+            <strong>Concurrency conflict:</strong> @Model.ConcurrencyError
+        </div>
+    }
+
+    <form method="post">
+        <input type="hidden" asp-for="Case.Rbse" />
+
+        <div class="card mb-4">
+            <div class="card-header">Identification</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-2">
+                        <label class="form-label">Eartag Country</label>
+                        <input asp-for="Case.EartagCountry" class="form-control" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Eartag Herdmark</label>
+                        <input asp-for="Case.EartagHerdmark" class="form-control" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Eartag</label>
+                        <input asp-for="Case.Eartag" class="form-control" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Previous Eartag</label>
+                        <input asp-for="Case.PreviousEartag" class="form-control" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Sex</label>
+                        <input asp-for="Case.Sex" class="form-control" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Breed</label>
+                        <input asp-for="Case.Breed" class="form-control" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Origin</label>
+                        <input asp-for="Case.Origin" class="form-control" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Case Type</label>
+                        <input asp-for="Case.CaseType" class="form-control" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">Dates &amp; Fate</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">BSE-1 Received Date</label>
+                        <input asp-for="Case.Bse1ReceivedDate" type="date" class="form-control" value="@Model.Case.Bse1ReceivedDate?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Form A Date</label>
+                        <input asp-for="Case.FormADate" type="date" class="form-control" value="@Model.Case.FormADate?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Form A Resubmitted</label>
+                        <input asp-for="Case.FormAResubmittedDate" type="date" class="form-control" value="@Model.Case.FormAResubmittedDate?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Form B Date</label>
+                        <input asp-for="Case.FormBDate" type="date" class="form-control" value="@Model.Case.FormBDate?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Form C Date</label>
+                        <input asp-for="Case.FormCDate" type="date" class="form-control" value="@Model.Case.FormCDate?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Fate</label>
+                        <input asp-for="Case.Fate" class="form-control" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Slaughter Date</label>
+                        <input asp-for="Case.SlaughterDate" type="date" class="form-control" value="@Model.Case.SlaughterDate?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Onset Date</label>
+                        <input asp-for="Case.OnsetDate" type="date" class="form-control" value="@Model.Case.OnsetDate?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check mt-4">
+                            <input asp-for="Case.IsOnsetDateEst" type="checkbox" class="form-check-input" />
+                            <label class="form-check-label">Onset Date Estimated</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">Birth &amp; Purchase</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Birth Date</label>
+                        <input asp-for="Case.BirthDate" type="date" class="form-control" value="@Model.Case.BirthDate?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-check mt-4">
+                            <input asp-for="Case.IsBirthDateEst" type="checkbox" class="form-check-input" />
+                            <label class="form-check-label">Estimated</label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Birth Date Source</label>
+                        <input asp-for="Case.BirthDateSource" class="form-control" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Dam Status</label>
+                        <input asp-for="Case.DamStatus" class="form-control" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Valuation Age</label>
+                        <input asp-for="Case.ValuationAge" class="form-control" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Purchase Date</label>
+                        <input asp-for="Case.PurchaseDate" type="date" class="form-control" value="@Model.Case.PurchaseDate?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Purchase Age (months)</label>
+                        <input asp-for="Case.PurchaseAgeInMonths" type="number" class="form-control" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Purchased County</label>
+                        <input asp-for="Case.PurchasedCounty" class="form-control" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Herd Entry Date</label>
+                        <input asp-for="Case.HerdEntryDate" type="date" class="form-control" value="@Model.Case.HerdEntryDate?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Months Pregnant</label>
+                        <input asp-for="Case.MonthsPregnant" type="number" class="form-control" min="0" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Months Post Calving</label>
+                        <input asp-for="Case.MonthsPostCalving" type="number" class="form-control" min="0" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Onset Age (months)</label>
+                        <input asp-for="Case.OnsetAgeInMonths" type="number" class="form-control" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">Paperwork &amp; Survey</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Survey</label>
+                        <input asp-for="Case.Survey" class="form-control" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Reported Location</label>
+                        <input asp-for="Case.ReportedLocation" class="form-control" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Alternate Diagnosis</label>
+                        <input asp-for="Case.AlternateDiagnosis" class="form-control" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Lab Comment</label>
+                        <input asp-for="Case.LabComment" class="form-control" />
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-check mt-2">
+                            <input asp-for="Case.IsPurchaserBse1Received" type="checkbox" class="form-check-input" />
+                            <label class="form-check-label">Purchaser BSE-1</label>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-check mt-2">
+                            <input asp-for="Case.IsBreederBse1Received" type="checkbox" class="form-check-input" />
+                            <label class="form-check-label">Breeder BSE-1</label>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-check mt-2">
+                            <input asp-for="Case.IsVendor1Bse1Received" type="checkbox" class="form-check-input" />
+                            <label class="form-check-label">Vendor 1 BSE-1</label>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-check mt-2">
+                            <input asp-for="Case.IsHomebredBse1Received" type="checkbox" class="form-check-input" />
+                            <label class="form-check-label">Homebred BSE-1</label>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-check mt-2">
+                            <input asp-for="Case.IsSummarySheetReceived" type="checkbox" class="form-check-input" />
+                            <label class="form-check-label">Summary Sheet</label>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="form-check mt-2">
+                            <input asp-for="Case.IsPaperworkComplete" type="checkbox" class="form-check-input" />
+                            <label class="form-check-label">Paperwork Complete</label>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Notes</label>
+                        <textarea asp-for="Case.Notes" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <a asp-page="/Case/Details" asp-route-rbse="@Model.Case.Rbse" class="btn btn-secondary ms-2">Cancel</a>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,54 @@
+@page
+@model CheckByDateModel
+@{
+    ViewData["Title"] = "BSESS Check by Date";
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">BSESS Check by Date</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a asp-page="/Home">Home</a></li>
+        <li class="breadcrumb-item active">BSESS Check by Date</li>
+    </ol>
+    <partial name="_AuditDateRangeForm" model="@(new BSE.Host.Models.ViewModels.AuditDateRangeViewModel(Model.StartDate, Model.EndDate))" />
+
+    @if (Model.Discrepancies.Any())
+    {
+        <div class="card mb-4">
+            <div class="card-header">@Model.Discrepancies.Count discrepancies found</div>
+            <div class="card-body p-0">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>RBSE</th>
+                            <th>BSESS Eartag</th>
+                            <th>BSE Eartag</th>
+                            <th>BSESS Birth Date</th>
+                            <th>BSE Birth Date</th>
+                            <th>BSESS Test Group</th>
+                            <th>BSE Test Group</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var d in Model.Discrepancies)
+                        {
+                            <tr>
+                                <td><a asp-page="/Case/Details" asp-route-rbse="@d.Rbse">@d.Rbse</a></td>
+                                <td class="@(d.BsessEartag != d.BseEartag ? "table-warning" : "")">@d.BsessEartag</td>
+                                <td class="@(d.BsessEartag != d.BseEartag ? "table-warning" : "")">@d.BseEartag</td>
+                                <td class="@(d.BsessBirthDate != d.BseBirthDate ? "table-warning" : "")">@d.BsessBirthDate?.ToShortDateString()</td>
+                                <td class="@(d.BsessBirthDate != d.BseBirthDate ? "table-warning" : "")">@d.BseBirthDate?.ToShortDateString()</td>
+                                <td class="@(d.BsessTestGroup != d.BseTestGroup ? "table-warning" : "")">@d.BsessTestGroup</td>
+                                <td class="@(d.BsessTestGroup != d.BseTestGroup ? "table-warning" : "")">@d.BseTestGroup</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else if (Model.HasSearched)
+    {
+        <div class="alert alert-success">No discrepancies found for this date range.</div>
+    }
+</div>

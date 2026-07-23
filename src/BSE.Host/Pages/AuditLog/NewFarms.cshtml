@@ -1,0 +1,42 @@
+@page
+@model NewFarmsModel
+@{
+    ViewData["Title"] = "Audit Log — New Farms";
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Audit Log — New Farms</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a asp-page="/Home">Home</a></li>
+        <li class="breadcrumb-item active">New Farms</li>
+    </ol>
+    <partial name="_AuditDateRangeForm" model="@(new BSE.Host.Models.ViewModels.AuditDateRangeViewModel(Model.StartDate, Model.EndDate))" />
+
+    @if (Model.Entries.Any())
+    {
+        <div class="card mb-4">
+            <div class="card-header">@Model.Entries.Count() new farms</div>
+            <div class="card-body p-0">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light">
+                        <tr><th>Date/Time</th><th>User</th><th>CPHH</th><th>Owner</th><th>Address</th><th>County</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var e in Model.Entries)
+                        {
+                            <tr>
+                                <td>@e.DateTime.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@e.UserName</td>
+                                <td>@e.Key</td>
+                                <td>@e.OwnerName</td>
+                                <td>@e.Address</td>
+                                <td>@e.County</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else if (Model.HasSearched) { <div class="alert alert-info">No new farms found in this period.</div> }
+</div>

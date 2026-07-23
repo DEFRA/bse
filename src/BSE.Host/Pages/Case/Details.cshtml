@@ -1,0 +1,82 @@
+@page "{rbse}"
+@model BSE.Host.Pages.Case.DetailsModel
+@{
+    ViewData["Title"] = Model.Case is null ? "Case Details" : $"Case {Model.Case.Rbse}";
+}
+
+@if (Model.Case is null)
+{
+    <div class="alert alert-warning">Case not found.</div>
+    <a asp-page="/Case/Lookup" class="btn btn-secondary">Back</a>
+    return;
+}
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <h2>Case: <span class="bse-rbse">@Model.Case.Rbse</span></h2>
+    <div class="d-flex gap-2">
+        <a asp-page="/Case/Edit" asp-route-rbse="@Model.Case.Rbse" class="btn btn-outline-primary">Edit</a>
+        <a asp-page="/Case/Delete" asp-route-rbse="@Model.Case.Rbse" class="btn btn-outline-danger">Delete</a>
+        <a asp-page="/Case/MoveCase" asp-route-rbse="@Model.Case.Rbse" class="btn btn-outline-warning">Move</a>
+        <a asp-page="/Case/RbseChange" asp-route-rbse="@Model.Case.Rbse" class="btn btn-outline-secondary">Change RBSE</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header fw-semibold">Case Details</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">CPHH</dt>
+                    <dd class="col-sm-7"><a asp-page="/Farm/Details" asp-route-cphh="@Model.Case.Cphh">@Model.Case.Cphh</a></dd>
+                    <dt class="col-sm-5">Eartag</dt>
+                    <dd class="col-sm-7">@Model.Case.EartagCountry @Model.Case.EartagHerdmark @Model.Case.Eartag</dd>
+                    <dt class="col-sm-5">Sex</dt><dd class="col-sm-7">@Model.Case.Sex</dd>
+                    <dt class="col-sm-5">Breed</dt><dd class="col-sm-7">@Model.Case.Breed</dd>
+                    <dt class="col-sm-5">Birth Date</dt>
+                    <dd class="col-sm-7">@Model.Case.BirthDate?.ToString("dd/MM/yyyy") @(Model.Case.IsBirthDateEst ? "(est)" : "")</dd>
+                    <dt class="col-sm-5">Survey</dt><dd class="col-sm-7">@Model.Case.Survey</dd>
+                    <dt class="col-sm-5">Form A Date</dt><dd class="col-sm-7">@Model.Case.FormADate?.ToString("dd/MM/yyyy")</dd>
+                    <dt class="col-sm-5">Fate</dt><dd class="col-sm-7">@Model.Case.Fate</dd>
+                    <dt class="col-sm-5">Final Result</dt><dd class="col-sm-7">@Model.Case.FinalResult</dd>
+                    <dt class="col-sm-5">Final Result Date</dt><dd class="col-sm-7">@Model.Case.FinalResultDate?.ToString("dd/MM/yyyy")</dd>
+                    <dt class="col-sm-5">DBSE</dt><dd class="col-sm-7">@Model.Case.Dbse</dd>
+                    <dt class="col-sm-5">Non-GB</dt><dd class="col-sm-7">@(Model.Case.IsNonGbCase ? "Yes" : "No")</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header fw-semibold">Paperwork Status</div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    @{
+                        void PaperworkItem(string label, bool received)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-1">
+                                @label
+                                <span class="badge @(received ? "bg-success" : "bg-danger")">
+                                    @(received ? "Received" : "Outstanding")
+                                </span>
+                            </li>;
+                        }
+                    }
+                    @{ PaperworkItem("Homebred BSE1", Model.Case.IsHomebredBse1Received); }
+                    @{ PaperworkItem("Breeder BSE1", Model.Case.IsBreederBse1Received); }
+                    @{ PaperworkItem("Purchaser BSE1", Model.Case.IsPurchaserBse1Received); }
+                    @{ PaperworkItem("Vendor BSE1", Model.Case.IsVendor1Bse1Received); }
+                    @{ PaperworkItem("Summary Sheet", Model.Case.IsSummarySheetReceived); }
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.Case.Notes))
+{
+    <div class="card mb-3">
+        <div class="card-header fw-semibold">Notes</div>
+        <div class="card-body"><p class="mb-0">@Model.Case.Notes</p></div>
+    </div>
+}

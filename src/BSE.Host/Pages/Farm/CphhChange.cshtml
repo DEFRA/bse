@@ -1,0 +1,24 @@
+@page "{cphh}"
+@model BSE.Host.Pages.Farm.CphhChangeModel
+@{
+    ViewData["Title"] = "Change CPHH";
+}
+
+<h2>Change CPHH</h2>
+<p class="text-muted">Current CPHH: <strong>@Model.OldCphh</strong></p>
+
+<form method="post">
+    <div class="row g-3 mb-3">
+        <div class="col-md-4">
+            <label asp-for="NewCphh" class="form-label">New CPHH *</label>
+            <input asp-for="NewCphh" class="form-control" />
+            <span asp-validation-for="NewCphh" class="text-danger small"></span>
+        </div>
+    </div>
+    @if (Model.ErrorMessage != null)
+    {
+        <div class="alert alert-danger">@Model.ErrorMessage</div>
+    }
+    <button type="submit" class="btn btn-warning">Change CPHH</button>
+    <a asp-page="/Farm/Details" asp-route-cphh="@Model.OldCphh" class="btn btn-outline-secondary ms-2">Cancel</a>
+</form>

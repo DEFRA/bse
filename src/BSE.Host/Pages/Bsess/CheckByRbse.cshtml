@@ -1,0 +1,55 @@
+@page
+@model CheckByRbseModel
+@{
+    ViewData["Title"] = "BSESS Check by RBSE";
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">BSESS Check by RBSE</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a asp-page="/Home">Home</a></li>
+        <li class="breadcrumb-item active">BSESS Check by RBSE</li>
+    </ol>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-auto">
+                    <label asp-for="Rbse" class="form-label">RBSE</label>
+                    <input asp-for="Rbse" class="form-control" style="width:160px" />
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary">Check</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (Model.Result is not null)
+    {
+        <div class="card mb-4">
+            <div class="card-header">BSESS vs BSE Comparison — @Model.Rbse</div>
+            <div class="card-body">
+                <table class="table table-bordered">
+                    <thead class="table-light">
+                        <tr><th>Field</th><th>BSESS</th><th>BSE</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Eartag</td><td>@Model.Result.BsessEartag</td><td>@Model.Result.BseEartag</td></tr>
+                        <tr><td>Birth Date</td><td>@Model.Result.BsessBirthDate</td><td>@Model.Result.BseBirthDate</td></tr>
+                        <tr><td>Final Result</td><td>@Model.Result.BsssFinalResult</td><td>@Model.Result.BseFinalResult</td></tr>
+                        <tr><td>Survey</td><td colspan="2">@Model.Result.Survey</td></tr>
+                        <tr><td>Notification Date</td><td colspan="2">@Model.Result.NotificationDate</td></tr>
+                        <tr><td>Test Group</td><td colspan="2">@Model.Result.TestGroupName</td></tr>
+                        <tr><td>Barcode</td><td colspan="2">@Model.Result.Barcode</td></tr>
+                        <tr><td>Form A Date</td><td colspan="2">@Model.Result.FormADate</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else if (Model.HasSearched)
+    {
+        <div class="alert alert-warning">No BSESS record found for <strong>@Model.Rbse</strong>.</div>
+    }
+</div>
