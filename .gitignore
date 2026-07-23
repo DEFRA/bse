@@ -1,0 +1,31 @@
+# Build outputs
+**/bin/
+**/obj/
+
+# Application logs
+**/logs/
+
+# Environment / secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+
+# JetBrains Rider
+.idea/
+
+# NuGet
+**/packages/
+*.nupkg
+
+# Test results and coverage
+**/coverage/
+**/TestResults/
+
+# macOS
+.DS_Store

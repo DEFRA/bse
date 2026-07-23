@@ -1,0 +1,114 @@
+@page
+@model GbModel
+@{
+    ViewData["Title"] = "ADNS Export — Great Britain";
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">ADNS Export — Great Britain</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a asp-page="/Home">Home</a></li>
+        <li class="breadcrumb-item"><a asp-page="/AdnsExport/Menu">ADNS Export</a></li>
+        <li class="breadcrumb-item active">GB</li>
+    </ol>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger">@Model.ErrorMessage</div>
+    }
+
+    @if (Model.Preview is null)
+    {
+        <div class="card mb-4">
+            <div class="card-header">Generate GB Export Preview</div>
+            <div class="card-body">
+                <form method="post" asp-page-handler="Preview">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label asp-for="EmailReference" class="form-label">Email Reference</label>
+                            <input asp-for="EmailReference" class="form-control" />
+                            <span asp-validation-for="EmailReference" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="AdnsYear" class="form-label">ADNS Year</label>
+                            <input asp-for="AdnsYear" type="number" class="form-control" />
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="StartAdnsNumber" class="form-label">Start ADNS Number</label>
+                            <input asp-for="StartAdnsNumber" type="number" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-primary">Preview</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        @if (Model.LastReference is not null)
+        {
+            <div class="alert alert-info">
+                Last export: ref <strong>@Model.LastReference.LastEmailReference</strong>,
+                year <strong>@Model.LastReference.LastAdnsReferenceYear</strong>,
+                number <strong>@Model.LastReference.LastAdnsReferenceNumber</strong>.
+            </div>
+        }
+    }
+    else
+    {
+        <div class="card mb-4">
+            <div class="card-header">Preview — @Model.Preview.Cases.Count cases</div>
+            <div class="card-body">
+                <p><strong>Subject:</strong> @Model.Preview.EmailSubject</p>
+                @if (Model.Preview.MissingCases.Any())
+                {
+                    <div class="alert alert-warning">
+                        @Model.Preview.MissingCases.Count cases missing ADNS region:
+                        @string.Join(", ", Model.Preview.MissingCases.Select(c => c.Rbse))
+                    </div>
+                }
+                <table class="table table-sm">
+                    <thead class="table-light">
+                        <tr><th>RBSE</th><th>ADNS Ref</th><th>Region</th><th>Confirmation Date</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in Model.Preview.Cases)
+                        {
+                            <tr>
+                                <td>@c.Rbse</td>
+                                <td>@c.AdnsReference</td>
+                                <td>@c.AdnsRegionName</td>
+                                <td>@c.ConfirmationDate.ToShortDateString()</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                <h6>Summary by Region</h6>
+                <table class="table table-sm table-bordered">
+                    <thead class="table-light"><tr><th>Region</th><th>Cases</th></tr></thead>
+                    <tbody>
+                        @foreach (var s in Model.Preview.Summary)
+                        {
+                            <tr><td>@s.AdnsRegionName</td><td>@s.CasesCount</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <form method="post" asp-page-handler="Dispatch">
+            <input type="hidden" asp-for="EmailReference" />
+            <div class="mb-3">
+                <label asp-for="UserEmailAddress" class="form-label">Your Email Address (CC copy)</label>
+                <input asp-for="UserEmailAddress" type="email" class="form-control" style="max-width:300px" />
+                <span asp-validation-for="UserEmailAddress" class="text-danger"></span>
+            </div>
+            <div class="form-check mb-3">
+                <input asp-for="SaveAdnsData" type="checkbox" class="form-check-input" checked />
+                <label asp-for="SaveAdnsData" class="form-check-label">Save ADNS data to database</label>
+            </div>
+            <button type="submit" class="btn btn-success">Dispatch</button>
+            <a asp-page="/AdnsExport/Gb" class="btn btn-secondary ms-2">Start Over</a>
+        </form>
+    }
+</div>

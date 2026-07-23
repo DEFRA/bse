@@ -1,0 +1,35 @@
+@page "{rbse}"
+@model MoveCaseModel
+@{
+    ViewData["Title"] = "Move Case";
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Move Case</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a asp-page="/Home">Home</a></li>
+        <li class="breadcrumb-item"><a asp-page="/Case/Details" asp-route-rbse="@Model.Rbse">Case @Model.Rbse</a></li>
+        <li class="breadcrumb-item active">Move</li>
+    </ol>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger">@Model.ErrorMessage</div>
+    }
+
+    <div class="card mb-4">
+        <div class="card-header">Move Case @Model.Rbse to a Different Farm</div>
+        <div class="card-body">
+            <form method="post">
+                <input type="hidden" asp-for="Rbse" />
+                <div class="mb-3">
+                    <label asp-for="NewCphh" class="form-label">New CPHH</label>
+                    <input asp-for="NewCphh" class="form-control" style="max-width:200px" placeholder="e.g. 12/345/6789/01" />
+                    <span asp-validation-for="NewCphh" class="text-danger"></span>
+                </div>
+                <button type="submit" class="btn btn-primary">Move Case</button>
+                <a asp-page="/Case/Details" asp-route-rbse="@Model.Rbse" class="btn btn-secondary ms-2">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>

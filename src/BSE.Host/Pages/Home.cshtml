@@ -1,0 +1,74 @@
+@page
+@model BSE.Host.Pages.HomeModel
+@{
+    ViewData["Title"] = "Home";
+}
+
+<h1 class="mb-4">BSE System</h1>
+
+<form method="get" asp-page="/Search/Cases" class="row g-3 mb-5">
+    <div class="col-md-4">
+        <label class="form-label fw-semibold">Quick Case Search (RBSE)</label>
+        <div class="input-group">
+            <input type="text" name="Rbse" class="form-control" placeholder="e.g. 01/01/12345" />
+            <button type="submit" class="btn btn-primary">Search</button>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label fw-semibold">Quick Farm Search (CPHH)</label>
+        <div class="input-group">
+            <input type="text" name="Cphh" asp-page="/Search/Farms" class="form-control" placeholder="e.g. 12/345/0001" />
+            <button type="submit" asp-page="/Search/Farms" class="btn btn-secondary">Search</button>
+        </div>
+    </div>
+</form>
+
+<div class="row g-4">
+    <div class="col-md-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Search</h5>
+                <ul class="list-unstyled">
+                    <li><a asp-page="/Search/Cases">Cases</a></li>
+                    <li><a asp-page="/Search/Farms">Farms</a></li>
+                    <li><a asp-page="/Search/Outstanding">Outstanding Data</a></li>
+                    <li><a asp-page="/Search/RelatedAnimals">Related Animals</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Case Entry</h5>
+                <ul class="list-unstyled">
+                    <li><a asp-page="/Case/New">New Case</a></li>
+                    <li><a asp-page="/Case/Lookup">Open Existing Case</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Farm</h5>
+                <ul class="list-unstyled">
+                    <li><a asp-page="/Farm/New">New Farm</a></li>
+                    <li><a asp-page="/Farm/Lookup">Open Farm</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">Casework &amp; Reports</h5>
+                <ul class="list-unstyled">
+                    <li><a asp-page="/CaseWork/Menu">Casework Menu</a></li>
+                    <li><a asp-page="/AuditLog/ByDate">Audit Log</a></li>
+                    <li><a asp-page="/Bsess/CheckByRbse">BSESS Check</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

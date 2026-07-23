@@ -1,0 +1,43 @@
+@page
+@model AdnsMenuModel
+@{
+    ViewData["Title"] = "ADNS Export";
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">ADNS Export</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a asp-page="/Home">Home</a></li>
+        <li class="breadcrumb-item active">ADNS Export</li>
+    </ol>
+
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Great Britain (GB)</h5>
+                    <p class="card-text">Export confirmed BSE cases for Great Britain to the EU ADNS system.</p>
+                    <a asp-page="/AdnsExport/Gb" class="btn btn-primary">GB Export</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Channel Islands (CI)</h5>
+                    <p class="card-text">Export confirmed BSE cases for Channel Islands (Jersey, Guernsey, Isle of Man).</p>
+                    <a asp-page="/AdnsExport/Ci" class="btn btn-primary">CI Export</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Northern Ireland (NI)</h5>
+                    <p class="card-text">Export confirmed BSE cases for Northern Ireland to the EU ADNS system.</p>
+                    <a asp-page="/AdnsExport/Ni" class="btn btn-primary">NI Export</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

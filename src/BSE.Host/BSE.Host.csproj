@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>14</LangVersion>
+    <RootNamespace>BSE.Host</RootNamespace>
+    <UserSecretsId>bse-host-dev</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.3" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\BSE.Infrastructure\BSE.Infrastructure.csproj" />
+    <ProjectReference Include="..\BSE.SharedKernel\BSE.SharedKernel.csproj" />
+    <ProjectReference Include="..\BSE.Modules.ReferenceData\BSE.Modules.ReferenceData.csproj" />
+    <ProjectReference Include="..\BSE.Modules.UserManagement\BSE.Modules.UserManagement.csproj" />
+    <ProjectReference Include="..\BSE.Modules.AuditLog\BSE.Modules.AuditLog.csproj" />
+    <ProjectReference Include="..\BSE.Modules.FarmManagement\BSE.Modules.FarmManagement.csproj" />
+    <ProjectReference Include="..\BSE.Modules.Search\BSE.Modules.Search.csproj" />
+    <ProjectReference Include="..\BSE.Modules.Batch\BSE.Modules.Batch.csproj" />
+    <ProjectReference Include="..\BSE.Modules.CaseManagement\BSE.Modules.CaseManagement.csproj" />
+    <ProjectReference Include="..\BSE.Modules.AnimalRelations\BSE.Modules.AnimalRelations.csproj" />
+    <ProjectReference Include="..\BSE.Modules.CaseWork\BSE.Modules.CaseWork.csproj" />
+    <ProjectReference Include="..\BSE.Modules.AdnsExport\BSE.Modules.AdnsExport.csproj" />
+    <ProjectReference Include="..\BSE.Modules.OssExport\BSE.Modules.OssExport.csproj" />
+    <ProjectReference Include="..\BSE.Modules.BsessIntegration\BSE.Modules.BsessIntegration.csproj" />
+  </ItemGroup>
+</Project>

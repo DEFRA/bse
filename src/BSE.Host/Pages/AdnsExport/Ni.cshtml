@@ -1,0 +1,99 @@
+@page
+@model NiModel
+@{
+    ViewData["Title"] = "ADNS Export — Northern Ireland";
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">ADNS Export — Northern Ireland</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a asp-page="/Home">Home</a></li>
+        <li class="breadcrumb-item"><a asp-page="/AdnsExport/Menu">ADNS Export</a></li>
+        <li class="breadcrumb-item active">NI</li>
+    </ol>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger">@Model.ErrorMessage</div>
+    }
+
+    @if (Model.Preview is null)
+    {
+        <div class="card mb-4">
+            <div class="card-header">NI Export — Case List</div>
+            <div class="card-body">
+                <form method="post" asp-page-handler="Preview" id="niForm">
+                    <input type="hidden" asp-for="EmailReference" />
+                    <div class="mb-3 row g-3">
+                        <div class="col-md-4">
+                            <label asp-for="EmailReference" class="form-label">Email Reference</label>
+                            <input asp-for="EmailReference" class="form-control" />
+                        </div>
+                    </div>
+                    <div id="caseRows">
+                        <div class="row g-2 align-items-end case-row mb-2">
+                            <div class="col-md-2"><label class="form-label">RBSE</label><input name="Cases[0].Rbse" class="form-control" /></div>
+                            <div class="col-md-2"><label class="form-label">ADNS Year</label><input name="Cases[0].AdnsYear" type="number" class="form-control" value="@DateTime.Today.Year" /></div>
+                            <div class="col-md-2"><label class="form-label">ADNS No.</label><input name="Cases[0].AdnsNumber" type="number" class="form-control" /></div>
+                            <div class="col-md-2"><label class="form-label">Region ID</label><input name="Cases[0].AdnsRegionId" type="number" class="form-control" /></div>
+                            <div class="col-md-2"><label class="form-label">Region Name</label><input name="Cases[0].AdnsRegionName" class="form-control" /></div>
+                            <div class="col-md-2"><label class="form-label">Conf. Date</label><input name="Cases[0].ConfirmationDate" type="date" class="form-control" /></div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm mb-3" onclick="addRow()">+ Add Row</button>
+                    <div><button type="submit" class="btn btn-primary">Preview</button></div>
+                </form>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card mb-4">
+            <div class="card-header">Preview — @Model.Preview.Cases.Count cases</div>
+            <div class="card-body">
+                <p><strong>Subject:</strong> @Model.Preview.EmailSubject</p>
+                <table class="table table-sm">
+                    <thead class="table-light"><tr><th>RBSE</th><th>Region</th><th>ADNS Ref</th><th>Confirmation</th></tr></thead>
+                    <tbody>
+                        @foreach (var c in Model.Preview.Cases)
+                        {
+                            <tr><td>@c.Rbse</td><td>@c.AdnsRegionName</td><td>@c.AdnsReference</td><td>@c.ConfirmationDate.ToShortDateString()</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <form method="post" asp-page-handler="Dispatch">
+            <input type="hidden" asp-for="EmailReference" />
+            <div class="mb-3">
+                <label asp-for="UserEmailAddress" class="form-label">Your Email Address</label>
+                <input asp-for="UserEmailAddress" type="email" class="form-control" style="max-width:300px" />
+            </div>
+            <div class="form-check mb-3">
+                <input asp-for="SaveAdnsData" type="checkbox" class="form-check-input" checked />
+                <label asp-for="SaveAdnsData" class="form-check-label">Save ADNS data to database</label>
+            </div>
+            <button type="submit" class="btn btn-success">Dispatch</button>
+            <a asp-page="/AdnsExport/Ni" class="btn btn-secondary ms-2">Start Over</a>
+        </form>
+    }
+</div>
+
+<script>
+    let rowIndex = 1;
+    function addRow() {
+        const container = document.getElementById('caseRows');
+        const row = document.createElement('div');
+        row.className = 'row g-2 align-items-end case-row mb-2';
+        row.innerHTML = `
+            <div class="col-md-2"><input name="Cases[${rowIndex}].Rbse" class="form-control" placeholder="RBSE" /></div>
+            <div class="col-md-2"><input name="Cases[${rowIndex}].AdnsYear" type="number" class="form-control" value="@DateTime.Today.Year" /></div>
+            <div class="col-md-2"><input name="Cases[${rowIndex}].AdnsNumber" type="number" class="form-control" /></div>
+            <div class="col-md-2"><input name="Cases[${rowIndex}].AdnsRegionId" type="number" class="form-control" /></div>
+            <div class="col-md-2"><input name="Cases[${rowIndex}].AdnsRegionName" class="form-control" /></div>
+            <div class="col-md-2"><input name="Cases[${rowIndex}].ConfirmationDate" type="date" class="form-control" /></div>`;
+        container.appendChild(row);
+        rowIndex++;
+    }
+</script>

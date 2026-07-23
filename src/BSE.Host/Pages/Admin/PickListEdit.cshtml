@@ -1,0 +1,97 @@
+@page "{tableId:int}"
+@model PickListEditModel
+@{
+    ViewData["Title"] = $"Edit {Model.Lookup?.Description ?? "Pick List"}";
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">@(Model.Lookup?.Description ?? "Pick List") — @Model.Lookup?.TableName</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a asp-page="/Home">Home</a></li>
+        <li class="breadcrumb-item"><a asp-page="/Admin/PickLists">Pick Lists</a></li>
+        <li class="breadcrumb-item active">@Model.Lookup?.Description</li>
+    </ol>
+
+    @if (Model.Procs is null)
+    {
+        <div class="alert alert-warning">No stored procedures configured for table ID @Model.TableId.</div>
+    }
+    else
+    {
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="alert alert-danger">@Model.ErrorMessage</div>
+        }
+
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                Current Records
+                <button class="btn btn-sm btn-primary" data-bs-toggle="collapse" data-bs-target="#addForm">+ Add</button>
+            </div>
+
+            <div id="addForm" class="collapse">
+                <div class="card-body border-bottom">
+                    <form method="post" asp-page-handler="Add">
+                        <input type="hidden" asp-for="TableId" />
+                        <div class="row g-2">
+                            @if (Model.Rows.Any())
+                            {
+                                @foreach (var col in Model.Rows.First().Keys)
+                                {
+                                    <div class="col-md-3">
+                                        <label class="form-label">@col</label>
+                                        <input name="Fields[@col]" class="form-control form-control-sm" />
+                                    </div>
+                                }
+                            }
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-primary mt-2">Save</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card-body p-0">
+                @if (Model.Rows.Any())
+                {
+                    var columns = Model.Rows.First().Keys.ToList();
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                @foreach (var col in columns) { <th>@col</th> }
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in Model.Rows)
+                            {
+                                <tr>
+                                    @foreach (var col in columns)
+                                    {
+                                        <td>@row[col]</td>
+                                    }
+                                    <td>
+                                        <form method="post" asp-page-handler="Delete" class="d-inline">
+                                            <input type="hidden" asp-for="TableId" />
+                                            @foreach (var col in columns)
+                                            {
+                                                <input type="hidden" name="Fields[@col]" value="@row[col]" />
+                                            }
+                                            <button type="submit" class="btn btn-danger btn-sm"
+                                                onclick="return confirm('Delete this row?');">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <p class="p-3 text-muted">No records found.</p>
+                }
+            </div>
+        </div>
+    }
+
+    <a asp-page="/Admin/PickLists" class="btn btn-secondary">Back to Pick Lists</a>
+</div>

@@ -1,0 +1,22 @@
+@page
+@model BSE.Host.Pages.Case.LookupModel
+@{
+    ViewData["Title"] = "Open Case";
+}
+
+<h2>Open Case</h2>
+
+<form method="get" class="row g-3 mb-4">
+    <div class="col-md-4">
+        <label asp-for="Rbse" class="form-label">RBSE</label>
+        <div class="input-group">
+            <input asp-for="Rbse" class="form-control" placeholder="e.g. 01/01/12345" />
+            <button type="submit" class="btn btn-primary">Open</button>
+        </div>
+    </div>
+</form>
+
+@if (Model.IsNotFound)
+{
+    <div class="alert alert-warning">No case found for RBSE <strong>@Model.Rbse</strong>.</div>
+}

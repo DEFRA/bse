@@ -1,0 +1,9 @@
+﻿CREATE PROCEDURE GetCPHHOtherOwnerForRBSE
+	@RBSE char(9) AS
+
+SELECT
+	[CPHH]
+FROM
+	[OtherOwner]
+WHERE
+	[RBSE] = @RBSE
