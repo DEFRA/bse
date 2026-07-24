@@ -29,3 +29,5 @@
 
 # macOS
 .DS_Store
+/src/BSE.Database/BSE.Database.dbmdl
+/src/BSE.Database/BSE.Database.jfm

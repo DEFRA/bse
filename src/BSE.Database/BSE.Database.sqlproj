@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.Build.Sql/2.2.0">
+﻿<Project Sdk="Microsoft.Build.Sql/2.2.0">
   <PropertyGroup>
     <Name>BSE.Database</Name>
     <DSP>Microsoft.Data.Tools.Schema.Sql.Sql150DatabaseSchemaProvider</DSP>
@@ -6,5 +6,30 @@
     <DefaultCollation>Latin1_General_CI_AS</DefaultCollation>
     <!-- SQL Server 2019 (v15 / Sql150) target. Upgrade DSP to Sql160 when upgrading to SQL Server 2022. -->
     <!-- Verbatim copy of legacy stored procedures; SP content must not be modified until Slice 8 (TRY/CATCH refactor). -->
+    <TargetDatabaseSet>True</TargetDatabaseSet>
+    <ProjectGuid>{7e25879e-4d3f-1073-7dc0-096eb3f98aae}</ProjectGuid>
+    <!-- Explicit glob required for Solution Explorer visibility without the SDK-style SSDT VS component. -->
+    <EnableDefaultItems>false</EnableDefaultItems>
   </PropertyGroup>
+  <ItemGroup>
+    <Build Include="**\*.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Functions\" />
+    <Folder Include="StoredProcedures\" />
+    <Folder Include="StoredProcedures\AdnsExport\" />
+    <Folder Include="StoredProcedures\AnimalRelations\" />
+    <Folder Include="StoredProcedures\AuditLog\" />
+    <Folder Include="StoredProcedures\Batch\" />
+    <Folder Include="StoredProcedures\BsessIntegration\" />
+    <Folder Include="StoredProcedures\CaseManagement\" />
+    <Folder Include="StoredProcedures\CaseWork\" />
+    <Folder Include="StoredProcedures\FarmManagement\" />
+    <Folder Include="StoredProcedures\OssExport\" />
+    <Folder Include="StoredProcedures\ReferenceData\" />
+    <Folder Include="StoredProcedures\Search\" />
+    <Folder Include="StoredProcedures\UserManagement\" />
+    <Folder Include="Tables\" />
+    <Folder Include="Views\" />
+  </ItemGroup>
 </Project>
