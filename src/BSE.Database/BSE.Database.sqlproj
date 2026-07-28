@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.Build.Sql/2.2.0">
+<Project Sdk="Microsoft.Build.Sql/2.2.0">
   <PropertyGroup>
     <Name>BSE.Database</Name>
     <DSP>Microsoft.Data.Tools.Schema.Sql.Sql150DatabaseSchemaProvider</DSP>
@@ -6,10 +6,16 @@
     <DefaultCollation>Latin1_General_CI_AS</DefaultCollation>
     <!-- SQL Server 2019 (v15 / Sql150) target. Upgrade DSP to Sql160 when upgrading to SQL Server 2022. -->
     <!-- Verbatim copy of legacy stored procedures; SP content must not be modified until Slice 8 (TRY/CATCH refactor). -->
-    <TargetDatabaseSet>True</TargetDatabaseSet>
-    <ProjectGuid>{7e25879e-4d3f-1073-7dc0-096eb3f98aae}</ProjectGuid>
     <!-- Explicit glob required for Solution Explorer visibility without the SDK-style SSDT VS component. -->
     <EnableDefaultItems>false</EnableDefaultItems>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <BuildFromSSDT>false</BuildFromSSDT>
+    <UseTaskHostFactory>true</UseTaskHostFactory>
+    <EnableDefaultSqlItems>false</EnableDefaultSqlItems>
+    <SSDTPath>$(NETFrameworkTargetsPath)</SSDTPath>
+    <SqlServerRedistPath>$(NETFrameworkTargetsPath)</SqlServerRedistPath>
+    <TargetDatabaseSet>True</TargetDatabaseSet>
+    <ProjectGuid>{a51c6a96-6da8-4513-99e1-50573f722695}</ProjectGuid>
   </PropertyGroup>
   <ItemGroup>
     <Build Include="**\*.sql" />
