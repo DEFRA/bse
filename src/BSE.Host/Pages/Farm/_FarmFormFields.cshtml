@@ -1,0 +1,55 @@
+@model BSE.Host.Models.ViewModels.FarmEditViewModel
+
+<div class="row g-3">
+    <div class="col-md-3">
+        <label asp-for="CPHH" class="form-label">CPHH *</label>
+        <input asp-for="CPHH" class="form-control" />
+        <span asp-validation-for="CPHH" class="text-danger small"></span>
+    </div>
+    <div class="col-md-5">
+        <label asp-for="OwnerName" class="form-label">Owner Name</label>
+        <input asp-for="OwnerName" class="form-control" />
+    </div>
+    <div class="col-md-4">
+        <label asp-for="County" class="form-label">County</label>
+        <input asp-for="County" class="form-control" />
+    </div>
+    <div class="col-md-4">
+        <label asp-for="Address1" class="form-label">Address Line 1</label>
+        <input asp-for="Address1" class="form-control" />
+    </div>
+    <div class="col-md-4">
+        <label asp-for="Address2" class="form-label">Address Line 2</label>
+        <input asp-for="Address2" class="form-control" />
+    </div>
+    <div class="col-md-4">
+        <label asp-for="Address3" class="form-label">Address Line 3</label>
+        <input asp-for="Address3" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label asp-for="Postcode" class="form-label">Postcode</label>
+        <input asp-for="Postcode" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label asp-for="Parish" class="form-label">Parish</label>
+        <input asp-for="Parish" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label asp-for="Herdmark1" class="form-label">Herdmark</label>
+        <input asp-for="Herdmark1" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label asp-for="AHO" class="form-label">AHO</label>
+        <input asp-for="AHO" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label asp-for="HerdType" class="form-label">Herd Type</label>
+        <input asp-for="HerdType" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <div class="form-check mt-4">
+            <input asp-for="IsDealer" class="form-check-input" />
+            <label asp-for="IsDealer" class="form-check-label">Dealer</label>
+        </div>
+    </div>
+</div>

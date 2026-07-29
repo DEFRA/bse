@@ -1,0 +1,151 @@
+@page "{rbse}"
+@model CaseWorkEntryModel
+@{
+    ViewData["Title"] = "Edit Case Work Entry";
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Edit Case Work Entry — @Model.Rbse</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a asp-page="/Home">Home</a></li>
+        <li class="breadcrumb-item"><a asp-page="/CaseWork/Menu" asp-route-rbse="@Model.Rbse">Case Work</a></li>
+        <li class="breadcrumb-item active">Entry</li>
+    </ol>
+
+    @if (Model.Entry is null)
+    {
+        <div class="alert alert-warning">No case work entry found for <strong>@Model.Rbse</strong>.</div>
+    }
+    else
+    {
+        <form method="post">
+            <input type="hidden" asp-for="Rbse" />
+            <div class="card mb-4">
+                <div class="card-header">Casework Details</div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Barcode</label>
+                            <input name="Barcode" class="form-control" value="@Model.Entry.Barcode" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">AHF Reference</label>
+                            <input name="AhfReference" class="form-control" value="@Model.Entry.AhfReference" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">RBSE Date</label>
+                            <input name="RbseDate" type="date" class="form-control" value="@Model.Entry.RbseDate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Purchaser BSE-1 Received</label>
+                            <input name="PurchaserBse1ReceivedDate" type="date" class="form-control" value="@Model.Entry.PurchaserBse1ReceivedDate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Breeder BSE-1 Received</label>
+                            <input name="BreederBse1ReceivedDate" type="date" class="form-control" value="@Model.Entry.BreederBse1ReceivedDate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Vendor 1 BSE-1 Received</label>
+                            <input name="Vendor1Bse1ReceivedDate" type="date" class="form-control" value="@Model.Entry.Vendor1Bse1ReceivedDate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Homebred BSE-1 Received</label>
+                            <input name="HomebredBse1ReceivedDate" type="date" class="form-control" value="@Model.Entry.HomebredBse1ReceivedDate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Summary Sheet Received</label>
+                            <input name="SummarySheetReceivedDate" type="date" class="form-control" value="@Model.Entry.SummarySheetReceivedDate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Paperwork Complete</label>
+                            <input name="PaperworkCompleteDate" type="date" class="form-control" value="@Model.Entry.PaperworkCompleteDate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Active Memo Date</label>
+                            <input name="ActiveMemoDate" type="date" class="form-control" value="@Model.Entry.ActiveMemoDate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Annex A Date</label>
+                            <input name="AnnexADate" type="date" class="form-control" value="@Model.Entry.AnnexADate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Annex B Date</label>
+                            <input name="AnnexBDate" type="date" class="form-control" value="@Model.Entry.AnnexBDate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Annex C Date</label>
+                            <input name="AnnexCDate" type="date" class="form-control" value="@Model.Entry.AnnexCDate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Annex D Date</label>
+                            <input name="AnnexDDate" type="date" class="form-control" value="@Model.Entry.AnnexDDate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Regional Lab</label>
+                            <input name="RegionalLab" class="form-control" value="@Model.Entry.RegionalLab" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Received by Regional Lab</label>
+                            <input name="ReceivedByRegionalLabDate" type="date" class="form-control" value="@Model.Entry.ReceivedByRegionalLabDate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Initial Received Date</label>
+                            <input name="InitialReceivedDate" type="date" class="form-control" value="@Model.Entry.InitialReceivedDate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Final Received Date</label>
+                            <input name="FinalReceivedDate" type="date" class="form-control" value="@Model.Entry.FinalReceivedDate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Final Sent Date</label>
+                            <input name="FinalSentDate" type="date" class="form-control" value="@Model.Entry.FinalSentDate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Lab Chased Date</label>
+                            <input name="LabChasedDate" type="date" class="form-control" value="@Model.Entry.LabChasedDate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">BARB Minute Sent Date</label>
+                            <input name="BarbMinuteSentDate" type="date" class="form-control" value="@Model.Entry.BarbMinuteSentDate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Post-2000 Sent Date</label>
+                            <input name="Post2000SentDate" type="date" class="form-control" value="@Model.Entry.Post2000SentDate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Data Complete Date</label>
+                            <input name="DataCompleteDate" type="date" class="form-control" value="@Model.Entry.DataCompleteDate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">TSE Testing Site</label>
+                            <input name="TseTestingSite" class="form-control" value="@Model.Entry.TseTestingSite" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Sampling Date</label>
+                            <input name="SamplingDate" type="date" class="form-control" value="@Model.Entry.SamplingDate?.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">AHRO ID</label>
+                            <input name="AhroId" type="number" class="form-control" value="@Model.Entry.Ahro" />
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">Case Work Notes</label>
+                            <textarea name="CaseWorkNotes" class="form-control" rows="3">@Model.Entry.CaseWorkNotes</textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check mt-2">
+                                <input name="IsCaseClosed" type="checkbox" class="form-check-input" @(Model.Entry.IsCaseClosed == true ? "checked" : "") />
+                                <label class="form-check-label">Case Closed</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <a asp-page="/CaseWork/Menu" asp-route-rbse="@Model.Rbse" class="btn btn-secondary ms-2">Cancel</a>
+            </div>
+        </form>
+    }
+</div>

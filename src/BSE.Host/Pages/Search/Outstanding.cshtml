@@ -1,0 +1,80 @@
+@page
+@model BSE.Host.Pages.Search.OutstandingModel
+@{
+    ViewData["Title"] = "Outstanding Data";
+}
+
+<h2>Outstanding Data Search</h2>
+
+<form method="get" class="mb-4">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label asp-for="Filter.EarliestFormADate" class="form-label">Form A From</label>
+            <input asp-for="Filter.EarliestFormADate" type="date" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <label asp-for="Filter.LatestFormADate" class="form-label">Form A To</label>
+            <input asp-for="Filter.LatestFormADate" type="date" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <label asp-for="Filter.SearchType" class="form-label">Type</label>
+            <select asp-for="Filter.SearchType" class="form-select">
+                <option value="BSE1">Outstanding BSE1s</option>
+                <option value="Fates">Outstanding Fates</option>
+                <option value="Results">Outstanding Results</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <div class="form-check">
+                <input asp-for="Filter.IncludeNonGb" class="form-check-input" />
+                <label asp-for="Filter.IncludeNonGb" class="form-check-label">Non-GB</label>
+            </div>
+        </div>
+        <div class="col-md-1">
+            <button type="submit" class="btn btn-primary w-100">Search</button>
+        </div>
+    </div>
+</form>
+
+@if (Model.Filter.HasSearched)
+{
+    <p class="text-muted">@Model.Filter.Results.Count result(s).</p>
+
+    @if (Model.Filter.Results.Count > 0)
+    {
+        <div class="table-responsive">
+            <table class="table table-sm table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>RBSE</th>
+                        <th>CPHH</th>
+                        <th>Eartag</th>
+                        <th>Form A Date</th>
+                        <th>Birth Date</th>
+                        <th>Fate</th>
+                        <th>Final Result</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model.Filter.Results)
+                    {
+                        <tr>
+                            <td class="bse-rbse">@r.Rbse</td>
+                            <td>@r.Cphh</td>
+                            <td>@r.Eartag</td>
+                            <td>@r.FormADate?.ToString("dd/MM/yyyy")</td>
+                            <td>@r.BirthDate?.ToString("dd/MM/yyyy")</td>
+                            <td>@r.Fate</td>
+                            <td>@r.FinalResult</td>
+                            <td>
+                                <a asp-page="/Case/Details" asp-route-rbse="@r.Rbse"
+                                   class="btn btn-sm btn-outline-primary">Open</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}

@@ -1,0 +1,23 @@
+@page
+@model BSE.Host.Pages.Farm.LookupModel
+@{
+    ViewData["Title"] = "Open Farm";
+}
+
+<h2>Open Farm</h2>
+
+<form method="get" class="row g-3 mb-4">
+    <div class="col-md-4">
+        <label asp-for="Cphh" class="form-label">CPHH</label>
+        <div class="input-group">
+            <input asp-for="Cphh" class="form-control" placeholder="e.g. 12/345/0001" />
+            <button type="submit" class="btn btn-primary">Open</button>
+        </div>
+        <span asp-validation-for="Cphh" class="text-danger small"></span>
+    </div>
+</form>
+
+@if (Model.IsNotFound)
+{
+    <div class="alert alert-warning">No farm found for CPHH <strong>@Model.Cphh</strong>.</div>
+}

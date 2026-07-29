@@ -1,0 +1,70 @@
+@page "{cphh}"
+@model BSE.Host.Pages.Farm.DetailsModel
+@{
+    ViewData["Title"] = $"Farm — {Model.Farm?.CPHH}";
+}
+
+@if (Model.Farm is null)
+{
+    <div class="alert alert-warning">Farm not found.</div>
+    <a asp-page="/Farm/Lookup" class="btn btn-secondary">Back to Farm Lookup</a>
+    return;
+}
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <h2>Farm: <span class="bse-rbse">@Model.Farm.CPHH</span></h2>
+    <div class="d-flex gap-2">
+        <a asp-page="/Farm/Edit" asp-route-cphh="@Model.Farm.CPHH" class="btn btn-outline-primary">Edit</a>
+        <a asp-page="/Farm/CphhChange" asp-route-cphh="@Model.Farm.CPHH" class="btn btn-outline-warning">Change CPHH</a>
+        <a asp-page="/Case/New" asp-route-cphh="@Model.Farm.CPHH" class="btn btn-success">New Case</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header fw-semibold">Farm Details</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Owner</dt><dd class="col-sm-8">@Model.Farm.OwnerName</dd>
+                    <dt class="col-sm-4">Address</dt>
+                    <dd class="col-sm-8">
+                        @Model.Farm.Address1<br />
+                        @Model.Farm.Address2<br />
+                        @Model.Farm.Address3<br />
+                        @Model.Farm.Postcode
+                    </dd>
+                    <dt class="col-sm-4">County</dt><dd class="col-sm-8">@Model.Farm.County</dd>
+                    <dt class="col-sm-4">Parish</dt><dd class="col-sm-8">@Model.Farm.Parish</dd>
+                    <dt class="col-sm-4">Herdmarks</dt>
+                    <dd class="col-sm-8">@Model.Farm.Herdmark1 @Model.Farm.Herdmark2 @Model.Farm.Herdmark3</dd>
+                    <dt class="col-sm-4">AHO</dt><dd class="col-sm-8">@Model.Farm.AHO</dd>
+                    <dt class="col-sm-4">Herd Type</dt><dd class="col-sm-8">@Model.Farm.HerdType</dd>
+                    <dt class="col-sm-4">Dealer</dt><dd class="col-sm-8">@(Model.Farm.IsDealer ? "Yes" : "No")</dd>
+                    <dt class="col-sm-4">Non-GB</dt><dd class="col-sm-8">@(Model.Farm.IsNonGBFarm ? "Yes" : "No")</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model.RelatedFarms.Count > 0)
+{
+    <h4 class="mt-3">Related Farms</h4>
+    <table class="table table-sm">
+        <thead class="table-light">
+            <tr><th>CPHH</th><th>Owner</th><th>Relation Type</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var r in Model.RelatedFarms)
+            {
+                <tr>
+                    <td>@r.RelatedCPHH</td>
+                    <td>@r.Status</td>
+                    <td></td>
+                    <td><a asp-page="/Farm/Details" asp-route-cphh="@r.RelatedCPHH" class="btn btn-sm btn-outline-secondary">Open</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

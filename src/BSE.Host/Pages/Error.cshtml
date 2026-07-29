@@ -1,0 +1,19 @@
+@page
+@model BSE.Host.Pages.ErrorModel
+@{
+    ViewData["Title"] = "Error";
+    Layout = "_Layout";
+}
+
+<h1 class="text-danger">An error occurred</h1>
+
+@if (!string.IsNullOrEmpty(Model.Message))
+{
+    <div class="alert alert-danger">@Model.Message</div>
+}
+else
+{
+    <p>An unexpected error occurred. Please try again or contact support if the problem persists.</p>
+}
+
+<a asp-page="/Home" class="btn btn-primary">Return to Home</a>

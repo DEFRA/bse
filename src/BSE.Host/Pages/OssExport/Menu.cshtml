@@ -1,0 +1,69 @@
+@page
+@model OssExportMenuModel
+@{
+    ViewData["Title"] = "OSS Export";
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">OSS Export</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a asp-page="/Home">Home</a></li>
+        <li class="breadcrumb-item active">OSS Export</li>
+    </ol>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger">@Model.ErrorMessage</div>
+    }
+
+    <div class="card mb-4">
+        <div class="card-header">OSS Export</div>
+        <div class="card-body">
+            <p>Populates OSS staging tables and allows cover-sheet generation per case.</p>
+            <form method="post" asp-page-handler="Populate">
+                <button type="submit" class="btn btn-primary">Populate Staging Tables</button>
+            </form>
+        </div>
+    </div>
+
+    @if (Model.BatchResult is not null)
+    {
+        <div class="alert alert-success">
+            Batch number created: <strong>@Model.BatchResult.BatchYear/@Model.BatchResult.BatchNumber</strong> (ID: @Model.BatchResult.BatchId)
+        </div>
+    }
+
+    <div class="card mb-4">
+        <div class="card-header">Lookup RBSE Cover Sheet</div>
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-auto">
+                    <label asp-for="Rbse" class="form-label">RBSE</label>
+                    <input asp-for="Rbse" class="form-control" style="width:160px" />
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-secondary">Look Up</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (Model.ExportRecord is not null)
+    {
+        <div class="card mb-4">
+            <div class="card-header">Cover Sheet — @Model.ExportRecord.Rbse</div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-3">RBSE</dt><dd class="col-sm-9">@Model.ExportRecord.Rbse</dd>
+                    <dt class="col-sm-3">CPHH</dt><dd class="col-sm-9">@Model.ExportRecord.Cphh</dd>
+                    <dt class="col-sm-3">Owner</dt><dd class="col-sm-9">@Model.ExportRecord.OwnerName</dd>
+                    <dt class="col-sm-3">Address</dt><dd class="col-sm-9">@Model.ExportRecord.Address1</dd>
+                </dl>
+            </div>
+        </div>
+    }
+    else if (Model.HasSearched)
+    {
+        <div class="alert alert-warning">No OSS export record found for <strong>@Model.Rbse</strong>.</div>
+    }
+</div>

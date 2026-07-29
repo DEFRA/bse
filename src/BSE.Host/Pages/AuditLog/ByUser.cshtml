@@ -1,0 +1,77 @@
+@page
+@model ByUserModel
+@{
+    ViewData["Title"] = "Audit Log by User";
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Audit Log by User</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a asp-page="/Home">Home</a></li>
+        <li class="breadcrumb-item active">Audit Log by User</li>
+    </ol>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-auto">
+                    <label asp-for="StartDate" class="form-label">From</label>
+                    <input asp-for="StartDate" type="date" class="form-control" />
+                </div>
+                <div class="col-auto">
+                    <label asp-for="EndDate" class="form-label">To</label>
+                    <input asp-for="EndDate" type="date" class="form-control" />
+                </div>
+                <div class="col-auto">
+                    <label asp-for="UserId" class="form-label">User ID</label>
+                    <input asp-for="UserId" type="number" class="form-control" style="width:120px" />
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary">Search</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (Model.Entries.Any())
+    {
+        <div class="card mb-4">
+            <div class="card-header">@Model.Entries.Count() entries</div>
+            <div class="card-body p-0">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date/Time</th>
+                            <th>User</th>
+                            <th>Table</th>
+                            <th>Field</th>
+                            <th>Key</th>
+                            <th>Before</th>
+                            <th>After</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var e in Model.Entries)
+                        {
+                            <tr>
+                                <td>@e.DateTime.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@e.UserName</td>
+                                <td>@e.TableName</td>
+                                <td>@e.FieldName</td>
+                                <td>@e.Key</td>
+                                <td>@e.BeforeValue</td>
+                                <td>@e.AfterValue</td>
+                                <td>@e.Reason</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else if (Model.HasSearched)
+    {
+        <div class="alert alert-info">No entries found.</div>
+    }
+</div>

@@ -1,0 +1,70 @@
+@page "{rbse}"
+@model CaseWorkMenuModel
+@{
+    ViewData["Title"] = "Case Work";
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Case Work — @Model.Rbse</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a asp-page="/Home">Home</a></li>
+        <li class="breadcrumb-item"><a asp-page="/Case/Details" asp-route-rbse="@Model.Rbse">Case @Model.Rbse</a></li>
+        <li class="breadcrumb-item active">Case Work</li>
+    </ol>
+
+    @if (Model.Record is null)
+    {
+        <div class="alert alert-warning">No case work record found for <strong>@Model.Rbse</strong>.</div>
+        <a asp-page="/Case/Lookup" class="btn btn-secondary">Back to Lookup</a>
+    }
+    else
+    {
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                Case Work Summary
+                <a asp-page="/CaseWork/Entry" asp-route-rbse="@Model.Rbse" class="btn btn-sm btn-primary">Edit Case Work Entry</a>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-4">RBSE</dt>
+                    <dd class="col-sm-8">@Model.Record.Rbse</dd>
+                    <dt class="col-sm-4">RBSE Date</dt>
+                    <dd class="col-sm-8">@Model.Record.RbseDate?.ToShortDateString()</dd>
+                    <dt class="col-sm-4">Barcode</dt>
+                    <dd class="col-sm-8">@Model.Record.Barcode</dd>
+                    <dt class="col-sm-4">AHF Reference</dt>
+                    <dd class="col-sm-8">@Model.Record.AhfReference</dd>
+                    <dt class="col-sm-4">Purchaser BSE-1 Received</dt>
+                    <dd class="col-sm-8">@Model.Record.PurchaserBse1ReceivedDate?.ToShortDateString()</dd>
+                    <dt class="col-sm-4">Breeder BSE-1 Received</dt>
+                    <dd class="col-sm-8">@Model.Record.BreederBse1ReceivedDate?.ToShortDateString()</dd>
+                    <dt class="col-sm-4">Vendor 1 BSE-1 Received</dt>
+                    <dd class="col-sm-8">@Model.Record.Vendor1Bse1ReceivedDate?.ToShortDateString()</dd>
+                    <dt class="col-sm-4">Homebred BSE-1 Received</dt>
+                    <dd class="col-sm-8">@Model.Record.HomebredBse1ReceivedDate?.ToShortDateString()</dd>
+                    <dt class="col-sm-4">Summary Sheet Received</dt>
+                    <dd class="col-sm-8">@Model.Record.SummarySheetReceivedDate?.ToShortDateString()</dd>
+                    <dt class="col-sm-4">Paperwork Complete</dt>
+                    <dd class="col-sm-8">@Model.Record.PaperworkCompleteDate?.ToShortDateString()</dd>
+                    <dt class="col-sm-4">Case Closed</dt>
+                    <dd class="col-sm-8">@(Model.Record.IsCaseClosed ? "Yes" : "No")</dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">Minute Letters</div>
+            <div class="card-body">
+                <div class="row g-2">
+                    @foreach (var minute in new[] { ("ActiveMemo", "Active Memo"), ("AnnexA", "Annex A"), ("AnnexB", "Annex B"), ("AnnexC", "Annex C"), ("AnnexD", "Annex D"), ("AMFS", "AMFS (Fallen Stock)") })
+                    {
+                        <div class="col-6 col-md-4 col-lg-2">
+                            <a asp-page="/CaseWork/Minute" asp-route-rbse="@Model.Rbse" asp-route-type="@minute.Item1"
+                               class="btn btn-outline-secondary w-100">@minute.Item2</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>

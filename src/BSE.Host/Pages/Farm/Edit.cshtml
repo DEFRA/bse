@@ -1,0 +1,16 @@
+@page "{cphh}"
+@model BSE.Host.Pages.Farm.EditModel
+@{
+    ViewData["Title"] = "Edit Farm";
+}
+
+<h2>Edit Farm: <span class="bse-rbse">@Model.Farm?.CPHH</span></h2>
+
+<form method="post">
+    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+    @await Html.PartialAsync("_FarmFormFields", Model.Farm)
+    <div class="mt-3">
+        <button type="submit" class="btn btn-success">Save Changes</button>
+        <a asp-page="/Farm/Details" asp-route-cphh="@Model.Farm?.CPHH" class="btn btn-outline-secondary ms-2">Cancel</a>
+    </div>
+</form>

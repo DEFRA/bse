@@ -1,0 +1,101 @@
+@page
+@model BSE.Host.Pages.Search.CasesModel
+@{
+    ViewData["Title"] = "Case Search";
+}
+
+<h2>Case Search</h2>
+
+<form method="get" class="mb-4">
+    <div class="row g-3">
+        <div class="col-md-3">
+            <label asp-for="Filter.Rbse" class="form-label">RBSE</label>
+            <input asp-for="Filter.Rbse" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <label asp-for="Filter.Eartag" class="form-label">Eartag</label>
+            <input asp-for="Filter.Eartag" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <label asp-for="Filter.Dbse" class="form-label">DBSE</label>
+            <input asp-for="Filter.Dbse" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <label asp-for="Filter.Fate" class="form-label">Fate</label>
+            <input asp-for="Filter.Fate" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <label asp-for="Filter.FinalResult" class="form-label">Final Result</label>
+            <input asp-for="Filter.FinalResult" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <label asp-for="Filter.Survey" class="form-label">Survey</label>
+            <input asp-for="Filter.Survey" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <label asp-for="Filter.EarliestFormADate" class="form-label">Form A From</label>
+            <input asp-for="Filter.EarliestFormADate" type="date" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <label asp-for="Filter.LatestFormADate" class="form-label">Form A To</label>
+            <input asp-for="Filter.LatestFormADate" type="date" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <div class="form-check mt-4">
+                <input asp-for="Filter.IncludeNonGb" class="form-check-input" />
+                <label asp-for="Filter.IncludeNonGb" class="form-check-label">Include Non-GB</label>
+            </div>
+        </div>
+    </div>
+    <div class="mt-3">
+        <button type="submit" class="btn btn-primary">Search</button>
+        <a asp-page="/Search/Cases" class="btn btn-outline-secondary ms-2">Clear</a>
+    </div>
+</form>
+
+@if (Model.Filter.HasSearched)
+{
+    <p class="text-muted">@Model.Filter.Results.Count result(s) found.</p>
+
+    @if (Model.Filter.Results.Count > 0)
+    {
+        <div class="table-responsive">
+            <table class="table table-sm table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>RBSE</th>
+                        <th>CPHH</th>
+                        <th>Sex</th>
+                        <th>Survey</th>
+                        <th>Eartag</th>
+                        <th>Birth Date</th>
+                        <th>Form A Date</th>
+                        <th>Fate</th>
+                        <th>Final Result</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model.Filter.Results)
+                    {
+                        <tr>
+                            <td class="bse-rbse">@r.Rbse</td>
+                            <td>@r.Cphh</td>
+                            <td>@r.Sex</td>
+                            <td>@r.Survey</td>
+                            <td>@r.Eartag</td>
+                            <td>@r.BirthDate?.ToString("dd/MM/yyyy")</td>
+                            <td>@r.FormADate?.ToString("dd/MM/yyyy")</td>
+                            <td>@r.Fate</td>
+                            <td>@r.FinalResult</td>
+                            <td>
+                                <a asp-page="/Case/Details" asp-route-rbse="@r.Rbse"
+                                   class="btn btn-sm btn-outline-primary">Open</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}

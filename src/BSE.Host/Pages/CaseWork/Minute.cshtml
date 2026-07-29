@@ -1,0 +1,110 @@
+@page "{rbse}/{type}"
+@model MinuteModel
+@{
+    ViewData["Title"] = $"{Model.MinuteTypeLabel} — {Model.Rbse}";
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">@Model.MinuteTypeLabel — @Model.Rbse</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a asp-page="/Home">Home</a></li>
+        <li class="breadcrumb-item"><a asp-page="/CaseWork/Menu" asp-route-rbse="@Model.Rbse">Case Work</a></li>
+        <li class="breadcrumb-item active">@Model.MinuteTypeLabel</li>
+    </ol>
+
+    @if (Model.Details is null)
+    {
+        <div class="alert alert-warning">No details found for <strong>@Model.Rbse</strong> / @Model.Type.</div>
+    }
+    else
+    {
+        <div class="card mb-4">
+            <div class="card-header">@Model.MinuteTypeLabel Details</div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-4">RBSE</dt>
+                    <dd class="col-sm-8">@Model.Details.Rbse</dd>
+                    @if (Model.Details.Cphh is not null)
+                    {
+                        <dt class="col-sm-4">CPHH</dt>
+                        <dd class="col-sm-8">@Model.Details.Cphh</dd>
+                    }
+                    @if (Model.Details.Eartag is not null)
+                    {
+                        <dt class="col-sm-4">Eartag</dt>
+                        <dd class="col-sm-8">@Model.Details.EartagCountry @Model.Details.EartagHerdmark / @Model.Details.Eartag</dd>
+                    }
+                    @if (Model.Details.BirthDate is not null)
+                    {
+                        <dt class="col-sm-4">Birth Date</dt>
+                        <dd class="col-sm-8">@Model.Details.BirthDate?.ToShortDateString()</dd>
+                    }
+                    @if (Model.Details.SlaughterDate is not null)
+                    {
+                        <dt class="col-sm-4">Slaughter Date</dt>
+                        <dd class="col-sm-8">@Model.Details.SlaughterDate?.ToShortDateString()</dd>
+                    }
+                    @if (Model.Details.SurveyDescription is not null)
+                    {
+                        <dt class="col-sm-4">Survey</dt>
+                        <dd class="col-sm-8">@Model.Details.SurveyDescription</dd>
+                    }
+                    @if (Model.Details.AhoName is not null)
+                    {
+                        <dt class="col-sm-4">AHO</dt>
+                        <dd class="col-sm-8">@Model.Details.AhoNumber — @Model.Details.AhoName</dd>
+                    }
+                    @if (Model.Details.OwnerName is not null)
+                    {
+                        <dt class="col-sm-4">Owner</dt>
+                        <dd class="col-sm-8">@Model.Details.OwnerName</dd>
+                    }
+                    @if (Model.Details.ActiveMemoDate is not null)
+                    {
+                        <dt class="col-sm-4">Active Memo Date</dt>
+                        <dd class="col-sm-8">@Model.Details.ActiveMemoDate?.ToShortDateString()</dd>
+                    }
+                    @if (Model.Details.AnnexADate is not null)
+                    {
+                        <dt class="col-sm-4">Annex A Date</dt>
+                        <dd class="col-sm-8">@Model.Details.AnnexADate?.ToShortDateString()</dd>
+                    }
+                    @if (Model.Details.AnnexBDate is not null)
+                    {
+                        <dt class="col-sm-4">Annex B Date</dt>
+                        <dd class="col-sm-8">@Model.Details.AnnexBDate?.ToShortDateString()</dd>
+                    }
+                    @if (Model.Details.AnnexCDate is not null)
+                    {
+                        <dt class="col-sm-4">Annex C Date</dt>
+                        <dd class="col-sm-8">@Model.Details.AnnexCDate?.ToShortDateString()</dd>
+                    }
+                    @if (Model.Details.AnnexDDate is not null)
+                    {
+                        <dt class="col-sm-4">Annex D Date</dt>
+                        <dd class="col-sm-8">@Model.Details.AnnexDDate?.ToShortDateString()</dd>
+                    }
+                    @if (Model.Details.TseTestingSite is not null)
+                    {
+                        <dt class="col-sm-4">TSE Testing Site</dt>
+                        <dd class="col-sm-8">@Model.Details.TseTestingSite</dd>
+                        <dt class="col-sm-4">Sampling Date</dt>
+                        <dd class="col-sm-8">@Model.Details.SamplingDate?.ToShortDateString()</dd>
+                    }
+                    @if (Model.Details.TestResult is not null)
+                    {
+                        <dt class="col-sm-4">Test Result</dt>
+                        <dd class="col-sm-8">@Model.Details.TestResult</dd>
+                    }
+                </dl>
+            </div>
+        </div>
+
+        <form method="post">
+            <input type="hidden" asp-for="Rbse" />
+            <input type="hidden" asp-for="Type" />
+            <button type="submit" class="btn btn-primary">Mark as Sent Today</button>
+            <a asp-page="/CaseWork/Menu" asp-route-rbse="@Model.Rbse" class="btn btn-secondary ms-2">Back</a>
+        </form>
+    }
+</div>

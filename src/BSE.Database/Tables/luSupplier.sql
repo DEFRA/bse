@@ -1,0 +1,8 @@
+﻿CREATE TABLE [dbo].[luSupplier] (
+    [ID]      INT          IDENTITY (1, 1) NOT NULL,
+    [Name]    VARCHAR (30) NOT NULL,
+    [Details] VARCHAR (60) NULL,
+    CONSTRAINT [PK_luSupplier] PRIMARY KEY CLUSTERED ([ID] ASC) WITH (FILLFACTOR = 90),
+    CONSTRAINT [UQ_luSupplier] UNIQUE NONCLUSTERED ([Name] ASC) WITH (FILLFACTOR = 90)
+);
+

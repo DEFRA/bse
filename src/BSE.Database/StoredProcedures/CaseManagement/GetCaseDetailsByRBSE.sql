@@ -1,0 +1,16 @@
+﻿
+
+CREATE PROCEDURE [dbo].[GetCaseDetailsByRBSE]
+	@RBSE char(9)
+AS
+	EXEC GetCaseByRBSE @RBSE
+
+	EXEC GetClinicalByRBSE @RBSE
+	EXEC GetBABByRBSE @RBSE
+	EXEC GetOtherOwnerByRBSE @RBSE
+	EXEC GetFeedByRBSE @RBSE
+	EXEC GetClinicalVisitByRBSE @RBSE
+	EXEC GetRelationsDetailsByRBSE @RBSE
+	EXEC GetTestByRBSE @RBSE
+	
+	EXEC GetCaseWorkByRBSE @RBSE

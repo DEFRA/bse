@@ -1,0 +1,91 @@
+@page
+@model CiModel
+@{
+    ViewData["Title"] = "ADNS Export — Channel Islands";
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">ADNS Export — Channel Islands</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a asp-page="/Home">Home</a></li>
+        <li class="breadcrumb-item"><a asp-page="/AdnsExport/Menu">ADNS Export</a></li>
+        <li class="breadcrumb-item active">CI</li>
+    </ol>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger">@Model.ErrorMessage</div>
+    }
+
+    @if (Model.Preview is null)
+    {
+        <div class="card mb-4">
+            <div class="card-header">Channel Islands Export</div>
+            <div class="card-body">
+                <form method="post" asp-page-handler="Preview">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label asp-for="EmailReference" class="form-label">Email Reference</label>
+                            <input asp-for="EmailReference" class="form-control" />
+                        </div>
+                        <div class="col-md-2">
+                            <label asp-for="AdnsYear" class="form-label">ADNS Year</label>
+                            <input asp-for="AdnsYear" type="number" class="form-control" />
+                        </div>
+                        <div class="col-md-2">
+                            <label asp-for="StartAdnsNumber" class="form-label">Start ADNS No.</label>
+                            <input asp-for="StartAdnsNumber" type="number" class="form-control" />
+                        </div>
+                        <div class="col-md-2">
+                            <label asp-for="JerseyCases" class="form-label">Jersey Cases</label>
+                            <input asp-for="JerseyCases" type="number" class="form-control" min="0" />
+                        </div>
+                        <div class="col-md-2">
+                            <label asp-for="GuernseyCases" class="form-label">Guernsey Cases</label>
+                            <input asp-for="GuernseyCases" type="number" class="form-control" min="0" />
+                        </div>
+                        <div class="col-md-2">
+                            <label asp-for="IsleOfManCases" class="form-label">IOM Cases</label>
+                            <input asp-for="IsleOfManCases" type="number" class="form-control" min="0" />
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="ConfirmationDate" class="form-label">Confirmation Date</label>
+                            <input asp-for="ConfirmationDate" type="date" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-primary">Preview</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card mb-4">
+            <div class="card-header">Preview — @Model.Preview.Cases.Count cases</div>
+            <div class="card-body">
+                <p><strong>Subject:</strong> @Model.Preview.EmailSubject</p>
+                <table class="table table-sm">
+                    <thead class="table-light"><tr><th>Region</th><th>ADNS Ref</th><th>Confirmation</th></tr></thead>
+                    <tbody>
+                        @foreach (var c in Model.Preview.Cases)
+                        {
+                            <tr><td>@c.AdnsRegionName</td><td>@c.AdnsReference</td><td>@c.ConfirmationDate.ToShortDateString()</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <form method="post" asp-page-handler="Dispatch">
+            <input type="hidden" asp-for="EmailReference" />
+            <div class="mb-3">
+                <label asp-for="UserEmailAddress" class="form-label">Your Email Address</label>
+                <input asp-for="UserEmailAddress" type="email" class="form-control" style="max-width:300px" />
+            </div>
+            <button type="submit" class="btn btn-success">Dispatch</button>
+            <a asp-page="/AdnsExport/Ci" class="btn btn-secondary ms-2">Start Over</a>
+        </form>
+    }
+</div>

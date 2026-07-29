@@ -1,0 +1,8 @@
+﻿
+CREATE PROCEDURE GetFarmDetailsByCPHH
+	 @CPHH char(11)
+AS
+
+	EXEC GetFarmByCPHH @CPHH
+	EXEC GetRelatedFarm @CPHH
+	EXEC GetHerdSizeByCPHH @CPHH

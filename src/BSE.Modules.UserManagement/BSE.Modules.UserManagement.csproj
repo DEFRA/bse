@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>14</LangVersion>
+    <RootNamespace>BSE.Modules.UserManagement</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Provides IClaimsTransformation, IHttpContextAccessor, ClaimsPrincipal, etc. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\BSE.Infrastructure\BSE.Infrastructure.csproj" />
+    <ProjectReference Include="..\BSE.SharedKernel\BSE.SharedKernel.csproj" />
+  </ItemGroup>
+</Project>

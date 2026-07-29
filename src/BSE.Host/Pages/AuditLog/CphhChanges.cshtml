@@ -1,0 +1,42 @@
+@page
+@model CphhChangesModel
+@{
+    ViewData["Title"] = "Audit Log — CPHH Changes";
+}
+
+<div class="container-fluid px-4">
+    <h1 class="mt-4">Audit Log — CPHH Changes</h1>
+    <ol class="breadcrumb mb-4">
+        <li class="breadcrumb-item"><a asp-page="/Home">Home</a></li>
+        <li class="breadcrumb-item active">CPHH Changes</li>
+    </ol>
+    <partial name="_AuditDateRangeForm" model="@(new BSE.Host.Models.ViewModels.AuditDateRangeViewModel(Model.StartDate, Model.EndDate))" />
+
+    @if (Model.Entries.Any())
+    {
+        <div class="card mb-4">
+            <div class="card-header">@Model.Entries.Count() CPHH changes</div>
+            <div class="card-body p-0">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light">
+                        <tr><th>Date/Time</th><th>User</th><th>Key</th><th>Before</th><th>After</th><th>Cases</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var e in Model.Entries)
+                        {
+                            <tr>
+                                <td>@e.DateTime.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@e.UserName</td>
+                                <td>@e.Key</td>
+                                <td>@e.BeforeValue</td>
+                                <td>@e.AfterValue</td>
+                                <td>@e.CaseCount</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else if (Model.HasSearched) { <div class="alert alert-info">No CPHH changes found in this period.</div> }
+</div>
