@@ -1,54 +1,60 @@
 @page
 @model CheckByDateModel
 @{
-    ViewData["Title"] = "BSESS Check by Date";
+    ViewData["Title"] = "BSESS check by date";
 }
 
-<div class="container-fluid px-4">
-    <h1 class="mt-4">BSESS Check by Date</h1>
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a asp-page="/Home">Home</a></li>
-        <li class="breadcrumb-item active">BSESS Check by Date</li>
-    </ol>
+<div>
+    <h1 class="govuk-heading-l">BSESS check by date</h1>
+    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+        <ol class="govuk-breadcrumbs__list">
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+            <li class="govuk-breadcrumbs__list-item" aria-current="page">BSESS check by date</li>
+        </ol>
+    </nav>
+
     <partial name="_AuditDateRangeForm" model="@(new BSE.Host.Models.ViewModels.AuditDateRangeViewModel(Model.StartDate, Model.EndDate))" />
 
     @if (Model.Discrepancies.Any())
     {
-        <div class="card mb-4">
-            <div class="card-header">@Model.Discrepancies.Count discrepancies found</div>
-            <div class="card-body p-0">
-                <table class="table table-sm table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>RBSE</th>
-                            <th>BSESS Eartag</th>
-                            <th>BSE Eartag</th>
-                            <th>BSESS Birth Date</th>
-                            <th>BSE Birth Date</th>
-                            <th>BSESS Test Group</th>
-                            <th>BSE Test Group</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var d in Model.Discrepancies)
-                        {
-                            <tr>
-                                <td><a asp-page="/Case/Details" asp-route-rbse="@d.Rbse">@d.Rbse</a></td>
-                                <td class="@(d.BsessEartag != d.BseEartag ? "table-warning" : "")">@d.BsessEartag</td>
-                                <td class="@(d.BsessEartag != d.BseEartag ? "table-warning" : "")">@d.BseEartag</td>
-                                <td class="@(d.BsessBirthDate != d.BseBirthDate ? "table-warning" : "")">@d.BsessBirthDate?.ToShortDateString()</td>
-                                <td class="@(d.BsessBirthDate != d.BseBirthDate ? "table-warning" : "")">@d.BseBirthDate?.ToShortDateString()</td>
-                                <td class="@(d.BsessTestGroup != d.BseTestGroup ? "table-warning" : "")">@d.BsessTestGroup</td>
-                                <td class="@(d.BsessTestGroup != d.BseTestGroup ? "table-warning" : "")">@d.BseTestGroup</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
+        <h2 class="govuk-heading-m">@Model.Discrepancies.Count discrepancies found</h2>
+        <table class="govuk-table">
+            <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                    <th scope="col" class="govuk-table__header">RBSE</th>
+                    <th scope="col" class="govuk-table__header">BSESS eartag</th>
+                    <th scope="col" class="govuk-table__header">BSE eartag</th>
+                    <th scope="col" class="govuk-table__header">BSESS birth date</th>
+                    <th scope="col" class="govuk-table__header">BSE birth date</th>
+                    <th scope="col" class="govuk-table__header">BSESS test group</th>
+                    <th scope="col" class="govuk-table__header">BSE test group</th>
+                </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+                @foreach (var d in Model.Discrepancies)
+                {
+                    <tr class="govuk-table__row">
+                        <td class="govuk-table__cell"><a asp-page="/Case/Details" asp-route-rbse="@d.Rbse" class="govuk-link">@d.Rbse</a></td>
+                        <td class="govuk-table__cell">@d.BsessEartag</td>
+                        <td class="govuk-table__cell">@d.BseEartag</td>
+                        <td class="govuk-table__cell">@d.BsessBirthDate?.ToShortDateString()</td>
+                        <td class="govuk-table__cell">@d.BseBirthDate?.ToShortDateString()</td>
+                        <td class="govuk-table__cell">@d.BsessTestGroup</td>
+                        <td class="govuk-table__cell">@d.BseTestGroup</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
     }
     else if (Model.HasSearched)
     {
-        <div class="alert alert-success">No discrepancies found for this date range.</div>
+        <div class="govuk-notification-banner govuk-notification-banner--success" role="alert" aria-labelledby="bsess-date-success-title" data-module="govuk-notification-banner">
+            <div class="govuk-notification-banner__header">
+                <h2 class="govuk-notification-banner__title" id="bsess-date-success-title">Success</h2>
+            </div>
+            <div class="govuk-notification-banner__content">
+                <p class="govuk-notification-banner__heading">No discrepancies found for this date range.</p>
+            </div>
+        </div>
     }
 </div>

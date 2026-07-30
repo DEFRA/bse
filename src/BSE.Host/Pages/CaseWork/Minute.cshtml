@@ -4,107 +4,97 @@
     ViewData["Title"] = $"{Model.MinuteTypeLabel} — {Model.Rbse}";
 }
 
-<div class="container-fluid px-4">
-    <h1 class="mt-4">@Model.MinuteTypeLabel — @Model.Rbse</h1>
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a asp-page="/Home">Home</a></li>
-        <li class="breadcrumb-item"><a asp-page="/CaseWork/Menu" asp-route-rbse="@Model.Rbse">Case Work</a></li>
-        <li class="breadcrumb-item active">@Model.MinuteTypeLabel</li>
-    </ol>
+<div>
+    <h1 class="govuk-heading-l">@Model.MinuteTypeLabel — @Model.Rbse</h1>
+    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+        <ol class="govuk-breadcrumbs__list">
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/CaseWork/Menu" asp-route-rbse="@Model.Rbse">Case work</a></li>
+            <li class="govuk-breadcrumbs__list-item" aria-current="page">@Model.MinuteTypeLabel</li>
+        </ol>
+    </nav>
 
     @if (Model.Details is null)
     {
-        <div class="alert alert-warning">No details found for <strong>@Model.Rbse</strong> / @Model.Type.</div>
+        <div class="govuk-warning-text">
+            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+            <strong class="govuk-warning-text__text">
+                <span class="govuk-warning-text__assistive">Warning</span>
+                No details found for @Model.Rbse / @Model.Type.
+            </strong>
+        </div>
     }
     else
     {
-        <div class="card mb-4">
-            <div class="card-header">@Model.MinuteTypeLabel Details</div>
-            <div class="card-body">
-                <dl class="row">
-                    <dt class="col-sm-4">RBSE</dt>
-                    <dd class="col-sm-8">@Model.Details.Rbse</dd>
-                    @if (Model.Details.Cphh is not null)
-                    {
-                        <dt class="col-sm-4">CPHH</dt>
-                        <dd class="col-sm-8">@Model.Details.Cphh</dd>
-                    }
-                    @if (Model.Details.Eartag is not null)
-                    {
-                        <dt class="col-sm-4">Eartag</dt>
-                        <dd class="col-sm-8">@Model.Details.EartagCountry @Model.Details.EartagHerdmark / @Model.Details.Eartag</dd>
-                    }
-                    @if (Model.Details.BirthDate is not null)
-                    {
-                        <dt class="col-sm-4">Birth Date</dt>
-                        <dd class="col-sm-8">@Model.Details.BirthDate?.ToShortDateString()</dd>
-                    }
-                    @if (Model.Details.SlaughterDate is not null)
-                    {
-                        <dt class="col-sm-4">Slaughter Date</dt>
-                        <dd class="col-sm-8">@Model.Details.SlaughterDate?.ToShortDateString()</dd>
-                    }
-                    @if (Model.Details.SurveyDescription is not null)
-                    {
-                        <dt class="col-sm-4">Survey</dt>
-                        <dd class="col-sm-8">@Model.Details.SurveyDescription</dd>
-                    }
-                    @if (Model.Details.AhoName is not null)
-                    {
-                        <dt class="col-sm-4">AHO</dt>
-                        <dd class="col-sm-8">@Model.Details.AhoNumber — @Model.Details.AhoName</dd>
-                    }
-                    @if (Model.Details.OwnerName is not null)
-                    {
-                        <dt class="col-sm-4">Owner</dt>
-                        <dd class="col-sm-8">@Model.Details.OwnerName</dd>
-                    }
-                    @if (Model.Details.ActiveMemoDate is not null)
-                    {
-                        <dt class="col-sm-4">Active Memo Date</dt>
-                        <dd class="col-sm-8">@Model.Details.ActiveMemoDate?.ToShortDateString()</dd>
-                    }
-                    @if (Model.Details.AnnexADate is not null)
-                    {
-                        <dt class="col-sm-4">Annex A Date</dt>
-                        <dd class="col-sm-8">@Model.Details.AnnexADate?.ToShortDateString()</dd>
-                    }
-                    @if (Model.Details.AnnexBDate is not null)
-                    {
-                        <dt class="col-sm-4">Annex B Date</dt>
-                        <dd class="col-sm-8">@Model.Details.AnnexBDate?.ToShortDateString()</dd>
-                    }
-                    @if (Model.Details.AnnexCDate is not null)
-                    {
-                        <dt class="col-sm-4">Annex C Date</dt>
-                        <dd class="col-sm-8">@Model.Details.AnnexCDate?.ToShortDateString()</dd>
-                    }
-                    @if (Model.Details.AnnexDDate is not null)
-                    {
-                        <dt class="col-sm-4">Annex D Date</dt>
-                        <dd class="col-sm-8">@Model.Details.AnnexDDate?.ToShortDateString()</dd>
-                    }
-                    @if (Model.Details.TseTestingSite is not null)
-                    {
-                        <dt class="col-sm-4">TSE Testing Site</dt>
-                        <dd class="col-sm-8">@Model.Details.TseTestingSite</dd>
-                        <dt class="col-sm-4">Sampling Date</dt>
-                        <dd class="col-sm-8">@Model.Details.SamplingDate?.ToShortDateString()</dd>
-                    }
-                    @if (Model.Details.TestResult is not null)
-                    {
-                        <dt class="col-sm-4">Test Result</dt>
-                        <dd class="col-sm-8">@Model.Details.TestResult</dd>
-                    }
-                </dl>
-            </div>
-        </div>
+        <h2 class="govuk-heading-m">@Model.MinuteTypeLabel details</h2>
+        <dl class="govuk-summary-list">
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@Model.Details.Rbse</dd></div>
+            @if (Model.Details.Cphh is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">CPHH</dt><dd class="govuk-summary-list__value">@Model.Details.Cphh</dd></div>
+            }
+            @if (Model.Details.Eartag is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Eartag</dt><dd class="govuk-summary-list__value">@Model.Details.EartagCountry @Model.Details.EartagHerdmark / @Model.Details.Eartag</dd></div>
+            }
+            @if (Model.Details.BirthDate is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Birth date</dt><dd class="govuk-summary-list__value">@Model.Details.BirthDate?.ToShortDateString()</dd></div>
+            }
+            @if (Model.Details.SlaughterDate is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Slaughter date</dt><dd class="govuk-summary-list__value">@Model.Details.SlaughterDate?.ToShortDateString()</dd></div>
+            }
+            @if (Model.Details.SurveyDescription is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Survey</dt><dd class="govuk-summary-list__value">@Model.Details.SurveyDescription</dd></div>
+            }
+            @if (Model.Details.AhoName is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">AHO</dt><dd class="govuk-summary-list__value">@Model.Details.AhoNumber — @Model.Details.AhoName</dd></div>
+            }
+            @if (Model.Details.OwnerName is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Owner</dt><dd class="govuk-summary-list__value">@Model.Details.OwnerName</dd></div>
+            }
+            @if (Model.Details.ActiveMemoDate is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Active memo date</dt><dd class="govuk-summary-list__value">@Model.Details.ActiveMemoDate?.ToShortDateString()</dd></div>
+            }
+            @if (Model.Details.AnnexADate is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Annex A date</dt><dd class="govuk-summary-list__value">@Model.Details.AnnexADate?.ToShortDateString()</dd></div>
+            }
+            @if (Model.Details.AnnexBDate is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Annex B date</dt><dd class="govuk-summary-list__value">@Model.Details.AnnexBDate?.ToShortDateString()</dd></div>
+            }
+            @if (Model.Details.AnnexCDate is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Annex C date</dt><dd class="govuk-summary-list__value">@Model.Details.AnnexCDate?.ToShortDateString()</dd></div>
+            }
+            @if (Model.Details.AnnexDDate is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Annex D date</dt><dd class="govuk-summary-list__value">@Model.Details.AnnexDDate?.ToShortDateString()</dd></div>
+            }
+            @if (Model.Details.TseTestingSite is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">TSE testing site</dt><dd class="govuk-summary-list__value">@Model.Details.TseTestingSite</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Sampling date</dt><dd class="govuk-summary-list__value">@Model.Details.SamplingDate?.ToShortDateString()</dd></div>
+            }
+            @if (Model.Details.TestResult is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Test result</dt><dd class="govuk-summary-list__value">@Model.Details.TestResult</dd></div>
+            }
+        </dl>
 
-        <form method="post">
+        <form method="post" novalidate>
             <input type="hidden" asp-for="Rbse" />
             <input type="hidden" asp-for="Type" />
-            <button type="submit" class="btn btn-primary">Mark as Sent Today</button>
-            <a asp-page="/CaseWork/Menu" asp-route-rbse="@Model.Rbse" class="btn btn-secondary ms-2">Back</a>
+            <div class="govuk-button-group">
+                <button type="submit" class="govuk-button" data-module="govuk-button">Mark as sent today</button>
+                <a asp-page="/CaseWork/Menu" asp-route-rbse="@Model.Rbse" class="govuk-link">Back</a>
+            </div>
         </form>
     }
 </div>

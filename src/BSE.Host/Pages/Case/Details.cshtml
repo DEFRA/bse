@@ -1,82 +1,72 @@
 @page "{rbse}"
 @model BSE.Host.Pages.Case.DetailsModel
 @{
-    ViewData["Title"] = Model.Case is null ? "Case Details" : $"Case {Model.Case.Rbse}";
+    ViewData["Title"] = Model.Case is null ? "Case details" : $"Case {Model.Case.Rbse}";
 }
 
 @if (Model.Case is null)
 {
-    <div class="alert alert-warning">Case not found.</div>
-    <a asp-page="/Case/Lookup" class="btn btn-secondary">Back</a>
+    <div class="govuk-warning-text">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text">
+            <span class="govuk-warning-text__assistive">Warning</span>
+            Case not found.
+        </strong>
+    </div>
+    <a asp-page="/Case/Lookup" class="govuk-link">Back to case lookup</a>
     return;
 }
 
-<div class="d-flex justify-content-between align-items-start mb-3">
-    <h2>Case: <span class="bse-rbse">@Model.Case.Rbse</span></h2>
-    <div class="d-flex gap-2">
-        <a asp-page="/Case/Edit" asp-route-rbse="@Model.Case.Rbse" class="btn btn-outline-primary">Edit</a>
-        <a asp-page="/Case/Delete" asp-route-rbse="@Model.Case.Rbse" class="btn btn-outline-danger">Delete</a>
-        <a asp-page="/Case/MoveCase" asp-route-rbse="@Model.Case.Rbse" class="btn btn-outline-warning">Move</a>
-        <a asp-page="/Case/RbseChange" asp-route-rbse="@Model.Case.Rbse" class="btn btn-outline-secondary">Change RBSE</a>
-    </div>
+<h1 class="govuk-heading-l">Case: <span class="bse-rbse">@Model.Case.Rbse</span></h1>
+
+<div class="govuk-button-group">
+    <a asp-page="/Case/Edit" asp-route-rbse="@Model.Case.Rbse" class="govuk-button" role="button" draggable="false">Edit</a>
+    <a asp-page="/Case/Delete" asp-route-rbse="@Model.Case.Rbse" class="govuk-link govuk-link--no-visited-state">Delete</a>
+    <a asp-page="/Case/MoveCase" asp-route-rbse="@Model.Case.Rbse" class="govuk-link">Move case</a>
+    <a asp-page="/Case/RbseChange" asp-route-rbse="@Model.Case.Rbse" class="govuk-link">Change RBSE</a>
 </div>
 
-<div class="row">
-    <div class="col-md-6">
-        <div class="card mb-3">
-            <div class="card-header fw-semibold">Case Details</div>
-            <div class="card-body">
-                <dl class="row mb-0">
-                    <dt class="col-sm-5">CPHH</dt>
-                    <dd class="col-sm-7"><a asp-page="/Farm/Details" asp-route-cphh="@Model.Case.Cphh">@Model.Case.Cphh</a></dd>
-                    <dt class="col-sm-5">Eartag</dt>
-                    <dd class="col-sm-7">@Model.Case.EartagCountry @Model.Case.EartagHerdmark @Model.Case.Eartag</dd>
-                    <dt class="col-sm-5">Sex</dt><dd class="col-sm-7">@Model.Case.Sex</dd>
-                    <dt class="col-sm-5">Breed</dt><dd class="col-sm-7">@Model.Case.Breed</dd>
-                    <dt class="col-sm-5">Birth Date</dt>
-                    <dd class="col-sm-7">@Model.Case.BirthDate?.ToString("dd/MM/yyyy") @(Model.Case.IsBirthDateEst ? "(est)" : "")</dd>
-                    <dt class="col-sm-5">Survey</dt><dd class="col-sm-7">@Model.Case.Survey</dd>
-                    <dt class="col-sm-5">Form A Date</dt><dd class="col-sm-7">@Model.Case.FormADate?.ToString("dd/MM/yyyy")</dd>
-                    <dt class="col-sm-5">Fate</dt><dd class="col-sm-7">@Model.Case.Fate</dd>
-                    <dt class="col-sm-5">Final Result</dt><dd class="col-sm-7">@Model.Case.FinalResult</dd>
-                    <dt class="col-sm-5">Final Result Date</dt><dd class="col-sm-7">@Model.Case.FinalResultDate?.ToString("dd/MM/yyyy")</dd>
-                    <dt class="col-sm-5">DBSE</dt><dd class="col-sm-7">@Model.Case.Dbse</dd>
-                    <dt class="col-sm-5">Non-GB</dt><dd class="col-sm-7">@(Model.Case.IsNonGbCase ? "Yes" : "No")</dd>
-                </dl>
+<div class="govuk-grid-row">
+    <div class="govuk-grid-column-one-half">
+        <h2 class="govuk-heading-m">Case details</h2>
+        <dl class="govuk-summary-list">
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">CPHH</dt>
+                <dd class="govuk-summary-list__value"><a asp-page="/Farm/Details" asp-route-cphh="@Model.Case.Cphh" class="govuk-link">@Model.Case.Cphh</a></dd>
             </div>
-        </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">Eartag</dt>
+                <dd class="govuk-summary-list__value">@Model.Case.EartagCountry @Model.Case.EartagHerdmark @Model.Case.Eartag</dd>
+            </div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Sex</dt><dd class="govuk-summary-list__value">@Model.Case.Sex</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Breed</dt><dd class="govuk-summary-list__value">@Model.Case.Breed</dd></div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">Birth date</dt>
+                <dd class="govuk-summary-list__value">@Model.Case.BirthDate?.ToString("dd/MM/yyyy") @(Model.Case.IsBirthDateEst ? "(estimated)" : "")</dd>
+            </div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Survey</dt><dd class="govuk-summary-list__value">@Model.Case.Survey</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Form A date</dt><dd class="govuk-summary-list__value">@Model.Case.FormADate?.ToString("dd/MM/yyyy")</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Fate</dt><dd class="govuk-summary-list__value">@Model.Case.Fate</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Final result</dt><dd class="govuk-summary-list__value">@Model.Case.FinalResult</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Final result date</dt><dd class="govuk-summary-list__value">@Model.Case.FinalResultDate?.ToString("dd/MM/yyyy")</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">DBSE</dt><dd class="govuk-summary-list__value">@Model.Case.Dbse</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Non-GB</dt><dd class="govuk-summary-list__value">@(Model.Case.IsNonGbCase ? "Yes" : "No")</dd></div>
+        </dl>
     </div>
-    <div class="col-md-6">
-        <div class="card mb-3">
-            <div class="card-header fw-semibold">Paperwork Status</div>
-            <div class="card-body">
-                <ul class="list-group list-group-flush">
-                    @{
-                        void PaperworkItem(string label, bool received)
-                        {
-                            <li class="list-group-item d-flex justify-content-between align-items-center py-1">
-                                @label
-                                <span class="badge @(received ? "bg-success" : "bg-danger")">
-                                    @(received ? "Received" : "Outstanding")
-                                </span>
-                            </li>;
-                        }
-                    }
-                    @{ PaperworkItem("Homebred BSE1", Model.Case.IsHomebredBse1Received); }
-                    @{ PaperworkItem("Breeder BSE1", Model.Case.IsBreederBse1Received); }
-                    @{ PaperworkItem("Purchaser BSE1", Model.Case.IsPurchaserBse1Received); }
-                    @{ PaperworkItem("Vendor BSE1", Model.Case.IsVendor1Bse1Received); }
-                    @{ PaperworkItem("Summary Sheet", Model.Case.IsSummarySheetReceived); }
-                </ul>
-            </div>
-        </div>
+    <div class="govuk-grid-column-one-half">
+        <h2 class="govuk-heading-m">Paperwork status</h2>
+        <dl class="govuk-summary-list">
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Homebred BSE1</dt><dd class="govuk-summary-list__value">@(Model.Case.IsHomebredBse1Received ? "Received" : "Outstanding")</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Breeder BSE1</dt><dd class="govuk-summary-list__value">@(Model.Case.IsBreederBse1Received ? "Received" : "Outstanding")</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Purchaser BSE1</dt><dd class="govuk-summary-list__value">@(Model.Case.IsPurchaserBse1Received ? "Received" : "Outstanding")</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Vendor BSE1</dt><dd class="govuk-summary-list__value">@(Model.Case.IsVendor1Bse1Received ? "Received" : "Outstanding")</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Summary sheet</dt><dd class="govuk-summary-list__value">@(Model.Case.IsSummarySheetReceived ? "Received" : "Outstanding")</dd></div>
+        </dl>
     </div>
 </div>
 
 @if (!string.IsNullOrWhiteSpace(Model.Case.Notes))
 {
-    <div class="card mb-3">
-        <div class="card-header fw-semibold">Notes</div>
-        <div class="card-body"><p class="mb-0">@Model.Case.Notes</p></div>
-    </div>
+    <h2 class="govuk-heading-m">Notes</h2>
+    <p class="govuk-body">@Model.Case.Notes</p>
 }

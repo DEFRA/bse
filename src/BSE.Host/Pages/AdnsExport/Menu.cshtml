@@ -1,43 +1,27 @@
 @page
 @model AdnsMenuModel
 @{
-    ViewData["Title"] = "ADNS Export";
+    ViewData["Title"] = "ADNS export";
 }
 
-<div class="container-fluid px-4">
-    <h1 class="mt-4">ADNS Export</h1>
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a asp-page="/Home">Home</a></li>
-        <li class="breadcrumb-item active">ADNS Export</li>
-    </ol>
+<div>
+    <h1 class="govuk-heading-l">ADNS export</h1>
+    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+        <ol class="govuk-breadcrumbs__list">
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+            <li class="govuk-breadcrumbs__list-item" aria-current="page">ADNS export</li>
+        </ol>
+    </nav>
 
-    <div class="row g-4">
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h5 class="card-title">Great Britain (GB)</h5>
-                    <p class="card-text">Export confirmed BSE cases for Great Britain to the EU ADNS system.</p>
-                    <a asp-page="/AdnsExport/Gb" class="btn btn-primary">GB Export</a>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h5 class="card-title">Channel Islands (CI)</h5>
-                    <p class="card-text">Export confirmed BSE cases for Channel Islands (Jersey, Guernsey, Isle of Man).</p>
-                    <a asp-page="/AdnsExport/Ci" class="btn btn-primary">CI Export</a>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h5 class="card-title">Northern Ireland (NI)</h5>
-                    <p class="card-text">Export confirmed BSE cases for Northern Ireland to the EU ADNS system.</p>
-                    <a asp-page="/AdnsExport/Ni" class="btn btn-primary">NI Export</a>
-                </div>
-            </div>
-        </div>
-    </div>
+    <h2 class="govuk-heading-m">Great Britain (GB)</h2>
+    <p class="govuk-body">Export confirmed BSE cases for Great Britain to the EU ADNS system.</p>
+    <p class="govuk-body"><a asp-page="/AdnsExport/Gb" class="govuk-link">Start GB export</a></p>
+
+    <h2 class="govuk-heading-m">Channel Islands (CI)</h2>
+    <p class="govuk-body">Export confirmed BSE cases for Channel Islands (Jersey, Guernsey, Isle of Man).</p>
+    <p class="govuk-body"><a asp-page="/AdnsExport/Ci" class="govuk-link">Start CI export</a></p>
+
+    <h2 class="govuk-heading-m">Northern Ireland (NI)</h2>
+    <p class="govuk-body">Export confirmed BSE cases for Northern Ireland to the EU ADNS system.</p>
+    <p class="govuk-body"><a asp-page="/AdnsExport/Ni" class="govuk-link">Start NI export</a></p>
 </div>

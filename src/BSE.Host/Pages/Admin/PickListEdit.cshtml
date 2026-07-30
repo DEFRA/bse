@@ -1,97 +1,95 @@
 @page "{tableId:int}"
 @model PickListEditModel
 @{
-    ViewData["Title"] = $"Edit {Model.Lookup?.Description ?? "Pick List"}";
+    ViewData["Title"] = $"Edit {Model.Lookup?.Description ?? "Pick list"}";
 }
 
-<div class="container-fluid px-4">
-    <h1 class="mt-4">@(Model.Lookup?.Description ?? "Pick List") — @Model.Lookup?.TableName</h1>
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a asp-page="/Home">Home</a></li>
-        <li class="breadcrumb-item"><a asp-page="/Admin/PickLists">Pick Lists</a></li>
-        <li class="breadcrumb-item active">@Model.Lookup?.Description</li>
-    </ol>
+<div>
+    <h1 class="govuk-heading-l">@(Model.Lookup?.Description ?? "Pick list") — @Model.Lookup?.TableName</h1>
+    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+        <ol class="govuk-breadcrumbs__list">
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Admin/PickLists">Pick lists</a></li>
+            <li class="govuk-breadcrumbs__list-item" aria-current="page">@Model.Lookup?.Description</li>
+        </ol>
+    </nav>
 
     @if (Model.Procs is null)
     {
-        <div class="alert alert-warning">No stored procedures configured for table ID @Model.TableId.</div>
+        <div class="govuk-warning-text">
+            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+            <strong class="govuk-warning-text__text"><span class="govuk-warning-text__assistive">Warning</span>No stored procedures configured for table ID @Model.TableId.</strong>
+        </div>
     }
     else
     {
         @if (!string.IsNullOrEmpty(Model.ErrorMessage))
         {
-            <div class="alert alert-danger">@Model.ErrorMessage</div>
+            <div class="govuk-error-summary" data-module="govuk-error-summary"><div role="alert"><h2 class="govuk-error-summary__title">There is a problem</h2><div class="govuk-error-summary__body"><ul class="govuk-list govuk-error-summary__list"><li>@Model.ErrorMessage</li></ul></div></div></div>
         }
 
-        <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                Current Records
-                <button class="btn btn-sm btn-primary" data-bs-toggle="collapse" data-bs-target="#addForm">+ Add</button>
+        <details class="govuk-details" data-module="govuk-details">
+            <summary class="govuk-details__summary"><span class="govuk-details__summary-text">Add record</span></summary>
+            <div class="govuk-details__text">
+                <form method="post" asp-page-handler="Add" novalidate>
+                    <input type="hidden" asp-for="TableId" />
+                    @if (Model.Rows.Any())
+                    {
+                        @foreach (var col in Model.Rows.First().Keys)
+                        {
+                            <div class="govuk-form-group">
+                                <label class="govuk-label">@col</label>
+                                <input name="Fields[@col]" class="govuk-input govuk-!-width-two-thirds" />
+                            </div>
+                        }
+                    }
+                    <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+                </form>
             </div>
+        </details>
 
-            <div id="addForm" class="collapse">
-                <div class="card-body border-bottom">
-                    <form method="post" asp-page-handler="Add">
-                        <input type="hidden" asp-for="TableId" />
-                        <div class="row g-2">
-                            @if (Model.Rows.Any())
+        <h2 class="govuk-heading-m">Current records</h2>
+        @if (Model.Rows.Any())
+        {
+            var columns = Model.Rows.First().Keys.ToList();
+            <table class="govuk-table">
+                <thead class="govuk-table__head">
+                    <tr class="govuk-table__row">
+                        @foreach (var col in columns)
+                        {
+                            <th scope="col" class="govuk-table__header">@col</th>
+                        }
+                        <th scope="col" class="govuk-table__header">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="govuk-table__body">
+                    @foreach (var row in Model.Rows)
+                    {
+                        <tr class="govuk-table__row">
+                            @foreach (var col in columns)
                             {
-                                @foreach (var col in Model.Rows.First().Keys)
-                                {
-                                    <div class="col-md-3">
-                                        <label class="form-label">@col</label>
-                                        <input name="Fields[@col]" class="form-control form-control-sm" />
-                                    </div>
-                                }
+                                <td class="govuk-table__cell">@row[col]</td>
                             }
-                        </div>
-                        <button type="submit" class="btn btn-sm btn-primary mt-2">Save</button>
-                    </form>
-                </div>
-            </div>
-
-            <div class="card-body p-0">
-                @if (Model.Rows.Any())
-                {
-                    var columns = Model.Rows.First().Keys.ToList();
-                    <table class="table table-sm table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                @foreach (var col in columns) { <th>@col</th> }
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var row in Model.Rows)
-                            {
-                                <tr>
+                            <td class="govuk-table__cell">
+                                <form method="post" asp-page-handler="Delete">
+                                    <input type="hidden" asp-for="TableId" />
                                     @foreach (var col in columns)
                                     {
-                                        <td>@row[col]</td>
+                                        <input type="hidden" name="Fields[@col]" value="@row[col]" />
                                     }
-                                    <td>
-                                        <form method="post" asp-page-handler="Delete" class="d-inline">
-                                            <input type="hidden" asp-for="TableId" />
-                                            @foreach (var col in columns)
-                                            {
-                                                <input type="hidden" name="Fields[@col]" value="@row[col]" />
-                                            }
-                                            <button type="submit" class="btn btn-danger btn-sm"
-                                                onclick="return confirm('Delete this row?');">Delete</button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                }
-                else
-                {
-                    <p class="p-3 text-muted">No records found.</p>
-                }
-            </div>
-        </div>
+                                    <button type="submit" class="govuk-button govuk-button--warning" data-module="govuk-button" onclick="return confirm('Delete this row?');">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p class="govuk-body">No records found.</p>
+        }
     }
 
-    <a asp-page="/Admin/PickLists" class="btn btn-secondary">Back to Pick Lists</a>
+    <p class="govuk-body"><a asp-page="/Admin/PickLists" class="govuk-link">Back to pick lists</a></p>
 </div>

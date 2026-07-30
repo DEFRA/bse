@@ -5,15 +5,24 @@
     Layout = "_Layout";
 }
 
-<h1 class="text-danger">An error occurred</h1>
+<h1 class="govuk-heading-l">There is a problem</h1>
 
 @if (!string.IsNullOrEmpty(Model.Message))
 {
-    <div class="alert alert-danger">@Model.Message</div>
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">We could not complete your request</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    <li>@Model.Message</li>
+                </ul>
+            </div>
+        </div>
+    </div>
 }
 else
 {
-    <p>An unexpected error occurred. Please try again or contact support if the problem persists.</p>
+    <p class="govuk-body">An unexpected error occurred. Try again or contact support if the problem persists.</p>
 }
 
-<a asp-page="/Home" class="btn btn-primary">Return to Home</a>
+<a asp-page="/Home" class="govuk-button" role="button" draggable="false">Return to home</a>

@@ -1,53 +1,68 @@
 @page "{rbse}"
 @model DeleteModel
 @{
-    ViewData["Title"] = "Delete Case";
+    ViewData["Title"] = "Delete case";
 }
 
-<div class="container-fluid px-4">
-    <h1 class="mt-4">Delete Case</h1>
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a asp-page="/Home">Home</a></li>
-        <li class="breadcrumb-item"><a asp-page="/Case/Lookup">Case Lookup</a></li>
-        <li class="breadcrumb-item active">Delete</li>
-    </ol>
+<div>
+    <h1 class="govuk-heading-l">Delete case</h1>
+    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+        <ol class="govuk-breadcrumbs__list">
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Lookup">Case lookup</a></li>
+            <li class="govuk-breadcrumbs__list-item" aria-current="page">Delete</li>
+        </ol>
+    </nav>
 
     @if (Model.CaseRecord is not null)
     {
-        <div class="alert alert-danger">
-            <strong>Warning:</strong> This action cannot be undone.
+        <div class="govuk-warning-text">
+            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+            <strong class="govuk-warning-text__text">
+                <span class="govuk-warning-text__assistive">Warning</span>
+                This action cannot be undone.
+            </strong>
         </div>
 
-        <div class="card mb-4">
-            <div class="card-header">Case @Model.CaseRecord.Rbse</div>
-            <div class="card-body">
-                <dl class="row">
-                    <dt class="col-sm-3">RBSE</dt>
-                    <dd class="col-sm-9">@Model.CaseRecord.Rbse</dd>
-                    <dt class="col-sm-3">CPHH</dt>
-                    <dd class="col-sm-9">@Model.CaseRecord.Cphh</dd>
-                    <dt class="col-sm-3">Eartag</dt>
-                    <dd class="col-sm-9">@Model.CaseRecord.EartagHerdmark / @Model.CaseRecord.Eartag</dd>
-                    <dt class="col-sm-3">Fate</dt>
-                    <dd class="col-sm-9">@Model.CaseRecord.Fate</dd>
-                </dl>
-            </div>
-        </div>
+        <h2 class="govuk-heading-m">Case @Model.CaseRecord.Rbse</h2>
+        <dl class="govuk-summary-list">
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@Model.CaseRecord.Rbse</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">CPHH</dt><dd class="govuk-summary-list__value">@Model.CaseRecord.Cphh</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Eartag</dt><dd class="govuk-summary-list__value">@Model.CaseRecord.EartagHerdmark / @Model.CaseRecord.Eartag</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Fate</dt><dd class="govuk-summary-list__value">@Model.CaseRecord.Fate</dd></div>
+        </dl>
 
         @if (!string.IsNullOrEmpty(Model.ErrorMessage))
         {
-            <div class="alert alert-danger">@Model.ErrorMessage</div>
+            <div class="govuk-error-summary" data-module="govuk-error-summary">
+                <div role="alert">
+                    <h2 class="govuk-error-summary__title">There is a problem</h2>
+                    <div class="govuk-error-summary__body">
+                        <ul class="govuk-list govuk-error-summary__list">
+                            <li>@Model.ErrorMessage</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         }
 
         <form method="post">
             <input type="hidden" asp-for="Rbse" />
-            <button type="submit" class="btn btn-danger">Confirm Delete</button>
-            <a asp-page="/Case/Details" asp-route-rbse="@Model.Rbse" class="btn btn-secondary ms-2">Cancel</a>
+            <div class="govuk-button-group">
+                <button type="submit" class="govuk-button govuk-button--warning" data-module="govuk-button">Confirm delete</button>
+                <a asp-page="/Case/Details" asp-route-rbse="@Model.Rbse" class="govuk-link">Cancel</a>
+            </div>
         </form>
     }
     else
     {
-        <div class="alert alert-warning">Case <strong>@Model.Rbse</strong> not found.</div>
-        <a asp-page="/Case/Lookup" class="btn btn-secondary">Back to Lookup</a>
+        <div class="govuk-warning-text">
+            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+            <strong class="govuk-warning-text__text">
+                <span class="govuk-warning-text__assistive">Warning</span>
+                Case @Model.Rbse not found.
+            </strong>
+        </div>
+        <a asp-page="/Case/Lookup" class="govuk-link">Back to lookup</a>
     }
 </div>
