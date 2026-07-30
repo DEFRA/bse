@@ -1,74 +1,60 @@
 @page
 @model BSE.Host.Pages.HomeModel
 @{
-    ViewData["Title"] = "Home";
+    ViewData["Title"] = "BSE system";
 }
 
-<h1 class="mb-4">BSE System</h1>
+<h1 class="govuk-heading-l">BSE system</h1>
 
-<form method="get" asp-page="/Search/Cases" class="row g-3 mb-5">
-    <div class="col-md-4">
-        <label class="form-label fw-semibold">Quick Case Search (RBSE)</label>
-        <div class="input-group">
-            <input type="text" name="Rbse" class="form-control" placeholder="e.g. 01/01/12345" />
-            <button type="submit" class="btn btn-primary">Search</button>
-        </div>
+<h2 class="govuk-heading-m">Quick case search</h2>
+<form method="get" asp-page="/Search/Cases" class="govuk-!-margin-bottom-7">
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="quick-case-rbse">RBSE</label>
+        <div class="govuk-hint">Enter 9 digits, for example 000000001.</div>
+        <input id="quick-case-rbse" type="text" name="Filter.Rbse" class="govuk-input govuk-!-width-one-half" />
     </div>
-    <div class="col-md-4">
-        <label class="form-label fw-semibold">Quick Farm Search (CPHH)</label>
-        <div class="input-group">
-            <input type="text" name="Cphh" asp-page="/Search/Farms" class="form-control" placeholder="e.g. 12/345/0001" />
-            <button type="submit" asp-page="/Search/Farms" class="btn btn-secondary">Search</button>
-        </div>
-    </div>
+    <button type="submit" class="govuk-button" data-module="govuk-button">Search cases</button>
 </form>
 
-<div class="row g-4">
-    <div class="col-md-3">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="card-title">Search</h5>
-                <ul class="list-unstyled">
-                    <li><a asp-page="/Search/Cases">Cases</a></li>
-                    <li><a asp-page="/Search/Farms">Farms</a></li>
-                    <li><a asp-page="/Search/Outstanding">Outstanding Data</a></li>
-                    <li><a asp-page="/Search/RelatedAnimals">Related Animals</a></li>
-                </ul>
-            </div>
-        </div>
+<h2 class="govuk-heading-m">Quick farm search</h2>
+<form method="get" asp-page="/Search/Farms" class="govuk-!-margin-bottom-7">
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="quick-farm-cphh">CPHH</label>
+        <div class="govuk-hint">For example, 12/345/0001.</div>
+        <input id="quick-farm-cphh" type="text" name="Filter.Cphh" class="govuk-input govuk-!-width-one-half" />
     </div>
-    <div class="col-md-3">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="card-title">Case Entry</h5>
-                <ul class="list-unstyled">
-                    <li><a asp-page="/Case/New">New Case</a></li>
-                    <li><a asp-page="/Case/Lookup">Open Existing Case</a></li>
-                </ul>
-            </div>
-        </div>
+    <button type="submit" class="govuk-button" data-module="govuk-button">Search farms</button>
+</form>
+
+<div class="govuk-grid-row">
+    <div class="govuk-grid-column-one-half">
+        <h2 class="govuk-heading-m">Search</h2>
+        <ul class="govuk-list govuk-list--bullet">
+            <li><a asp-page="/Search/Cases" class="govuk-link">Cases</a></li>
+            <li><a asp-page="/Search/Farms" class="govuk-link">Farms</a></li>
+            <li><a asp-page="/Search/Outstanding" class="govuk-link">Outstanding data</a></li>
+            <li><a asp-page="/Search/RelatedAnimals" class="govuk-link">Related animals</a></li>
+        </ul>
+
+        <h2 class="govuk-heading-m">Case entry</h2>
+        <ul class="govuk-list govuk-list--bullet">
+            <li><a asp-page="/Case/New" class="govuk-link">New case</a></li>
+            <li><a asp-page="/Case/Lookup" class="govuk-link">Open existing case</a></li>
+        </ul>
     </div>
-    <div class="col-md-3">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="card-title">Farm</h5>
-                <ul class="list-unstyled">
-                    <li><a asp-page="/Farm/New">New Farm</a></li>
-                    <li><a asp-page="/Farm/Lookup">Open Farm</a></li>
-                </ul>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="card-title">Casework &amp; Reports</h5>
-                <ul class="list-unstyled">
-                    <li><a asp-page="/CaseWork/Menu">Casework Menu</a></li>
-                    <li><a asp-page="/AuditLog/ByDate">Audit Log</a></li>
-                    <li><a asp-page="/Bsess/CheckByRbse">BSESS Check</a></li>
-                </ul>
-            </div>
-        </div>
+
+    <div class="govuk-grid-column-one-half">
+        <h2 class="govuk-heading-m">Farms</h2>
+        <ul class="govuk-list govuk-list--bullet">
+            <li><a asp-page="/Farm/New" class="govuk-link">New farm</a></li>
+            <li><a asp-page="/Farm/Lookup" class="govuk-link">Open farm</a></li>
+        </ul>
+
+        <h2 class="govuk-heading-m">Casework and reports</h2>
+        <ul class="govuk-list govuk-list--bullet">
+            <li><a asp-page="/CaseWork/Menu" class="govuk-link">Casework menu</a></li>
+            <li><a asp-page="/AuditLog/ByDate" class="govuk-link">Audit log</a></li>
+            <li><a asp-page="/Bsess/CheckByRbse" class="govuk-link">BSESS check</a></li>
+        </ul>
     </div>
 </div>

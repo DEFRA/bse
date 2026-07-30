@@ -1,69 +1,61 @@
 @page
 @model OssExportMenuModel
 @{
-    ViewData["Title"] = "OSS Export";
+    ViewData["Title"] = "OSS export";
 }
 
-<div class="container-fluid px-4">
-    <h1 class="mt-4">OSS Export</h1>
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a asp-page="/Home">Home</a></li>
-        <li class="breadcrumb-item active">OSS Export</li>
-    </ol>
+<div>
+    <h1 class="govuk-heading-l">OSS export</h1>
+    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+        <ol class="govuk-breadcrumbs__list">
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+            <li class="govuk-breadcrumbs__list-item" aria-current="page">OSS export</li>
+        </ol>
+    </nav>
 
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <div class="alert alert-danger">@Model.ErrorMessage</div>
+        <div class="govuk-error-summary" data-module="govuk-error-summary"><div role="alert"><h2 class="govuk-error-summary__title">There is a problem</h2><div class="govuk-error-summary__body"><ul class="govuk-list govuk-error-summary__list"><li>@Model.ErrorMessage</li></ul></div></div></div>
     }
 
-    <div class="card mb-4">
-        <div class="card-header">OSS Export</div>
-        <div class="card-body">
-            <p>Populates OSS staging tables and allows cover-sheet generation per case.</p>
-            <form method="post" asp-page-handler="Populate">
-                <button type="submit" class="btn btn-primary">Populate Staging Tables</button>
-            </form>
-        </div>
-    </div>
+    <h2 class="govuk-heading-m">OSS export</h2>
+    <p class="govuk-body">Populates OSS staging tables and allows cover-sheet generation per case.</p>
+    <form method="post" asp-page-handler="Populate" novalidate>
+        <button type="submit" class="govuk-button" data-module="govuk-button">Populate staging tables</button>
+    </form>
 
     @if (Model.BatchResult is not null)
     {
-        <div class="alert alert-success">
-            Batch number created: <strong>@Model.BatchResult.BatchYear/@Model.BatchResult.BatchNumber</strong> (ID: @Model.BatchResult.BatchId)
+        <div class="govuk-notification-banner govuk-notification-banner--success" role="alert" aria-labelledby="oss-success-title" data-module="govuk-notification-banner">
+            <div class="govuk-notification-banner__header"><h2 class="govuk-notification-banner__title" id="oss-success-title">Success</h2></div>
+            <div class="govuk-notification-banner__content"><p class="govuk-notification-banner__heading">Batch number created: @Model.BatchResult.BatchYear/@Model.BatchResult.BatchNumber (ID: @Model.BatchResult.BatchId)</p></div>
         </div>
     }
 
-    <div class="card mb-4">
-        <div class="card-header">Lookup RBSE Cover Sheet</div>
-        <div class="card-body">
-            <form method="get" class="row g-3 align-items-end">
-                <div class="col-auto">
-                    <label asp-for="Rbse" class="form-label">RBSE</label>
-                    <input asp-for="Rbse" class="form-control" style="width:160px" />
-                </div>
-                <div class="col-auto">
-                    <button type="submit" class="btn btn-secondary">Look Up</button>
-                </div>
-            </form>
+    <h2 class="govuk-heading-m">Look up RBSE cover sheet</h2>
+    <form method="get" novalidate>
+        <div class="govuk-form-group">
+            <label asp-for="Rbse" class="govuk-label">RBSE</label>
+            <input asp-for="Rbse" class="govuk-input govuk-!-width-one-half" />
         </div>
-    </div>
+        <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Look up</button>
+    </form>
 
     @if (Model.ExportRecord is not null)
     {
-        <div class="card mb-4">
-            <div class="card-header">Cover Sheet — @Model.ExportRecord.Rbse</div>
-            <div class="card-body">
-                <dl class="row">
-                    <dt class="col-sm-3">RBSE</dt><dd class="col-sm-9">@Model.ExportRecord.Rbse</dd>
-                    <dt class="col-sm-3">CPHH</dt><dd class="col-sm-9">@Model.ExportRecord.Cphh</dd>
-                    <dt class="col-sm-3">Owner</dt><dd class="col-sm-9">@Model.ExportRecord.OwnerName</dd>
-                    <dt class="col-sm-3">Address</dt><dd class="col-sm-9">@Model.ExportRecord.Address1</dd>
-                </dl>
-            </div>
-        </div>
+        <h2 class="govuk-heading-m">Cover sheet — @Model.ExportRecord.Rbse</h2>
+        <dl class="govuk-summary-list">
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@Model.ExportRecord.Rbse</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">CPHH</dt><dd class="govuk-summary-list__value">@Model.ExportRecord.Cphh</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Owner</dt><dd class="govuk-summary-list__value">@Model.ExportRecord.OwnerName</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Address</dt><dd class="govuk-summary-list__value">@Model.ExportRecord.Address1</dd></div>
+        </dl>
     }
     else if (Model.HasSearched)
     {
-        <div class="alert alert-warning">No OSS export record found for <strong>@Model.Rbse</strong>.</div>
+        <div class="govuk-warning-text">
+            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+            <strong class="govuk-warning-text__text"><span class="govuk-warning-text__assistive">Warning</span>No OSS export record found for @Model.Rbse.</strong>
+        </div>
     }
 </div>

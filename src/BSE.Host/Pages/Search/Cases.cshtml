@@ -1,101 +1,137 @@
 @page
 @model BSE.Host.Pages.Search.CasesModel
 @{
-    ViewData["Title"] = "Case Search";
+    ViewData["Title"] = "Search for a case";
 }
 
-<h2>Case Search</h2>
+<h1 class="govuk-heading-l">Search for a case</h1>
 
-<form method="get" class="mb-4">
-    <div class="row g-3">
-        <div class="col-md-3">
-            <label asp-for="Filter.Rbse" class="form-label">RBSE</label>
-            <input asp-for="Filter.Rbse" class="form-control" />
-        </div>
-        <div class="col-md-3">
-            <label asp-for="Filter.Eartag" class="form-label">Eartag</label>
-            <input asp-for="Filter.Eartag" class="form-control" />
-        </div>
-        <div class="col-md-3">
-            <label asp-for="Filter.Dbse" class="form-label">DBSE</label>
-            <input asp-for="Filter.Dbse" class="form-control" />
-        </div>
-        <div class="col-md-3">
-            <label asp-for="Filter.Fate" class="form-label">Fate</label>
-            <input asp-for="Filter.Fate" class="form-control" />
-        </div>
-        <div class="col-md-3">
-            <label asp-for="Filter.FinalResult" class="form-label">Final Result</label>
-            <input asp-for="Filter.FinalResult" class="form-control" />
-        </div>
-        <div class="col-md-3">
-            <label asp-for="Filter.Survey" class="form-label">Survey</label>
-            <input asp-for="Filter.Survey" class="form-control" />
-        </div>
-        <div class="col-md-3">
-            <label asp-for="Filter.EarliestFormADate" class="form-label">Form A From</label>
-            <input asp-for="Filter.EarliestFormADate" type="date" class="form-control" />
-        </div>
-        <div class="col-md-3">
-            <label asp-for="Filter.LatestFormADate" class="form-label">Form A To</label>
-            <input asp-for="Filter.LatestFormADate" type="date" class="form-control" />
-        </div>
-        <div class="col-md-3">
-            <div class="form-check mt-4">
-                <input asp-for="Filter.IncludeNonGb" class="form-check-input" />
-                <label asp-for="Filter.IncludeNonGb" class="form-check-label">Include Non-GB</label>
+@if (!ViewContext.ModelState.IsValid)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var modelError in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@modelError.ErrorMessage</li>
+                    }
+                </ul>
             </div>
         </div>
     </div>
-    <div class="mt-3">
-        <button type="submit" class="btn btn-primary">Search</button>
-        <a asp-page="/Search/Cases" class="btn btn-outline-secondary ms-2">Clear</a>
+}
+
+<form method="get" novalidate>
+    <div class="govuk-form-group">
+        <label asp-for="Filter.Rbse" class="govuk-label">RBSE</label>
+        <div id="rbse-hint" class="govuk-hint">Enter RBSE as 9 digits, for example 000000001.</div>
+        <input asp-for="Filter.Rbse" class="govuk-input govuk-!-width-one-half" aria-describedby="rbse-hint" />
+    </div>
+
+    <div class="govuk-form-group">
+        <label asp-for="Filter.Eartag" class="govuk-label">Eartag</label>
+        <input asp-for="Filter.Eartag" class="govuk-input govuk-!-width-two-thirds" />
+    </div>
+
+    <div class="govuk-form-group">
+        <label asp-for="Filter.Dbse" class="govuk-label">DBSE</label>
+        <input asp-for="Filter.Dbse" class="govuk-input govuk-!-width-one-half" />
+    </div>
+
+    <div class="govuk-form-group">
+        <label asp-for="Filter.Fate" class="govuk-label">Fate</label>
+        <input asp-for="Filter.Fate" class="govuk-input govuk-!-width-one-half" />
+    </div>
+
+    <div class="govuk-form-group">
+        <label asp-for="Filter.FinalResult" class="govuk-label">Final result</label>
+        <input asp-for="Filter.FinalResult" class="govuk-input govuk-!-width-one-half" />
+    </div>
+
+    <div class="govuk-form-group">
+        <label asp-for="Filter.Survey" class="govuk-label">Survey</label>
+        <input asp-for="Filter.Survey" class="govuk-input govuk-!-width-one-half" />
+    </div>
+
+    <div class="govuk-form-group">
+        <fieldset class="govuk-fieldset" role="group" aria-describedby="form-a-date-hint">
+            <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">Form A date range</legend>
+            <div id="form-a-date-hint" class="govuk-hint">Leave blank to search all dates.</div>
+            <div class="govuk-date-input" id="form-a-dates">
+                <div class="govuk-date-input__item">
+                    <div class="govuk-form-group">
+                        <label asp-for="Filter.EarliestFormADate" class="govuk-label govuk-date-input__label">From</label>
+                        <input asp-for="Filter.EarliestFormADate" type="date" class="govuk-input govuk-date-input__input" />
+                    </div>
+                </div>
+                <div class="govuk-date-input__item">
+                    <div class="govuk-form-group">
+                        <label asp-for="Filter.LatestFormADate" class="govuk-label govuk-date-input__label">To</label>
+                        <input asp-for="Filter.LatestFormADate" type="date" class="govuk-input govuk-date-input__input" />
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+    </div>
+
+    <div class="govuk-form-group">
+        <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+            <div class="govuk-checkboxes__item">
+                <input asp-for="Filter.IncludeNonGb" class="govuk-checkboxes__input" />
+                <label asp-for="Filter.IncludeNonGb" class="govuk-label govuk-checkboxes__label">Include non-GB</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="govuk-button-group">
+        <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
+        <a asp-page="/Search/Cases" class="govuk-link">Clear search</a>
     </div>
 </form>
 
 @if (Model.Filter.HasSearched)
 {
-    <p class="text-muted">@Model.Filter.Results.Count result(s) found.</p>
+    <p class="govuk-body">@Model.Filter.Results.Count result(s) found.</p>
 
     @if (Model.Filter.Results.Count > 0)
     {
-        <div class="table-responsive">
-            <table class="table table-sm table-striped table-hover">
-                <thead class="table-dark">
-                    <tr>
-                        <th>RBSE</th>
-                        <th>CPHH</th>
-                        <th>Sex</th>
-                        <th>Survey</th>
-                        <th>Eartag</th>
-                        <th>Birth Date</th>
-                        <th>Form A Date</th>
-                        <th>Fate</th>
-                        <th>Final Result</th>
-                        <th></th>
+        <table class="govuk-table">
+            <caption class="govuk-visually-hidden">Case search results</caption>
+            <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                    <th scope="col" class="govuk-table__header">RBSE</th>
+                    <th scope="col" class="govuk-table__header">CPHH</th>
+                    <th scope="col" class="govuk-table__header">Sex</th>
+                    <th scope="col" class="govuk-table__header">Survey</th>
+                    <th scope="col" class="govuk-table__header">Eartag</th>
+                    <th scope="col" class="govuk-table__header">Birth date</th>
+                    <th scope="col" class="govuk-table__header">Form A date</th>
+                    <th scope="col" class="govuk-table__header">Fate</th>
+                    <th scope="col" class="govuk-table__header">Final result</th>
+                    <th scope="col" class="govuk-table__header">Action</th>
+                </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+                @foreach (var r in Model.Filter.Results)
+                {
+                    <tr class="govuk-table__row">
+                        <td class="govuk-table__cell bse-rbse">@r.Rbse</td>
+                        <td class="govuk-table__cell">@r.Cphh</td>
+                        <td class="govuk-table__cell">@r.Sex</td>
+                        <td class="govuk-table__cell">@r.Survey</td>
+                        <td class="govuk-table__cell">@r.Eartag</td>
+                        <td class="govuk-table__cell">@r.BirthDate?.ToString("dd/MM/yyyy")</td>
+                        <td class="govuk-table__cell">@r.FormADate?.ToString("dd/MM/yyyy")</td>
+                        <td class="govuk-table__cell">@r.Fate</td>
+                        <td class="govuk-table__cell">@r.FinalResult</td>
+                        <td class="govuk-table__cell">
+                            <a asp-page="/Case/Details" asp-route-rbse="@r.Rbse" class="govuk-link">Open</a>
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    @foreach (var r in Model.Filter.Results)
-                    {
-                        <tr>
-                            <td class="bse-rbse">@r.Rbse</td>
-                            <td>@r.Cphh</td>
-                            <td>@r.Sex</td>
-                            <td>@r.Survey</td>
-                            <td>@r.Eartag</td>
-                            <td>@r.BirthDate?.ToString("dd/MM/yyyy")</td>
-                            <td>@r.FormADate?.ToString("dd/MM/yyyy")</td>
-                            <td>@r.Fate</td>
-                            <td>@r.FinalResult</td>
-                            <td>
-                                <a asp-page="/Case/Details" asp-route-rbse="@r.Rbse"
-                                   class="btn btn-sm btn-outline-primary">Open</a>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+                }
+            </tbody>
+        </table>
     }
 }

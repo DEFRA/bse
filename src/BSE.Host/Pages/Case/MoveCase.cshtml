@@ -1,35 +1,45 @@
 @page "{rbse}"
 @model MoveCaseModel
 @{
-    ViewData["Title"] = "Move Case";
+    ViewData["Title"] = "Move case";
 }
 
-<div class="container-fluid px-4">
-    <h1 class="mt-4">Move Case</h1>
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a asp-page="/Home">Home</a></li>
-        <li class="breadcrumb-item"><a asp-page="/Case/Details" asp-route-rbse="@Model.Rbse">Case @Model.Rbse</a></li>
-        <li class="breadcrumb-item active">Move</li>
-    </ol>
+<div>
+    <h1 class="govuk-heading-l">Move case</h1>
+    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+        <ol class="govuk-breadcrumbs__list">
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Details" asp-route-rbse="@Model.Rbse">Case @Model.Rbse</a></li>
+            <li class="govuk-breadcrumbs__list-item" aria-current="page">Move</li>
+        </ol>
+    </nav>
 
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <div class="alert alert-danger">@Model.ErrorMessage</div>
+        <div class="govuk-error-summary" data-module="govuk-error-summary">
+            <div role="alert">
+                <h2 class="govuk-error-summary__title">There is a problem</h2>
+                <div class="govuk-error-summary__body">
+                    <ul class="govuk-list govuk-error-summary__list">
+                        <li>@Model.ErrorMessage</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     }
 
-    <div class="card mb-4">
-        <div class="card-header">Move Case @Model.Rbse to a Different Farm</div>
-        <div class="card-body">
-            <form method="post">
-                <input type="hidden" asp-for="Rbse" />
-                <div class="mb-3">
-                    <label asp-for="NewCphh" class="form-label">New CPHH</label>
-                    <input asp-for="NewCphh" class="form-control" style="max-width:200px" placeholder="e.g. 12/345/6789/01" />
-                    <span asp-validation-for="NewCphh" class="text-danger"></span>
-                </div>
-                <button type="submit" class="btn btn-primary">Move Case</button>
-                <a asp-page="/Case/Details" asp-route-rbse="@Model.Rbse" class="btn btn-secondary ms-2">Cancel</a>
-            </form>
+    <h2 class="govuk-heading-m">Move case @Model.Rbse to a different farm</h2>
+    <form method="post" novalidate>
+        <input type="hidden" asp-for="Rbse" />
+        <div class="govuk-form-group">
+            <label asp-for="NewCphh" class="govuk-label">New CPHH</label>
+            <div class="govuk-hint">For example, 12/345/6789/01.</div>
+            <input asp-for="NewCphh" class="govuk-input govuk-!-width-one-half" />
+            <span asp-validation-for="NewCphh" class="govuk-error-message"></span>
         </div>
-    </div>
+        <div class="govuk-button-group">
+            <button type="submit" class="govuk-button" data-module="govuk-button">Move case</button>
+            <a asp-page="/Case/Details" asp-route-rbse="@Model.Rbse" class="govuk-link">Cancel</a>
+        </div>
+    </form>
 </div>

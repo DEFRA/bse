@@ -1,22 +1,28 @@
 @page
 @model BSE.Host.Pages.Case.LookupModel
 @{
-    ViewData["Title"] = "Open Case";
+    ViewData["Title"] = "Open case";
 }
 
-<h2>Open Case</h2>
+<h1 class="govuk-heading-l">Open case</h1>
 
-<form method="get" class="row g-3 mb-4">
-    <div class="col-md-4">
-        <label asp-for="Rbse" class="form-label">RBSE</label>
-        <div class="input-group">
-            <input asp-for="Rbse" class="form-control" placeholder="e.g. 01/01/12345" />
-            <button type="submit" class="btn btn-primary">Open</button>
-        </div>
+<form method="get" novalidate>
+    <div class="govuk-form-group">
+        <label asp-for="Rbse" class="govuk-label">RBSE</label>
+        <div class="govuk-hint">Enter 9 digits, for example 000000001.</div>
+        <input asp-for="Rbse" class="govuk-input govuk-!-width-one-half" />
     </div>
+
+    <button type="submit" class="govuk-button" data-module="govuk-button">Open case</button>
 </form>
 
 @if (Model.IsNotFound)
 {
-    <div class="alert alert-warning">No case found for RBSE <strong>@Model.Rbse</strong>.</div>
+    <div class="govuk-warning-text">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text">
+            <span class="govuk-warning-text__assistive">Warning</span>
+            No case found for RBSE @Model.Rbse.
+        </strong>
+    </div>
 }

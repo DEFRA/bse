@@ -1,78 +1,51 @@
 @page
 @model UsersModel
 @{
-    ViewData["Title"] = "User Management";
+    ViewData["Title"] = "User management";
 }
 
-<div class="container-fluid px-4">
-    <h1 class="mt-4">User Management</h1>
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a asp-page="/Home">Home</a></li>
-        <li class="breadcrumb-item active">Users</li>
-    </ol>
+<div>
+    <h1 class="govuk-heading-l">User management</h1>
+    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+        <ol class="govuk-breadcrumbs__list">
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+            <li class="govuk-breadcrumbs__list-item" aria-current="page">Users</li>
+        </ol>
+    </nav>
 
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            Users
-            <button class="btn btn-sm btn-primary" data-bs-toggle="collapse" data-bs-target="#addUserForm">+ Add User</button>
+    <details class="govuk-details" data-module="govuk-details">
+        <summary class="govuk-details__summary"><span class="govuk-details__summary-text">Add user</span></summary>
+        <div class="govuk-details__text">
+            <form method="post" asp-page-handler="Add" novalidate>
+                <div class="govuk-form-group"><label class="govuk-label">NT login</label><input name="NTLogin" class="govuk-input govuk-!-width-one-half" required /></div>
+                <div class="govuk-form-group"><label class="govuk-label">UPN</label><input name="Upn" type="email" class="govuk-input govuk-!-width-two-thirds" /></div>
+                <div class="govuk-form-group"><label class="govuk-label">Display name</label><input name="UserName" class="govuk-input govuk-!-width-two-thirds" required /></div>
+                <div class="govuk-form-group"><label class="govuk-label">Email</label><input name="Email" type="email" class="govuk-input govuk-!-width-two-thirds" /></div>
+                <div class="govuk-form-group"><label class="govuk-label">User group ID</label><input name="UserGroupId" type="number" class="govuk-input govuk-input--width-5" value="1" /></div>
+                <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input name="IsActive" type="checkbox" class="govuk-checkboxes__input" checked /><label class="govuk-label govuk-checkboxes__label">Active</label></div></div></div>
+                <button type="submit" class="govuk-button" data-module="govuk-button">Save user</button>
+            </form>
         </div>
-        <div id="addUserForm" class="collapse">
-            <div class="card-body border-bottom">
-                <form method="post" asp-page-handler="Add">
-                    <div class="row g-3">
-                        <div class="col-md-3">
-                            <label class="form-label">NT Login</label>
-                            <input name="NTLogin" class="form-control" required />
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">UPN</label>
-                            <input name="Upn" type="email" class="form-control" />
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Display Name</label>
-                            <input name="UserName" class="form-control" required />
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Email</label>
-                            <input name="Email" type="email" class="form-control" />
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">User Group ID</label>
-                            <input name="UserGroupId" type="number" class="form-control" value="1" />
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-check mt-4">
-                                <input name="IsActive" type="checkbox" class="form-check-input" checked />
-                                <label class="form-check-label">Active</label>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mt-3">
-                        <button type="submit" class="btn btn-primary btn-sm">Save User</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-        <div class="card-body p-0">
-            <table class="table table-sm table-hover mb-0">
-                <thead class="table-light">
-                    <tr><th>ID</th><th>NT Login</th><th>UPN</th><th>Name</th><th>Email</th><th>Group</th><th>Active</th></tr>
-                </thead>
-                <tbody>
-                    @foreach (var u in Model.Users)
-                    {
-                        <tr>
-                            <td>@u.UserId</td>
-                            <td>@u.NTLogin</td>
-                            <td>@u.Upn</td>
-                            <td>@u.UserName</td>
-                            <td>@u.Email</td>
-                            <td>@u.UserGroup</td>
-                            <td>@(u.IsActive ? "✓" : "✗")</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    </div>
+    </details>
+
+    <h2 class="govuk-heading-m">Users</h2>
+    <table class="govuk-table">
+        <thead class="govuk-table__head">
+            <tr class="govuk-table__row"><th scope="col" class="govuk-table__header">ID</th><th scope="col" class="govuk-table__header">NT login</th><th scope="col" class="govuk-table__header">UPN</th><th scope="col" class="govuk-table__header">Name</th><th scope="col" class="govuk-table__header">Email</th><th scope="col" class="govuk-table__header">Group</th><th scope="col" class="govuk-table__header">Active</th></tr>
+        </thead>
+        <tbody class="govuk-table__body">
+            @foreach (var u in Model.Users)
+            {
+                <tr class="govuk-table__row">
+                    <td class="govuk-table__cell">@u.UserId</td>
+                    <td class="govuk-table__cell">@u.NTLogin</td>
+                    <td class="govuk-table__cell">@u.Upn</td>
+                    <td class="govuk-table__cell">@u.UserName</td>
+                    <td class="govuk-table__cell">@u.Email</td>
+                    <td class="govuk-table__cell">@u.UserGroup</td>
+                    <td class="govuk-table__cell">@(u.IsActive ? "Yes" : "No")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
 </div>

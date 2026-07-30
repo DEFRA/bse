@@ -1,70 +1,72 @@
 @page
 @model BSE.Host.Pages.Case.NewModel
 @{
-    ViewData["Title"] = "New Case";
+    ViewData["Title"] = "Create a new case";
 }
 
-<h2>New Case</h2>
+<h1 class="govuk-heading-l">Create a new case</h1>
 
-<form method="post" class="row g-3">
-    <div asp-validation-summary="ModelOnly" class="text-danger col-12"></div>
+<form method="post" novalidate>
+    <div asp-validation-summary="ModelOnly" class="govuk-error-summary"></div>
 
-    <div class="col-md-3">
-        <label asp-for="Rbse" class="form-label">RBSE *</label>
-        <input asp-for="Rbse" class="form-control" placeholder="e.g. 01/01/12345" />
-        <span asp-validation-for="Rbse" class="text-danger small"></span>
+    <div class="govuk-form-group">
+        <label asp-for="Rbse" class="govuk-label">RBSE</label>
+        <div class="govuk-hint">For example, 000000001.</div>
+        <input asp-for="Rbse" class="govuk-input govuk-!-width-one-half" />
+        <span asp-validation-for="Rbse" class="govuk-error-message"></span>
     </div>
-    <div class="col-md-3">
-        <label asp-for="Cphh" class="form-label">CPHH *</label>
-        <input asp-for="Cphh" class="form-control" />
-        <span asp-validation-for="Cphh" class="text-danger small"></span>
+    <div class="govuk-form-group">
+        <label asp-for="Cphh" class="govuk-label">CPHH</label>
+        <input asp-for="Cphh" class="govuk-input govuk-!-width-one-half" />
+        <span asp-validation-for="Cphh" class="govuk-error-message"></span>
     </div>
-    <div class="col-md-3">
-        <label asp-for="Survey" class="form-label">Survey</label>
-        <input asp-for="Survey" class="form-control" />
+    <div class="govuk-form-group">
+        <label asp-for="Survey" class="govuk-label">Survey</label>
+        <input asp-for="Survey" class="govuk-input govuk-!-width-one-third" />
     </div>
-    <div class="col-md-3">
-        <label asp-for="Sex" class="form-label">Sex</label>
-        <input asp-for="Sex" class="form-control" />
+    <div class="govuk-form-group">
+        <label asp-for="Sex" class="govuk-label">Sex</label>
+        <input asp-for="Sex" class="govuk-input govuk-!-width-one-quarter" />
     </div>
-    <div class="col-md-3">
-        <label asp-for="Breed" class="form-label">Breed</label>
-        <input asp-for="Breed" class="form-control" />
+    <div class="govuk-form-group">
+        <label asp-for="Breed" class="govuk-label">Breed</label>
+        <input asp-for="Breed" class="govuk-input govuk-!-width-one-half" />
     </div>
-    <div class="col-md-3">
-        <label asp-for="EartagCountry" class="form-label">Eartag Country</label>
-        <input asp-for="EartagCountry" class="form-control" />
+    <div class="govuk-form-group">
+        <label asp-for="EartagCountry" class="govuk-label">Eartag country</label>
+        <input asp-for="EartagCountry" class="govuk-input govuk-!-width-one-quarter" />
     </div>
-    <div class="col-md-3">
-        <label asp-for="EartagHerdmark" class="form-label">Eartag Herdmark</label>
-        <input asp-for="EartagHerdmark" class="form-control" />
+    <div class="govuk-form-group">
+        <label asp-for="EartagHerdmark" class="govuk-label">Eartag herdmark</label>
+        <input asp-for="EartagHerdmark" class="govuk-input govuk-!-width-one-half" />
     </div>
-    <div class="col-md-3">
-        <label asp-for="Eartag" class="form-label">Eartag</label>
-        <input asp-for="Eartag" class="form-control" />
+    <div class="govuk-form-group">
+        <label asp-for="Eartag" class="govuk-label">Eartag</label>
+        <input asp-for="Eartag" class="govuk-input govuk-!-width-two-thirds" />
     </div>
-    <div class="col-md-3">
-        <label asp-for="BirthDate" class="form-label">Birth Date</label>
-        <input asp-for="BirthDate" type="date" class="form-control" />
+    <div class="govuk-form-group">
+        <label asp-for="BirthDate" class="govuk-label">Birth date</label>
+        <input asp-for="BirthDate" type="date" class="govuk-input govuk-input--width-10" />
     </div>
-    <div class="col-md-3">
-        <label asp-for="FormADate" class="form-label">Form A Date</label>
-        <input asp-for="FormADate" type="date" class="form-control" />
+    <div class="govuk-form-group">
+        <label asp-for="FormADate" class="govuk-label">Form A date</label>
+        <input asp-for="FormADate" type="date" class="govuk-input govuk-input--width-10" />
     </div>
-    <div class="col-md-3">
-        <label asp-for="Fate" class="form-label">Fate</label>
-        <input asp-for="Fate" class="form-control" />
+    <div class="govuk-form-group">
+        <label asp-for="Fate" class="govuk-label">Fate</label>
+        <input asp-for="Fate" class="govuk-input govuk-!-width-one-half" />
     </div>
-    <div class="col-md-3">
-        <label asp-for="Origin" class="form-label">Origin</label>
-        <input asp-for="Origin" class="form-control" />
+    <div class="govuk-form-group">
+        <label asp-for="Origin" class="govuk-label">Origin</label>
+        <input asp-for="Origin" class="govuk-input govuk-!-width-one-half" />
     </div>
-    <div class="col-md-6">
-        <label asp-for="Notes" class="form-label">Notes</label>
-        <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+    <div class="govuk-form-group">
+        <label asp-for="Notes" class="govuk-label">Notes</label>
+        <textarea asp-for="Notes" class="govuk-textarea" rows="4"></textarea>
     </div>
-    <div class="col-12">
-        <button type="submit" class="btn btn-success">Create Case</button>
-        <a asp-page="/Home" class="btn btn-outline-secondary ms-2">Cancel</a>
+
+    <div class="govuk-button-group">
+        <button type="submit" class="govuk-button" data-module="govuk-button">Create case</button>
+        <a asp-page="/Home" class="govuk-link">Cancel</a>
     </div>
 </form>

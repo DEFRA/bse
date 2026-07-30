@@ -4,21 +4,30 @@
     ViewData["Title"] = "Change CPHH";
 }
 
-<h2>Change CPHH</h2>
-<p class="text-muted">Current CPHH: <strong>@Model.OldCphh</strong></p>
+<h1 class="govuk-heading-l">Change CPHH</h1>
+<p class="govuk-body">Current CPHH: <strong>@Model.OldCphh</strong></p>
 
-<form method="post">
-    <div class="row g-3 mb-3">
-        <div class="col-md-4">
-            <label asp-for="NewCphh" class="form-label">New CPHH *</label>
-            <input asp-for="NewCphh" class="form-control" />
-            <span asp-validation-for="NewCphh" class="text-danger small"></span>
-        </div>
+<form method="post" novalidate>
+    <div class="govuk-form-group">
+        <label asp-for="NewCphh" class="govuk-label">New CPHH</label>
+        <input asp-for="NewCphh" class="govuk-input govuk-!-width-one-half" />
+        <span asp-validation-for="NewCphh" class="govuk-error-message"></span>
     </div>
     @if (Model.ErrorMessage != null)
     {
-        <div class="alert alert-danger">@Model.ErrorMessage</div>
+        <div class="govuk-error-summary" data-module="govuk-error-summary">
+            <div role="alert">
+                <h2 class="govuk-error-summary__title">There is a problem</h2>
+                <div class="govuk-error-summary__body">
+                    <ul class="govuk-list govuk-error-summary__list">
+                        <li>@Model.ErrorMessage</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     }
-    <button type="submit" class="btn btn-warning">Change CPHH</button>
-    <a asp-page="/Farm/Details" asp-route-cphh="@Model.OldCphh" class="btn btn-outline-secondary ms-2">Cancel</a>
+    <div class="govuk-button-group">
+        <button type="submit" class="govuk-button govuk-button--warning" data-module="govuk-button">Change CPHH</button>
+        <a asp-page="/Farm/Details" asp-route-cphh="@Model.OldCphh" class="govuk-link">Cancel</a>
+    </div>
 </form>

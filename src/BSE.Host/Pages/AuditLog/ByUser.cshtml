@@ -1,77 +1,79 @@
 @page
 @model ByUserModel
 @{
-    ViewData["Title"] = "Audit Log by User";
+    ViewData["Title"] = "Audit log by user";
 }
 
-<div class="container-fluid px-4">
-    <h1 class="mt-4">Audit Log by User</h1>
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a asp-page="/Home">Home</a></li>
-        <li class="breadcrumb-item active">Audit Log by User</li>
-    </ol>
+<div>
+    <h1 class="govuk-heading-l">Audit log by user</h1>
+    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+        <ol class="govuk-breadcrumbs__list">
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+            <li class="govuk-breadcrumbs__list-item" aria-current="page">Audit log by user</li>
+        </ol>
+    </nav>
 
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="get" class="row g-3 align-items-end">
-                <div class="col-auto">
-                    <label asp-for="StartDate" class="form-label">From</label>
-                    <input asp-for="StartDate" type="date" class="form-control" />
-                </div>
-                <div class="col-auto">
-                    <label asp-for="EndDate" class="form-label">To</label>
-                    <input asp-for="EndDate" type="date" class="form-control" />
-                </div>
-                <div class="col-auto">
-                    <label asp-for="UserId" class="form-label">User ID</label>
-                    <input asp-for="UserId" type="number" class="form-control" style="width:120px" />
-                </div>
-                <div class="col-auto">
-                    <button type="submit" class="btn btn-primary">Search</button>
-                </div>
-            </form>
+    <form method="get" novalidate class="govuk-!-margin-bottom-6">
+        <div class="govuk-form-group">
+            <label asp-for="StartDate" class="govuk-label">From</label>
+            <input asp-for="StartDate" type="date" class="govuk-input govuk-input--width-10" />
         </div>
-    </div>
+        <div class="govuk-form-group">
+            <label asp-for="EndDate" class="govuk-label">To</label>
+            <input asp-for="EndDate" type="date" class="govuk-input govuk-input--width-10" />
+        </div>
+        <div class="govuk-form-group">
+            <label asp-for="UserId" class="govuk-label">User ID</label>
+            <input asp-for="UserId" type="number" class="govuk-input govuk-input--width-5" />
+        </div>
+        <div class="govuk-button-group">
+            <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
+            <a asp-page="/AuditLog/ByUser" class="govuk-link">Clear search</a>
+        </div>
+    </form>
 
     @if (Model.Entries.Any())
     {
-        <div class="card mb-4">
-            <div class="card-header">@Model.Entries.Count() entries</div>
-            <div class="card-body p-0">
-                <table class="table table-sm table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Date/Time</th>
-                            <th>User</th>
-                            <th>Table</th>
-                            <th>Field</th>
-                            <th>Key</th>
-                            <th>Before</th>
-                            <th>After</th>
-                            <th>Reason</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var e in Model.Entries)
-                        {
-                            <tr>
-                                <td>@e.DateTime.ToString("dd/MM/yyyy HH:mm")</td>
-                                <td>@e.UserName</td>
-                                <td>@e.TableName</td>
-                                <td>@e.FieldName</td>
-                                <td>@e.Key</td>
-                                <td>@e.BeforeValue</td>
-                                <td>@e.AfterValue</td>
-                                <td>@e.Reason</td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
+        <h2 class="govuk-heading-m">@Model.Entries.Count() entries</h2>
+        <table class="govuk-table">
+            <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                    <th scope="col" class="govuk-table__header">Date/time</th>
+                    <th scope="col" class="govuk-table__header">User</th>
+                    <th scope="col" class="govuk-table__header">Table</th>
+                    <th scope="col" class="govuk-table__header">Field</th>
+                    <th scope="col" class="govuk-table__header">Key</th>
+                    <th scope="col" class="govuk-table__header">Before</th>
+                    <th scope="col" class="govuk-table__header">After</th>
+                    <th scope="col" class="govuk-table__header">Reason</th>
+                </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+                @foreach (var e in Model.Entries)
+                {
+                    <tr class="govuk-table__row">
+                        <td class="govuk-table__cell">@e.DateTime.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td class="govuk-table__cell">@e.UserName</td>
+                        <td class="govuk-table__cell">@e.TableName</td>
+                        <td class="govuk-table__cell">@e.FieldName</td>
+                        <td class="govuk-table__cell">@e.Key</td>
+                        <td class="govuk-table__cell">@e.BeforeValue</td>
+                        <td class="govuk-table__cell">@e.AfterValue</td>
+                        <td class="govuk-table__cell">@e.Reason</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
     }
     else if (Model.HasSearched)
     {
-        <div class="alert alert-info">No entries found.</div>
+        <div class="govuk-notification-banner" role="region" aria-labelledby="audit-user-info-title" data-module="govuk-notification-banner">
+            <div class="govuk-notification-banner__header">
+                <h2 class="govuk-notification-banner__title" id="audit-user-info-title">Information</h2>
+            </div>
+            <div class="govuk-notification-banner__content">
+                <p class="govuk-notification-banner__heading">No entries found.</p>
+            </div>
+        </div>
     }
 </div>

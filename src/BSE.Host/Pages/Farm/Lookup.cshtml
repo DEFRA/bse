@@ -1,23 +1,29 @@
 @page
 @model BSE.Host.Pages.Farm.LookupModel
 @{
-    ViewData["Title"] = "Open Farm";
+    ViewData["Title"] = "Open farm";
 }
 
-<h2>Open Farm</h2>
+<h1 class="govuk-heading-l">Open farm</h1>
 
-<form method="get" class="row g-3 mb-4">
-    <div class="col-md-4">
-        <label asp-for="Cphh" class="form-label">CPHH</label>
-        <div class="input-group">
-            <input asp-for="Cphh" class="form-control" placeholder="e.g. 12/345/0001" />
-            <button type="submit" class="btn btn-primary">Open</button>
-        </div>
-        <span asp-validation-for="Cphh" class="text-danger small"></span>
+<form method="get" novalidate>
+    <div class="govuk-form-group">
+        <label asp-for="Cphh" class="govuk-label">CPHH</label>
+        <div class="govuk-hint">For example, 12/345/0001.</div>
+        <input asp-for="Cphh" class="govuk-input govuk-!-width-one-half" />
+        <span asp-validation-for="Cphh" class="govuk-error-message"></span>
     </div>
+
+    <button type="submit" class="govuk-button" data-module="govuk-button">Open farm</button>
 </form>
 
 @if (Model.IsNotFound)
 {
-    <div class="alert alert-warning">No farm found for CPHH <strong>@Model.Cphh</strong>.</div>
+    <div class="govuk-warning-text">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text">
+            <span class="govuk-warning-text__assistive">Warning</span>
+            No farm found for CPHH @Model.Cphh.
+        </strong>
+    </div>
 }

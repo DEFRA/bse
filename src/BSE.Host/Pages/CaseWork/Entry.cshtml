@@ -1,150 +1,76 @@
 @page "{rbse}"
 @model CaseWorkEntryModel
 @{
-    ViewData["Title"] = "Edit Case Work Entry";
+    ViewData["Title"] = "Edit case work entry";
 }
 
-<div class="container-fluid px-4">
-    <h1 class="mt-4">Edit Case Work Entry — @Model.Rbse</h1>
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a asp-page="/Home">Home</a></li>
-        <li class="breadcrumb-item"><a asp-page="/CaseWork/Menu" asp-route-rbse="@Model.Rbse">Case Work</a></li>
-        <li class="breadcrumb-item active">Entry</li>
-    </ol>
+<div>
+    <h1 class="govuk-heading-l">Edit case work entry — @Model.Rbse</h1>
+    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+        <ol class="govuk-breadcrumbs__list">
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/CaseWork/Menu" asp-route-rbse="@Model.Rbse">Case work</a></li>
+            <li class="govuk-breadcrumbs__list-item" aria-current="page">Entry</li>
+        </ol>
+    </nav>
 
     @if (Model.Entry is null)
     {
-        <div class="alert alert-warning">No case work entry found for <strong>@Model.Rbse</strong>.</div>
+        <div class="govuk-warning-text">
+            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+            <strong class="govuk-warning-text__text">
+                <span class="govuk-warning-text__assistive">Warning</span>
+                No case work entry found for @Model.Rbse.
+            </strong>
+        </div>
     }
     else
     {
-        <form method="post">
+        <form method="post" novalidate>
             <input type="hidden" asp-for="Rbse" />
-            <div class="card mb-4">
-                <div class="card-header">Casework Details</div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Barcode</label>
-                            <input name="Barcode" class="form-control" value="@Model.Entry.Barcode" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">AHF Reference</label>
-                            <input name="AhfReference" class="form-control" value="@Model.Entry.AhfReference" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">RBSE Date</label>
-                            <input name="RbseDate" type="date" class="form-control" value="@Model.Entry.RbseDate?.ToString("yyyy-MM-dd")" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Purchaser BSE-1 Received</label>
-                            <input name="PurchaserBse1ReceivedDate" type="date" class="form-control" value="@Model.Entry.PurchaserBse1ReceivedDate?.ToString("yyyy-MM-dd")" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Breeder BSE-1 Received</label>
-                            <input name="BreederBse1ReceivedDate" type="date" class="form-control" value="@Model.Entry.BreederBse1ReceivedDate?.ToString("yyyy-MM-dd")" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Vendor 1 BSE-1 Received</label>
-                            <input name="Vendor1Bse1ReceivedDate" type="date" class="form-control" value="@Model.Entry.Vendor1Bse1ReceivedDate?.ToString("yyyy-MM-dd")" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Homebred BSE-1 Received</label>
-                            <input name="HomebredBse1ReceivedDate" type="date" class="form-control" value="@Model.Entry.HomebredBse1ReceivedDate?.ToString("yyyy-MM-dd")" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Summary Sheet Received</label>
-                            <input name="SummarySheetReceivedDate" type="date" class="form-control" value="@Model.Entry.SummarySheetReceivedDate?.ToString("yyyy-MM-dd")" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Paperwork Complete</label>
-                            <input name="PaperworkCompleteDate" type="date" class="form-control" value="@Model.Entry.PaperworkCompleteDate?.ToString("yyyy-MM-dd")" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Active Memo Date</label>
-                            <input name="ActiveMemoDate" type="date" class="form-control" value="@Model.Entry.ActiveMemoDate?.ToString("yyyy-MM-dd")" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Annex A Date</label>
-                            <input name="AnnexADate" type="date" class="form-control" value="@Model.Entry.AnnexADate?.ToString("yyyy-MM-dd")" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Annex B Date</label>
-                            <input name="AnnexBDate" type="date" class="form-control" value="@Model.Entry.AnnexBDate?.ToString("yyyy-MM-dd")" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Annex C Date</label>
-                            <input name="AnnexCDate" type="date" class="form-control" value="@Model.Entry.AnnexCDate?.ToString("yyyy-MM-dd")" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Annex D Date</label>
-                            <input name="AnnexDDate" type="date" class="form-control" value="@Model.Entry.AnnexDDate?.ToString("yyyy-MM-dd")" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Regional Lab</label>
-                            <input name="RegionalLab" class="form-control" value="@Model.Entry.RegionalLab" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Received by Regional Lab</label>
-                            <input name="ReceivedByRegionalLabDate" type="date" class="form-control" value="@Model.Entry.ReceivedByRegionalLabDate?.ToString("yyyy-MM-dd")" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Initial Received Date</label>
-                            <input name="InitialReceivedDate" type="date" class="form-control" value="@Model.Entry.InitialReceivedDate?.ToString("yyyy-MM-dd")" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Final Received Date</label>
-                            <input name="FinalReceivedDate" type="date" class="form-control" value="@Model.Entry.FinalReceivedDate?.ToString("yyyy-MM-dd")" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Final Sent Date</label>
-                            <input name="FinalSentDate" type="date" class="form-control" value="@Model.Entry.FinalSentDate?.ToString("yyyy-MM-dd")" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Lab Chased Date</label>
-                            <input name="LabChasedDate" type="date" class="form-control" value="@Model.Entry.LabChasedDate?.ToString("yyyy-MM-dd")" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">BARB Minute Sent Date</label>
-                            <input name="BarbMinuteSentDate" type="date" class="form-control" value="@Model.Entry.BarbMinuteSentDate?.ToString("yyyy-MM-dd")" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Post-2000 Sent Date</label>
-                            <input name="Post2000SentDate" type="date" class="form-control" value="@Model.Entry.Post2000SentDate?.ToString("yyyy-MM-dd")" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Data Complete Date</label>
-                            <input name="DataCompleteDate" type="date" class="form-control" value="@Model.Entry.DataCompleteDate?.ToString("yyyy-MM-dd")" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">TSE Testing Site</label>
-                            <input name="TseTestingSite" class="form-control" value="@Model.Entry.TseTestingSite" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Sampling Date</label>
-                            <input name="SamplingDate" type="date" class="form-control" value="@Model.Entry.SamplingDate?.ToString("yyyy-MM-dd")" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">AHRO ID</label>
-                            <input name="AhroId" type="number" class="form-control" value="@Model.Entry.Ahro" />
-                        </div>
-                        <div class="col-md-12">
-                            <label class="form-label">Case Work Notes</label>
-                            <textarea name="CaseWorkNotes" class="form-control" rows="3">@Model.Entry.CaseWorkNotes</textarea>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-check mt-2">
-                                <input name="IsCaseClosed" type="checkbox" class="form-check-input" @(Model.Entry.IsCaseClosed == true ? "checked" : "") />
-                                <label class="form-check-label">Case Closed</label>
-                            </div>
-                        </div>
+
+            <h2 class="govuk-heading-m">Casework details</h2>
+
+            <div class="govuk-form-group"><label class="govuk-label">Barcode</label><input name="Barcode" class="govuk-input govuk-!-width-one-half" value="@Model.Entry.Barcode" /></div>
+            <div class="govuk-form-group"><label class="govuk-label">AHF reference</label><input name="AhfReference" class="govuk-input govuk-!-width-one-half" value="@Model.Entry.AhfReference" /></div>
+            <div class="govuk-form-group"><label class="govuk-label">RBSE date</label><input name="RbseDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.RbseDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label">Purchaser BSE-1 received</label><input name="PurchaserBse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.PurchaserBse1ReceivedDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label">Breeder BSE-1 received</label><input name="BreederBse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.BreederBse1ReceivedDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label">Vendor 1 BSE-1 received</label><input name="Vendor1Bse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.Vendor1Bse1ReceivedDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label">Homebred BSE-1 received</label><input name="HomebredBse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.HomebredBse1ReceivedDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label">Summary sheet received</label><input name="SummarySheetReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.SummarySheetReceivedDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label">Paperwork complete</label><input name="PaperworkCompleteDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.PaperworkCompleteDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label">Active memo date</label><input name="ActiveMemoDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.ActiveMemoDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label">Annex A date</label><input name="AnnexADate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.AnnexADate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label">Annex B date</label><input name="AnnexBDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.AnnexBDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label">Annex C date</label><input name="AnnexCDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.AnnexCDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label">Annex D date</label><input name="AnnexDDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.AnnexDDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label">Regional lab</label><input name="RegionalLab" class="govuk-input govuk-!-width-one-half" value="@Model.Entry.RegionalLab" /></div>
+            <div class="govuk-form-group"><label class="govuk-label">Received by regional lab</label><input name="ReceivedByRegionalLabDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.ReceivedByRegionalLabDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label">Initial received date</label><input name="InitialReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.InitialReceivedDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label">Final received date</label><input name="FinalReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.FinalReceivedDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label">Final sent date</label><input name="FinalSentDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.FinalSentDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label">Lab chased date</label><input name="LabChasedDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.LabChasedDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label">BARB minute sent date</label><input name="BarbMinuteSentDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.BarbMinuteSentDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label">Post-2000 sent date</label><input name="Post2000SentDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.Post2000SentDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label">Data complete date</label><input name="DataCompleteDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.DataCompleteDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label">TSE testing site</label><input name="TseTestingSite" class="govuk-input govuk-!-width-one-half" value="@Model.Entry.TseTestingSite" /></div>
+            <div class="govuk-form-group"><label class="govuk-label">Sampling date</label><input name="SamplingDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.SamplingDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label">AHRO ID</label><input name="AhroId" type="number" class="govuk-input govuk-input--width-5" value="@Model.Entry.Ahro" /></div>
+            <div class="govuk-form-group"><label class="govuk-label">Case work notes</label><textarea name="CaseWorkNotes" class="govuk-textarea" rows="4">@Model.Entry.CaseWorkNotes</textarea></div>
+
+            <div class="govuk-form-group">
+                <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                    <div class="govuk-checkboxes__item">
+                        <input name="IsCaseClosed" type="checkbox" class="govuk-checkboxes__input" @(Model.Entry.IsCaseClosed == true ? "checked" : "") />
+                        <label class="govuk-label govuk-checkboxes__label">Case closed</label>
                     </div>
                 </div>
             </div>
 
-            <div class="mb-4">
-                <button type="submit" class="btn btn-primary">Save Changes</button>
-                <a asp-page="/CaseWork/Menu" asp-route-rbse="@Model.Rbse" class="btn btn-secondary ms-2">Cancel</a>
+            <div class="govuk-button-group">
+                <button type="submit" class="govuk-button" data-module="govuk-button">Save changes</button>
+                <a asp-page="/CaseWork/Menu" asp-route-rbse="@Model.Rbse" class="govuk-link">Cancel</a>
             </div>
         </form>
     }
