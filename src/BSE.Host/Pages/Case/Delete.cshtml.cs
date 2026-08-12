@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.Case;
 
-[Authorize(Policy = "DataEntry")]
+[Authorize(Policy = "DEFRAMaintenance")]
 public class DeleteModel(ICaseService caseService, ICurrentUserService currentUserService) : PageModel
 {
     [BindProperty(SupportsGet = true)]

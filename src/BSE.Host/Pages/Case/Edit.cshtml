@@ -14,7 +14,22 @@
         </ol>
     </nav>
 
-    <div asp-validation-summary="ModelOnly" class="govuk-error-summary" style="display:@(ViewData.ModelState.IsValid ? "none" : "block")"></div>
+    @if (!ViewContext.ModelState.IsValid)
+    {
+        <div class="govuk-error-summary" data-module="govuk-error-summary">
+            <div role="alert">
+                <h2 class="govuk-error-summary__title">There is a problem</h2>
+                <div class="govuk-error-summary__body">
+                    <ul class="govuk-list govuk-error-summary__list">
+                        @foreach (var modelError in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <li>@modelError.ErrorMessage</li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    }
 
     @if (!string.IsNullOrEmpty(Model.ConcurrencyError))
     {
@@ -31,54 +46,54 @@
         <input type="hidden" asp-for="Case.Rbse" />
 
         <h2 class="govuk-heading-m">Identification</h2>
-        <div class="govuk-form-group"><label class="govuk-label">Eartag country</label><input asp-for="Case.EartagCountry" class="govuk-input govuk-!-width-one-quarter" /></div>
-        <div class="govuk-form-group"><label class="govuk-label">Eartag herdmark</label><input asp-for="Case.EartagHerdmark" class="govuk-input govuk-!-width-one-half" /></div>
-        <div class="govuk-form-group"><label class="govuk-label">Eartag</label><input asp-for="Case.Eartag" class="govuk-input govuk-!-width-two-thirds" /></div>
-        <div class="govuk-form-group"><label class="govuk-label">Previous eartag</label><input asp-for="Case.PreviousEartag" class="govuk-input govuk-!-width-two-thirds" /></div>
-        <div class="govuk-form-group"><label class="govuk-label">Sex</label><input asp-for="Case.Sex" class="govuk-input govuk-!-width-one-quarter" /></div>
-        <div class="govuk-form-group"><label class="govuk-label">Breed</label><input asp-for="Case.Breed" class="govuk-input govuk-!-width-one-half" /></div>
-        <div class="govuk-form-group"><label class="govuk-label">Origin</label><input asp-for="Case.Origin" class="govuk-input govuk-!-width-one-half" /></div>
-        <div class="govuk-form-group"><label class="govuk-label">Case type</label><input asp-for="Case.CaseType" class="govuk-input govuk-!-width-one-half" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.EartagCountry" class="govuk-label">Eartag country</label><input asp-for="Case.EartagCountry" class="govuk-input govuk-!-width-one-quarter" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.EartagHerdmark" class="govuk-label">Eartag herdmark</label><input asp-for="Case.EartagHerdmark" class="govuk-input govuk-!-width-one-half" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.Eartag" class="govuk-label">Eartag</label><input asp-for="Case.Eartag" class="govuk-input govuk-!-width-two-thirds" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.PreviousEartag" class="govuk-label">Previous eartag</label><input asp-for="Case.PreviousEartag" class="govuk-input govuk-!-width-two-thirds" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.Sex" class="govuk-label">Sex</label><input asp-for="Case.Sex" class="govuk-input govuk-!-width-one-quarter" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.Breed" class="govuk-label">Breed</label><input asp-for="Case.Breed" class="govuk-input govuk-!-width-one-half" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.Origin" class="govuk-label">Origin</label><input asp-for="Case.Origin" class="govuk-input govuk-!-width-one-half" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.CaseType" class="govuk-label">Case type</label><input asp-for="Case.CaseType" class="govuk-input govuk-!-width-one-half" /></div>
 
         <h2 class="govuk-heading-m">Dates and fate</h2>
-        <div class="govuk-form-group"><label class="govuk-label">BSE-1 received date</label><input asp-for="Case.Bse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.Bse1ReceivedDate?.ToString("yyyy-MM-dd")" /></div>
-        <div class="govuk-form-group"><label class="govuk-label">Form A date</label><input asp-for="Case.FormADate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.FormADate?.ToString("yyyy-MM-dd")" /></div>
-        <div class="govuk-form-group"><label class="govuk-label">Form A resubmitted</label><input asp-for="Case.FormAResubmittedDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.FormAResubmittedDate?.ToString("yyyy-MM-dd")" /></div>
-        <div class="govuk-form-group"><label class="govuk-label">Form B date</label><input asp-for="Case.FormBDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.FormBDate?.ToString("yyyy-MM-dd")" /></div>
-        <div class="govuk-form-group"><label class="govuk-label">Form C date</label><input asp-for="Case.FormCDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.FormCDate?.ToString("yyyy-MM-dd")" /></div>
-        <div class="govuk-form-group"><label class="govuk-label">Fate</label><input asp-for="Case.Fate" class="govuk-input govuk-!-width-one-half" /></div>
-        <div class="govuk-form-group"><label class="govuk-label">Slaughter date</label><input asp-for="Case.SlaughterDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.SlaughterDate?.ToString("yyyy-MM-dd")" /></div>
-        <div class="govuk-form-group"><label class="govuk-label">Onset date</label><input asp-for="Case.OnsetDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.OnsetDate?.ToString("yyyy-MM-dd")" /></div>
-        <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input asp-for="Case.IsOnsetDateEst" type="checkbox" class="govuk-checkboxes__input" /><label class="govuk-label govuk-checkboxes__label">Onset date estimated</label></div></div></div>
+        <div class="govuk-form-group"><label asp-for="Case.Bse1ReceivedDate" class="govuk-label">BSE-1 received date</label><input asp-for="Case.Bse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.Bse1ReceivedDate?.ToString("yyyy-MM-dd")" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.FormADate" class="govuk-label">Form A date</label><input asp-for="Case.FormADate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.FormADate?.ToString("yyyy-MM-dd")" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.FormAResubmittedDate" class="govuk-label">Form A resubmitted</label><input asp-for="Case.FormAResubmittedDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.FormAResubmittedDate?.ToString("yyyy-MM-dd")" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.FormBDate" class="govuk-label">Form B date</label><input asp-for="Case.FormBDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.FormBDate?.ToString("yyyy-MM-dd")" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.FormCDate" class="govuk-label">Form C date</label><input asp-for="Case.FormCDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.FormCDate?.ToString("yyyy-MM-dd")" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.Fate" class="govuk-label">Fate</label><input asp-for="Case.Fate" class="govuk-input govuk-!-width-one-half" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.SlaughterDate" class="govuk-label">Slaughter date</label><input asp-for="Case.SlaughterDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.SlaughterDate?.ToString("yyyy-MM-dd")" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.OnsetDate" class="govuk-label">Onset date</label><input asp-for="Case.OnsetDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.OnsetDate?.ToString("yyyy-MM-dd")" /></div>
+        <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input asp-for="Case.IsOnsetDateEst" type="checkbox" class="govuk-checkboxes__input" /><label asp-for="Case.IsOnsetDateEst" class="govuk-label govuk-checkboxes__label">Onset date estimated</label></div></div></div>
 
         <h2 class="govuk-heading-m">Birth and purchase</h2>
-        <div class="govuk-form-group"><label class="govuk-label">Birth date</label><input asp-for="Case.BirthDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.BirthDate?.ToString("yyyy-MM-dd")" /></div>
-        <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input asp-for="Case.IsBirthDateEst" type="checkbox" class="govuk-checkboxes__input" /><label class="govuk-label govuk-checkboxes__label">Estimated</label></div></div></div>
-        <div class="govuk-form-group"><label class="govuk-label">Birth date source</label><input asp-for="Case.BirthDateSource" class="govuk-input govuk-!-width-one-half" /></div>
-        <div class="govuk-form-group"><label class="govuk-label">Dam status</label><input asp-for="Case.DamStatus" class="govuk-input govuk-!-width-one-third" /></div>
-        <div class="govuk-form-group"><label class="govuk-label">Valuation age</label><input asp-for="Case.ValuationAge" class="govuk-input govuk-!-width-one-third" /></div>
-        <div class="govuk-form-group"><label class="govuk-label">Purchase date</label><input asp-for="Case.PurchaseDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.PurchaseDate?.ToString("yyyy-MM-dd")" /></div>
-        <div class="govuk-form-group"><label class="govuk-label">Purchase age (months)</label><input asp-for="Case.PurchaseAgeInMonths" type="number" class="govuk-input govuk-input--width-5" /></div>
-        <div class="govuk-form-group"><label class="govuk-label">Purchased county</label><input asp-for="Case.PurchasedCounty" class="govuk-input govuk-!-width-one-half" /></div>
-        <div class="govuk-form-group"><label class="govuk-label">Herd entry date</label><input asp-for="Case.HerdEntryDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.HerdEntryDate?.ToString("yyyy-MM-dd")" /></div>
-        <div class="govuk-form-group"><label class="govuk-label">Months pregnant</label><input asp-for="Case.MonthsPregnant" type="number" class="govuk-input govuk-input--width-5" min="0" /></div>
-        <div class="govuk-form-group"><label class="govuk-label">Months post calving</label><input asp-for="Case.MonthsPostCalving" type="number" class="govuk-input govuk-input--width-5" min="0" /></div>
-        <div class="govuk-form-group"><label class="govuk-label">Onset age (months)</label><input asp-for="Case.OnsetAgeInMonths" type="number" class="govuk-input govuk-input--width-5" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.BirthDate" class="govuk-label">Birth date</label><input asp-for="Case.BirthDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.BirthDate?.ToString("yyyy-MM-dd")" /></div>
+        <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input asp-for="Case.IsBirthDateEst" type="checkbox" class="govuk-checkboxes__input" /><label asp-for="Case.IsBirthDateEst" class="govuk-label govuk-checkboxes__label">Estimated</label></div></div></div>
+        <div class="govuk-form-group"><label asp-for="Case.BirthDateSource" class="govuk-label">Birth date source</label><input asp-for="Case.BirthDateSource" class="govuk-input govuk-!-width-one-half" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.DamStatus" class="govuk-label">Dam status</label><input asp-for="Case.DamStatus" class="govuk-input govuk-!-width-one-third" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.ValuationAge" class="govuk-label">Valuation age</label><input asp-for="Case.ValuationAge" class="govuk-input govuk-!-width-one-third" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.PurchaseDate" class="govuk-label">Purchase date</label><input asp-for="Case.PurchaseDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.PurchaseDate?.ToString("yyyy-MM-dd")" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.PurchaseAgeInMonths" class="govuk-label">Purchase age (months)</label><input asp-for="Case.PurchaseAgeInMonths" type="number" class="govuk-input govuk-input--width-5" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.PurchasedCounty" class="govuk-label">Purchased county</label><input asp-for="Case.PurchasedCounty" class="govuk-input govuk-!-width-one-half" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.HerdEntryDate" class="govuk-label">Herd entry date</label><input asp-for="Case.HerdEntryDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.HerdEntryDate?.ToString("yyyy-MM-dd")" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.MonthsPregnant" class="govuk-label">Months pregnant</label><input asp-for="Case.MonthsPregnant" type="number" class="govuk-input govuk-input--width-5" min="0" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.MonthsPostCalving" class="govuk-label">Months post calving</label><input asp-for="Case.MonthsPostCalving" type="number" class="govuk-input govuk-input--width-5" min="0" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.OnsetAgeInMonths" class="govuk-label">Onset age (months)</label><input asp-for="Case.OnsetAgeInMonths" type="number" class="govuk-input govuk-input--width-5" /></div>
 
         <h2 class="govuk-heading-m">Paperwork and survey</h2>
-        <div class="govuk-form-group"><label class="govuk-label">Survey</label><input asp-for="Case.Survey" class="govuk-input govuk-!-width-one-third" /></div>
-        <div class="govuk-form-group"><label class="govuk-label">Reported location</label><input asp-for="Case.ReportedLocation" class="govuk-input govuk-!-width-two-thirds" /></div>
-        <div class="govuk-form-group"><label class="govuk-label">Alternate diagnosis</label><input asp-for="Case.AlternateDiagnosis" class="govuk-input govuk-!-width-two-thirds" /></div>
-        <div class="govuk-form-group"><label class="govuk-label">Lab comment</label><input asp-for="Case.LabComment" class="govuk-input govuk-!-width-two-thirds" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.Survey" class="govuk-label">Survey</label><input asp-for="Case.Survey" class="govuk-input govuk-!-width-one-third" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.ReportedLocation" class="govuk-label">Reported location</label><input asp-for="Case.ReportedLocation" class="govuk-input govuk-!-width-two-thirds" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.AlternateDiagnosis" class="govuk-label">Alternate diagnosis</label><input asp-for="Case.AlternateDiagnosis" class="govuk-input govuk-!-width-two-thirds" /></div>
+        <div class="govuk-form-group"><label asp-for="Case.LabComment" class="govuk-label">Lab comment</label><input asp-for="Case.LabComment" class="govuk-input govuk-!-width-two-thirds" /></div>
 
-        <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input asp-for="Case.IsPurchaserBse1Received" type="checkbox" class="govuk-checkboxes__input" /><label class="govuk-label govuk-checkboxes__label">Purchaser BSE-1</label></div></div></div>
-        <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input asp-for="Case.IsBreederBse1Received" type="checkbox" class="govuk-checkboxes__input" /><label class="govuk-label govuk-checkboxes__label">Breeder BSE-1</label></div></div></div>
-        <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input asp-for="Case.IsVendor1Bse1Received" type="checkbox" class="govuk-checkboxes__input" /><label class="govuk-label govuk-checkboxes__label">Vendor 1 BSE-1</label></div></div></div>
-        <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input asp-for="Case.IsHomebredBse1Received" type="checkbox" class="govuk-checkboxes__input" /><label class="govuk-label govuk-checkboxes__label">Homebred BSE-1</label></div></div></div>
-        <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input asp-for="Case.IsSummarySheetReceived" type="checkbox" class="govuk-checkboxes__input" /><label class="govuk-label govuk-checkboxes__label">Summary sheet</label></div></div></div>
-        <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input asp-for="Case.IsPaperworkComplete" type="checkbox" class="govuk-checkboxes__input" /><label class="govuk-label govuk-checkboxes__label">Paperwork complete</label></div></div></div>
+        <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input asp-for="Case.IsPurchaserBse1Received" type="checkbox" class="govuk-checkboxes__input" /><label asp-for="Case.IsPurchaserBse1Received" class="govuk-label govuk-checkboxes__label">Purchaser BSE-1</label></div></div></div>
+        <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input asp-for="Case.IsBreederBse1Received" type="checkbox" class="govuk-checkboxes__input" /><label asp-for="Case.IsBreederBse1Received" class="govuk-label govuk-checkboxes__label">Breeder BSE-1</label></div></div></div>
+        <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input asp-for="Case.IsVendor1Bse1Received" type="checkbox" class="govuk-checkboxes__input" /><label asp-for="Case.IsVendor1Bse1Received" class="govuk-label govuk-checkboxes__label">Vendor 1 BSE-1</label></div></div></div>
+        <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input asp-for="Case.IsHomebredBse1Received" type="checkbox" class="govuk-checkboxes__input" /><label asp-for="Case.IsHomebredBse1Received" class="govuk-label govuk-checkboxes__label">Homebred BSE-1</label></div></div></div>
+        <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input asp-for="Case.IsSummarySheetReceived" type="checkbox" class="govuk-checkboxes__input" /><label asp-for="Case.IsSummarySheetReceived" class="govuk-label govuk-checkboxes__label">Summary sheet</label></div></div></div>
+        <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input asp-for="Case.IsPaperworkComplete" type="checkbox" class="govuk-checkboxes__input" /><label asp-for="Case.IsPaperworkComplete" class="govuk-label govuk-checkboxes__label">Paperwork complete</label></div></div></div>
 
-        <div class="govuk-form-group"><label class="govuk-label">Notes</label><textarea asp-for="Case.Notes" class="govuk-textarea" rows="4"></textarea></div>
+        <div class="govuk-form-group"><label asp-for="Case.Notes" class="govuk-label">Notes</label><textarea asp-for="Case.Notes" class="govuk-textarea" rows="4"></textarea></div>
 
         <div class="govuk-button-group">
             <button type="submit" class="govuk-button" data-module="govuk-button">Save changes</button>

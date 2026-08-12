@@ -1,0 +1,15 @@
+@* Export to Excel link partial.
+   Builds a URL to ?handler=Export preserving all current query-string filter params,
+   stripping the pageNumber key so the export covers all rows. *@
+@{
+    var exportQs = ViewContext.HttpContext.Request.Query
+        .Where(k => !string.Equals(k.Key, "pageNumber", StringComparison.OrdinalIgnoreCase))
+        .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}")
+        .Append("handler=Export");
+
+    var exportUrl = "?" + string.Join("&", exportQs);
+}
+
+<p class="govuk-body">
+    <a href="@exportUrl" class="govuk-link">Export to Excel</a>
+</p>

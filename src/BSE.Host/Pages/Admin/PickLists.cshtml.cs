@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.Admin;
 
-[Authorize(Policy = "Admin")]
+[Authorize(Policy = "PickListAccess")]
 public class PickListsModel(IEditableLookupAdminService lookupAdminService) : PageModel
 {
     public IEnumerable<EditableLookup> Lookups { get; private set; } = [];

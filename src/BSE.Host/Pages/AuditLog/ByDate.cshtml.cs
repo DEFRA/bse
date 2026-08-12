@@ -1,10 +1,12 @@
 using BSE.Modules.AuditLog.Models;
 using BSE.Modules.AuditLog.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.AuditLog;
 
+[Authorize(Policy = "Authenticated")]
 public class ByDateModel(IAuditLogService auditLogService) : PageModel
 {
     [BindProperty(SupportsGet = true)]

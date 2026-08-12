@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.OssExport;
 
-[Authorize(Policy = "DataEntry")]
+[Authorize(Policy = "VLAAccess")]
 public class OssExportMenuModel(IOssExportService ossExportService) : PageModel
 {
     [BindProperty(SupportsGet = true)]

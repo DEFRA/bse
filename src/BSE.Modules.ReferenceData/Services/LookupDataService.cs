@@ -31,7 +31,7 @@ public sealed class LookupDataService : ILookupDataService
             LookupTableId.ADNSRegion =>
                 (await _repo.GetADNSRegionsAsync()).Select(x => new LookupItem(x.Id, x.Name)),
             LookupTableId.AHO =>
-                (await _repo.GetAHOAsync()).Select(x => new LookupItem(x.Id, x.Name)),
+                (await _repo.GetAHOAsync()).Select(x => new LookupItem(x.Id, x.Code, x.Name)),
             LookupTableId.AHRO =>
                 (await _repo.GetAHROAsync()).Select(x => new LookupItem(x.Id, x.Name)),
             LookupTableId.AnimalOrigin =>
@@ -43,7 +43,7 @@ public sealed class LookupDataService : ILookupDataService
             LookupTableId.Breed =>
                 (await _repo.GetBreedsAsync()).Select(x => new LookupItem(x.Id, x.FullName)),
             LookupTableId.BSECounty =>
-                (await _repo.GetBSECountiesAsync()).Select(x => new LookupItem(x.Id, x.Description)),
+                (await _repo.GetBSECountiesAsync()).Select(x => new LookupItem(x.Id, x.Code, x.Description)),
             LookupTableId.BSEForm =>
                 await _repo.GetBSEFormsAsync(),
             LookupTableId.BSERegion =>

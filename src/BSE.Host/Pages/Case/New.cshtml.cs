@@ -25,6 +25,8 @@ public class NewModel : PageModel
 
     [BindProperty] public string Rbse { get; set; } = "";
     [BindProperty] public string Cphh { get; set; } = "";
+    [BindProperty(SupportsGet = true)] public short? BatchYear { get; set; }
+    [BindProperty(SupportsGet = true)] public int? BatchNumber { get; set; }
     [BindProperty] public string? Survey { get; set; }
     [BindProperty] public string? Sex { get; set; }
     [BindProperty] public string? Breed { get; set; }
@@ -44,7 +46,25 @@ public class NewModel : PageModel
     {
         if (!ModelState.IsValid) return Page();
 
-        var batch = await _batch.GetOrCreateBatchNumberAsync();
+        int batchId;
+
+        // If a batch year/number were supplied (via Home redirect), use that batch if it exists.
+        if (BatchYear.HasValue && BatchNumber.HasValue)
+        {
+            var existing = await _batch.GetBatchIdAsync(BatchYear.Value, BatchNumber.Value);
+            if (existing is null)
+            {
+                ModelState.AddModelError(string.Empty, $"Batch {BatchYear}/{BatchNumber} was not found.");
+                return Page();
+            }
+            batchId = existing.Value;
+        }
+        else
+        {
+            var batch = await _batch.GetOrCreateBatchNumberAsync();
+            batchId = batch.BatchId;
+        }
+
         var userId = await _currentUser.GetUserIdAsync();
 
         var addCase = new AddCaseCommand(
@@ -65,7 +85,7 @@ public class NewModel : PageModel
             LabComment: null, CaseType: CaseType);
 
         var command = new UpdateCaseDetailsCommand(
-            addCase, batch.BatchId,
+            addCase, batchId,
             Clinical: null, Bab: null,
             Feeds: [], Tests: [], OtherOwners: [],
             DamSire: null, ClinicalVisits: []);

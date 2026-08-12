@@ -38,6 +38,9 @@ public sealed class ClaimsUserContext : IUserContext
         ?? _principal.FindFirstValue("name")
         ?? Upn;
 
+    public string GroupName =>
+        _principal.FindFirstValue(BseGroupClaimType) ?? string.Empty;
+
     public UserGroup Group
     {
         get

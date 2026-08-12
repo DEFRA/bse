@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.CaseWork;
 
-[Authorize(Policy = "DataEntry")]
+[Authorize(Policy = "VLAMaintenance")]
 public class CaseWorkEntryModel(ICaseWorkService caseWorkService, ICurrentUserService currentUserService) : PageModel
 {
     [BindProperty(SupportsGet = true)]

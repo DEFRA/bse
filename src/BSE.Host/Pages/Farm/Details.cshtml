@@ -20,7 +20,7 @@
 <h1 class="govuk-heading-l">Farm: <span class="bse-rbse">@Model.Farm.CPHH</span></h1>
 
 <div class="govuk-button-group">
-    <a asp-page="/Farm/Edit" asp-route-cphh="@Model.Farm.CPHH" class="govuk-button" role="button" draggable="false">Edit</a>
+    <a asp-page="/Farm/Edit" asp-route-cphh="@Model.Farm.CPHH" class="govuk-button">Edit</a>
     <a asp-page="/Farm/CphhChange" asp-route-cphh="@Model.Farm.CPHH" class="govuk-link">Change CPHH</a>
     <a asp-page="/Case/New" asp-route-cphh="@Model.Farm.CPHH" class="govuk-link">Create case for this farm</a>
 </div>
@@ -50,6 +50,7 @@
 {
     <h2 class="govuk-heading-m">Related farms</h2>
     <table class="govuk-table">
+        <caption class="govuk-visually-hidden">Related farms</caption>
         <thead class="govuk-table__head">
             <tr class="govuk-table__row">
                 <th scope="col" class="govuk-table__header">CPHH</th>

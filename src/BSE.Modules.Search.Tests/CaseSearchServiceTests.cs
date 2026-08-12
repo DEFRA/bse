@@ -45,14 +45,18 @@ public sealed class CaseSearchServiceTests
     [Fact]
     public async Task GetCasesByCphhAsync_DelegatesToRepository()
     {
-        // CaseDetailSearchResult: Rbse, Cphh, Sex, Eartag, BirthDate, PurchaseDate,
+        // CaseDetailSearchResult properties: Rbse, Cphh, Sex, Eartag, BirthDate, PurchaseDate,
         // PurchaseAgeInMonths, OnsetDate, FormADate, SlaughterDate, FinalResultDate,
         // OnsetAgeInMonths, Fate, FinalResult, Survey, CaseStatus, TimeElapsed, DaysElapsed, Origin
         var detail = new List<CaseDetailSearchResult>
         {
-            new("01/23/12345", "12/345/6789/01", "Male", "UK 123456 12345",
-                new DateTime(2018, 1, 1), null, null, null, new DateTime(2020, 5, 1), null,
-                new DateTime(2020, 6, 1), null, "Slaughter", "Neg", "Passive", null, null, null, "UK Bred")
+            new()
+            {
+                Rbse = "01/23/12345", Cphh = "12/345/6789/01", Sex = "Male", Eartag = "UK 123456 12345",
+                BirthDate = new DateTime(2018, 1, 1), FormADate = new DateTime(2020, 5, 1),
+                FinalResultDate = new DateTime(2020, 6, 1),
+                Fate = "Slaughter", FinalResult = "Neg", Survey = "Passive", Origin = "UK Bred"
+            }
         };
         _repo.GetCasesByCphhAsync("12/345/6789/01", "", "", false, default).Returns(detail);
 
@@ -110,6 +114,30 @@ public sealed class CaseSearchServiceTests
 
         await _repo.Received(1).SearchCasesAsync(
             Arg.Is<CaseSearchQuery>(q => q.PassiveActive == "P"), default);
+    }
+
+    [Fact]
+    public async Task SearchCasesAsync_WithImportedCaseFilter_PassesFilterToRepository()
+    {
+        var query = new CaseSearchQuery(IsImportedCase: true);
+        _repo.SearchCasesAsync(query, default).Returns(Array.Empty<CaseSearchResult>());
+
+        await _sut.SearchCasesAsync(query);
+
+        await _repo.Received(1).SearchCasesAsync(
+            Arg.Is<CaseSearchQuery>(q => q.IsImportedCase), default);
+    }
+
+    [Fact]
+    public async Task SearchCasesAsync_WithSexAndNotesFilters_PassesFiltersToRepository()
+    {
+        var query = new CaseSearchQuery(Sex: "M", Notes: "urgent");
+        _repo.SearchCasesAsync(query, default).Returns(Array.Empty<CaseSearchResult>());
+
+        await _sut.SearchCasesAsync(query);
+
+        await _repo.Received(1).SearchCasesAsync(
+            Arg.Is<CaseSearchQuery>(q => q.Sex == "M" && q.Notes == "urgent"), default);
     }
 
     [Fact]

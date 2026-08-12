@@ -13,4 +13,5 @@ public sealed record User(
     string? Email,
     bool IsActive,
     int UserGroupId,
-    UserGroup UserGroup);
+    UserGroup UserGroup,
+    string? GroupName = null);

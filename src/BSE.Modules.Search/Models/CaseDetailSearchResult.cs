@@ -1,26 +1,30 @@
 namespace BSE.Modules.Search.Models;
 
 /// <summary>
-/// Result record for GetSearchCaseByCPHH and GetSearchCaseByEartagHerdmark —
+/// Result class for GetSearchCaseByCPHH and GetSearchCaseByEartagHerdmark —
 /// extended case result including purchase/onset dates and status fields.
+/// Uses a class with settable properties so Dapper maps by column name,
+/// avoiding constructor signature mismatches caused by SQL smallint vs int.
 /// </summary>
-public record CaseDetailSearchResult(
-    string Rbse,
-    string Cphh,
-    string? Sex,
-    string? Eartag,
-    DateTime? BirthDate,
-    DateTime? PurchaseDate,
-    int? PurchaseAgeInMonths,
-    DateTime? OnsetDate,
-    DateTime? FormADate,
-    DateTime? SlaughterDate,
-    DateTime? FinalResultDate,
-    int? OnsetAgeInMonths,
-    string? Fate,
-    string? FinalResult,
-    string? Survey,
-    string? CaseStatus,
-    string? TimeElapsed,
-    int? DaysElapsed,
-    string? Origin);
+public class CaseDetailSearchResult
+{
+    public string Rbse { get; set; } = "";
+    public string Cphh { get; set; } = "";
+    public string? Sex { get; set; }
+    public string? Eartag { get; set; }
+    public DateTime? BirthDate { get; set; }
+    public DateTime? PurchaseDate { get; set; }
+    public short? PurchaseAgeInMonths { get; set; }
+    public DateTime? OnsetDate { get; set; }
+    public DateTime? FormADate { get; set; }
+    public DateTime? SlaughterDate { get; set; }
+    public DateTime? FinalResultDate { get; set; }
+    public short? OnsetAgeInMonths { get; set; }
+    public string? Fate { get; set; }
+    public string? FinalResult { get; set; }
+    public string? Survey { get; set; }
+    public string? CaseStatus { get; set; }
+    public string? TimeElapsed { get; set; }
+    public int? DaysElapsed { get; set; }
+    public string? Origin { get; set; }
+}

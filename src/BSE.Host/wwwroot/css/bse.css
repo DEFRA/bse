@@ -1,35 +1,23 @@
-/* BSE System custom styles — minimal overrides on top of Bootstrap 5 */
-
-body {
-    font-size: 0.9rem;
-}
-
-.sidebar .nav-link {
-    color: #333;
-    padding: 0.2rem 0.75rem;
-}
-
-.sidebar .nav-link:hover {
-    color: #0d6efd;
-    background-color: #e9ecef;
-    border-radius: 4px;
-}
-
-.sidebar .fw-semibold {
-    font-size: 0.75rem;
-    letter-spacing: 0.05em;
-    padding-bottom: 0.2rem;
-}
-
-.table th {
-    white-space: nowrap;
-}
+/* BSE custom additions on top of GOV.UK Frontend */
 
 .bse-rbse {
     font-family: monospace;
     font-weight: bold;
 }
 
-.badge-outstanding {
-    background-color: #dc3545;
+/* User and group info displayed in the service navigation bar */
+.bse-user-info {
+    display: flex;
+    flex-direction: column;
+    align-self: center;
+    margin-left: auto;
+    padding-right: 15px;
+    font-size: 0.875rem;
+    color: #505a5f;
+    white-space: nowrap;
+    line-height: 1.4;
+}
+
+.bse-user-info__item + .bse-user-info__item {
+    margin-top: 2px;
 }

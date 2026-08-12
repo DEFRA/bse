@@ -93,6 +93,30 @@ public sealed class FarmSearchServiceTests
     }
 
     [Fact]
+    public async Task SearchFarmsAsync_DealerAny_PassesNullToRepository()
+    {
+        var query = new FarmSearchQuery(IsDealer: null);
+        _repo.SearchFarmsAsync(query, default).Returns(Array.Empty<FarmSearchResult>());
+
+        await _sut.SearchFarmsAsync(query);
+
+        await _repo.Received(1).SearchFarmsAsync(
+            Arg.Is<FarmSearchQuery>(q => q.IsDealer == null), default);
+    }
+
+    [Fact]
+    public async Task SearchFarmsAsync_DealerNo_PassesFalseToRepository()
+    {
+        var query = new FarmSearchQuery(IsDealer: false);
+        _repo.SearchFarmsAsync(query, default).Returns(Array.Empty<FarmSearchResult>());
+
+        await _sut.SearchFarmsAsync(query);
+
+        await _repo.Received(1).SearchFarmsAsync(
+            Arg.Is<FarmSearchQuery>(q => q.IsDealer == false), default);
+    }
+
+    [Fact]
     public async Task SearchFarmsAsync_MultipleResults_ReturnsAll()
     {
         var query = new FarmSearchQuery(County: "Devon");

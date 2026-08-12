@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.Farm;
 
-[Authorize(Policy = "DataEntry")]
+[Authorize(Policy = "FarmCreation")]
 public class NewModel(IFarmService farmService, ICurrentUserService currentUserService) : PageModel
 {
     [BindProperty]

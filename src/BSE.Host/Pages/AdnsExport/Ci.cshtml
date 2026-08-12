@@ -38,6 +38,7 @@
         <h2 class="govuk-heading-m">Preview — @Model.Preview.Cases.Count cases</h2>
         <p class="govuk-body"><strong>Subject:</strong> @Model.Preview.EmailSubject</p>
         <table class="govuk-table">
+            <caption class="govuk-visually-hidden">Channel Islands ADNS preview cases</caption>
             <thead class="govuk-table__head"><tr class="govuk-table__row"><th scope="col" class="govuk-table__header">Region</th><th scope="col" class="govuk-table__header">ADNS ref</th><th scope="col" class="govuk-table__header">Confirmation</th></tr></thead>
             <tbody class="govuk-table__body">
                 @foreach (var c in Model.Preview.Cases)

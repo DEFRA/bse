@@ -1,10 +1,12 @@
 using BSE.Modules.CaseWork.Models;
 using BSE.Modules.CaseWork.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.CaseWork;
 
+[Authorize(Policy = "VLAMaintenance")]
 public class MinuteModel(ICaseWorkService caseWorkService) : PageModel
 {
     private static readonly Dictionary<string, string> Labels = new(StringComparer.OrdinalIgnoreCase)

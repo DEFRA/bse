@@ -1,5 +1,6 @@
 @page
 @model UsersModel
+@using BSE.SharedKernel
 @{
     ViewData["Title"] = "User management";
 }
@@ -17,12 +18,20 @@
         <summary class="govuk-details__summary"><span class="govuk-details__summary-text">Add user</span></summary>
         <div class="govuk-details__text">
             <form method="post" asp-page-handler="Add" novalidate>
-                <div class="govuk-form-group"><label class="govuk-label">NT login</label><input name="NTLogin" class="govuk-input govuk-!-width-one-half" required /></div>
-                <div class="govuk-form-group"><label class="govuk-label">UPN</label><input name="Upn" type="email" class="govuk-input govuk-!-width-two-thirds" /></div>
-                <div class="govuk-form-group"><label class="govuk-label">Display name</label><input name="UserName" class="govuk-input govuk-!-width-two-thirds" required /></div>
-                <div class="govuk-form-group"><label class="govuk-label">Email</label><input name="Email" type="email" class="govuk-input govuk-!-width-two-thirds" /></div>
-                <div class="govuk-form-group"><label class="govuk-label">User group ID</label><input name="UserGroupId" type="number" class="govuk-input govuk-input--width-5" value="1" /></div>
-                <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input name="IsActive" type="checkbox" class="govuk-checkboxes__input" checked /><label class="govuk-label govuk-checkboxes__label">Active</label></div></div></div>
+                <div class="govuk-form-group"><label class="govuk-label" for="nt-login">NT login</label><input id="nt-login" name="NTLogin" class="govuk-input govuk-!-width-one-half" required /></div>
+                <div class="govuk-form-group"><label class="govuk-label" for="upn">UPN</label><input id="upn" name="Upn" type="email" class="govuk-input govuk-!-width-two-thirds" /></div>
+                <div class="govuk-form-group"><label class="govuk-label" for="user-name">Display name</label><input id="user-name" name="UserName" class="govuk-input govuk-!-width-two-thirds" required /></div>
+                <div class="govuk-form-group"><label class="govuk-label" for="email">Email</label><input id="email" name="Email" type="email" class="govuk-input govuk-!-width-two-thirds" /></div>
+                <div class="govuk-form-group">
+                    <label class="govuk-label" for="user-group-id">User group</label>
+                    <select id="user-group-id" name="UserGroupId" class="govuk-select">
+                        @foreach (var g in Model.UserGroups)
+                        {
+                            <option value="@g.Id" selected="@(Model.UserGroupId == g.Id ? "selected" : null)">@g.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input id="is-active" name="IsActive" type="checkbox" class="govuk-checkboxes__input" checked /><label class="govuk-label govuk-checkboxes__label" for="is-active">Active</label></div></div></div>
                 <button type="submit" class="govuk-button" data-module="govuk-button">Save user</button>
             </form>
         </div>
@@ -30,8 +39,9 @@
 
     <h2 class="govuk-heading-m">Users</h2>
     <table class="govuk-table">
+        <caption class="govuk-visually-hidden">Users</caption>
         <thead class="govuk-table__head">
-            <tr class="govuk-table__row"><th scope="col" class="govuk-table__header">ID</th><th scope="col" class="govuk-table__header">NT login</th><th scope="col" class="govuk-table__header">UPN</th><th scope="col" class="govuk-table__header">Name</th><th scope="col" class="govuk-table__header">Email</th><th scope="col" class="govuk-table__header">Group</th><th scope="col" class="govuk-table__header">Active</th></tr>
+            <tr class="govuk-table__row"><th scope="col" class="govuk-table__header">ID</th><th scope="col" class="govuk-table__header">NT login</th><th scope="col" class="govuk-table__header">UPN</th><th scope="col" class="govuk-table__header">Name</th><th scope="col" class="govuk-table__header">Email</th><th scope="col" class="govuk-table__header">Group</th><th scope="col" class="govuk-table__header">Active</th><th scope="col" class="govuk-table__header">Actions</th></tr>
         </thead>
         <tbody class="govuk-table__body">
             @foreach (var u in Model.Users)
@@ -44,6 +54,31 @@
                     <td class="govuk-table__cell">@u.Email</td>
                     <td class="govuk-table__cell">@u.UserGroup</td>
                     <td class="govuk-table__cell">@(u.IsActive ? "Yes" : "No")</td>
+                    <td class="govuk-table__cell">
+                        <details class="govuk-details" data-module="govuk-details">
+                            <summary class="govuk-details__summary"><span class="govuk-details__summary-text">Edit</span></summary>
+                            <div class="govuk-details__text">
+                                <form method="post" asp-page-handler="Edit" novalidate>
+                                    <input type="hidden" name="EditUserId" value="@u.UserId" />
+                                    <div class="govuk-form-group"><label class="govuk-label" for="edit-nt-login-@u.UserId">NT login</label><input id="edit-nt-login-@u.UserId" name="EditNTLogin" class="govuk-input govuk-!-width-one-half" value="@u.NTLogin" required /></div>
+                                    <div class="govuk-form-group"><label class="govuk-label" for="edit-upn-@u.UserId">UPN</label><input id="edit-upn-@u.UserId" name="EditUpn" type="email" class="govuk-input govuk-!-width-two-thirds" value="@u.Upn" /></div>
+                                    <div class="govuk-form-group"><label class="govuk-label" for="edit-name-@u.UserId">Display name</label><input id="edit-name-@u.UserId" name="EditUserName" class="govuk-input govuk-!-width-two-thirds" value="@u.UserName" required /></div>
+                                    <div class="govuk-form-group"><label class="govuk-label" for="edit-email-@u.UserId">Email</label><input id="edit-email-@u.UserId" name="EditEmail" type="email" class="govuk-input govuk-!-width-two-thirds" value="@u.Email" /></div>
+                                    <div class="govuk-form-group">
+                                        <label class="govuk-label" for="edit-group-@u.UserId">User group</label>
+                                        <select id="edit-group-@u.UserId" name="EditUserGroupId" class="govuk-select">
+                                            @foreach (var g in Model.UserGroups)
+                                            {
+                                                <option value="@g.Id" selected="@(u.UserGroupId == g.Id ? "selected" : null)">@g.Name</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input id="edit-active-@u.UserId" name="EditIsActive" type="checkbox" class="govuk-checkboxes__input" @(u.IsActive ? "checked" : "") /><label class="govuk-label govuk-checkboxes__label" for="edit-active-@u.UserId">Active</label></div></div></div>
+                                    <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Save changes</button>
+                                </form>
+                            </div>
+                        </details>
+                    </td>
                 </tr>
             }
         </tbody>
