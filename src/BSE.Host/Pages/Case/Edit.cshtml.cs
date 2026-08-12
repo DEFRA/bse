@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.Case;
 
-[Authorize(Policy = "ReadOnly")]
+[Authorize(Policy = "DataEntry")]
 public class EditModel(ICaseService caseService, ICurrentUserService currentUserService) : PageModel
 {
     private const string RowStampKey = "CaseEdit_RowStamp_{0}";
