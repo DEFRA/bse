@@ -52,7 +52,7 @@
                     <td class="govuk-table__cell">@u.Upn</td>
                     <td class="govuk-table__cell">@u.UserName</td>
                     <td class="govuk-table__cell">@u.Email</td>
-                    <td class="govuk-table__cell">@u.UserGroup</td>
+                    <td class="govuk-table__cell">@(Model.UserGroups.FirstOrDefault(g => g.Id == u.UserGroupId)?.Name)</td>
                     <td class="govuk-table__cell">@(u.IsActive ? "Yes" : "No")</td>
                     <td class="govuk-table__cell">
                         <details class="govuk-details" data-module="govuk-details">

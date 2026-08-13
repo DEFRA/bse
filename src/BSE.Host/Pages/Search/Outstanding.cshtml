@@ -99,6 +99,6 @@
                 }
             </tbody>
         </table>
-        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.Filter.PageNumber, ["TotalPages"] = Model.Filter.TotalPages })
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.Filter.PageNumber, ["TotalPages"] = Model.Filter.TotalPages, ["PageNumberKey"] = "Filter.PageNumber" })
     }
 }

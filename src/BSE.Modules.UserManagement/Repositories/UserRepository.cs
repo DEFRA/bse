@@ -17,14 +17,16 @@ public sealed class UserRepository : DapperRepository, IUserRepository
 
     // ── Private DTOs matching SP output column names ───────────────────────────
 
-    // GetUsers SP column order: ID, NTLogin, Name, Email, UserGroup, IsActive
-    private sealed record GetUsersRow(
-        int ID,
-        string NTLogin,
-        string Name,
-        string? Email,
-        int UserGroup,
-        bool IsActive);
+    // GetUsers SP — mapped by column name so adding/removing columns does not break Dapper.
+    private sealed class GetUsersRow
+    {
+        public int ID { get; init; }
+        public string NTLogin { get; init; } = string.Empty;
+        public string Name { get; init; } = string.Empty;
+        public string? Email { get; init; }
+        public int UserGroup { get; init; }
+        public bool IsActive { get; init; }
+    }
 
     // GetUserByNTLogin: ID, Name, UserGroup, GroupName, Email (NTLogin is the input parameter)
     private sealed record GetUserByNtLoginRow(

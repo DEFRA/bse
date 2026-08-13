@@ -74,14 +74,14 @@ public sealed class ClaimsUserContextTests
     // ── Group resolution ───────────────────────────────────────────────────────
 
     [Theory]
-    [InlineData("Admin",            UserGroup.Admin)]
-    [InlineData("DataEntry",        UserGroup.DataEntry)]
-    [InlineData("ReadOnly",         UserGroup.ReadOnly)]
-    [InlineData("DEFRAMaintenance", UserGroup.DEFRAMaintenance)]
-    [InlineData("Supervisor",       UserGroup.Supervisor)]
-    public void Group_ParsesBseGroupClaim_Correctly(string claimValue, UserGroup expected)
+    [InlineData(1, UserGroup.Admin)]
+    [InlineData(2, UserGroup.DataEntry)]
+    [InlineData(3, UserGroup.ReadOnly)]
+    [InlineData(4, UserGroup.DEFRAMaintenance)]
+    [InlineData(5, UserGroup.Supervisor)]
+    public void Group_ParsesBseGroupIdClaim_Correctly(int groupId, UserGroup expected)
     {
-        var ctx = BuildContext(new Claim(ClaimsUserContext.BseGroupClaimType, claimValue));
+        var ctx = BuildContext(new Claim(ClaimsUserContext.BseGroupIdClaimType, groupId.ToString()));
         ctx.Group.Should().Be(expected);
     }
 
@@ -95,7 +95,7 @@ public sealed class ClaimsUserContextTests
     [Fact]
     public void Group_ReturnsNone_WhenClaimValueUnrecognised()
     {
-        var ctx = BuildContext(new Claim(ClaimsUserContext.BseGroupClaimType, "UnknownGroup"));
+        var ctx = BuildContext(new Claim(ClaimsUserContext.BseGroupIdClaimType, "999"));
         ctx.Group.Should().Be(UserGroup.None);
     }
 
@@ -104,14 +104,14 @@ public sealed class ClaimsUserContextTests
     [Fact]
     public void IsInGroup_ReturnsTrue_WhenGroupMatches()
     {
-        var ctx = BuildContext(new Claim(ClaimsUserContext.BseGroupClaimType, "Admin"));
+        var ctx = BuildContext(new Claim(ClaimsUserContext.BseGroupIdClaimType, ((int)UserGroup.Admin).ToString()));
         ctx.IsInGroup(UserGroup.Admin).Should().BeTrue();
     }
 
     [Fact]
     public void IsInGroup_ReturnsFalse_WhenGroupDoesNotMatch()
     {
-        var ctx = BuildContext(new Claim(ClaimsUserContext.BseGroupClaimType, "Admin"));
+        var ctx = BuildContext(new Claim(ClaimsUserContext.BseGroupIdClaimType, ((int)UserGroup.Admin).ToString()));
         ctx.IsInGroup(UserGroup.ReadOnly).Should().BeFalse();
     }
 

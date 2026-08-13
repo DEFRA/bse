@@ -68,8 +68,13 @@ public sealed class GroupClaimsTransformation : IClaimsTransformation
             identity.RemoveClaim(existingName);
         identity.AddClaim(new Claim(ClaimTypes.Name, user.UserName));
 
-        // Emit the luUserGroup display name as the bse:group claim.
+        // Emit the luUserGroup display name as the bse:group claim (used for display / audit).
         identity.AddClaim(new Claim(ClaimsUserContext.BseGroupClaimType, user.GroupName ?? string.Empty));
+
+        // Emit the luUserGroup integer ID as bse:groupId — the authoritative claim for UserGroup
+        // enum resolution in ClaimsUserContext.Group. Using the integer avoids fragile display-name
+        // parsing (e.g. "DEFRA Viewer" cannot be Enum.TryParsed into UserGroup).
+        identity.AddClaim(new Claim(ClaimsUserContext.BseGroupIdClaimType, user.UserGroupId.ToString()));
 
         // Emit the policy names this DB group satisfies as role claims.
         // To change a user's access: update [User].UserGroup in the database — no code changes needed.

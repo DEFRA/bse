@@ -1,9 +1,11 @@
 @* Export to Excel link partial.
-   Builds a URL to ?handler=Export preserving all current query-string filter params,
-   stripping the pageNumber key so the export covers all rows. *@
+   Builds a URL to ?handler=Export preserving all current filter params,
+   stripping BOTH page-number keys (pageNumber and Filter.PageNumber)
+   so the export always covers all rows regardless of which page was active. *@
 @{
     var exportQs = ViewContext.HttpContext.Request.Query
-        .Where(k => !string.Equals(k.Key, "pageNumber", StringComparison.OrdinalIgnoreCase))
+        .Where(k => !string.Equals(k.Key, "pageNumber",        StringComparison.OrdinalIgnoreCase)
+                 && !string.Equals(k.Key, "Filter.PageNumber", StringComparison.OrdinalIgnoreCase))
         .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}")
         .Append("handler=Export");
 

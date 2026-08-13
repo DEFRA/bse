@@ -28,7 +28,19 @@ public sealed class GroupClaimsTransformationTests
     }
 
     private static User MakeUser(UserGroup group) =>
-        new(1, "ntlogin", "upn@domain", "Test User", null, true, (int)group, group);
+        new(1, "ntlogin", "upn@domain", "Test User", null, true, (int)group, group,
+            GroupName: GroupDisplayName(group));
+
+    // Maps enum to the luUserGroup.Name display strings stored in the database.
+    private static string GroupDisplayName(UserGroup group) => group switch
+    {
+        UserGroup.Admin            => "Admin",
+        UserGroup.DataEntry        => "DEFRA Data Entry",
+        UserGroup.ReadOnly         => "DEFRA Viewer",
+        UserGroup.DEFRAMaintenance => "DEFRA Maintenance",
+        UserGroup.Supervisor       => "Supervisor",
+        _                          => string.Empty
+    };
 
     // ── Tests ──────────────────────────────────────────────────────────────────
 
@@ -78,9 +90,11 @@ public sealed class GroupClaimsTransformationTests
         var result = await _sut.TransformAsync(principal);
 
         result.FindFirst(ClaimsUserContext.BseGroupClaimType)!.Value
-              .Should().Be("DataEntry");
+              .Should().Be("DEFRA Data Entry");
+        result.FindFirst(ClaimsUserContext.BseGroupIdClaimType)!.Value
+              .Should().Be(((int)UserGroup.DataEntry).ToString());
         result.FindFirst(ClaimTypes.Role)!.Value
-              .Should().Be("DataEntry");
+              .Should().Be("ReadOnly");
 
         await _repo.DidNotReceive().GetByNtLoginAsync(Arg.Any<string>());
     }
@@ -99,6 +113,8 @@ public sealed class GroupClaimsTransformationTests
 
         result.FindFirst(ClaimsUserContext.BseGroupClaimType)!.Value
               .Should().Be("Admin");
+        result.FindFirst(ClaimsUserContext.BseGroupIdClaimType)!.Value
+              .Should().Be(((int)UserGroup.Admin).ToString());
         await _repo.Received(1).GetByNtLoginAsync("bob.smith");
     }
 
@@ -128,7 +144,7 @@ public sealed class GroupClaimsTransformationTests
         var result = await _sut.TransformAsync(principal);
 
         result.FindFirst(ClaimsUserContext.BseGroupClaimType)!.Value
-              .Should().Be("ReadOnly");
+              .Should().Be("DEFRA Viewer");
     }
 
     [Theory]
@@ -146,6 +162,8 @@ public sealed class GroupClaimsTransformationTests
         var result = await _sut.TransformAsync(principal);
 
         result.FindFirst(ClaimsUserContext.BseGroupClaimType)!.Value
-              .Should().Be(group.ToString());
+              .Should().Be(GroupDisplayName(group));
+        result.FindFirst(ClaimsUserContext.BseGroupIdClaimType)!.Value
+              .Should().Be(((int)group).ToString());
     }
 }

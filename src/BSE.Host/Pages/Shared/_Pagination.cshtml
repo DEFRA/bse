@@ -1,21 +1,25 @@
 @* GDS govuk-pagination partial.
    Parameters (passed via ViewData):
-     ViewData["CurrentPage"]  — int
-     ViewData["TotalPages"]   — int
-   The partial reads HttpContext.Request.Query to preserve existing filter params,
-   replacing only the page number key. *@
+     ViewData["CurrentPage"]   — int
+     ViewData["TotalPages"]    — int
+     ViewData["PageNumberKey"] — string (optional, default: "pageNumber")
+                                 Pass "Filter.PageNumber" for pages that bind
+                                 PageNumber inside a Filter view-model (Farms, Outstanding). *@
 @{
     int currentPage = (int)(ViewData["CurrentPage"] ?? 1);
     int totalPages  = (int)(ViewData["TotalPages"]  ?? 1);
+    string pageKey  = (string?)ViewData["PageNumberKey"] ?? "pageNumber";
 
     if (totalPages <= 1) { return; }
 
+    // Strip BOTH possible page-number keys so neither leaks into generated links.
     var qs = ViewContext.HttpContext.Request.Query
-        .Where(k => !string.Equals(k.Key, "pageNumber", StringComparison.OrdinalIgnoreCase))
+        .Where(k => !string.Equals(k.Key, "pageNumber",        StringComparison.OrdinalIgnoreCase)
+                 && !string.Equals(k.Key, "Filter.PageNumber", StringComparison.OrdinalIgnoreCase))
         .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}")
         .ToList();
 
-    string PageUrl(int p) => "?" + string.Join("&", qs) + "&pageNumber=" + p;
+    string PageUrl(int p) => "?" + string.Join("&", qs) + $"&{Uri.EscapeDataString(pageKey)}={p}";
 }
 
 <nav class="govuk-pagination" aria-label="Pagination">
