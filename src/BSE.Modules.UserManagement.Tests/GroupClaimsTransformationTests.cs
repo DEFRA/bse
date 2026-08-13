@@ -58,10 +58,11 @@ public sealed class GroupClaimsTransformationTests
     [Fact]
     public async Task Already_Transformed_Principal_IsReturnedUnchanged()
     {
-        // Principal already has bse:group → should not hit the repository again.
+        // Principal already has bse:groupId — the claim owned exclusively by this
+        // transformation. The guard short-circuits and the repository must not be called.
         var principal = AuthenticatedPrincipal(
             new Claim("preferred_username", "user@domain.com"),
-            new Claim(ClaimsUserContext.BseGroupClaimType, "DataEntry"));
+            new Claim(ClaimsUserContext.BseGroupIdClaimType, "2"));
 
         var result = await _sut.TransformAsync(principal);
 

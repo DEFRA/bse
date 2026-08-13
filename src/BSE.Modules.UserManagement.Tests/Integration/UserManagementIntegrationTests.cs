@@ -68,8 +68,10 @@ public sealed class UserManagementIntegrationTests : IClassFixture<UserManagemen
         var user = new User(2, ntLogin, null, "Bob Legacy", null, true, (int)UserGroup.ReadOnly, UserGroup.ReadOnly,
             GroupName: "DEFRA Viewer");
 
+        _factory.MockUserRepository.ClearReceivedCalls();
         _factory.MockUserRepository.GetByUpnAsync(upn).Returns((User?)null);
         _factory.MockUserRepository.GetByNtLoginAsync(ntLogin).Returns(user);
+        _factory.MockUserRepository.GetByUpnAsync(Arg.Is<string>(s => s != upn)).Returns((User?)null);
 
         // Configure factory with this specific UPN for this test.
         var client = _factory.WithWebHostBuilder(b =>

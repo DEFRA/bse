@@ -41,8 +41,10 @@ public sealed class GroupClaimsTransformation : IClaimsTransformation
         if (principal.Identity?.IsAuthenticated != true)
             return principal;
 
-        // Avoid double-transformation if claims already present.
-        if (principal.HasClaim(c => c.Type == ClaimsUserContext.BseGroupClaimType))
+        // Avoid double-transformation: guard on bse:groupId — a claim we exclusively own
+        // and emit. Unlike bse:group (a display string), bse:groupId will never appear in
+        // an upstream Azure AD token, so this guard cannot be spoofed.
+        if (principal.HasClaim(c => c.Type == ClaimsUserContext.BseGroupIdClaimType))
             return principal;
 
         var upn = principal.FindFirstValue(ClaimsUserContext.PreferredUsernameClaim)
@@ -59,6 +61,20 @@ public sealed class GroupClaimsTransformation : IClaimsTransformation
 
         var clone = principal.Clone();
         var identity = (ClaimsIdentity)clone.Identity!;
+
+        // ── Purge upstream claims before emitting the authoritative DB set ────────────
+        // The authentication provider (Azure AD / OIDC) may emit ClaimTypes.Role claims
+        // (Azure AD app roles) or bse:* claims whose values coincide with our policy names.
+        // Leaving them in place would let a misconfigured or forged upstream token bypass
+        // the DB-driven access model. Stripping them here makes the database the sole
+        // authority for authorisation.
+        foreach (var c in identity.FindAll(ClaimTypes.Role).ToList())
+            identity.RemoveClaim(c);
+        foreach (var c in identity.FindAll(ClaimsUserContext.BseGroupClaimType).ToList())
+            identity.RemoveClaim(c);
+        foreach (var c in identity.FindAll(ClaimsUserContext.BseGroupIdClaimType).ToList())
+            identity.RemoveClaim(c);
+        // ─────────────────────────────────────────────────────────────────────────────
 
         // Replace the Name claim with the display name from the [User] table.
         // DevelopmentAuthHandler (and OIDC) may emit NTLogin or UPN as ClaimTypes.Name;
