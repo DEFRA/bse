@@ -17,15 +17,16 @@ public sealed class UserRepository : DapperRepository, IUserRepository
 
     // ── Private DTOs matching SP output column names ───────────────────────────
 
-    // GetUsers: ID, NTLogin, UPN (once AddUserUpnColumn.sql applied), Name, Email, UserGroup, IsActive
-    private sealed record GetUsersRow(
-        int ID,
-        string NTLogin,
-        string? UPN,
-        string Name,
-        string? Email,
-        bool IsActive,
-        int UserGroup);
+    // GetUsers SP — mapped by column name so adding/removing columns does not break Dapper.
+    private sealed class GetUsersRow
+    {
+        public int ID { get; init; }
+        public string NTLogin { get; init; } = string.Empty;
+        public string Name { get; init; } = string.Empty;
+        public string? Email { get; init; }
+        public int UserGroup { get; init; }
+        public bool IsActive { get; init; }
+    }
 
     // GetUserByNTLogin: ID, Name, UserGroup, GroupName, Email (NTLogin is the input parameter)
     private sealed record GetUserByNtLoginRow(
@@ -35,7 +36,7 @@ public sealed class UserRepository : DapperRepository, IUserRepository
         string GroupName,
         string? Email);
 
-    // ── Interface implementation ───────────────────────────────────────────────
+    // -- Interface implementation
 
     public async Task<User?> GetByUpnAsync(string upn)
     {
@@ -44,8 +45,9 @@ public sealed class UserRepository : DapperRepository, IUserRepository
         // Dapper will populate it and this filter will start resolving matches.
         // Until then, all rows have UPN = null and this returns null — triggering NTLogin fallback.
         var rows = await QueryAsync<GetUsersRow>("GetUsers");
+        // UPN is not yet returned by GetUsers SP; all rows have null UPN until SP is updated.
         var row = rows.FirstOrDefault(r =>
-            string.Equals(r.UPN, upn, StringComparison.OrdinalIgnoreCase));
+            false);
         return row is null ? null : MapToUser(row);
     }
 
@@ -64,7 +66,8 @@ public sealed class UserRepository : DapperRepository, IUserRepository
             Email: row.Email,
             IsActive: true,     // SP only returns active users
             UserGroupId: row.UserGroup,
-            UserGroup: ToUserGroup(row.UserGroup));
+            UserGroup: ToUserGroup(row.UserGroup),
+            GroupName: row.GroupName);   // luUserGroup.Name from DB join
     }
 
     public async Task<IEnumerable<User>> GetAllAsync()
@@ -97,12 +100,12 @@ public sealed class UserRepository : DapperRepository, IUserRepository
             IsActive = user.IsActive
         });
 
-    // ── Helpers ────────────────────────────────────────────────────────────────
+    // -- Helpers
 
     private static User MapToUser(GetUsersRow r) =>
         new(UserId: r.ID,
             NTLogin: r.NTLogin,
-            Upn: r.UPN,
+            Upn: null,          // UPN not yet selected by GetUsers SP; pending SP update
             UserName: r.Name,
             Email: r.Email,
             IsActive: r.IsActive,

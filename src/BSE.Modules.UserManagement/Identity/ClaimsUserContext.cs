@@ -15,8 +15,14 @@ namespace BSE.Modules.UserManagement.Identity;
 /// </remarks>
 public sealed class ClaimsUserContext : IUserContext
 {
-    // "bse:group" claim is populated by GroupClaimsTransformation before this is resolved.
-    public const string BseGroupClaimType = "bse:group";
+    /// <summary>The <c>bse:group</c> claim holds the <c>luUserGroup.Name</c> display string from the database.</summary>
+    public const string BseGroupClaimType   = "bse:group";
+
+    /// <summary>
+    /// The <c>bse:groupId</c> claim holds the <c>luUserGroup.ID</c> integer as a string.
+    /// This is the authoritative source for <see cref="Group"/> — avoids fragile display-name parsing.
+    /// </summary>
+    public const string BseGroupIdClaimType = "bse:groupId";
 
     // Primary Azure AD claim name for UPN.
     public const string PreferredUsernameClaim = "preferred_username";
@@ -38,13 +44,22 @@ public sealed class ClaimsUserContext : IUserContext
         ?? _principal.FindFirstValue("name")
         ?? Upn;
 
+    /// <summary>The <c>luUserGroup.Name</c> display string (e.g. "DEFRA Viewer").</summary>
+    public string GroupName =>
+        _principal.FindFirstValue(BseGroupClaimType) ?? string.Empty;
+
+    /// <summary>
+    /// Resolves the <see cref="UserGroup"/> enum by parsing the integer <c>bse:groupId</c> claim
+    /// emitted by <see cref="GroupClaimsTransformation"/>. Falls back to <see cref="UserGroup.None"/>
+    /// if the claim is absent or the value is unrecognised.
+    /// </summary>
     public UserGroup Group
     {
         get
         {
-            var raw = _principal.FindFirstValue(BseGroupClaimType);
-            return Enum.TryParse<UserGroup>(raw, ignoreCase: true, out var group)
-                ? group
+            var raw = _principal.FindFirstValue(BseGroupIdClaimType);
+            return int.TryParse(raw, out var id) && Enum.IsDefined(typeof(UserGroup), id)
+                ? (UserGroup)id
                 : UserGroup.None;
         }
     }

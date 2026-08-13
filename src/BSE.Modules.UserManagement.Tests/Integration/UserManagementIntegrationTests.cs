@@ -44,7 +44,8 @@ public sealed class UserManagementIntegrationTests : IClassFixture<UserManagemen
     {
         // Arrange: the factory's mock repository is configured to return DataEntry for testuser.
         const string upn = "testuser@placeholder.domain";
-        var user = new User(1, "testuser", upn, "Test User", null, true, (int)UserGroup.DataEntry, UserGroup.DataEntry);
+        var user = new User(1, "testuser", upn, "Test User", null, true, (int)UserGroup.DataEntry, UserGroup.DataEntry,
+            GroupName: "DEFRA Data Entry");
         _factory.MockUserRepository.GetByUpnAsync(upn).Returns(user);
 
         var client = _factory.CreateClient();
@@ -55,7 +56,7 @@ public sealed class UserManagementIntegrationTests : IClassFixture<UserManagemen
         // Assert: GroupClaimsTransformation resolved the correct group claim.
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadAsStringAsync();
-        body.Should().Be(UserGroup.DataEntry.ToString());
+        body.Should().Be("DEFRA Data Entry");
     }
 
     [Fact]
@@ -64,10 +65,13 @@ public sealed class UserManagementIntegrationTests : IClassFixture<UserManagemen
         // Arrange: UPN lookup fails, NTLogin fallback succeeds.
         const string upn = "bob.legacy@placeholder.domain";
         const string ntLogin = "bob.legacy";
-        var user = new User(2, ntLogin, null, "Bob Legacy", null, true, (int)UserGroup.ReadOnly, UserGroup.ReadOnly);
+        var user = new User(2, ntLogin, null, "Bob Legacy", null, true, (int)UserGroup.ReadOnly, UserGroup.ReadOnly,
+            GroupName: "DEFRA Viewer");
 
+        _factory.MockUserRepository.ClearReceivedCalls();
         _factory.MockUserRepository.GetByUpnAsync(upn).Returns((User?)null);
         _factory.MockUserRepository.GetByNtLoginAsync(ntLogin).Returns(user);
+        _factory.MockUserRepository.GetByUpnAsync(Arg.Is<string>(s => s != upn)).Returns((User?)null);
 
         // Configure factory with this specific UPN for this test.
         var client = _factory.WithWebHostBuilder(b =>
@@ -80,7 +84,7 @@ public sealed class UserManagementIntegrationTests : IClassFixture<UserManagemen
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadAsStringAsync();
-        body.Should().Be(UserGroup.ReadOnly.ToString());
+        body.Should().Be("DEFRA Viewer");
     }
 }
 

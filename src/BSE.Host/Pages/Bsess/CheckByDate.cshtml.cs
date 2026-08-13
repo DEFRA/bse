@@ -1,10 +1,12 @@
 using BSE.Modules.BsessIntegration.Models;
 using BSE.Modules.BsessIntegration.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.Bsess;
 
+[Authorize(Policy = "Authenticated")]
 public class CheckByDateModel(IBsessCheckService bsessCheckService) : PageModel
 {
     [BindProperty(SupportsGet = true)] public DateTime StartDate { get; set; } = DateTime.Today.AddMonths(-1);

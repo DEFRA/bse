@@ -1,5 +1,7 @@
+using System.Data;
 using BSE.Infrastructure;
 using BSE.Modules.Search.Models;
+using Dapper;
 
 namespace BSE.Modules.Search.Repositories;
 
@@ -18,26 +20,26 @@ public sealed class SearchRepository : DapperRepository, ISearchRepository
 
     public async Task<IReadOnlyList<CaseSearchResult>> SearchCasesAsync(CaseSearchQuery q, CancellationToken ct = default)
     {
-        var result = await QueryAsync<CaseSearchResult>("GetSearchCase", new
-        {
-            RBSE = q.Rbse,
-            Eartag = q.Eartag,
-            DBSE = q.Dbse,
-            Fate = q.Fate,
-            FinalResult = q.FinalResult,
-            Sex = q.Sex,
-            Survey = q.Survey,
-            Notes = q.Notes,
-            EarliestFormADate = q.EarliestFormADate,
-            LatestFormADate = q.LatestFormADate,
-            EarliestFinalResultDate = q.EarliestFinalResultDate,
-            LatestFinalResultDate = q.LatestFinalResultDate,
-            EarliestBirthDate = q.EarliestBirthDate,
-            LatestBirthDate = q.LatestBirthDate,
-            IncludeNonGBCases = q.IncludeNonGbCases,
-            PassiveActive = q.PassiveActive,
-            IsImportedCase = q.IsImportedCase
-        }, SearchCommandTimeoutSeconds);
+        var p = new DynamicParameters();
+        p.Add("RBSE",                    q.Rbse         ?? "", DbType.AnsiString,  size: 9);
+        p.Add("Eartag",                  q.Eartag       ?? "", DbType.AnsiString,  size: 35);
+        p.Add("DBSE",                    q.Dbse         ?? "", DbType.AnsiString,  size: 7);
+        p.Add("Fate",                    q.Fate         ?? "", DbType.AnsiString,  size: 4);
+        p.Add("FinalResult",             q.FinalResult  ?? "", DbType.AnsiString,  size: 5);
+        p.Add("Sex",                     q.Sex          ?? "", DbType.AnsiString,  size: 1);
+        p.Add("Survey",                  q.Survey       ?? "", DbType.AnsiString,  size: 4);
+        p.Add("Notes",                   q.Notes        ?? "", DbType.AnsiString,  size: 500);
+        p.Add("PassiveActive",           q.PassiveActive ?? "", DbType.AnsiString,  size: 1);
+        p.Add("EarliestFormADate",       (object?)q.EarliestFormADate       ?? DBNull.Value, DbType.DateTime);
+        p.Add("LatestFormADate",         (object?)q.LatestFormADate         ?? DBNull.Value, DbType.DateTime);
+        p.Add("EarliestFinalResultDate", (object?)q.EarliestFinalResultDate ?? DBNull.Value, DbType.DateTime);
+        p.Add("LatestFinalResultDate",   (object?)q.LatestFinalResultDate   ?? DBNull.Value, DbType.DateTime);
+        p.Add("EarliestBirthDate",       (object?)q.EarliestBirthDate       ?? DBNull.Value, DbType.DateTime);
+        p.Add("LatestBirthDate",         (object?)q.LatestBirthDate         ?? DBNull.Value, DbType.DateTime);
+        p.Add("IncludeNonGBCases",       q.IncludeNonGbCases,         DbType.Boolean);
+        p.Add("IsImportedCase",          q.IsImportedCase,            DbType.Boolean);
+
+        var result = await QueryAsync<CaseSearchResult>("GetSearchCase", p, SearchCommandTimeoutSeconds);
         return result.ToList();
     }
 

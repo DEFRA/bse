@@ -20,7 +20,7 @@
 <h1 class="govuk-heading-l">Case: <span class="bse-rbse">@Model.Case.Rbse</span></h1>
 
 <div class="govuk-button-group">
-    <a asp-page="/Case/Edit" asp-route-rbse="@Model.Case.Rbse" class="govuk-button" role="button" draggable="false">Edit</a>
+    <a asp-page="/Case/Edit" asp-route-rbse="@Model.Case.Rbse" class="govuk-button">Edit</a>
     <a asp-page="/Case/Delete" asp-route-rbse="@Model.Case.Rbse" class="govuk-link govuk-link--no-visited-state">Delete</a>
     <a asp-page="/Case/MoveCase" asp-route-rbse="@Model.Case.Rbse" class="govuk-link">Move case</a>
     <a asp-page="/Case/RbseChange" asp-route-rbse="@Model.Case.Rbse" class="govuk-link">Change RBSE</a>
@@ -32,7 +32,7 @@
         <dl class="govuk-summary-list">
             <div class="govuk-summary-list__row">
                 <dt class="govuk-summary-list__key">CPHH</dt>
-                <dd class="govuk-summary-list__value"><a asp-page="/Farm/Details" asp-route-cphh="@Model.Case.Cphh" class="govuk-link">@Model.Case.Cphh</a></dd>
+                <dd class="govuk-summary-list__value">@Model.Case.Cphh</dd>
             </div>
             <div class="govuk-summary-list__row">
                 <dt class="govuk-summary-list__key">Eartag</dt>
@@ -69,4 +69,38 @@
 {
     <h2 class="govuk-heading-m">Notes</h2>
     <p class="govuk-body">@Model.Case.Notes</p>
+}
+
+@* ── Farm details (inline, matching legacy CaseEntryFarm) ─────────────────── *@
+@if (Model.Farm is not null)
+{
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+    <h2 class="govuk-heading-m">
+        Farm: <a asp-page="/Farm/Details" asp-route-cphh="@Model.Farm.CPHH" class="govuk-link">@Model.Farm.CPHH</a>
+    </h2>
+    <dl class="govuk-summary-list">
+        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Owner</dt><dd class="govuk-summary-list__value">@Model.Farm.OwnerName</dd></div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Address</dt>
+            <dd class="govuk-summary-list__value">
+                @Model.Farm.Address1<br />
+                @Model.Farm.Address2<br />
+                @Model.Farm.Address3<br />
+                @Model.Farm.Postcode
+            </dd>
+        </div>
+        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">County</dt><dd class="govuk-summary-list__value">@Model.Farm.County</dd></div>
+        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Parish</dt><dd class="govuk-summary-list__value">@Model.Farm.Parish</dd></div>
+        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Herdmarks</dt><dd class="govuk-summary-list__value">@Model.Farm.Herdmark1 @Model.Farm.Herdmark2 @Model.Farm.Herdmark3</dd></div>
+        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">AHO</dt><dd class="govuk-summary-list__value">@Model.Farm.AHO</dd></div>
+        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Herd type</dt><dd class="govuk-summary-list__value">@Model.Farm.HerdType</dd></div>
+        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Dealer</dt><dd class="govuk-summary-list__value">@(Model.Farm.IsDealer ? "Yes" : "No")</dd></div>
+        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Non-GB</dt><dd class="govuk-summary-list__value">@(Model.Farm.IsNonGBFarm ? "Yes" : "No")</dd></div>
+    </dl>
+    <a asp-page="/Farm/Details" asp-route-cphh="@Model.Farm.CPHH" class="govuk-link govuk-!-font-size-19">View full farm details</a>
+}
+else if (!string.IsNullOrWhiteSpace(Model.Case.Cphh))
+{
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+    <p class="govuk-body">Farm <strong>@Model.Case.Cphh</strong> was not found.</p>
 }

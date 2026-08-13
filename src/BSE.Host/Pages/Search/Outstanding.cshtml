@@ -1,63 +1,76 @@
 @page
 @model BSE.Host.Pages.Search.OutstandingModel
 @{
-    ViewData["Title"] = "Search outstanding data";
+    ViewData["Title"] = "Outstanding Data Search";
 }
 
-<h1 class="govuk-heading-l">Search outstanding data</h1>
+<h1 class="govuk-heading-l">Outstanding Data Search</h1>
 
 <form method="get" novalidate>
-    <div class="govuk-form-group">
-        <fieldset class="govuk-fieldset" role="group" aria-describedby="outstanding-date-hint">
-            <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">Form A date range</legend>
-            <div id="outstanding-date-hint" class="govuk-hint">Enter a from and to date.</div>
-            <div class="govuk-date-input" id="outstanding-date-range">
-                <div class="govuk-date-input__item">
-                    <div class="govuk-form-group">
-                        <label asp-for="Filter.EarliestFormADate" class="govuk-label govuk-date-input__label">From</label>
-                        <input asp-for="Filter.EarliestFormADate" type="date" class="govuk-input govuk-date-input__input" />
+    <div class="govuk-grid-row">
+        <div class="govuk-grid-column-two-thirds">
+            <div class="govuk-form-group">
+                <div class="govuk-radios govuk-radios--inline" data-module="govuk-radios">
+                    <div class="govuk-radios__item">
+                        <input asp-for="Filter.SearchType" class="govuk-radios__input" id="search-type-results" type="radio" value="Results" />
+                        <label class="govuk-label govuk-radios__label" for="search-type-results">Outstanding Results</label>
                     </div>
-                </div>
-                <div class="govuk-date-input__item">
-                    <div class="govuk-form-group">
-                        <label asp-for="Filter.LatestFormADate" class="govuk-label govuk-date-input__label">To</label>
-                        <input asp-for="Filter.LatestFormADate" type="date" class="govuk-input govuk-date-input__input" />
+                    <div class="govuk-radios__item">
+                        <input asp-for="Filter.SearchType" class="govuk-radios__input" id="search-type-fates" type="radio" value="Fates" />
+                        <label class="govuk-label govuk-radios__label" for="search-type-fates">Fate</label>
+                    </div>
+                    <div class="govuk-radios__item">
+                        <input asp-for="Filter.SearchType" class="govuk-radios__input" id="search-type-bse1" type="radio" value="BSE1" />
+                        <label class="govuk-label govuk-radios__label" for="search-type-bse1">BSE1s</label>
                     </div>
                 </div>
             </div>
-        </fieldset>
-    </div>
 
-    <div class="govuk-form-group">
-        <label asp-for="Filter.SearchType" class="govuk-label">Outstanding type</label>
-        <select asp-for="Filter.SearchType" class="govuk-select govuk-!-width-one-half">
-            <option value="BSE1">Outstanding BSE1s</option>
-            <option value="Fates">Outstanding fates</option>
-            <option value="Results">Outstanding results</option>
-        </select>
-    </div>
+            <div class="govuk-form-group">
+                <fieldset class="govuk-fieldset" role="group" aria-describedby="outstanding-date-hint">
+                    <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">Form A Date Between</legend>
+                    <div id="outstanding-date-hint" class="govuk-hint">Leave blank to search all dates.</div>
+                    <div class="govuk-date-input">
+                        <div class="govuk-date-input__item">
+                            <div class="govuk-form-group">
+                                <label asp-for="Filter.EarliestFormADate" class="govuk-label govuk-date-input__label">From</label>
+                                <input asp-for="Filter.EarliestFormADate" type="date" class="govuk-input govuk-date-input__input" />
+                            </div>
+                        </div>
+                        <div class="govuk-date-input__item">
+                            <div class="govuk-form-group">
+                                <label asp-for="Filter.LatestFormADate" class="govuk-label govuk-date-input__label">To</label>
+                                <input asp-for="Filter.LatestFormADate" type="date" class="govuk-input govuk-date-input__input" />
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
 
-    <div class="govuk-form-group">
-        <div class="govuk-checkboxes" data-module="govuk-checkboxes">
-            <div class="govuk-checkboxes__item">
-                <input asp-for="Filter.IncludeNonGb" class="govuk-checkboxes__input" />
-                <label asp-for="Filter.IncludeNonGb" class="govuk-label govuk-checkboxes__label">Include non-GB</label>
+            <div class="govuk-form-group">
+                <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                    <div class="govuk-checkboxes__item">
+                        <input asp-for="Filter.IncludeNonGb" class="govuk-checkboxes__input" />
+                        <label asp-for="Filter.IncludeNonGb" class="govuk-label govuk-checkboxes__label">Include Non-GB Cases?</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="govuk-button-group">
+                <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
+                <a asp-page="/Home" class="govuk-link">Search Menu</a>
             </div>
         </div>
-    </div>
-
-    <div class="govuk-button-group">
-        <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
-        <a asp-page="/Search/Outstanding" class="govuk-link">Clear search</a>
     </div>
 </form>
 
 @if (Model.Filter.HasSearched)
 {
-    <p class="govuk-body">@Model.Filter.Results.Count result(s) found.</p>
+    <p class="govuk-body">@Model.Filter.TotalCount result(s) found.</p>
 
-    @if (Model.Filter.Results.Count > 0)
+    @if (Model.Filter.TotalCount > 0)
     {
+        @await Html.PartialAsync("_ExportLink")
         <table class="govuk-table">
             <caption class="govuk-visually-hidden">Outstanding search results</caption>
             <thead class="govuk-table__head">
@@ -69,26 +82,23 @@
                     <th scope="col" class="govuk-table__header">Birth date</th>
                     <th scope="col" class="govuk-table__header">Fate</th>
                     <th scope="col" class="govuk-table__header">Final result</th>
-                    <th scope="col" class="govuk-table__header">Action</th>
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
-                @foreach (var r in Model.Filter.Results)
+                @foreach (var r in Model.Filter.PagedResults)
                 {
                     <tr class="govuk-table__row">
-                        <td class="govuk-table__cell bse-rbse">@r.Rbse</td>
+                        <td class="govuk-table__cell bse-rbse"><a asp-page="/Case/Details" asp-route-rbse="@r.Rbse" class="govuk-link">@r.Rbse</a></td>
                         <td class="govuk-table__cell">@r.Cphh</td>
                         <td class="govuk-table__cell">@r.Eartag</td>
                         <td class="govuk-table__cell">@r.FormADate?.ToString("dd/MM/yyyy")</td>
                         <td class="govuk-table__cell">@r.BirthDate?.ToString("dd/MM/yyyy")</td>
                         <td class="govuk-table__cell">@r.Fate</td>
                         <td class="govuk-table__cell">@r.FinalResult</td>
-                        <td class="govuk-table__cell">
-                            <a asp-page="/Case/Details" asp-route-rbse="@r.Rbse" class="govuk-link">Open</a>
-                        </td>
                     </tr>
                 }
             </tbody>
         </table>
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.Filter.PageNumber, ["TotalPages"] = Model.Filter.TotalPages, ["PageNumberKey"] = "Filter.PageNumber" })
     }
 }

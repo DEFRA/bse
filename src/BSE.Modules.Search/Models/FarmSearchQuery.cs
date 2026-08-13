@@ -8,6 +8,6 @@ public record FarmSearchQuery(
     string County = "",
     string Herdmark = "",
     string NumericHerdmark = "",
-    bool IsDealer = false,
+    bool? IsDealer = null,
     string Aho = "",
     bool IncludeNonGbFarms = false);

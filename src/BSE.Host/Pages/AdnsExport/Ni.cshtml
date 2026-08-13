@@ -31,12 +31,12 @@
 
             <div id="caseRows">
                 <div class="case-row govuk-!-margin-bottom-4">
-                    <div class="govuk-form-group"><label class="govuk-label">RBSE</label><input name="Cases[0].Rbse" class="govuk-input govuk-!-width-one-half" /></div>
-                    <div class="govuk-form-group"><label class="govuk-label">ADNS year</label><input name="Cases[0].AdnsYear" type="number" class="govuk-input govuk-input--width-5" value="@DateTime.Today.Year" /></div>
-                    <div class="govuk-form-group"><label class="govuk-label">ADNS number</label><input name="Cases[0].AdnsNumber" type="number" class="govuk-input govuk-input--width-5" /></div>
-                    <div class="govuk-form-group"><label class="govuk-label">Region ID</label><input name="Cases[0].AdnsRegionId" type="number" class="govuk-input govuk-input--width-5" /></div>
-                    <div class="govuk-form-group"><label class="govuk-label">Region name</label><input name="Cases[0].AdnsRegionName" class="govuk-input govuk-!-width-one-half" /></div>
-                    <div class="govuk-form-group"><label class="govuk-label">Confirmation date</label><input name="Cases[0].ConfirmationDate" type="date" class="govuk-input govuk-input--width-10" /></div>
+                    <div class="govuk-form-group"><label class="govuk-label" for="cases-0-rbse">RBSE</label><input id="cases-0-rbse" name="Cases[0].Rbse" class="govuk-input govuk-!-width-one-half" /></div>
+                    <div class="govuk-form-group"><label class="govuk-label" for="cases-0-adns-year">ADNS year</label><input id="cases-0-adns-year" name="Cases[0].AdnsYear" type="number" class="govuk-input govuk-input--width-5" value="@DateTime.Today.Year" /></div>
+                    <div class="govuk-form-group"><label class="govuk-label" for="cases-0-adns-number">ADNS number</label><input id="cases-0-adns-number" name="Cases[0].AdnsNumber" type="number" class="govuk-input govuk-input--width-5" /></div>
+                    <div class="govuk-form-group"><label class="govuk-label" for="cases-0-adns-region-id">Region ID</label><input id="cases-0-adns-region-id" name="Cases[0].AdnsRegionId" type="number" class="govuk-input govuk-input--width-5" /></div>
+                    <div class="govuk-form-group"><label class="govuk-label" for="cases-0-adns-region-name">Region name</label><input id="cases-0-adns-region-name" name="Cases[0].AdnsRegionName" class="govuk-input govuk-!-width-one-half" /></div>
+                    <div class="govuk-form-group"><label class="govuk-label" for="cases-0-confirmation-date">Confirmation date</label><input id="cases-0-confirmation-date" name="Cases[0].ConfirmationDate" type="date" class="govuk-input govuk-input--width-10" /></div>
                 </div>
             </div>
 
@@ -51,6 +51,7 @@
         <h2 class="govuk-heading-m">Preview — @Model.Preview.Cases.Count cases</h2>
         <p class="govuk-body"><strong>Subject:</strong> @Model.Preview.EmailSubject</p>
         <table class="govuk-table">
+            <caption class="govuk-visually-hidden">Northern Ireland ADNS preview cases</caption>
             <thead class="govuk-table__head"><tr class="govuk-table__row"><th scope="col" class="govuk-table__header">RBSE</th><th scope="col" class="govuk-table__header">Region</th><th scope="col" class="govuk-table__header">ADNS ref</th><th scope="col" class="govuk-table__header">Confirmation</th></tr></thead>
             <tbody class="govuk-table__body">
                 @foreach (var c in Model.Preview.Cases)
@@ -86,12 +87,12 @@
         const row = document.createElement('div');
         row.className = 'case-row govuk-!-margin-bottom-4';
         row.innerHTML = `
-            <div class="govuk-form-group"><input name="Cases[${rowIndex}].Rbse" class="govuk-input govuk-!-width-one-half" placeholder="RBSE" /></div>
-            <div class="govuk-form-group"><input name="Cases[${rowIndex}].AdnsYear" type="number" class="govuk-input govuk-input--width-5" value="@DateTime.Today.Year" /></div>
-            <div class="govuk-form-group"><input name="Cases[${rowIndex}].AdnsNumber" type="number" class="govuk-input govuk-input--width-5" /></div>
-            <div class="govuk-form-group"><input name="Cases[${rowIndex}].AdnsRegionId" type="number" class="govuk-input govuk-input--width-5" /></div>
-            <div class="govuk-form-group"><input name="Cases[${rowIndex}].AdnsRegionName" class="govuk-input govuk-!-width-one-half" /></div>
-            <div class="govuk-form-group"><input name="Cases[${rowIndex}].ConfirmationDate" type="date" class="govuk-input govuk-input--width-10" /></div>`;
+            <div class="govuk-form-group"><input name="Cases[${rowIndex}].Rbse" class="govuk-input govuk-!-width-one-half" aria-label="RBSE" placeholder="RBSE" /></div>
+            <div class="govuk-form-group"><input name="Cases[${rowIndex}].AdnsYear" type="number" class="govuk-input govuk-input--width-5" aria-label="ADNS year" value="@DateTime.Today.Year" /></div>
+            <div class="govuk-form-group"><input name="Cases[${rowIndex}].AdnsNumber" type="number" class="govuk-input govuk-input--width-5" aria-label="ADNS number" /></div>
+            <div class="govuk-form-group"><input name="Cases[${rowIndex}].AdnsRegionId" type="number" class="govuk-input govuk-input--width-5" aria-label="Region ID" /></div>
+            <div class="govuk-form-group"><input name="Cases[${rowIndex}].AdnsRegionName" class="govuk-input govuk-!-width-one-half" aria-label="Region name" /></div>
+            <div class="govuk-form-group"><input name="Cases[${rowIndex}].ConfirmationDate" type="date" class="govuk-input govuk-input--width-10" aria-label="Confirmation date" /></div>`;
         container.appendChild(row);
         rowIndex++;
     }

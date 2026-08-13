@@ -7,7 +7,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BSE.Host.Pages.AdnsExport;
 
-[Authorize(Policy = "DataEntry")]
+[Authorize(Policy = "DEFRAMaintenance")]
 public class CiModel(IAdnsExportService adnsExportService) : PageModel
 {
     [BindProperty] [Required] public string EmailReference { get; set; } = string.Empty;

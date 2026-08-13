@@ -2,59 +2,231 @@
 @model BSE.Host.Pages.HomeModel
 @{
     ViewData["Title"] = "BSE system";
+    var batchYearError   = Model.ModelState[nameof(Model.BatchYear)]?.Errors.FirstOrDefault()?.ErrorMessage;
+    var batchNumberError = Model.ModelState[nameof(Model.BatchNumber)]?.Errors.FirstOrDefault()?.ErrorMessage;
+    var hasBatchError    = batchYearError is not null || batchNumberError is not null;
 }
 
 <h1 class="govuk-heading-l">BSE system</h1>
 
-<h2 class="govuk-heading-m">Quick case search</h2>
-<form method="get" asp-page="/Search/Cases" class="govuk-!-margin-bottom-7">
-    <div class="govuk-form-group">
-        <label class="govuk-label" for="quick-case-rbse">RBSE</label>
-        <div class="govuk-hint">Enter 9 digits, for example 000000001.</div>
-        <input id="quick-case-rbse" type="text" name="Filter.Rbse" class="govuk-input govuk-!-width-one-half" />
+@* ── Error summary (batch panel validation) ──────────────────────────────────── *@
+@if (hasBatchError)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @if (batchYearError is not null)
+                    {
+                        <li><a href="#batch-year">@batchYearError</a></li>
+                    }
+                    @if (batchNumberError is not null)
+                    {
+                        <li><a href="#batch-number">@batchNumberError</a></li>
+                    }
+                </ul>
+            </div>
+        </div>
     </div>
-    <button type="submit" class="govuk-button" data-module="govuk-button">Search cases</button>
-</form>
+}
 
-<h2 class="govuk-heading-m">Quick farm search</h2>
-<form method="get" asp-page="/Search/Farms" class="govuk-!-margin-bottom-7">
-    <div class="govuk-form-group">
-        <label class="govuk-label" for="quick-farm-cphh">CPHH</label>
-        <div class="govuk-hint">For example, 12/345/0001.</div>
-        <input id="quick-farm-cphh" type="text" name="Filter.Cphh" class="govuk-input govuk-!-width-one-half" />
-    </div>
-    <button type="submit" class="govuk-button" data-module="govuk-button">Search farms</button>
-</form>
+@* ── Batch Number panel — VLA Data Entry + VLA Maintenance ────────────────────── *@
+@if (User.IsInRole("VLAAccess"))
+{
+    <section aria-labelledby="batch-panel-heading" class="govuk-!-margin-bottom-6">
+        <h2 class="govuk-heading-m" id="batch-panel-heading">Batch number</h2>
+        <p class="govuk-body">Only enter a batch number if you are entering a batch of case details.</p>
+
+        <div class="govuk-grid-row">
+            <div class="govuk-grid-column-two-thirds">
+                <form method="post">
+                    <div class="govuk-form-group @(hasBatchError ? "govuk-form-group--error" : "")">
+                        <fieldset class="govuk-fieldset" aria-describedby="@(hasBatchError ? "batch-error" : "batch-hint")">
+                            <legend class="govuk-fieldset__legend">
+                                Enter batch number
+                            </legend>
+                            <div id="batch-hint" class="govuk-hint">Year and number — for example, 2026 and 1.</div>
+                            @if (hasBatchError)
+                            {
+                                <p id="batch-error" class="govuk-error-message">
+                                    <span class="govuk-visually-hidden">Error:</span>
+                                    @(batchYearError ?? batchNumberError)
+                                </p>
+                            }
+                            <div class="govuk-!-display-flex govuk-!-gap-3 govuk-!-align-items-end">
+                                <div>
+                                    <label class="govuk-label govuk-!-font-weight-bold" for="batch-year">Year</label>
+                                    <input id="batch-year" name="BatchYear" type="text" inputmode="numeric"
+                                           class="govuk-input govuk-input--width-4 @(batchYearError is not null ? "govuk-input--error" : "")"
+                                           value="@Model.BatchYear" autocomplete="off" />
+                                </div>
+                                <div>
+                                    <label class="govuk-label govuk-!-font-weight-bold" for="batch-number">Number</label>
+                                    <input id="batch-number" name="BatchNumber" type="text" inputmode="numeric"
+                                           class="govuk-input govuk-input--width-4 @(batchNumberError is not null ? "govuk-input--error" : "")"
+                                           value="@Model.BatchNumber" autocomplete="off" />
+                                </div>
+                                <div>
+                                    <button type="submit" asp-page-handler="LookupBatch"
+                                            class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0"
+                                            data-module="govuk-button">Go</button>
+                                </div>
+                                <div>
+                                    <button type="submit" asp-page-handler="CreateBatch"
+                                            class="govuk-button govuk-!-margin-bottom-0"
+                                            data-module="govuk-button">Create new</button>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </div>
+                </form>
+            </div>
+
+            @if (Model.LatestBatches.Count > 0)
+            {
+                <div class="govuk-grid-column-one-third">
+                    <table class="govuk-table govuk-!-font-size-16">
+                        <caption class="govuk-table__caption govuk-table__caption--s govuk-visually-hidden">Recent batches</caption>
+                        <thead class="govuk-table__head">
+                            <tr class="govuk-table__row">
+                                <th scope="col" class="govuk-table__header">Batch number</th>
+                                <th scope="col" class="govuk-table__header govuk-table__header--numeric">Cases</th>
+                            </tr>
+                        </thead>
+                        <tbody class="govuk-table__body">
+                            @foreach (var b in Model.LatestBatches)
+                            {
+                                <tr class="govuk-table__row">
+                                    <td class="govuk-table__cell">@b.Batch</td>
+                                    <td class="govuk-table__cell govuk-table__cell--numeric">@b.CaseCount</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </section>
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-bottom-6" />
+}
+
+@* ── RBSE Number panel — DEFRA Maintenance + VLA Data Entry + VLA Maintenance ─── *@
+@if (User.IsInRole("DEFRAMaintenance") || User.IsInRole("VLAAccess"))
+{
+    <section aria-labelledby="rbse-panel-heading" class="govuk-!-margin-bottom-6">
+        <h2 class="govuk-heading-m" id="rbse-panel-heading">RBSE number</h2>
+
+        <form method="get" asp-page="/Case/Lookup" class="govuk-!-margin-bottom-4">
+            <div class="govuk-form-group">
+                <label class="govuk-label" for="rbse-lookup">Enter RBSE to open case</label>
+                <div class="govuk-hint">For example, 00/26/00001.</div>
+                <input id="rbse-lookup" name="Rbse" type="text"
+                       class="govuk-input govuk-input--width-10"
+                       autocomplete="off" />
+            </div>
+            <button type="submit" class="govuk-button govuk-button--secondary"
+                    data-module="govuk-button">Go</button>
+        </form>
+
+        <table class="govuk-table govuk-!-font-size-16">
+            <caption class="govuk-table__caption govuk-table__caption--s govuk-visually-hidden">Latest RBSE and DBSE references</caption>
+            <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                    <th scope="col" class="govuk-table__header"></th>
+                    <th scope="col" class="govuk-table__header">RBSE</th>
+                    <th scope="col" class="govuk-table__header">DBSE</th>
+                </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+                <tr class="govuk-table__row">
+                    <th scope="row" class="govuk-table__header govuk-!-font-weight-regular">Latest in current year</th>
+                    <td class="govuk-table__cell">@(Model.LatestRbseCurrentYear ?? "—")</td>
+                    <td class="govuk-table__cell">@(Model.LatestDbseCurrentYear ?? "—")</td>
+                </tr>
+                <tr class="govuk-table__row">
+                    <th scope="row" class="govuk-table__header govuk-!-font-weight-regular">Latest in previous year</th>
+                    <td class="govuk-table__cell">@(Model.LatestRbsePreviousYear ?? "—")</td>
+                    <td class="govuk-table__cell">@(Model.LatestDbsePreviousYear ?? "—")</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-bottom-6" />
+}
+
+@* Quick-case and quick-farm inputs removed — Home now exposes only Batch and RBSE inputs per migration requirement *@
 
 <div class="govuk-grid-row">
     <div class="govuk-grid-column-one-half">
         <h2 class="govuk-heading-m">Search</h2>
         <ul class="govuk-list govuk-list--bullet">
             <li><a asp-page="/Search/Cases" class="govuk-link">Cases</a></li>
+            <li><a asp-page="/Search/CasesByHerdmark" class="govuk-link">Cases by herdmark</a></li>
+            <li><a asp-page="/Search/CasesByHoldingHerdmark" class="govuk-link">Cases by holding/herdmark</a></li>
             <li><a asp-page="/Search/Farms" class="govuk-link">Farms</a></li>
             <li><a asp-page="/Search/Outstanding" class="govuk-link">Outstanding data</a></li>
             <li><a asp-page="/Search/RelatedAnimals" class="govuk-link">Related animals</a></li>
         </ul>
 
-        <h2 class="govuk-heading-m">Case entry</h2>
-        <ul class="govuk-list govuk-list--bullet">
-            <li><a asp-page="/Case/New" class="govuk-link">New case</a></li>
-            <li><a asp-page="/Case/Lookup" class="govuk-link">Open existing case</a></li>
-        </ul>
+        @if (User.IsInRole("DataEntry"))
+        {
+            <h2 class="govuk-heading-m">Case entry</h2>
+            <ul class="govuk-list govuk-list--bullet">
+                <li><a asp-page="/Case/New" class="govuk-link">New case</a></li>
+                <li><a asp-page="/Case/Lookup" class="govuk-link">Open existing case</a></li>
+            </ul>
+        }
     </div>
 
     <div class="govuk-grid-column-one-half">
-        <h2 class="govuk-heading-m">Farms</h2>
-        <ul class="govuk-list govuk-list--bullet">
-            <li><a asp-page="/Farm/New" class="govuk-link">New farm</a></li>
-            <li><a asp-page="/Farm/Lookup" class="govuk-link">Open farm</a></li>
-        </ul>
+        @if (User.IsInRole("FarmCreation"))
+        {
+            <h2 class="govuk-heading-m">Farms</h2>
+            <ul class="govuk-list govuk-list--bullet">
+                <li><a asp-page="/Farm/New" class="govuk-link">New farm</a></li>
+                <li><a asp-page="/Farm/Lookup" class="govuk-link">Open farm</a></li>
+            </ul>
+        }
 
         <h2 class="govuk-heading-m">Casework and reports</h2>
         <ul class="govuk-list govuk-list--bullet">
-            <li><a asp-page="/CaseWork/Menu" class="govuk-link">Casework menu</a></li>
+            @if (User.IsInRole("VLAMaintenance"))
+            {
+                <li><a asp-page="/CaseWork/Menu" class="govuk-link">Casework menu</a></li>
+            }
             <li><a asp-page="/AuditLog/ByDate" class="govuk-link">Audit log</a></li>
             <li><a asp-page="/Bsess/CheckByRbse" class="govuk-link">BSESS check</a></li>
         </ul>
+
+        @if (User.IsInRole("DEFRAMaintenance") || User.IsInRole("VLAAccess"))
+        {
+            <h2 class="govuk-heading-m">Exports</h2>
+            <ul class="govuk-list govuk-list--bullet">
+                @if (User.IsInRole("DEFRAMaintenance"))
+                {
+                    <li><a asp-page="/AdnsExport/Menu" class="govuk-link">ADNS export</a></li>
+                }
+                @if (User.IsInRole("VLAAccess"))
+                {
+                    <li><a asp-page="/OssExport/Menu" class="govuk-link">OSS export</a></li>
+                }
+            </ul>
+        }
+
+        @if (User.IsInRole("VLAMaintenance") || User.IsInRole("PickListAccess"))
+        {
+            <h2 class="govuk-heading-m">Administration</h2>
+            <ul class="govuk-list govuk-list--bullet">
+                @if (User.IsInRole("VLAMaintenance"))
+                {
+                    <li><a asp-page="/Admin/Users" class="govuk-link">Manage users</a></li>
+                }
+                @if (User.IsInRole("PickListAccess"))
+                {
+                    <li><a asp-page="/Admin/PickLists" class="govuk-link">Manage pick lists</a></li>
+                }
+            </ul>
+        }
     </div>
 </div>

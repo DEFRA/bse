@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.Farm;
 
-[Authorize(Policy = "DataEntry")]
+[Authorize(Policy = "DEFRAMaintenance")]
 public class CphhChangeModel : PageModel
 {
     private readonly IFarmService _farm;

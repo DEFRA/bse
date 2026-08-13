@@ -12,6 +12,9 @@ public interface IUserContext
     /// <summary>Display name from claims.</summary>
     string DisplayName { get; }
 
+    /// <summary>Display name of the resolved database user group (luUserGroup.Name).</summary>
+    string GroupName { get; }
+
     /// <summary>Resolved database user group.</summary>
     UserGroup Group { get; }
 

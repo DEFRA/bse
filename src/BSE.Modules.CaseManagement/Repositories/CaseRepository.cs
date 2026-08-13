@@ -35,14 +35,22 @@ public sealed class CaseRepository : DapperRepository, ICaseRepository
 
     public async Task<string?> GetLatestRbseForYearAsync(short year)
     {
-        var r = await QuerySingleOrDefaultAsync<LatestReferenceRecord>("GetLatestRBSEForYear", new { Year = year });
-        return r?.LatestReference;
+        var p = new DynamicParameters();
+        p.Add("TwoDigitYear", (year % 100).ToString("D2"), System.Data.DbType.AnsiStringFixedLength, size: 2);
+        p.Add("LatestRBSE", dbType: System.Data.DbType.AnsiStringFixedLength, direction: System.Data.ParameterDirection.Output, size: 9);
+        await ExecuteWithOutputAsync("GetLatestRBSEForYear", p);
+        var result = p.Get<string?>("LatestRBSE");
+        return string.IsNullOrWhiteSpace(result) ? null : result.Trim();
     }
 
     public async Task<string?> GetLatestDbseForYearAsync(short year)
     {
-        var r = await QuerySingleOrDefaultAsync<LatestReferenceRecord>("GetLatestDBSEForYear", new { Year = year });
-        return r?.LatestReference;
+        var p = new DynamicParameters();
+        p.Add("TwoDigitYear", (year % 100).ToString("D2"), System.Data.DbType.AnsiStringFixedLength, size: 2);
+        p.Add("LatestDBSE", dbType: System.Data.DbType.AnsiStringFixedLength, direction: System.Data.ParameterDirection.Output, size: 7);
+        await ExecuteWithOutputAsync("GetLatestDBSEForYear", p);
+        var result = p.Get<string?>("LatestDBSE");
+        return string.IsNullOrWhiteSpace(result) ? null : result.Trim();
     }
 
     public Task<CaseDetailRecord?> GetCaseDetailsByRbseAsync(string rbse)

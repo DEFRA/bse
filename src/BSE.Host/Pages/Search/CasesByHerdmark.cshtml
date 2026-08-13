@@ -1,0 +1,94 @@
+@page
+@model BSE.Host.Pages.Search.CasesByHerdmarkModel
+@{
+    ViewData["Title"] = "List Of Cases With A Given Herdmark";
+}
+
+<h1 class="govuk-heading-l">List Of Cases With A Given Herdmark</h1>
+
+<form method="get" novalidate>
+    <div class="govuk-grid-row">
+        <div class="govuk-grid-column-two-thirds">
+            <div class="govuk-form-group">
+                <label asp-for="Herdmark" class="govuk-label">Herdmark</label>
+                <input asp-for="Herdmark" class="govuk-input govuk-!-width-two-thirds" />
+                <span asp-validation-for="Herdmark" class="govuk-error-message"></span>
+            </div>
+
+            <div class="govuk-form-group">
+                <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                    <div class="govuk-checkboxes__item">
+                        <input asp-for="IncludeNonGb" class="govuk-checkboxes__input" />
+                        <label asp-for="IncludeNonGb" class="govuk-label govuk-checkboxes__label">Include Non-GB Cases?</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="govuk-button-group">
+                <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
+                <a asp-page="/Home" class="govuk-link">Search Menu</a>
+            </div>
+        </div>
+    </div>
+</form>
+
+@if (Model.HasSearched)
+{
+    <p class="govuk-body">@Model.TotalCount result(s) found.</p>
+
+    @if (Model.TotalCount > 0)
+    {
+        @await Html.PartialAsync("_ExportLink")
+        <table class="govuk-table">
+            <caption class="govuk-visually-hidden">Cases by herdmark results</caption>
+            <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                    <th scope="col" class="govuk-table__header">RBSE</th>
+                    <th scope="col" class="govuk-table__header">CPHH</th>
+                    <th scope="col" class="govuk-table__header">Sex</th>
+                    <th scope="col" class="govuk-table__header">Eartag</th>
+                    <th scope="col" class="govuk-table__header">Birth date</th>
+                    <th scope="col" class="govuk-table__header">Origin</th>
+                    <th scope="col" class="govuk-table__header">Date purchased</th>
+                    <th scope="col" class="govuk-table__header">Age at purchase</th>
+                    <th scope="col" class="govuk-table__header">Date onset</th>
+                    <th scope="col" class="govuk-table__header">Form A date</th>
+                    <th scope="col" class="govuk-table__header">Slaughter date</th>
+                    <th scope="col" class="govuk-table__header">Final result date</th>
+                    <th scope="col" class="govuk-table__header">Age at onset</th>
+                    <th scope="col" class="govuk-table__header">Fate</th>
+                    <th scope="col" class="govuk-table__header">Final result</th>
+                    <th scope="col" class="govuk-table__header">Survey</th>
+                    <th scope="col" class="govuk-table__header">Case status</th>
+                    <th scope="col" class="govuk-table__header">Time elapsed</th>
+                </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+                @foreach (var r in Model.PagedResults)
+                {
+                    <tr class="govuk-table__row">
+                        <td class="govuk-table__cell bse-rbse"><a asp-page="/Case/Details" asp-route-rbse="@r.Rbse" class="govuk-link">@r.Rbse</a></td>
+                        <td class="govuk-table__cell">@r.Cphh</td>
+                        <td class="govuk-table__cell">@r.Sex</td>
+                        <td class="govuk-table__cell">@r.Eartag</td>
+                        <td class="govuk-table__cell">@r.BirthDate?.ToString("dd/MM/yyyy")</td>
+                        <td class="govuk-table__cell">@r.Origin</td>
+                        <td class="govuk-table__cell">@r.PurchaseDate?.ToString("dd/MM/yyyy")</td>
+                        <td class="govuk-table__cell">@r.PurchaseAgeInMonths</td>
+                        <td class="govuk-table__cell">@r.OnsetDate?.ToString("dd/MM/yyyy")</td>
+                        <td class="govuk-table__cell">@r.FormADate?.ToString("dd/MM/yyyy")</td>
+                        <td class="govuk-table__cell">@r.SlaughterDate?.ToString("dd/MM/yyyy")</td>
+                        <td class="govuk-table__cell">@r.FinalResultDate?.ToString("dd/MM/yyyy")</td>
+                        <td class="govuk-table__cell">@r.OnsetAgeInMonths</td>
+                        <td class="govuk-table__cell">@r.Fate</td>
+                        <td class="govuk-table__cell">@r.FinalResult</td>
+                        <td class="govuk-table__cell">@r.Survey</td>
+                        <td class="govuk-table__cell">@r.CaseStatus</td>
+                        <td class="govuk-table__cell">@r.TimeElapsed</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
+    }
+}

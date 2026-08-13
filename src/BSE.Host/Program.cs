@@ -1,4 +1,5 @@
 using BSE.Host.Cache;
+using BSE.Host.Authentication;
 using BSE.Host.HealthChecks;
 using BSE.Infrastructure;
 using BSE.Infrastructure.Cache;
@@ -14,7 +15,7 @@ using BSE.Modules.FarmManagement;
 using BSE.Modules.ReferenceData;
 using BSE.Modules.Search;
 using BSE.Modules.UserManagement;
-using BSE.SharedKernel;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -135,23 +136,43 @@ try
     // Set via appsettings.json, appsettings.{Environment}.json, or environment
     // variables OIDC__Authority / OIDC__ClientId / OIDC__ClientSecret.
     // Full Azure AD wiring is completed when the real tenant is provisioned.
-    builder.Services
-        .AddAuthentication(options =>
-        {
-            options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
-        })
-        .AddCookie()
-        .AddOpenIdConnect("oidc", options =>
-        {
-            options.Authority = builder.Configuration["OIDC:Authority"];
-            options.ClientId = builder.Configuration["OIDC:ClientId"];
-            options.ClientSecret = builder.Configuration["OIDC:ClientSecret"];
-            options.ResponseType = "code";
-            options.SaveTokens = true;
-            options.GetClaimsFromUserInfoEndpoint = true;
-            options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
-        });
+    var bypassAuthentication = builder.Environment.IsDevelopment()
+        && builder.Configuration.GetValue<bool>("Authentication:BypassEnabled");
+
+    if (bypassAuthentication)
+    {
+        builder.Services
+            .AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = DevelopmentAuthHandler.SchemeName;
+                options.DefaultChallengeScheme = DevelopmentAuthHandler.SchemeName;
+                options.DefaultScheme = DevelopmentAuthHandler.SchemeName;
+            })
+            .AddScheme<DevelopmentAuthOptions, DevelopmentAuthHandler>(
+                DevelopmentAuthHandler.SchemeName,
+                opts => opts.NtLogin =
+                    builder.Configuration["Authentication:DevUserNtLogin"] ?? "dev-user");
+    }
+    else
+    {
+        builder.Services
+            .AddAuthentication(options =>
+            {
+                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
+            })
+            .AddCookie()
+            .AddOpenIdConnect("oidc", options =>
+            {
+                options.Authority = builder.Configuration["OIDC:Authority"];
+                options.ClientId = builder.Configuration["OIDC:ClientId"];
+                options.ClientSecret = builder.Configuration["OIDC:ClientSecret"];
+                options.ResponseType = "code";
+                options.SaveTokens = true;
+                options.GetClaimsFromUserInfoEndpoint = true;
+                options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+            });
+    }
 
     // ── Razor Pages ────────────────────────────────────────────────────────────
     builder.Services.AddRazorPages(options =>
@@ -159,38 +180,54 @@ try
         options.Conventions.AuthorizeFolder("/");
         options.Conventions.AllowAnonymousToPage("/Error");
         options.Conventions.AllowAnonymousToPage("/SessionError");
-    });
+    })
+     .AddMvcOptions(o =>
+        // ASP.NET Core 6+ treats non-nullable string properties as implicitly [Required]
+        // when nullable context is enabled. The legacy .NET Framework app had no such
+        // behaviour — all search filter fields are optional. Suppress to match legacy.
+        o.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true) ;
 
     // ── Host services ──────────────────────────────────────────────────────────
     builder.Services.AddScoped<BSE.Host.Services.ICurrentUserService, BSE.Host.Services.CurrentUserService>();
 
-    // ── Authorisation — Slice 3 policies ────────────────────────────────────
-    // Roles correspond to BSE.SharedKernel.UserGroup enum names.
+    // -- Authorisation policies
+    // Each policy requires exactly its own name as a role claim.
+    // GroupClaimsTransformation calls GetGroupPolicies SP (reading luGroupPolicy) and emits
+    // one ClaimTypes.Role per row - so changing luGroupPolicy rows changes access with no code deploy.
+    // Source of truth: docs/Legacy-Page-Level-Access-Control.md (Section 5 access matrix)
     builder.Services.AddAuthorization(options =>
     {
+        // All authenticated users - search, audit log, BSESS, case/farm detail views.
         options.AddPolicy("Authenticated",
             p => p.RequireAuthenticatedUser());
 
-        options.AddPolicy("DataEntry",
-            p => p.RequireRole(
-                UserGroup.DataEntry.ToString(),
-                UserGroup.Admin.ToString(),
-                UserGroup.Supervisor.ToString()));
-
+        // All five recognised groups - read-only view access.
         options.AddPolicy("ReadOnly",
-            p => p.RequireRole(
-                UserGroup.ReadOnly.ToString(),
-                UserGroup.DataEntry.ToString(),
-                UserGroup.Admin.ToString(),
-                UserGroup.Supervisor.ToString()));
+            p => p.RequireRole("ReadOnly"));
 
-        options.AddPolicy("Admin",
-            p => p.RequireRole(UserGroup.Admin.ToString()));
+        // DEFRA Data Entry, DEFRA Maintenance, VLA Data Entry, VLA Maintenance.
+        options.AddPolicy("DataEntry",
+            p => p.RequireRole("DataEntry"));
 
+        // DEFRA Maintenance, VLA Maintenance - ADNS Export, MoveCase, DeleteCase, RbseChange, CphhChange.
         options.AddPolicy("DEFRAMaintenance",
-            p => p.RequireRole(
-                UserGroup.DEFRAMaintenance.ToString(),
-                UserGroup.Admin.ToString()));
+            p => p.RequireRole("DEFRAMaintenance"));
+
+        // VLA Data Entry, VLA Maintenance - OSS Export, Print Batch.
+        options.AddPolicy("VLAAccess",
+            p => p.RequireRole("VLAAccess"));
+
+        // VLA Maintenance only - CaseWork, User Maintenance.
+        options.AddPolicy("VLAMaintenance",
+            p => p.RequireRole("VLAMaintenance"));
+
+        // DEFRA Maintenance, VLA Data Entry, VLA Maintenance - Pick List Maintenance.
+        options.AddPolicy("PickListAccess",
+            p => p.RequireRole("PickListAccess"));
+
+        // DEFRA Data Entry, DEFRA Maintenance, VLA Maintenance - Farm creation (not VLA Data Entry).
+        options.AddPolicy("FarmCreation",
+            p => p.RequireRole("FarmCreation"));
     });
 
     var app = builder.Build();
@@ -213,6 +250,7 @@ try
     }).AllowAnonymous();
 
     app.UseStaticFiles();
+    app.MapGet("/", () => Results.Redirect("/Home"));
     app.MapRazorPages();
 
     app.Run();

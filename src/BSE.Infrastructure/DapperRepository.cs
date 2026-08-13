@@ -12,10 +12,23 @@ public class DapperRepository : IDbRepository
         _connectionFactory = connectionFactory;
     }
 
+    // Microsoft.Data.SqlClient sets ARITHABORT OFF by default, which causes
+    // SQL Server to reuse cached plans compiled under different SET options
+    // (e.g. from SSMS which uses ARITHABORT ON), returning wrong results.
+    // Setting it ON here fixes all SP calls without touching individual SPs.
+    private IDbConnection OpenConnection()
+    {
+        var connection = _connectionFactory.CreateConnection();
+        connection.Open();
+        using var cmd = connection.CreateCommand();
+        cmd.CommandText = "SET ARITHABORT ON";
+        cmd.ExecuteNonQuery();
+        return connection;
+    }
+
     public async Task<IEnumerable<T>> QueryAsync<T>(string storedProcedure, object? param = null)
     {
-        using var connection = _connectionFactory.CreateConnection();
-        connection.Open();
+        using var connection = OpenConnection();
         return await connection.QueryAsync<T>(
             storedProcedure,
             param,
@@ -24,8 +37,7 @@ public class DapperRepository : IDbRepository
 
     public async Task ExecuteAsync(string storedProcedure, object? param = null)
     {
-        using var connection = _connectionFactory.CreateConnection();
-        connection.Open();
+        using var connection = OpenConnection();
         await connection.ExecuteAsync(
             storedProcedure,
             param,
@@ -35,8 +47,7 @@ public class DapperRepository : IDbRepository
     public async Task<T?> QuerySingleOrDefaultAsync<T>(string storedProcedure, object? param = null)
         where T : class
     {
-        using var connection = _connectionFactory.CreateConnection();
-        connection.Open();
+        using var connection = OpenConnection();
         return await connection.QuerySingleOrDefaultAsync<T>(
             storedProcedure,
             param,
@@ -45,8 +56,7 @@ public class DapperRepository : IDbRepository
 
     public async Task<IEnumerable<T>> QueryAsync<T>(string storedProcedure, object? param, int commandTimeoutSeconds)
     {
-        using var connection = _connectionFactory.CreateConnection();
-        connection.Open();
+        using var connection = OpenConnection();
         return await connection.QueryAsync<T>(
             storedProcedure,
             param,
@@ -56,8 +66,7 @@ public class DapperRepository : IDbRepository
 
     public async Task ExecuteWithOutputAsync(string storedProcedure, DynamicParameters param)
     {
-        using var connection = _connectionFactory.CreateConnection();
-        connection.Open();
+        using var connection = OpenConnection();
         await connection.ExecuteAsync(
             storedProcedure,
             param,
@@ -73,8 +82,7 @@ public class DapperRepository : IDbRepository
 
     public async Task<T> QueryMultipleAsync<T>(string storedProcedure, object? param, Func<SqlMapper.GridReader, Task<T>> read)
     {
-        using var connection = _connectionFactory.CreateConnection();
-        connection.Open();
+        using var connection = OpenConnection();
         using var multi = await connection.QueryMultipleAsync(
             storedProcedure,
             param,

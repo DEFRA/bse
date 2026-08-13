@@ -1,77 +1,98 @@
 @page
 @model BSE.Host.Pages.Search.RelatedAnimalsModel
 @{
-    ViewData["Title"] = "Search related animals";
+    ViewData["Title"] = "Related Animal Search";
 }
 
-<h1 class="govuk-heading-l">Search related animals</h1>
+<h1 class="govuk-heading-l">Related Animal Search</h1>
 
 <form method="get" novalidate>
-    <div class="govuk-form-group">
-        <label asp-for="Rbse" class="govuk-label">RBSE</label>
-        <div class="govuk-hint">Enter RBSE as 9 digits.</div>
-        <input asp-for="Rbse" class="govuk-input govuk-!-width-one-half" />
-    </div>
+    <div class="govuk-grid-row">
+        <div class="govuk-grid-column-two-thirds">
+            <div class="govuk-form-group">
+                <label asp-for="Rbse" class="govuk-label">RBSE Of Case</label>
+                <input asp-for="Rbse" class="govuk-input govuk-!-width-two-thirds" />
+                <span asp-validation-for="Rbse" class="govuk-error-message"></span>
+            </div>
 
-    <div class="govuk-form-group">
-        <label asp-for="Name" class="govuk-label">Name</label>
-        <input asp-for="Name" class="govuk-input govuk-!-width-two-thirds" />
-    </div>
+            <div class="govuk-form-group">
+                <label asp-for="Eartag" class="govuk-label">Eartag of Related Animal (starting with...)</label>
+                <input asp-for="Eartag" class="govuk-input govuk-!-width-two-thirds" />
+            </div>
 
-    <div class="govuk-form-group">
-        <label asp-for="Eartag" class="govuk-label">Eartag</label>
-        <input asp-for="Eartag" class="govuk-input govuk-!-width-two-thirds" />
-    </div>
+            <div class="govuk-form-group">
+                <label asp-for="RelationRbse" class="govuk-label">RBSE of Related Animal</label>
+                <input asp-for="RelationRbse" class="govuk-input govuk-!-width-two-thirds" />
+                <span asp-validation-for="RelationRbse" class="govuk-error-message"></span>
+            </div>
 
-    <div class="govuk-form-group">
-        <label asp-for="RelationRbse" class="govuk-label">Relation RBSE</label>
-        <input asp-for="RelationRbse" class="govuk-input govuk-!-width-one-half" />
-    </div>
+            <div class="govuk-form-group">
+                <label asp-for="RelationType" class="govuk-label">Relation Type</label>
+                <select asp-for="RelationType" class="govuk-select govuk-!-width-two-thirds">
+                    <option value=""></option>
+                    @foreach (var item in Model.RelationTypeOptions)
+                    {
+                        <option value="@item.Code">@item.Description</option>
+                    }
+                </select>
+            </div>
 
-    <div class="govuk-form-group">
-        <label asp-for="RelationType" class="govuk-label">Relation type</label>
-        <input asp-for="RelationType" class="govuk-input govuk-!-width-one-half" />
-    </div>
+            <div class="govuk-form-group">
+                <label asp-for="Name" class="govuk-label">Name of Related Animal (starting with...)</label>
+                <input asp-for="Name" class="govuk-input govuk-!-width-two-thirds" />
+            </div>
 
-    <div class="govuk-button-group">
-        <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
-        <a asp-page="/Search/RelatedAnimals" class="govuk-link">Clear search</a>
+            <div class="govuk-button-group">
+                <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
+                <a asp-page="/Home" class="govuk-link">Search Menu</a>
+            </div>
+        </div>
     </div>
- </form>
+</form>
 
 @if (Model.HasSearched)
 {
-    <p class="govuk-body">@Model.Results.Count result(s) found.</p>
+    <p class="govuk-body">@Model.TotalCount result(s) found.</p>
 
-    @if (Model.Results.Count > 0)
+    @if (Model.TotalCount > 0)
     {
+        @await Html.PartialAsync("_ExportLink")
         <table class="govuk-table">
             <caption class="govuk-visually-hidden">Related animal results</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
                     <th scope="col" class="govuk-table__header">RBSE</th>
-                    <th scope="col" class="govuk-table__header">Eartag</th>
-                    <th scope="col" class="govuk-table__header">Name</th>
+                    <th scope="col" class="govuk-table__header">CPHH</th>
                     <th scope="col" class="govuk-table__header">Relation type</th>
+                    <th scope="col" class="govuk-table__header">Relation sex</th>
+                    <th scope="col" class="govuk-table__header">Eartag</th>
+                    <th scope="col" class="govuk-table__header">Relation birth date</th>
+                    <th scope="col" class="govuk-table__header">Relation fate</th>
+                    <th scope="col" class="govuk-table__header">Left date</th>
+                    <th scope="col" class="govuk-table__header">Name</th>
+                    <th scope="col" class="govuk-table__header">Relation eartag</th>
                     <th scope="col" class="govuk-table__header">Relation RBSE</th>
-                    <th scope="col" class="govuk-table__header">Action</th>
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
-                @foreach (var r in Model.Results)
+                @foreach (var r in Model.PagedResults)
                 {
                     <tr class="govuk-table__row">
-                        <td class="govuk-table__cell bse-rbse">@r.Rbse</td>
-                        <td class="govuk-table__cell">@r.Eartag</td>
-                        <td class="govuk-table__cell">@r.RelName</td>
+                        <td class="govuk-table__cell bse-rbse"><a asp-page="/Case/Details" asp-route-rbse="@r.Rbse" class="govuk-link">@r.Rbse</a></td>
+                        <td class="govuk-table__cell">@r.Cphh</td>
                         <td class="govuk-table__cell">@r.RelationType</td>
+                        <td class="govuk-table__cell">@r.RelSex</td>
+                        <td class="govuk-table__cell">@r.Eartag</td>
+                        <td class="govuk-table__cell">@r.RelBirthDate</td>
+                        <td class="govuk-table__cell">@r.RelFate</td>
+                        <td class="govuk-table__cell">@r.LeftDate?.ToString("dd/MM/yyyy")</td>
+                        <td class="govuk-table__cell">@r.RelName</td>
+                        <td class="govuk-table__cell">@r.RelEartag</td>
                         <td class="govuk-table__cell bse-rbse">@r.RelationRbse</td>
-                        <td class="govuk-table__cell">
-                            <a asp-page="/Case/Details" asp-route-rbse="@r.Rbse" class="govuk-link">Open</a>
-                        </td>
                     </tr>
                 }
             </tbody>
         </table>
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
     }
 }

@@ -8,7 +8,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BSE.Host.Pages.Case;
 
-[Authorize(Policy = "DataEntry")]
+[Authorize(Policy = "DEFRAMaintenance")]
 public class RbseChangeModel(ICaseService caseService, ICurrentUserService currentUserService) : PageModel
 {
     [BindProperty(SupportsGet = true)]

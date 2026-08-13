@@ -37,9 +37,10 @@
                     {
                         @foreach (var col in Model.Rows.First().Keys)
                         {
+                            var inputId = $"field-{col}".Replace(" ", "-");
                             <div class="govuk-form-group">
-                                <label class="govuk-label">@col</label>
-                                <input name="Fields[@col]" class="govuk-input govuk-!-width-two-thirds" />
+                                <label class="govuk-label" for="@inputId">@col</label>
+                                <input id="@inputId" name="Fields[@col]" class="govuk-input govuk-!-width-two-thirds" />
                             </div>
                         }
                     }
@@ -53,6 +54,7 @@
         {
             var columns = Model.Rows.First().Keys.ToList();
             <table class="govuk-table">
+                <caption class="govuk-visually-hidden">Current pick list records</caption>
                 <thead class="govuk-table__head">
                     <tr class="govuk-table__row">
                         @foreach (var col in columns)

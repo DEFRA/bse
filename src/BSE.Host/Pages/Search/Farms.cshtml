@@ -1,59 +1,96 @@
 @page
 @model BSE.Host.Pages.Search.FarmsModel
 @{
-    ViewData["Title"] = "Search for a farm";
+    ViewData["Title"] = "Farm Search";
 }
 
-<h1 class="govuk-heading-l">Search for a farm</h1>
+<h1 class="govuk-heading-l">Farm Search</h1>
 
 <form method="get" novalidate>
-    <div class="govuk-form-group">
-        <label asp-for="Filter.Cphh" class="govuk-label">CPHH</label>
-        <div class="govuk-hint">For example, 12/345/0001.</div>
-        <input asp-for="Filter.Cphh" class="govuk-input govuk-!-width-one-half" />
-    </div>
+    <div class="govuk-grid-row">
+        <div class="govuk-grid-column-two-thirds">
+            <div class="govuk-form-group">
+                <label asp-for="Filter.Cphh" class="govuk-label">CPH(H)</label>
+                <input asp-for="Filter.Cphh" class="govuk-input govuk-!-width-two-thirds" />
+                <span asp-validation-for="Filter.Cphh" class="govuk-error-message"></span>
+            </div>
 
-    <div class="govuk-form-group">
-        <label asp-for="Filter.OwnerName" class="govuk-label">Owner name</label>
-        <input asp-for="Filter.OwnerName" class="govuk-input govuk-!-width-two-thirds" />
-    </div>
+            <div class="govuk-form-group">
+                <label asp-for="Filter.OwnerName" class="govuk-label">Owner Name (partial search)</label>
+                <input asp-for="Filter.OwnerName" class="govuk-input govuk-!-width-two-thirds" />
+            </div>
 
-    <div class="govuk-form-group">
-        <label asp-for="Filter.Address" class="govuk-label">Address</label>
-        <input asp-for="Filter.Address" class="govuk-input govuk-!-width-two-thirds" />
-    </div>
+            <div class="govuk-form-group">
+                <label asp-for="Filter.Herdmark" class="govuk-label">Herdmark</label>
+                <input asp-for="Filter.Herdmark" class="govuk-input govuk-!-width-two-thirds" />
+            </div>
 
-    <div class="govuk-form-group">
-        <label asp-for="Filter.County" class="govuk-label">County</label>
-        <input asp-for="Filter.County" class="govuk-input govuk-!-width-one-half" />
-    </div>
+            <div class="govuk-form-group">
+                <label asp-for="Filter.Address" class="govuk-label">Address (partial search)</label>
+                <input asp-for="Filter.Address" class="govuk-input govuk-!-width-two-thirds" />
+            </div>
 
-    <div class="govuk-form-group">
-        <label asp-for="Filter.Herdmark" class="govuk-label">Herdmark</label>
-        <input asp-for="Filter.Herdmark" class="govuk-input govuk-!-width-one-half" />
-    </div>
+            <div class="govuk-form-group">
+                <label asp-for="Filter.NumericHerdmark" class="govuk-label">Numeric Herdmark</label>
+                <input asp-for="Filter.NumericHerdmark" class="govuk-input govuk-!-width-two-thirds" />
+                <span asp-validation-for="Filter.NumericHerdmark" class="govuk-error-message"></span>
+            </div>
 
-    <div class="govuk-form-group">
-        <div class="govuk-checkboxes" data-module="govuk-checkboxes">
-            <div class="govuk-checkboxes__item">
-                <input asp-for="Filter.IncludeNonGb" class="govuk-checkboxes__input" />
-                <label asp-for="Filter.IncludeNonGb" class="govuk-label govuk-checkboxes__label">Include non-GB farms</label>
+            <div class="govuk-form-group">
+                <label asp-for="Filter.County" class="govuk-label">County</label>
+                <select asp-for="Filter.County" class="govuk-select govuk-!-width-two-thirds">
+                    <option value=""></option>
+                    @foreach (var item in Model.CountyOptions)
+                    {
+                        <option value="@item.Code">@item.Description</option>
+                    }
+                </select>
+            </div>
+
+            <div class="govuk-form-group">
+                <label asp-for="Filter.IsDealer" class="govuk-label">Dealer</label>
+                <select asp-for="Filter.IsDealer" class="govuk-select govuk-!-width-two-thirds">
+                    <option value=""></option>
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                </select>
+            </div>
+
+            <div class="govuk-form-group">
+                <label asp-for="Filter.Aho" class="govuk-label">AHO</label>
+                <select asp-for="Filter.Aho" class="govuk-select govuk-!-width-two-thirds">
+                    <option value=""></option>
+                    @foreach (var item in Model.AhoOptions)
+                    {
+                        <option value="@item.Code">@item.Description</option>
+                    }
+                </select>
+            </div>
+
+            <div class="govuk-form-group">
+                <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                    <div class="govuk-checkboxes__item">
+                        <input asp-for="Filter.IncludeNonGb" class="govuk-checkboxes__input" />
+                        <label asp-for="Filter.IncludeNonGb" class="govuk-label govuk-checkboxes__label">Include Non-GB Farms?</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="govuk-button-group">
+                <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
+                <a asp-page="/Home" class="govuk-link">Search Menu</a>
             </div>
         </div>
-    </div>
-
-    <div class="govuk-button-group">
-        <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
-        <a asp-page="/Search/Farms" class="govuk-link">Clear search</a>
     </div>
 </form>
 
 @if (Model.Filter.HasSearched)
 {
-    <p class="govuk-body">@Model.Filter.Results.Count result(s) found.</p>
+    <p class="govuk-body">@Model.Filter.TotalCount result(s) found.</p>
 
-    @if (Model.Filter.Results.Count > 0)
+    @if (Model.Filter.TotalCount > 0)
     {
+        @await Html.PartialAsync("_ExportLink")
         <table class="govuk-table">
             <caption class="govuk-visually-hidden">Farm search results</caption>
             <thead class="govuk-table__head">
@@ -61,30 +98,37 @@
                     <th scope="col" class="govuk-table__header">CPHH</th>
                     <th scope="col" class="govuk-table__header">Owner name</th>
                     <th scope="col" class="govuk-table__header">Address</th>
+                    <th scope="col" class="govuk-table__header">Correspondence address</th>
                     <th scope="col" class="govuk-table__header">County</th>
                     <th scope="col" class="govuk-table__header">Herdmark</th>
+                    <th scope="col" class="govuk-table__header">Numeric herdmark</th>
+                    <th scope="col" class="govuk-table__header">Map reference</th>
+                    <th scope="col" class="govuk-table__header">AHO</th>
+                    <th scope="col" class="govuk-table__header">Herd type</th>
                     <th scope="col" class="govuk-table__header">Cases</th>
                     <th scope="col" class="govuk-table__header">Confirmed</th>
-                    <th scope="col" class="govuk-table__header">Action</th>
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
-                @foreach (var r in Model.Filter.Results)
+                @foreach (var r in Model.Filter.PagedResults)
                 {
                     <tr class="govuk-table__row">
-                        <td class="govuk-table__cell">@r.Cphh</td>
+                        <td class="govuk-table__cell"><a asp-page="/Farm/Details" asp-route-cphh="@r.Cphh" class="govuk-link">@r.Cphh</a></td>
                         <td class="govuk-table__cell">@r.OwnerName</td>
                         <td class="govuk-table__cell">@r.Address</td>
+                        <td class="govuk-table__cell">@r.CorrespondenceAddress</td>
                         <td class="govuk-table__cell">@r.County</td>
                         <td class="govuk-table__cell">@r.Herdmark</td>
+                        <td class="govuk-table__cell">@r.NumericHerdmark</td>
+                        <td class="govuk-table__cell">@r.MapReference</td>
+                        <td class="govuk-table__cell">@r.Aho</td>
+                        <td class="govuk-table__cell">@r.HerdType</td>
                         <td class="govuk-table__cell">@r.CasesCount</td>
                         <td class="govuk-table__cell">@r.ConfirmedCasesCount</td>
-                        <td class="govuk-table__cell">
-                            <a asp-page="/Farm/Details" asp-route-cphh="@r.Cphh" class="govuk-link">Open</a>
-                        </td>
                     </tr>
                 }
             </tbody>
         </table>
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.Filter.PageNumber, ["TotalPages"] = Model.Filter.TotalPages, ["PageNumberKey"] = "Filter.PageNumber" })
     }
 }
