@@ -1,0 +1,38 @@
+@* Shared partial — case section tab bar (mirrors legacy 7-tab bar)
+   Usage: @await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Farm", rbse))
+*@
+@model BSE.Host.Models.CaseTabsViewModel
+@{
+    var tabs = new[]
+    {
+        new { Label = "Farm",        Page = "/Case/Farm"     },
+        new { Label = "Case (DEFRA)", Page = "/Case/Edit"    },
+        new { Label = "BAB",         Page = "/Case/Bab"      },
+        new { Label = "Case (VLA)",  Page = "/Case/Vla"      },
+        new { Label = "Clinical",    Page = "/Case/Clinical" },
+        new { Label = "Feeds",       Page = "/Case/Feeds"    },
+        new { Label = "Relations",   Page = "/Case/Relations"},
+    };
+}
+
+<nav class="bse-case-tabs govuk-!-margin-bottom-6" aria-label="Case sections">
+    <ul class="bse-case-tabs__list" role="list">
+        @foreach (var tab in tabs)
+        {
+            bool isActive = string.Equals(tab.Label, Model.ActiveTab, StringComparison.OrdinalIgnoreCase);
+            if (isActive)
+            {
+                <li class="bse-case-tabs__item bse-case-tabs__item--active" aria-current="page">
+                    <span class="bse-case-tabs__link">@tab.Label</span>
+                </li>
+            }
+            else
+            {
+                <li class="bse-case-tabs__item">
+                    <a class="bse-case-tabs__link govuk-link govuk-link--no-visited-state"
+                       asp-page="@tab.Page" asp-route-rbse="@Model.Rbse">@tab.Label</a>
+                </li>
+            }
+        }
+    </ul>
+</nav>

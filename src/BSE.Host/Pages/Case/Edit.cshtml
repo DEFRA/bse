@@ -1,103 +1,234 @@
-@page "{rbse}"
+﻿@page "{rbse}"
 @model EditModel
+@using BSE.Modules.CaseManagement.Models
 @{
-    ViewData["Title"] = $"Edit case — {Model.Case.Rbse}";
+    ViewData["Title"] = $"Case {Model.Case.Rbse} — DEFRA tab";
+    string D(DateTime? d) => d?.ToString("dd/MM/yyyy") ?? "—";
+    string Desc(IEnumerable<BSE.SharedKernel.ILookupItem> opts, string? code) =>
+        opts.FirstOrDefault(o => o.Code == code)?.Description ?? code ?? "—";
+    string rbseNoSlash = Model.Case.Rbse.Replace("/", "");
 }
 
-<div>
-    <h1 class="govuk-heading-l">Edit case — @Model.Case.Rbse</h1>
-    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
-        <ol class="govuk-breadcrumbs__list">
-            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Details" asp-route-rbse="@Model.Case.Rbse">@Model.Case.Rbse</a></li>
-            <li class="govuk-breadcrumbs__list-item" aria-current="page">Edit</li>
-        </ol>
-    </nav>
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Details" asp-route-rbse="@Model.Case.Rbse">@BseFormat.FormatRbse(Model.Case.Rbse)</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Case (DEFRA)</li>
+    </ol>
+</nav>
 
-    @if (!ViewContext.ModelState.IsValid)
+<h1 class="govuk-heading-l">RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Case.Rbse)</span></h1>
+
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Case (DEFRA)", Model.Case.Rbse))
+
+@if (TempData["Success"] is string successMsg)
+{
+    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert"
+         aria-labelledby="defra-success-title" data-module="govuk-notification-banner">
+        <div class="govuk-notification-banner__header">
+            <h2 class="govuk-notification-banner__title" id="defra-success-title">Success</h2>
+        </div>
+        <div class="govuk-notification-banner__content">
+            <p class="govuk-notification-banner__heading">@successMsg</p>
+        </div>
+    </div>
+}
+
+@* -- Batch numbers ------------------------------------------------------------ *@
+@if (User.IsInRole("DataEntry") && Model.BatchNumbers.Count > 0)
+{
+    <div class="govuk-summary-card govuk-!-margin-bottom-4">
+        <div class="govuk-summary-card__title-wrapper">
+            <h2 class="govuk-summary-card__title">Batch numbers</h2>
+        </div>
+        <div class="govuk-summary-card__content">
+            <ul class="govuk-list">
+                @foreach (var b in Model.BatchNumbers)
+                {
+                    <li>@b.BatchNumber@(b.Document is not null ? $" — {b.Document}" : "")</li>
+                }
+            </ul>
+        </div>
+    </div>
+}
+
+@* -- READ-ONLY VIEW --------------------------------------------------------- *@
+<div class="govuk-button-group govuk-!-margin-bottom-4">
+    @if (User.IsInRole("DataEntry"))
     {
-        <div class="govuk-error-summary" data-module="govuk-error-summary">
-            <div role="alert">
-                <h2 class="govuk-error-summary__title">There is a problem</h2>
-                <div class="govuk-error-summary__body">
-                    <ul class="govuk-list govuk-error-summary__list">
-                        @foreach (var modelError in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
-                        {
-                            <li>@modelError.ErrorMessage</li>
-                        }
-                    </ul>
-                </div>
+        <a asp-page="/Case/DefraEdit" asp-route-rbse="@Model.Case.Rbse"
+       class="govuk-button govuk-button--secondary">Edit case (DEFRA) details</a>
+    }
+        <a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse" class="govuk-link">Case audit log</a>
+        @if (!string.IsNullOrEmpty(Model.SpolSiteUrl))
+        {
+            <a href="@(Model.SpolSiteUrl)@rbseNoSlash" target="_blank" rel="noopener noreferrer" class="govuk-link">
+                View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
+            </a>
+        }
+    </div>
+
+    <h2 class="govuk-heading-m">Animal identification</h2>
+    <dl class="govuk-summary-list">
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Eartag</dt>
+            <dd class="govuk-summary-list__value">@Model.Case.EartagCountry @Model.Case.EartagHerdmark @Model.Case.Eartag</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Previous eartag</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.PreviousEartag ?? "—")</dd>
+        </div>
+    </dl>
+
+    <h2 class="govuk-heading-m">Key dates and fate</h2>
+    <dl class="govuk-summary-list">
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">BSE-1 date received</dt>
+            <dd class="govuk-summary-list__value">@D(Model.Case.Bse1ReceivedDate)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Form A date</dt>
+            <dd class="govuk-summary-list__value">@D(Model.Case.FormADate)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Form A resubmitted date</dt>
+            <dd class="govuk-summary-list__value">@D(Model.Case.FormAResubmittedDate)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Form B date</dt>
+            <dd class="govuk-summary-list__value">@D(Model.Case.FormBDate)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Fate (Form B reason)</dt>
+            <dd class="govuk-summary-list__value">@Desc(Model.FateOptions, Model.Case.Fate)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Form C date</dt>
+            <dd class="govuk-summary-list__value">@D(Model.Case.FormCDate)</dd>
+        </div>
+    </dl>
+
+    <h2 class="govuk-heading-m">Results</h2>
+    <dl class="govuk-summary-list">
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Final result date</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.FinalResultDate?.ToString("dd/MM/yyyy") ?? "—")</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Final result</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.FinalResult ?? "—")</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">DBSE</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.Dbse ?? "—")</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Case type</dt>
+            <dd class="govuk-summary-list__value">@Desc(Model.CaseTypeOptions, Model.Case.CaseType)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Lab comment</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.LabComment ?? "—")</dd>
+        </div>
+    </dl>
+
+    @if (Model.Tests.Count > 0)
+    {
+        <table class="govuk-table">
+            <caption class="govuk-table__caption govuk-table__caption--s">Test records</caption>
+            <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                    <th scope="col" class="govuk-table__header">Test type</th>
+                    <th scope="col" class="govuk-table__header">Test result</th>
+                </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+                @foreach (var t in Model.Tests)
+                {
+                    <tr class="govuk-table__row">
+                        <td class="govuk-table__cell">@(t.TestTypeDescription ?? t.TestType)</td>
+                        <td class="govuk-table__cell">@(t.TestResultDescription ?? t.TestResult)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    <p class="govuk-body">
+        <a asp-page="/Case/TestResults" asp-route-rbse="@Model.Rbse" class="govuk-link">Add / edit test records</a>
+    </p>
+
+    <h2 class="govuk-heading-m">Animal details</h2>
+    <dl class="govuk-summary-list">
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Date of birth</dt>
+            <dd class="govuk-summary-list__value">@D(Model.Case.BirthDate)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Is DOB estimated?</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.IsBirthDateEst ? "Yes" : "No")</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Date of birth source</dt>
+            <dd class="govuk-summary-list__value">@Desc(Model.BirthDateSourceOptions, Model.Case.BirthDateSource)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Reported location</dt>
+            <dd class="govuk-summary-list__value">@Desc(Model.ReportedLocationOptions, Model.Case.ReportedLocation)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Survey</dt>
+            <dd class="govuk-summary-list__value">@Desc(Model.SurveyOptions, Model.Case.Survey)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Valuation age</dt>
+            <dd class="govuk-summary-list__value">@Desc(Model.ValuationAgeOptions, Model.Case.ValuationAge)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Notes</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.Notes ?? "—")</dd>
+        </div>
+    </dl>
+
+    <h2 class="govuk-heading-m">BSE-1 receipts</h2>
+    <dl class="govuk-summary-list">
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Purchaser BSE-1 received?</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.IsPurchaserBse1Received ? "Yes" : "No")@(Model.Case.HasCaseWork && Model.Case.PurchaserBse1ReceivedDate.HasValue ? $" ({D(Model.Case.PurchaserBse1ReceivedDate)})" : "")</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Breeder BSE-1 received?</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.IsBreederBse1Received ? "Yes" : "No")@(Model.Case.HasCaseWork && Model.Case.BreederBse1ReceivedDate.HasValue ? $" ({D(Model.Case.BreederBse1ReceivedDate)})" : "")</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Vendor 1 BSE-1 received?</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.IsVendor1Bse1Received ? "Yes" : "No")@(Model.Case.HasCaseWork && Model.Case.Vendor1Bse1ReceivedDate.HasValue ? $" ({D(Model.Case.Vendor1Bse1ReceivedDate)})" : "")</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Homebred BSE-1 received?</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.IsHomebredBse1Received ? "Yes" : "No")@(Model.Case.HasCaseWork && Model.Case.HomebredBse1ReceivedDate.HasValue ? $" ({D(Model.Case.HomebredBse1ReceivedDate)})" : "")</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Summary sheet received?</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.IsSummarySheetReceived ? "Yes" : "No")@(Model.Case.HasCaseWork && Model.Case.SummarySheetReceivedDate.HasValue ? $" ({D(Model.Case.SummarySheetReceivedDate)})" : "")</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Paperwork complete?</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.IsPaperworkComplete ? "Yes" : "No")@(Model.Case.HasCaseWork && Model.Case.PaperworkCompleteDate.HasValue ? $" ({D(Model.Case.PaperworkCompleteDate)})" : "")</dd>
+        </div>
+    </dl>
+
+    @if (Model.Case.HasCaseWork)
+    {
+        <h2 class="govuk-heading-m">Casework</h2>
+        <dl class="govuk-summary-list">
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">Barcode</dt>
+                <dd class="govuk-summary-list__value">@(Model.Case.Barcode ?? "—")</dd>
             </div>
-        </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">AHF reference</dt>
+                <dd class="govuk-summary-list__value">@(Model.Case.AhfReference ?? "—")</dd>
+            </div>
+        </dl>
     }
 
-    @if (!string.IsNullOrEmpty(Model.ConcurrencyError))
-    {
-        <div class="govuk-warning-text">
-            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
-            <strong class="govuk-warning-text__text">
-                <span class="govuk-warning-text__assistive">Warning</span>
-                Concurrency conflict: @Model.ConcurrencyError
-            </strong>
-        </div>
-    }
-
-    <form method="post" novalidate>
-        <input type="hidden" asp-for="Case.Rbse" />
-
-        <h2 class="govuk-heading-m">Identification</h2>
-        <div class="govuk-form-group"><label asp-for="Case.EartagCountry" class="govuk-label">Eartag country</label><input asp-for="Case.EartagCountry" class="govuk-input govuk-!-width-one-quarter" /></div>
-        <div class="govuk-form-group"><label asp-for="Case.EartagHerdmark" class="govuk-label">Eartag herdmark</label><input asp-for="Case.EartagHerdmark" class="govuk-input govuk-!-width-one-half" /></div>
-        <div class="govuk-form-group"><label asp-for="Case.Eartag" class="govuk-label">Eartag</label><input asp-for="Case.Eartag" class="govuk-input govuk-!-width-two-thirds" /></div>
-        <div class="govuk-form-group"><label asp-for="Case.PreviousEartag" class="govuk-label">Previous eartag</label><input asp-for="Case.PreviousEartag" class="govuk-input govuk-!-width-two-thirds" /></div>
-        <div class="govuk-form-group"><label asp-for="Case.Sex" class="govuk-label">Sex</label><input asp-for="Case.Sex" class="govuk-input govuk-!-width-one-quarter" /></div>
-        <div class="govuk-form-group"><label asp-for="Case.Breed" class="govuk-label">Breed</label><input asp-for="Case.Breed" class="govuk-input govuk-!-width-one-half" /></div>
-        <div class="govuk-form-group"><label asp-for="Case.Origin" class="govuk-label">Origin</label><input asp-for="Case.Origin" class="govuk-input govuk-!-width-one-half" /></div>
-        <div class="govuk-form-group"><label asp-for="Case.CaseType" class="govuk-label">Case type</label><input asp-for="Case.CaseType" class="govuk-input govuk-!-width-one-half" /></div>
-
-        <h2 class="govuk-heading-m">Dates and fate</h2>
-        <div class="govuk-form-group"><label asp-for="Case.Bse1ReceivedDate" class="govuk-label">BSE-1 received date</label><input asp-for="Case.Bse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.Bse1ReceivedDate?.ToString("yyyy-MM-dd")" /></div>
-        <div class="govuk-form-group"><label asp-for="Case.FormADate" class="govuk-label">Form A date</label><input asp-for="Case.FormADate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.FormADate?.ToString("yyyy-MM-dd")" /></div>
-        <div class="govuk-form-group"><label asp-for="Case.FormAResubmittedDate" class="govuk-label">Form A resubmitted</label><input asp-for="Case.FormAResubmittedDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.FormAResubmittedDate?.ToString("yyyy-MM-dd")" /></div>
-        <div class="govuk-form-group"><label asp-for="Case.FormBDate" class="govuk-label">Form B date</label><input asp-for="Case.FormBDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.FormBDate?.ToString("yyyy-MM-dd")" /></div>
-        <div class="govuk-form-group"><label asp-for="Case.FormCDate" class="govuk-label">Form C date</label><input asp-for="Case.FormCDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.FormCDate?.ToString("yyyy-MM-dd")" /></div>
-        <div class="govuk-form-group"><label asp-for="Case.Fate" class="govuk-label">Fate</label><input asp-for="Case.Fate" class="govuk-input govuk-!-width-one-half" /></div>
-        <div class="govuk-form-group"><label asp-for="Case.SlaughterDate" class="govuk-label">Slaughter date</label><input asp-for="Case.SlaughterDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.SlaughterDate?.ToString("yyyy-MM-dd")" /></div>
-        <div class="govuk-form-group"><label asp-for="Case.OnsetDate" class="govuk-label">Onset date</label><input asp-for="Case.OnsetDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.OnsetDate?.ToString("yyyy-MM-dd")" /></div>
-        <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input asp-for="Case.IsOnsetDateEst" type="checkbox" class="govuk-checkboxes__input" /><label asp-for="Case.IsOnsetDateEst" class="govuk-label govuk-checkboxes__label">Onset date estimated</label></div></div></div>
-
-        <h2 class="govuk-heading-m">Birth and purchase</h2>
-        <div class="govuk-form-group"><label asp-for="Case.BirthDate" class="govuk-label">Birth date</label><input asp-for="Case.BirthDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.BirthDate?.ToString("yyyy-MM-dd")" /></div>
-        <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input asp-for="Case.IsBirthDateEst" type="checkbox" class="govuk-checkboxes__input" /><label asp-for="Case.IsBirthDateEst" class="govuk-label govuk-checkboxes__label">Estimated</label></div></div></div>
-        <div class="govuk-form-group"><label asp-for="Case.BirthDateSource" class="govuk-label">Birth date source</label><input asp-for="Case.BirthDateSource" class="govuk-input govuk-!-width-one-half" /></div>
-        <div class="govuk-form-group"><label asp-for="Case.DamStatus" class="govuk-label">Dam status</label><input asp-for="Case.DamStatus" class="govuk-input govuk-!-width-one-third" /></div>
-        <div class="govuk-form-group"><label asp-for="Case.ValuationAge" class="govuk-label">Valuation age</label><input asp-for="Case.ValuationAge" class="govuk-input govuk-!-width-one-third" /></div>
-        <div class="govuk-form-group"><label asp-for="Case.PurchaseDate" class="govuk-label">Purchase date</label><input asp-for="Case.PurchaseDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.PurchaseDate?.ToString("yyyy-MM-dd")" /></div>
-        <div class="govuk-form-group"><label asp-for="Case.PurchaseAgeInMonths" class="govuk-label">Purchase age (months)</label><input asp-for="Case.PurchaseAgeInMonths" type="number" class="govuk-input govuk-input--width-5" /></div>
-        <div class="govuk-form-group"><label asp-for="Case.PurchasedCounty" class="govuk-label">Purchased county</label><input asp-for="Case.PurchasedCounty" class="govuk-input govuk-!-width-one-half" /></div>
-        <div class="govuk-form-group"><label asp-for="Case.HerdEntryDate" class="govuk-label">Herd entry date</label><input asp-for="Case.HerdEntryDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Case.HerdEntryDate?.ToString("yyyy-MM-dd")" /></div>
-        <div class="govuk-form-group"><label asp-for="Case.MonthsPregnant" class="govuk-label">Months pregnant</label><input asp-for="Case.MonthsPregnant" type="number" class="govuk-input govuk-input--width-5" min="0" /></div>
-        <div class="govuk-form-group"><label asp-for="Case.MonthsPostCalving" class="govuk-label">Months post calving</label><input asp-for="Case.MonthsPostCalving" type="number" class="govuk-input govuk-input--width-5" min="0" /></div>
-        <div class="govuk-form-group"><label asp-for="Case.OnsetAgeInMonths" class="govuk-label">Onset age (months)</label><input asp-for="Case.OnsetAgeInMonths" type="number" class="govuk-input govuk-input--width-5" /></div>
-
-        <h2 class="govuk-heading-m">Paperwork and survey</h2>
-        <div class="govuk-form-group"><label asp-for="Case.Survey" class="govuk-label">Survey</label><input asp-for="Case.Survey" class="govuk-input govuk-!-width-one-third" /></div>
-        <div class="govuk-form-group"><label asp-for="Case.ReportedLocation" class="govuk-label">Reported location</label><input asp-for="Case.ReportedLocation" class="govuk-input govuk-!-width-two-thirds" /></div>
-        <div class="govuk-form-group"><label asp-for="Case.AlternateDiagnosis" class="govuk-label">Alternate diagnosis</label><input asp-for="Case.AlternateDiagnosis" class="govuk-input govuk-!-width-two-thirds" /></div>
-        <div class="govuk-form-group"><label asp-for="Case.LabComment" class="govuk-label">Lab comment</label><input asp-for="Case.LabComment" class="govuk-input govuk-!-width-two-thirds" /></div>
-
-        <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input asp-for="Case.IsPurchaserBse1Received" type="checkbox" class="govuk-checkboxes__input" /><label asp-for="Case.IsPurchaserBse1Received" class="govuk-label govuk-checkboxes__label">Purchaser BSE-1</label></div></div></div>
-        <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input asp-for="Case.IsBreederBse1Received" type="checkbox" class="govuk-checkboxes__input" /><label asp-for="Case.IsBreederBse1Received" class="govuk-label govuk-checkboxes__label">Breeder BSE-1</label></div></div></div>
-        <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input asp-for="Case.IsVendor1Bse1Received" type="checkbox" class="govuk-checkboxes__input" /><label asp-for="Case.IsVendor1Bse1Received" class="govuk-label govuk-checkboxes__label">Vendor 1 BSE-1</label></div></div></div>
-        <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input asp-for="Case.IsHomebredBse1Received" type="checkbox" class="govuk-checkboxes__input" /><label asp-for="Case.IsHomebredBse1Received" class="govuk-label govuk-checkboxes__label">Homebred BSE-1</label></div></div></div>
-        <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input asp-for="Case.IsSummarySheetReceived" type="checkbox" class="govuk-checkboxes__input" /><label asp-for="Case.IsSummarySheetReceived" class="govuk-label govuk-checkboxes__label">Summary sheet</label></div></div></div>
-        <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input asp-for="Case.IsPaperworkComplete" type="checkbox" class="govuk-checkboxes__input" /><label asp-for="Case.IsPaperworkComplete" class="govuk-label govuk-checkboxes__label">Paperwork complete</label></div></div></div>
-
-        <div class="govuk-form-group"><label asp-for="Case.Notes" class="govuk-label">Notes</label><textarea asp-for="Case.Notes" class="govuk-textarea" rows="4"></textarea></div>
-
-        <div class="govuk-button-group">
-            <button type="submit" class="govuk-button" data-module="govuk-button">Save changes</button>
-            <a asp-page="/Case/Details" asp-route-rbse="@Model.Case.Rbse" class="govuk-link">Cancel</a>
-        </div>
-    </form>
-</div>

@@ -1,0 +1,146 @@
+﻿@page "{rbse}"
+@model VlaModel
+@{
+    ViewData["Title"] = $"Case (VLA) — {Model.Case.Rbse}";
+    string DateVal(DateTime? d) => d?.ToString("yyyy-MM-dd") ?? "";
+    string D(DateTime? d) => d?.ToString("dd/MM/yyyy") ?? "—";
+    string rbseNoSlash = Model.Case.Rbse.Replace("/", "");
+    string Desc(IEnumerable<BSE.SharedKernel.ILookupItem> opts, string? code) =>
+        opts.FirstOrDefault(o => o.Code == code)?.Description ?? code ?? "—";
+}
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Vla" asp-route-rbse="@Model.Case.Rbse">@BseFormat.FormatRbse(Model.Case.Rbse)</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Case (VLA)</li>
+    </ol>
+</nav>
+
+<h1 class="govuk-heading-l">RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Case.Rbse)</span></h1>
+
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Case (VLA)", Model.Case.Rbse))
+
+@if (TempData["Success"] is string successMsg)
+{
+    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert"
+         aria-labelledby="vla-success-title" data-module="govuk-notification-banner">
+        <div class="govuk-notification-banner__header">
+            <h2 class="govuk-notification-banner__title" id="vla-success-title">Success</h2>
+        </div>
+        <div class="govuk-notification-banner__content">
+            <p class="govuk-notification-banner__heading">@successMsg</p>
+        </div>
+    </div>
+}
+
+@* -- Batch numbers ------------------------------------------------------------ *@
+@if (User.IsInRole("DataEntry") && Model.BatchNumbers.Count > 0)
+{
+    <div class="govuk-summary-card govuk-!-margin-bottom-4">
+        <div class="govuk-summary-card__title-wrapper">
+            <h2 class="govuk-summary-card__title">Batch numbers</h2>
+        </div>
+        <div class="govuk-summary-card__content">
+            <ul class="govuk-list">
+                @foreach (var b in Model.BatchNumbers)
+                {
+                    <li>@b.BatchNumber@(b.Document is not null ? $" — {b.Document}" : "")</li>
+                }
+            </ul>
+        </div>
+    </div>
+}
+
+@* -- READ-ONLY VIEW --------------------------------------------------------- *@
+<div class="govuk-button-group govuk-!-margin-bottom-4">
+    @if (User.IsInRole("DataEntry"))
+    {
+        <a asp-page="/Case/VlaEdit" asp-route-rbse="@Model.Case.Rbse"
+       class="govuk-button govuk-button--secondary">Edit case (VLA) details</a>
+    }
+        <a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse" class="govuk-link">Case audit log</a>
+        @if (!string.IsNullOrEmpty(Model.SpolSiteUrl))
+        {
+            <a href="@(Model.SpolSiteUrl)@rbseNoSlash" target="_blank" rel="noopener noreferrer" class="govuk-link">
+                View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
+            </a>
+        }
+    </div>
+
+    <h2 class="govuk-heading-m">Animal details</h2>
+    <dl class="govuk-summary-list">
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Date of birth</dt>
+            <dd class="govuk-summary-list__value">@D(Model.Case.BirthDate)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Is DOB estimated?</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.IsBirthDateEst == true ? "Yes" : "No")</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Date of birth source</dt>
+            <dd class="govuk-summary-list__value">@Desc(Model.BirthDateSourceOptions, Model.Case.BirthDateSource)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Sex</dt>
+            <dd class="govuk-summary-list__value">@Desc(Model.SexOptions, Model.Case.Sex)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Breed</dt>
+            <dd class="govuk-summary-list__value">@Desc(Model.BreedOptions, Model.Case.Breed)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Origin</dt>
+            <dd class="govuk-summary-list__value">@Desc(Model.OriginOptions, Model.Case.Origin)</dd>
+        </div>
+    </dl>
+
+    <h2 class="govuk-heading-m">Purchase details</h2>
+    <dl class="govuk-summary-list">
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Date purchased</dt>
+            <dd class="govuk-summary-list__value">@D(Model.Case.PurchaseDate)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Age purchased (months)</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.PurchaseAgeInMonths?.ToString() ?? "—")</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Purchased county</dt>
+            <dd class="govuk-summary-list__value">@Desc(Model.PurchasedCountyOptions, Model.Case.PurchasedCounty)</dd>
+        </div>
+    </dl>
+
+    <h2 class="govuk-heading-m">Health dates</h2>
+    <dl class="govuk-summary-list">
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Herd entry date</dt>
+            <dd class="govuk-summary-list__value">@D(Model.Case.HerdEntryDate)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Onset date</dt>
+            <dd class="govuk-summary-list__value">@D(Model.Case.OnsetDate)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Is onset date estimated?</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.IsOnsetDateEst == true ? "Yes" : "No")</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Months pregnant</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.MonthsPregnant?.ToString() ?? "—")</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Months post calving</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.MonthsPostCalving?.ToString() ?? "—")</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Onset age (months)</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.OnsetAgeInMonths?.ToString() ?? "—")</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Slaughter date</dt>
+            <dd class="govuk-summary-list__value">@D(Model.Case.SlaughterDate)</dd>
+        </div>
+    </dl>
+

@@ -1,0 +1,280 @@
+﻿@page "{rbse}"
+@model BSE.Host.Pages.Case.VlaEditModel
+@{
+    ViewData["Title"] = $"Edit Case (VLA) — {Model.Case.Rbse}";
+    string DateVal(DateTime? d) => d?.ToString("yyyy-MM-dd") ?? "";
+    string rbseNoSlash = Model.Case.Rbse.Replace("/", "");
+    string Desc(IEnumerable<BSE.SharedKernel.ILookupItem> opts, string? code) =>
+        opts.FirstOrDefault(o => o.Code == code)?.Description ?? code ?? "—";
+}
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Vla" asp-route-rbse="@Model.Case.Rbse">@BseFormat.FormatRbse(Model.Case.Rbse)</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Edit Case (VLA)</li>
+    </ol>
+</nav>
+
+<h1 class="govuk-heading-l">RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Case.Rbse)</span></h1>
+
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Case (VLA)", Model.Case.Rbse))
+
+@if (TempData["Success"] is string successMsg)
+{
+    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert"
+         aria-labelledby="vla-edit-success-title" data-module="govuk-notification-banner">
+        <div class="govuk-notification-banner__header">
+            <h2 class="govuk-notification-banner__title" id="vla-edit-success-title">Success</h2>
+        </div>
+        <div class="govuk-notification-banner__content">
+            <p class="govuk-notification-banner__heading">@successMsg</p>
+        </div>
+    </div>
+}
+
+@if (!ViewContext.ModelState.IsValid)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@e.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.ConcurrencyError))
+{
+    <div class="govuk-warning-text">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text">
+            <span class="govuk-warning-text__assistive">Warning</span>
+            @Model.ConcurrencyError
+        </strong>
+    </div>
+}
+
+<form id="edit-vla-form" method="post" novalidate>
+
+    @* -- Hidden pass-through fields (DEFRA-owned) *@
+    <input type="hidden" asp-for="Case.Rbse" />
+    <input type="hidden" asp-for="Case.EartagCountry" />
+    <input type="hidden" asp-for="Case.EartagHerdmark" />
+    <input type="hidden" asp-for="Case.Eartag" />
+    <input type="hidden" asp-for="Case.PreviousEartag" />
+    <input type="hidden" asp-for="Case.Bse1ReceivedDate" />
+    <input type="hidden" asp-for="Case.FormADate" />
+    <input type="hidden" asp-for="Case.FormAResubmittedDate" />
+    <input type="hidden" asp-for="Case.FormBDate" />
+    <input type="hidden" asp-for="Case.Fate" />
+    <input type="hidden" asp-for="Case.FormCDate" />
+    <input type="hidden" asp-for="Case.IsPurchaserBse1Received" />
+    <input type="hidden" asp-for="Case.IsBreederBse1Received" />
+    <input type="hidden" asp-for="Case.IsVendor1Bse1Received" />
+    <input type="hidden" asp-for="Case.IsHomebredBse1Received" />
+    <input type="hidden" asp-for="Case.IsSummarySheetReceived" />
+    <input type="hidden" asp-for="Case.IsPaperworkComplete" />
+    <input type="hidden" asp-for="Case.ReportedLocation" />
+    <input type="hidden" asp-for="Case.Survey" />
+    <input type="hidden" asp-for="Case.Notes" />
+    <input type="hidden" asp-for="Case.DamStatus" />
+    <input type="hidden" asp-for="Case.ValuationAge" />
+    <input type="hidden" asp-for="Case.AlternateDiagnosis" />
+    <input type="hidden" asp-for="Case.LabComment" />
+    <input type="hidden" asp-for="Case.CaseType" />
+
+    <h2 class="govuk-heading-m">Animal details</h2>
+
+    <div class="govuk-form-group @(ViewData.ModelState["Case.BirthDate"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+        <label asp-for="Case.BirthDate" class="govuk-label">Date of birth</label>
+        @if (ViewData.ModelState["Case.BirthDate"]?.Errors.Count > 0)
+        {
+            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["Case.BirthDate"]!.Errors[0].ErrorMessage</p>
+        }
+        <input asp-for="Case.BirthDate" type="date" class="govuk-input govuk-input--width-10 @(ViewData.ModelState["Case.BirthDate"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
+               value="@DateVal(Model.Case.BirthDate)" />
+    </div>
+    <div class="govuk-form-group @(ViewData.ModelState["Case.BirthDateSource"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+        <label asp-for="Case.BirthDateSource" class="govuk-label">Date of birth source</label>
+        @if (ViewData.ModelState["Case.BirthDateSource"]?.Errors.Count > 0)
+        {
+            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["Case.BirthDateSource"]!.Errors[0].ErrorMessage</p>
+        }
+        <select asp-for="Case.BirthDateSource" class="govuk-select @(ViewData.ModelState["Case.BirthDateSource"]?.Errors.Count > 0 ? "govuk-select--error" : "")">
+            <option value="">-- Select --</option>
+            @foreach (var o in Model.BirthDateSourceOptions) { <option value="@o.Code" selected="@(o.Code == Model.Case.BirthDateSource ? "selected" : null)">@o.Description</option> }
+        </select>
+    </div>
+    <div class="govuk-form-group">
+        <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+            <div class="govuk-checkboxes__item">
+                <input asp-for="Case.IsBirthDateEst" type="checkbox" class="govuk-checkboxes__input" />
+                <label asp-for="Case.IsBirthDateEst" class="govuk-label govuk-checkboxes__label">Date of birth estimated?</label>
+            </div>
+        </div>
+    </div>
+    <div class="govuk-form-group @(ViewData.ModelState["Case.Sex"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+        <label asp-for="Case.Sex" class="govuk-label">Sex</label>
+        @if (ViewData.ModelState["Case.Sex"]?.Errors.Count > 0)
+        {
+            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["Case.Sex"]!.Errors[0].ErrorMessage</p>
+        }
+        <select asp-for="Case.Sex" class="govuk-select @(ViewData.ModelState["Case.Sex"]?.Errors.Count > 0 ? "govuk-select--error" : "")">
+            <option value="">-- Select --</option>
+            @foreach (var o in Model.SexOptions) { <option value="@o.Code" selected="@(o.Code == Model.Case.Sex ? "selected" : null)">@o.Description</option> }
+        </select>
+    </div>
+    <div class="govuk-form-group @(ViewData.ModelState["Case.Breed"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+        <label asp-for="Case.Breed" class="govuk-label">Breed</label>
+        @if (ViewData.ModelState["Case.Breed"]?.Errors.Count > 0)
+        {
+            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["Case.Breed"]!.Errors[0].ErrorMessage</p>
+        }
+        <select asp-for="Case.Breed" class="govuk-select @(ViewData.ModelState["Case.Breed"]?.Errors.Count > 0 ? "govuk-select--error" : "")">
+            <option value="">-- Select --</option>
+            @foreach (var o in Model.BreedOptions) { <option value="@o.Code" selected="@(o.Code == Model.Case.Breed ? "selected" : null)">@o.Description</option> }
+        </select>
+    </div>
+    <div class="govuk-form-group @(ViewData.ModelState["Case.Origin"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+        <label asp-for="Case.Origin" class="govuk-label">Origin</label>
+        @if (ViewData.ModelState["Case.Origin"]?.Errors.Count > 0)
+        {
+            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["Case.Origin"]!.Errors[0].ErrorMessage</p>
+        }
+        <select asp-for="Case.Origin" class="govuk-select @(ViewData.ModelState["Case.Origin"]?.Errors.Count > 0 ? "govuk-select--error" : "")">
+            <option value="">-- Select --</option>
+            @foreach (var o in Model.OriginOptions) { <option value="@o.Code" selected="@(o.Code == Model.Case.Origin ? "selected" : null)">@o.Description</option> }
+        </select>
+    </div>
+
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+
+    <h2 class="govuk-heading-m">Purchase details</h2>
+
+    <div class="govuk-form-group @(ViewData.ModelState["Case.PurchaseDate"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+        <label asp-for="Case.PurchaseDate" class="govuk-label">Date purchased</label>
+        @if (ViewData.ModelState["Case.PurchaseDate"]?.Errors.Count > 0)
+        {
+            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["Case.PurchaseDate"]!.Errors[0].ErrorMessage</p>
+        }
+        <input asp-for="Case.PurchaseDate" type="date" class="govuk-input govuk-input--width-10 @(ViewData.ModelState["Case.PurchaseDate"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
+               value="@DateVal(Model.Case.PurchaseDate)" />
+    </div>
+    <div class="govuk-form-group @(ViewData.ModelState["Case.PurchaseAgeInMonths"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+        <label asp-for="Case.PurchaseAgeInMonths" class="govuk-label">Age purchased (months)</label>
+        @if (ViewData.ModelState["Case.PurchaseAgeInMonths"]?.Errors.Count > 0)
+        {
+            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["Case.PurchaseAgeInMonths"]!.Errors[0].ErrorMessage</p>
+        }
+        <input asp-for="Case.PurchaseAgeInMonths" type="number" class="govuk-input govuk-input--width-5 @(ViewData.ModelState["Case.PurchaseAgeInMonths"]?.Errors.Count > 0 ? "govuk-input--error" : "")" min="0" />
+    </div>
+    <div class="govuk-form-group @(ViewData.ModelState["Case.PurchasedCounty"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+        <label asp-for="Case.PurchasedCounty" class="govuk-label">Purchased county</label>
+        @if (ViewData.ModelState["Case.PurchasedCounty"]?.Errors.Count > 0)
+        {
+            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["Case.PurchasedCounty"]!.Errors[0].ErrorMessage</p>
+        }
+        <select asp-for="Case.PurchasedCounty" class="govuk-select govuk-!-width-one-half @(ViewData.ModelState["Case.PurchasedCounty"]?.Errors.Count > 0 ? "govuk-select--error" : "")">
+            <option value="">-- Select --</option>
+            @foreach (var o in Model.PurchasedCountyOptions) { <option value="@o.Code" selected="@(o.Code == Model.Case.PurchasedCounty ? "selected" : null)">@o.Description</option> }
+        </select>
+    </div>
+
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+
+    <h2 class="govuk-heading-m">Clinical details</h2>
+
+    <div class="govuk-form-group @(ViewData.ModelState["Case.HerdEntryDate"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+        <label asp-for="Case.HerdEntryDate" class="govuk-label">Herd entry date</label>
+        @if (ViewData.ModelState["Case.HerdEntryDate"]?.Errors.Count > 0)
+        {
+            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["Case.HerdEntryDate"]!.Errors[0].ErrorMessage</p>
+        }
+        <input asp-for="Case.HerdEntryDate" type="date" class="govuk-input govuk-input--width-10 @(ViewData.ModelState["Case.HerdEntryDate"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
+               value="@DateVal(Model.Case.HerdEntryDate)" />
+    </div>
+    <div class="govuk-form-group @(ViewData.ModelState["Case.OnsetDate"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+        <label asp-for="Case.OnsetDate" class="govuk-label">Onset date</label>
+        @if (ViewData.ModelState["Case.OnsetDate"]?.Errors.Count > 0)
+        {
+            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["Case.OnsetDate"]!.Errors[0].ErrorMessage</p>
+        }
+        <input asp-for="Case.OnsetDate" type="date" class="govuk-input govuk-input--width-10 @(ViewData.ModelState["Case.OnsetDate"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
+               value="@DateVal(Model.Case.OnsetDate)" />
+    </div>
+    <div class="govuk-form-group">
+        <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+            <div class="govuk-checkboxes__item">
+                <input asp-for="Case.IsOnsetDateEst" type="checkbox" class="govuk-checkboxes__input" />
+                <label asp-for="Case.IsOnsetDateEst" class="govuk-label govuk-checkboxes__label">Onset date estimated?</label>
+            </div>
+        </div>
+    </div>
+    <div class="govuk-form-group @(ViewData.ModelState["Case.MonthsPregnant"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+        <label asp-for="Case.MonthsPregnant" class="govuk-label">Months pregnant</label>
+        @if (ViewData.ModelState["Case.MonthsPregnant"]?.Errors.Count > 0)
+        {
+            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["Case.MonthsPregnant"]!.Errors[0].ErrorMessage</p>
+        }
+        <input asp-for="Case.MonthsPregnant" type="number" class="govuk-input govuk-input--width-5 @(ViewData.ModelState["Case.MonthsPregnant"]?.Errors.Count > 0 ? "govuk-input--error" : "")" min="1" max="9" />
+    </div>
+    <div class="govuk-form-group @(ViewData.ModelState["Case.MonthsPostCalving"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+        <label asp-for="Case.MonthsPostCalving" class="govuk-label">Months post calving</label>
+        @if (ViewData.ModelState["Case.MonthsPostCalving"]?.Errors.Count > 0)
+        {
+            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["Case.MonthsPostCalving"]!.Errors[0].ErrorMessage</p>
+        }
+        <input asp-for="Case.MonthsPostCalving" type="number" class="govuk-input govuk-input--width-5 @(ViewData.ModelState["Case.MonthsPostCalving"]?.Errors.Count > 0 ? "govuk-input--error" : "")" min="1" max="3" />
+    </div>
+    <div class="govuk-form-group @(ViewData.ModelState["Case.OnsetAgeInMonths"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+        <label asp-for="Case.OnsetAgeInMonths" class="govuk-label">Onset age (months)</label>
+        @if (ViewData.ModelState["Case.OnsetAgeInMonths"]?.Errors.Count > 0)
+        {
+            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["Case.OnsetAgeInMonths"]!.Errors[0].ErrorMessage</p>
+        }
+        <input asp-for="Case.OnsetAgeInMonths" type="number" class="govuk-input govuk-input--width-5 @(ViewData.ModelState["Case.OnsetAgeInMonths"]?.Errors.Count > 0 ? "govuk-input--error" : "")" min="0" />
+    </div>
+
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-top-4" />
+
+    <div class="govuk-button-group">
+        <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+        <a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse"
+           class="govuk-link">Case audit log</a>
+        @if (!string.IsNullOrEmpty(Model.SpolSiteUrl))
+        {
+            <a href="@(Model.SpolSiteUrl)@rbseNoSlash" target="_blank" rel="noopener noreferrer"
+               class="govuk-link">View docs<span class="govuk-visually-hidden"> (opens in new tab)</span></a>
+        }
+        <a id="cancel-link" asp-page="/Case/Vla" asp-route-rbse="@Model.Case.Rbse" class="govuk-link">Cancel</a>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        (function () {
+            var form = document.getElementById('edit-vla-form');
+            var saved = false;
+            if (!form) return;
+            form.addEventListener('submit', function () { saved = true; });
+            window.addEventListener('beforeunload', function (e) {
+                if (!saved) { e.preventDefault(); e.returnValue = ''; }
+            });
+            var cancelLink = document.getElementById('cancel-link');
+            if (cancelLink) {
+                cancelLink.addEventListener('click', function (e) {
+                    if (!saved && !confirm('You have unsaved changes. Are you sure you want to cancel?')) {
+                        e.preventDefault();
+                    } else { saved = true; }
+                });
+            }
+        })();
+    </script>
+}

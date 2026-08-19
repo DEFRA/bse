@@ -44,23 +44,11 @@
             <div class="govuk-width-container">
                 <div class="govuk-service-navigation__container">
                     <span class="govuk-service-navigation__service-name">
-                        <a asp-page="/Home" class="govuk-service-navigation__link">BSE system</a>
+                        <a asp-page="/Home" class="govuk-service-navigation__link">BSE Database System</a>
                     </span>
-                    @if (User.Identity?.IsAuthenticated == true)
-                    {
-                        var groupName = UserContext.GroupName;
-                        <div class="bse-user-info">
-                            <span class="bse-user-info__item">User: <strong>@UserContext.DisplayName</strong></span>
-                            <span class="bse-user-info__item">Group: <strong>@groupName</strong></span>
-                        </div>
-                    }
                     <nav aria-label="Menu" class="govuk-service-navigation__wrapper">
                         <button type="button" class="govuk-service-navigation__toggle govuk-js-service-navigation-toggle" aria-controls="navigation" hidden>Menu</button>
                         <ul class="govuk-service-navigation__list" id="navigation">
-                            <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Search/Cases">Case search</a></li>
-                            <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Search/CasesByHerdmark">Cases by herdmark</a></li>
-                            <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Search/CasesByHoldingHerdmark">Cases by holding/herdmark</a></li>
-                            <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Search/Farms">Farm search</a></li>
                             @if (User.IsInRole("DataEntry"))
                             {
                                 <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Case/New">New case</a></li>
@@ -75,10 +63,18 @@
                             }
                             @if (User.Identity?.IsAuthenticated == true)
                             {
-                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Account/Logout">Sign out</a></li>
+                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Home">Home</a></li>
                             }
                         </ul>
                     </nav>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        var groupName = UserContext.GroupName;
+                        <div class="bse-user-info">
+                            <span class="bse-user-info__item">User: <strong>@UserContext.DisplayName</strong></span>
+                            <span class="bse-user-info__item">Group: <strong>@groupName</strong></span>
+                        </div>
+                    }
                 </div>
             </div>
         </section>

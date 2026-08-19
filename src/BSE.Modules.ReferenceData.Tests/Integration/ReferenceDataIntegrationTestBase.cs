@@ -129,6 +129,15 @@ public abstract class ReferenceDataIntegrationTestBase : IAsyncLifetime
         IF NOT EXISTS (SELECT 1 FROM luParishMapReference WHERE County='AB' AND Parish='001')
             INSERT INTO luParishMapReference VALUES ('AB', '001', 'NJ5030', 'NJ5535');
 
+        -- GetluADNSRegionAll SP
+        IF OBJECT_ID('GetluADNSRegionAll', 'P') IS NOT NULL DROP PROCEDURE GetluADNSRegionAll;
+        EXEC('
+        CREATE PROCEDURE GetluADNSRegionAll AS
+        SELECT [ID], [Name], [AuthorityID]
+        FROM [luADNSRegion]
+        ORDER BY [Name]
+        ');
+
         -- GetMapReferenceByCountyParish SP
         IF OBJECT_ID('GetMapReferenceByCountyParish', 'P') IS NOT NULL DROP PROCEDURE GetMapReferenceByCountyParish;
         EXEC('

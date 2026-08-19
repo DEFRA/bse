@@ -22,4 +22,10 @@ public interface ICaseWorkService
 
     /// <summary>Full casework entry update — includes IsCaseClosed audit logging via SP.</summary>
     Task EditCaseWorkEntryAsync(EditCaseWorkEntryCommand command);
+
+    /// <summary>Returns all open (not closed) case work entries for the open cases report.</summary>
+    Task<IEnumerable<CaseWorkEntryRecord>> GetOpenCasesAsync();
+
+    /// <summary>Returns all closed case work entries for the closed cases report.</summary>
+    Task<IEnumerable<CaseWorkEntryRecord>> GetClosedCasesAsync();
 }

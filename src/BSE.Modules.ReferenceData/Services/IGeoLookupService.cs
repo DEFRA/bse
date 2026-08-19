@@ -7,4 +7,6 @@ public interface IGeoLookupService
     Task<GeoMapReference?> GetMapReferenceAsync(string county, string parish);
     Task<ParishLookup?> GetParishAsync(string county, string parish);
     Task<IEnumerable<LuBSECounty>> GetNonGBCountyAsync();
+    Task<MapReference?> GetXYReferenceByPrefixCodeAsync(string code);
+    Task<string?> GetPrefixCodeByXYReferenceAsync(string xCoordPrefix, string yCoordPrefix);
 }

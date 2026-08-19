@@ -1,0 +1,147 @@
+@page "{rbse}"
+@model BSE.Host.Pages.Case.BabEditModel
+@{
+    ViewData["Title"] = $"Edit BAB — {Model.Rbse}";
+    string rbseNoSlash = Model.Rbse.Replace("/", "");
+    string Desc(IEnumerable<BSE.SharedKernel.ILookupItem> opts, string? code) =>
+        opts.FirstOrDefault(o => o.Code == code)?.Description ?? code ?? "—";
+}
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Bab" asp-route-rbse="@Model.Rbse">@BseFormat.FormatRbse(Model.Rbse)</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Edit BAB</li>
+    </ol>
+</nav>
+
+<h1 class="govuk-heading-l">RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Rbse)</span></h1>
+
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("BAB", Model.Rbse))
+
+@if (TempData["Success"] is string successMsg)
+{
+    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert"
+         aria-labelledby="bab-edit-success-title" data-module="govuk-notification-banner">
+        <div class="govuk-notification-banner__header">
+            <h2 class="govuk-notification-banner__title" id="bab-edit-success-title">Success</h2>
+        </div>
+        <div class="govuk-notification-banner__content">
+            <p class="govuk-notification-banner__heading">@successMsg</p>
+        </div>
+    </div>
+}
+
+@if (!ViewContext.ModelState.IsValid)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@e.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+<form method="post" asp-page-handler="SaveBab" novalidate>
+    <input type="hidden" asp-for="Rbse" />
+    @if (Model.RowStampBase64 is not null)
+    {
+        <input type="hidden" name="RowStampBase64" value="@Model.RowStampBase64" />
+    }
+
+    <h2 class="govuk-heading-m">Born-After-Ban details</h2>
+
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="bab-notes">Notes</label>
+        <textarea id="bab-notes" name="Bab.Notes" class="govuk-textarea" rows="3" maxlength="500">@Model.Bab?.Notes</textarea>
+    </div>
+
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="bab-origin">Origin</label>
+        <select id="bab-origin" name="Origin" class="govuk-select govuk-!-width-one-half">
+            <option value="">— select —</option>
+            @foreach (var o in Model.AnimalOrigins)
+            {
+                <option value="@o.Code" selected="@(o.Code == Model.Origin ? "selected" : null)">@o.Description</option>
+            }
+        </select>
+    </div>
+
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="bab-natal-cphh">Traced CPHH</label>
+        <div class="govuk-hint">The CPHH of the farm where the animal was born (11 digits).</div>
+        <input id="bab-natal-cphh" name="Bab.NatalCphh" class="govuk-input govuk-!-width-one-half"
+               value="@Model.Bab?.NatalCphh" maxlength="11" inputmode="numeric" />
+    </div>
+
+    <h2 class="govuk-heading-m">Traced origin farm</h2>
+
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="bab-traced-name">Traced Name</label>
+        <input id="bab-traced-name" name="Bab.TracedName" class="govuk-input govuk-!-width-two-thirds"
+               value="@Model.Bab?.TracedName" maxlength="30" />
+    </div>
+
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="bab-addr1">Traced Address</label>
+        <input id="bab-addr1" name="Bab.TracedAddress1" class="govuk-input govuk-!-width-two-thirds govuk-!-margin-bottom-1"
+               value="@Model.Bab?.TracedAddress1" maxlength="30" aria-label="Address line 1" />
+        <input id="bab-addr2" name="Bab.TracedAddress2" class="govuk-input govuk-!-width-two-thirds govuk-!-margin-bottom-1"
+               value="@Model.Bab?.TracedAddress2" maxlength="30" aria-label="Address line 2" />
+        <input id="bab-addr3" name="Bab.TracedAddress3" class="govuk-input govuk-!-width-two-thirds"
+               value="@Model.Bab?.TracedAddress3" maxlength="30" aria-label="Address line 3" />
+    </div>
+
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="bab-postcode">Traced Postcode</label>
+        <input id="bab-postcode" name="Bab.TracedPostcode" class="govuk-input govuk-!-width-one-third"
+               value="@Model.Bab?.TracedPostcode" maxlength="10" />
+    </div>
+
+    <h2 class="govuk-heading-m">Risk factors</h2>
+
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="bab-feed-risk">Feed Risk</label>
+        <select id="bab-feed-risk" name="Bab.FeedRisk" class="govuk-select govuk-!-width-one-half">
+            <option value="">— select —</option>
+            @foreach (var r in Model.FeedRisks)
+            {
+                <option value="@r.Code" selected="@(r.Code == Model.Bab?.FeedRisk ? "selected" : null)">@r.Description</option>
+            }
+        </select>
+    </div>
+
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="bab-horiz-risk">Horizontal Risk</label>
+        <select id="bab-horiz-risk" name="Bab.HorizontalRisk" class="govuk-select govuk-!-width-one-half">
+            <option value="">— select —</option>
+            @foreach (var r in Model.HorizontalRisks)
+            {
+                <option value="@r.Code" selected="@(r.Code == Model.Bab?.HorizontalRisk ? "selected" : null)">@r.Description</option>
+            }
+        </select>
+    </div>
+
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="bab-mat-risk">Maternal Risk</label>
+        <select id="bab-mat-risk" name="Bab.MaternalRisk" class="govuk-select govuk-!-width-one-half">
+            <option value="">— select —</option>
+            @foreach (var r in Model.MaternalRisks)
+            {
+                <option value="@r.Code" selected="@(r.Code == Model.Bab?.MaternalRisk ? "selected" : null)">@r.Description</option>
+            }
+        </select>
+    </div>
+
+    <div class="govuk-button-group govuk-!-margin-top-4">
+        <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+        <a asp-page="/Case/Bab" asp-route-rbse="@Model.Rbse" class="govuk-link">Cancel</a>
+    </div>
+</form>

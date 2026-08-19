@@ -5,7 +5,7 @@
 }
 
 <div>
-    <h1 class="govuk-heading-l">Edit case work entry — @Model.Rbse</h1>
+    <h1 class="govuk-heading-l">Edit case work entry — @BseFormat.FormatRbse(Model.Rbse)</h1>
     <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
         <ol class="govuk-breadcrumbs__list">
             <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
@@ -20,7 +20,7 @@
             <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
             <strong class="govuk-warning-text__text">
                 <span class="govuk-warning-text__assistive">Warning</span>
-                No case work entry found for @Model.Rbse.
+                No case work entry found for @BseFormat.FormatRbse(Model.Rbse).
             </strong>
         </div>
     }

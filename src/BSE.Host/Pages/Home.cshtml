@@ -1,13 +1,11 @@
 @page
 @model BSE.Host.Pages.HomeModel
 @{
-    ViewData["Title"] = "BSE system";
+    ViewData["Title"] = "BSE Database System";
     var batchYearError   = Model.ModelState[nameof(Model.BatchYear)]?.Errors.FirstOrDefault()?.ErrorMessage;
     var batchNumberError = Model.ModelState[nameof(Model.BatchNumber)]?.Errors.FirstOrDefault()?.ErrorMessage;
     var hasBatchError    = batchYearError is not null || batchNumberError is not null;
 }
-
-<h1 class="govuk-heading-l">BSE system</h1>
 
 @* ── Error summary (batch panel validation) ──────────────────────────────────── *@
 @if (hasBatchError)
@@ -54,33 +52,35 @@
                                     @(batchYearError ?? batchNumberError)
                                 </p>
                             }
-                            <div class="govuk-!-display-flex govuk-!-gap-3 govuk-!-align-items-end">
-                                <div>
-                                    <label class="govuk-label govuk-!-font-weight-bold" for="batch-year">Year</label>
-                                    <input id="batch-year" name="BatchYear" type="text" inputmode="numeric"
-                                           class="govuk-input govuk-input--width-4 @(batchYearError is not null ? "govuk-input--error" : "")"
-                                           value="@Model.BatchYear" autocomplete="off" />
+                            <div class="govuk-date-input">
+                                <div class="govuk-date-input__item">
+                                    <div class="govuk-form-group">
+                                        <label class="govuk-label govuk-date-input__label" for="batch-year">Year</label>
+                                        <input id="batch-year" name="BatchYear" type="text" inputmode="numeric"
+                                               class="govuk-input govuk-date-input__input govuk-input--width-4 @(batchYearError is not null ? "govuk-input--error" : "")"
+                                               value="@Model.BatchYear" autocomplete="off" />
+                                    </div>
                                 </div>
-                                <div>
-                                    <label class="govuk-label govuk-!-font-weight-bold" for="batch-number">Number</label>
-                                    <input id="batch-number" name="BatchNumber" type="text" inputmode="numeric"
-                                           class="govuk-input govuk-input--width-4 @(batchNumberError is not null ? "govuk-input--error" : "")"
-                                           value="@Model.BatchNumber" autocomplete="off" />
-                                </div>
-                                <div>
-                                    <button type="submit" asp-page-handler="LookupBatch"
-                                            class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0"
-                                            data-module="govuk-button">Go</button>
-                                </div>
-                                <div>
-                                    <button type="submit" asp-page-handler="CreateBatch"
-                                            class="govuk-button govuk-!-margin-bottom-0"
-                                            data-module="govuk-button">Create new</button>
+                                <div class="govuk-date-input__item">
+                                    <div class="govuk-form-group">
+                                        <label class="govuk-label govuk-date-input__label" for="batch-number">Number</label>
+                                        <input id="batch-number" name="BatchNumber" type="text" inputmode="numeric"
+                                               class="govuk-input govuk-date-input__input govuk-input--width-4 @(batchNumberError is not null ? "govuk-input--error" : "")"
+                                               value="@Model.BatchNumber" autocomplete="off" />
+                                    </div>
                                 </div>
                             </div>
-                        </fieldset>
-                    </div>
-                </form>
+                                    </fieldset>
+                                </div>
+                                <div class="govuk-button-group">
+                                    <button type="submit" asp-page-handler="LookupBatch"
+                                            class="govuk-button govuk-button--secondary"
+                                            data-module="govuk-button">Go</button>
+                                    <button type="submit" asp-page-handler="CreateBatch"
+                                            class="govuk-button"
+                                            data-module="govuk-button">Create new</button>
+                                </div>
+                            </form>
             </div>
 
             @if (Model.LatestBatches.Count > 0)
@@ -111,18 +111,17 @@
     <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-bottom-6" />
 }
 
-@* ── RBSE Number panel — DEFRA Maintenance + VLA Data Entry + VLA Maintenance ─── *@
-@if (User.IsInRole("DEFRAMaintenance") || User.IsInRole("VLAAccess"))
-{
+@* ── RBSE Number panel — all authenticated users (legacy: all 5 roles saw this) ─── *@
+@{
     <section aria-labelledby="rbse-panel-heading" class="govuk-!-margin-bottom-6">
         <h2 class="govuk-heading-m" id="rbse-panel-heading">RBSE number</h2>
 
         <form method="get" asp-page="/Case/Lookup" class="govuk-!-margin-bottom-4">
             <div class="govuk-form-group">
                 <label class="govuk-label" for="rbse-lookup">Enter RBSE to open case</label>
-                <div class="govuk-hint">For example, 00/26/00001.</div>
                 <input id="rbse-lookup" name="Rbse" type="text"
                        class="govuk-input govuk-input--width-10"
+                       maxlength="11"
                        autocomplete="off" />
             </div>
             <button type="submit" class="govuk-button govuk-button--secondary"
@@ -169,7 +168,8 @@
             <li><a asp-page="/Search/RelatedAnimals" class="govuk-link">Related animals</a></li>
         </ul>
 
-        @if (User.IsInRole("DataEntry"))
+        @* Legacy: Case entry shortcut links only for VLA Maintenance — VLA Data Entry uses the RBSE lookup above *@
+        @if (User.IsInRole("VLAMaintenance"))
         {
             <h2 class="govuk-heading-m">Case entry</h2>
             <ul class="govuk-list govuk-list--bullet">
@@ -180,7 +180,8 @@
     </div>
 
     <div class="govuk-grid-column-one-half">
-        @if (User.IsInRole("FarmCreation"))
+        @* Legacy: Farm links only visible to VLA Maintenance (VLAMaintenance uniquely excludes DEFRA Maintenance) *@
+        @if (User.IsInRole("VLAMaintenance"))
         {
             <h2 class="govuk-heading-m">Farms</h2>
             <ul class="govuk-list govuk-list--bullet">
@@ -197,6 +198,14 @@
             }
             <li><a asp-page="/AuditLog/ByDate" class="govuk-link">Audit log</a></li>
             <li><a asp-page="/Bsess/CheckByRbse" class="govuk-link">BSESS check</a></li>
+            @if (User.IsInRole("DEFRAMaintenance"))
+            {
+                <li><a asp-page="/Case/FinalResultEntry" class="govuk-link">Final result entry</a></li>
+            }
+            @if (User.IsInRole("VLAAccess"))
+            {
+                <li><a asp-page="/Batch/PrintBatch" class="govuk-link">Print batch</a></li>
+            }
         </ul>
 
         @if (User.IsInRole("DEFRAMaintenance") || User.IsInRole("VLAAccess"))
@@ -211,6 +220,17 @@
                 {
                     <li><a asp-page="/OssExport/Menu" class="govuk-link">OSS export</a></li>
                 }
+            </ul>
+        }
+
+        @if (User.IsInRole("DEFRAMaintenance"))
+        {
+            <h2 class="govuk-heading-m">Case maintenance</h2>
+            <ul class="govuk-list govuk-list--bullet">
+                <li><a asp-page="/Farm/CphhChange" class="govuk-link">CPHH change</a></li>
+                <li><a asp-page="/Case/RbseChange" class="govuk-link">RBSE change</a></li>
+                <li><a asp-page="/Case/MoveCase" class="govuk-link">Move case</a></li>
+                <li><a asp-page="/Case/Delete" class="govuk-link">Delete case</a></li>
             </ul>
         }
 

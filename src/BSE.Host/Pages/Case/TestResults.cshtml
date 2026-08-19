@@ -1,0 +1,112 @@
+@page "{rbse}"
+@model BSE.Host.Pages.Case.TestResultsModel
+@{
+    ViewData["Title"] = $"Test results — {Model.Rbse}";
+}
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Edit" asp-route-rbse="@Model.Rbse">@Model.Rbse</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Tests</li>
+    </ol>
+</nav>
+
+<h1 class="govuk-heading-l">Test results &mdash; <span class="bse-rbse">@Model.Rbse</span></h1>
+
+@if (TempData["Success"] is string successMsg)
+{
+    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert"
+         aria-labelledby="tests-success-title" data-module="govuk-notification-banner">
+        <div class="govuk-notification-banner__header">
+            <h2 class="govuk-notification-banner__title" id="tests-success-title">Success</h2>
+        </div>
+        <div class="govuk-notification-banner__content">
+            <p class="govuk-notification-banner__heading">@successMsg</p>
+        </div>
+    </div>
+}
+
+@if (!ViewContext.ModelState.IsValid)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@e.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+<h2 class="govuk-heading-m govuk-!-margin-top-6">Individual test records</h2>
+
+@if (Model.Tests.Count > 0)
+{
+    <table class="govuk-table">
+        <caption class="govuk-visually-hidden">Test records for @Model.Rbse</caption>
+        <thead class="govuk-table__head">
+            <tr class="govuk-table__row">
+                <th scope="col" class="govuk-table__header">Test type</th>
+                <th scope="col" class="govuk-table__header">Result</th>
+                <th scope="col" class="govuk-table__header">Action</th>
+            </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+            @foreach (var t in Model.Tests)
+            {
+                <tr class="govuk-table__row">
+                    <td class="govuk-table__cell">@(t.TestTypeDescription ?? t.TestType)</td>
+                    <td class="govuk-table__cell">@(t.TestResultDescription ?? t.TestResult)</td>
+                    <td class="govuk-table__cell">
+                        <form method="post" asp-page-handler="DeleteTest" style="display:inline" novalidate>
+                            <input type="hidden" name="TestId" value="@t.Id" />
+                            <input type="hidden" asp-for="Rbse" />
+                            <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0"
+                                    onclick="return confirm('Delete this test record?')">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p class="govuk-body govuk-!-colour-secondary">No individual test records.</p>
+}
+
+<h2 class="govuk-heading-m govuk-!-margin-top-6">Add a test record</h2>
+<form method="post" asp-page-handler="AddTest" novalidate>
+    <input type="hidden" asp-for="Rbse" />
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="test-type">Test type</label>
+        <select id="test-type" name="NewTest.TestType" class="govuk-select govuk-!-width-one-half">
+            <option value="">&mdash; select &mdash;</option>
+            @foreach (var tt in Model.TestTypes)
+            {
+                <option value="@tt.Code">@tt.Description</option>
+            }
+        </select>
+    </div>
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="test-result">Test result</label>
+        <select id="test-result" name="NewTest.TestResult" class="govuk-select govuk-!-width-one-half">
+            <option value="">&mdash; select &mdash;</option>
+            @foreach (var tr in Model.TestResults)
+            {
+                <option value="@tr.Code">@tr.Description</option>
+            }
+        </select>
+    </div>
+    <button type="submit" class="govuk-button" data-module="govuk-button">Add test record</button>
+</form>
+
+<div class="govuk-button-group govuk-!-margin-top-6">
+    <a asp-page="/Case/Edit" asp-route-rbse="@Model.Rbse" class="govuk-link">Back to case (DEFRA)</a>
+</div>

@@ -43,10 +43,10 @@
 
     @if (Model.ExportRecord is not null)
     {
-        <h2 class="govuk-heading-m">Cover sheet — @Model.ExportRecord.Rbse</h2>
+        <h2 class="govuk-heading-m">Cover sheet — @BseFormat.FormatRbse(Model.ExportRecord.Rbse)</h2>
         <dl class="govuk-summary-list">
-            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@Model.ExportRecord.Rbse</dd></div>
-            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">CPHH</dt><dd class="govuk-summary-list__value">@Model.ExportRecord.Cphh</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@BseFormat.FormatRbse(Model.ExportRecord.Rbse)</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">CPHH</dt><dd class="govuk-summary-list__value">@BseFormat.FormatCphh(Model.ExportRecord.Cphh)</dd></div>
             <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Owner</dt><dd class="govuk-summary-list__value">@Model.ExportRecord.OwnerName</dd></div>
             <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Address</dt><dd class="govuk-summary-list__value">@Model.ExportRecord.Address1</dd></div>
         </dl>
@@ -55,7 +55,7 @@
     {
         <div class="govuk-warning-text">
             <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
-            <strong class="govuk-warning-text__text"><span class="govuk-warning-text__assistive">Warning</span>No OSS export record found for @Model.Rbse.</strong>
+            <strong class="govuk-warning-text__text"><span class="govuk-warning-text__assistive">Warning</span>No OSS export record found for @BseFormat.FormatRbse(Model.Rbse).</strong>
         </div>
     }
 </div>

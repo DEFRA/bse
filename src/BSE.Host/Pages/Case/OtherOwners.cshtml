@@ -1,0 +1,119 @@
+@page "{rbse}"
+@model BSE.Host.Pages.Case.OtherOwnersModel
+@{
+    ViewData["Title"] = $"Other owners — {Model.Rbse}";
+}
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Details" asp-route-rbse="@Model.Rbse">@Model.Rbse</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Other owners</li>
+    </ol>
+</nav>
+
+<h1 class="govuk-heading-l">Other owners — <span class="bse-rbse">@Model.Rbse</span></h1>
+
+@if (TempData["Success"] is string successMsg)
+{
+    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert"
+         aria-labelledby="owners-success-title" data-module="govuk-notification-banner">
+        <div class="govuk-notification-banner__header">
+            <h2 class="govuk-notification-banner__title" id="owners-success-title">Success</h2>
+        </div>
+        <div class="govuk-notification-banner__content">
+            <p class="govuk-notification-banner__heading">@successMsg</p>
+        </div>
+    </div>
+}
+
+@if (!ViewContext.ModelState.IsValid)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@e.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+<p class="govuk-body govuk-hint">Previous and other owners of this animal, used during BSE tracing.</p>
+
+@if (Model.OtherOwners.Count > 0)
+{
+    <table class="govuk-table">
+        <caption class="govuk-visually-hidden">Other owners for @Model.Rbse</caption>
+        <thead class="govuk-table__head">
+            <tr class="govuk-table__row">
+                <th scope="col" class="govuk-table__header">Type</th>
+                <th scope="col" class="govuk-table__header">Name</th>
+                <th scope="col" class="govuk-table__header">CPHH</th>
+                <th scope="col" class="govuk-table__header">Action</th>
+            </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+            @foreach (var o in Model.OtherOwners)
+            {
+                <tr class="govuk-table__row">
+                    <td class="govuk-table__cell">@o.Type</td>
+                    <td class="govuk-table__cell">@o.Name</td>
+                    <td class="govuk-table__cell">@o.Cphh</td>
+                    <td class="govuk-table__cell">
+                        <form method="post" asp-page-handler="DeleteOwner" style="display:inline" novalidate>
+                            <input type="hidden" name="OwnerId" value="@o.Id" />
+                            <input type="hidden" name="RowStampBase64" value="@Convert.ToBase64String(o.RowStamp ?? [])" />
+                            <input type="hidden" asp-for="Rbse" />
+                            <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0"
+                                    onclick="return confirm('Delete this owner record?')">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p class="govuk-body govuk-!-colour-secondary">No other owner records.</p>
+}
+
+<details class="govuk-details" data-module="govuk-details">
+    <summary class="govuk-details__summary">
+        <span class="govuk-details__summary-text">Add an owner record</span>
+    </summary>
+    <div class="govuk-details__text">
+        <form method="post" asp-page-handler="AddOwner" novalidate>
+            <input type="hidden" asp-for="Rbse" />
+            <div class="govuk-form-group">
+                <label class="govuk-label" for="owner-type">Type</label>
+                <select id="owner-type" name="NewOwner.Type" class="govuk-select govuk-!-width-one-half">
+                    <option value="">— select —</option>
+                    @foreach (var ot in Model.OwnerTypes)
+                    {
+                        <option value="@ot.Code">@ot.Description</option>
+                    }
+                </select>
+            </div>
+            <div class="govuk-form-group">
+                <label class="govuk-label" for="owner-name">Name</label>
+                <input id="owner-name" name="NewOwner.Name" class="govuk-input govuk-!-width-two-thirds" />
+            </div>
+            <div class="govuk-form-group">
+                <label class="govuk-label" for="owner-cphh">CPHH</label>
+                <input id="owner-cphh" name="NewOwner.Cphh" class="govuk-input govuk-!-width-one-half" />
+            </div>
+            <button type="submit" class="govuk-button" data-module="govuk-button">Add owner</button>
+        </form>
+    </div>
+</details>
+
+<div class="govuk-button-group govuk-!-margin-top-4">
+    <a asp-page="/Case/Details" asp-route-rbse="@Model.Rbse" class="govuk-link">Back to case</a>
+</div>

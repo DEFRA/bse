@@ -21,12 +21,15 @@ public sealed class CurrentUserService : ICurrentUserService
 
     public async Task<int> GetUserIdAsync()
     {
-        var user = await _repository.GetByUpnAsync(_context.Upn)
-                ?? await _repository.GetByNtLoginAsync(_context.Upn);
+        var upn = _context.Upn;
+        var ntLogin = upn.IndexOf('@') > 0 ? upn[..upn.IndexOf('@')] : upn;
+
+        var user = await _repository.GetByUpnAsync(upn)
+                ?? await _repository.GetByNtLoginAsync(ntLogin);
 
         if (user is null)
             throw new InvalidOperationException(
-                $"Authenticated user '{_context.Upn}' does not have a record in the BSE database. " +
+                $"Authenticated user '{upn}' does not have a record in the BSE database. " +
                 "Ensure the user account has been added via User Maintenance.");
 
         return user.UserId;

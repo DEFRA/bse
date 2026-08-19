@@ -33,7 +33,7 @@ public sealed record CaseRecord
     public string? Notes { get; init; }
     public DateTime? BirthDate { get; init; }
     public bool IsBAB { get; init; }
-    public bool IsBirthDateEst { get; init; }
+    public bool? IsBirthDateEst { get; init; }
     public string? DamStatus { get; init; }
     public string? BirthDateSource { get; init; }
     public string? ValuationAge { get; init; }
@@ -45,7 +45,7 @@ public sealed record CaseRecord
     public string? PurchasedCounty { get; init; }
     public DateTime? HerdEntryDate { get; init; }
     public DateTime? OnsetDate { get; init; }
-    public bool IsOnsetDateEst { get; init; }
+    public bool? IsOnsetDateEst { get; init; }
     public byte? MonthsPregnant { get; init; }
     public byte? MonthsPostCalving { get; init; }
     public short? OnsetAgeInMonths { get; init; }

@@ -42,4 +42,21 @@
             <a asp-page="/Case/Details" asp-route-rbse="@Model.Rbse" class="govuk-link">Cancel</a>
         </div>
     </form>
+
+    @if (Model.ShowNewFarmPrompt)
+    {
+        <div class="govuk-notification-banner" role="region" aria-labelledby="new-farm-banner-title"
+             data-module="govuk-notification-banner">
+            <div class="govuk-notification-banner__header">
+                <h2 class="govuk-notification-banner__title" id="new-farm-banner-title">Farm not found</h2>
+            </div>
+            <div class="govuk-notification-banner__content">
+                <p class="govuk-body">
+                    Farm <strong>@Model.NewCphh</strong> does not exist.
+                    <a asp-page="/Farm/New" asp-route-returnRbse="@Model.Rbse" asp-route-returnCphh="@Model.NewCphh"
+                       class="govuk-link">Create a new farm with this CPHH</a>, then retry the move.
+                </p>
+            </div>
+        </div>
+    }
 </div>

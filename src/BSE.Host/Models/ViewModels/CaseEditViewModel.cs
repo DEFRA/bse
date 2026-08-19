@@ -1,5 +1,7 @@
 using BSE.Modules.CaseManagement.Commands;
 using BSE.Modules.CaseManagement.Models;
+using BSE.Modules.CaseWork.Models;
+using CaseWorkRecord = BSE.Modules.CaseWork.Models.CaseWorkRecord;
 
 namespace BSE.Host.Models.ViewModels;
 
@@ -52,6 +54,23 @@ public class CaseEditViewModel
     public string? LabComment { get; set; }
     public string? CaseType { get; set; }
 
+    // ── Read-only display fields (not editable, shown for context) ────────────
+    public DateTime? FinalResultDate { get; set; }
+    public string? FinalResult { get; set; }
+    public string? Dbse { get; set; }
+
+    // ── Casework fields (CaseWork table, EditCaseWork SP) ─────────────────────
+    public string? Barcode { get; set; }
+    public string? AhfReference { get; set; }
+    public DateTime? PurchaserBse1ReceivedDate { get; set; }
+    public DateTime? BreederBse1ReceivedDate { get; set; }
+    public DateTime? Vendor1Bse1ReceivedDate { get; set; }
+    public DateTime? HomebredBse1ReceivedDate { get; set; }
+    public DateTime? SummarySheetReceivedDate { get; set; }
+    public DateTime? PaperworkCompleteDate { get; set; }
+    public DateTime? RbseDate { get; set; }
+    public bool HasCaseWork { get; set; }
+
     public static CaseEditViewModel FromRecord(CaseRecord r) => new()
     {
         Rbse = r.Rbse,
@@ -75,7 +94,7 @@ public class CaseEditViewModel
         Survey = r.Survey,
         Notes = r.Notes,
         BirthDate = r.BirthDate,
-        IsBirthDateEst = r.IsBirthDateEst,
+        IsBirthDateEst = r.IsBirthDateEst ?? false,
         DamStatus = r.DamStatus,
         BirthDateSource = r.BirthDateSource,
         ValuationAge = r.ValuationAge,
@@ -87,15 +106,32 @@ public class CaseEditViewModel
         PurchasedCounty = r.PurchasedCounty,
         HerdEntryDate = r.HerdEntryDate,
         OnsetDate = r.OnsetDate,
-        IsOnsetDateEst = r.IsOnsetDateEst,
+        IsOnsetDateEst = r.IsOnsetDateEst ?? false,
         MonthsPregnant = r.MonthsPregnant,
         MonthsPostCalving = r.MonthsPostCalving,
         OnsetAgeInMonths = r.OnsetAgeInMonths,
         SlaughterDate = r.SlaughterDate,
         AlternateDiagnosis = r.AlternateDiagnosis,
         LabComment = r.LabComment,
-        CaseType = r.CaseType
+        CaseType = r.CaseType,
+        FinalResultDate = r.FinalResultDate,
+        FinalResult = r.FinalResult,
+        Dbse = r.Dbse
     };
+
+    public void ApplyCaseWork(CaseWorkRecord cw)
+    {
+        HasCaseWork = true;
+        Barcode = cw.Barcode;
+        AhfReference = cw.AhfReference;
+        PurchaserBse1ReceivedDate = cw.PurchaserBse1ReceivedDate;
+        BreederBse1ReceivedDate = cw.BreederBse1ReceivedDate;
+        Vendor1Bse1ReceivedDate = cw.Vendor1Bse1ReceivedDate;
+        HomebredBse1ReceivedDate = cw.HomebredBse1ReceivedDate;
+        SummarySheetReceivedDate = cw.SummarySheetReceivedDate;
+        PaperworkCompleteDate = cw.PaperworkCompleteDate;
+        RbseDate = cw.RbseDate;
+    }
 
     public EditCaseCommand ToEditCommand(byte[] rowStamp) => new(
         Rbse: Rbse,
@@ -119,7 +155,7 @@ public class CaseEditViewModel
         Survey: Survey,
         Notes: Notes,
         BirthDate: BirthDate,
-        IsBirthDateEst: IsBirthDateEst,
+        IsBirthDateEst: BirthDate.HasValue ? IsBirthDateEst : null,
         DamStatus: DamStatus,
         BirthDateSource: BirthDateSource,
         ValuationAge: ValuationAge,
@@ -131,7 +167,7 @@ public class CaseEditViewModel
         PurchasedCounty: PurchasedCounty,
         HerdEntryDate: HerdEntryDate,
         OnsetDate: OnsetDate,
-        IsOnsetDateEst: IsOnsetDateEst,
+        IsOnsetDateEst: OnsetDate.HasValue ? IsOnsetDateEst : null,
         MonthsPregnant: MonthsPregnant,
         MonthsPostCalving: MonthsPostCalving,
         OnsetAgeInMonths: OnsetAgeInMonths,

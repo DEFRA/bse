@@ -76,11 +76,11 @@ public class NewModel : PageModel
             IsVendor1Bse1Received: false, IsHomebredBse1Received: false,
             IsSummarySheetReceived: false, IsPaperworkComplete: false,
             ReportedLocation: null, Survey: Survey, Notes: Notes,
-            BirthDate: BirthDate, IsBirthDateEst: false, DamStatus: null,
+            BirthDate: BirthDate, IsBirthDateEst: BirthDate.HasValue ? false : null, DamStatus: null,
             BirthDateSource: null, ValuationAge: null, Sex: Sex, Breed: Breed,
             Origin: Origin, PurchaseDate: null, PurchaseAgeInMonths: null,
             PurchasedCounty: null, HerdEntryDate: null, OnsetDate: null,
-            IsOnsetDateEst: false, MonthsPregnant: null, MonthsPostCalving: null,
+            IsOnsetDateEst: null, MonthsPregnant: null, MonthsPostCalving: null,
             OnsetAgeInMonths: null, SlaughterDate: null, AlternateDiagnosis: null,
             LabComment: null, CaseType: CaseType);
 

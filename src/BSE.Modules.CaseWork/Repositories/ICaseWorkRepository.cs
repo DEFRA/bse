@@ -28,8 +28,16 @@ public interface ICaseWorkRepository
     /// <summary>Full casework entry update including IsCaseClosed audit (EditCaseWorkEntry).</summary>
     Task EditEntryAsync(EditCaseWorkEntryCommand command);
 
+    /// <summary>Returns all open (not closed) case work entries (GetOpenCaseReportData).</summary>
+    Task<IEnumerable<CaseWorkEntryRecord>> GetOpenCasesAsync();
+
+    /// <summary>Returns all closed case work entries (GetClosedCaseReportData).</summary>
+    Task<IEnumerable<CaseWorkEntryRecord>> GetClosedCasesAsync();
+
     // ── Transactional writes (enlisted in caller's transaction) ────────────────
 
     Task AddAsync(AddCaseWorkCommand command, IDbConnection connection, IDbTransaction transaction);
     Task EditAsync(EditCaseWorkCommand command, IDbConnection connection, IDbTransaction transaction);
+    /// <summary>Standalone (non-transactional) casework update — opens its own connection.</summary>
+    Task EditAsync(EditCaseWorkCommand command);
 }

@@ -1,0 +1,123 @@
+@page "{rbse}"
+@model BSE.Host.Pages.Case.RelationsEditModel
+@{
+    ViewData["Title"] = $"Edit Dam and Sire — {Model.Rbse}";
+}
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Relations" asp-route-rbse="@Model.Rbse">@BseFormat.FormatRbse(Model.Rbse)</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Edit Dam and Sire</li>
+    </ol>
+</nav>
+
+<h1 class="govuk-heading-l">RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Rbse)</span></h1>
+
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Relations", Model.Rbse))
+
+@if (!ViewContext.ModelState.IsValid)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@e.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+<form method="post" asp-page-handler="EditDamSire" novalidate>
+    <input type="hidden" asp-for="Rbse" />
+
+    <h2 class="govuk-heading-m">Dam</h2>
+
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="DamSire_DamEartag">Eartag</label>
+        <input id="DamSire_DamEartag" name="DamSire.DamEartag" class="govuk-input govuk-!-width-two-thirds"
+               value="@Model.DamSire.DamEartag" />
+    </div>
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="DamSire_DamName">Name</label>
+        <input id="DamSire_DamName" name="DamSire.DamName" class="govuk-input govuk-!-width-two-thirds"
+               value="@Model.DamSire.DamName" />
+    </div>
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="DamSire_DamHerdbook">Herdbook</label>
+        <input id="DamSire_DamHerdbook" name="DamSire.DamHerdbook" class="govuk-input govuk-!-width-one-half"
+               value="@Model.DamSire.DamHerdbook" />
+    </div>
+    <div class="govuk-form-group">
+        <fieldset class="govuk-fieldset">
+            <legend class="govuk-fieldset__legend">Birth date (day / month / year)</legend>
+            <div class="govuk-date-input">
+                <div class="govuk-date-input__item">
+                    <label class="govuk-label govuk-date-input__label" for="dam-birth-day">Day</label>
+                    <input class="govuk-input govuk-date-input__input govuk-input--width-2" id="dam-birth-day"
+                           name="DamSire.DamBirthDay" type="text" inputmode="numeric" value="@Model.DamSire.DamBirthDay" />
+                </div>
+                <div class="govuk-date-input__item">
+                    <label class="govuk-label govuk-date-input__label" for="dam-birth-month">Month</label>
+                    <input class="govuk-input govuk-date-input__input govuk-input--width-2" id="dam-birth-month"
+                           name="DamSire.DamBirthMonth" type="text" inputmode="numeric" value="@Model.DamSire.DamBirthMonth" />
+                </div>
+                <div class="govuk-date-input__item">
+                    <label class="govuk-label govuk-date-input__label" for="dam-birth-year">Year</label>
+                    <input class="govuk-input govuk-date-input__input govuk-input--width-4" id="dam-birth-year"
+                           name="DamSire.DamBirthYear" type="text" inputmode="numeric" value="@Model.DamSire.DamBirthYear" />
+                </div>
+            </div>
+        </fieldset>
+    </div>
+
+    <h2 class="govuk-heading-m">Sire</h2>
+
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="DamSire_SireEartag">Eartag</label>
+        <input id="DamSire_SireEartag" name="DamSire.SireEartag" class="govuk-input govuk-!-width-two-thirds"
+               value="@Model.DamSire.SireEartag" />
+    </div>
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="DamSire_SireName">Name</label>
+        <input id="DamSire_SireName" name="DamSire.SireName" class="govuk-input govuk-!-width-two-thirds"
+               value="@Model.DamSire.SireName" />
+    </div>
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="DamSire_SireHerdbook">Herdbook</label>
+        <input id="DamSire_SireHerdbook" name="DamSire.SireHerdbook" class="govuk-input govuk-!-width-one-half"
+               value="@Model.DamSire.SireHerdbook" />
+    </div>
+    <div class="govuk-form-group">
+        <fieldset class="govuk-fieldset">
+            <legend class="govuk-fieldset__legend">Birth date (day / month / year)</legend>
+            <div class="govuk-date-input">
+                <div class="govuk-date-input__item">
+                    <label class="govuk-label govuk-date-input__label" for="sire-birth-day">Day</label>
+                    <input class="govuk-input govuk-date-input__input govuk-input--width-2" id="sire-birth-day"
+                           name="DamSire.SireBirthDay" type="text" inputmode="numeric" value="@Model.DamSire.SireBirthDay" />
+                </div>
+                <div class="govuk-date-input__item">
+                    <label class="govuk-label govuk-date-input__label" for="sire-birth-month">Month</label>
+                    <input class="govuk-input govuk-date-input__input govuk-input--width-2" id="sire-birth-month"
+                           name="DamSire.SireBirthMonth" type="text" inputmode="numeric" value="@Model.DamSire.SireBirthMonth" />
+                </div>
+                <div class="govuk-date-input__item">
+                    <label class="govuk-label govuk-date-input__label" for="sire-birth-year">Year</label>
+                    <input class="govuk-input govuk-date-input__input govuk-input--width-4" id="sire-birth-year"
+                           name="DamSire.SireBirthYear" type="text" inputmode="numeric" value="@Model.DamSire.SireBirthYear" />
+                </div>
+            </div>
+        </fieldset>
+    </div>
+
+    <div class="govuk-button-group govuk-!-margin-top-4">
+        <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+        <a asp-page="/Case/Relations" asp-route-rbse="@Model.Rbse" class="govuk-link">Cancel</a>
+    </div>
+</form>

@@ -1,0 +1,42 @@
+@page
+@model BSE.Host.Pages.HelpModel
+@{
+    ViewData["Title"] = "Help";
+}
+
+<div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+        <h1 class="govuk-heading-l">Help</h1>
+        <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+            <ol class="govuk-breadcrumbs__list">
+                <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+                <li class="govuk-breadcrumbs__list-item" aria-current="page">Help</li>
+            </ol>
+        </nav>
+
+        <h2 class="govuk-heading-m">About this service</h2>
+        <p class="govuk-body">
+            The BSE Surveillance System (BSS) is used by DEFRA to record and manage bovine spongiform encephalopathy (BSE) cases in Great Britain.
+        </p>
+
+        <h2 class="govuk-heading-m">Case management</h2>
+        <p class="govuk-body">Use the <strong>Case</strong> section to create new cases, view case details, edit case information, and record test results, clinical signs, feeds, and case work.</p>
+
+        <h2 class="govuk-heading-m">Farm management</h2>
+        <p class="govuk-body">Use the <strong>Farm</strong> section to create or update farm holdings (CPHH records), change CPHH numbers, and move cases between farms.</p>
+
+        <h2 class="govuk-heading-m">Search</h2>
+        <p class="govuk-body">Use the <strong>Search</strong> section to find cases or farms. You can search by RBSE number, herdmark, holding herdmark, CPHH, or owner name.</p>
+
+        <h2 class="govuk-heading-m">Reports</h2>
+        <p class="govuk-body">Open and closed case reports are available under <strong>Case Work</strong>. Audit logs are available under <strong>Audit Log</strong>.</p>
+
+        <h2 class="govuk-heading-m">Exports</h2>
+        <p class="govuk-body">ADNS export and OSS BSE1 exports are available to authorised users under their respective menu sections.</p>
+
+        <h2 class="govuk-heading-m">Contact</h2>
+        <p class="govuk-body">For technical support or access issues, contact the DEFRA BSE Surveillance team.</p>
+
+    </div>
+</div>

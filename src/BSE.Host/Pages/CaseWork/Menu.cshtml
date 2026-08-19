@@ -5,11 +5,11 @@
 }
 
 <div>
-    <h1 class="govuk-heading-l">Case work — @Model.Rbse</h1>
+    <h1 class="govuk-heading-l">Case work — @BseFormat.FormatRbse(Model.Rbse)</h1>
     <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
         <ol class="govuk-breadcrumbs__list">
             <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Details" asp-route-rbse="@Model.Rbse">Case @Model.Rbse</a></li>
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Details" asp-route-rbse="@Model.Rbse">Case @BseFormat.FormatRbse(Model.Rbse)</a></li>
             <li class="govuk-breadcrumbs__list-item" aria-current="page">Case work</li>
         </ol>
     </nav>
@@ -20,7 +20,7 @@
             <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
             <strong class="govuk-warning-text__text">
                 <span class="govuk-warning-text__assistive">Warning</span>
-                No case work record found for @Model.Rbse.
+                No case work record found for @BseFormat.FormatRbse(Model.Rbse).
             </strong>
         </div>
         <a asp-page="/Case/Lookup" class="govuk-link">Back to lookup</a>
@@ -33,7 +33,7 @@
 
         <h2 class="govuk-heading-m">Case work summary</h2>
         <dl class="govuk-summary-list">
-            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@Model.Record.Rbse</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@BseFormat.FormatRbse(Model.Record.Rbse)</dd></div>
             <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE date</dt><dd class="govuk-summary-list__value">@Model.Record.RbseDate?.ToShortDateString()</dd></div>
             <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Barcode</dt><dd class="govuk-summary-list__value">@Model.Record.Barcode</dd></div>
             <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">AHF reference</dt><dd class="govuk-summary-list__value">@Model.Record.AhfReference</dd></div>

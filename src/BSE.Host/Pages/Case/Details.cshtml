@@ -17,7 +17,15 @@
     return;
 }
 
-<h1 class="govuk-heading-l">Case: <span class="bse-rbse">@Model.Case.Rbse</span></h1>
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Farm" asp-route-rbse="@Model.Case.Rbse">Case @BseFormat.FormatRbse(Model.Case.Rbse)</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Case details</li>
+    </ol>
+</nav>
+
+<h1 class="govuk-heading-l">Case details: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Case.Rbse)</span></h1>
 
 <div class="govuk-button-group">
     <a asp-page="/Case/Edit" asp-route-rbse="@Model.Case.Rbse" class="govuk-button">Edit</a>
@@ -25,6 +33,24 @@
     <a asp-page="/Case/MoveCase" asp-route-rbse="@Model.Case.Rbse" class="govuk-link">Move case</a>
     <a asp-page="/Case/RbseChange" asp-route-rbse="@Model.Case.Rbse" class="govuk-link">Change RBSE</a>
 </div>
+
+@* ── Case sub-section navigation (mirrors the legacy 7-tab bar) ────────────── *@
+<nav class="govuk-!-margin-bottom-6" aria-label="Case sections">
+    <h2 class="govuk-heading-s govuk-!-margin-bottom-2">Case sections</h2>
+    <ul class="govuk-list govuk-list--inline bse-case-nav">
+        <li><a asp-page="/Case/Farm" asp-route-rbse="@Model.Case.Rbse" class="govuk-link govuk-link--no-visited-state">Farm</a></li>
+        <li><strong class="govuk-body">Case details</strong></li>
+        <li><a asp-page="/Case/Edit" asp-route-rbse="@Model.Case.Rbse" class="govuk-link govuk-link--no-visited-state">Edit case</a></li>
+        <li><a asp-page="/Case/TestResults" asp-route-rbse="@Model.Case.Rbse" class="govuk-link govuk-link--no-visited-state">Test results</a></li>
+        <li><a asp-page="/Case/Clinical" asp-route-rbse="@Model.Case.Rbse" class="govuk-link govuk-link--no-visited-state">Clinical</a></li>
+        <li><a asp-page="/Case/Feeds" asp-route-rbse="@Model.Case.Rbse" class="govuk-link govuk-link--no-visited-state">Feeds</a></li>
+        <li><a asp-page="/Case/Relations" asp-route-rbse="@Model.Case.Rbse" class="govuk-link govuk-link--no-visited-state">Relations</a></li>
+        <li><a asp-page="/Case/Bab" asp-route-rbse="@Model.Case.Rbse" class="govuk-link govuk-link--no-visited-state">BAB</a></li>
+        <li><a asp-page="/Case/OtherOwners" asp-route-rbse="@Model.Case.Rbse" class="govuk-link govuk-link--no-visited-state">Other owners</a></li>
+        <li><a asp-page="/CaseWork/Entry" asp-route-rbse="@Model.Case.Rbse" class="govuk-link govuk-link--no-visited-state">Case work</a></li>
+        <li><a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse" class="govuk-link govuk-link--no-visited-state">Audit log</a></li>
+    </ul>
+</nav>
 
 <div class="govuk-grid-row">
     <div class="govuk-grid-column-one-half">
@@ -42,7 +68,7 @@
             <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Breed</dt><dd class="govuk-summary-list__value">@Model.Case.Breed</dd></div>
             <div class="govuk-summary-list__row">
                 <dt class="govuk-summary-list__key">Birth date</dt>
-                <dd class="govuk-summary-list__value">@Model.Case.BirthDate?.ToString("dd/MM/yyyy") @(Model.Case.IsBirthDateEst ? "(estimated)" : "")</dd>
+                <dd class="govuk-summary-list__value">@Model.Case.BirthDate?.ToString("dd/MM/yyyy") @(Model.Case.IsBirthDateEst == true ? "(estimated)" : "")</dd>
             </div>
             <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Survey</dt><dd class="govuk-summary-list__value">@Model.Case.Survey</dd></div>
             <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Form A date</dt><dd class="govuk-summary-list__value">@Model.Case.FormADate?.ToString("dd/MM/yyyy")</dd></div>
@@ -71,36 +97,103 @@
     <p class="govuk-body">@Model.Case.Notes</p>
 }
 
-@* ── Farm details (inline, matching legacy CaseEntryFarm) ─────────────────── *@
+@* ── Farm details (inline, matching legacy CaseEntryFarm Farm tab) ──────────── *@
 @if (Model.Farm is not null)
 {
     <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
-    <h2 class="govuk-heading-m">
-        Farm: <a asp-page="/Farm/Details" asp-route-cphh="@Model.Farm.CPHH" class="govuk-link">@Model.Farm.CPHH</a>
-    </h2>
-    <dl class="govuk-summary-list">
-        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Owner</dt><dd class="govuk-summary-list__value">@Model.Farm.OwnerName</dd></div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Address</dt>
-            <dd class="govuk-summary-list__value">
-                @Model.Farm.Address1<br />
-                @Model.Farm.Address2<br />
-                @Model.Farm.Address3<br />
-                @Model.Farm.Postcode
-            </dd>
+    <div class="govuk-grid-row">
+        <div class="govuk-grid-column-full">
+            <h2 class="govuk-heading-m">
+                Farm: <a asp-page="/Farm/Details" asp-route-cphh="@Model.Farm.CPHH" class="govuk-link">@BseFormat.FormatCphh(Model.Farm.CPHH)</a>
+            </h2>
+            <div class="govuk-button-group govuk-!-margin-bottom-4">
+                <a asp-page="/Case/Farm" asp-route-rbse="@Model.Case.Rbse" class="govuk-button govuk-button--secondary">Farm details</a>
+                <a asp-page="/Farm/Edit" asp-route-cphh="@Model.Farm.CPHH" class="govuk-link">Edit farm</a>
+                <a asp-page="/Farm/Details" asp-route-cphh="@Model.Farm.CPHH" class="govuk-link">Full farm record</a>
+            </div>
         </div>
-        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">County</dt><dd class="govuk-summary-list__value">@Model.Farm.County</dd></div>
-        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Parish</dt><dd class="govuk-summary-list__value">@Model.Farm.Parish</dd></div>
-        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Herdmarks</dt><dd class="govuk-summary-list__value">@Model.Farm.Herdmark1 @Model.Farm.Herdmark2 @Model.Farm.Herdmark3</dd></div>
-        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">AHO</dt><dd class="govuk-summary-list__value">@Model.Farm.AHO</dd></div>
-        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Herd type</dt><dd class="govuk-summary-list__value">@Model.Farm.HerdType</dd></div>
-        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Dealer</dt><dd class="govuk-summary-list__value">@(Model.Farm.IsDealer ? "Yes" : "No")</dd></div>
-        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Non-GB</dt><dd class="govuk-summary-list__value">@(Model.Farm.IsNonGBFarm ? "Yes" : "No")</dd></div>
-    </dl>
-    <a asp-page="/Farm/Details" asp-route-cphh="@Model.Farm.CPHH" class="govuk-link govuk-!-font-size-19">View full farm details</a>
+    </div>
+    <div class="govuk-grid-row">
+        <div class="govuk-grid-column-one-half">
+            <h3 class="govuk-heading-s">Address</h3>
+            <dl class="govuk-summary-list">
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Owner</dt><dd class="govuk-summary-list__value">@Model.Farm.OwnerName</dd></div>
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">Address</dt>
+                    <dd class="govuk-summary-list__value">
+                        @Model.Farm.Address1<br />
+                        @if (!string.IsNullOrWhiteSpace(Model.Farm.Address2)) { @Model.Farm.Address2 <br /> }
+                        @if (!string.IsNullOrWhiteSpace(Model.Farm.Address3)) { @Model.Farm.Address3 <br /> }
+                        @Model.Farm.Postcode
+                    </dd>
+                </div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Parish</dt><dd class="govuk-summary-list__value">@Model.Farm.Parish</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">District</dt><dd class="govuk-summary-list__value">@Model.Farm.District</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">County</dt><dd class="govuk-summary-list__value">@Model.Farm.County</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Map reference</dt><dd class="govuk-summary-list__value">@Model.Farm.MapReference</dd></div>
+            </dl>
+            <h3 class="govuk-heading-s">Correspondence address</h3>
+            <dl class="govuk-summary-list">
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">Correspondence address</dt>
+                    <dd class="govuk-summary-list__value">
+                        @if (string.IsNullOrWhiteSpace(Model.Farm.CorrespondenceAddress1))
+                        {
+                            <span class="govuk-hint">Same as main address</span>
+                        }
+                        else
+                        {
+                            @Model.Farm.CorrespondenceAddress1<br />
+                            @if (!string.IsNullOrWhiteSpace(Model.Farm.CorrespondenceAddress2)) { @Model.Farm.CorrespondenceAddress2 <br /> }
+                            @if (!string.IsNullOrWhiteSpace(Model.Farm.CorrespondenceAddress3)) { @Model.Farm.CorrespondenceAddress3 <br /> }
+                            @Model.Farm.CorrespondencePostcode
+                        }
+                    </dd>
+                </div>
+            </dl>
+        </div>
+        <div class="govuk-grid-column-one-half">
+            <h3 class="govuk-heading-s">Herd details</h3>
+            <dl class="govuk-summary-list">
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Herdmark 1</dt><dd class="govuk-summary-list__value">@Model.Farm.Herdmark1 @(!string.IsNullOrWhiteSpace(Model.Farm.NumericHerdmark1) ? $"({Model.Farm.NumericHerdmark1})" : "")</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Herdmark 2</dt><dd class="govuk-summary-list__value">@Model.Farm.Herdmark2 @(!string.IsNullOrWhiteSpace(Model.Farm.NumericHerdmark2) ? $"({Model.Farm.NumericHerdmark2})" : "")</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Herdmark 3</dt><dd class="govuk-summary-list__value">@Model.Farm.Herdmark3</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Herd type</dt><dd class="govuk-summary-list__value">@Model.Farm.HerdType</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Pedigree</dt><dd class="govuk-summary-list__value">@Model.Farm.PedigreeType</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">AHO</dt><dd class="govuk-summary-list__value">@Model.Farm.AHO</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Is a dealer</dt><dd class="govuk-summary-list__value">@(Model.Farm.IsDealer ? "Yes" : "No")</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Non-GB farm</dt><dd class="govuk-summary-list__value">@(Model.Farm.IsNonGBFarm ? "Yes" : "No")</dd></div>
+            </dl>
+        </div>
+    </div>
 }
 else if (!string.IsNullOrWhiteSpace(Model.Case.Cphh))
 {
     <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
     <p class="govuk-body">Farm <strong>@Model.Case.Cphh</strong> was not found.</p>
+}
+
+@if (Model.RelatedFarms.Count > 0)
+{
+    <h2 class="govuk-heading-m">Related farms</h2>
+    <table class="govuk-table">
+        <caption class="govuk-visually-hidden">Related farms for @Model.Case?.Cphh</caption>
+        <thead class="govuk-table__head">
+            <tr class="govuk-table__row">
+                <th scope="col" class="govuk-table__header">CPHH</th>
+                <th scope="col" class="govuk-table__header">Owner or status</th>
+                <th scope="col" class="govuk-table__header">Action</th>
+            </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+            @foreach (var r in Model.RelatedFarms)
+            {
+                <tr class="govuk-table__row">
+                    <td class="govuk-table__cell">@r.RelatedCPHH</td>
+                    <td class="govuk-table__cell">@r.Status</td>
+                    <td class="govuk-table__cell"><a asp-page="/Farm/Details" asp-route-cphh="@r.RelatedCPHH" class="govuk-link">Open</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
 }

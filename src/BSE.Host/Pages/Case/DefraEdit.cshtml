@@ -1,0 +1,360 @@
+@page "{rbse}"
+@model BSE.Host.Pages.Case.DefraEditModel
+@using BSE.Modules.CaseManagement.Models
+@{
+    ViewData["Title"] = $"Edit Case (DEFRA) — {Model.Case.Rbse}";
+    string DateVal(DateTime? d) => d?.ToString("yyyy-MM-dd") ?? "";
+    string rbseNoSlash = Model.Case.Rbse.Replace("/", "");
+}
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Edit" asp-route-rbse="@Model.Case.Rbse">@BseFormat.FormatRbse(Model.Case.Rbse)</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Edit Case (DEFRA)</li>
+    </ol>
+</nav>
+
+<h1 class="govuk-heading-l">RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Case.Rbse)</span></h1>
+
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Case (DEFRA)", Model.Case.Rbse))
+
+@if (TempData["Success"] is string successMsg)
+{
+    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert"
+         aria-labelledby="defra-edit-success-title" data-module="govuk-notification-banner">
+        <div class="govuk-notification-banner__header">
+            <h2 class="govuk-notification-banner__title" id="defra-edit-success-title">Success</h2>
+        </div>
+        <div class="govuk-notification-banner__content">
+            <p class="govuk-notification-banner__heading">@successMsg</p>
+        </div>
+    </div>
+}
+
+@if (!ViewContext.ModelState.IsValid)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var modelError in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@modelError.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.ConcurrencyError))
+{
+    <div class="govuk-warning-text">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text">
+            <span class="govuk-warning-text__assistive">Warning</span>
+            @Model.ConcurrencyError
+        </strong>
+    </div>
+}
+
+<form id="edit-defra-form" method="post" novalidate>
+
+    <input type="hidden" asp-for="Case.Rbse" />
+    <input type="hidden" asp-for="Case.HasCaseWork" />
+    <input type="hidden" asp-for="Case.RbseDate" />
+    <input type="hidden" asp-for="Case.Sex" />
+    <input type="hidden" asp-for="Case.Breed" />
+    <input type="hidden" asp-for="Case.Origin" />
+    <input type="hidden" asp-for="Case.DamStatus" />
+    <input type="hidden" asp-for="Case.SlaughterDate" />
+    <input type="hidden" asp-for="Case.OnsetDate" />
+    <input type="hidden" asp-for="Case.IsOnsetDateEst" />
+    <input type="hidden" asp-for="Case.PurchaseDate" />
+    <input type="hidden" asp-for="Case.PurchaseAgeInMonths" />
+    <input type="hidden" asp-for="Case.PurchasedCounty" />
+    <input type="hidden" asp-for="Case.HerdEntryDate" />
+    <input type="hidden" asp-for="Case.MonthsPregnant" />
+    <input type="hidden" asp-for="Case.MonthsPostCalving" />
+    <input type="hidden" asp-for="Case.OnsetAgeInMonths" />
+    <input type="hidden" asp-for="Case.AlternateDiagnosis" />
+
+    <h2 class="govuk-heading-m">Animal identification</h2>
+
+    <div class="govuk-form-group">
+        <label asp-for="Case.EartagCountry" class="govuk-label">Eartag country</label>
+        <input asp-for="Case.EartagCountry" class="govuk-input govuk-!-width-one-half" />
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="Case.EartagHerdmark" class="govuk-label">Eartag herdmark</label>
+        <input asp-for="Case.EartagHerdmark" class="govuk-input govuk-!-width-two-thirds" />
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="Case.Eartag" class="govuk-label">Eartag</label>
+        <input asp-for="Case.Eartag" class="govuk-input govuk-!-width-two-thirds" />
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="Case.PreviousEartag" class="govuk-label">Previous eartag</label>
+        <input asp-for="Case.PreviousEartag" class="govuk-input govuk-!-width-two-thirds" />
+    </div>
+
+    <h2 class="govuk-heading-m">Key dates and fate</h2>
+
+    <div class="govuk-form-group">
+        <label asp-for="Case.Bse1ReceivedDate" class="govuk-label">BSE-1 date received</label>
+        <input asp-for="Case.Bse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@DateVal(Model.Case.Bse1ReceivedDate)" />
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="Case.FormADate" class="govuk-label">Form A date</label>
+        <input asp-for="Case.FormADate" type="date" class="govuk-input govuk-input--width-10" value="@DateVal(Model.Case.FormADate)" />
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="Case.FormAResubmittedDate" class="govuk-label">Form A resubmitted date</label>
+        <input asp-for="Case.FormAResubmittedDate" type="date" class="govuk-input govuk-input--width-10" value="@DateVal(Model.Case.FormAResubmittedDate)" />
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="Case.FormBDate" class="govuk-label">Form B date</label>
+        <input asp-for="Case.FormBDate" type="date" class="govuk-input govuk-input--width-10" value="@DateVal(Model.Case.FormBDate)" />
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="Case.Fate" class="govuk-label">Fate (Form B reason)</label>
+        <select asp-for="Case.Fate" class="govuk-select">
+            <option value="">-- Select --</option>
+            @foreach (var o in Model.FateOptions)
+            {
+                <option value="@o.Code" selected="@(o.Code == Model.Case.Fate ? "selected" : null)">@o.Description</option>
+            }
+        </select>
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="Case.FormCDate" class="govuk-label">Form C date</label>
+        <input asp-for="Case.FormCDate" type="date" class="govuk-input govuk-input--width-10" value="@DateVal(Model.Case.FormCDate)" />
+    </div>
+
+    @if (Model.Tests.Count > 0)
+    {
+        <table class="govuk-table govuk-!-margin-top-4">
+            <caption class="govuk-table__caption govuk-table__caption--s">Test records</caption>
+            <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                    <th scope="col" class="govuk-table__header">Test type</th>
+                    <th scope="col" class="govuk-table__header">Test result</th>
+                </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+                @foreach (var t in Model.Tests)
+                {
+                    <tr class="govuk-table__row">
+                        <td class="govuk-table__cell">@t.TestType</td>
+                        <td class="govuk-table__cell">@t.TestResult</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <h2 class="govuk-heading-m">Animal details</h2>
+
+    <div class="govuk-form-group">
+        <label asp-for="Case.CaseType" class="govuk-label">Case type</label>
+        <select asp-for="Case.CaseType" class="govuk-select">
+            <option value="">-- Select --</option>
+            @foreach (var o in Model.CaseTypeOptions)
+            {
+                <option value="@o.Code" selected="@(o.Code == Model.Case.CaseType ? "selected" : null)">@o.Description</option>
+            }
+        </select>
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="Case.LabComment" class="govuk-label">Lab comment</label>
+        <textarea asp-for="Case.LabComment" class="govuk-textarea" rows="2" maxlength="255"></textarea>
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="Case.BirthDate" class="govuk-label">Date of birth</label>
+        <input asp-for="Case.BirthDate" type="date" class="govuk-input govuk-input--width-10" value="@DateVal(Model.Case.BirthDate)" />
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="Case.ReportedLocation" class="govuk-label">Reported location</label>
+        <select asp-for="Case.ReportedLocation" class="govuk-select">
+            <option value="">-- Select --</option>
+            @foreach (var o in Model.ReportedLocationOptions)
+            {
+                <option value="@o.Code" selected="@(o.Code == Model.Case.ReportedLocation ? "selected" : null)">@o.Description</option>
+            }
+        </select>
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="Case.BirthDateSource" class="govuk-label">Date of birth source</label>
+        <select asp-for="Case.BirthDateSource" class="govuk-select">
+            <option value="">-- Select --</option>
+            @foreach (var o in Model.BirthDateSourceOptions)
+            {
+                <option value="@o.Code" selected="@(o.Code == Model.Case.BirthDateSource ? "selected" : null)">@o.Description</option>
+            }
+        </select>
+    </div>
+    <div class="govuk-checkboxes govuk-!-margin-bottom-4" data-module="govuk-checkboxes">
+        <div class="govuk-checkboxes__item">
+            <input asp-for="Case.IsBirthDateEst" type="checkbox" class="govuk-checkboxes__input" />
+            <label asp-for="Case.IsBirthDateEst" class="govuk-label govuk-checkboxes__label">Is date of birth estimated?</label>
+        </div>
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="Case.Survey" class="govuk-label">Survey</label>
+        <select asp-for="Case.Survey" class="govuk-select">
+            <option value="">-- Select --</option>
+            @foreach (var o in Model.SurveyOptions)
+            {
+                <option value="@o.Code" selected="@(o.Code == Model.Case.Survey ? "selected" : null)">@o.Description</option>
+            }
+        </select>
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="Case.ValuationAge" class="govuk-label">Valuation age</label>
+        <select asp-for="Case.ValuationAge" class="govuk-select">
+            <option value="">-- Select --</option>
+            @foreach (var o in Model.ValuationAgeOptions)
+            {
+                <option value="@o.Code" selected="@(o.Code == Model.Case.ValuationAge ? "selected" : null)">@o.Description</option>
+            }
+        </select>
+    </div>
+    @if (Model.Case.HasCaseWork)
+    {
+        <div class="govuk-form-group">
+            <label asp-for="Case.Barcode" class="govuk-label">Barcode</label>
+            <input asp-for="Case.Barcode" class="govuk-input govuk-!-width-two-thirds" maxlength="20" />
+        </div>
+    }
+    <div class="govuk-form-group">
+        <label asp-for="Case.Notes" class="govuk-label">Notes</label>
+        <textarea asp-for="Case.Notes" class="govuk-textarea" rows="4" maxlength="500"></textarea>
+    </div>
+    @if (Model.Case.HasCaseWork)
+    {
+        <div class="govuk-form-group">
+            <label asp-for="Case.AhfReference" class="govuk-label">AHF reference</label>
+            <input asp-for="Case.AhfReference" class="govuk-input govuk-!-width-two-thirds" maxlength="40" />
+        </div>
+    }
+
+    <h2 class="govuk-heading-m">BSE-1 receipts</h2>
+
+    <div class="govuk-checkboxes govuk-!-margin-bottom-2" data-module="govuk-checkboxes">
+        <div class="govuk-checkboxes__item">
+            <input asp-for="Case.IsPurchaserBse1Received" type="checkbox" class="govuk-checkboxes__input" />
+            <label asp-for="Case.IsPurchaserBse1Received" class="govuk-label govuk-checkboxes__label">Is purchaser BSE-1 received?</label>
+        </div>
+    </div>
+    @if (Model.Case.HasCaseWork)
+    {
+        <div class="govuk-form-group govuk-!-margin-bottom-4">
+            <label asp-for="Case.PurchaserBse1ReceivedDate" class="govuk-label govuk-!-font-size-16">Date received</label>
+            <input asp-for="Case.PurchaserBse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@DateVal(Model.Case.PurchaserBse1ReceivedDate)" />
+        </div>
+    }
+    <div class="govuk-checkboxes govuk-!-margin-bottom-2" data-module="govuk-checkboxes">
+        <div class="govuk-checkboxes__item">
+            <input asp-for="Case.IsBreederBse1Received" type="checkbox" class="govuk-checkboxes__input" />
+            <label asp-for="Case.IsBreederBse1Received" class="govuk-label govuk-checkboxes__label">Is breeder BSE-1 received?</label>
+        </div>
+    </div>
+    @if (Model.Case.HasCaseWork)
+    {
+        <div class="govuk-form-group govuk-!-margin-bottom-4">
+            <label asp-for="Case.BreederBse1ReceivedDate" class="govuk-label govuk-!-font-size-16">Date received</label>
+            <input asp-for="Case.BreederBse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@DateVal(Model.Case.BreederBse1ReceivedDate)" />
+        </div>
+    }
+    <div class="govuk-checkboxes govuk-!-margin-bottom-2" data-module="govuk-checkboxes">
+        <div class="govuk-checkboxes__item">
+            <input asp-for="Case.IsVendor1Bse1Received" type="checkbox" class="govuk-checkboxes__input" />
+            <label asp-for="Case.IsVendor1Bse1Received" class="govuk-label govuk-checkboxes__label">Is vendor 1 BSE-1 received?</label>
+        </div>
+    </div>
+    @if (Model.Case.HasCaseWork)
+    {
+        <div class="govuk-form-group govuk-!-margin-bottom-4">
+            <label asp-for="Case.Vendor1Bse1ReceivedDate" class="govuk-label govuk-!-font-size-16">Date received</label>
+            <input asp-for="Case.Vendor1Bse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@DateVal(Model.Case.Vendor1Bse1ReceivedDate)" />
+        </div>
+    }
+    <div class="govuk-checkboxes govuk-!-margin-bottom-2" data-module="govuk-checkboxes">
+        <div class="govuk-checkboxes__item">
+            <input asp-for="Case.IsHomebredBse1Received" type="checkbox" class="govuk-checkboxes__input" />
+            <label asp-for="Case.IsHomebredBse1Received" class="govuk-label govuk-checkboxes__label">Is homebred BSE-1 received?</label>
+        </div>
+    </div>
+    @if (Model.Case.HasCaseWork)
+    {
+        <div class="govuk-form-group govuk-!-margin-bottom-4">
+            <label asp-for="Case.HomebredBse1ReceivedDate" class="govuk-label govuk-!-font-size-16">Date received</label>
+            <input asp-for="Case.HomebredBse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@DateVal(Model.Case.HomebredBse1ReceivedDate)" />
+        </div>
+    }
+    <div class="govuk-checkboxes govuk-!-margin-bottom-2" data-module="govuk-checkboxes">
+        <div class="govuk-checkboxes__item">
+            <input asp-for="Case.IsSummarySheetReceived" type="checkbox" class="govuk-checkboxes__input" />
+            <label asp-for="Case.IsSummarySheetReceived" class="govuk-label govuk-checkboxes__label">Is summary sheet received?</label>
+        </div>
+    </div>
+    @if (Model.Case.HasCaseWork)
+    {
+        <div class="govuk-form-group govuk-!-margin-bottom-4">
+            <label asp-for="Case.SummarySheetReceivedDate" class="govuk-label govuk-!-font-size-16">Date received</label>
+            <input asp-for="Case.SummarySheetReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@DateVal(Model.Case.SummarySheetReceivedDate)" />
+        </div>
+    }
+    <div class="govuk-checkboxes govuk-!-margin-bottom-2" data-module="govuk-checkboxes">
+        <div class="govuk-checkboxes__item">
+            <input asp-for="Case.IsPaperworkComplete" type="checkbox" class="govuk-checkboxes__input" />
+            <label asp-for="Case.IsPaperworkComplete" class="govuk-label govuk-checkboxes__label">Is paperwork complete?</label>
+        </div>
+    </div>
+    @if (Model.Case.HasCaseWork)
+    {
+        <div class="govuk-form-group govuk-!-margin-bottom-4">
+            <label asp-for="Case.PaperworkCompleteDate" class="govuk-label govuk-!-font-size-16">Date complete</label>
+            <input asp-for="Case.PaperworkCompleteDate" type="date" class="govuk-input govuk-input--width-10" value="@DateVal(Model.Case.PaperworkCompleteDate)" />
+        </div>
+    }
+
+    <div class="govuk-button-group govuk-!-margin-top-4">
+        <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+        <a id="cancel-link" asp-page="/Case/Edit" asp-route-rbse="@Model.Case.Rbse" class="govuk-link">Cancel</a>
+    </div>
+</form>
+
+@* Unsaved-changes warning — equivalent to legacy ExitConfirmation prompt *@
+<script>
+(function () {
+    var form = document.getElementById('edit-defra-form');
+    var cancelLink = document.getElementById('cancel-link');
+    var dirty = false;
+    var submitting = false;
+
+    form.addEventListener('change', function () { dirty = true; });
+    form.addEventListener('input',  function () { dirty = true; });
+    form.addEventListener('submit', function () { submitting = true; });
+
+    if (cancelLink) {
+        cancelLink.addEventListener('click', function (e) {
+            if (dirty) {
+                e.preventDefault();
+                if (window.confirm('You have unsaved changes. Click OK to discard them and leave, or Cancel to go back and save.')) {
+                    window.location.href = cancelLink.href;
+                }
+            }
+        });
+    }
+
+    window.addEventListener('beforeunload', function (e) {
+        if (dirty && !submitting) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+}());
+</script>

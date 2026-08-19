@@ -5,7 +5,7 @@
 }
 
 <div>
-    <h1 class="govuk-heading-l">@Model.MinuteTypeLabel — @Model.Rbse</h1>
+    <h1 class="govuk-heading-l">@Model.MinuteTypeLabel — @BseFormat.FormatRbse(Model.Rbse)</h1>
     <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
         <ol class="govuk-breadcrumbs__list">
             <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
@@ -20,7 +20,7 @@
             <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
             <strong class="govuk-warning-text__text">
                 <span class="govuk-warning-text__assistive">Warning</span>
-                No details found for @Model.Rbse / @Model.Type.
+                No details found for @BseFormat.FormatRbse(Model.Rbse) / @Model.Type.
             </strong>
         </div>
     }
@@ -28,10 +28,10 @@
     {
         <h2 class="govuk-heading-m">@Model.MinuteTypeLabel details</h2>
         <dl class="govuk-summary-list">
-            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@Model.Details.Rbse</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@BseFormat.FormatRbse(Model.Details.Rbse)</dd></div>
             @if (Model.Details.Cphh is not null)
             {
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">CPHH</dt><dd class="govuk-summary-list__value">@Model.Details.Cphh</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">CPHH</dt><dd class="govuk-summary-list__value">@BseFormat.FormatCphh(Model.Details.Cphh)</dd></div>
             }
             @if (Model.Details.Eartag is not null)
             {

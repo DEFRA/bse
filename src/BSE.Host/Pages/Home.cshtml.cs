@@ -50,8 +50,8 @@ public class HomeModel(IBatchService batchService, ICaseRepository caseRepositor
         if (User.IsInRole("VLAAccess"))
             tasks.Add(LoadBatchDataAsync());
 
-        if (User.IsInRole("DEFRAMaintenance") || User.IsInRole("VLAAccess"))
-            tasks.Add(LoadRbseDataAsync(currentYear, previousYear));
+        // Legacy Home showed Latest RBSE/DBSE and the RBSE lookup to all 5 roles.
+        tasks.Add(LoadRbseDataAsync(currentYear, previousYear));
 
         await Task.WhenAll(tasks);
     }

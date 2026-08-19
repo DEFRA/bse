@@ -1,0 +1,169 @@
+﻿@page "{rbse}"
+@model BSE.Host.Pages.Case.ClinicalModel
+@{
+    ViewData["Title"] = $"Clinical signs and visits — {Model.Rbse}";
+    string rbseNoSlash = Model.Rbse.Replace("/", "");
+    var c = Model.Signs;
+    var checkedSigns = new System.Collections.Generic.List<string>();
+    if (c.Apprehension) checkedSigns.Add("Apprehension");
+    if (c.HypersensitiveTouch) checkedSigns.Add("Hypersensitive to touch");
+    if (c.HypersensitiveSound) checkedSigns.Add("Hypersensitive to sound");
+    if (c.Maniacal) checkedSigns.Add("Maniacal");
+    if (c.PanicStricken) checkedSigns.Add("Panic stricken");
+    if (c.TemperamentChange) checkedSigns.Add("Temperament change");
+    if (c.AbnormalHeadCarriage) checkedSigns.Add("Abnormal head carriage");
+    if (c.EarTwitching) checkedSigns.Add("Ear twitching");
+    if (c.EarsOddAngle) checkedSigns.Add("Ears at odd angle");
+    if (c.AbnormalBehaviour) checkedSigns.Add("Abnormal behaviour");
+    if (c.HeadShyness) checkedSigns.Add("Head shyness");
+    if (c.LickingFlank) checkedSigns.Add("Licking flank");
+    if (c.LickingNose) checkedSigns.Add("Licking nose");
+    if (c.Kicking) checkedSigns.Add("Kicking");
+    if (c.ReluctantDoorways) checkedSigns.Add("Reluctant to enter doorways");
+    if (c.HeadPressing) checkedSigns.Add("Head pressing");
+    if (c.HeadRubbing) checkedSigns.Add("Head rubbing");
+    if (c.TeethGrinding) checkedSigns.Add("Teeth grinding");
+    if (c.Blindness) checkedSigns.Add("Blindness");
+    if (c.Circling) checkedSigns.Add("Circling");
+    if (c.HindAtaxia) checkedSigns.Add("Hind ataxia");
+    if (c.Falling) checkedSigns.Add("Falling");
+    if (c.Paresis) checkedSigns.Add("Paresis");
+    if (c.ForeAtaxia) checkedSigns.Add("Fore ataxia");
+    if (c.Recumbent) checkedSigns.Add("Recumbent");
+    if (c.Tremor) checkedSigns.Add("Tremor");
+    if (c.KnucklingFetlock) checkedSigns.Add("Knuckling fetlock");
+    if (c.WeightLoss) checkedSigns.Add("Weight loss");
+    if (c.ConditionLoss) checkedSigns.Add("Condition loss");
+    if (c.MilkYield) checkedSigns.Add("Milk yield loss");
+}
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Details" asp-route-rbse="@Model.Rbse">@BseFormat.FormatRbse(Model.Rbse)</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Clinical</li>
+    </ol>
+</nav>
+
+<h1 class="govuk-heading-l">RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Rbse)</span></h1>
+
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Clinical", Model.Rbse))
+
+@if (TempData["Success"] is string successMsg)
+{
+    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert"
+         aria-labelledby="clinical-success-title" data-module="govuk-notification-banner">
+        <div class="govuk-notification-banner__header">
+            <h2 class="govuk-notification-banner__title" id="clinical-success-title">Success</h2>
+        </div>
+        <div class="govuk-notification-banner__content">
+            <p class="govuk-notification-banner__heading">@successMsg</p>
+        </div>
+    </div>
+}
+
+@* -- Batch numbers ------------------------------------------------------------ *@
+@if (User.IsInRole("DataEntry") && Model.BatchNumbers.Count > 0)
+{
+    <div class="govuk-summary-card govuk-!-margin-bottom-4">
+        <div class="govuk-summary-card__title-wrapper">
+            <h2 class="govuk-summary-card__title">Batch numbers</h2>
+        </div>
+        <div class="govuk-summary-card__content">
+            <ul class="govuk-list">
+                @foreach (var b in Model.BatchNumbers)
+                {
+                    <li>@b.BatchNumber@(b.Document is not null ? $" — {b.Document}" : "")</li>
+                }
+            </ul>
+        </div>
+    </div>
+}
+
+@* -- Clinical signs ----------------------------------------------------------- *@
+<h2 class="govuk-heading-m">Clinical signs</h2>
+
+@* -- READ-ONLY SIGNS VIEW --------------------------------------------------- *@
+<div class="govuk-button-group govuk-!-margin-bottom-4">
+    @if (User.IsInRole("DataEntry"))
+    {
+        <a asp-page="/Case/ClinicalEdit" asp-route-rbse="@Model.Rbse"
+       class="govuk-button govuk-button--secondary">Edit clinical signs</a>
+    }
+    </div>
+
+@if (checkedSigns.Count > 0)
+{
+    <ul class="govuk-list govuk-list--bullet">
+        @foreach (var sign in checkedSigns)
+        {
+            <li>@sign</li>
+        }
+    </ul>
+}
+else
+{
+    <p class="govuk-body govuk-!-colour-secondary">No clinical signs recorded.</p>
+}
+
+@* -- Clinical visits ---------------------------------------------------------- *@
+<h2 class="govuk-heading-m govuk-!-margin-top-6">Clinical visits</h2>
+
+@if (Model.Visits.Count > 0)
+{
+    <table class="govuk-table">
+        <caption class="govuk-visually-hidden">Clinical visits for @BseFormat.FormatRbse(Model.Rbse)</caption>
+        <thead class="govuk-table__head">
+            <tr class="govuk-table__row">
+                <th scope="col" class="govuk-table__header">Visit date</th>
+                @if (User.IsInRole("DataEntry"))
+                {
+                    <th scope="col" class="govuk-table__header">Action</th>
+                }
+            </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+            @foreach (var v in Model.Visits)
+            {
+                <tr class="govuk-table__row">
+                    <td class="govuk-table__cell">@v.VisitDate?.ToString("dd/MM/yyyy")</td>
+                    @if (User.IsInRole("DataEntry"))
+                    {
+                    <td class="govuk-table__cell">
+                        <form method="post" asp-page-handler="DeleteVisit" style="display:inline" novalidate>
+                            <input type="hidden" name="VisitId" value="@v.Id" />
+                            <input type="hidden" asp-for="Rbse" />
+                            <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0"
+                                    onclick="return confirm('Delete this visit?')">Delete</button>
+                        </form>
+                    </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p class="govuk-body govuk-!-colour-secondary">No clinical visits recorded.</p>
+}
+
+@if (User.IsInRole("DataEntry"))
+{
+<details class="govuk-details" data-module="govuk-details">
+    <summary class="govuk-details__summary">
+        <span class="govuk-details__summary-text">Add a clinical visit</span>
+    </summary>
+    <div class="govuk-details__text">
+        <form method="post" asp-page-handler="AddVisit" novalidate>
+            <input type="hidden" asp-for="Rbse" />
+            <div class="govuk-form-group">
+                <label class="govuk-label" for="visit-date">Visit date</label>
+                <input id="visit-date" name="VisitDate" type="date" class="govuk-input govuk-input--width-10" />
+            </div>
+            <button type="submit" class="govuk-button" data-module="govuk-button">Add visit</button>
+        </form>
+    </div>
+</details>
+}
+

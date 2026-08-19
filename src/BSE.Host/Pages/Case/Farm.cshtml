@@ -1,0 +1,448 @@
+@page "{rbse}"
+@model BSE.Host.Pages.Case.FarmModel
+@{
+    ViewData["Title"] = Model.Case is null ? "Case" : $"RBSE Number: {Model.Rbse}";
+}
+
+@if (Model.Case is null)
+{
+    <div class="govuk-warning-text">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text">
+            <span class="govuk-warning-text__assistive">Warning</span>
+            Case not found.
+        </strong>
+    </div>
+    <a asp-page="/Case/Lookup" class="govuk-link">Back to case lookup</a>
+    return;
+}
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Case @Model.Rbse</li>
+    </ol>
+</nav>
+
+<h1 class="govuk-heading-l">RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Rbse)</span></h1>
+
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Farm", Model.Rbse))
+
+@* ── Notifications ────────────────────────────────────────────────────────────── *@
+@if (TempData["Success"] is string successMsg)
+{
+    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert"
+         aria-labelledby="farm-success-title" data-module="govuk-notification-banner">
+        <div class="govuk-notification-banner__header">
+            <h2 class="govuk-notification-banner__title" id="farm-success-title">Success</h2>
+        </div>
+        <div class="govuk-notification-banner__content">
+            <p class="govuk-notification-banner__heading">@successMsg</p>
+        </div>
+    </div>
+}
+
+@if (TempData["Warning"] is string warningMsg)
+{
+    <div class="govuk-notification-banner" role="region"
+         aria-labelledby="farm-warning-title" data-module="govuk-notification-banner">
+        <div class="govuk-notification-banner__header">
+            <h2 class="govuk-notification-banner__title" id="farm-warning-title">Important</h2>
+        </div>
+        <div class="govuk-notification-banner__content">
+            <p class="govuk-body">@warningMsg</p>
+        </div>
+    </div>
+}
+
+@if (!ViewContext.ModelState.IsValid)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@e.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+@if (Model.Farm is null)
+{
+    <div class="govuk-inset-text">
+        No farm record is associated with CPHH <strong>@BseFormat.FormatCphh(Model.Case.Cphh)</strong>.
+    </div>
+
+    <p class="govuk-body">
+        <a asp-page="/Farm/Details" asp-route-cphh="@Model.Case.Cphh" class="govuk-link">View farm record</a> &mdash;
+        <a asp-page="/Case/Details" asp-route-rbse="@Model.Rbse" class="govuk-link">Back to case</a>
+    </p>
+    return;
+}
+
+@* ── Confirmed cases banner ───────────────────────────────────────────────────── *@
+<div class="govuk-inset-text">
+    <strong>Number of confirmed cases for this farm: @Model.ConfirmedCaseCount</strong>
+</div>
+
+@* ── Batch numbers (mirrors legacy BatchNumberDisplay control) ─────────────────────────────── *@
+@if (User.IsInRole("DataEntry") && Model.BatchNumbers.Count > 0)
+{
+    <div class="govuk-summary-card govuk-!-margin-bottom-4">
+        <div class="govuk-summary-card__title-wrapper">
+            <h2 class="govuk-summary-card__title">Batch numbers</h2>
+        </div>
+        <div class="govuk-summary-card__content">
+            <ul class="govuk-list">
+                @foreach (var b in Model.BatchNumbers)
+                {
+                    <li>@b.BatchNumber@(b.Document is not null ? $" — {b.Document}" : "")</li>
+                }
+            </ul>
+        </div>
+    </div>
+}
+
+@* ── Action buttons ───────────────────────────────────────────────────────────── *@
+<div class="govuk-button-group govuk-!-margin-bottom-4">
+    @if (User.IsInRole("DataEntry"))
+    {
+        <a asp-page="/Farm/Edit" asp-route-cphh="@Model.Farm.CPHH" asp-route-rbse="@Model.Rbse" class="govuk-button govuk-button--secondary">Edit farm details</a>
+    }
+    <a asp-page="/AuditLog/ByFarm" asp-route-cphh="@Model.Farm.CPHH" asp-route-rbse="@Model.Rbse" class="govuk-link">Farm audit log</a>
+    @if (!string.IsNullOrEmpty(Model.SpolSiteUrl))
+    {
+        string farmRbseNoSlash = Model.Rbse.Replace("/", "");
+        <a href="@(Model.SpolSiteUrl)@farmRbseNoSlash" target="_blank" rel="noopener noreferrer" class="govuk-link">
+            View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
+        </a>
+    }
+</div>
+
+@* ── Farm summary — two columns ───────────────────────────────────────────────── *@
+<h2 class="govuk-heading-m">CPHH: @BseFormat.FormatCphh(Model.Farm.CPHH)</h2>
+
+<div class="govuk-grid-row">
+    <div class="govuk-grid-column-one-half">
+
+        <h3 class="govuk-heading-s">Address</h3>
+        <dl class="govuk-summary-list">
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">Owner name</dt>
+                <dd class="govuk-summary-list__value">@Model.Farm.OwnerName</dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">Address</dt>
+                <dd class="govuk-summary-list__value">
+                    @Model.Farm.Address1<br />
+                    @if (!string.IsNullOrWhiteSpace(Model.Farm.Address2)) { @Model.Farm.Address2 <br /> }
+                    @if (!string.IsNullOrWhiteSpace(Model.Farm.Address3)) { @Model.Farm.Address3 <br /> }
+                    @Model.Farm.Postcode
+                </dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">Parish</dt>
+                <dd class="govuk-summary-list__value">@Model.Farm.Parish</dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">District</dt>
+                <dd class="govuk-summary-list__value">@Model.Farm.District</dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">County</dt>
+                <dd class="govuk-summary-list__value">@(Model.CountyName ?? Model.Farm.County)</dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">Map reference</dt>
+                <dd class="govuk-summary-list__value">@Model.Farm.MapReference</dd>
+            </div>
+        </dl>
+
+        <h3 class="govuk-heading-s">Correspondence address</h3>
+        <dl class="govuk-summary-list">
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">Correspondence address</dt>
+                <dd class="govuk-summary-list__value">
+                    @if (string.IsNullOrWhiteSpace(Model.Farm.CorrespondenceAddress1))
+                    {
+                        <span class="govuk-hint">Same as main address</span>
+                    }
+                    else
+                    {
+                        @Model.Farm.CorrespondenceAddress1<br />
+                        @if (!string.IsNullOrWhiteSpace(Model.Farm.CorrespondenceAddress2)) { @Model.Farm.CorrespondenceAddress2 <br /> }
+                        @if (!string.IsNullOrWhiteSpace(Model.Farm.CorrespondenceAddress3)) { @Model.Farm.CorrespondenceAddress3 <br /> }
+                        @Model.Farm.CorrespondencePostcode
+                    }
+                </dd>
+            </div>
+        </dl>
+
+    </div>
+    <div class="govuk-grid-column-one-half">
+
+        <h3 class="govuk-heading-s">Herd details</h3>
+        <dl class="govuk-summary-list">
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">Herdmark 1</dt>
+                <dd class="govuk-summary-list__value">@Model.Farm.Herdmark1</dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">Numeric herdmark 1</dt>
+                <dd class="govuk-summary-list__value">@Model.Farm.NumericHerdmark1</dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">Herdmark 2</dt>
+                <dd class="govuk-summary-list__value">@Model.Farm.Herdmark2</dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">Numeric herdmark 2</dt>
+                <dd class="govuk-summary-list__value">@Model.Farm.NumericHerdmark2</dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">Herdmark 3</dt>
+                <dd class="govuk-summary-list__value">@Model.Farm.Herdmark3</dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">Herd type</dt>
+                <dd class="govuk-summary-list__value">@(Model.HerdTypeName ?? Model.Farm.HerdType)</dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">Pedigree</dt>
+                <dd class="govuk-summary-list__value">@(Model.PedigreeTypeName ?? Model.Farm.PedigreeType)</dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">AHO</dt>
+                <dd class="govuk-summary-list__value">@(Model.AHOName ?? Model.Farm.AHO)</dd>
+            </div>
+            @if (!string.IsNullOrWhiteSpace(Model.AuthorityCountyName))
+            {
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">Authority county</dt>
+                    <dd class="govuk-summary-list__value">@Model.AuthorityCountyName</dd>
+                </div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.LocalAuthorityName))
+            {
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">Local authority</dt>
+                    <dd class="govuk-summary-list__value">@Model.LocalAuthorityName</dd>
+                </div>
+            }
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">ADNS region</dt>
+                <dd class="govuk-summary-list__value">@Model.ADNSRegionName</dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">Is a dealer?</dt>
+                <dd class="govuk-summary-list__value">@(Model.Farm.IsDealer ? "Yes" : "No")</dd>
+            </div>
+        </dl>
+
+    </div>
+</div>
+
+<hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+
+@* ── Linked farms ─────────────────────────────────────────────────────────────── *@
+<h2 class="govuk-heading-m">Linked farms</h2>
+
+@if (Model.LinkedFarms.Count > 0)
+{
+    <table class="govuk-table">
+        <caption class="govuk-visually-hidden">Linked farms for @Model.Farm.CPHH</caption>
+        <thead class="govuk-table__head">
+            <tr class="govuk-table__row">
+                <th scope="col" class="govuk-table__header">CPHH</th>
+                <th scope="col" class="govuk-table__header">Status</th>
+                @if (User.IsInRole("DataEntry"))
+                {
+                    <th scope="col" class="govuk-table__header">Action</th>
+                }
+            </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+            @foreach (var lf in Model.LinkedFarms)
+            {
+                <tr class="govuk-table__row">
+                    <td class="govuk-table__cell">@BseFormat.FormatCphh(lf.RelatedCPHH)</td>
+                    <td class="govuk-table__cell">@lf.Status</td>
+                    <td class="govuk-table__cell">
+                        @if (User.IsInRole("DataEntry"))
+                        {
+                        <form method="post" asp-page-handler="DeleteLinkedFarm" novalidate>
+                            <input type="hidden" name="Rbse" value="@Model.Rbse" />
+                            <input type="hidden" name="id" value="@lf.ID" />
+                            <input type="hidden" name="rowStampBase64" value="@(lf.RowStamp is not null ? Convert.ToBase64String(lf.RowStamp) : "")" />
+                            <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0"
+                                    data-module="govuk-button"
+                                    onclick="return confirm('Remove linked farm @lf.RelatedCPHH?')">
+                                Remove
+                            </button>
+                        </form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p class="govuk-body">No linked farms recorded.</p>
+}
+
+@if (User.IsInRole("DataEntry"))
+{
+<details class="govuk-details" data-module="govuk-details">
+    <summary class="govuk-details__summary">
+        <span class="govuk-details__summary-text">Add linked farm</span>
+    </summary>
+    <div class="govuk-details__text">
+        <form method="post" asp-page-handler="AddLinkedFarm" novalidate>
+            <input type="hidden" asp-for="Rbse" />
+            <div class="govuk-form-group @(ViewContext.ModelState[nameof(Model.NewLinkedCphh)]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+                <label class="govuk-label" for="NewLinkedCphh">CPHH to link</label>
+                <div class="govuk-hint">For example, 12/345/6789</div>
+                <span asp-validation-for="NewLinkedCphh" class="govuk-error-message"></span>
+                <input class="govuk-input govuk-!-width-one-third" id="NewLinkedCphh" asp-for="NewLinkedCphh"
+                       autocomplete="off" spellcheck="false" />
+            </div>
+            <button type="submit" class="govuk-button" data-module="govuk-button">Add linked farm</button>
+        </form>
+    </div>
+</details>
+}
+
+<hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+
+@* ── Herd size ────────────────────────────────────────────────────────────────── *@
+<h2 class="govuk-heading-m">Herd size</h2>
+
+@if (Model.HerdSizes.Count > 0)
+{
+    <table class="govuk-table govuk-!-font-size-16">
+            <caption class="govuk-visually-hidden">Annual herd size for @Model.Farm.CPHH</caption>
+            <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                    <th scope="col" class="govuk-table__header">Year</th>
+                    <th scope="col" class="govuk-table__header govuk-table__header--numeric">Total</th>
+                    <th scope="col" class="govuk-table__header govuk-table__header--numeric">Lac 1</th>
+                    <th scope="col" class="govuk-table__header govuk-table__header--numeric">Lac 2</th>
+                    <th scope="col" class="govuk-table__header govuk-table__header--numeric">Lac 3</th>
+                    <th scope="col" class="govuk-table__header govuk-table__header--numeric">Lac 4</th>
+                    <th scope="col" class="govuk-table__header govuk-table__header--numeric">Lac 5</th>
+                    <th scope="col" class="govuk-table__header govuk-table__header--numeric">Lac 6</th>
+                    <th scope="col" class="govuk-table__header govuk-table__header--numeric">Lac 7</th>
+                    <th scope="col" class="govuk-table__header govuk-table__header--numeric">Lac 8</th>
+                    <th scope="col" class="govuk-table__header govuk-table__header--numeric">Lac 9</th>
+                    <th scope="col" class="govuk-table__header govuk-table__header--numeric">Lac 10</th>
+                    <th scope="col" class="govuk-table__header govuk-table__header--numeric">Lac 10+</th>
+                    @if (User.IsInRole("DataEntry"))
+                    {
+                        <th scope="col" class="govuk-table__header">Action</th>
+                    }
+                </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+                @foreach (var h in Model.HerdSizes)
+                {
+                    <tr class="govuk-table__row">
+                        <td class="govuk-table__cell">@h.HerdYear</td>
+                        <td class="govuk-table__cell govuk-table__cell--numeric">@h.TotalSize</td>
+                        <td class="govuk-table__cell govuk-table__cell--numeric">@h.Lactation1Size</td>
+                        <td class="govuk-table__cell govuk-table__cell--numeric">@h.Lactation2Size</td>
+                        <td class="govuk-table__cell govuk-table__cell--numeric">@h.Lactation3Size</td>
+                        <td class="govuk-table__cell govuk-table__cell--numeric">@h.Lactation4Size</td>
+                        <td class="govuk-table__cell govuk-table__cell--numeric">@h.Lactation5Size</td>
+                        <td class="govuk-table__cell govuk-table__cell--numeric">@h.Lactation6Size</td>
+                        <td class="govuk-table__cell govuk-table__cell--numeric">@h.Lactation7Size</td>
+                        <td class="govuk-table__cell govuk-table__cell--numeric">@h.Lactation8Size</td>
+                        <td class="govuk-table__cell govuk-table__cell--numeric">@h.Lactation9Size</td>
+                        <td class="govuk-table__cell govuk-table__cell--numeric">@h.Lactation10Size</td>
+                        <td class="govuk-table__cell govuk-table__cell--numeric">@h.Lactation10PlusSize</td>
+                        @if (User.IsInRole("DataEntry"))
+                        {
+                        <td class="govuk-table__cell">
+                            <form method="post" asp-page-handler="DeleteHerdSize" novalidate>
+                                <input type="hidden" name="Rbse" value="@Model.Rbse" />
+                                <input type="hidden" name="id" value="@h.ID" />
+                                <input type="hidden" name="rowStampBase64" value="@(h.RowStamp is not null ? Convert.ToBase64String(h.RowStamp) : "")" />
+                                <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0"
+                                        data-module="govuk-button"
+                                        onclick="return confirm('Delete herd size record for @h.HerdYear?')">
+                                    Delete
+                                </button>
+                            </form>
+                        </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+</table>
+}
+else
+{
+    <p class="govuk-body">No herd size records for this farm.</p>
+}
+
+@if (User.IsInRole("DataEntry"))
+{
+<details class="govuk-details" data-module="govuk-details">
+    <summary class="govuk-details__summary">
+        <span class="govuk-details__summary-text">Add herd size record</span>
+    </summary>
+    <div class="govuk-details__text">
+        <form method="post" asp-page-handler="AddHerdSize" novalidate>
+            <input type="hidden" asp-for="Rbse" />
+
+            <div class="govuk-grid-row">
+                <div class="govuk-grid-column-one-quarter">
+                    <div class="govuk-form-group">
+                        <label class="govuk-label" for="NewHerdSize_HerdYear">Year</label>
+                        <input class="govuk-input" id="NewHerdSize_HerdYear" asp-for="NewHerdSize.HerdYear"
+                               type="number" min="1980" max="2100" />
+                    </div>
+                </div>
+                <div class="govuk-grid-column-one-quarter">
+                    <div class="govuk-form-group">
+                        <label class="govuk-label" for="NewHerdSize_TotalSize">Total size</label>
+                        <input class="govuk-input" id="NewHerdSize_TotalSize" asp-for="NewHerdSize.TotalSize"
+                               type="number" min="0" />
+                    </div>
+                </div>
+            </div>
+
+            <p class="govuk-body govuk-!-font-size-16 govuk-!-font-weight-bold govuk-!-margin-bottom-2">Lactation sizes</p>
+            <div class="govuk-grid-row">
+                @foreach (var lac in new[] { (1,"1"), (2,"2"), (3,"3"), (4,"4"), (5,"5"), (6,"6"), (7,"7"), (8,"8"), (9,"9"), (10,"10") })
+                {
+                    <div class="govuk-grid-column-one-quarter govuk-!-margin-bottom-3">
+                        <div class="govuk-form-group">
+                            <label class="govuk-label govuk-!-font-size-16" for="NewHerdSize_Lactation@(lac.Item1)Size">Lac @lac.Item2</label>
+                            <input class="govuk-input" id="NewHerdSize_Lactation@(lac.Item1)Size"
+                                   name="NewHerdSize.Lactation@(lac.Item1)Size"
+                                   type="number" min="0" value="0" />
+                        </div>
+                    </div>
+                }
+                <div class="govuk-grid-column-one-quarter govuk-!-margin-bottom-3">
+                    <div class="govuk-form-group">
+                        <label class="govuk-label govuk-!-font-size-16" for="NewHerdSize_Lactation10PlusSize">Lac 10+</label>
+                        <input class="govuk-input" id="NewHerdSize_Lactation10PlusSize"
+                               asp-for="NewHerdSize.Lactation10PlusSize"
+                               type="number" min="0" />
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="govuk-button" data-module="govuk-button">Add herd size</button>
+        </form>
+    </div>
+</details>
+}

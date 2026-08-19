@@ -23,7 +23,7 @@
 
     @if (Model.Result is not null)
     {
-        <h2 class="govuk-heading-m">BSESS vs BSE comparison — @Model.Rbse</h2>
+        <h2 class="govuk-heading-m">BSESS vs BSE comparison — @BseFormat.FormatRbse(Model.Rbse)</h2>
         <table class="govuk-table">
             <caption class="govuk-visually-hidden">BSESS comparison details</caption>
             <thead class="govuk-table__head">
@@ -45,7 +45,7 @@
     {
         <div class="govuk-warning-text">
             <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
-            <strong class="govuk-warning-text__text"><span class="govuk-warning-text__assistive">Warning</span>No BSESS record found for @Model.Rbse.</strong>
+            <strong class="govuk-warning-text__text"><span class="govuk-warning-text__assistive">Warning</span>No BSESS record found for @BseFormat.FormatRbse(Model.Rbse).</strong>
         </div>
     }
 </div>

@@ -1,0 +1,131 @@
+@page "{rbse}"
+@model BSE.Host.Pages.Case.BabModel
+@{
+    ViewData["Title"] = $"BAB — {Model.Rbse}";
+    string rbseNoSlash = Model.Rbse.Replace("/", "");
+    string Desc(IEnumerable<BSE.SharedKernel.ILookupItem> opts, string? code) =>
+        opts.FirstOrDefault(o => o.Code == code)?.Description ?? code ?? "—";
+}
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Bab" asp-route-rbse="@Model.Rbse">@BseFormat.FormatRbse(Model.Rbse)</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">BAB</li>
+    </ol>
+</nav>
+
+<h1 class="govuk-heading-l">RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Rbse)</span></h1>
+
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("BAB", Model.Rbse))
+
+@if (TempData["Success"] is string successMsg)
+{
+    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert"
+         aria-labelledby="bab-success-title" data-module="govuk-notification-banner">
+        <div class="govuk-notification-banner__header">
+            <h2 class="govuk-notification-banner__title" id="bab-success-title">Success</h2>
+        </div>
+        <div class="govuk-notification-banner__content">
+            <p class="govuk-notification-banner__heading">@successMsg</p>
+        </div>
+    </div>
+}
+
+@* -- Batch numbers ---------------------------------------------------------- *@
+@if (User.IsInRole("DataEntry") && Model.BatchNumbers.Count > 0)
+{
+    <div class="govuk-summary-card govuk-!-margin-bottom-4">
+        <div class="govuk-summary-card__title-wrapper">
+            <h2 class="govuk-summary-card__title">Batch numbers</h2>
+        </div>
+        <div class="govuk-summary-card__content">
+            <ul class="govuk-list">
+                @foreach (var b in Model.BatchNumbers)
+                {
+                    <li>@b.BatchNumber@(b.Document is not null ? $" — {b.Document}" : "")</li>
+                }
+            </ul>
+        </div>
+    </div>
+}
+
+@* -- READ-ONLY VIEW ----------------------------------------------------- *@
+<div class="govuk-button-group govuk-!-margin-bottom-4">
+    @if (User.IsInRole("DataEntry"))
+    {
+        <a asp-page="/Case/BabEdit" asp-route-rbse="@Model.Rbse"
+       class="govuk-button govuk-button--secondary">Edit BAB details</a>
+    }
+        @if (!string.IsNullOrEmpty(Model.SpolSiteUrl))
+        {
+            <a href="@(Model.SpolSiteUrl)@rbseNoSlash" target="_blank" rel="noopener noreferrer" class="govuk-link">
+                View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
+            </a>
+        }
+    </div>
+
+    <h2 class="govuk-heading-m">Born-After-Ban details</h2>
+    <dl class="govuk-summary-list">
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Notes</dt>
+            <dd class="govuk-summary-list__value">@(Model.Bab?.Notes ?? "—")</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Origin</dt>
+            <dd class="govuk-summary-list__value">@Desc(Model.AnimalOrigins, Model.Origin)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Traced CPHH</dt>
+            <dd class="govuk-summary-list__value">@BseFormat.FormatCphh(Model.Bab?.NatalCphh)</dd>
+        </div>
+    </dl>
+
+    <h2 class="govuk-heading-m">Traced origin farm</h2>
+    <dl class="govuk-summary-list">
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Traced Name</dt>
+            <dd class="govuk-summary-list__value">@(Model.Bab?.TracedName)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Traced Address</dt>
+            <dd class="govuk-summary-list__value">
+                @{
+                    var addrParts = new[] { Model.Bab?.TracedAddress1, Model.Bab?.TracedAddress2, Model.Bab?.TracedAddress3 }
+                        .Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
+                }
+                @if (addrParts.Count > 0)
+                {
+                    foreach (var line in addrParts)
+                    {
+                        <span>@line<br /></span>
+                    }
+                }
+                else
+                {
+                    <span>—</span>
+                }
+            </dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Traced Postcode</dt>
+            <dd class="govuk-summary-list__value">@(Model.Bab?.TracedPostcode ?? "—")</dd>
+        </div>
+    </dl>
+
+    <h2 class="govuk-heading-m">Risk factors</h2>
+    <dl class="govuk-summary-list">
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Feed Risk</dt>
+            <dd class="govuk-summary-list__value">@Desc(Model.FeedRisks, Model.Bab?.FeedRisk)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Horizontal Risk</dt>
+            <dd class="govuk-summary-list__value">@Desc(Model.HorizontalRisks, Model.Bab?.HorizontalRisk)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Maternal Risk</dt>
+            <dd class="govuk-summary-list__value">@Desc(Model.MaternalRisks, Model.Bab?.MaternalRisk)</dd>
+        </div>
+    </dl>
+

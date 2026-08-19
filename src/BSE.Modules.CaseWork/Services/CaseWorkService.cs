@@ -25,4 +25,10 @@ public sealed class CaseWorkService : ICaseWorkService
 
     public Task EditCaseWorkEntryAsync(EditCaseWorkEntryCommand command)
         => _repository.EditEntryAsync(command);
+
+    public Task<IEnumerable<CaseWorkEntryRecord>> GetOpenCasesAsync()
+        => _repository.GetOpenCasesAsync();
+
+    public Task<IEnumerable<CaseWorkEntryRecord>> GetClosedCasesAsync()
+        => _repository.GetClosedCasesAsync();
 }

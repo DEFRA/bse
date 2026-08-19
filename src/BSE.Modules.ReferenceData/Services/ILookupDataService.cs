@@ -19,6 +19,9 @@ public interface ILookupDataService
     Task<IEnumerable<LuTestResult>> GetTestResultsAsync();
     Task<IEnumerable<LuUserGroup>> GetUserGroupsAsync();
 
+    Task<IEnumerable<LuAuthority>> GetAuthoritiesByCountyAsync(int authorityCountyId);
+    Task<IEnumerable<LuADNSRegion>> GetADNSRegionsByAuthorityAsync(int authorityId);
+
     /// <summary>
     /// Returns a generic Id+Description projection for the specified lookup table.
     /// Useful for populating dropdowns that do not need the full typed record.

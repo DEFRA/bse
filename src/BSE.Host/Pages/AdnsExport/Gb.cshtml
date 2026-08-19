@@ -65,7 +65,7 @@
                 <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
                 <strong class="govuk-warning-text__text">
                     <span class="govuk-warning-text__assistive">Warning</span>
-                    @Model.Preview.MissingCases.Count cases missing ADNS region: @string.Join(", ", Model.Preview.MissingCases.Select(c => c.Rbse))
+                    @Model.Preview.MissingCases.Count cases missing ADNS region: @string.Join(", ", Model.Preview.MissingCases.Select(c => BseFormat.FormatRbse(c.Rbse)))
                 </strong>
             </div>
         }
@@ -78,7 +78,7 @@
             <tbody class="govuk-table__body">
                 @foreach (var c in Model.Preview.Cases)
                 {
-                    <tr class="govuk-table__row"><td class="govuk-table__cell">@c.Rbse</td><td class="govuk-table__cell">@c.AdnsReference</td><td class="govuk-table__cell">@c.AdnsRegionName</td><td class="govuk-table__cell">@c.ConfirmationDate.ToShortDateString()</td></tr>
+                    <tr class="govuk-table__row"><td class="govuk-table__cell">@BseFormat.FormatRbse(c.Rbse)</td><td class="govuk-table__cell">@c.AdnsReference</td><td class="govuk-table__cell">@c.AdnsRegionName</td><td class="govuk-table__cell">@c.ConfirmationDate.ToShortDateString()</td></tr>
                 }
             </tbody>
         </table>

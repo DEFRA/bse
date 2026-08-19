@@ -23,6 +23,8 @@ public sealed class LookupDataService : ILookupDataService
     public Task<IEnumerable<LuTestType>> GetTestTypesAsync() => _repo.GetTestTypesAsync();
     public Task<IEnumerable<LuTestResult>> GetTestResultsAsync() => _repo.GetTestResultsAsync();
     public Task<IEnumerable<LuUserGroup>> GetUserGroupsAsync() => _repo.GetUserGroupsAsync();
+    public Task<IEnumerable<LuAuthority>> GetAuthoritiesByCountyAsync(int authorityCountyId) => _repo.GetAuthoritiesByCountyAsync(authorityCountyId);
+    public Task<IEnumerable<LuADNSRegion>> GetADNSRegionsByAuthorityAsync(int authorityId) => _repo.GetADNSRegionsByAuthorityAsync(authorityId);
 
     public async Task<IEnumerable<LookupItem>> GetLookupAsync(LookupTableId tableId)
     {
