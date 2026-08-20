@@ -47,7 +47,8 @@ public sealed class HelpNavigationIntegrationTests : IClassFixture<HomeNavigatio
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         html.Should().Contain("href=\"/Help\"");
-        html.Should().Contain(">Help<");
+        html.Should().Contain(">Help<span");
+        html.Should().Contain("(opens in new tab)");
         html.Should().Contain("target=\"_blank\"");
     }
 

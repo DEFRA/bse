@@ -64,7 +64,7 @@
                             @if (User.Identity?.IsAuthenticated == true)
                             {
                                 <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Home">Home</a></li>
-                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Help" target="_blank" rel="noopener noreferrer">Help</a></li>
+                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Help" target="_blank" rel="noopener noreferrer">Help<span class="govuk-visually-hidden"> (opens in new tab)</span></a></li>
                             }
                         </ul>
                     </nav>

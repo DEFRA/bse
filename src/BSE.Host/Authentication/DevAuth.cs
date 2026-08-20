@@ -3,8 +3,8 @@ using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 
-// Dev-only OIDC bypass — this file is NOT committed to the repository.
-// Drop it or exclude it from git; Program.cs compiles and runs OIDC-only without it.
+// Dev-only OIDC bypass — active only when IsDevelopment() && Authentication:BypassEnabled = true.
+// Set Authentication:DevUserNtLogin in appsettings.Development.json to your NT login before use.
 
 internal static partial class DevAuth
 {
