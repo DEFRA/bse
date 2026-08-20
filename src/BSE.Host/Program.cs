@@ -1,5 +1,4 @@
 using BSE.Host.Cache;
-using BSE.Host.Authentication;
 using BSE.Host.HealthChecks;
 using BSE.Infrastructure;
 using BSE.Infrastructure.Cache;
@@ -136,50 +135,37 @@ try
     // Set via appsettings.json, appsettings.{Environment}.json, or environment
     // variables OIDC__Authority / OIDC__ClientId / OIDC__ClientSecret.
     // Full Azure AD wiring is completed when the real tenant is provisioned.
-    var bypassAuthentication = builder.Environment.IsDevelopment()
-        && builder.Configuration.GetValue<bool>("Authentication:BypassEnabled");
+    DevAuth.Register(builder);
 
-    if (bypassAuthentication)
-    {
-        builder.Services
-            .AddAuthentication(options =>
+    builder.Services
+        .AddAuthentication(options =>
+        {
+            options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = "oidc";
+        })
+        .AddCookie()
+        .AddOpenIdConnect("oidc", options =>
+        {
+            options.Authority = builder.Configuration["OIDC:Authority"];
+            options.ClientId = builder.Configuration["OIDC:ClientId"];
+            options.ClientSecret = builder.Configuration["OIDC:ClientSecret"];
+            options.ResponseType = "code";
+            options.SaveTokens = true;
+            options.GetClaimsFromUserInfoEndpoint = true;
+            options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+            options.Events.OnRemoteFailure = ctx =>
             {
-                options.DefaultAuthenticateScheme = DevelopmentAuthHandler.SchemeName;
-                options.DefaultChallengeScheme = DevelopmentAuthHandler.SchemeName;
-                options.DefaultScheme = DevelopmentAuthHandler.SchemeName;
-            })
-            .AddScheme<DevelopmentAuthOptions, DevelopmentAuthHandler>(
-                DevelopmentAuthHandler.SchemeName,
-                opts => opts.NtLogin =
-                    builder.Configuration["Authentication:DevUserNtLogin"] ?? "dev-user");
-    }
-    else
-    {
-        builder.Services
-            .AddAuthentication(options =>
-            {
-                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
-            })
-            .AddCookie()
-            .AddOpenIdConnect("oidc", options =>
-            {
-                options.Authority = builder.Configuration["OIDC:Authority"];
-                options.ClientId = builder.Configuration["OIDC:ClientId"];
-                options.ClientSecret = builder.Configuration["OIDC:ClientSecret"];
-                options.ResponseType = "code";
-                options.SaveTokens = true;
-                options.GetClaimsFromUserInfoEndpoint = true;
-                options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
-            });
-    }
+                ctx.Response.Redirect("/Error?message=Sign-in+failed.+Please+try+again.");
+                ctx.HandleResponse();
+                return Task.CompletedTask;
+            };
+        });
 
     // ── Razor Pages ────────────────────────────────────────────────────────────
     builder.Services.AddRazorPages(options =>
     {
         options.Conventions.AuthorizeFolder("/");
         options.Conventions.AllowAnonymousToPage("/Error");
-        options.Conventions.AllowAnonymousToPage("/SessionError");
     })
      .AddMvcOptions(o =>
         // ASP.NET Core 6+ treats non-nullable string properties as implicitly [Required]
@@ -266,3 +252,10 @@ finally
 
 // Expose Program to integration test projects using WebApplicationFactory<Program>.
 public partial class Program { }
+
+// Partial void stub — silently dropped by the compiler when Authentication/DevAuth.cs is absent.
+internal static partial class DevAuth
+{
+    static partial void DoRegister(WebApplicationBuilder builder);
+    internal static void Register(WebApplicationBuilder builder) => DoRegister(builder);
+}

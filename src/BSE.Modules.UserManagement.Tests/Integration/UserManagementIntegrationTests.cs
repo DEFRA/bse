@@ -30,6 +30,7 @@ namespace BSE.Modules.UserManagement.Tests.Integration;
 /// No code changes are required.
 /// </summary>
 [Trait("Category", "Integration")]
+[Collection("Integration")]
 public sealed class UserManagementIntegrationTests : IClassFixture<UserManagementWebFactory>
 {
     private readonly UserManagementWebFactory _factory;
@@ -76,7 +77,7 @@ public sealed class UserManagementIntegrationTests : IClassFixture<UserManagemen
         // Configure factory with this specific UPN for this test.
         var client = _factory.WithWebHostBuilder(b =>
             b.ConfigureServices(s =>
-                s.PostConfigure<TestAuthOptions>(opts =>
+                s.PostConfigure<TestAuthOptions>(TestAuthHandler.SchemeName, opts =>
                     opts.DefaultUpn = upn)))
             .CreateClient();
 
@@ -103,6 +104,9 @@ public sealed class UserManagementWebFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(Microsoft.AspNetCore.Hosting.IWebHostBuilder builder)
     {
+        // Prevent Program.cs from registering DevAuthHandler so TestAuthHandler is the sole scheme.
+        builder.UseEnvironment("Testing");
+
         builder.ConfigureServices(services =>
         {
             // Replace OIDC authentication with test handler.

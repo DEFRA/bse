@@ -148,6 +148,29 @@ public sealed class GroupClaimsTransformationTests
               .Should().Be("DEFRA Viewer");
     }
 
+    [Fact]
+    public async Task GroupChangedInDatabase_OnNextLogin_ReflectsUpdatedGroup()
+    {
+        // Simulates: user has DataEntry, admin changes it to ReadOnly in DB, user logs in again.
+        const string upn = "changeduser@test.domain";
+
+        _repo.GetByUpnAsync(upn).Returns(MakeUser(UserGroup.DataEntry));
+        var firstLogin = AuthenticatedPrincipal(new Claim("preferred_username", upn));
+        var afterFirstLogin = await _sut.TransformAsync(firstLogin);
+        afterFirstLogin.FindFirst(ClaimsUserContext.BseGroupIdClaimType)!.Value
+                       .Should().Be(((int)UserGroup.DataEntry).ToString());
+
+        // DB group is updated — next login issues a fresh principal with no bse:groupId.
+        _repo.GetByUpnAsync(upn).Returns(MakeUser(UserGroup.ReadOnly));
+        var nextLogin = AuthenticatedPrincipal(new Claim("preferred_username", upn));
+        var afterNextLogin = await _sut.TransformAsync(nextLogin);
+
+        afterNextLogin.FindFirst(ClaimsUserContext.BseGroupIdClaimType)!.Value
+                      .Should().Be(((int)UserGroup.ReadOnly).ToString());
+        afterNextLogin.FindFirst(ClaimsUserContext.BseGroupClaimType)!.Value
+                      .Should().Be("DEFRA Viewer");
+    }
+
     [Theory]
     [InlineData(UserGroup.Admin)]
     [InlineData(UserGroup.DataEntry)]
