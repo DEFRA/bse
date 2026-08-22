@@ -50,7 +50,7 @@ public class HomeModel(IBatchService batchService, ICaseRepository caseRepositor
         if (User.IsInRole("VLAAccess"))
             tasks.Add(LoadBatchDataAsync());
 
-        if (User.IsInRole("DEFRAMaintenance") || User.IsInRole("VLAAccess"))
+        if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess"))
             tasks.Add(LoadRbseDataAsync(currentYear, previousYear));
 
         await Task.WhenAll(tasks);
@@ -67,11 +67,19 @@ public class HomeModel(IBatchService batchService, ICaseRepository caseRepositor
             caseRepository.GetLatestDbseForYearAsync(currentYear),
             caseRepository.GetLatestDbseForYearAsync(previousYear));
 
-        LatestRbseCurrentYear  = results[0];
-        LatestRbsePreviousYear = results[1];
-        LatestDbseCurrentYear  = results[2];
-        LatestDbsePreviousYear = results[3];
+        LatestRbseCurrentYear  = FormatRbse(results[0]);
+        LatestRbsePreviousYear = FormatRbse(results[1]);
+        LatestDbseCurrentYear  = FormatDbse(results[2]);
+        LatestDbsePreviousYear = FormatDbse(results[3]);
     }
+
+    // Mirrors legacy Common.vb FormatRBSE: strips slashes then inserts CC/YY/NNNNN.
+    private static string? FormatRbse(string? raw)
+        => raw?.Length == 9 ? $"{raw[..2]}/{raw[2..4]}/{raw[4..]}" : raw;
+
+    // Mirrors legacy Common.vb FormatDBSE: strips slashes then inserts YY/NNNNN.
+    private static string? FormatDbse(string? raw)
+        => raw?.Length == 7 ? $"{raw[..2]}/{raw[2..]}" : raw;
 
     /// <summary>
     /// Validates the entered batch year/number. If found, redirects to New Case

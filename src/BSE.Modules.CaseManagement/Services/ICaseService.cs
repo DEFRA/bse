@@ -34,4 +34,7 @@ public interface ICaseService
 
     /// <summary>Creates a non-GB case (Jersey, Guernsey or Isle of Man) via AddNonGBCase SP.</summary>
     Task<AddNonGbCaseResult> CreateNonGbCaseAsync(AddNonGbCaseCommand command, int userId);
+
+    /// <summary>Saves final result for a case in its own SQL transaction.</summary>
+    Task<EditCaseResult> SaveFinalResultAsync(EditFinalResultCommand command, int userId);
 }

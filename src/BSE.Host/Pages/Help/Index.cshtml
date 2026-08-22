@@ -56,7 +56,14 @@
     <p class="govuk-body">Your name and user group are displayed in the header. Selecting the <strong>BSE system</strong> link in the navigation bar returns you to the home page from anywhere in the system.</p>
 
     <h3 class="govuk-heading-m" id="General_DateControls">Date entry</h3>
-    <p class="govuk-body">Enter dates directly into date fields. Use the format <strong>YYYY-MM-DD</strong> (for example, <samp>2026-04-01</samp> for 1 April 2026). The browser's date picker may also be used where available.</p>
+    <p class="govuk-body">Date fields use the browser's built-in date picker in place of the calendar popup used in the previous system.</p>
+    <p class="govuk-body">To enter a date, either:</p>
+    <ul class="govuk-list govuk-list--bullet">
+        <li>Select the date field or its calendar icon to open the browser date picker, then navigate to and choose a date.</li>
+        <li>Type directly into the field. The format shown by the field is determined by your browser and operating system — on most UK systems this is <strong>DD/MM/YYYY</strong> (for example, <samp>01/04/2026</samp> for 1 April 2026).</li>
+    </ul>
+    <p class="govuk-body">Dates are displayed throughout the system in <strong>DD/MM/YYYY</strong> format.</p>
+    <p class="govuk-body">To clear a date field, select the field and delete the value, or use your browser's built-in clear control if one is shown.</p>
 
     <h3 class="govuk-heading-m" id="General_Grids">Data tables</h3>
     <p class="govuk-body">Data is displayed in tables. Use the action links in each row to view, edit or remove that record. Where present, column headings can be selected to sort the table — select once for ascending order, again for descending.</p>
@@ -89,7 +96,7 @@
         <p class="govuk-body">See also: <a class="govuk-link" href="#General_FieldErrors">Field error messages</a></p>
     }
 
-    @if (isVLAAccess || isDEFRAMaintenance)
+    @if (isVLAAccess || isDEFRAMaintenance || User.IsInRole("DEFRAAccess"))
     {
         <h3 class="govuk-heading-m" id="RBSENumber">RBSE number</h3>
         <p class="govuk-body">The RBSE number is stored as <strong>9 digits</strong> in the format <samp>CCYYNNNNN</samp> — two-digit region code, two-digit year, five-digit sequence number. Enter all 9 digits with no slashes. For example, enter <samp>002600001</samp> for sequence 1 in region 00, year 2026.</p>

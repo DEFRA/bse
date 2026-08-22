@@ -26,7 +26,7 @@
 
     @if (Model.Entries.Any())
     {
-        <h2 class="govuk-heading-m">@Model.Entries.Count() entries on @Model.LogDate.ToShortDateString()</h2>
+        <h2 class="govuk-heading-m">@Model.Entries.Count() entries on @Model.LogDate.ToString("dd/MM/yyyy")</h2>
         <table class="govuk-table">
             <caption class="govuk-visually-hidden">Audit log entries by date</caption>
             <thead class="govuk-table__head">
@@ -65,7 +65,7 @@
                 <h2 class="govuk-notification-banner__title" id="audit-info-title">Information</h2>
             </div>
             <div class="govuk-notification-banner__content">
-                <p class="govuk-notification-banner__heading">No audit log entries found for @Model.LogDate.ToShortDateString().</p>
+                <p class="govuk-notification-banner__heading">No audit log entries found for @Model.LogDate.ToString("dd/MM/yyyy").</p>
             </div>
         </div>
     }

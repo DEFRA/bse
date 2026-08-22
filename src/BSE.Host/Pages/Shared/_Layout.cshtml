@@ -53,17 +53,15 @@
                             <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Search/CasesByHerdmark">Cases by herdmark</a></li>
                             <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Search/CasesByHoldingHerdmark">Cases by holding/herdmark</a></li>
                             <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Search/Farms">Farm search</a></li>
-                            @if (User.IsInRole("DataEntry"))
-                            {
-                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Case/New">New case</a></li>
-                            }
-                            @if (User.IsInRole("FarmCreation"))
-                            {
-                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Farm/New">New farm</a></li>
-                            }
                             @if (User.IsInRole("VLAMaintenance"))
                             {
+                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Case/New">New case</a></li>
+                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Farm/New">New farm</a></li>
                                 <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Admin/Users">Admin</a></li>
+                            }
+                            @if (User.IsInRole("VLAAccess"))
+                            {
+                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/CaseWork/PrintBatch">Print batch</a></li>
                             }
                             @if (User.Identity?.IsAuthenticated == true)
                             {

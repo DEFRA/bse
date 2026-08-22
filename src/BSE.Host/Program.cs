@@ -271,6 +271,10 @@ try
         options.AddPolicy("DEFRAMaintenance",
             p => p.RequireRole("DEFRAMaintenance"));
 
+        // DEFRA Viewer, DEFRA Data Entry, DEFRA Maintenance - RBSE lookup on Home page.
+        options.AddPolicy("DEFRAAccess",
+            p => p.RequireRole("DEFRAAccess"));
+
         // VLA Data Entry, VLA Maintenance - OSS Export, Print Batch.
         options.AddPolicy("VLAAccess",
             p => p.RequireRole("VLAAccess"));

@@ -160,4 +160,25 @@ public sealed class CaseService : ICaseService
 
     public Task<AddNonGbCaseResult> CreateNonGbCaseAsync(AddNonGbCaseCommand command, int userId)
         => _caseRepository.AddNonGbCaseAsync(command, userId);
+
+    public async Task<EditCaseResult> SaveFinalResultAsync(EditFinalResultCommand command, int userId)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        connection.Open();
+        using var transaction = connection.BeginTransaction();
+        try
+        {
+            var result = await _caseRepository.EditFinalResultAsync(command, userId, connection, transaction);
+            if (result == EditCaseResult.Success)
+                transaction.Commit();
+            else
+                transaction.Rollback();
+            return result;
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
+    }
 }

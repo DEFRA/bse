@@ -111,8 +111,8 @@
     <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-bottom-6" />
 }
 
-@* ── RBSE Number panel — DEFRA Maintenance + VLA Data Entry + VLA Maintenance ─── *@
-@if (User.IsInRole("DEFRAMaintenance") || User.IsInRole("VLAAccess"))
+@* ── RBSE Number panel — all DEFRA groups + VLA Data Entry + VLA Maintenance ─── *@
+@if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess"))
 {
     <section aria-labelledby="rbse-panel-heading" class="govuk-!-margin-bottom-6">
         <h2 class="govuk-heading-m" id="rbse-panel-heading">RBSE number</h2>
@@ -199,6 +199,10 @@
             {
                 <li><a asp-page="/CaseWork/Menu" class="govuk-link">Casework menu</a></li>
             }
+            @if (User.IsInRole("VLAAccess"))
+            {
+                <li><a asp-page="/CaseWork/PrintBatch" class="govuk-link">Print batch</a></li>
+            }
             <li><a asp-page="/AuditLog/ByDate" class="govuk-link">Audit log</a></li>
             <li><a asp-page="/Bsess/CheckByRbse" class="govuk-link">BSESS check</a></li>
         </ul>
@@ -218,6 +222,18 @@
                 {
                     <li><a asp-page="/OssExport/Menu" class="govuk-link">OSS export</a></li>
                 }
+            </ul>
+        }
+
+        @if (User.IsInRole("DEFRAMaintenance"))
+        {
+            <h2 class="govuk-heading-m">Maintenance</h2>
+            <ul class="govuk-list">
+                <li><a asp-page="/Case/FinalResultEntry" class="govuk-link">Final result entry</a></li>
+                <li><a asp-page="/Farm/CphhChange" class="govuk-link">CPHH change</a></li>
+                <li><a asp-page="/Case/RbseChange" class="govuk-link">RBSE change</a></li>
+                <li><a asp-page="/Case/MoveCase" class="govuk-link">Move case</a></li>
+                <li><a asp-page="/Case/Delete" class="govuk-link">Delete case</a></li>
             </ul>
         }
 

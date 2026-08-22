@@ -1,0 +1,120 @@
+@page
+@model BSE.Host.Pages.Case.FinalResultEntryModel
+@{
+    ViewData["Title"] = "Final result entry";
+}
+
+<h1 class="govuk-heading-l">Final result entry</h1>
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Final result entry</li>
+    </ol>
+</nav>
+
+@* ── Step 1: RBSE lookup ──────────────────────────────────────────────────── *@
+@if (Model.CurrentCase is null && !Model.IsNotFound)
+{
+    <form method="get" novalidate>
+        <div class="govuk-form-group">
+            <label class="govuk-label" for="lookup-rbse">Enter RBSE</label>
+            <div class="govuk-hint">Enter 9 digits with no slashes — for example, 002600001.</div>
+            <input id="lookup-rbse" name="LookupRbse" type="text"
+                   class="govuk-input govuk-input--width-10"
+                   value="@Model.LookupRbse" autocomplete="off" />
+        </div>
+        <button type="submit" class="govuk-button govuk-button--secondary"
+                data-module="govuk-button">Look up</button>
+    </form>
+}
+
+@* ── Not found warning ───────────────────────────────────────────────────── *@
+@if (Model.IsNotFound)
+{
+    <div class="govuk-warning-text">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text">
+            <span class="govuk-warning-text__assistive">Warning</span>
+            No case found for RBSE @Model.LookupRbse.
+        </strong>
+    </div>
+    <form method="get" novalidate>
+        <div class="govuk-form-group">
+            <label class="govuk-label" for="lookup-rbse-retry">Enter RBSE</label>
+            <div class="govuk-hint">Enter 9 digits with no slashes — for example, 002600001.</div>
+            <input id="lookup-rbse-retry" name="LookupRbse" type="text"
+                   class="govuk-input govuk-input--width-10"
+                   value="@Model.LookupRbse" autocomplete="off" />
+        </div>
+        <button type="submit" class="govuk-button govuk-button--secondary"
+                data-module="govuk-button">Look up</button>
+    </form>
+}
+
+@* ── Step 2: Edit form (shown after successful lookup or POST validation failure) ── *@
+@if (Model.CurrentCase is not null || (Model.Rbse?.Length > 0 && !ViewContext.ModelState.IsValid))
+{
+    @if (!ViewContext.ModelState.IsValid)
+    {
+        <div class="govuk-error-summary" data-module="govuk-error-summary">
+            <div role="alert">
+                <h2 class="govuk-error-summary__title">There is a problem</h2>
+                <div class="govuk-error-summary__body">
+                    <ul class="govuk-list govuk-error-summary__list">
+                        @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <li>@e.ErrorMessage</li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    }
+
+    <p class="govuk-body">
+        Case: <strong>@(Model.CurrentCase?.Rbse ?? Model.Rbse)</strong>
+    </p>
+
+    <form method="post" novalidate>
+        <input type="hidden" asp-for="Rbse" />
+
+        <div class="govuk-form-group @(ViewContext.ModelState[nameof(Model.FinalResult)]?.Errors.Any() == true ? "govuk-form-group--error" : "")">
+            <label asp-for="FinalResult" class="govuk-label">Final result</label>
+            <div class="govuk-hint">For example, Pos (Positive) or Neg (Negative).</div>
+            @if (ViewContext.ModelState[nameof(Model.FinalResult)]?.Errors.Any() == true)
+            {
+                <p class="govuk-error-message">
+                    <span class="govuk-visually-hidden">Error:</span>
+                    @ViewContext.ModelState[nameof(Model.FinalResult)]!.Errors.First().ErrorMessage
+                </p>
+            }
+            <input asp-for="FinalResult" class="govuk-input govuk-!-width-one-quarter" />
+        </div>
+
+        <div class="govuk-form-group @(ViewContext.ModelState[nameof(Model.FinalResultDate)]?.Errors.Any() == true ? "govuk-form-group--error" : "")">
+            <label asp-for="FinalResultDate" class="govuk-label">Final result date</label>
+            @if (ViewContext.ModelState[nameof(Model.FinalResultDate)]?.Errors.Any() == true)
+            {
+                <p class="govuk-error-message">
+                    <span class="govuk-visually-hidden">Error:</span>
+                    @ViewContext.ModelState[nameof(Model.FinalResultDate)]!.Errors.First().ErrorMessage
+                </p>
+            }
+            <input asp-for="FinalResultDate" type="date"
+                   class="govuk-input govuk-input--width-10"
+                   value="@Model.FinalResultDate?.ToString("yyyy-MM-dd")" />
+        </div>
+
+        <div class="govuk-form-group">
+            <label asp-for="Dbse" class="govuk-label">DBSE number</label>
+            <div class="govuk-hint">Required for positive results. Leave blank to clear.</div>
+            <input asp-for="Dbse" class="govuk-input govuk-!-width-one-quarter" />
+        </div>
+
+        <div class="govuk-button-group">
+            <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+            <a asp-page="/Home" class="govuk-link">Cancel</a>
+        </div>
+    </form>
+}
