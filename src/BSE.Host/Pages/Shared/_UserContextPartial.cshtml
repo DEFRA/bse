@@ -1,0 +1,5 @@
+@* Renders authenticated user identity — mirrors Histo _UserContextPartial pattern. *@
+@inject BSE.SharedKernel.IUserContext UserContext
+
+<span>User: @UserContext.DisplayName</span>
+<span>Group: @UserContext.GroupName</span>

@@ -17,8 +17,10 @@ using BSE.Modules.Search;
 using BSE.Modules.UserManagement;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Sustainsys.Saml2;
+using Sustainsys.Saml2.AspNetCore2;
+using Sustainsys.Saml2.Metadata;
 using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Json;
@@ -131,13 +133,19 @@ try
         .AddCheck<SqlReadinessCheck>("sql", tags: ["ready"])
         .AddCheck<RedisReadinessCheck>("redis", tags: ["ready"]);
 
-    // ── Authentication — OIDC stub ──────────────────────────────────────────
-    // Authority, ClientId and ClientSecret are read from configuration.
-    // Set via appsettings.json, appsettings.{Environment}.json, or environment
-    // variables OIDC__Authority / OIDC__ClientId / OIDC__ClientSecret.
-    // Full Azure AD wiring is completed when the real tenant is provisioned.
+    // ── Authentication ──────────────────────────────────────────────────────────
+    // Two paths:
+    //   Authentication:BypassEnabled = true  — DevelopmentAuthHandler (local, no Entra)
+    //   Authentication:BypassEnabled = false — SAML 2.0 via Sustainsys + Entra ID
+    //
+    // SAML config is read from the Saml2 section in appsettings.json /
+    // appsettings.{Environment}.json or environment variables SAML2__*.
+    // Never hardcode tenant IDs, entity IDs, or certificate thumbprints in source.
     var bypassAuthentication = builder.Environment.IsDevelopment()
         && builder.Configuration.GetValue<bool>("Authentication:BypassEnabled");
+
+    builder.Services.Configure<Saml2Configuration>(
+        builder.Configuration.GetSection(Saml2Configuration.SectionName));
 
     if (bypassAuthentication)
     {
@@ -145,32 +153,82 @@ try
             .AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = DevelopmentAuthHandler.SchemeName;
-                options.DefaultChallengeScheme = DevelopmentAuthHandler.SchemeName;
-                options.DefaultScheme = DevelopmentAuthHandler.SchemeName;
+                options.DefaultChallengeScheme    = DevelopmentAuthHandler.SchemeName;
+                options.DefaultScheme             = DevelopmentAuthHandler.SchemeName;
             })
             .AddScheme<DevelopmentAuthOptions, DevelopmentAuthHandler>(
                 DevelopmentAuthHandler.SchemeName,
-                opts => opts.NtLogin =
-                    builder.Configuration["Authentication:DevUserNtLogin"] ?? "dev-user");
+                opts =>
+                {
+                    opts.NtLogin            = builder.Configuration["Authentication:DevUserNtLogin"] ?? "dev-user";
+                    opts.UseWindowsIdentity = builder.Configuration.GetValue<bool>("Authentication:UseWindowsIdentity", defaultValue: true);
+                });
     }
     else
     {
+        // ── SAML 2.0 / Entra ID ────────────────────────────────────────────
+        var saml2Config = builder.Configuration
+            .GetSection(Saml2Configuration.SectionName)
+            .Get<Saml2Configuration>() ?? new Saml2Configuration();
+
         builder.Services
             .AddAuthentication(options =>
             {
-                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
+                options.DefaultScheme          = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = Saml2Defaults.Scheme;
             })
-            .AddCookie()
-            .AddOpenIdConnect("oidc", options =>
+            .AddCookie(options =>
             {
-                options.Authority = builder.Configuration["OIDC:Authority"];
-                options.ClientId = builder.Configuration["OIDC:ClientId"];
-                options.ClientSecret = builder.Configuration["OIDC:ClientSecret"];
-                options.ResponseType = "code";
-                options.SaveTokens = true;
-                options.GetClaimsFromUserInfoEndpoint = true;
-                options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+                // Redirect to Entra ID challenge when the cookie expires.
+                options.Events.OnRedirectToLogin = ctx =>
+                {
+                    ctx.HttpContext.ChallengeAsync(Saml2Defaults.Scheme).GetAwaiter().GetResult();
+                    return Task.CompletedTask;
+                };
+            })
+            .AddSaml2(options =>
+            {
+                options.SPOptions.EntityId = new EntityId(saml2Config.SPEntityId);
+
+                // SP signing certificate — placeholder; wire Key Vault reference before production deploy.
+                // Leaving ServiceCertificates empty is acceptable for local SAML testing only.
+                // Add the certificate here when the thumbprint is provisioned:
+                // if (!string.IsNullOrEmpty(saml2Config.SPCertificateThumbprint))
+                // {
+                //     var cert = GetCertificateByThumbprint(saml2Config.SPCertificateThumbprint);
+                //     options.SPOptions.ServiceCertificates.Add(cert);
+                // }
+
+                var idp = new IdentityProvider(
+                    new EntityId(saml2Config.IdPEntityId),
+                    options.SPOptions)
+                {
+                    MetadataLocation = saml2Config.IdPMetadataUrl,
+                    LoadMetadata     = true,
+                };
+
+                options.IdentityProviders.Add(idp);
+
+                // Map the UPN/email claim from the Entra ID SAML assertion into
+                // preferred_username so GroupClaimsTransformation can look up the
+                // user in the database — identical path to the dev bypass.
+                // Assertion payloads are never logged (GDPR / Defra SDS Logging Standards).
+                options.Notifications.AcsCommandResultCreated = (result, _) =>
+                {
+                    if (result.Principal?.Identity is not System.Security.Claims.ClaimsIdentity identity)
+                        return;
+
+                    var upn =
+                        identity.FindFirst(System.Security.Claims.ClaimTypes.Upn)?.Value
+                        ?? identity.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value
+                        ?? identity.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+                    if (!string.IsNullOrWhiteSpace(upn)
+                        && !identity.HasClaim(c => c.Type == "preferred_username"))
+                    {
+                        identity.AddClaim(new System.Security.Claims.Claim("preferred_username", upn));
+                    }
+                };
             });
     }
 
@@ -235,6 +293,19 @@ try
     app.UseSerilogRequestLogging();
     app.UseAuthentication();
     app.UseAuthorization();
+
+    // ── Sign-out endpoint ─────────────────────────────────────────────────────
+    // SP-initiated SLO: clears the local auth cookie then redirects to Entra ID
+    // SLO endpoint. In bypass mode just clears the local session and goes home.
+    // Not a UI page — invoked via POST from the layout sign-out form.
+    app.MapPost("/auth/signout", async (HttpContext ctx) =>
+    {
+        await ctx.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        if (!bypassAuthentication)
+            await ctx.SignOutAsync(Saml2Defaults.Scheme);
+        else
+            ctx.Response.Redirect("/Home");
+    }).AllowAnonymous();
 
     // Liveness: always returns 200 — no health checks evaluated.
     // AllowAnonymous ensures the liveness probe is reachable even when OIDC is not yet configured.

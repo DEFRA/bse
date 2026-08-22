@@ -33,6 +33,7 @@
         <input type="hidden" asp-for="OldRbse" />
         <div class="govuk-form-group">
             <label asp-for="NewRbse" class="govuk-label">New RBSE</label>
+            <div class="govuk-hint">Enter 9 digits with no slashes — for example, 002600001.</div>
             <input asp-for="NewRbse" class="govuk-input govuk-!-width-one-half" />
             <span asp-validation-for="NewRbse" class="govuk-error-message"></span>
         </div>

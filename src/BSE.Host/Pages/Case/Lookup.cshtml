@@ -2,15 +2,40 @@
 @model BSE.Host.Pages.Case.LookupModel
 @{
     ViewData["Title"] = "Open case";
+    var rbseError = Model.ModelState[nameof(Model.Rbse)]?.Errors.FirstOrDefault()?.ErrorMessage;
+    var rbseDescribedBy = rbseError is not null ? "rbse-hint rbse-error" : "rbse-hint";
 }
 
 <h1 class="govuk-heading-l">Open case</h1>
 
+@if (rbseError is not null)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    <li><a href="#rbse-lookup">@rbseError</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
 <form method="get" novalidate>
-    <div class="govuk-form-group">
-        <label asp-for="Rbse" class="govuk-label">RBSE</label>
-        <div class="govuk-hint">Enter 9 digits, for example 000000001.</div>
-        <input asp-for="Rbse" class="govuk-input govuk-!-width-one-half" />
+    <div class="govuk-form-group @(rbseError is not null ? "govuk-form-group--error" : "")">
+        <label class="govuk-label" for="rbse-lookup">RBSE</label>
+        <div id="rbse-hint" class="govuk-hint">Enter 9 digits with no slashes — for example, 002600001.</div>
+        @if (rbseError is not null)
+        {
+            <p id="rbse-error" class="govuk-error-message">
+                <span class="govuk-visually-hidden">Error:</span>
+                @rbseError
+            </p>
+        }
+        <input asp-for="Rbse" id="rbse-lookup"
+               class="govuk-input govuk-!-width-one-half @(rbseError is not null ? "govuk-input--error" : "")"
+               aria-describedby="@rbseDescribedBy" />
     </div>
 
     <button type="submit" class="govuk-button" data-module="govuk-button">Open case</button>

@@ -1,0 +1,393 @@
+@page
+@model BSE.Host.Pages.Help.HelpModel
+@{
+    ViewData["Title"] = "Help";
+
+    var isVLAAccess        = User.IsInRole("VLAAccess");
+    var isDEFRAMaintenance = User.IsInRole("DEFRAMaintenance");
+    var isVLAMaintenance   = User.IsInRole("VLAMaintenance");
+    var isPickListAccess   = User.IsInRole("PickListAccess");
+    var hasExportAccess    = isVLAAccess || isDEFRAMaintenance;
+    var hasAdminAccess     = isVLAMaintenance || isPickListAccess;
+}
+
+<h1 class="govuk-heading-l">Help</h1>
+
+@* ── Table of contents ──────────────────────────────────────────────────── *@
+<nav aria-label="Help contents" class="govuk-!-margin-bottom-8">
+    <h2 class="govuk-heading-m">Contents</h2>
+    <ol class="govuk-list govuk-list--number">
+        <li><a class="govuk-link" href="#general">General information</a></li>
+        <li><a class="govuk-link" href="#home-page">Home page</a></li>
+        <li><a class="govuk-link" href="#case-details">Case details</a></li>
+        <li><a class="govuk-link" href="#non-gb-case">Non-GB case creation</a></li>
+        <li><a class="govuk-link" href="#audit-log">Audit log</a></li>
+        <li><a class="govuk-link" href="#search">Search</a></li>
+        <li><a class="govuk-link" href="#bsess-check">BSESS check</a></li>
+        @if (hasExportAccess)
+        {
+            @if (isDEFRAMaintenance)
+            {
+                <li><a class="govuk-link" href="#adns-export">ADNS export</a></li>
+            }
+            @if (isVLAAccess)
+            {
+                <li><a class="govuk-link" href="#print-batch">Print batch</a></li>
+                <li><a class="govuk-link" href="#final-result-entry">Final result entry</a></li>
+                <li><a class="govuk-link" href="#oss-export">OSS export</a></li>
+            }
+        }
+        @if (hasAdminAccess)
+        {
+            <li><a class="govuk-link" href="#administration">Administration</a></li>
+        }
+        <li><a class="govuk-link" href="#application-error">Application error</a></li>
+    </ol>
+</nav>
+
+<hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+
+@* ── 1. General information ─────────────────────────────────────────────── *@
+<section id="general">
+    <h2 class="govuk-heading-l">1. General information</h2>
+
+    <h3 class="govuk-heading-m" id="General_Header">The page header</h3>
+    <p class="govuk-body">A navigation bar is displayed at the top of every page. It shows the service name <strong>BSE system</strong> and links to the main areas of the system available to you based on your user group.</p>
+    <p class="govuk-body">Your name and user group are displayed in the header. Selecting the <strong>BSE system</strong> link in the navigation bar returns you to the home page from anywhere in the system.</p>
+
+    <h3 class="govuk-heading-m" id="General_DateControls">Date entry</h3>
+    <p class="govuk-body">Enter dates directly into date fields. Use the format <strong>YYYY-MM-DD</strong> (for example, <samp>2026-04-01</samp> for 1 April 2026). The browser's date picker may also be used where available.</p>
+
+    <h3 class="govuk-heading-m" id="General_Grids">Data tables</h3>
+    <p class="govuk-body">Data is displayed in tables. Use the action links in each row to view, edit or remove that record. Where present, column headings can be selected to sort the table — select once for ascending order, again for descending.</p>
+    <p class="govuk-body">When a table spans multiple pages, use the pagination links below the table to move between pages. The current page number and total page count are shown.</p>
+    <p class="govuk-body">To add a new row to a table, use the <strong>Add new</strong> link or button below the table. To edit or remove an existing row, use the action links on that row.</p>
+
+    <h3 class="govuk-heading-m" id="General_FieldErrors">Field error messages</h3>
+    <p class="govuk-body">If required data is missing or invalid when a form is submitted, an error summary appears at the top of the page. Each error message links directly to the affected field. Correct the highlighted fields and resubmit the form.</p>
+
+    <p class="govuk-body govuk-!-margin-top-4"><a class="govuk-link" href="#">Back to top</a></p>
+</section>
+
+<hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+
+@* ── 2. Home page ───────────────────────────────────────────────────────── *@
+<section id="home-page">
+    <h2 class="govuk-heading-l">2. Home page</h2>
+    <p class="govuk-body">The home page provides quick access to all areas of the system available to your user group. Selecting the <strong>BSE system</strong> link in the navigation bar returns you to the home page at any time.</p>
+
+    @if (isVLAAccess)
+    {
+        <h3 class="govuk-heading-m" id="BatchNumber">Batch number</h3>
+        <p class="govuk-body">If you are a VLA user working with a batch of case details, the batch number panel is where you specify the batch you wish to work with. Any cases you enter while the batch number is displayed will be added to that batch.</p>
+        <p class="govuk-body">The batch number is in the format <samp>yyyy/nnnnnn</samp> — where <samp>yyyy</samp> is a four-digit year and <samp>nnnnnn</samp> is an integer up to six digits in length (for example, <samp>2026/000001</samp>). Note that only the last 3 digits of the batch number are used in the OSS export.</p>
+        <h4 class="govuk-heading-s">Looking up an existing batch</h4>
+        <p class="govuk-body">Enter the batch year in the <strong>Year</strong> field and the batch number in the <strong>Number</strong> field, then select <strong>Go</strong>. If the batch is found, you are taken to the new case page with that batch pre-selected. If the batch is not found, an error is shown — check the year and number and try again.</p>
+        <h4 class="govuk-heading-s">Creating a new batch</h4>
+        <p class="govuk-body">Select <strong>Create new</strong> to start work on a new batch. A new batch number is assigned automatically and displayed in the year and number fields. If the most recent batch has no cases recorded against it, that batch number is assigned to you rather than creating a new one.</p>
+        <p class="govuk-body">The three most recent batches, together with the number of cases recorded against each, are shown to the right of the batch entry fields.</p>
+        <p class="govuk-body">See also: <a class="govuk-link" href="#General_FieldErrors">Field error messages</a></p>
+    }
+
+    @if (isVLAAccess || isDEFRAMaintenance)
+    {
+        <h3 class="govuk-heading-m" id="RBSENumber">RBSE number</h3>
+        <p class="govuk-body">The RBSE number is stored as <strong>9 digits</strong> in the format <samp>CCYYNNNNN</samp> — two-digit region code, two-digit year, five-digit sequence number. Enter all 9 digits with no slashes. For example, enter <samp>002600001</samp> for sequence 1 in region 00, year 2026.</p>
+        <p class="govuk-body">The most recently used RBSE and DBSE numbers for the current year and the previous year are displayed on the home page for reference.</p>
+        <p class="govuk-body">Enter an RBSE number and select <strong>Go</strong> to open that case. If the case exists, you are taken to the case details page. If no case is found:</p>
+        <ul class="govuk-list govuk-list--bullet">
+            <li>For RBSEs beginning <samp>6300</samp> or <samp>2300</samp> (Jersey, Guernsey or Isle of Man), you are taken to the <a class="govuk-link" href="#non-gb-case">Non-GB Case Creation</a> page to record the case.</li>
+            <li>For all other RBSEs, a warning is shown that no case was found.</li>
+        </ul>
+        <p class="govuk-body">See also: <a class="govuk-link" href="#General_FieldErrors">Field error messages</a></p>
+    }
+
+    <h3 class="govuk-heading-m" id="HomeNavigation">Navigation links</h3>
+    <p class="govuk-body">Below the data entry panels, the home page shows links to all areas of the system available to your user group:</p>
+    <ul class="govuk-list govuk-list--bullet">
+        <li><strong>Search</strong> — links to all case and farm search pages, available to all users.</li>
+        @if (isVLAMaintenance)
+        {
+            <li><strong>Case entry</strong> — links to create a new case or open an existing case by RBSE. Available to VLA Maintenance users.</li>
+            <li><strong>Farms</strong> — links to create a new farm or look up an existing farm. Available to VLA Maintenance users.</li>
+        }
+        <li><strong>Casework and reports</strong> — links to the audit log and BSESS check, available to all users.
+            @if (isVLAMaintenance) { <text>VLA Maintenance users also see a link to the casework menu.</text> }
+        </li>
+        @if (isDEFRAMaintenance)
+        {
+            <li><strong>Exports</strong> — links to the ADNS export (DEFRA Maintenance) and OSS export (VLA users).</li>
+        }
+        else if (isVLAAccess)
+        {
+            <li><strong>Exports</strong> — link to the OSS export.</li>
+        }
+        @if (isVLAMaintenance)
+        {
+            <li><strong>Administration</strong> — links to manage users (VLA Maintenance) and manage pick lists (Pick List Access).</li>
+        }
+        else if (isPickListAccess)
+        {
+            <li><strong>Administration</strong> — link to manage pick lists.</li>
+        }
+    </ul>
+
+    <p class="govuk-body govuk-!-margin-top-4"><a class="govuk-link" href="#">Back to top</a></p>
+</section>
+
+<hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+
+@* ── 3. Case details ────────────────────────────────────────────────────── *@
+<section id="case-details">
+    <h2 class="govuk-heading-l">3. Case details</h2>
+    <p class="govuk-body">The case details pages allow entry and viewing of all information recorded against a BSE case. The RBSE of the current case is shown at the top of each page. Use the breadcrumb navigation to move between case pages and return to the home page.</p>
+    <p class="govuk-body">Data is not saved until you select <strong>Save</strong>. Selecting <strong>Cancel</strong> or navigating away discards any unsaved changes.</p>
+
+    <h3 class="govuk-heading-m" id="CaseEntryFarm">Farm</h3>
+    <p class="govuk-body">The Farm section allows entry of details about the farm where the case occurred.</p>
+    <p class="govuk-body">Enter the CPHH of the farm and select <strong>Look up</strong>. If the CPHH exists in the system, the farm details are populated. If the farm does not exist, you are shown a list of farms with the same CPH — select one or choose to create a new farm.</p>
+    <p class="govuk-body">The farm location section includes the Animal Health Office, map reference, and address fields. The correspondence address can be set separately to the location address; select <strong>Use above address</strong> to copy the location address.</p>
+    <p class="govuk-body">The Authority County, Local Authority and ADNS Region fields determine the ADNS reporting region for the farm. You must select an ADNS Region for any farm within Great Britain so that cases can be reported to ADNS.</p>
+    <p class="govuk-body">The Related Farms table records CPHH numbers of farms connected to the case farm. The Herd Size table holds herd size data for preceding years — a Year and Herd Size are required for each row.</p>
+
+    <h3 class="govuk-heading-m" id="CaseEntryDEFRA">Case (DEFRA)</h3>
+    <p class="govuk-body">This section holds data entered by DEFRA on a case.</p>
+    <p class="govuk-body">Enter the eartag of the animal and the dates Form A, Form B and Form C were received. The eartag should include a delimiter between the herdmark and individual animal ID. For all-numeric eartags, prefix with the country of origin (for example, <samp>UK123456789012</samp>). For pre-Barimo British eartags where the first two letters could indicate a country code, prefix with a dash or asterisk (for example, enter <samp>DE494-394</samp> as <samp>–DE494-394</samp>).</p>
+    <p class="govuk-body">The tests section records the tests conducted and results obtained. If a Final Result has been entered against the case, it is also displayed here.</p>
+
+    <h3 class="govuk-heading-m" id="CaseEntryBAB">BAB (born after ban)</h3>
+    <p class="govuk-body">The BAB section enables entry of details for animals born after the ban (date of birth later than 18 July 1988).</p>
+    <p class="govuk-body">Traced details can only be entered if the animal's origin is <strong>Purchased</strong>. Changing the origin to Homebred or Unknown removes any Traced data previously entered — a warning is displayed before this happens.</p>
+
+    <h3 class="govuk-heading-m" id="CaseEntryVLA">Case (VLA)</h3>
+    <p class="govuk-body">This section holds data specific to the VLA.</p>
+    <p class="govuk-body">The Purchased section is enabled only when the animal's origin is <strong>Purchased</strong>. If a Date of Birth and Date Purchased are both entered, the Age Purchased is calculated automatically in months.</p>
+    <p class="govuk-body">If an Onset Date and Date of Birth are both entered, the Onset Age is calculated. The Months Post Pregnant value must be between 1 and 3; Months Pregnant between 1 and 9.</p>
+    <p class="govuk-body">The Other Owners table records previous, post and 56-day-rule owners of the animal.</p>
+
+    <h3 class="govuk-heading-m" id="CaseEntryClinical">Clinical</h3>
+    <p class="govuk-body">The Clinical section enables entry of details about the clinical signs of BSE. The visits table records the dates that clinical visits took place.</p>
+
+    <h3 class="govuk-heading-m" id="CaseEntryFeeds">Feeds</h3>
+    <p class="govuk-body">The Feeds section records the feed received by the animal. Enter feed details and select <strong>Add new</strong> to add them to the table. Select an existing row to edit or remove it.</p>
+    <p class="govuk-body">A Year From, Year To, Ration Type and Supplier are all required before a feed record can be saved. Suppliers must be validated before they can be added — enter a supplier name and select <strong>Validate supplier</strong>. If no exact match is found, similar names are displayed for selection. If the supplier is not in the list, you can add them as a new supplier.</p>
+
+    <h3 class="govuk-heading-m" id="CaseEntryRelations">Relations</h3>
+    <p class="govuk-body">The Relations section records animals related to the case, covering the Case Herdbook, Sire Details, Dam Details and Other Relations.</p>
+    <p class="govuk-body"><strong>Sire and Dam:</strong> Enter one or more identifying fields (Eartag, Name, RBSE or Herdbook) and select <strong>Look up</strong>. If a unique match is found, that animal is recorded as the sire or dam. Otherwise, a list of possible matches is shown — select the correct animal or select <strong>New</strong> to create a new sire or dam record.</p>
+    <p class="govuk-body"><strong>Other Relations:</strong> Enter relation details and select <strong>Add new</strong> to add to the table. You must select a Relation Type for each entry. If the related animal is also a case, enter the RBSE number — the remaining details are populated from the case record and cannot be edited directly.</p>
+
+    <p class="govuk-body govuk-!-margin-top-4"><a class="govuk-link" href="#">Back to top</a></p>
+</section>
+
+<hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+
+@* ── 4. Non-GB case creation ────────────────────────────────────────────── *@
+<section id="non-gb-case">
+    <h2 class="govuk-heading-l">4. Non-GB case creation</h2>
+    <p class="govuk-body">The Non-GB Case Creation page records cases from Jersey, Guernsey or the Isle of Man. You are taken to this page automatically when you enter an RBSE beginning <samp>6300</samp> or <samp>2300</samp> (the first four digits of the 9-digit RBSE) that does not already exist in the system.</p>
+    <p class="govuk-body">Enter the animal's <strong>Eartag</strong>, <strong>Fate code</strong> and <strong>Final result code</strong>. The default values are <samp>SLOS</samp> (Slaughtered) for Fate and <samp>NOT</samp> (Not examined) for Final Result. A Final Result Date and Slaughter Date are also required.</p>
+    <p class="govuk-body">Enter the farm's <strong>CPHH</strong> — this must be an 11-digit non-GB CPHH beginning with <samp>00999</samp>. Enter the <strong>Owner Name</strong>, <strong>Address line 1</strong> and <strong>County or territory</strong> (for example, Jersey, Guernsey or Isle of Man). Additional address lines, postcode, herdmark and numeric herdmark are optional.</p>
+    <p class="govuk-body">Select <strong>Save</strong> to create the case. If the non-GB farm CPHH already exists in the system, its details are updated; otherwise, a new farm record is created.</p>
+
+    <p class="govuk-body govuk-!-margin-top-4"><a class="govuk-link" href="#">Back to top</a></p>
+</section>
+
+<hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+
+@* ── 5. Audit log ───────────────────────────────────────────────────────── *@
+<section id="audit-log">
+    <h2 class="govuk-heading-l">5. Audit log</h2>
+    <p class="govuk-body">The Audit Log pages track changes made to the system. Each entry shows who made a change, what the change was, and when it was made.</p>
+
+    <h3 class="govuk-heading-m" id="AuditLogByDate">Daily audit log</h3>
+    <p class="govuk-body">The Daily Audit Log lists all changes that occurred on a specific date. Select a date to view the changes made on that day.</p>
+
+    <h3 class="govuk-heading-m" id="AuditLogNewFarms">New farms</h3>
+    <p class="govuk-body">The New Farms Audit Log shows all farms created between the dates you specify.</p>
+
+    <h3 class="govuk-heading-m" id="AuditLogCPHHChanges">CPHH changes</h3>
+    <p class="govuk-body">The CPHH Changes Audit Log shows all farms that had their CPHH changed between the dates you specify.</p>
+
+    <h3 class="govuk-heading-m" id="AuditLogRBSEChanges">RBSE changes</h3>
+    <p class="govuk-body">The RBSE Changes Audit Log shows all cases that had their RBSE number changed between the dates you specify.</p>
+
+    <h3 class="govuk-heading-m" id="AuditLogCaseMoves">Case moves list</h3>
+    <p class="govuk-body">The Case Moves List shows all cases that were moved (allocated to a different farm) between the dates you specify.</p>
+
+    <h3 class="govuk-heading-m" id="AuditLogByUser">Audit log by user</h3>
+    <p class="govuk-body">The Audit Log By User lists all changes made by a specified user between the dates you specify.</p>
+
+    <p class="govuk-body govuk-!-margin-top-4"><a class="govuk-link" href="#">Back to top</a></p>
+</section>
+
+<hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+
+@* ── 6. Search ──────────────────────────────────────────────────────────── *@
+<section id="search">
+    <h2 class="govuk-heading-l">6. Search</h2>
+    <p class="govuk-body">The Search pages enable you to perform searches on farm and case data. Enter criteria in one or more fields — only records matching all entered criteria are shown. Partial values are accepted for Name and Address fields; a CPH (without individual holding identifier) may be entered instead of a full CPHH.</p>
+    <p class="govuk-body">All search results can be exported to a spreadsheet using the <strong>Export to Excel</strong> link at the bottom of the results page.</p>
+
+    <h3 class="govuk-heading-m" id="SearchFarm">Farm search</h3>
+    <p class="govuk-body">The Farm Search page allows searches on information recorded for a farm. Enter criteria in at least one field — results are displayed in the table below the search form.</p>
+
+    <h3 class="govuk-heading-m" id="SearchCase">Case search</h3>
+    <p class="govuk-body">The Case Search page allows searches on information recorded for a case. Enter criteria in at least one field — results are displayed in the table below the search form.</p>
+
+    <h3 class="govuk-heading-m" id="SearchCaseByHerdMark">Cases by herdmark</h3>
+    <p class="govuk-body">The Cases By Herdmark page searches for all cases — including animals sold off — that match a given herdmark. All results containing the entered herdmark text are returned.</p>
+
+    <h3 class="govuk-heading-m" id="SearchRelatedAnimal">Related animals search</h3>
+    <p class="govuk-body">The Related Animals Search finds animals related to a case, or cases related to a given animal. Enter criteria in at least one field — results are displayed in the table below.</p>
+
+    <h3 class="govuk-heading-m" id="SearchOutstandingData">Outstanding data list</h3>
+    <p class="govuk-body">The Outstanding Data List searches for cases that have incomplete paperwork. Choose to view cases where the final result, fate, or BSE-1 questionnaire date is outstanding. Optionally specify a date range and whether to include non-GB cases.</p>
+
+    <h3 class="govuk-heading-m" id="SearchCPHH">Cases by holding/herdmark</h3>
+    <p class="govuk-body">This search (designed for organic farmer checks) finds all cases that occurred on a specific farm. Enter at least one field — a CPHH or part thereof — and results are shown in the table below.</p>
+
+    <p class="govuk-body govuk-!-margin-top-4"><a class="govuk-link" href="#">Back to top</a></p>
+</section>
+
+<hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+
+@* ── 7. BSESS check ─────────────────────────────────────────────────────── *@
+<section id="bsess-check">
+    <h2 class="govuk-heading-l">7. BSESS check</h2>
+    <p class="govuk-body">The BSESS Check pages enable comparison between data held in this system and data held in the BSE Surveillance System (BSESS) to identify discrepancies.</p>
+
+    <h3 class="govuk-heading-m" id="BSESSCheckByDate">Compare cases by date</h3>
+    <p class="govuk-body">Enter a date range to view differences between cases that have notification dates recorded in BSESS within that period. Any case where the birth date, eartag or test group differs between the two systems is listed in the results.</p>
+
+    <h3 class="govuk-heading-m" id="BSESSCheckByRBSE">Compare details by RBSE</h3>
+    <p class="govuk-body">Enter an RBSE number to view the differences between this system and BSESS for that specific case. This also shows whether the RBSE exists on only one of the two systems.</p>
+
+    <p class="govuk-body govuk-!-margin-top-4"><a class="govuk-link" href="#">Back to top</a></p>
+</section>
+
+@* ── 8. ADNS export (DEFRAMaintenance only) ────────────────────────────── *@
+@if (isDEFRAMaintenance)
+{
+    <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+
+    <section id="adns-export">
+        <h2 class="govuk-heading-l">8. ADNS export</h2>
+        <p class="govuk-body">The ADNS Export pages enable newly confirmed BSE cases to be reported by email to the Animal Disease Notification System (ADNS) in Brussels. There are separate processes for GB cases, Channel Island and Isle of Man cases, and Northern Ireland cases.</p>
+
+        <h3 class="govuk-heading-m" id="ADNSExportGB">ADNS export — GB cases</h3>
+        <p class="govuk-body">Provide an email reference (for example, <samp>DBSE00827Sep3</samp>) and a starting ADNS reference number (a four-digit year followed by a number of up to five digits). Select <strong>Generate report</strong> to preview the cases to be exported.</p>
+        <p class="govuk-body">A list of missing cases is shown for any positive cases that cannot be placed into an ADNS region. These should be investigated before proceeding. A summary shows the ADNS reference numbers that will be allocated and the number of cases per region.</p>
+        <p class="govuk-body">Review the email details (From, To, Subject and Body). When correct, select <strong>Send email</strong> to transmit the report to the Brussels ADNS system. A copy is sent to your own email address.</p>
+
+        <h3 class="govuk-heading-m" id="ADNSExportCI">ADNS export — Channel Island cases</h3>
+        <p class="govuk-body">Provide an email reference and a starting ADNS reference number. Then enter the number of cases to report for Jersey, Guernsey and the Isle of Man separately. Select <strong>Generate report</strong> to preview the allocation summary, then <strong>Send email</strong> to transmit.</p>
+
+        <h3 class="govuk-heading-m" id="ADNSExportNI">ADNS export — Northern Ireland cases</h3>
+        <p class="govuk-body">Enter an email reference. For each case to report, enter the ADNS reference number, region and confirmation date, then select <strong>Add to table</strong>. Remove rows using the Remove action link. When all cases are entered, select <strong>Generate report</strong> to preview the summary, then <strong>Send email</strong> to transmit.</p>
+
+        <p class="govuk-body govuk-!-margin-top-4"><a class="govuk-link" href="#">Back to top</a></p>
+    </section>
+}
+
+@* ── VLA-only sections ──────────────────────────────────────────────────── *@
+@if (isVLAAccess)
+{
+    <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+
+    <section id="print-batch">
+        <h2 class="govuk-heading-l">@(isDEFRAMaintenance ? "9" : "8"). Print batch</h2>
+        <p class="govuk-body">The Print Batch page enables you to download batch reports for checking data entry. Enter the batch number you require and select a Report Type from the drop-down list. The report is downloaded as a file that can be opened or saved.</p>
+
+        <p class="govuk-body govuk-!-margin-top-4"><a class="govuk-link" href="#">Back to top</a></p>
+    </section>
+
+    <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+
+    <section id="final-result-entry">
+        <h2 class="govuk-heading-l">@(isDEFRAMaintenance ? "10" : "9"). Final result entry</h2>
+        <p class="govuk-body">The Final Result Entry page records a final result against a case. Enter the RBSE of an existing case — the case details are displayed on screen.</p>
+        <p class="govuk-body">If the verdict is <strong>Positive</strong>, the Final Result Date and DBSE are displayed, and the Download button becomes available to save the result memo. If the verdict is <strong>Negative</strong>, a Final Result Date is shown and the Download button is available, but no DBSE is shown.</p>
+        <p class="govuk-body">The final result is not saved until you select <strong>Save</strong>. If you change a result that already has a Final Result recorded, save the change before downloading a new copy of the result memo.</p>
+        <p class="govuk-body">After saving, a confirmation page is displayed showing the RBSE and DBSE (if applicable). Use the <strong>Add another result</strong> button to continue entering results or return to the home page.</p>
+
+        <p class="govuk-body govuk-!-margin-top-4"><a class="govuk-link" href="#">Back to top</a></p>
+    </section>
+
+    <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+
+    <section id="oss-export">
+        <h2 class="govuk-heading-l">@(isDEFRAMaintenance ? "11" : "10"). OSS export</h2>
+        <p class="govuk-body">The OSS Export pages generate files for import into the Optical Storage System (OSS).</p>
+
+        <h3 class="govuk-heading-m" id="OSSExportBSE1">BSE1</h3>
+        <p class="govuk-body">Enter a batch number to generate a BSE1 import file. If the batch exists, the file is downloaded automatically. Note that the OSS system only accepts file names with three-digit endings — batch numbers longer than three digits are truncated (for example, <samp>2001/1987</samp> becomes <samp>2001/987</samp>). A warning is shown when truncation occurs.</p>
+
+        <h3 class="govuk-heading-m" id="OSSExportBSE1b">BSE1b</h3>
+        <p class="govuk-body">Enter the RBSE of a case — a new BSE1b batch number is created and displayed. Continue entering RBSE numbers to add more cases to the batch. Remove rows using the Remove action link. When all cases are added, select <strong>Export to OSS</strong> to record the cases against the batch number and download the export file.</p>
+
+        <p class="govuk-body govuk-!-margin-top-4"><a class="govuk-link" href="#">Back to top</a></p>
+    </section>
+}
+
+@* ── Administration (VLAMaintenance + PickListAccess) ───────────────────── *@
+@if (hasAdminAccess)
+{
+    <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+
+    <section id="administration">
+        <h2 class="govuk-heading-l">Administration</h2>
+        <p class="govuk-body">The Administration pages are available to maintenance users to make changes to farm records, case records and system reference data.</p>
+
+        @if (isVLAMaintenance)
+        {
+            <h3 class="govuk-heading-m" id="CPHHChange">CPHH change</h3>
+            <p class="govuk-body">The CPHH Change page changes the CPHH of an existing farm. The change is applied across all related tables so that cases associated with the farm remain correctly linked.</p>
+            <p class="govuk-body">Look up the CPHH you want to change — the farm details are displayed. Enter the new CPHH, which must not already exist in the system. Select <strong>Save</strong> to apply the change. A confirmation page is shown once complete.</p>
+
+            <h3 class="govuk-heading-m" id="RBSEChange">RBSE change</h3>
+            <p class="govuk-body">The RBSE Change page assigns a new RBSE number to an existing case. Look up the current RBSE — the case details are displayed. Enter the new RBSE, which must not already exist in the system. Select <strong>Save</strong> to apply the change. A confirmation page is shown once complete.</p>
+        }
+
+        @if (isPickListAccess || isVLAMaintenance)
+        {
+            <h3 class="govuk-heading-m" id="PickListMaintenance">Pick list maintenance</h3>
+            <p class="govuk-body">The Pick List Maintenance page manages the values shown in drop-down lists throughout the system. Use the drop-down at the top of the page to select the list you want to maintain. Add, edit or remove rows using the action links in the table.</p>
+            <p class="govuk-body">You cannot delete a pick list value that is already referenced by a case record. The following pick lists are available:</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li><strong>AHO</strong> — Animal Health Offices (code, name, BSE region ID)</li>
+                <li><strong>Animal Origin List</strong> — possible origins for an animal (code, description)</li>
+                <li><strong>Animal Status</strong> — states for the animal (code, description)</li>
+                <li><strong>Birth Date Source</strong> — source of birth date information (code, description)</li>
+                <li><strong>Breed</strong> — animal breed values</li>
+                <li>Other reference data lists used throughout the system</li>
+            </ul>
+        }
+
+        @if (isVLAMaintenance)
+        {
+            <h3 class="govuk-heading-m" id="MoveCase">Move case</h3>
+            <p class="govuk-body">The Move Case page moves a case from one farm to another. Enter the RBSE of the case and the CPHH of the destination farm, then select <strong>Save</strong> to move the case.</p>
+
+            <h3 class="govuk-heading-m" id="DeleteCase">Delete case</h3>
+            <p class="govuk-body">The Delete Case page permanently removes a case from the system. Enter the RBSE of the case to delete, review the case details displayed, then select <strong>Delete</strong> to confirm. This action cannot be undone.</p>
+
+            <h3 class="govuk-heading-m" id="UserMaintenance">User maintenance</h3>
+            <p class="govuk-body">The User Maintenance page manages system users. Use it to view, create, edit and deactivate user accounts and assign users to the correct user group. Each user must be assigned to exactly one group.</p>
+        }
+
+        <p class="govuk-body govuk-!-margin-top-4"><a class="govuk-link" href="#">Back to top</a></p>
+    </section>
+}
+
+<hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+
+@* ── Application error ──────────────────────────────────────────────────── *@
+<section id="application-error">
+    <h2 class="govuk-heading-l">Application error</h2>
+    <p class="govuk-body">If the system encounters an unexpected problem, an application error page is displayed. Details of the error are shown on screen and recorded in the system log.</p>
+    <p class="govuk-body">You can record additional information about what you were doing when the error occurred in the text area provided. Select <strong>Save</strong> to add your notes to the system log for later analysis.</p>
+    <p class="govuk-body">After an error, use the <strong>BSE system</strong> link in the navigation bar to return to the home page. If the error occurred before your data was saved, that data will have been lost and must be re-entered.</p>
+
+    <p class="govuk-body govuk-!-margin-top-4"><a class="govuk-link" href="#">Back to top</a></p>
+</section>

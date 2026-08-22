@@ -157,4 +157,7 @@ public sealed class CaseService : ICaseService
 
     public Task<ChangeRbseResult> ChangeRbseAsync(string oldRbse, string newRbse, int userId)
         => _caseRepository.ChangeRbseAsync(oldRbse, newRbse, userId);
+
+    public Task<AddNonGbCaseResult> CreateNonGbCaseAsync(AddNonGbCaseCommand command, int userId)
+        => _caseRepository.AddNonGbCaseAsync(command, userId);
 }

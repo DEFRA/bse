@@ -42,7 +42,7 @@ The migrated BSE application covers the core day-to-day workflows but has **sign
 | Legacy Screen | Migrated Equivalent | Status | Notes |
 |---|---|---|---|
 | `ShowCase.aspx` | `/Case/Details` | ✅ Complete | Combined case+farm view maintained; GB/non-GB display handled |
-| `CaseEntryFarm.aspx` | `/Case/Details` | ✅ Complete | Farm details shown inline on case details page |
+| `CaseEntryFarm.aspx` | `/Case/Farm` | ⚠️ Fixed | **3 parity gaps resolved (2026-08):** (1) Page heading said "Case:" — legacy `lblRBSEHeader` shows "RBSE Number:" — corrected. (2) Farm section heading said "Farm:" — legacy `lblCPHH` shows "CPHH:" — corrected. (3) Legacy `BatchNumberDisplay` control showed batch numbers linked to the case (VLA users) — absent in migrated page — added inline batch numbers card via `IBatchRepository.GetBatchNumbersByRbseAsync`. |
 | `CaseEntryDEFRA.aspx` | `/Case/Edit` | ✅ Complete | Eartag, dates, fate, paperwork flags — all fields present in `CaseRecord` and `Edit.cshtml` |
 | `CaseEntryVLA.aspx` | `/Case/Edit` | ⚠️ Partial | Core VLA fields (birth date, purchase date, onset date, slaughter date, months pregnant/post-calving) are in `Edit.cshtml`. **Missing:** *Other Owners (previous owners) sub-grid* — no UI to add/edit/delete previous owner records. |
 | `CaseEntryBAB.aspx` | `/Case/Edit` | ⚠️ Partial | BAB flag exists in `CaseRecord.IsBAB`. **Missing:** *Traced CPHH, traced farm details (name, address, feed risk, animal origin notes)* — these BAB-specific traced-farm fields have no UI. |
@@ -352,6 +352,14 @@ The following issues were already identified in `BSE-Migration-Status-Report.md`
 | G06 | **Move Case to New Farm** — Move only supports existing CPHH | Extend `/Case/MoveCase` with a "Create new farm" inline option or link to `/Farm/New` that returns the new CPHH back to the move workflow. | Medium |
 | G07 | **BAB Traced-Farm fields** — BAB-specific traced details (traced CPHH, owner name/address, feed risk) have no UI | Add a "BAB details" section to `/Case/Edit` for fields: `IsBAB`, traced CPHH/name/address, animal origin notes. Confirm DB column mapping. | Medium |
 | G08 | **Other Owners (Previous Owners) sub-grid** — VLA tab other-owners records not shown | Add previous-owner records display and CRUD sub-form to `/Case/Details` or `/Case/Edit`. Identify SP for previous-owner data. | Medium |
+| G25 | ✅ **RESOLVED** — **Case sub-page navigation bar** — `/Case/Details` had no links to the case sub-sections. A `govuk-list govuk-list--inline` nav bar was added to `Case/Details.cshtml` linking to: Test results, Clinical, Feeds, Relations, BAB, Other owners, Case work. | — | — |
+| G26 | ✅ **RESOLVED** — **Farm section — incomplete field set on `/Case/Details` and `/Farm/Details`** — District, Map reference, Correspondence address/postcode, Numeric Herdmark 1 & 2, Pedigree type, and two-column layout with sub-section headings were added. An "Edit farm" button was added to the inline farm section on `/Case/Details`. | — | — |
+| G27 | **Case Herdbook field not editable** — `CaseRecord.Herdbook` and `CaseRecord.PedigreeRowStamp` exist but the field is absent from all edit surfaces. In the legacy app, `CaseHerdbook` was saved via the `AddEditDamSireDetails` SP (called from `CaseEntryRelations.aspx`). The migrated `AddEditDamSireCommand` and `PedigreeRepository.AddEditDamSireAsync` do not include `CaseHerdbook` or the required concurrency parameters (`DamID`, `DamRowStamp`, `SireID`, `SireRowStamp`, `CaseRowStamp`). | Add `CaseHerdbook` to `AddEditDamSireCommand`; pass `CaseHerdbook` + all missing concurrency params in `PedigreeRepository`; add `CaseHerdbook` text input to `Case/Relations.cshtml` edit form; load `CasePedigreeRowStamp` from `CaseRecord` in `RelationsModel`. | Medium |
+| G29 | **Linked farms not shown on inline farm section of `/Case/Details`** — The legacy Farm tab showed a Linked Farms sub-grid when viewing a case. The migrated `/Farm/Details` page has the related-farms table but `/Case/Details` only shows a "Full farm details" link — the linked farms are invisible from the case view. | Load `GetRelatedFarmsAsync(cphh)` in `Case/Details.cshtml.cs`; render a linked-farms table after the farm section. ✅ **Applied this session.** | Low |
+| G30 | **Authority County and Local Authority display names not resolved** — `FarmRecord.AuthorityCountyID` and `FarmRecord.AuthorityID` are integer FKs. No display name is shown anywhere in the migrated app. The legacy Farm tab showed these as cascading dropdowns (Authority County → Local Authority → ADNS Region). The `GetluAuthorityAll` SP does not exist in the migrated database; only `GetluAuthorityByAuthorityCounty` exists (county-filtered). | Create `GetluAuthorityAll` SP; add `GetAllAuthoritiesAsync` to `ILookupRepository` and `LookupDataService`; load in `Farm/Details.cshtml.cs` and `Case/Details.cshtml.cs`; display resolved names. | Low |
+| G31 | **ADNS Region name not shown on `/Farm/Details` or `/Case/Details`** — `FarmRecord.ADNSRegionID` is stored as an integer FK. `ILookupDataService.GetADNSRegionsAsync()` already exists. Neither `Farm/Details` nor `Case/Details` loads or displays the resolved ADNS Region name. | Load `GetADNSRegionsAsync()` in `Farm/Details.cshtml.cs`; resolve and display name in farm herd details section. ✅ **Applied this session.** | Low |
+| G32 | **Herd Size grid absent from `/Farm/Details`** — The legacy Farm tab displayed a `grdHerdSize` grid (annual herd size: HerdYear, TotalSize, Lactation1Size–Lactation10PlusSize) and a confirmed-case count. The migrated `IFarmService.GetHerdSizesAsync` and `GetConfirmedCaseCountAsync` both exist but are never called and no page renders this data. | Add herd-sizes and confirmed-case-count loading to `Farm/Details.cshtml.cs`; render GOV.UK summary list + table. ✅ **Applied this session.** | Low |
+| G33 | **Audit Log shortcut absent from `/Case/Details`** — The legacy `CaseEntryDEFRA.aspx` had a direct "Case Audit log" button. The migrated `/AuditLog/ByCase` page exists but there is no contextual link from the case view. | Add an "Audit log" link to the case sections nav bar on `Case/Details.cshtml`. ✅ **Applied this session.** | Low |
 
 ### Priority 2 — High: Reporting and Document Export
 
@@ -418,12 +426,23 @@ The following issues were already identified in `BSE-Migration-Status-Report.md`
 
 ## 6. Recommendations
 
+### Resolved Since Last Report (this session — August 2026)
+
+- **G25** ✅ Case sub-page navigation bar added to `/Case/Details`
+- **G26** ✅ Farm section field completeness and two-column layout fixed on `/Case/Details` and `/Farm/Details`; "Edit farm" button added
+- **G28** ✅ Number of Offspring (ChildCount) already present in `/Case/Relations` — confirmed not a gap
+- **G29** ✅ Linked farms now shown on inline farm section of `/Case/Details`
+- **G31** ✅ ADNS Region name now displayed on `/Farm/Details` (resolved via `ILookupDataService.GetADNSRegionsAsync`)
+- **G32** ✅ Herd Size grid and confirmed case count now shown on `/Farm/Details`
+- **G33** ✅ Audit Log contextual link added to Case sections nav bar
+
 ### Immediate Actions (before production release)
 
 1. **Implement Azure AD OIDC** and add an explicit environment guard on `DevelopmentAuthHandler` to prevent accidental deployment of the bypass. This is a **security blocker**.
 2. **Implement Animal Relations UI** (G01) — this is a core daily workflow for VLA staff; its absence makes the migrated application functionally incomplete for case investigation tracking.
 3. **Implement Clinical Visits and Feed Records UIs** (G02, G03) — required to fully replace the legacy multi-tab case entry workflow.
 4. **Implement Final Result / Test Results UI** (G04) — the `FinalResult` and `FinalResultDate` fields are visible read-only but cannot be maintained without this page.
+5. **Fix Case Herdbook editable field** (G27) — add `CaseHerdbook` to `AddEditDamSireCommand`, fix missing concurrency params in `PedigreeRepository.AddEditDamSireAsync` (`DamID`, `DamRowStamp`, `SireID`, `SireRowStamp`, `CaseRowStamp`), and add text input to `Case/Relations.cshtml`. Note: the current dam/sire edit form likely throws a runtime error due to missing required SP parameters; this bug must be fixed before the Relations page can be used in production.
 
 ### Near-term Actions (sprint backlog)
 

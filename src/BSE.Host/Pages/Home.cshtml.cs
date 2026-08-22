@@ -105,13 +105,11 @@ public class HomeModel(IBatchService batchService, ICaseRepository caseRepositor
         return RedirectToPage("/Case/New", new { batchYear = BatchYear, batchNumber = BatchNumber });
     }
 
-    /// <summary>
-    /// Creates (or retrieves) the current batch and redirects to New Case.
-    /// </summary>
+    /// <summary>Batch fields are pre-filled via redirect so the user sees the assigned number — matches legacy behaviour.</summary>
     public async Task<IActionResult> OnPostCreateBatchAsync()
     {
         var batch = await batchService.GetOrCreateBatchNumberAsync();
-        return RedirectToPage("/Case/New",
-            new { batchYear = batch.BatchYear, batchNumber = batch.BatchNumber });
+        TempData["SuccessMessage"] = $"Batch {batch.BatchYear}/{batch.BatchNumber} has been assigned. Enter the year and number above and select Go to add cases to this batch.";
+        return RedirectToPage("/Home", new { batchYear = batch.BatchYear, batchNumber = batch.BatchNumber });
     }
 }
