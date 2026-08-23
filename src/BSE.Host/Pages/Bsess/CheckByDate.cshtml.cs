@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.Bsess;
 
-[Authorize(Policy = "Authenticated")]
+[Authorize(Policy = "AuditAccess")]
 public class CheckByDateModel(IBsessCheckService bsessCheckService) : PageModel
 {
     [BindProperty(SupportsGet = true)] public DateTime StartDate { get; set; } = DateTime.Today.AddMonths(-1);

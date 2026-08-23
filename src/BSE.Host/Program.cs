@@ -17,6 +17,8 @@ using BSE.Modules.Search;
 using BSE.Modules.UserManagement;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Sustainsys.Saml2;
 using Sustainsys.Saml2.AspNetCore2;
@@ -185,6 +187,12 @@ try
                     ctx.HttpContext.ChallengeAsync(Saml2Defaults.Scheme).GetAwaiter().GetResult();
                     return Task.CompletedTask;
                 };
+                // Redirect authenticated users with insufficient permissions to Home, not a 403.
+                options.Events.OnRedirectToAccessDenied = ctx =>
+                {
+                    ctx.Response.Redirect("/Home");
+                    return Task.CompletedTask;
+                };
             })
             .AddSaml2(options =>
             {
@@ -253,6 +261,10 @@ try
     // GroupClaimsTransformation calls GetGroupPolicies SP (reading luGroupPolicy) and emits
     // one ClaimTypes.Role per row - so changing luGroupPolicy rows changes access with no code deploy.
     // Source of truth: docs/Legacy-Page-Level-Access-Control.md (Section 5 access matrix)
+    // Redirect authenticated-but-forbidden users to Home instead of returning 403.
+    // Applies to both the dev-bypass path and the SAML path.
+    builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, HomeRedirectAuthorizationHandler>();
+
     builder.Services.AddAuthorization(options =>
     {
         // All authenticated users - search, audit log, BSESS, case/farm detail views.
@@ -290,6 +302,10 @@ try
         // DEFRA Data Entry, DEFRA Maintenance, VLA Maintenance - Farm creation (not VLA Data Entry).
         options.AddPolicy("FarmCreation",
             p => p.RequireRole("FarmCreation"));
+
+        // All original 5 groups - audit log and BSESS check access; excludes search-only groups (DEFRA AHO User, DEFRA AI Wales Scotland).
+        options.AddPolicy("AuditAccess",
+            p => p.RequireRole("DEFRAAccess", "VLAAccess"));
     });
 
     var app = builder.Build();

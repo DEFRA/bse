@@ -28,7 +28,7 @@
         <div class="govuk-grid-column-two-thirds">
             <div class="govuk-form-group">
                 <label asp-for="Filter.Rbse" class="govuk-label">RBSE</label>
-                <div id="rbse-hint" class="govuk-hint">Enter 9 digits with no slashes — for example, 002600001.</div>
+                <div id="rbse-hint" class="govuk-hint">Enter in format nn/nn/nnnnn — for example, 00/26/00001.</div>
                 <input asp-for="Filter.Rbse" class="govuk-input govuk-!-width-two-thirds" aria-describedby="rbse-hint" />
                 <span asp-validation-for="Filter.Rbse" class="govuk-error-message"></span>
             </div>

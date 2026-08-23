@@ -1,7 +1,8 @@
-@page
+﻿@page
 @model BSE.Host.Pages.Case.FinalResultEntryModel
 @{
     ViewData["Title"] = "Final result entry";
+    var c = Model.CaseDetails?.Case;
 }
 
 <h1 class="govuk-heading-l">Final result entry</h1>
@@ -13,8 +14,8 @@
     </ol>
 </nav>
 
-@* ── Step 1: RBSE lookup ──────────────────────────────────────────────────── *@
-@if (Model.CurrentCase is null && !Model.IsNotFound)
+@* Step 1: RBSE lookup *@
+@if (Model.CaseDetails is null && !Model.IsNotFound)
 {
     <form method="get" novalidate>
         <div class="govuk-form-group">
@@ -24,12 +25,11 @@
                    class="govuk-input govuk-input--width-10"
                    value="@Model.LookupRbse" autocomplete="off" />
         </div>
-        <button type="submit" class="govuk-button govuk-button--secondary"
-                data-module="govuk-button">Look up</button>
+        <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Look up</button>
     </form>
 }
 
-@* ── Not found warning ───────────────────────────────────────────────────── *@
+@* Not found *@
 @if (Model.IsNotFound)
 {
     <div class="govuk-warning-text">
@@ -47,13 +47,12 @@
                    class="govuk-input govuk-input--width-10"
                    value="@Model.LookupRbse" autocomplete="off" />
         </div>
-        <button type="submit" class="govuk-button govuk-button--secondary"
-                data-module="govuk-button">Look up</button>
+        <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Look up</button>
     </form>
 }
 
-@* ── Step 2: Edit form (shown after successful lookup or POST validation failure) ── *@
-@if (Model.CurrentCase is not null || (Model.Rbse?.Length > 0 && !ViewContext.ModelState.IsValid))
+@* Step 2: Case details + edit form *@
+@if (Model.CaseDetails is not null || (Model.Rbse?.Length > 0 && !ViewContext.ModelState.IsValid))
 {
     @if (!ViewContext.ModelState.IsValid)
     {
@@ -72,16 +71,94 @@
         </div>
     }
 
-    <p class="govuk-body">
-        Case: <strong>@(Model.CurrentCase?.Rbse ?? Model.Rbse)</strong>
-    </p>
+    <h2 class="govuk-heading-m">Case @(c?.Rbse ?? Model.Rbse)</h2>
+
+    @if (c is not null)
+    {
+        <dl class="govuk-summary-list govuk-summary-list--no-border govuk-!-margin-bottom-6">
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">Eartag</dt>
+                <dd class="govuk-summary-list__value">@(c.Eartag ?? "—")</dd>
+                <dt class="govuk-summary-list__key">Date of birth</dt>
+                <dd class="govuk-summary-list__value">@(c.BirthDate?.ToString("dd/MM/yyyy") ?? "—")</dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">CPHH</dt>
+                <dd class="govuk-summary-list__value">@c.Cphh</dd>
+                <dt class="govuk-summary-list__key">Case type</dt>
+                <dd class="govuk-summary-list__value">@(c.CaseType ?? "—")</dd>
+            </div>
+            @if (Model.Farm is not null)
+            {
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">Farm owner</dt>
+                    <dd class="govuk-summary-list__value">@(Model.Farm.OwnerName ?? "—")</dd>
+                    <dt class="govuk-summary-list__key">Address</dt>
+                    <dd class="govuk-summary-list__value">@(Model.Farm.Address1 ?? "—")</dd>
+                </div>
+            }
+        </dl>
+
+        <h3 class="govuk-heading-s">BSE1 paperwork</h3>
+        <dl class="govuk-summary-list govuk-summary-list--no-border govuk-!-margin-bottom-6">
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">Purchaser BSE1 received</dt>
+                <dd class="govuk-summary-list__value">@(c.IsPurchaserBse1Received ? "Yes" : "No")</dd>
+                <dt class="govuk-summary-list__key">Breeder BSE1 received</dt>
+                <dd class="govuk-summary-list__value">@(c.IsBreederBse1Received ? "Yes" : "No")</dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">Vendor 1 BSE1 received</dt>
+                <dd class="govuk-summary-list__value">@(c.IsVendor1Bse1Received ? "Yes" : "No")</dd>
+                <dt class="govuk-summary-list__key">Homebred BSE1 received</dt>
+                <dd class="govuk-summary-list__value">@(c.IsHomebredBse1Received ? "Yes" : "No")</dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">Summary sheet received</dt>
+                <dd class="govuk-summary-list__value">@(c.IsSummarySheetReceived ? "Yes" : "No")</dd>
+                <dt class="govuk-summary-list__key">Paperwork complete</dt>
+                <dd class="govuk-summary-list__value">@(c.IsPaperworkComplete ? "Yes" : "No")</dd>
+            </div>
+        </dl>
+
+        @if (Model.CaseDetails?.Tests.Count > 0)
+        {
+            <h3 class="govuk-heading-s">Test results</h3>
+            <table class="govuk-table govuk-!-margin-bottom-6">
+                <caption class="govuk-visually-hidden">Test results for case @c.Rbse</caption>
+                <thead class="govuk-table__head">
+                    <tr class="govuk-table__row">
+                        <th scope="col" class="govuk-table__header">Test type</th>
+                        <th scope="col" class="govuk-table__header">Test result</th>
+                    </tr>
+                </thead>
+                <tbody class="govuk-table__body">
+                    @foreach (var test in Model.CaseDetails!.Tests)
+                    {
+                        <tr class="govuk-table__row">
+                            <td class="govuk-table__cell">
+                                @(Model.TestTypeDescriptions.TryGetValue(test.TestType, out var typeDesc) ? typeDesc : test.TestType)
+                            </td>
+                            <td class="govuk-table__cell">
+                                @(test.TestResult is not null && Model.TestResultDescriptions.TryGetValue(test.TestResult, out var resDesc) ? resDesc : (test.TestResult ?? "—"))
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    }
+
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-bottom-6" />
+
+    <h3 class="govuk-heading-s">Record final result</h3>
 
     <form method="post" novalidate>
         <input type="hidden" asp-for="Rbse" />
 
         <div class="govuk-form-group @(ViewContext.ModelState[nameof(Model.FinalResult)]?.Errors.Any() == true ? "govuk-form-group--error" : "")">
             <label asp-for="FinalResult" class="govuk-label">Final result</label>
-            <div class="govuk-hint">For example, Pos (Positive) or Neg (Negative).</div>
+            <div class="govuk-hint">Enter the result code — for example, <samp>Pos</samp> for Positive or <samp>Neg</samp> for Negative.</div>
             @if (ViewContext.ModelState[nameof(Model.FinalResult)]?.Errors.Any() == true)
             {
                 <p class="govuk-error-message">
@@ -89,7 +166,7 @@
                     @ViewContext.ModelState[nameof(Model.FinalResult)]!.Errors.First().ErrorMessage
                 </p>
             }
-            <input asp-for="FinalResult" class="govuk-input govuk-!-width-one-quarter" />
+            <input asp-for="FinalResult" class="govuk-input govuk-input--width-5" />
         </div>
 
         <div class="govuk-form-group @(ViewContext.ModelState[nameof(Model.FinalResultDate)]?.Errors.Any() == true ? "govuk-form-group--error" : "")">
@@ -109,7 +186,7 @@
         <div class="govuk-form-group">
             <label asp-for="Dbse" class="govuk-label">DBSE number</label>
             <div class="govuk-hint">Required for positive results. Leave blank to clear.</div>
-            <input asp-for="Dbse" class="govuk-input govuk-!-width-one-quarter" />
+            <input asp-for="Dbse" class="govuk-input govuk-input--width-10" />
         </div>
 
         <div class="govuk-button-group">

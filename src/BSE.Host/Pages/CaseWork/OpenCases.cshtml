@@ -1,0 +1,23 @@
+@page
+@model BSE.Host.Pages.CaseWork.OpenCasesModel
+@{
+    ViewData["Title"] = "View all open cases";
+}
+
+<h1 class="govuk-heading-l">View all open cases</h1>
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/CaseWork/Menu">Casework menu</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">View all open cases</li>
+    </ol>
+</nav>
+
+<div class="govuk-inset-text">
+    This report is not yet available in the migrated application. To access casework for a specific case, look up the case by RBSE and navigate to its casework record.
+</div>
+
+<p class="govuk-body">
+    <a asp-page="/Case/Lookup" class="govuk-link">Look up a case by RBSE</a>
+</p>

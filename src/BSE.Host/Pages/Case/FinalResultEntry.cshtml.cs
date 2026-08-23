@@ -1,8 +1,11 @@
-using BSE.Host.Services;
+﻿using BSE.Host.Services;
 using BSE.Modules.CaseManagement.Commands;
 using BSE.Modules.CaseManagement.Enums;
 using BSE.Modules.CaseManagement.Models;
 using BSE.Modules.CaseManagement.Services;
+using BSE.Modules.FarmManagement.Models;
+using BSE.Modules.FarmManagement.Services;
+using BSE.Modules.ReferenceData.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -10,11 +13,18 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace BSE.Host.Pages.Case;
 
 [Authorize(Policy = "DEFRAMaintenance")]
-public class FinalResultEntryModel(ICaseService cases, ICurrentUserService currentUser) : PageModel
+public class FinalResultEntryModel(
+    ICaseService cases,
+    IFarmService farmService,
+    ILookupDataService lookupService,
+    ICurrentUserService currentUser) : PageModel
 {
     [BindProperty(SupportsGet = true)] public string? LookupRbse { get; set; }
 
-    public CaseRecord? CurrentCase { get; private set; }
+    public CaseDetailRecord? CaseDetails { get; private set; }
+    public FarmRecord? Farm { get; private set; }
+    public IReadOnlyDictionary<string, string> TestTypeDescriptions { get; private set; } = new Dictionary<string, string>();
+    public IReadOnlyDictionary<string, string> TestResultDescriptions { get; private set; } = new Dictionary<string, string>();
     public bool IsNotFound { get; private set; }
 
     [BindProperty] public string Rbse { get; set; } = "";
@@ -24,31 +34,37 @@ public class FinalResultEntryModel(ICaseService cases, ICurrentUserService curre
 
     public async Task OnGetAsync()
     {
+        await LoadLookupsAsync();
         if (string.IsNullOrWhiteSpace(LookupRbse)) return;
 
-        CurrentCase = await cases.GetCaseAsync(LookupRbse.Trim());
-        if (CurrentCase is null)
+        var details = await cases.GetCaseDetailsAsync(LookupRbse.Trim());
+        if (details is null)
         {
             IsNotFound = true;
             return;
         }
 
-        Rbse = CurrentCase.Rbse;
-        FinalResult = CurrentCase.FinalResult;
-        FinalResultDate = CurrentCase.FinalResultDate;
-        Dbse = CurrentCase.Dbse;
+        CaseDetails     = details;
+        Farm            = await farmService.GetByCphhAsync(details.Case.Cphh);
+        Rbse            = details.Case.Rbse;
+        FinalResult     = details.Case.FinalResult;
+        FinalResultDate = details.Case.FinalResultDate;
+        Dbse            = details.Case.Dbse;
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (!ModelState.IsValid) return Page();
+        await LoadLookupsAsync();
 
-        CurrentCase = await cases.GetCaseAsync(Rbse.Trim());
-        if (CurrentCase is null)
+        var details = await cases.GetCaseDetailsAsync(Rbse.Trim());
+        if (details is null)
         {
             ModelState.AddModelError(nameof(Rbse), "Case not found.");
             return Page();
         }
+
+        CaseDetails = details;
+        Farm = await farmService.GetByCphhAsync(details.Case.Cphh);
 
         if (string.IsNullOrWhiteSpace(FinalResult))
         {
@@ -62,7 +78,7 @@ public class FinalResultEntryModel(ICaseService cases, ICurrentUserService curre
             return Page();
         }
 
-        var userId = await currentUser.GetUserIdAsync();
+        var userId  = await currentUser.GetUserIdAsync();
         var command = new EditFinalResultCommand(
             Rbse: Rbse.Trim(),
             FinalResult: FinalResult,
@@ -85,5 +101,13 @@ public class FinalResultEntryModel(ICaseService cases, ICurrentUserService curre
         });
 
         return Page();
+    }
+
+    private async Task LoadLookupsAsync()
+    {
+        var types   = await lookupService.GetTestTypesAsync();
+        var results = await lookupService.GetTestResultsAsync();
+        TestTypeDescriptions   = types.ToDictionary(t => t.Code, t => t.Description);
+        TestResultDescriptions = results.ToDictionary(t => t.Code, t => t.Description);
     }
 }

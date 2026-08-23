@@ -21,7 +21,7 @@ public class UsersModel(IUserManagementService userManagementService, ILookupDat
     [BindProperty] public string UserName { get; set; } = string.Empty;
     [BindProperty] public string? Email { get; set; }
     [BindProperty] public bool IsActive { get; set; } = true;
-    [BindProperty] public int UserGroupId { get; set; } = 1;
+    [BindProperty] public int UserGroupId { get; set; } = 0;
 
     // Edit form fields
     [BindProperty] public int EditUserId { get; set; }
@@ -41,9 +41,26 @@ public class UsersModel(IUserManagementService userManagementService, ILookupDat
 
     public async Task<IActionResult> OnPostAddAsync()
     {
+        if (string.IsNullOrWhiteSpace(NTLogin))
+            ModelState.AddModelError(nameof(NTLogin), "Enter NT login");
+        if (string.IsNullOrWhiteSpace(UserName))
+            ModelState.AddModelError(nameof(UserName), "Enter a display name");
+        if (UserGroupId <= 0)
+            ModelState.AddModelError(nameof(UserGroupId), "Select a user group");
+
+        Users = await userManagementService.GetAllUsersAsync();
+
+        if (ModelState.IsValid)
+        {
+            if (Users.Any(u => u.NTLogin.Equals(NTLogin, StringComparison.OrdinalIgnoreCase)))
+                ModelState.AddModelError(nameof(NTLogin), "Unable to add the selected user");
+            if (!string.IsNullOrWhiteSpace(Email) &&
+                Users.Any(u => !string.IsNullOrWhiteSpace(u.Email) && u.Email.Equals(Email, StringComparison.OrdinalIgnoreCase)))
+                ModelState.AddModelError(nameof(Email), "Unable to add the selected user");
+        }
+
         if (!ModelState.IsValid)
         {
-            Users = await userManagementService.GetAllUsersAsync();
             UserGroups = await lookupDataService.GetUserGroupsAsync();
             return Page();
         }
@@ -65,9 +82,26 @@ public class UsersModel(IUserManagementService userManagementService, ILookupDat
 
     public async Task<IActionResult> OnPostEditAsync()
     {
+        if (string.IsNullOrWhiteSpace(EditNTLogin))
+            ModelState.AddModelError(nameof(EditNTLogin), "Enter NT login");
+        if (string.IsNullOrWhiteSpace(EditUserName))
+            ModelState.AddModelError(nameof(EditUserName), "Enter a display name");
+        if (EditUserGroupId <= 0)
+            ModelState.AddModelError(nameof(EditUserGroupId), "Select a user group");
+
+        Users = await userManagementService.GetAllUsersAsync();
+
+        if (ModelState.IsValid)
+        {
+            if (Users.Any(u => u.UserId != EditUserId && u.NTLogin.Equals(EditNTLogin, StringComparison.OrdinalIgnoreCase)))
+                ModelState.AddModelError(nameof(EditNTLogin), "Unable to add the selected user");
+            if (!string.IsNullOrWhiteSpace(EditEmail) &&
+                Users.Any(u => u.UserId != EditUserId && !string.IsNullOrWhiteSpace(u.Email) && u.Email.Equals(EditEmail, StringComparison.OrdinalIgnoreCase)))
+                ModelState.AddModelError(nameof(EditEmail), "Unable to add the selected user");
+        }
+
         if (!ModelState.IsValid)
         {
-            Users = await userManagementService.GetAllUsersAsync();
             UserGroups = await lookupDataService.GetUserGroupsAsync();
             return Page();
         }

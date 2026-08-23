@@ -1,4 +1,5 @@
 using BSE.Modules.CaseManagement.Services;
+using BSE.SharedKernel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -24,7 +25,7 @@ public class LookupModel : PageModel
             return Page();
         }
 
-        var rbse = Rbse.Trim();
+        var rbse = RbseHelper.ParseToRaw(Rbse);
         var caseRecord = await _cases.GetCaseAsync(rbse);
         if (caseRecord is null)
         {

@@ -99,7 +99,8 @@
     @if (isVLAAccess || isDEFRAMaintenance || User.IsInRole("DEFRAAccess"))
     {
         <h3 class="govuk-heading-m" id="RBSENumber">RBSE number</h3>
-        <p class="govuk-body">The RBSE number is stored as <strong>9 digits</strong> in the format <samp>CCYYNNNNN</samp> — two-digit region code, two-digit year, five-digit sequence number. Enter all 9 digits with no slashes. For example, enter <samp>002600001</samp> for sequence 1 in region 00, year 2026.</p>
+        <p class="govuk-body">The RBSE number is in the format <strong>nn/nn/nnnnn</strong> where <samp>n</samp> is a digit. This is a region code (2 digits), a two-digit year, and a five-digit sequence number. For example, <samp>00/26/00001</samp> is region 00, year 2026, sequence 1.</p>
+        <p class="govuk-body">You must enter the second slash. Any digits you do not enter will be filled with zeros — for example, entering <samp>9/87</samp> produces <samp>00/09/00087</samp>. You can also enter the 9 raw digits without slashes (for example <samp>002600001</samp>) and the system will format them automatically.</p>
         <p class="govuk-body">The most recently used RBSE and DBSE numbers for the current year and the previous year are displayed on the home page for reference.</p>
         <p class="govuk-body">Enter an RBSE number and select <strong>Go</strong> to open that case. If the case exists, you are taken to the case details page. If no case is found:</p>
         <ul class="govuk-list govuk-list--bullet">
@@ -113,13 +114,9 @@
     <p class="govuk-body">Below the data entry panels, the home page shows links to all areas of the system available to your user group:</p>
     <ul class="govuk-list govuk-list--bullet">
         <li><strong>Search</strong> — links to all case and farm search pages, available to all users.</li>
-        @if (isVLAMaintenance)
-        {
-            <li><strong>Case entry</strong> — links to create a new case or open an existing case by RBSE. Available to VLA Maintenance users.</li>
-            <li><strong>Farms</strong> — links to create a new farm or look up an existing farm. Available to VLA Maintenance users.</li>
-        }
         <li><strong>Casework and reports</strong> — links to the audit log and BSESS check, available to all users.
             @if (isVLAMaintenance) { <text>VLA Maintenance users also see a link to the casework menu.</text> }
+            @if (isVLAAccess) { <text>VLA users also see a link to print batch.</text> }
         </li>
         @if (isDEFRAMaintenance)
         {
@@ -205,7 +202,7 @@
 @* ── 5. Audit log ───────────────────────────────────────────────────────── *@
 <section id="audit-log">
     <h2 class="govuk-heading-l">5. Audit log</h2>
-    <p class="govuk-body">The Audit Log pages track changes made to the system. Each entry shows who made a change, what the change was, and when it was made.</p>
+    <p class="govuk-body">The Audit log menu provides access to all six audit log reports. Select an option from the menu to view changes to specific data. Each entry shows who made a change, what the change was, and when it was made.</p>
 
     <h3 class="govuk-heading-m" id="AuditLogByDate">Daily audit log</h3>
     <p class="govuk-body">The Daily Audit Log lists all changes that occurred on a specific date. Select a date to view the changes made on that day.</p>
@@ -262,7 +259,7 @@
 @* ── 7. BSESS check ─────────────────────────────────────────────────────── *@
 <section id="bsess-check">
     <h2 class="govuk-heading-l">7. BSESS check</h2>
-    <p class="govuk-body">The BSESS Check pages enable comparison between data held in this system and data held in the BSE Surveillance System (BSESS) to identify discrepancies.</p>
+    <p class="govuk-body">The BSESS check menu provides access to both BSESS comparison reports. Select an option to compare data between this system and the BSE Surveillance System (BSESS) and identify discrepancies.</p>
 
     <h3 class="govuk-heading-m" id="BSESSCheckByDate">Compare cases by date</h3>
     <p class="govuk-body">Enter a date range to view differences between cases that have notification dates recorded in BSESS within that period. Any case where the birth date, eartag or test group differs between the two systems is listed in the results.</p>
@@ -313,10 +310,10 @@
 
     <section id="final-result-entry">
         <h2 class="govuk-heading-l">@(isDEFRAMaintenance ? "10" : "9"). Final result entry</h2>
-        <p class="govuk-body">The Final Result Entry page records a final result against a case. Enter the RBSE of an existing case — the case details are displayed on screen.</p>
-        <p class="govuk-body">If the verdict is <strong>Positive</strong>, the Final Result Date and DBSE are displayed, and the Download button becomes available to save the result memo. If the verdict is <strong>Negative</strong>, a Final Result Date is shown and the Download button is available, but no DBSE is shown.</p>
-        <p class="govuk-body">The final result is not saved until you select <strong>Save</strong>. If you change a result that already has a Final Result recorded, save the change before downloading a new copy of the result memo.</p>
-        <p class="govuk-body">After saving, a confirmation page is displayed showing the RBSE and DBSE (if applicable). Use the <strong>Add another result</strong> button to continue entering results or return to the home page.</p>
+        <p class="govuk-body">The Final Result Entry page records a final result against a case. Enter the RBSE of an existing case and select <strong>Look up</strong> — the case details are then displayed on screen, including eartag, date of birth, CPHH, farm owner, case type, BSE1 paperwork status, and test results.</p>
+        <p class="govuk-body">Once you have selected a Final Result it will not be recorded against the case until you select <strong>Save</strong>. The final result date is recorded at the time of saving. For positive cases, enter the DBSE number in the DBSE number field.</p>
+        <p class="govuk-body">After saving, a success notification is shown and you are taken to the case details page. Select <strong>Final result entry</strong> from the home page to add another result.</p>
+        <p class="govuk-body">See also: <a class="govuk-link" href="#General_FieldErrors">Field error messages</a></p>
 
         <p class="govuk-body govuk-!-margin-top-4"><a class="govuk-link" href="#">Back to top</a></p>
     </section>
@@ -325,13 +322,13 @@
 
     <section id="oss-export">
         <h2 class="govuk-heading-l">@(isDEFRAMaintenance ? "11" : "10"). OSS export</h2>
-        <p class="govuk-body">The OSS Export pages generate files for import into the Optical Storage System (OSS).</p>
+        <p class="govuk-body">The OSS Export page generates data for import into the Optical Storage System (OSS). It provides two functions, accessible via the <strong>BSE1</strong> and <strong>BSE1b</strong> sections.</p>
 
         <h3 class="govuk-heading-m" id="OSSExportBSE1">BSE1</h3>
-        <p class="govuk-body">Enter a batch number to generate a BSE1 import file. If the batch exists, the file is downloaded automatically. Note that the OSS system only accepts file names with three-digit endings — batch numbers longer than three digits are truncated (for example, <samp>2001/1987</samp> becomes <samp>2001/987</samp>). A warning is shown when truncation occurs.</p>
+        <p class="govuk-body">Select <strong>Populate staging tables</strong> to populate the four OSS staging tables and create a new BSE1 batch number. The assigned batch number is shown on screen once the operation completes.</p>
 
         <h3 class="govuk-heading-m" id="OSSExportBSE1b">BSE1b</h3>
-        <p class="govuk-body">Enter the RBSE of a case — a new BSE1b batch number is created and displayed. Continue entering RBSE numbers to add more cases to the batch. Remove rows using the Remove action link. When all cases are added, select <strong>Export to OSS</strong> to record the cases against the batch number and download the export file.</p>
+        <p class="govuk-body">Enter an RBSE number and select <strong>Look up</strong> to view the OSS cover sheet details for that case (RBSE, CPHH, owner name and address). A warning is shown if no OSS export record exists for the entered RBSE.</p>
 
         <p class="govuk-body govuk-!-margin-top-4"><a class="govuk-link" href="#">Back to top</a></p>
     </section>
@@ -346,14 +343,14 @@
         <h2 class="govuk-heading-l">Administration</h2>
         <p class="govuk-body">The Administration pages are available to maintenance users to make changes to farm records, case records and system reference data.</p>
 
-        @if (isVLAMaintenance)
+        @if (isDEFRAMaintenance)
         {
             <h3 class="govuk-heading-m" id="CPHHChange">CPHH change</h3>
             <p class="govuk-body">The CPHH Change page changes the CPHH of an existing farm. The change is applied across all related tables so that cases associated with the farm remain correctly linked.</p>
-            <p class="govuk-body">Look up the CPHH you want to change — the farm details are displayed. Enter the new CPHH, which must not already exist in the system. Select <strong>Save</strong> to apply the change. A confirmation page is shown once complete.</p>
+            <p class="govuk-body">Enter the current CPHH and select <strong>Look up</strong> to confirm the farm exists, then enter the new CPHH and select <strong>Change CPHH</strong>. The new CPHH must not already exist in the system. Note that location information (County, AHO, ADNS Region) is not automatically updated — check and amend those fields on the farm record if required.</p>
 
             <h3 class="govuk-heading-m" id="RBSEChange">RBSE change</h3>
-            <p class="govuk-body">The RBSE Change page assigns a new RBSE number to an existing case. Look up the current RBSE — the case details are displayed. Enter the new RBSE, which must not already exist in the system. Select <strong>Save</strong> to apply the change. A confirmation page is shown once complete.</p>
+            <p class="govuk-body">The RBSE Change page assigns a new RBSE number to an existing case. Enter the current RBSE and select <strong>Look up</strong>, then enter the new RBSE. The new RBSE must not already exist in the system and cannot be the same as the old RBSE. Select <strong>Change RBSE</strong> to apply.</p>
         }
 
         @if (isPickListAccess || isVLAMaintenance)
@@ -374,10 +371,10 @@
         @if (isVLAMaintenance)
         {
             <h3 class="govuk-heading-m" id="MoveCase">Move case</h3>
-            <p class="govuk-body">The Move Case page moves a case from one farm to another. Enter the RBSE of the case and the CPHH of the destination farm, then select <strong>Save</strong> to move the case.</p>
+            <p class="govuk-body">The Move Case page moves a case from one farm to another. Enter the RBSE of the case to look it up, then enter the CPHH of the destination farm and select <strong>Move case</strong>. The destination farm must already exist in the system.</p>
 
             <h3 class="govuk-heading-m" id="DeleteCase">Delete case</h3>
-            <p class="govuk-body">The Delete Case page permanently removes a case from the system. Enter the RBSE of the case to delete, review the case details displayed, then select <strong>Delete</strong> to confirm. This action cannot be undone.</p>
+            <p class="govuk-body">The Delete Case page permanently removes a case from the system. Enter the RBSE of the case to look it up, review the case details displayed, then select <strong>Confirm delete</strong>. This action cannot be undone. Cases with linked records (feeds, clinical data, batch assignments) cannot be deleted.</p>
 
             <h3 class="govuk-heading-m" id="UserMaintenance">User maintenance</h3>
             <p class="govuk-body">The User Maintenance page manages system users. Use it to view, create, edit and deactivate user accounts and assign users to the correct user group. Each user must be assigned to exactly one group.</p>

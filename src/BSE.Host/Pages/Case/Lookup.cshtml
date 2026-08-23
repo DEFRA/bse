@@ -25,7 +25,7 @@
 <form method="get" novalidate>
     <div class="govuk-form-group @(rbseError is not null ? "govuk-form-group--error" : "")">
         <label class="govuk-label" for="rbse-lookup">RBSE</label>
-        <div id="rbse-hint" class="govuk-hint">Enter 9 digits with no slashes — for example, 002600001.</div>
+        <div id="rbse-hint" class="govuk-hint">Enter in format nn/nn/nnnnn — for example, 00/26/00001.</div>
         @if (rbseError is not null)
         {
             <p id="rbse-error" class="govuk-error-message">

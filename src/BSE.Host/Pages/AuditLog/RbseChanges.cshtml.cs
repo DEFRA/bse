@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.AuditLog;
 
-[Authorize(Policy = "Authenticated")]
+[Authorize(Policy = "AuditAccess")]
 public class RbseChangesModel(IAuditLogService auditLogService) : PageModel
 {
     [BindProperty(SupportsGet = true)] public DateTime StartDate { get; set; } = DateTime.Today.AddMonths(-1);

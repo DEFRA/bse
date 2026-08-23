@@ -1,6 +1,7 @@
 using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Services;
 using BSE.Modules.CaseManagement.Repositories;
+using BSE.SharedKernel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -25,6 +26,12 @@ public class HomeModel(IBatchService batchService, ICaseRepository caseRepositor
 
     /// <summary>True when a batch lookup was attempted but the batch was not found.</summary>
     public bool BatchNotFound { get; private set; }
+
+    // ── RBSE Number panel (DEFRAAccess or VLAAccess role) ──────────────────────
+
+    /// <summary>RBSE value entered in the lookup form on the home page.</summary>
+    [BindProperty]
+    public string? LookupRbse { get; set; }
 
     // ── RBSE Number panel (DEFRAMaintenance or VLAAccess role) ───────────────
 
@@ -75,11 +82,11 @@ public class HomeModel(IBatchService batchService, ICaseRepository caseRepositor
 
     // Mirrors legacy Common.vb FormatRBSE: strips slashes then inserts CC/YY/NNNNN.
     private static string? FormatRbse(string? raw)
-        => raw?.Length == 9 ? $"{raw[..2]}/{raw[2..4]}/{raw[4..]}" : raw;
+        => RbseHelper.Format(raw);
 
     // Mirrors legacy Common.vb FormatDBSE: strips slashes then inserts YY/NNNNN.
     private static string? FormatDbse(string? raw)
-        => raw?.Length == 7 ? $"{raw[..2]}/{raw[2..]}" : raw;
+        => RbseHelper.FormatDbse(raw);
 
     /// <summary>
     /// Validates the entered batch year/number. If found, redirects to New Case
@@ -111,6 +118,19 @@ public class HomeModel(IBatchService batchService, ICaseRepository caseRepositor
         // Redirect to case entry; the batch year/number are passed so case entry
         // can pre-select the correct batch context.
         return RedirectToPage("/Case/New", new { batchYear = BatchYear, batchNumber = BatchNumber });
+    }
+
+    /// <summary>Validates, zero-pads (e.g. "9/87" → "000900087"), and redirects to the case lookup page; shows an inline error if the field is empty.</summary>
+    public async Task<IActionResult> OnPostRbseLookupAsync()
+    {
+        if (string.IsNullOrWhiteSpace(LookupRbse))
+        {
+            ModelState.AddModelError(nameof(LookupRbse), "Enter an RBSE number.");
+            await OnGetAsync();
+            return Page();
+        }
+        var normalized = RbseHelper.ParseToRaw(LookupRbse);
+        return RedirectToPage("/Case/Lookup", new { Rbse = normalized });
     }
 
     /// <summary>Batch fields are pre-filled via redirect so the user sees the assigned number — matches legacy behaviour.</summary>

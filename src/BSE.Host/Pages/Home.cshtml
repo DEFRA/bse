@@ -5,6 +5,8 @@
     var batchYearError   = Model.ModelState[nameof(Model.BatchYear)]?.Errors.FirstOrDefault()?.ErrorMessage;
     var batchNumberError = Model.ModelState[nameof(Model.BatchNumber)]?.Errors.FirstOrDefault()?.ErrorMessage;
     var hasBatchError    = batchYearError is not null || batchNumberError is not null;
+    var rbseError        = Model.ModelState[nameof(Model.LookupRbse)]?.Errors.FirstOrDefault()?.ErrorMessage;
+    var hasAnyError      = hasBatchError || rbseError is not null;
 }
 
 <h1 class="govuk-heading-l">BSE system</h1>
@@ -117,13 +119,21 @@
     <section aria-labelledby="rbse-panel-heading" class="govuk-!-margin-bottom-6">
         <h2 class="govuk-heading-m" id="rbse-panel-heading">RBSE number</h2>
 
-        <form method="get" asp-page="/Case/Lookup" class="govuk-!-margin-bottom-4">
-            <div class="govuk-form-group">
+        <form method="post" asp-page-handler="RbseLookup" class="govuk-!-margin-bottom-4">
+            <div class="govuk-form-group @(rbseError is not null ? "govuk-form-group--error" : "")">
                 <label class="govuk-label" for="rbse-lookup">Enter RBSE to open case</label>
-                
-                <input id="rbse-lookup" name="Rbse" type="text"
-                       class="govuk-input govuk-input--width-10"
-                       autocomplete="off" />
+                <div class="govuk-hint" id="rbse-hint">Enter in format nn/nn/nnnnn — for example, 00/26/00001.</div>
+                @if (rbseError is not null)
+                {
+                    <p id="rbse-error" class="govuk-error-message">
+                        <span class="govuk-visually-hidden">Error:</span>
+                        @rbseError
+                    </p>
+                }
+                <input id="rbse-lookup" name="LookupRbse" type="text"
+                       class="govuk-input govuk-input--width-10 @(rbseError is not null ? "govuk-input--error" : "")"
+                       value="@Model.LookupRbse" autocomplete="off"
+                       aria-describedby="rbse-hint@(rbseError is not null ? " rbse-error" : "")" />
             </div>
             <button type="submit" class="govuk-button govuk-button--secondary"
                     data-module="govuk-button">Go</button>
@@ -171,29 +181,13 @@
         </ul>
     </div>
 
-    @* Column 2: Case entry + Farms *@
+    @* Column 2: Casework and reports *@
     <div class="govuk-grid-column-one-third">
-        @* Legacy: Case entry shortcut links only for VLA Maintenance — VLA Data Entry uses the RBSE lookup above *@
-        @if (User.IsInRole("VLAMaintenance"))
+        @if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess") || User.IsInRole("VLAMaintenance"))
         {
-            <h2 class="govuk-heading-m">Case entry</h2>
-            <ul class="govuk-list">
-                <li><a asp-page="/Case/New" class="govuk-link">New case</a></li>
-                <li><a asp-page="/Case/Lookup" class="govuk-link">Open existing case</a></li>
-            </ul>
+            <h2 class="govuk-heading-m">Casework and reports</h2>
         }
-
-        @* Legacy: Farm links only visible to VLA Maintenance (VLAMaintenance uniquely excludes DEFRA Maintenance) *@
-        @if (User.IsInRole("VLAMaintenance"))
-        {
-            <h2 class="govuk-heading-m">Farms</h2>
-            <ul class="govuk-list">
-                <li><a asp-page="/Farm/New" class="govuk-link">New farm</a></li>
-                <li><a asp-page="/Farm/Lookup" class="govuk-link">Open farm</a></li>
-            </ul>
-        }
-
-        <h2 class="govuk-heading-m">Casework and reports</h2>
+        
         <ul class="govuk-list">
             @if (User.IsInRole("VLAMaintenance"))
             {
@@ -203,8 +197,11 @@
             {
                 <li><a asp-page="/CaseWork/PrintBatch" class="govuk-link">Print batch</a></li>
             }
-            <li><a asp-page="/AuditLog/ByDate" class="govuk-link">Audit log</a></li>
-            <li><a asp-page="/Bsess/CheckByRbse" class="govuk-link">BSESS check</a></li>
+            @if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess"))
+            {
+                <li><a asp-page="/AuditLog/Menu" class="govuk-link">Audit log</a></li>
+                <li><a asp-page="/Bsess/Menu" class="govuk-link">BSESS check</a></li>
+            }
         </ul>
     </div>
 

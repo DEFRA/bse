@@ -1,4 +1,4 @@
-@page "{rbse}"
+@page "{rbse?}"
 @model DeleteModel
 @{
     ViewData["Title"] = "Delete case";
@@ -6,16 +6,35 @@
 
 <div>
     <h1 class="govuk-heading-l">Delete case</h1>
-    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
-        <ol class="govuk-breadcrumbs__list">
-            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Lookup">Case lookup</a></li>
-            <li class="govuk-breadcrumbs__list-item" aria-current="page">Delete</li>
-        </ol>
-    </nav>
 
-    @if (Model.CaseRecord is not null)
+    @* ── Step 1: lookup (navigated from home page without a known RBSE) ── *@
+    @if (string.IsNullOrEmpty(Model.Rbse))
     {
+        <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+            <ol class="govuk-breadcrumbs__list">
+                <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+                <li class="govuk-breadcrumbs__list-item" aria-current="page">Delete case</li>
+            </ol>
+        </nav>
+        <form method="get" novalidate>
+            <div class="govuk-form-group">
+                <label class="govuk-label" for="rbse-lookup">Enter RBSE of case to delete</label>
+                <div class="govuk-hint">Enter 9 digits with no slashes — for example, 002600001.</div>
+                <input id="rbse-lookup" name="Rbse" type="text" class="govuk-input govuk-input--width-10" autocomplete="off" />
+            </div>
+            <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Look up</button>
+        </form>
+    }
+    else if (Model.CaseRecord is not null)
+    {
+        <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+            <ol class="govuk-breadcrumbs__list">
+                <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+                <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Details" asp-route-rbse="@Model.Rbse">Case @Model.Rbse</a></li>
+                <li class="govuk-breadcrumbs__list-item" aria-current="page">Delete</li>
+            </ol>
+        </nav>
+
         <div class="govuk-warning-text">
             <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
             <strong class="govuk-warning-text__text">
@@ -26,7 +45,7 @@
 
         <h2 class="govuk-heading-m">Case @Model.CaseRecord.Rbse</h2>
         <dl class="govuk-summary-list">
-            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@Model.CaseRecord.Rbse</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@RbseHelper.Format(Model.CaseRecord.Rbse)</dd></div>
             <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">CPHH</dt><dd class="govuk-summary-list__value">@Model.CaseRecord.Cphh</dd></div>
             <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Eartag</dt><dd class="govuk-summary-list__value">@Model.CaseRecord.EartagHerdmark / @Model.CaseRecord.Eartag</dd></div>
             <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Fate</dt><dd class="govuk-summary-list__value">@Model.CaseRecord.Fate</dd></div>
@@ -56,13 +75,19 @@
     }
     else
     {
+        <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+            <ol class="govuk-breadcrumbs__list">
+                <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+                <li class="govuk-breadcrumbs__list-item" aria-current="page">Delete case</li>
+            </ol>
+        </nav>
         <div class="govuk-warning-text">
             <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
             <strong class="govuk-warning-text__text">
                 <span class="govuk-warning-text__assistive">Warning</span>
-                Case @Model.Rbse not found.
+                No case found for RBSE @Model.Rbse.
             </strong>
         </div>
-        <a asp-page="/Case/Lookup" class="govuk-link">Back to lookup</a>
+        <a asp-page="/Case/Delete" class="govuk-link">Look up another case</a>
     }
 </div>
