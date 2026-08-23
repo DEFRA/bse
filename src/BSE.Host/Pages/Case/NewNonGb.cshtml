@@ -1,15 +1,17 @@
 @page
 @model BSE.Host.Pages.Case.NewNonGbModel
 @{
-    ViewData["Title"] = "Create a non-GB case";
+    ViewData["Title"] = "Create non-GB case";
 }
 
-<h1 class="govuk-heading-l">Create a non-GB case</h1>
+<h1 class="govuk-heading-l">Create non-GB case — @Model.Rbse</h1>
+
+<p class="govuk-body">Use this page to record a case from Jersey, Guernsey or the Isle of Man.</p>
 
 <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
     <ol class="govuk-breadcrumbs__list">
         <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-        <li class="govuk-breadcrumbs__list-item" aria-current="page">New non-GB case</li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Create non-GB case</li>
     </ol>
 </nav>
 
@@ -30,38 +32,68 @@
     </div>
 }
 
-<p class="govuk-body">Use this form to record a non-GB BSE case where the animal was not born or kept in Great Britain.</p>
-
 <form method="post" novalidate>
-    <h2 class="govuk-heading-m">Case identification</h2>
-    <div class="govuk-form-group">
-        <label asp-for="Rbse" class="govuk-label">RBSE number</label>
-        <div class="govuk-hint">9-digit RBSE number.</div>
-        <input asp-for="Rbse" class="govuk-input govuk-!-width-one-half" />
-        <span asp-validation-for="Rbse" class="govuk-error-message"></span>
-    </div>
+    <input type="hidden" asp-for="Rbse" />
 
-    <h2 class="govuk-heading-m">Eartag</h2>
-    <div class="govuk-form-group">
-        <label asp-for="EartagCountry" class="govuk-label">Eartag country</label>
-        <input asp-for="EartagCountry" class="govuk-input govuk-input--width-5" />
+    <h2 class="govuk-heading-m">Animal details</h2>
+
+    <div class="govuk-form-group @(ViewContext.ModelState[nameof(Model.Eartag)]?.Errors.Any() == true ? "govuk-form-group--error" : "")">
+        <label asp-for="Eartag" class="govuk-label">Eartag <span class="govuk-visually-hidden">(required)</span></label>
+        <span asp-validation-for="Eartag" class="govuk-error-message"></span>
+        <input asp-for="Eartag" class="govuk-input govuk-!-width-two-thirds" />
     </div>
     <div class="govuk-form-group">
         <label asp-for="EartagHerdmark" class="govuk-label">Eartag herdmark</label>
         <input asp-for="EartagHerdmark" class="govuk-input govuk-!-width-one-half" />
     </div>
     <div class="govuk-form-group">
-        <label asp-for="Eartag" class="govuk-label">Eartag</label>
-        <input asp-for="Eartag" class="govuk-input govuk-!-width-two-thirds" />
+        <label asp-for="EartagCountry" class="govuk-label">Eartag country</label>
+        <input asp-for="EartagCountry" class="govuk-input govuk-!-width-one-quarter" />
     </div>
 
-    <h2 class="govuk-heading-m">Origin farm (non-GB)</h2>
-    <div class="govuk-form-group">
-        <label asp-for="OwnerName" class="govuk-label">Owner name</label>
+    <div class="govuk-form-group @(ViewContext.ModelState[nameof(Model.Fate)]?.Errors.Any() == true ? "govuk-form-group--error" : "")">
+        <label asp-for="Fate" class="govuk-label">Fate code <span class="govuk-visually-hidden">(required)</span></label>
+        <div class="govuk-hint">Default is SLOS (Slaughtered).</div>
+        <span asp-validation-for="Fate" class="govuk-error-message"></span>
+        <input asp-for="Fate" class="govuk-input govuk-input--width-5" />
+    </div>
+    <div class="govuk-form-group @(ViewContext.ModelState[nameof(Model.FinalResult)]?.Errors.Any() == true ? "govuk-form-group--error" : "")">
+        <label asp-for="FinalResult" class="govuk-label">Final result code <span class="govuk-visually-hidden">(required)</span></label>
+        <div class="govuk-hint">Default is NOT (Not examined).</div>
+        <span asp-validation-for="FinalResult" class="govuk-error-message"></span>
+        <input asp-for="FinalResult" class="govuk-input govuk-input--width-5" />
+    </div>
+    <div class="govuk-form-group @(ViewContext.ModelState[nameof(Model.FinalResultDate)]?.Errors.Any() == true ? "govuk-form-group--error" : "")">
+        <label asp-for="FinalResultDate" class="govuk-label">Final result date <span class="govuk-visually-hidden">(required)</span></label>
+        <span asp-validation-for="FinalResultDate" class="govuk-error-message"></span>
+        <input asp-for="FinalResultDate" type="date" class="govuk-input govuk-input--width-10"
+               value="@Model.FinalResultDate?.ToString("yyyy-MM-dd")" />
+    </div>
+    <div class="govuk-form-group @(ViewContext.ModelState[nameof(Model.SlaughterDate)]?.Errors.Any() == true ? "govuk-form-group--error" : "")">
+        <label asp-for="SlaughterDate" class="govuk-label">Slaughter date <span class="govuk-visually-hidden">(required)</span></label>
+        <span asp-validation-for="SlaughterDate" class="govuk-error-message"></span>
+        <input asp-for="SlaughterDate" type="date" class="govuk-input govuk-input--width-10"
+               value="@Model.SlaughterDate?.ToString("yyyy-MM-dd")" />
+    </div>
+
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-bottom-4">
+
+    <h2 class="govuk-heading-m">Farm details</h2>
+
+    <div class="govuk-form-group @(ViewContext.ModelState[nameof(Model.Cphh)]?.Errors.Any() == true ? "govuk-form-group--error" : "")">
+        <label asp-for="Cphh" class="govuk-label">CPHH <span class="govuk-visually-hidden">(required)</span></label>
+        <div class="govuk-hint">Non-GB farms must begin with 00999. For example, 00999900001.</div>
+        <span asp-validation-for="Cphh" class="govuk-error-message"></span>
+        <input asp-for="Cphh" class="govuk-input govuk-!-width-one-third" />
+    </div>
+    <div class="govuk-form-group @(ViewContext.ModelState[nameof(Model.OwnerName)]?.Errors.Any() == true ? "govuk-form-group--error" : "")">
+        <label asp-for="OwnerName" class="govuk-label">Owner name <span class="govuk-visually-hidden">(required)</span></label>
+        <span asp-validation-for="OwnerName" class="govuk-error-message"></span>
         <input asp-for="OwnerName" class="govuk-input govuk-!-width-two-thirds" />
     </div>
-    <div class="govuk-form-group">
-        <label asp-for="Address1" class="govuk-label">Address line 1</label>
+    <div class="govuk-form-group @(ViewContext.ModelState[nameof(Model.Address1)]?.Errors.Any() == true ? "govuk-form-group--error" : "")">
+        <label asp-for="Address1" class="govuk-label">Address line 1 <span class="govuk-visually-hidden">(required)</span></label>
+        <span asp-validation-for="Address1" class="govuk-error-message"></span>
         <input asp-for="Address1" class="govuk-input govuk-!-width-two-thirds" />
     </div>
     <div class="govuk-form-group">
@@ -74,51 +106,42 @@
     </div>
     <div class="govuk-form-group">
         <label asp-for="Postcode" class="govuk-label">Postcode</label>
-        <input asp-for="Postcode" class="govuk-input govuk-!-width-one-third" />
+        <input asp-for="Postcode" class="govuk-input govuk-input--width-10" />
+    </div>
+    <div class="govuk-form-group @(ViewContext.ModelState[nameof(Model.County)]?.Errors.Any() == true ? "govuk-form-group--error" : "")">
+        <label asp-for="County" class="govuk-label">County or territory <span class="govuk-visually-hidden">(required)</span></label>
+        <div class="govuk-hint">For example, Jersey, Guernsey or Isle of Man.</div>
+        <span asp-validation-for="County" class="govuk-error-message"></span>
+        <input asp-for="County" class="govuk-input govuk-!-width-one-half" />
     </div>
     <div class="govuk-form-group">
-        <label asp-for="Herdmark" class="govuk-label">Herdmark</label>
-        <input asp-for="Herdmark" class="govuk-input govuk-!-width-one-half" />
+        <label asp-for="Herdmark1" class="govuk-label">Herdmark</label>
+        <input asp-for="Herdmark1" class="govuk-input govuk-!-width-one-third" />
     </div>
     <div class="govuk-form-group">
-        <label asp-for="NumericHerdmark" class="govuk-label">Numeric herdmark</label>
-        <input asp-for="NumericHerdmark" class="govuk-input govuk-!-width-one-half" />
+        <label asp-for="NumericHerdmark1" class="govuk-label">Numeric herdmark</label>
+        <div class="govuk-hint">6 digits — for example, 123456.</div>
+        <input asp-for="NumericHerdmark1" class="govuk-input govuk-input--width-10" />
     </div>
 
-    <h2 class="govuk-heading-m">Fate and result</h2>
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-bottom-4">
+
+    <h2 class="govuk-heading-m">Casework reference (optional)</h2>
+
     <div class="govuk-form-group">
-        <label asp-for="Fate" class="govuk-label">Fate</label>
-        <select asp-for="Fate" class="govuk-select govuk-!-width-one-half">
-            <option value="">— select —</option>
-            @foreach (var f in Model.Fates)
-            {
-                <option value="@f.Code" selected="@(f.Code == "SL" ? "selected" : null)">@f.Description</option>
-            }
-        </select>
+        <label asp-for="RbseDate" class="govuk-label">RBSE date</label>
+        <input asp-for="RbseDate" type="date" class="govuk-input govuk-input--width-10"
+               value="@Model.RbseDate?.ToString("yyyy-MM-dd")" />
     </div>
     <div class="govuk-form-group">
-        <label asp-for="FinalResult" class="govuk-label">Final result</label>
-        <select asp-for="FinalResult" class="govuk-select govuk-!-width-one-half">
-            <option value="">— select —</option>
-            @foreach (var r in Model.TestResults)
-            {
-                <option value="@r.Code" selected="@(r.Code == "NE" ? "selected" : null)">@r.Description</option>
-            }
-        </select>
+        <label asp-for="Barcode" class="govuk-label">Barcode</label>
+        <input asp-for="Barcode" class="govuk-input govuk-!-width-one-half" />
     </div>
     <div class="govuk-form-group">
-        <label asp-for="FinalResultDate" class="govuk-label">Final result date</label>
-        <input asp-for="FinalResultDate" type="date" class="govuk-input govuk-input--width-10"
-               value="@Model.FinalResultDate?.ToString("yyyy-MM-dd")" />
-    </div>
-    <div class="govuk-form-group">
-        <label asp-for="SlaughterDate" class="govuk-label">Slaughter date</label>
-        <input asp-for="SlaughterDate" type="date" class="govuk-input govuk-input--width-10"
-               value="@Model.SlaughterDate?.ToString("yyyy-MM-dd")" />
+        <label asp-for="AhfReference" class="govuk-label">AHF reference</label>
+        <input asp-for="AhfReference" class="govuk-input govuk-!-width-one-half" />
     </div>
 
-    <div class="govuk-button-group">
-        <button type="submit" class="govuk-button" data-module="govuk-button">Create non-GB case</button>
-        <a asp-page="/Home" class="govuk-link">Cancel</a>
-    </div>
+    <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+    <a asp-page="/Home" class="govuk-link govuk-!-margin-left-4">Cancel</a>
 </form>

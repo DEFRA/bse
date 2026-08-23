@@ -31,4 +31,10 @@ public interface ICaseService
     /// Changes an RBSE number and cascades the rename across all 15 child tables.
     /// </summary>
     Task<ChangeRbseResult> ChangeRbseAsync(string oldRbse, string newRbse, int userId);
+
+    /// <summary>Creates a non-GB case (Jersey, Guernsey or Isle of Man) via AddNonGBCase SP.</summary>
+    Task<AddNonGbCaseResult> CreateNonGbCaseAsync(AddNonGbCaseCommand command, int userId);
+
+    /// <summary>Saves final result for a case in its own SQL transaction.</summary>
+    Task<EditCaseResult> SaveFinalResultAsync(EditFinalResultCommand command, int userId);
 }

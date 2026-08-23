@@ -1,6 +1,7 @@
 using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Services;
 using BSE.Modules.CaseManagement.Repositories;
+using BSE.SharedKernel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -26,6 +27,12 @@ public class HomeModel(IBatchService batchService, ICaseRepository caseRepositor
     /// <summary>True when a batch lookup was attempted but the batch was not found.</summary>
     public bool BatchNotFound { get; private set; }
 
+    // ── RBSE Number panel (DEFRAAccess or VLAAccess role) ──────────────────────
+
+    /// <summary>RBSE value entered in the lookup form on the home page.</summary>
+    [BindProperty]
+    public string? LookupRbse { get; set; }
+
     // ── RBSE Number panel (DEFRAMaintenance or VLAAccess role) ───────────────
 
     /// <summary>Latest RBSE reference in the current year.</summary>
@@ -50,8 +57,8 @@ public class HomeModel(IBatchService batchService, ICaseRepository caseRepositor
         if (User.IsInRole("VLAAccess"))
             tasks.Add(LoadBatchDataAsync());
 
-        // Legacy Home showed Latest RBSE/DBSE and the RBSE lookup to all 5 roles.
-        tasks.Add(LoadRbseDataAsync(currentYear, previousYear));
+        if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess"))
+            tasks.Add(LoadRbseDataAsync(currentYear, previousYear));
 
         await Task.WhenAll(tasks);
     }
@@ -67,11 +74,19 @@ public class HomeModel(IBatchService batchService, ICaseRepository caseRepositor
             caseRepository.GetLatestDbseForYearAsync(currentYear),
             caseRepository.GetLatestDbseForYearAsync(previousYear));
 
-        LatestRbseCurrentYear  = results[0];
-        LatestRbsePreviousYear = results[1];
-        LatestDbseCurrentYear  = results[2];
-        LatestDbsePreviousYear = results[3];
+        LatestRbseCurrentYear  = FormatRbse(results[0]);
+        LatestRbsePreviousYear = FormatRbse(results[1]);
+        LatestDbseCurrentYear  = FormatDbse(results[2]);
+        LatestDbsePreviousYear = FormatDbse(results[3]);
     }
+
+    // Mirrors legacy Common.vb FormatRBSE: strips slashes then inserts CC/YY/NNNNN.
+    private static string? FormatRbse(string? raw)
+        => RbseHelper.Format(raw);
+
+    // Mirrors legacy Common.vb FormatDBSE: strips slashes then inserts YY/NNNNN.
+    private static string? FormatDbse(string? raw)
+        => RbseHelper.FormatDbse(raw);
 
     /// <summary>
     /// Validates the entered batch year/number. If found, redirects to New Case
@@ -105,13 +120,24 @@ public class HomeModel(IBatchService batchService, ICaseRepository caseRepositor
         return RedirectToPage("/Case/New", new { batchYear = BatchYear, batchNumber = BatchNumber });
     }
 
-    /// <summary>
-    /// Creates (or retrieves) the current batch and redirects to New Case.
-    /// </summary>
+    /// <summary>Validates, zero-pads (e.g. "9/87" → "000900087"), and redirects to the case lookup page; shows an inline error if the field is empty.</summary>
+    public async Task<IActionResult> OnPostRbseLookupAsync()
+    {
+        if (string.IsNullOrWhiteSpace(LookupRbse))
+        {
+            ModelState.AddModelError(nameof(LookupRbse), "Enter an RBSE number.");
+            await OnGetAsync();
+            return Page();
+        }
+        var normalized = RbseHelper.ParseToRaw(LookupRbse);
+        return RedirectToPage("/Case/Lookup", new { Rbse = normalized });
+    }
+
+    /// <summary>Batch fields are pre-filled via redirect so the user sees the assigned number — matches legacy behaviour.</summary>
     public async Task<IActionResult> OnPostCreateBatchAsync()
     {
         var batch = await batchService.GetOrCreateBatchNumberAsync();
-        return RedirectToPage("/Case/New",
-            new { batchYear = batch.BatchYear, batchNumber = batch.BatchNumber });
+        TempData["SuccessMessage"] = $"Batch {batch.BatchYear}/{batch.BatchNumber} has been assigned. Enter the year and number above and select Go to add cases to this batch.";
+        return RedirectToPage("/Home", new { batchYear = batch.BatchYear, batchNumber = batch.BatchNumber });
     }
 }

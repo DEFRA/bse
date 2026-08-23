@@ -108,9 +108,9 @@ public sealed class GroupClaimsTransformation : IClaimsTransformation
     private static IEnumerable<string> GetPoliciesForGroup(string? groupName) =>
         groupName switch
         {
-            "DEFRA Viewer"              => ["ReadOnly"],
-            "DEFRA Data Entry"          => ["ReadOnly", "DataEntry", "FarmCreation"],
-            "DEFRA Maintenance"         => ["ReadOnly", "DataEntry", "DEFRAMaintenance", "PickListAccess", "FarmCreation"],
+            "DEFRA Viewer"              => ["ReadOnly", "DEFRAAccess"],
+            "DEFRA Data Entry"          => ["ReadOnly", "DataEntry", "FarmCreation", "DEFRAAccess"],
+            "DEFRA Maintenance"         => ["ReadOnly", "DataEntry", "DEFRAMaintenance", "PickListAccess", "FarmCreation", "DEFRAAccess"],
             "VLA Data Entry"            => ["ReadOnly", "DataEntry", "VLAAccess", "PickListAccess"],
             "VLA Maintenance"           => ["ReadOnly", "DataEntry", "DEFRAMaintenance", "VLAAccess", "VLAMaintenance", "PickListAccess", "FarmCreation"],
             "DEFRA AI Wales Scotland"   => ["ReadOnly"],

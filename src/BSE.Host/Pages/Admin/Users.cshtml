@@ -3,6 +3,17 @@
 @using BSE.SharedKernel
 @{
     ViewData["Title"] = "User management";
+    var addNtLoginError  = ViewData.ModelState["NTLogin"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    var addNameError     = ViewData.ModelState["UserName"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    var addGroupError    = ViewData.ModelState["UserGroupId"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    var addEmailError    = ViewData.ModelState["Email"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    bool addHasErrors    = addNtLoginError is not null || addNameError is not null || addGroupError is not null || addEmailError is not null;
+
+    var editNtLoginError  = ViewData.ModelState["EditNTLogin"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    var editNameError     = ViewData.ModelState["EditUserName"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    var editGroupError    = ViewData.ModelState["EditUserGroupId"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    var editEmailError    = ViewData.ModelState["EditEmail"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    bool editHasErrors    = editNtLoginError is not null || editNameError is not null || editGroupError is not null || editEmailError is not null;
 }
 
 <div>
@@ -14,24 +25,66 @@
         </ol>
     </nav>
 
-    <details class="govuk-details" data-module="govuk-details">
+    @if (TempData["Success"] is string successMsg)
+    {
+        <div class="govuk-notification-banner govuk-notification-banner--success" role="alert" aria-labelledby="govuk-notification-banner-title" data-module="govuk-notification-banner">
+            <div class="govuk-notification-banner__header"><h2 class="govuk-notification-banner__title" id="govuk-notification-banner-title">Success</h2></div>
+            <div class="govuk-notification-banner__content"><p class="govuk-body">@successMsg</p></div>
+        </div>
+    }
+
+    @if (addHasErrors)
+    {
+        <div class="govuk-error-summary" data-module="govuk-error-summary">
+            <div role="alert">
+                <h2 class="govuk-error-summary__title">There is a problem</h2>
+                <div class="govuk-error-summary__body">
+                    <ul class="govuk-list govuk-error-summary__list">
+                        @if (addNtLoginError is not null) { <li><a href="#nt-login">@addNtLoginError</a></li> }
+                        @if (addNameError   is not null) { <li><a href="#user-name">@addNameError</a></li> }
+                        @if (addGroupError  is not null) { <li><a href="#user-group-id">@addGroupError</a></li> }
+                        @if (addEmailError  is not null) { <li><a href="#email">@addEmailError</a></li> }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    }
+
+    <details class="govuk-details" data-module="govuk-details" @(addHasErrors ? "open" : null)>
         <summary class="govuk-details__summary"><span class="govuk-details__summary-text">Add user</span></summary>
         <div class="govuk-details__text">
             <form method="post" asp-page-handler="Add" novalidate>
-                <div class="govuk-form-group"><label class="govuk-label" for="nt-login">NT login</label><input id="nt-login" name="NTLogin" class="govuk-input govuk-!-width-one-half" required /></div>
-                <div class="govuk-form-group"><label class="govuk-label" for="upn">UPN</label><input id="upn" name="Upn" type="email" class="govuk-input govuk-!-width-two-thirds" /></div>
-                <div class="govuk-form-group"><label class="govuk-label" for="user-name">Display name</label><input id="user-name" name="UserName" class="govuk-input govuk-!-width-two-thirds" required /></div>
-                <div class="govuk-form-group"><label class="govuk-label" for="email">Email</label><input id="email" name="Email" type="email" class="govuk-input govuk-!-width-two-thirds" /></div>
+                <div class="govuk-form-group @(addNtLoginError is not null ? "govuk-form-group--error" : "")">
+                    <label class="govuk-label" for="nt-login">NT login</label>
+                    @if (addNtLoginError is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @addNtLoginError</p> }
+                    <input id="nt-login" name="NTLogin" class="govuk-input govuk-!-width-one-half @(addNtLoginError is not null ? "govuk-input--error" : "")" value="@Model.NTLogin" />
+                </div>
                 <div class="govuk-form-group">
+                    <label class="govuk-label" for="upn">UPN</label>
+                    <input id="upn" name="Upn" type="email" class="govuk-input govuk-!-width-two-thirds" value="@Model.Upn" />
+                </div>
+                <div class="govuk-form-group @(addNameError is not null ? "govuk-form-group--error" : "")">
+                    <label class="govuk-label" for="user-name">Display name</label>
+                    @if (addNameError is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @addNameError</p> }
+                    <input id="user-name" name="UserName" class="govuk-input govuk-!-width-two-thirds @(addNameError is not null ? "govuk-input--error" : "")" value="@Model.UserName" />
+                </div>
+                <div class="govuk-form-group @(addEmailError is not null ? "govuk-form-group--error" : "")">
+                    <label class="govuk-label" for="email">Email</label>
+                    @if (addEmailError is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @addEmailError</p> }
+                    <input id="email" name="Email" type="email" class="govuk-input govuk-!-width-two-thirds @(addEmailError is not null ? "govuk-input--error" : "")" value="@Model.Email" />
+                </div>
+                <div class="govuk-form-group @(addGroupError is not null ? "govuk-form-group--error" : "")">
                     <label class="govuk-label" for="user-group-id">User group</label>
-                    <select id="user-group-id" name="UserGroupId" class="govuk-select">
+                    @if (addGroupError is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @addGroupError</p> }
+                    <select id="user-group-id" name="UserGroupId" class="govuk-select @(addGroupError is not null ? "govuk-select--error" : "")">
+                        <option value="0">— Select —</option>
                         @foreach (var g in Model.UserGroups)
                         {
                             <option value="@g.Id" selected="@(Model.UserGroupId == g.Id ? "selected" : null)">@g.Name</option>
                         }
                     </select>
                 </div>
-                <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input id="is-active" name="IsActive" type="checkbox" class="govuk-checkboxes__input" checked /><label class="govuk-label govuk-checkboxes__label" for="is-active">Active</label></div></div></div>
+                <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input type="hidden" name="IsActive" value="false" /><input id="is-active" name="IsActive" value="true" type="checkbox" class="govuk-checkboxes__input" checked /><label class="govuk-label govuk-checkboxes__label" for="is-active">Active</label></div></div></div>
                 <button type="submit" class="govuk-button" data-module="govuk-button">Save user</button>
             </form>
         </div>
@@ -46,6 +99,7 @@
         <tbody class="govuk-table__body">
             @foreach (var u in Model.Users)
             {
+                bool isErrorRow = editHasErrors && Model.EditUserId == u.UserId;
                 <tr class="govuk-table__row">
                     <td class="govuk-table__cell">@u.UserId</td>
                     <td class="govuk-table__cell">@u.NTLogin</td>
@@ -55,25 +109,58 @@
                     <td class="govuk-table__cell">@(Model.UserGroups.FirstOrDefault(g => g.Id == u.UserGroupId)?.Name)</td>
                     <td class="govuk-table__cell">@(u.IsActive ? "Yes" : "No")</td>
                     <td class="govuk-table__cell">
-                        <details class="govuk-details" data-module="govuk-details">
+                        <details class="govuk-details" data-module="govuk-details" @(isErrorRow ? "open" : null)>
                             <summary class="govuk-details__summary"><span class="govuk-details__summary-text">Edit</span></summary>
                             <div class="govuk-details__text">
+                                @if (isErrorRow)
+                                {
+                                    <div class="govuk-error-summary" data-module="govuk-error-summary">
+                                        <div role="alert">
+                                            <h2 class="govuk-error-summary__title">There is a problem</h2>
+                                            <div class="govuk-error-summary__body">
+                                                <ul class="govuk-list govuk-error-summary__list">
+                                                    @if (editNtLoginError is not null) { <li><a href="#edit-nt-login-@u.UserId">@editNtLoginError</a></li> }
+                                                    @if (editNameError   is not null) { <li><a href="#edit-name-@u.UserId">@editNameError</a></li> }
+                                                    @if (editGroupError  is not null) { <li><a href="#edit-group-@u.UserId">@editGroupError</a></li> }
+                                                    @if (editEmailError  is not null) { <li><a href="#edit-email-@u.UserId">@editEmailError</a></li> }
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
                                 <form method="post" asp-page-handler="Edit" novalidate>
                                     <input type="hidden" name="EditUserId" value="@u.UserId" />
-                                    <div class="govuk-form-group"><label class="govuk-label" for="edit-nt-login-@u.UserId">NT login</label><input id="edit-nt-login-@u.UserId" name="EditNTLogin" class="govuk-input govuk-!-width-one-half" value="@u.NTLogin" required /></div>
-                                    <div class="govuk-form-group"><label class="govuk-label" for="edit-upn-@u.UserId">UPN</label><input id="edit-upn-@u.UserId" name="EditUpn" type="email" class="govuk-input govuk-!-width-two-thirds" value="@u.Upn" /></div>
-                                    <div class="govuk-form-group"><label class="govuk-label" for="edit-name-@u.UserId">Display name</label><input id="edit-name-@u.UserId" name="EditUserName" class="govuk-input govuk-!-width-two-thirds" value="@u.UserName" required /></div>
-                                    <div class="govuk-form-group"><label class="govuk-label" for="edit-email-@u.UserId">Email</label><input id="edit-email-@u.UserId" name="EditEmail" type="email" class="govuk-input govuk-!-width-two-thirds" value="@u.Email" /></div>
+                                    <div class="govuk-form-group @(isErrorRow && editNtLoginError is not null ? "govuk-form-group--error" : "")">
+                                        <label class="govuk-label" for="edit-nt-login-@u.UserId">NT login</label>
+                                        @if (isErrorRow && editNtLoginError is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @editNtLoginError</p> }
+                                        <input id="edit-nt-login-@u.UserId" name="EditNTLogin" class="govuk-input govuk-!-width-one-half @(isErrorRow && editNtLoginError is not null ? "govuk-input--error" : "")" value="@(isErrorRow ? Model.EditNTLogin : u.NTLogin)" />
+                                    </div>
                                     <div class="govuk-form-group">
+                                        <label class="govuk-label" for="edit-upn-@u.UserId">UPN</label>
+                                        <input id="edit-upn-@u.UserId" name="EditUpn" type="email" class="govuk-input govuk-!-width-two-thirds" value="@(isErrorRow ? Model.EditUpn : u.Upn)" />
+                                    </div>
+                                    <div class="govuk-form-group @(isErrorRow && editNameError is not null ? "govuk-form-group--error" : "")">
+                                        <label class="govuk-label" for="edit-name-@u.UserId">Display name</label>
+                                        @if (isErrorRow && editNameError is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @editNameError</p> }
+                                        <input id="edit-name-@u.UserId" name="EditUserName" class="govuk-input govuk-!-width-two-thirds @(isErrorRow && editNameError is not null ? "govuk-input--error" : "")" value="@(isErrorRow ? Model.EditUserName : u.UserName)" />
+                                    </div>
+                                    <div class="govuk-form-group @(isErrorRow && editEmailError is not null ? "govuk-form-group--error" : "")">
+                                        <label class="govuk-label" for="edit-email-@u.UserId">Email</label>
+                                        @if (isErrorRow && editEmailError is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @editEmailError</p> }
+                                        <input id="edit-email-@u.UserId" name="EditEmail" type="email" class="govuk-input govuk-!-width-two-thirds @(isErrorRow && editEmailError is not null ? "govuk-input--error" : "")" value="@(isErrorRow ? Model.EditEmail : u.Email)" />
+                                    </div>
+                                    <div class="govuk-form-group @(isErrorRow && editGroupError is not null ? "govuk-form-group--error" : "")">
                                         <label class="govuk-label" for="edit-group-@u.UserId">User group</label>
-                                        <select id="edit-group-@u.UserId" name="EditUserGroupId" class="govuk-select">
+                                        @if (isErrorRow && editGroupError is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @editGroupError</p> }
+                                        <select id="edit-group-@u.UserId" name="EditUserGroupId" class="govuk-select @(isErrorRow && editGroupError is not null ? "govuk-select--error" : "")">
                                             @foreach (var g in Model.UserGroups)
                                             {
-                                                <option value="@g.Id" selected="@(u.UserGroupId == g.Id ? "selected" : null)">@g.Name</option>
+                                                var selectedGroupId = isErrorRow ? Model.EditUserGroupId : u.UserGroupId;
+                                                <option value="@g.Id" selected="@(selectedGroupId == g.Id ? "selected" : null)">@g.Name</option>
                                             }
                                         </select>
                                     </div>
-                                    <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input id="edit-active-@u.UserId" name="EditIsActive" type="checkbox" class="govuk-checkboxes__input" @(u.IsActive ? "checked" : "") /><label class="govuk-label govuk-checkboxes__label" for="edit-active-@u.UserId">Active</label></div></div></div>
+                                    <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input type="hidden" name="EditIsActive" value="false" /><input id="edit-active-@u.UserId" name="EditIsActive" value="true" type="checkbox" class="govuk-checkboxes__input" @(u.IsActive ? "checked" : "") /><label class="govuk-label govuk-checkboxes__label" for="edit-active-@u.UserId">Active</label></div></div></div>
                                     <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Save changes</button>
                                 </form>
                             </div>

@@ -1,161 +1,113 @@
-using BSE.Infrastructure;
+﻿using BSE.Host.Services;
 using BSE.Modules.CaseManagement.Commands;
 using BSE.Modules.CaseManagement.Enums;
 using BSE.Modules.CaseManagement.Models;
-using BSE.Modules.CaseManagement.Repositories;
-using BSE.Modules.ReferenceData.Models;
+using BSE.Modules.CaseManagement.Services;
+using BSE.Modules.FarmManagement.Models;
+using BSE.Modules.FarmManagement.Services;
 using BSE.Modules.ReferenceData.Services;
-using BSE.Host.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.Case;
 
-/// <summary>
-/// Migrated equivalent of legacy FinalResultEntry.aspx.
-/// Accessible to DEFRA Maintenance and VLA Maintenance only (DEFRAMaintenance policy).
-/// The user enters an RBSE to load case details, then sets the final result and
-/// optional retrospective test information.
-/// </summary>
 [Authorize(Policy = "DEFRAMaintenance")]
 public class FinalResultEntryModel(
-    ICaseRepository caseRepository,
-    ITestRepository testRepository,
-    ILookupDataService lookups,
-    ICurrentUserService currentUserService,
-    IDbConnectionFactory connectionFactory) : PageModel
+    ICaseService cases,
+    IFarmService farmService,
+    ILookupDataService lookupService,
+    ICurrentUserService currentUser) : PageModel
 {
-    [BindProperty(SupportsGet = true)]
-    public string? Rbse { get; set; }
+    [BindProperty(SupportsGet = true)] public string? LookupRbse { get; set; }
 
-    // ── Case summary (read-only display fields) ───────────────────────────────
-    public FinalResultRecord? FinalResultData { get; private set; }
-    public IReadOnlyList<CaseTestRecord> Tests { get; private set; } = [];
+    public CaseDetailRecord? CaseDetails { get; private set; }
+    public FarmRecord? Farm { get; private set; }
+    public IReadOnlyDictionary<string, string> TestTypeDescriptions { get; private set; } = new Dictionary<string, string>();
+    public IReadOnlyDictionary<string, string> TestResultDescriptions { get; private set; } = new Dictionary<string, string>();
+    public bool IsNotFound { get; private set; }
 
-    // ── Lookup options ────────────────────────────────────────────────────────
-    public IEnumerable<LuTestType> TestTypeOptions { get; private set; } = [];
-    public IEnumerable<LuTestResult> TestResultOptions { get; private set; } = [];
-
-    // ── Editable form fields ──────────────────────────────────────────────────
+    [BindProperty] public string Rbse { get; set; } = "";
     [BindProperty] public string? FinalResult { get; set; }
-    [BindProperty] public string? RetrospectiveTestType { get; set; }
-    [BindProperty] public string? RetrospectiveResult { get; set; }
-    [BindProperty] public DateTime? RetrospectiveResultDate { get; set; }
-    [BindProperty] public string? RetrospectiveComment { get; set; }
-    [BindProperty] public string? LabComment { get; set; }
+    [BindProperty] public DateTime? FinalResultDate { get; set; }
+    [BindProperty] public string? Dbse { get; set; }
 
-    // ── Concurrency token (hidden in form) ────────────────────────────────────
-    [BindProperty] public string? RowStampBase64 { get; set; }
-
-    public async Task<IActionResult> OnGetAsync()
+    public async Task OnGetAsync()
     {
         await LoadLookupsAsync();
-        if (!string.IsNullOrWhiteSpace(Rbse))
-            await LoadCaseAsync(Rbse.Replace("/", "").ToUpper());
-        return Page();
+        if (string.IsNullOrWhiteSpace(LookupRbse)) return;
+
+        var details = await cases.GetCaseDetailsAsync(LookupRbse.Trim());
+        if (details is null)
+        {
+            IsNotFound = true;
+            return;
+        }
+
+        CaseDetails     = details;
+        Farm            = await farmService.GetByCphhAsync(details.Case.Cphh);
+        Rbse            = details.Case.Rbse;
+        FinalResult     = details.Case.FinalResult;
+        FinalResultDate = details.Case.FinalResultDate;
+        Dbse            = details.Case.Dbse;
     }
 
-    public async Task<IActionResult> OnPostLookupAsync()
-    {
-        await LoadLookupsAsync();
-        if (string.IsNullOrWhiteSpace(Rbse))
-        {
-            ModelState.AddModelError(nameof(Rbse), "Enter an RBSE number.");
-            return Page();
-        }
-        await LoadCaseAsync(Rbse.Replace("/", "").ToUpper());
-        if (FinalResultData is null)
-            ModelState.AddModelError(nameof(Rbse), "This RBSE could not be found in the database.");
-        return Page();
-    }
-
-    public async Task<IActionResult> OnPostSaveAsync()
+    public async Task<IActionResult> OnPostAsync()
     {
         await LoadLookupsAsync();
 
-        if (string.IsNullOrWhiteSpace(Rbse))
+        var details = await cases.GetCaseDetailsAsync(Rbse.Trim());
+        if (details is null)
         {
-            ModelState.AddModelError(nameof(Rbse), "Enter an RBSE number.");
+            ModelState.AddModelError(nameof(Rbse), "Case not found.");
             return Page();
         }
+
+        CaseDetails = details;
+        Farm = await farmService.GetByCphhAsync(details.Case.Cphh);
+
         if (string.IsNullOrWhiteSpace(FinalResult))
         {
-            ModelState.AddModelError(nameof(FinalResult), "Select a final result.");
-            await LoadCaseAsync(Rbse.Replace("/", "").ToUpper());
-            return Page();
-        }
-        if (string.IsNullOrWhiteSpace(RowStampBase64))
-        {
-            ModelState.AddModelError(string.Empty, "Session expired — please look up the case again.");
-            await LoadCaseAsync(Rbse.Replace("/", "").ToUpper());
+            ModelState.AddModelError(nameof(FinalResult), "Enter a final result.");
             return Page();
         }
 
-        var rowStamp = Convert.FromBase64String(RowStampBase64);
+        if (FinalResultDate is null)
+        {
+            ModelState.AddModelError(nameof(FinalResultDate), "Enter a final result date.");
+            return Page();
+        }
+
+        var userId  = await currentUser.GetUserIdAsync();
         var command = new EditFinalResultCommand(
-            Rbse:                    Rbse.Replace("/", "").ToUpper(),
-            FinalResult:             FinalResult,
-            FinalResultDate:         DateTime.Today,
-            RetrospectiveTestType:   RetrospectiveTestType,
-            RetrospectiveResult:     RetrospectiveResult,
-            RetrospectiveResultDate: RetrospectiveResultDate,
-            RetrospectiveComment:    RetrospectiveComment,
-            LabComment:              LabComment,
-            RowStamp:                rowStamp);
+            Rbse: Rbse.Trim(),
+            FinalResult: FinalResult,
+            FinalResultDate: FinalResultDate,
+            Dbse: Dbse);
 
-        var userId = await currentUserService.GetUserIdAsync();
+        var result = await cases.SaveFinalResultAsync(command, userId);
 
-        using var conn = connectionFactory.CreateConnection();
-        conn.Open();
-        using var tx = conn.BeginTransaction();
-        var result = await caseRepository.EditFinalResultAsync(command, userId, conn, tx);
-        tx.Commit();
-
-        if (result == EditCaseResult.ConcurrencyConflict)
+        if (result == EditCaseResult.Success)
         {
-            ModelState.AddModelError(string.Empty,
-                "Another user modified this case. Look up the case again to get the latest version.");
-            await LoadCaseAsync(Rbse.Replace("/", "").ToUpper());
-            return Page();
+            TempData["SuccessMessage"] = $"Final result for {Rbse} saved successfully.";
+            return RedirectToPage("/Case/Details", new { rbse = Rbse.Trim() });
         }
 
-        TempData["Success"] = $"Final result saved for {Rbse}.";
-        return RedirectToPage(new { rbse = Rbse });
-    }
-
-    // ── Private helpers ───────────────────────────────────────────────────────
-
-    private async Task LoadCaseAsync(string rbse)
-    {
-        var dataTask  = caseRepository.GetFinalResultByRbseAsync(rbse);
-        var testsTask = testRepository.GetByRbseAsync(rbse);
-        await Task.WhenAll(dataTask, testsTask);
-
-        FinalResultData = await dataTask;
-        Tests           = await testsTask;
-
-        if (FinalResultData is not null)
+        ModelState.AddModelError(string.Empty, result switch
         {
-            // Pre-populate form fields from existing saved values
-            FinalResult             = FinalResultData.FinalResult;
-            RetrospectiveTestType   = FinalResultData.RetrospectiveTestType;
-            RetrospectiveResult     = FinalResultData.RetrospectiveResult;
-            RetrospectiveResultDate = FinalResultData.RetrospectiveResultDate;
-            RetrospectiveComment    = FinalResultData.RetrospectiveComment;
-            LabComment              = FinalResultData.LabComment;
-            RowStampBase64          = FinalResultData.RowStamp is not null
-                                        ? Convert.ToBase64String(FinalResultData.RowStamp)
-                                        : null;
-        }
+            EditCaseResult.RbseNotFound => $"Case '{Rbse}' not found.",
+            EditCaseResult.ConcurrencyConflict => "This case was modified by another user. Reload and try again.",
+            _ => $"Failed to save final result (error {(int)result})."
+        });
+
+        return Page();
     }
 
     private async Task LoadLookupsAsync()
     {
-        var t1 = lookups.GetTestTypesAsync();
-        var t2 = lookups.GetTestResultsAsync();
-        await Task.WhenAll(t1, t2);
-        TestTypeOptions   = await t1;
-        TestResultOptions = await t2;
+        var types   = await lookupService.GetTestTypesAsync();
+        var results = await lookupService.GetTestResultsAsync();
+        TestTypeDescriptions   = types.ToDictionary(t => t.Code, t => t.Description);
+        TestResultDescriptions = results.ToDictionary(t => t.Code, t => t.Description);
     }
 }

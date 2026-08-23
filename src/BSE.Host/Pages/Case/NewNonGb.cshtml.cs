@@ -1,138 +1,115 @@
 using BSE.Host.Services;
-using BSE.Modules.Batch.Services;
 using BSE.Modules.CaseManagement.Commands;
 using BSE.Modules.CaseManagement.Enums;
 using BSE.Modules.CaseManagement.Services;
-using BSE.Modules.FarmManagement.Models;
-using BSE.Modules.FarmManagement.Services;
-using BSE.Modules.ReferenceData.Models;
-using BSE.Modules.ReferenceData.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.ComponentModel.DataAnnotations;
 
 namespace BSE.Host.Pages.Case;
 
 [Authorize(Policy = "DataEntry")]
-public class NewNonGbModel(
-    ICaseService caseService,
-    IFarmService farmService,
-    IBatchService batch,
-    ILookupDataService lookups,
-    ICurrentUserService currentUser) : PageModel
+public class NewNonGbModel : PageModel
 {
-    [BindProperty, Required(ErrorMessage = "RBSE number is required.")]
-    public string Rbse { get; set; } = "";
+    private readonly ICaseService _cases;
+    private readonly ICurrentUserService _currentUser;
 
+    public NewNonGbModel(ICaseService cases, ICurrentUserService currentUser)
+    {
+        _cases = cases;
+        _currentUser = currentUser;
+    }
+
+    // Pre-filled from query string when redirected from Lookup
+    [BindProperty(SupportsGet = true)] public string Rbse { get; set; } = "";
+
+    [BindProperty] public string Cphh { get; set; } = "";
     [BindProperty] public string? EartagCountry { get; set; }
     [BindProperty] public string? EartagHerdmark { get; set; }
     [BindProperty] public string? Eartag { get; set; }
+    [BindProperty] public string? Fate { get; set; } = "SLOS";
+    [BindProperty] public string? FinalResult { get; set; } = "NOT";
+    [BindProperty] public DateTime? FinalResultDate { get; set; }
+    [BindProperty] public DateTime? SlaughterDate { get; set; }
     [BindProperty] public string? OwnerName { get; set; }
     [BindProperty] public string? Address1 { get; set; }
     [BindProperty] public string? Address2 { get; set; }
     [BindProperty] public string? Address3 { get; set; }
     [BindProperty] public string? Postcode { get; set; }
-    [BindProperty] public string? Herdmark { get; set; }
-    [BindProperty] public string? NumericHerdmark { get; set; }
-    [BindProperty] public string? Fate { get; set; }
-    [BindProperty] public string? FinalResult { get; set; }
-    [BindProperty] public DateTime? FinalResultDate { get; set; }
-    [BindProperty] public DateTime? SlaughterDate { get; set; }
+    [BindProperty] public string? County { get; set; }
+    [BindProperty] public string? Herdmark1 { get; set; }
+    [BindProperty] public string? NumericHerdmark1 { get; set; }
+    [BindProperty] public DateTime? RbseDate { get; set; }
+    [BindProperty] public string? Barcode { get; set; }
+    [BindProperty] public string? AhfReference { get; set; }
 
-    public IEnumerable<LuCaseFate> Fates { get; private set; } = [];
-    public IEnumerable<LuTestResult> TestResults { get; private set; } = [];
-
-    public async Task<IActionResult> OnGetAsync()
-    {
-        await LoadLookupsAsync();
-        Fate = "SL";
-        FinalResult = "NE";
-        return Page();
-    }
+    public void OnGet() { }
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (!ModelState.IsValid)
+        if (string.IsNullOrWhiteSpace(Eartag))
+            ModelState.AddModelError(nameof(Eartag), "Enter an eartag.");
+        if (string.IsNullOrWhiteSpace(Fate))
+            ModelState.AddModelError(nameof(Fate), "Enter a fate code.");
+        if (string.IsNullOrWhiteSpace(FinalResult))
+            ModelState.AddModelError(nameof(FinalResult), "Enter a final result code.");
+        if (FinalResultDate is null)
+            ModelState.AddModelError(nameof(FinalResultDate), "Enter a final result date.");
+        if (SlaughterDate is null)
+            ModelState.AddModelError(nameof(SlaughterDate), "Enter a slaughter date.");
+        if (string.IsNullOrWhiteSpace(Cphh))
+            ModelState.AddModelError(nameof(Cphh), "Enter a CPHH.");
+        else if (!Cphh.Trim().StartsWith("00999", StringComparison.Ordinal))
+            ModelState.AddModelError(nameof(Cphh), "CPHH for a non-GB farm must begin with 00999.");
+        if (string.IsNullOrWhiteSpace(OwnerName))
+            ModelState.AddModelError(nameof(OwnerName), "Enter an owner name.");
+        if (string.IsNullOrWhiteSpace(Address1))
+            ModelState.AddModelError(nameof(Address1), "Enter address line 1.");
+        if (string.IsNullOrWhiteSpace(County))
+            ModelState.AddModelError(nameof(County), "Enter a county or territory.");
+
+        if (!ModelState.IsValid) return Page();
+
+        var userId = await _currentUser.GetUserIdAsync();
+
+        var command = new AddNonGbCaseCommand(
+            Rbse: Rbse.Trim(),
+            Cphh: Cphh.Trim(),
+            EartagCountry: EartagCountry,
+            EartagHerdmark: EartagHerdmark,
+            Eartag: Eartag,
+            Fate: Fate,
+            FinalResult: FinalResult,
+            FinalResultDate: FinalResultDate,
+            SlaughterDate: SlaughterDate,
+            OwnerName: OwnerName,
+            Address1: Address1,
+            Address2: Address2,
+            Address3: Address3,
+            Postcode: Postcode,
+            County: County,
+            Herdmark1: Herdmark1,
+            NumericHerdmark1: NumericHerdmark1,
+            RbseDate: RbseDate,
+            Barcode: Barcode,
+            AhfReference: AhfReference);
+
+        var result = await _cases.CreateNonGbCaseAsync(command, userId);
+
+        if (result != AddNonGbCaseResult.Success)
         {
-            await LoadLookupsAsync();
+            var message = result switch
+            {
+                AddNonGbCaseResult.AlreadyExists => $"Case '{Rbse}' already exists.",
+                AddNonGbCaseResult.FarmCreateError or AddNonGbCaseResult.FarmUpdateError
+                    => "An error occurred saving the farm record.",
+                _ => $"Failed to create case (error {(int)result})."
+            };
+            ModelState.AddModelError(string.Empty, message);
             return Page();
         }
 
-        // For non-GB cases, CPHH is constructed from the herdmark
-        var cphh = $"NG/{Herdmark?.Trim() ?? "NONGB"}";
-
-        // Ensure the non-GB farm exists (create a stub if not)
-        var existingFarm = await farmService.GetByCphhAsync(cphh);
-        if (existingFarm is null)
-        {
-            var farmCommand = new AddFarmCommand(
-                CPHH: cphh,
-                OwnerName: OwnerName,
-                Address1: Address1, Address2: Address2, Address3: Address3,
-                Postcode: Postcode,
-                Parish: null, District: null, County: null,
-                CorrespondenceAddress1: null, CorrespondenceAddress2: null,
-                CorrespondenceAddress3: null, CorrespondencePostcode: null,
-                MapReference: null,
-                Herdmark1: Herdmark, Herdmark2: null, Herdmark3: null,
-                NumericHerdmark1: NumericHerdmark, NumericHerdmark2: null,
-                AHO: null, HerdType: null, PedigreeType: null,
-                IsDealer: false, ADNSRegionID: null);
-
-            var userId = await currentUser.GetUserIdAsync();
-            await farmService.AddAsync(farmCommand, userId);
-        }
-
-        var batchRecord = await batch.GetOrCreateBatchNumberAsync();
-        var addCase = new AddCaseCommand(
-            Rbse: Rbse.Trim(), Cphh: cphh,
-            EartagCountry: EartagCountry, EartagHerdmark: EartagHerdmark, Eartag: Eartag,
-            PreviousEartag: null,
-            Bse1ReceivedDate: null, FormADate: null, FormAResubmittedDate: null,
-            FormBDate: null, Fate: Fate ?? "SL", FormCDate: null,
-            IsPurchaserBse1Received: false, IsBreederBse1Received: false,
-            IsVendor1Bse1Received: false, IsHomebredBse1Received: false,
-            IsSummarySheetReceived: false, IsPaperworkComplete: false,
-            ReportedLocation: null, Survey: null, Notes: null,
-            BirthDate: null, IsBirthDateEst: null, DamStatus: null,
-            BirthDateSource: null, ValuationAge: null,
-            Sex: null, Breed: null, Origin: null,
-            PurchaseDate: null, PurchaseAgeInMonths: null, PurchasedCounty: null,
-            HerdEntryDate: null, OnsetDate: null, IsOnsetDateEst: null,
-            MonthsPregnant: null, MonthsPostCalving: null, OnsetAgeInMonths: null,
-            SlaughterDate: SlaughterDate,
-            AlternateDiagnosis: null, LabComment: null, CaseType: null);
-
-        var command = new UpdateCaseDetailsCommand(
-            Case: addCase,
-            BatchId: batchRecord.BatchId,
-            Clinical: null, Bab: null,
-            Feeds: [], Tests: [], OtherOwners: [],
-            DamSire: null, ClinicalVisits: []);
-
-        var uid = await currentUser.GetUserIdAsync();
-        var result = await caseService.CreateCaseAsync(command, uid);
-
-        if (result == AddCaseResult.Success)
-        {
-            TempData["Success"] = $"Non-GB case {Rbse} created.";
-            return RedirectToPage("/Case/Details", new { rbse = Rbse.Trim() });
-        }
-
-        ModelState.AddModelError(string.Empty, result switch
-        {
-            AddCaseResult.DuplicateRbse => $"A case with RBSE '{Rbse}' already exists.",
-            _ => $"Failed to create case: {result}"
-        });
-
-        await LoadLookupsAsync();
-        return Page();
-    }
-
-    private async Task LoadLookupsAsync()
-    {
-        Fates = await lookups.GetCaseFatesAsync();
-        TestResults = await lookups.GetTestResultsAsync();
+        TempData["SuccessMessage"] = $"Non-GB case {Rbse} created successfully.";
+        return RedirectToPage("/Case/Details", new { rbse = Rbse.Trim() });
     }
 }

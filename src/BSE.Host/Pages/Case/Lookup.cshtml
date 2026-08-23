@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Open case";
     var rbseError = Model.ModelState[nameof(Model.Rbse)]?.Errors.FirstOrDefault()?.ErrorMessage;
+    var rbseDescribedBy = rbseError is not null ? "rbse-hint rbse-error" : "rbse-hint";
 }
 
 <h1 class="govuk-heading-l">Open case</h1>
@@ -23,17 +24,18 @@
 
 <form method="get" novalidate>
     <div class="govuk-form-group @(rbseError is not null ? "govuk-form-group--error" : "")">
-        <label asp-for="Rbse" class="govuk-label" id="rbse-lookup-label">RBSE</label>
+        <label class="govuk-label" for="rbse-lookup">RBSE</label>
+        <div id="rbse-hint" class="govuk-hint">Enter in format nn/nn/nnnnn — for example, 00/26/00001.</div>
         @if (rbseError is not null)
         {
             <p id="rbse-error" class="govuk-error-message">
-                <span class="govuk-visually-hidden">Error:</span> @rbseError
+                <span class="govuk-visually-hidden">Error:</span>
+                @rbseError
             </p>
         }
-        <input id="rbse-lookup" asp-for="Rbse"
+        <input asp-for="Rbse" id="rbse-lookup"
                class="govuk-input govuk-!-width-one-half @(rbseError is not null ? "govuk-input--error" : "")"
-               aria-describedby="@(rbseError is not null ? "rbse-error" : "")"
-               maxlength="11" autocomplete="off" />
+               aria-describedby="@rbseDescribedBy" />
     </div>
 
     <button type="submit" class="govuk-button" data-module="govuk-button">Open case</button>

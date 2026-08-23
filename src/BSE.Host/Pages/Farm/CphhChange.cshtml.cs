@@ -23,11 +23,16 @@ public class CphhChangeModel : PageModel
     [BindProperty] public string NewCphh { get; set; } = "";
     public string? ErrorMessage { get; private set; }
 
-    public void OnGet(string cphh) => OldCphh = cphh;
+    public void OnGet(string? cphh) => OldCphh = cphh ?? "";
 
-    public async Task<IActionResult> OnPostAsync(string cphh)
+    public async Task<IActionResult> OnPostAsync(string? cphh)
     {
-        OldCphh = cphh;
+        OldCphh = cphh ?? "";
+        if (string.IsNullOrWhiteSpace(OldCphh))
+        {
+            ErrorMessage = "Enter the current CPHH.";
+            return Page();
+        }
         if (!ModelState.IsValid) return Page();
 
         var userId = await _currentUser.GetUserIdAsync();

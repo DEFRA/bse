@@ -142,6 +142,35 @@ public sealed class CaseRepository : DapperRepository, ICaseRepository
         return (ChangeRbseResult)p.Get<int>("ReturnValue");
     }
 
+    public async Task<AddNonGbCaseResult> AddNonGbCaseAsync(AddNonGbCaseCommand c, int userId)
+    {
+        var p = new DynamicParameters();
+        p.Add("ReturnValue", direction: ParameterDirection.ReturnValue);
+        p.Add("@RBSE", c.Rbse);
+        p.Add("@Eartag", c.Eartag);
+        p.Add("@EartagHerdmark", c.EartagHerdmark);
+        p.Add("@EartagCountry", c.EartagCountry);
+        p.Add("@Fate", c.Fate);
+        p.Add("@FinalResult", c.FinalResult);
+        p.Add("@FinalResultDate", c.FinalResultDate);
+        p.Add("@SlaughterDate", c.SlaughterDate);
+        p.Add("@CPHH", c.Cphh);
+        p.Add("@OwnerName", c.OwnerName);
+        p.Add("@Address1", c.Address1);
+        p.Add("@Address2", c.Address2);
+        p.Add("@Address3", c.Address3);
+        p.Add("@Postcode", c.Postcode);
+        p.Add("@County", c.County);
+        p.Add("@Herdmark1", c.Herdmark1);
+        p.Add("@NumericHerdmark1", c.NumericHerdmark1);
+        p.Add("@UserID", userId);
+        p.Add("@RBSEDate", c.RbseDate);
+        p.Add("@Barcode", c.Barcode);
+        p.Add("@AHFReference", c.AhfReference);
+        await ExecuteWithOutputAsync("AddNonGBCase", p);
+        return (AddNonGbCaseResult)p.Get<int>("ReturnValue");
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private static DynamicParameters BuildAddCaseParams(AddCaseCommand c, int userId)
