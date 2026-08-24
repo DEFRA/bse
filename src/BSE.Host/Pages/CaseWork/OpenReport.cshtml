@@ -47,18 +47,10 @@
                                 <td class="govuk-table__cell">@c.SlaughterDate?.ToString("dd/MM/yyyy")</td>
                                 <td class="govuk-table__cell">@c.Fate</td>
                                 <td class="govuk-table__cell">@c.RbseDate?.ToString("dd/MM/yyyy")</td>
-                                <td class="govuk-table__cell @(Model.IsOverdue(c.ActiveMemoDueDate) ? "govuk-tag--red" : "")">
-                                    @c.ActiveMemoDueDate?.ToString("dd/MM/yyyy")
-                                </td>
-                                <td class="govuk-table__cell @(Model.IsOverdue(c.AnnexADueDate) ? "govuk-tag--red" : "")">
-                                    @c.AnnexADueDate?.ToString("dd/MM/yyyy")
-                                </td>
-                                <td class="govuk-table__cell @(Model.IsOverdue(c.AnnexBDueDate) ? "govuk-tag--red" : "")">
-                                    @c.AnnexBDueDate?.ToString("dd/MM/yyyy")
-                                </td>
-                                <td class="govuk-table__cell @(Model.IsOverdue(c.LabChaseDueDate) ? "govuk-tag--red" : "")">
-                                    @c.LabChaseDueDate?.ToString("dd/MM/yyyy")
-                                </td>
+                                <td class="govuk-table__cell"><span class="@(Model.IsOverdue(c.ActiveMemoDueDate) ? "govuk-tag govuk-tag--red" : "")">@c.ActiveMemoDueDate?.ToString("dd/MM/yyyy")</span></td>
+                                <td class="govuk-table__cell"><span class="@(Model.IsOverdue(c.AnnexADueDate) ? "govuk-tag govuk-tag--red" : "")">@c.AnnexADueDate?.ToString("dd/MM/yyyy")</span></td>
+                                <td class="govuk-table__cell"><span class="@(Model.IsOverdue(c.AnnexBDueDate) ? "govuk-tag govuk-tag--red" : "")">@c.AnnexBDueDate?.ToString("dd/MM/yyyy")</span></td>
+                                <td class="govuk-table__cell"><span class="@(Model.IsOverdue(c.LabChaseDueDate) ? "govuk-tag govuk-tag--red" : "")">@c.LabChaseDueDate?.ToString("dd/MM/yyyy")</span></td>
                                 <td class="govuk-table__cell">
                                     @if (c.BarbMemoDue == "Yes")
                                     {
