@@ -50,6 +50,13 @@ public class BabEditModel(
 
     public async Task<IActionResult> OnPostSaveBabAsync(string? rowStampBase64)
     {
+        // Traced fields only apply when Origin = "P" (Purchased); mirrors legacy EmptyTracedFields
+        if (Origin != "P")
+        {
+            Bab.NatalCphh = Bab.TracedName = Bab.TracedAddress1 =
+                Bab.TracedAddress2 = Bab.TracedAddress3 = Bab.TracedPostcode = null;
+        }
+
         using var conn = connectionFactory.CreateConnection();
         conn.Open();
         using var tx = conn.BeginTransaction();

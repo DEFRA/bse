@@ -157,6 +157,7 @@
     <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
 
     <h2 class="govuk-heading-m">Purchase details</h2>
+    <div id="purchase-section" @(Model.Case.Origin != "P" ? "style=\"display:none\"" : "")>
 
     <div class="govuk-form-group @(ViewData.ModelState["Case.PurchaseDate"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
         <label asp-for="Case.PurchaseDate" class="govuk-label">Date purchased</label>
@@ -168,12 +169,34 @@
                value="@DateVal(Model.Case.PurchaseDate)" />
     </div>
     <div class="govuk-form-group @(ViewData.ModelState["Case.PurchaseAgeInMonths"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
-        <label asp-for="Case.PurchaseAgeInMonths" class="govuk-label">Age purchased (months)</label>
-        @if (ViewData.ModelState["Case.PurchaseAgeInMonths"]?.Errors.Count > 0)
-        {
-            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["Case.PurchaseAgeInMonths"]!.Errors[0].ErrorMessage</p>
-        }
-        <input asp-for="Case.PurchaseAgeInMonths" type="number" class="govuk-input govuk-input--width-5 @(ViewData.ModelState["Case.PurchaseAgeInMonths"]?.Errors.Count > 0 ? "govuk-input--error" : "")" min="0" />
+        <fieldset class="govuk-fieldset" aria-describedby="age-purchased-hint">
+            <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">Age purchased</legend>
+            <div id="age-purchased-hint" class="govuk-hint">Enter years and months, or click Calculate if Date of birth and Date purchased are both set.</div>
+            @if (ViewData.ModelState["Case.PurchaseAgeInMonths"]?.Errors.Count > 0)
+            {
+                <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["Case.PurchaseAgeInMonths"]!.Errors[0].ErrorMessage</p>
+            }
+            <div class="govuk-date-input">
+                <div class="govuk-date-input__item">
+                    <div class="govuk-form-group">
+                        <label class="govuk-label govuk-date-input__label" for="age-purchased-years">Years</label>
+                        <input class="govuk-input govuk-date-input__input govuk-input--width-3"
+                               id="age-purchased-years" type="number" min="0" max="99" />
+                    </div>
+                </div>
+                <div class="govuk-date-input__item">
+                    <div class="govuk-form-group">
+                        <label class="govuk-label govuk-date-input__label" for="Case_PurchaseAgeInMonths">Total months</label>
+                        <input asp-for="Case.PurchaseAgeInMonths"
+                               class="govuk-input govuk-date-input__input govuk-input--width-4 @(ViewData.ModelState["Case.PurchaseAgeInMonths"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
+                               type="number" min="0" />
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+        <button type="button" id="btn-calc-age-purchased"
+                class="govuk-button govuk-button--secondary govuk-!-margin-top-2 govuk-!-margin-bottom-0"
+                title="Calculate from Date of birth and Date purchased">Calculate</button>
     </div>
     <div class="govuk-form-group @(ViewData.ModelState["Case.PurchasedCounty"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
         <label asp-for="Case.PurchasedCounty" class="govuk-label">Purchased county</label>
@@ -186,6 +209,8 @@
             @foreach (var o in Model.PurchasedCountyOptions) { <option value="@o.Code" selected="@(o.Code == Model.Case.PurchasedCounty ? "selected" : null)">@o.Description</option> }
         </select>
     </div>
+
+    </div>@* end purchase-section *@
 
     <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
 
@@ -234,15 +259,50 @@
         <input asp-for="Case.MonthsPostCalving" type="number" class="govuk-input govuk-input--width-5 @(ViewData.ModelState["Case.MonthsPostCalving"]?.Errors.Count > 0 ? "govuk-input--error" : "")" min="1" max="3" />
     </div>
     <div class="govuk-form-group @(ViewData.ModelState["Case.OnsetAgeInMonths"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
-        <label asp-for="Case.OnsetAgeInMonths" class="govuk-label">Onset age (months)</label>
-        @if (ViewData.ModelState["Case.OnsetAgeInMonths"]?.Errors.Count > 0)
-        {
-            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["Case.OnsetAgeInMonths"]!.Errors[0].ErrorMessage</p>
-        }
-        <input asp-for="Case.OnsetAgeInMonths" type="number" class="govuk-input govuk-input--width-5 @(ViewData.ModelState["Case.OnsetAgeInMonths"]?.Errors.Count > 0 ? "govuk-input--error" : "")" min="0" />
+        <fieldset class="govuk-fieldset" aria-describedby="onset-age-hint">
+            <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">Onset age</legend>
+            <div id="onset-age-hint" class="govuk-hint">Enter years and months, or click Calculate if Date of birth and Onset date are both set.</div>
+            @if (ViewData.ModelState["Case.OnsetAgeInMonths"]?.Errors.Count > 0)
+            {
+                <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["Case.OnsetAgeInMonths"]!.Errors[0].ErrorMessage</p>
+            }
+            <div class="govuk-date-input">
+                <div class="govuk-date-input__item">
+                    <div class="govuk-form-group">
+                        <label class="govuk-label govuk-date-input__label" for="onset-age-years">Years</label>
+                        <input class="govuk-input govuk-date-input__input govuk-input--width-3"
+                               id="onset-age-years" type="number" min="0" max="99" />
+                    </div>
+                </div>
+                <div class="govuk-date-input__item">
+                    <div class="govuk-form-group">
+                        <label class="govuk-label govuk-date-input__label" for="Case_OnsetAgeInMonths">Total months</label>
+                        <input asp-for="Case.OnsetAgeInMonths"
+                               class="govuk-input govuk-date-input__input govuk-input--width-4 @(ViewData.ModelState["Case.OnsetAgeInMonths"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
+                               type="number" min="0" />
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+        <button type="button" id="btn-calc-onset-age"
+                class="govuk-button govuk-button--secondary govuk-!-margin-top-2 govuk-!-margin-bottom-0"
+                title="Calculate from Date of birth and Onset date">Calculate</button>
+    </div>
+    <div id="onset-age-warning" class="govuk-warning-text govuk-!-margin-bottom-2" style="@(Model.Case.OnsetAgeInMonths.HasValue && Model.Case.OnsetAgeInMonths.Value < 18 ? "" : "display:none")">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text"><span class="govuk-warning-text__assistive">Warning</span> Onset age appears to be less than 18 months &mdash; please check.</strong>
     </div>
 
-    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-top-4" />
+    <div class="govuk-form-group @(ViewData.ModelState["Case.SlaughterDate"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+        <label asp-for="Case.SlaughterDate" class="govuk-label">Slaughter date</label>
+        @if (ViewData.ModelState["Case.SlaughterDate"]?.Errors.Count > 0)
+        {
+            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["Case.SlaughterDate"]!.Errors[0].ErrorMessage</p>
+        }
+        <input asp-for="Case.SlaughterDate" type="date"
+               class="govuk-input govuk-input--width-10 @(ViewData.ModelState["Case.SlaughterDate"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
+               value="@DateVal(Model.Case.SlaughterDate)" />
+    </div>
 
     <div class="govuk-button-group">
         <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
@@ -259,6 +319,89 @@
 
 @section Scripts {
     <script>
+        // Origin = "P" (Purchased) controls purchase section visibility; mirrors legacy MakeControlsWritable + ddlOrigin_SelectedIndexChanged
+        (function () {
+            var originSel = document.getElementById('Case_Origin');
+            var section   = document.getElementById('purchase-section');
+
+            function hasPurchaseData() {
+                var d = document.getElementById('Case_PurchaseDate');
+                var m = document.getElementById('Case_PurchaseAgeInMonths');
+                var y = document.getElementById('age-purchased-years');
+                var c = document.getElementById('Case_PurchasedCounty');
+                return (d && d.value) || (m && m.value) || (y && y.value) || (c && c.value);
+            }
+
+            function clearPurchaseData() {
+                ['Case_PurchaseDate', 'Case_PurchaseAgeInMonths', 'age-purchased-years'].forEach(function (id) {
+                    var el = document.getElementById(id); if (el) el.value = '';
+                });
+                var c = document.getElementById('Case_PurchasedCounty');
+                if (c) c.value = '';
+            }
+
+            function applyVisibility() {
+                if (!section || !originSel) return;
+                section.style.display = (originSel.value === 'P') ? '' : 'none';
+            }
+
+            if (originSel) {
+                originSel.addEventListener('change', function () {
+                    if (originSel.value !== 'P') {
+                        // mirrors legacy EmptyPurchaseFields + EmptyTracedFields warnings
+                        var msgs = [];
+                        if (hasPurchaseData())
+                            msgs.push('Purchase data has been entered on this Case.  If you click Save then this data will be lost.');
+                        msgs.push('Changing the origin away from Purchased may also affect the Traced data entered on the BAB tab.');
+                        alert(msgs.join('\n\n'));
+                        clearPurchaseData();
+                    }
+                    applyVisibility();
+                });
+            }
+            applyVisibility();
+        }());
+
+        // Calculate Age Purchased and Onset Age; mirrors legacy btnCalculateAgePurchased/btnCalculateOnsetAge
+        (function () {
+            function monthsBetween(dateStr1, dateStr2) {
+                var d1 = new Date(dateStr1), d2 = new Date(dateStr2);
+                return (d2.getFullYear() - d1.getFullYear()) * 12 + (d2.getMonth() - d1.getMonth());
+            }
+            function updateOnsetWarning() {
+                var total = parseInt(document.getElementById('Case_OnsetAgeInMonths').value || '');
+                var warn = document.getElementById('onset-age-warning');
+                if (warn) warn.style.display = (!isNaN(total) && total < 18) ? '' : 'none';
+            }
+            function calculate(birthId, refDateId, yearsId, totalId) {
+                var birth = document.getElementById(birthId)?.value;
+                var ref   = document.getElementById(refDateId)?.value;
+                var yrs   = document.getElementById(yearsId);
+                var tot   = document.getElementById(totalId);
+                if (birth && ref) {
+                    var m = monthsBetween(birth, ref);
+                    if (tot) tot.value = Math.max(0, m);
+                } else {
+                    var years  = parseInt(yrs?.value || '0') || 0;
+                    var months = parseInt(tot?.value || '0') || 0;
+                    if (years > 0) {
+                        if (tot) tot.value = years * 12 + months;
+                    }
+                }
+                if (yrs) yrs.value = '';
+                updateOnsetWarning();
+            }
+            document.getElementById('btn-calc-age-purchased')?.addEventListener('click', function () {
+                calculate('Case_BirthDate', 'Case_PurchaseDate', 'age-purchased-years', 'Case_PurchaseAgeInMonths');
+            });
+            document.getElementById('btn-calc-onset-age')?.addEventListener('click', function () {
+                calculate('Case_BirthDate', 'Case_OnsetDate', 'onset-age-years', 'Case_OnsetAgeInMonths');
+            });
+            document.getElementById('Case_OnsetAgeInMonths')?.addEventListener('change', updateOnsetWarning);
+            updateOnsetWarning();
+        }());
+
+        // Unsaved-changes prompt
         (function () {
             var form = document.getElementById('edit-vla-form');
             var saved = false;
@@ -275,6 +418,6 @@
                     } else { saved = true; }
                 });
             }
-        })();
+        }());
     </script>
 }

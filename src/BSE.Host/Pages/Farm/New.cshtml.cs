@@ -3,6 +3,7 @@ using BSE.Host.Services;
 using BSE.Modules.FarmManagement.Services;
 using BSE.Modules.ReferenceData.Models;
 using BSE.Modules.ReferenceData.Services;
+using IGeoLookupService = BSE.Modules.ReferenceData.Services.IGeoLookupService;
 using BSE.SharedKernel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

@@ -3,6 +3,7 @@ using BSE.Host.Services;
 using BSE.Modules.FarmManagement.Services;
 using BSE.Modules.ReferenceData.Models;
 using BSE.Modules.ReferenceData.Services;
+using IGeoLookupService = BSE.Host.Services.IGeoLookupService;
 using BSE.SharedKernel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -46,6 +47,17 @@ public class EditModel : PageModel
     public async Task<IActionResult> OnPostAsync()
     {
         await LoadLookupsAsync();
+
+        // Validate map reference is within the parish for the CPHH (mirrors legacy MapReference1_MapReferenceChanged)
+        if (Farm is not null
+            && Farm.MapReference is { Length: >= 8 } mapRef
+            && Farm.CPHH.Length >= 5)
+        {
+            if (!await MapReferenceWithinParishAsync(Farm.CPHH, mapRef))
+                ModelState.AddModelError("Farm.MapRef1",
+                    "Map reference does not lie within the parish boundaries for this CPHH.");
+        }
+
         if (!ModelState.IsValid || Farm is null) return Page();
 
         var rowStampBase64 = TempData["FarmRowStamp"] as string;
@@ -100,7 +112,7 @@ public class EditModel : PageModel
         return new JsonResult(items.Select(r => new { id = r.Id, name = r.Name }));
     }
 
-    /// <summary>AJAX handler: estimates the map reference from the parish centre for the given CPHH.</summary>
+    /// <summary>AJAX GET: estimates the map reference from the centre of the CPHH parish.</summary>
     public async Task<IActionResult> OnGetEstimateMapReferenceAsync(string? cphh)
     {
         if (string.IsNullOrEmpty(cphh) || cphh.Length < 5)
@@ -109,14 +121,82 @@ public class EditModel : PageModel
         var county = cphh[..2];
         var parish = cphh[2..5];
 
-        var geo = await _geoLookup.GetMapReferenceAsync(county, parish);
-        if (geo is null)
+        var rows = await _geoLookup.GetAllParishMapReferencesAsync(county, parish);
+        if (rows.Count == 0)
             return new JsonResult(new { error = "No map reference data found for the parish associated with this CPHH." });
 
-        var centreX = (int.Parse(geo.XReference1) + int.Parse(geo.XReference2)) / 2;
-        var centreY = (int.Parse(geo.YReference1) + int.Parse(geo.YReference2)) / 2;
-        var mapRef = centreX.ToString("D4") + centreY.ToString("D4");
+        // Find middle row — mirrors clsCase.EstimateMapReference (VB): odd row count rounds up
+        double rowCount = rows.Count;
+        double middleIdx = rowCount % 2 != 0 ? rowCount / 2 + 0.5 : rowCount / 2;
+        middleIdx -= 1; // make 0-based
+        var row = rows[(int)middleIdx];
 
-        return new JsonResult(new { mapReference = mapRef });
+        var xCoord = row.XReference1;                               // 4-digit string e.g. "0345"
+        var centreY = CentreCoordinate(row.YReference1, row.YReference2); // 4-digit string
+
+        // Convert coords → OS grid prefix (mirrors clsCase.ConvertToMapReference)
+        var xPrefixCoord = xCoord[1].ToString();                    // VB: Mid$(xCoord, 2, 1)
+        var yPrefixRaw   = centreY[..2];                            // VB: Mid$(yCoord, 1, 2)
+        var yPrefixCoord = yPrefixRaw[0] == '0' ? yPrefixRaw[1].ToString() : yPrefixRaw;
+
+        var code = await _geoLookup.GetPrefixCodeAsync(xPrefixCoord, yPrefixCoord);
+        if (code is null)
+            return new JsonResult(new { error = "Could not determine OS grid square for this parish." });
+
+        // VB: sCode & Mid$(xCoord,3,2) & "5" & Mid$(yCoord,3,2) & "5"
+        return new JsonResult(new
+        {
+            mapRef1 = code,
+            mapRef2 = xCoord[2..4] + "5",
+            mapRef3 = centreY[2..4] + "5"
+        });
+    }
+
+    /// <summary>AJAX GET: returns whether the supplied map reference lies within the parish boundaries.</summary>
+    public async Task<IActionResult> OnGetValidateMapReferenceAsync(string? cphh, string? mapRef)
+    {
+        if (string.IsNullOrEmpty(cphh) || cphh.Length < 5
+            || string.IsNullOrEmpty(mapRef) || mapRef.Length < 8)
+            return new JsonResult(new { valid = false, message = "Map reference must be 8 characters (e.g. HP345125)." });
+
+        var isValid = await MapReferenceWithinParishAsync(cphh, mapRef);
+        return new JsonResult(isValid
+            ? new { valid = true, message = (string?)null }
+            : new { valid = false, message = "Map reference does not lie within the parish boundaries for this CPHH." });
+    }
+
+    // ── Private helpers ────────────────────────────────────────────────────────
+
+    // Mirrors clsCase.ValidateMapReference
+    private async Task<bool> MapReferenceWithinParishAsync(string cphh, string mapRef)
+    {
+        var county = cphh[..2];
+        var parish = cphh[2..5];
+
+        var prefixData = await _geoLookup.GetXYCoordsByPrefixCodeAsync(mapRef[..2].ToUpperInvariant());
+        if (prefixData is null) return false;
+
+        var rows = await _geoLookup.GetAllParishMapReferencesAsync(county, parish);
+        if (rows.Count == 0) return true; // no boundary data — allow
+
+        // VB: sXCoord & Mid$(mapRef,3,2); sYCoord & Mid$(mapRef,6,2)  (1-indexed)
+        var sXCoord = prefixData.XCoordPrefix + mapRef[2..4];
+        var sYCoord = prefixData.YCoordPrefix + mapRef[5..7];
+
+        return rows.Any(r =>
+            sXCoord == r.XReference1
+            && string.Compare(sYCoord, r.YReference1, StringComparison.Ordinal) >= 0
+            && string.Compare(sYCoord, r.YReference2, StringComparison.Ordinal) <= 0);
+    }
+
+    // Mirrors clsCase.GetCentreCoordinate
+    private static string CentreCoordinate(string y1, string y2)
+    {
+        int iY1 = int.Parse(y1);
+        int iY2 = int.Parse(y2);
+        int output = (iY2 - iY1) % 2 != 0
+            ? (int)(iY1 + (iY2 - iY1) / 2.0 + 0.5)
+            : iY1 + (iY2 - iY1) / 2;
+        return output.ToString("D4");
     }
 }

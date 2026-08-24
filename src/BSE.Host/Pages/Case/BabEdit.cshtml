@@ -65,14 +65,24 @@
 
     <div class="govuk-form-group">
         <label class="govuk-label" for="bab-origin">Origin</label>
+        <div class="govuk-hint">Select &ldquo;Purchased&rdquo; to enable the traced origin farm fields.</div>
         <select id="bab-origin" name="Origin" class="govuk-select govuk-!-width-one-half">
             <option value="">— select —</option>
             @foreach (var o in Model.AnimalOrigins)
             {
-                <option value="@o.Code" selected="@(o.Code == Model.Origin ? "selected" : null)">@o.Description</option>
+                if (o.Code == Model.Origin)
+                {
+                    <option value="@o.Code" selected="selected">@o.Description</option>
+                }
+                else
+                {
+                    <option value="@o.Code">@o.Description</option>
+                }
             }
         </select>
     </div>
+
+    <div id="bab-traced-section" @(Model.Origin != "P" ? "style=\"display:none\"" : "")>
 
     <div class="govuk-form-group">
         <label class="govuk-label" for="bab-natal-cphh">Traced CPHH</label>
@@ -105,6 +115,8 @@
                value="@Model.Bab?.TracedPostcode" maxlength="10" />
     </div>
 
+    </div>@* end bab-traced-section *@
+
     <h2 class="govuk-heading-m">Risk factors</h2>
 
     <div class="govuk-form-group">
@@ -113,7 +125,14 @@
             <option value="">— select —</option>
             @foreach (var r in Model.FeedRisks)
             {
-                <option value="@r.Code" selected="@(r.Code == Model.Bab?.FeedRisk ? "selected" : null)">@r.Description</option>
+                if (r.Code == Model.Bab?.FeedRisk)
+                {
+                    <option value="@r.Code" selected="selected">@r.Description</option>
+                }
+                else
+                {
+                    <option value="@r.Code">@r.Description</option>
+                }
             }
         </select>
     </div>
@@ -124,7 +143,14 @@
             <option value="">— select —</option>
             @foreach (var r in Model.HorizontalRisks)
             {
-                <option value="@r.Code" selected="@(r.Code == Model.Bab?.HorizontalRisk ? "selected" : null)">@r.Description</option>
+                if (r.Code == Model.Bab?.HorizontalRisk)
+                {
+                    <option value="@r.Code" selected="selected">@r.Description</option>
+                }
+                else
+                {
+                    <option value="@r.Code">@r.Description</option>
+                }
             }
         </select>
     </div>
@@ -135,7 +161,14 @@
             <option value="">— select —</option>
             @foreach (var r in Model.MaternalRisks)
             {
-                <option value="@r.Code" selected="@(r.Code == Model.Bab?.MaternalRisk ? "selected" : null)">@r.Description</option>
+                if (r.Code == Model.Bab?.MaternalRisk)
+                {
+                    <option value="@r.Code" selected="selected">@r.Description</option>
+                }
+                else
+                {
+                    <option value="@r.Code">@r.Description</option>
+                }
             }
         </select>
     </div>
@@ -145,3 +178,38 @@
         <a asp-page="/Case/Bab" asp-route-rbse="@Model.Rbse" class="govuk-link">Cancel</a>
     </div>
 </form>
+
+<script>
+(function () {
+    var sel = document.getElementById('bab-origin');
+    var sec = document.getElementById('bab-traced-section');
+
+    function hasTracedData() {
+        return ['bab-natal-cphh', 'bab-traced-name', 'bab-addr1', 'bab-addr2', 'bab-addr3', 'bab-postcode']
+            .some(function (id) { var el = document.getElementById(id); return el && el.value.trim() !== ''; });
+    }
+
+    function clearTracedFields() {
+        ['bab-natal-cphh', 'bab-traced-name', 'bab-addr1', 'bab-addr2', 'bab-addr3', 'bab-postcode']
+            .forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ''; });
+    }
+
+    // mirrors legacy ddlOrigin_SelectedIndexChanged → EmptyTracedFields + EmptyPurchaseFields + ShowMessage
+    function handleChange(showWarning) {
+        if (!sel || !sec) return;
+        var isPurchased = sel.value === 'P';
+        if (!isPurchased && showWarning) {
+            var msgs = [];
+            if (hasTracedData())
+                msgs.push('Trace data has been entered on this Case.  If you click Save then this data will be lost.');
+            msgs.push('Purchase data entered on the Case (VLA) tab will also be cleared.');
+            alert(msgs.join('\n\n'));
+            clearTracedFields();
+        }
+        sec.style.display = isPurchased ? '' : 'none';
+    }
+
+    if (sel) sel.addEventListener('change', function () { handleChange(true); });
+    handleChange(false);
+}());
+</script>

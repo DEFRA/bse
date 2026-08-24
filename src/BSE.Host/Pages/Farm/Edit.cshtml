@@ -75,3 +75,75 @@
     });
 }());
 </script>
+
+@* Map reference — Estimate button and parish-boundary validation *@
+<script>
+(function () {
+    var estimateBtn  = document.getElementById('estimate-map-ref-btn');
+    var estimateMsg  = document.getElementById('estimate-map-ref-msg');
+    var mapRef1      = document.getElementById('MapRef1');
+    var mapRef2      = document.getElementById('MapRef2');
+    var mapRef3      = document.getElementById('MapRef3');
+    var cphhInput    = document.querySelector('input[name="Farm.CPHH"]');
+
+    function getCphh() { return cphhInput ? cphhInput.value.replace(/\//g, '') : ''; }
+
+    function getFullMapRef() {
+        return ((mapRef1 ? mapRef1.value.trim().toUpperCase() : '')
+              + (mapRef2 ? mapRef2.value.trim() : '')
+              + (mapRef3 ? mapRef3.value.trim() : ''));
+    }
+
+    function showMsg(text, isError) {
+        if (!estimateMsg) return;
+        estimateMsg.textContent  = text;
+        estimateMsg.style.display = text ? 'block' : 'none';
+        estimateMsg.className    = isError ? 'govuk-error-message' : 'govuk-hint';
+    }
+
+    if (estimateBtn) {
+        estimateBtn.addEventListener('click', function () {
+            var cphh = getCphh();
+            if (!cphh || cphh.length < 5) {
+                showMsg('A CPHH is required to estimate the map reference.', true);
+                return;
+            }
+            estimateBtn.disabled = true;
+            showMsg('Estimating\u2026', false);
+
+            fetch('?handler=EstimateMapReference&cphh=' + encodeURIComponent(cphh), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (d.error) {
+                        showMsg(d.error, true);
+                    } else {
+                        if (mapRef1) mapRef1.value = d.mapRef1 || '';
+                        if (mapRef2) mapRef2.value = d.mapRef2 || '';
+                        if (mapRef3) mapRef3.value = d.mapRef3 || '';
+                        showMsg('Map reference estimated from parish centre.', false);
+                        validateMapRef();
+                    }
+                })
+                .catch(function () { showMsg('Could not contact server. Please try again.', true); })
+                .finally(function () { estimateBtn.disabled = false; });
+        });
+    }
+
+    function validateMapRef() {
+        var mapRef = getFullMapRef();
+        if (mapRef.length < 8) { showMsg('', false); return; }
+        var cphh = getCphh();
+        if (!cphh || cphh.length < 5) return;
+
+        fetch('?handler=ValidateMapReference&cphh=' + encodeURIComponent(cphh) + '&mapRef=' + encodeURIComponent(mapRef),
+              { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { return r.json(); })
+            .then(function (d) { showMsg(d.valid ? '' : (d.message || 'Map reference is outside the parish boundaries.'), !d.valid); })
+            .catch(function () { /* swallow — server-side check on POST handles final validation */ });
+    }
+
+    [mapRef1, mapRef2, mapRef3].forEach(function (el) {
+        if (el) el.addEventListener('blur', validateMapRef);
+    });
+}());
+</script>

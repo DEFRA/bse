@@ -132,30 +132,170 @@
         </div>
     </dl>
 
-    @if (Model.Tests.Count > 0)
+    @* ── Test records — full CRUD with GDS pagination and sorting ── *@
+    @{
+        var editTestTypeError = ViewData.ModelState[nameof(Model.EditTestType)]?.Errors.FirstOrDefault()?.ErrorMessage;
+        var newTestTypeError  = ViewData.ModelState[nameof(Model.NewTestType)]?.Errors.FirstOrDefault()?.ErrorMessage;
+        bool hasTestEditError = editTestTypeError is not null;
+        bool hasTestAddError  = newTestTypeError  is not null;
+    }
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+    <h2 class="govuk-heading-m">Test records</h2>
+    @if (Model.TestsTotalCount > 0)
     {
         <table class="govuk-table">
-            <caption class="govuk-table__caption govuk-table__caption--s">Test records</caption>
+            <caption class="govuk-visually-hidden">Test records for @BseFormat.FormatRbse(Model.Case.Rbse)</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header">Test type</th>
-                    <th scope="col" class="govuk-table__header">Test result</th>
+                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.TSort=="type" ? (Model.TDir=="asc" ? "ascending" : "descending") : "none")">
+                        <a class="govuk-link govuk-link--no-visited-state" href="@Model.TestsSortUrl("type")">Test type</a>
+                    </th>
+                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.TSort=="result" ? (Model.TDir=="asc" ? "ascending" : "descending") : "none")">
+                        <a class="govuk-link govuk-link--no-visited-state" href="@Model.TestsSortUrl("result")">Test result</a>
+                    </th>
+                    @if (User.IsInRole("DataEntry"))
+                    {
+                        <th scope="col" class="govuk-table__header">Action</th>
+                    }
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
                 @foreach (var t in Model.Tests)
                 {
+                    bool isEditRow = hasTestEditError && Model.EditTestId == t.Id;
                     <tr class="govuk-table__row">
                         <td class="govuk-table__cell">@(t.TestTypeDescription ?? t.TestType)</td>
                         <td class="govuk-table__cell">@(t.TestResultDescription ?? t.TestResult)</td>
+                        @if (User.IsInRole("DataEntry"))
+                        {
+                        <td class="govuk-table__cell">
+                            <details class="govuk-details" data-module="govuk-details" @(isEditRow ? "open" : null)>
+                                <summary class="govuk-details__summary"><span class="govuk-details__summary-text">Edit</span></summary>
+                                <div class="govuk-details__text">
+                                    @if (isEditRow)
+                                    {
+                                        <div class="govuk-error-summary" data-module="govuk-error-summary"><div role="alert"><h2 class="govuk-error-summary__title">There is a problem</h2><div class="govuk-error-summary__body"><ul class="govuk-list govuk-error-summary__list"><li>@editTestTypeError</li></ul></div></div></div>
+                                    }
+                                    <form method="post" asp-page-handler="EditTest" novalidate>
+                                        <input type="hidden" name="EditTestId" value="@t.Id" />
+                                        <input type="hidden" name="EditTestRowStampBase64" value="@(t.RowStamp is not null ? Convert.ToBase64String(t.RowStamp) : "")" />
+                                        <div class="govuk-form-group @(isEditRow ? "govuk-form-group--error" : "")">
+                                            <label class="govuk-label" for="edit-tt-@t.Id">Test type</label>
+                                            @if (isEditRow) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @editTestTypeError</p> }
+                                            <select class="govuk-select @(isEditRow ? "govuk-select--error" : "")" id="edit-tt-@t.Id" name="EditTestType">
+                                                <option value="">-- Select --</option>
+                                                @foreach (var o in Model.TestTypeOptions)
+                                                {
+                                                    var sel = o.Code == (isEditRow ? Model.EditTestType : t.TestType) ? "selected" : null;
+                                                    <option value="@o.Code" selected="@sel">@o.Description</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="govuk-form-group">
+                                            <label class="govuk-label" for="edit-tr-@t.Id">Test result</label>
+                                            <select class="govuk-select" id="edit-tr-@t.Id" name="EditTestResult">
+                                                <option value="">-- Select --</option>
+                                                @foreach (var o in Model.TestResultOptions)
+                                                {
+                                                    var sel2 = o.Code == (isEditRow ? Model.EditTestResult : t.TestResult) ? "selected" : null;
+                                                    <option value="@o.Code" selected="@sel2">@o.Description</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <button type="submit" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">Save changes</button>
+                                    </form>
+                                </div>
+                            </details>
+                            <form method="post" asp-page-handler="DeleteTest" novalidate>
+                                <input type="hidden" name="id" value="@t.Id" />
+                                <input type="hidden" name="rowStampBase64" value="@(t.RowStamp is not null ? Convert.ToBase64String(t.RowStamp) : "")" />
+                                <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0"
+                                        onclick="return confirm('Delete this test record?')">Delete</button>
+                            </form>
+                        </td>
+                        }
                     </tr>
                 }
             </tbody>
         </table>
+        @if (Model.TestsTotalPages > 1)
+        {
+            <nav class="govuk-pagination" role="navigation" aria-label="Test records pagination">
+                @if (Model.TPage > 1)
+                {
+                    <div class="govuk-pagination__prev">
+                        <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(Model.TPage - 1)" rel="prev">
+                            <svg class="govuk-pagination__icon govuk-pagination__icon--prev" xmlns="http://www.w3.org/2000/svg" height="13" width="15" focusable="false" aria-hidden="true" viewBox="0 0 15 13"><path d="m6.5938-0.0078125-6.7266 6.7266 6.7441 6.4062 1.377-1.449-4.1856-3.9768h12.896v-2h-12.984l4.2931-4.293-1.414-1.414z"/></svg>
+                            <span class="govuk-pagination__link-title">Previous<span class="govuk-visually-hidden"> page</span></span>
+                        </a>
+                    </div>
+                }
+                <ul class="govuk-pagination__list">
+                    @{ int tStart = Math.Max(1, Model.TPage - 4); int tEnd = Math.Min(Model.TestsTotalPages, tStart + 9); if (tEnd - tStart < 9) tStart = Math.Max(1, tEnd - 9); }
+                    @for (int p = tStart; p <= tEnd; p++)
+                    {
+                        bool tCur = p == Model.TPage;
+                        <li class="govuk-pagination__item @(tCur ? "govuk-pagination__item--current" : "")">
+                            @if (tCur) { <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(p)" aria-label="Page @p" aria-current="page">@p</a> }
+                            else       { <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(p)" aria-label="Page @p">@p</a> }
+                        </li>
+                    }
+                </ul>
+                @if (Model.TPage < Model.TestsTotalPages)
+                {
+                    <div class="govuk-pagination__next">
+                        <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(Model.TPage + 1)" rel="next">
+                            <span class="govuk-pagination__link-title">Next<span class="govuk-visually-hidden"> page</span></span>
+                            <svg class="govuk-pagination__icon govuk-pagination__icon--next" xmlns="http://www.w3.org/2000/svg" height="13" width="15" focusable="false" aria-hidden="true" viewBox="0 0 15 13"><path d="m8.107-0.0078125-1.4136 1.414 4.2926 4.293h-12.986v2h12.896l-4.1855 3.9766 1.377 1.4492 6.7441-6.4062-6.7246-6.7246z"/></svg>
+                        </a>
+                    </div>
+                }
+            </nav>
+        }
     }
-    <p class="govuk-body">
-        <a asp-page="/Case/TestResults" asp-route-rbse="@Model.Rbse" class="govuk-link">Add / edit test records</a>
-    </p>
+    else
+    {
+        <p class="govuk-body">No test records for this case.</p>
+    }
+
+    @if (User.IsInRole("DataEntry"))
+    {
+    <details class="govuk-details" data-module="govuk-details" @(hasTestAddError ? "open" : null)>
+        <summary class="govuk-details__summary"><span class="govuk-details__summary-text">Add test record</span></summary>
+        <div class="govuk-details__text">
+            @if (hasTestAddError)
+            {
+                <div class="govuk-error-summary" data-module="govuk-error-summary"><div role="alert"><h2 class="govuk-error-summary__title">There is a problem</h2><div class="govuk-error-summary__body"><ul class="govuk-list govuk-error-summary__list"><li><a href="#new-tt">@newTestTypeError</a></li></ul></div></div></div>
+            }
+            <form method="post" asp-page-handler="AddTest" novalidate>
+                <div class="govuk-form-group @(hasTestAddError ? "govuk-form-group--error" : "")">
+                    <label class="govuk-label" for="new-tt">Test type</label>
+                    @if (hasTestAddError) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @newTestTypeError</p> }
+                    <select class="govuk-select @(hasTestAddError ? "govuk-select--error" : "")" id="new-tt" name="NewTestType">
+                        <option value="">-- Select --</option>
+                        @foreach (var o in Model.TestTypeOptions)
+                        {
+                            <option value="@o.Code" selected="@(o.Code == Model.NewTestType ? "selected" : null)">@o.Description</option>
+                        }
+                    </select>
+                </div>
+                <div class="govuk-form-group">
+                    <label class="govuk-label" for="new-tr">Test result</label>
+                    <select class="govuk-select" id="new-tr" name="NewTestResult">
+                        <option value="">-- Select --</option>
+                        @foreach (var o in Model.TestResultOptions)
+                        {
+                            <option value="@o.Code" selected="@(o.Code == Model.NewTestResult ? "selected" : null)">@o.Description</option>
+                        }
+                    </select>
+                </div>
+                <button type="submit" class="govuk-button" data-module="govuk-button">Add test record</button>
+            </form>
+        </div>
+    </details>
+    }
+
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
 
     <h2 class="govuk-heading-m">Animal details</h2>
     <dl class="govuk-summary-list">

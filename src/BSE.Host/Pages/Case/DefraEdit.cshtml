@@ -5,6 +5,21 @@
     ViewData["Title"] = $"Edit Case (DEFRA) — {Model.Case.Rbse}";
     string DateVal(DateTime? d) => d?.ToString("yyyy-MM-dd") ?? "";
     string rbseNoSlash = Model.Case.Rbse.Replace("/", "");
+
+    string? eEartag       = ViewData.ModelState["Case.EartagCountry"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    // Per-field error messages for validated fields
+    string? eFormA         = ViewData.ModelState["Case.FormADate"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string? eFormAResub    = ViewData.ModelState["Case.FormAResubmittedDate"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string? eFormB         = ViewData.ModelState["Case.FormBDate"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string? eFate          = ViewData.ModelState["Case.Fate"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string? eFormC         = ViewData.ModelState["Case.FormCDate"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string? eBirth         = ViewData.ModelState["Case.BirthDate"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string? ePurchaserBse1 = ViewData.ModelState["Case.PurchaserBse1ReceivedDate"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string? eBreederBse1   = ViewData.ModelState["Case.BreederBse1ReceivedDate"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string? eVendor1Bse1   = ViewData.ModelState["Case.Vendor1Bse1ReceivedDate"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string? eHomebredBse1  = ViewData.ModelState["Case.HomebredBse1ReceivedDate"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string? eSummarySheet  = ViewData.ModelState["Case.SummarySheetReceivedDate"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string? ePaperwork     = ViewData.ModelState["Case.PaperworkCompleteDate"]?.Errors.FirstOrDefault()?.ErrorMessage;
 }
 
 <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
@@ -83,21 +98,47 @@
 
     <h2 class="govuk-heading-m">Animal identification</h2>
 
-    <div class="govuk-form-group">
-        <label asp-for="Case.EartagCountry" class="govuk-label">Eartag country</label>
-        <input asp-for="Case.EartagCountry" class="govuk-input govuk-!-width-one-half" />
-    </div>
-    <div class="govuk-form-group">
-        <label asp-for="Case.EartagHerdmark" class="govuk-label">Eartag herdmark</label>
-        <input asp-for="Case.EartagHerdmark" class="govuk-input govuk-!-width-two-thirds" />
-    </div>
-    <div class="govuk-form-group">
-        <label asp-for="Case.Eartag" class="govuk-label">Eartag</label>
-        <input asp-for="Case.Eartag" class="govuk-input govuk-!-width-two-thirds" />
+    <div class="govuk-form-group @(eEartag is not null ? "govuk-form-group--error" : "")">
+        <fieldset class="govuk-fieldset" aria-describedby="eartag-hint@(eEartag is not null ? " eartag-error" : "")">
+            <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">Eartag</legend>
+            <div id="eartag-hint" class="govuk-hint">Country code (up to 4 characters), herdmark (up to 8 characters), animal number (up to 25 characters)</div>
+            @if (eEartag is not null)
+            {
+                <p id="eartag-error" class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eEartag</p>
+            }
+            <div class="govuk-date-input" id="eartag-compound">
+                <div class="govuk-date-input__item">
+                    <div class="govuk-form-group">
+                        <label class="govuk-label govuk-date-input__label" for="Case_EartagCountry">Country</label>
+                        <input asp-for="Case.EartagCountry" id="Case_EartagCountry"
+                               class="govuk-input govuk-date-input__input govuk-input--width-4"
+                               maxlength="4" spellcheck="false" autocomplete="off"
+                               style="text-transform:uppercase" />
+                    </div>
+                </div>
+                <div class="govuk-date-input__item">
+                    <div class="govuk-form-group">
+                        <label class="govuk-label govuk-date-input__label" for="Case_EartagHerdmark">Herdmark</label>
+                        <input asp-for="Case.EartagHerdmark" id="Case_EartagHerdmark"
+                               class="govuk-input govuk-date-input__input govuk-input--width-10"
+                               maxlength="8" spellcheck="false" autocomplete="off" />
+                    </div>
+                </div>
+                <div class="govuk-date-input__item">
+                    <div class="govuk-form-group">
+                        <label class="govuk-label govuk-date-input__label" for="Case_Eartag">Animal number</label>
+                        <input asp-for="Case.Eartag" id="Case_Eartag"
+                               class="govuk-input govuk-date-input__input"
+                               style="width:15rem"
+                               maxlength="25" spellcheck="false" autocomplete="off" />
+                    </div>
+                </div>
+            </div>
+        </fieldset>
     </div>
     <div class="govuk-form-group">
         <label asp-for="Case.PreviousEartag" class="govuk-label">Previous eartag</label>
-        <input asp-for="Case.PreviousEartag" class="govuk-input govuk-!-width-two-thirds" />
+        <input asp-for="Case.PreviousEartag" class="govuk-input govuk-!-width-two-thirds" maxlength="25" />
     </div>
 
     <h2 class="govuk-heading-m">Key dates and fate</h2>
@@ -106,54 +147,44 @@
         <label asp-for="Case.Bse1ReceivedDate" class="govuk-label">BSE-1 date received</label>
         <input asp-for="Case.Bse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@DateVal(Model.Case.Bse1ReceivedDate)" />
     </div>
-    <div class="govuk-form-group">
+    <div class="govuk-form-group @(eFormA is not null ? "govuk-form-group--error" : "")">
         <label asp-for="Case.FormADate" class="govuk-label">Form A date</label>
-        <input asp-for="Case.FormADate" type="date" class="govuk-input govuk-input--width-10" value="@DateVal(Model.Case.FormADate)" />
+        @if (eFormA is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eFormA</p> }
+        <input asp-for="Case.FormADate" type="date" class="govuk-input govuk-input--width-10 @(eFormA is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.FormADate)" />
     </div>
-    <div class="govuk-form-group">
+    <div class="govuk-form-group @(eFormAResub is not null ? "govuk-form-group--error" : "")">
         <label asp-for="Case.FormAResubmittedDate" class="govuk-label">Form A resubmitted date</label>
-        <input asp-for="Case.FormAResubmittedDate" type="date" class="govuk-input govuk-input--width-10" value="@DateVal(Model.Case.FormAResubmittedDate)" />
+        @if (eFormAResub is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eFormAResub</p> }
+        <input asp-for="Case.FormAResubmittedDate" type="date" class="govuk-input govuk-input--width-10 @(eFormAResub is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.FormAResubmittedDate)" />
     </div>
-    <div class="govuk-form-group">
+    <div class="govuk-form-group @(eFormB is not null ? "govuk-form-group--error" : "")">
         <label asp-for="Case.FormBDate" class="govuk-label">Form B date</label>
-        <input asp-for="Case.FormBDate" type="date" class="govuk-input govuk-input--width-10" value="@DateVal(Model.Case.FormBDate)" />
+        @if (eFormB is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eFormB</p> }
+        <input asp-for="Case.FormBDate" type="date" class="govuk-input govuk-input--width-10 @(eFormB is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.FormBDate)" />
     </div>
-    <div class="govuk-form-group">
+    <div class="govuk-form-group @(eFate is not null ? "govuk-form-group--error" : "")">
         <label asp-for="Case.Fate" class="govuk-label">Fate (Form B reason)</label>
-        <select asp-for="Case.Fate" class="govuk-select">
+        @if (eFate is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eFate</p> }
+        <select asp-for="Case.Fate" class="govuk-select @(eFate is not null ? "govuk-select--error" : "")">
             <option value="">-- Select --</option>
             @foreach (var o in Model.FateOptions)
             {
-                <option value="@o.Code" selected="@(o.Code == Model.Case.Fate ? "selected" : null)">@o.Description</option>
+                <option value="@o.Code">@o.Description</option>
             }
         </select>
     </div>
-    <div class="govuk-form-group">
+    <div class="govuk-form-group @(eFormC is not null ? "govuk-form-group--error" : "")">
         <label asp-for="Case.FormCDate" class="govuk-label">Form C date</label>
-        <input asp-for="Case.FormCDate" type="date" class="govuk-input govuk-input--width-10" value="@DateVal(Model.Case.FormCDate)" />
+        @if (eFormC is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eFormC</p> }
+        @if (eFormC is null && Model.Case.FormCDate.HasValue && Model.Case.FormBDate.HasValue && Model.Case.FormCDate != Model.Case.FormBDate)
+        {
+            <p class="govuk-warning-text govuk-!-margin-bottom-0 govuk-!-font-size-16">
+                <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+                <strong class="govuk-warning-text__text"><span class="govuk-warning-text__assistive">Warning</span> Form C date differs from Form B date — please check.</strong>
+            </p>
+        }
+        <input asp-for="Case.FormCDate" type="date" class="govuk-input govuk-input--width-10 @(eFormC is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.FormCDate)" />
     </div>
-
-    @if (Model.Tests.Count > 0)
-    {
-        <table class="govuk-table govuk-!-margin-top-4">
-            <caption class="govuk-table__caption govuk-table__caption--s">Test records</caption>
-            <thead class="govuk-table__head">
-                <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header">Test type</th>
-                    <th scope="col" class="govuk-table__header">Test result</th>
-                </tr>
-            </thead>
-            <tbody class="govuk-table__body">
-                @foreach (var t in Model.Tests)
-                {
-                    <tr class="govuk-table__row">
-                        <td class="govuk-table__cell">@t.TestType</td>
-                        <td class="govuk-table__cell">@t.TestResult</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    }
 
     <h2 class="govuk-heading-m">Animal details</h2>
 
@@ -171,9 +202,10 @@
         <label asp-for="Case.LabComment" class="govuk-label">Lab comment</label>
         <textarea asp-for="Case.LabComment" class="govuk-textarea" rows="2" maxlength="255"></textarea>
     </div>
-    <div class="govuk-form-group">
+    <div class="govuk-form-group @(eBirth is not null ? "govuk-form-group--error" : "")">
         <label asp-for="Case.BirthDate" class="govuk-label">Date of birth</label>
-        <input asp-for="Case.BirthDate" type="date" class="govuk-input govuk-input--width-10" value="@DateVal(Model.Case.BirthDate)" />
+        @if (eBirth is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eBirth</p> }
+        <input asp-for="Case.BirthDate" type="date" class="govuk-input govuk-input--width-10 @(eBirth is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.BirthDate)" />
     </div>
     <div class="govuk-form-group">
         <label asp-for="Case.ReportedLocation" class="govuk-label">Reported location</label>
@@ -250,9 +282,10 @@
     </div>
     @if (Model.Case.HasCaseWork)
     {
-        <div class="govuk-form-group govuk-!-margin-bottom-4">
+        <div class="govuk-form-group govuk-!-margin-bottom-4 @(ePurchaserBse1 is not null ? "govuk-form-group--error" : "")">
             <label asp-for="Case.PurchaserBse1ReceivedDate" class="govuk-label govuk-!-font-size-16">Date received</label>
-            <input asp-for="Case.PurchaserBse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@DateVal(Model.Case.PurchaserBse1ReceivedDate)" />
+            @if (ePurchaserBse1 is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ePurchaserBse1</p> }
+            <input asp-for="Case.PurchaserBse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10 @(ePurchaserBse1 is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.PurchaserBse1ReceivedDate)" />
         </div>
     }
     <div class="govuk-checkboxes govuk-!-margin-bottom-2" data-module="govuk-checkboxes">
@@ -263,9 +296,10 @@
     </div>
     @if (Model.Case.HasCaseWork)
     {
-        <div class="govuk-form-group govuk-!-margin-bottom-4">
+        <div class="govuk-form-group govuk-!-margin-bottom-4 @(eBreederBse1 is not null ? "govuk-form-group--error" : "")">
             <label asp-for="Case.BreederBse1ReceivedDate" class="govuk-label govuk-!-font-size-16">Date received</label>
-            <input asp-for="Case.BreederBse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@DateVal(Model.Case.BreederBse1ReceivedDate)" />
+            @if (eBreederBse1 is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eBreederBse1</p> }
+            <input asp-for="Case.BreederBse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10 @(eBreederBse1 is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.BreederBse1ReceivedDate)" />
         </div>
     }
     <div class="govuk-checkboxes govuk-!-margin-bottom-2" data-module="govuk-checkboxes">
@@ -276,9 +310,10 @@
     </div>
     @if (Model.Case.HasCaseWork)
     {
-        <div class="govuk-form-group govuk-!-margin-bottom-4">
+        <div class="govuk-form-group govuk-!-margin-bottom-4 @(eVendor1Bse1 is not null ? "govuk-form-group--error" : "")">
             <label asp-for="Case.Vendor1Bse1ReceivedDate" class="govuk-label govuk-!-font-size-16">Date received</label>
-            <input asp-for="Case.Vendor1Bse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@DateVal(Model.Case.Vendor1Bse1ReceivedDate)" />
+            @if (eVendor1Bse1 is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eVendor1Bse1</p> }
+            <input asp-for="Case.Vendor1Bse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10 @(eVendor1Bse1 is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.Vendor1Bse1ReceivedDate)" />
         </div>
     }
     <div class="govuk-checkboxes govuk-!-margin-bottom-2" data-module="govuk-checkboxes">
@@ -289,9 +324,10 @@
     </div>
     @if (Model.Case.HasCaseWork)
     {
-        <div class="govuk-form-group govuk-!-margin-bottom-4">
+        <div class="govuk-form-group govuk-!-margin-bottom-4 @(eHomebredBse1 is not null ? "govuk-form-group--error" : "")">
             <label asp-for="Case.HomebredBse1ReceivedDate" class="govuk-label govuk-!-font-size-16">Date received</label>
-            <input asp-for="Case.HomebredBse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@DateVal(Model.Case.HomebredBse1ReceivedDate)" />
+            @if (eHomebredBse1 is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eHomebredBse1</p> }
+            <input asp-for="Case.HomebredBse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10 @(eHomebredBse1 is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.HomebredBse1ReceivedDate)" />
         </div>
     }
     <div class="govuk-checkboxes govuk-!-margin-bottom-2" data-module="govuk-checkboxes">
@@ -302,9 +338,10 @@
     </div>
     @if (Model.Case.HasCaseWork)
     {
-        <div class="govuk-form-group govuk-!-margin-bottom-4">
+        <div class="govuk-form-group govuk-!-margin-bottom-4 @(eSummarySheet is not null ? "govuk-form-group--error" : "")">
             <label asp-for="Case.SummarySheetReceivedDate" class="govuk-label govuk-!-font-size-16">Date received</label>
-            <input asp-for="Case.SummarySheetReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@DateVal(Model.Case.SummarySheetReceivedDate)" />
+            @if (eSummarySheet is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eSummarySheet</p> }
+            <input asp-for="Case.SummarySheetReceivedDate" type="date" class="govuk-input govuk-input--width-10 @(eSummarySheet is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.SummarySheetReceivedDate)" />
         </div>
     }
     <div class="govuk-checkboxes govuk-!-margin-bottom-2" data-module="govuk-checkboxes">
@@ -315,13 +352,12 @@
     </div>
     @if (Model.Case.HasCaseWork)
     {
-        <div class="govuk-form-group govuk-!-margin-bottom-4">
+        <div class="govuk-form-group govuk-!-margin-bottom-4 @(ePaperwork is not null ? "govuk-form-group--error" : "")">
             <label asp-for="Case.PaperworkCompleteDate" class="govuk-label govuk-!-font-size-16">Date complete</label>
-            <input asp-for="Case.PaperworkCompleteDate" type="date" class="govuk-input govuk-input--width-10" value="@DateVal(Model.Case.PaperworkCompleteDate)" />
+            @if (ePaperwork is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ePaperwork</p> }
+            <input asp-for="Case.PaperworkCompleteDate" type="date" class="govuk-input govuk-input--width-10 @(ePaperwork is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.PaperworkCompleteDate)" />
         </div>
     }
-
-    <div class="govuk-button-group govuk-!-margin-top-4">
         <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
         <a id="cancel-link" asp-page="/Case/Edit" asp-route-rbse="@Model.Case.Rbse" class="govuk-link">Cancel</a>
     </div>

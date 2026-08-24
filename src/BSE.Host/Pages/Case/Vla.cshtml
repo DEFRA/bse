@@ -144,3 +144,91 @@
         </div>
     </dl>
 
+    <h2 class="govuk-heading-m">Previous owners</h2>
+    @{
+        string OwnerTypeDesc(string? code) =>
+            Model.OwnerTypeOptions.FirstOrDefault(o => o.Code == code)?.Description ?? code ?? "—";
+    }
+    @if (Model.OtherOwnersTotalCount > 0)
+    {
+        <table class="govuk-table">
+            <caption class="govuk-visually-hidden">Previous owners for @BseFormat.FormatRbse(Model.Case.Rbse)</caption>
+            <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                    <th scope="col" class="govuk-table__header"
+                        aria-sort="@(Model.OSort=="type" ? (Model.ODir=="asc" ? "ascending" : "descending") : "none")">
+                        <a class="govuk-link govuk-link--no-visited-state" href="@Model.OwnersSortUrl("type")">Owner type</a>
+                    </th>
+                    <th scope="col" class="govuk-table__header">Name</th>
+                    <th scope="col" class="govuk-table__header"
+                        aria-sort="@(Model.OSort=="cphh" ? (Model.ODir=="asc" ? "ascending" : "descending") : "none")">
+                        <a class="govuk-link govuk-link--no-visited-state" href="@Model.OwnersSortUrl("cphh")">CPHH</a>
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+                @foreach (var o in Model.OtherOwners)
+                {
+                    <tr class="govuk-table__row">
+                        <td class="govuk-table__cell">@OwnerTypeDesc(o.Type)</td>
+                        <td class="govuk-table__cell">@(o.Name ?? "—")</td>
+                        <td class="govuk-table__cell">@BseFormat.FormatCphh(o.Cphh)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (Model.OtherOwnersTotalPages > 1)
+        {
+            <nav class="govuk-pagination" role="navigation" aria-label="Previous owners pagination">
+                @if (Model.OPage > 1)
+                {
+                    <div class="govuk-pagination__prev">
+                        <a class="govuk-link govuk-pagination__link" href="@Model.OwnersPageUrl(Model.OPage - 1)" rel="prev">
+                            <svg class="govuk-pagination__icon govuk-pagination__icon--prev" xmlns="http://www.w3.org/2000/svg" height="13" width="15" focusable="false" aria-hidden="true" viewBox="0 0 15 13"><path d="m6.5938-0.0078125-6.7266 6.7266 6.7441 6.4062 1.377-1.449-4.1856-3.9768h12.896v-2h-12.984l4.2931-4.293-1.414-1.414z"/></svg>
+                            <span class="govuk-pagination__link-title">Previous<span class="govuk-visually-hidden"> page</span></span>
+                        </a>
+                    </div>
+                }
+                <ul class="govuk-pagination__list">
+                    @{ int startPage = Math.Max(1, Model.OPage - 4); int endPage = Math.Min(Model.OtherOwnersTotalPages, startPage + 9); }
+                    @for (int p = startPage; p <= endPage; p++)
+                    {
+                        if (p == Model.OPage)
+                        {
+                            <li class="govuk-pagination__item govuk-pagination__item--current">
+                                <a class="govuk-link govuk-pagination__link" href="@Model.OwnersPageUrl(p)" aria-label="Page @p" aria-current="page">@p</a>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="govuk-pagination__item">
+                                <a class="govuk-link govuk-pagination__link" href="@Model.OwnersPageUrl(p)" aria-label="Page @p">@p</a>
+                            </li>
+                        }
+                    }
+                </ul>
+                @if (Model.OPage < Model.OtherOwnersTotalPages)
+                {
+                    <div class="govuk-pagination__next">
+                        <a class="govuk-link govuk-pagination__link" href="@Model.OwnersPageUrl(Model.OPage + 1)" rel="next">
+                            <span class="govuk-pagination__link-title">Next<span class="govuk-visually-hidden"> page</span></span>
+                            <svg class="govuk-pagination__icon govuk-pagination__icon--next" xmlns="http://www.w3.org/2000/svg" height="13" width="15" focusable="false" aria-hidden="true" viewBox="0 0 15 13"><path d="m8.107-0.0078125-1.4136 1.414 4.2926 4.293h-12.986v2h12.896l-4.1855 3.9766 1.377 1.4492 6.7441-6.4062-6.7246-6.7246z"/></svg>
+                        </a>
+                    </div>
+                }
+            </nav>
+        }
+    }
+    else
+    {
+        <p class="govuk-body">No owner records.</p>
+    }
+    @if (User.IsInRole("DataEntry"))
+    {
+        <p class="govuk-body govuk-!-margin-top-2">
+            <a asp-page="/Case/OtherOwners" asp-route-rbse="@Model.Case.Rbse" class="govuk-link">Manage other owners</a>
+        </p>
+    }
+
+

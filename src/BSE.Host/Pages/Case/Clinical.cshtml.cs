@@ -14,15 +14,29 @@ namespace BSE.Host.Pages.Case;
 [Authorize]
 public class ClinicalModel(
     IClinicalRepository clinicalRepository,
+    ICaseRepository caseRepository,
     IBatchRepository batchRepository,
     IDbConnectionFactory connectionFactory,
     IConfiguration configuration) : PageModel
 {
+    private const int PageSize = 10;
+    private List<ClinicalVisitRecord> _allVisits = [];
+
     [BindProperty(SupportsGet = true)]
     public string Rbse { get; set; } = string.Empty;
 
+    [BindProperty(SupportsGet = true)] public int    VPage { get; set; } = 1;
+    [BindProperty(SupportsGet = true)] public string VDir  { get; set; } = "asc";
+    public int VisitsTotalPages { get; private set; } = 1;
+    public int VisitsTotalCount { get; private set; }
+
+    [BindProperty(SupportsGet = true)] public int EditVisitId { get; set; }
+    [BindProperty] public DateTime? EditVisitDate { get; set; }
+    [BindProperty] public string EditVisitRowStampBase64 { get; set; } = string.Empty;
+
     public ClinicalSignsViewModel Signs { get; private set; } = new();
     public IReadOnlyList<ClinicalVisitRecord> Visits { get; private set; } = [];
+    public DateTime? BirthDate { get; private set; }
     public string? ClinicalRowStampBase64 { get; private set; }
     public string SpolSiteUrl { get; private set; } = string.Empty;
     public IReadOnlyList<BatchNumberEntry> BatchNumbers { get; private set; } = [];
@@ -97,6 +111,18 @@ public class ClinicalModel(
     {
         if (!User.IsInRole("DataEntry"))
             return Forbid();
+
+        await LoadAsync();
+
+        // Mirrors legacy ClinicalVisitPager_RowSave validation
+        ValidateVisitDate(VisitDate, null, nameof(VisitDate));
+
+        if (ModelState.IsValid && _allVisits.Any(v => v.VisitDate?.Date == VisitDate!.Value.Date))
+            ModelState.AddModelError(nameof(VisitDate), "A visit on this date already exists. The visit date must be unique.");
+
+        if (!ModelState.IsValid)
+            return Page();
+
         using var conn = connectionFactory.CreateConnection();
         conn.Open();
         using var tx = conn.BeginTransaction();
@@ -107,15 +133,36 @@ public class ClinicalModel(
         return RedirectToPage(new { rbse = Rbse });
     }
 
+    public async Task<IActionResult> OnPostEditVisitAsync()
+    {
+        if (!User.IsInRole("DataEntry"))
+            return Forbid();
+
+        await LoadAsync();
+
+        ValidateVisitDate(EditVisitDate, EditVisitId, nameof(EditVisitDate));
+
+        if (ModelState.IsValid && _allVisits.Any(v => v.Id != EditVisitId && v.VisitDate?.Date == EditVisitDate!.Value.Date))
+            ModelState.AddModelError(nameof(EditVisitDate), "A visit on this date already exists. The visit date must be unique.");
+
+        if (!ModelState.IsValid)
+            return Page();
+
+        var rowStamp = string.IsNullOrEmpty(EditVisitRowStampBase64) ? [] : Convert.FromBase64String(EditVisitRowStampBase64);
+        using var conn = connectionFactory.CreateConnection();
+        conn.Open();
+        using var tx = conn.BeginTransaction();
+        await clinicalRepository.EditVisitAsync(new EditClinicalVisitCommand(EditVisitId, EditVisitDate, rowStamp), conn, tx);
+        tx.Commit();
+
+        TempData["Success"] = "Clinical visit updated.";
+        return RedirectToPage(new { rbse = Rbse });
+    }
+
     public async Task<IActionResult> OnPostDeleteVisitAsync(int visitId)
     {
         if (!User.IsInRole("DataEntry"))
             return Forbid();
-        // Load RowStamp for the visit before deletion
-        var visits = await clinicalRepository.GetVisitsByRbseAsync(Rbse);
-        var visit = visits.FirstOrDefault(v => v.Id == visitId);
-        if (visit is null)
-            return RedirectToPage(new { rbse = Rbse });
 
         using var conn = connectionFactory.CreateConnection();
         conn.Open();
@@ -127,13 +174,33 @@ public class ClinicalModel(
         return RedirectToPage(new { rbse = Rbse });
     }
 
+    // Mirrors legacy: visit date must be after birth date (default 1 Jan 1970) and not in the future
+    private void ValidateVisitDate(DateTime? date, int? excludeId, string key)
+    {
+        if (!date.HasValue)
+        {
+            ModelState.AddModelError(key, "Enter a visit date.");
+            return;
+        }
+
+        var minDate = BirthDate?.Date ?? new DateTime(1970, 1, 1);
+        if (date.Value.Date <= minDate)
+            ModelState.AddModelError(key, BirthDate.HasValue
+                ? "The visit date must be after the birth date."
+                : "The visit date must be after 1 January 1970.");
+
+        if (date.Value.Date > DateTime.Today)
+            ModelState.AddModelError(key, "The visit date must not be in the future.");
+    }
+
     private async Task LoadAsync()
     {
         var clinicalTask = clinicalRepository.GetByRbseAsync(Rbse);
         var visitsTask   = clinicalRepository.GetVisitsByRbseAsync(Rbse);
         var batchTask    = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
+        var caseTask     = caseRepository.GetCaseByRbseAsync(Rbse);
 
-        await Task.WhenAll(clinicalTask, visitsTask, batchTask);
+        await Task.WhenAll(clinicalTask, visitsTask, batchTask, caseTask);
 
         var clinical = await clinicalTask;
         if (clinical is not null)
@@ -143,9 +210,26 @@ public class ClinicalModel(
                 ? Convert.ToBase64String(clinical.RowStamp)
                 : null;
         }
-        Visits = await visitsTask;
-        BatchNumbers = (await batchTask).ToList().AsReadOnly();
+
+        _allVisits     = (await visitsTask).ToList();
+        BirthDate      = (await caseTask)?.BirthDate;
+        BatchNumbers   = (await batchTask).ToList().AsReadOnly();
+
+        IEnumerable<ClinicalVisitRecord> sorted = VDir == "desc"
+            ? _allVisits.OrderByDescending(v => v.VisitDate)
+            : _allVisits.OrderBy(v => v.VisitDate);
+
+        VisitsTotalCount = _allVisits.Count;
+        VisitsTotalPages = Math.Max(1, (int)Math.Ceiling(_allVisits.Count / (double)PageSize));
+        VPage = Math.Clamp(VPage, 1, VisitsTotalPages);
+        Visits = sorted.Skip((VPage - 1) * PageSize).Take(PageSize).ToList().AsReadOnly();
     }
+
+    public string VisitsSortUrl() =>
+        $"?rbse={Uri.EscapeDataString(Rbse)}&VDir={(VDir == "asc" ? "desc" : "asc")}&VPage=1";
+
+    public string VisitsPageUrl(int page) =>
+        $"?rbse={Uri.EscapeDataString(Rbse)}&VPage={page}&VDir={VDir}";
 
     // ── View model ────────────────────────────────────────────────────────────
 

@@ -4,8 +4,6 @@ using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Repositories;
 using BSE.Modules.CaseManagement.Commands;
 using BSE.Modules.CaseManagement.Enums;
-using BSE.Modules.CaseManagement.Models;
-using BSE.Modules.CaseManagement.Repositories;
 using BSE.Modules.CaseManagement.Services;
 using BSE.Modules.CaseWork.Commands;
 using BSE.Modules.CaseWork.Repositories;
@@ -14,7 +12,7 @@ using BSE.SharedKernel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Extensions.Configuration;
+using System.Text.RegularExpressions;
 
 namespace BSE.Host.Pages.Case;
 
@@ -24,9 +22,7 @@ public class DefraEditModel(
     ICurrentUserService currentUserService,
     ILookupDataService lookups,
     ICaseWorkRepository caseWorkRepository,
-    ITestRepository testRepository,
-    IBatchRepository batchRepository,
-    IConfiguration configuration) : PageModel
+    IBatchRepository batchRepository) : PageModel
 {
     private const string RowStampKey = "DefraEdit_RowStamp_{0}";
 
@@ -46,9 +42,6 @@ public class DefraEditModel(
     public IEnumerable<ILookupItem> ValuationAgeOptions { get; private set; } = [];
     public IEnumerable<ILookupItem> CaseTypeOptions { get; private set; } = [];
 
-    public IReadOnlyList<CaseTestRecord> Tests { get; private set; } = [];
-    public string SpolSiteUrl { get; private set; } = string.Empty;
-
     public async Task<IActionResult> OnGetAsync()
     {
         var record = await caseService.GetCaseAsync(Rbse);
@@ -66,9 +59,6 @@ public class DefraEditModel(
             Case.ApplyCaseWork(caseWork);
 
         var batchTask = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
-        Tests = (await testRepository.GetByRbseAsync(Rbse)).ToList().AsReadOnly();
-        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
-
         await Task.WhenAll(LoadLookupsAsync(), batchTask);
         BatchNumbers = (await batchTask).ToList().AsReadOnly();
         return Page();
@@ -76,8 +66,10 @@ public class DefraEditModel(
 
     public async Task<IActionResult> OnPostAsync()
     {
-        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadLookupsAsync();
+
+        ValidateDomainRules();
+
         if (!ModelState.IsValid)
             return Page();
 
@@ -157,5 +149,151 @@ public class DefraEditModel(
         BirthDateSourceOptions  = await birthDateSourceTask;
         ValuationAgeOptions     = await valuationAgeTask;
         CaseTypeOptions         = await caseTypeTask;
+    }
+
+    // Mirrors legacy UpdateSessionWithCaseDetails validation (FormXDateValid, DateOfBirthValid, BSE1ReceivedDateValid)
+    private void ValidateDomainRules()
+    {
+        // Eartag: mirrors BSELib.Eartag.GetEartag + .ErrorCode check from ThreePartEartag.Validate()
+        var eartagError = ValidateEartagFormat(Case.EartagCountry, Case.EartagHerdmark, Case.Eartag);
+        if (eartagError is not null)
+            ModelState.AddModelError("Case.EartagCountry", eartagError);
+
+        var today = DateTime.Today;
+
+        // Form A Date: must be ≤ SlaughterDate (if set) else ≤ today
+        if (Case.FormADate.HasValue)
+        {
+            var limit = Case.SlaughterDate.HasValue ? Case.SlaughterDate.Value.Date : today;
+            if (Case.FormADate.Value.Date > limit)
+                ModelState.AddModelError("Case.FormADate",
+                    Case.SlaughterDate.HasValue
+                        ? $"Form A date must be before the slaughter date ({Case.SlaughterDate.Value:dd/MM/yyyy})."
+                        : "Form A date must be a past date.");
+        }
+
+        // Form A Resubmitted Date: requires Form A, must be after Form A and ≤ today
+        if (Case.FormAResubmittedDate.HasValue)
+        {
+            if (!Case.FormADate.HasValue)
+                ModelState.AddModelError("Case.FormAResubmittedDate",
+                    "Form A resubmitted date requires a Form A date to be set.");
+            else if (Case.FormAResubmittedDate.Value.Date <= Case.FormADate.Value.Date)
+                ModelState.AddModelError("Case.FormAResubmittedDate",
+                    "Form A resubmitted date must be after the Form A date.");
+            else if (Case.FormAResubmittedDate.Value.Date > today)
+                ModelState.AddModelError("Case.FormAResubmittedDate",
+                    "Form A resubmitted date must be a past date.");
+        }
+
+        // Form B Date: requires Form A, must be after Form A and ≤ today
+        if (Case.FormBDate.HasValue)
+        {
+            if (!Case.FormADate.HasValue)
+                ModelState.AddModelError("Case.FormBDate",
+                    "Form B date requires a Form A date to be set.");
+            else if (Case.FormBDate.Value.Date <= Case.FormADate.Value.Date)
+                ModelState.AddModelError("Case.FormBDate",
+                    "Form B date must be after the Form A date.");
+            else if (Case.FormBDate.Value.Date > today)
+                ModelState.AddModelError("Case.FormBDate",
+                    "Form B date must be a past date.");
+        }
+
+        // Fate required when Form B Date is filled
+        if (Case.FormBDate.HasValue && string.IsNullOrWhiteSpace(Case.Fate))
+            ModelState.AddModelError("Case.Fate",
+                "Fate (Form B reason) is required when a Form B date is entered.");
+
+        // Form C Date: requires Form B Date (FormC ≠ FormB is a soft warning — not a hard block)
+        if (Case.FormCDate.HasValue && !Case.FormBDate.HasValue)
+            ModelState.AddModelError("Case.FormCDate",
+                "Form C date requires a Form B date to be set.");
+
+        // Date of Birth: after 1 Jan 1970, before Form A date (or today), PurchaseDate, OnsetDate
+        if (Case.BirthDate.HasValue)
+        {
+            if (Case.BirthDate.Value.Date < new DateTime(1970, 1, 1))
+                ModelState.AddModelError("Case.BirthDate",
+                    "Date of birth must be after 1 January 1970.");
+            else
+            {
+                var formALimit = Case.FormADate.HasValue ? Case.FormADate.Value.Date : today;
+                if (Case.BirthDate.Value.Date >= formALimit)
+                    ModelState.AddModelError("Case.BirthDate",
+                        Case.FormADate.HasValue
+                            ? "Date of birth must be before the Form A date."
+                            : "Date of birth must be a past date.");
+
+                if (Case.PurchaseDate.HasValue && Case.BirthDate.Value.Date >= Case.PurchaseDate.Value.Date)
+                    ModelState.AddModelError("Case.BirthDate",
+                        "Date of birth must be before the purchase date.");
+
+                if (Case.OnsetDate.HasValue && Case.BirthDate.Value.Date >= Case.OnsetDate.Value.Date)
+                    ModelState.AddModelError("Case.BirthDate",
+                        "Date of birth must be before the onset date.");
+            }
+        }
+
+        // BSE-1 receipt dates: if filled, must be after RBSEDate + 1 day and ≤ today
+        if (Case.HasCaseWork && Case.RbseDate.HasValue)
+        {
+            var minDate = Case.RbseDate.Value.Date.AddDays(1);
+            void CheckBse1Date(DateTime? date, string field, string label)
+            {
+                if (!date.HasValue) return;
+                if (date.Value.Date < minDate)
+                    ModelState.AddModelError(field,
+                        $"{label} must be after the RBSE date ({Case.RbseDate.Value:dd/MM/yyyy}).");
+                else if (date.Value.Date > today)
+                    ModelState.AddModelError(field, $"{label} must be a past date.");
+            }
+            CheckBse1Date(Case.PurchaserBse1ReceivedDate, "Case.PurchaserBse1ReceivedDate", "Purchaser BSE-1 received date");
+            CheckBse1Date(Case.BreederBse1ReceivedDate,   "Case.BreederBse1ReceivedDate",   "Breeder BSE-1 received date");
+            CheckBse1Date(Case.Vendor1Bse1ReceivedDate,   "Case.Vendor1Bse1ReceivedDate",   "Vendor 1 BSE-1 received date");
+            CheckBse1Date(Case.HomebredBse1ReceivedDate,  "Case.HomebredBse1ReceivedDate",  "Homebred BSE-1 received date");
+            CheckBse1Date(Case.SummarySheetReceivedDate,  "Case.SummarySheetReceivedDate",  "Summary sheet received date");
+            CheckBse1Date(Case.PaperworkCompleteDate,     "Case.PaperworkCompleteDate",     "Paperwork complete date");
+        }
+    }
+
+    // Mirrors BSELib.Eartag.GetEartag routing and each format's Validate() method.
+    private static string? ValidateEartagFormat(string? country, string? herdmark, string? animal)
+    {
+        var c = (country  ?? "").Trim().ToUpperInvariant();
+        var h = (herdmark ?? "").Trim().ToUpperInvariant();
+        var a = (animal   ?? "").Trim().ToUpperInvariant();
+
+        if (c == "" && h == "" && a == "") return null; // eartag is optional
+
+        // ISO EID format: country code longer than 2 chars (IsoNumericCountryEartagFormat / IsoAlphaNumericCountryEartagFormat)
+        if (c.Length > 2)
+        {
+            if (c.Length > 0 && char.IsDigit(c[0]))
+            {
+                if (!Regex.IsMatch(c, @"^\d{3}[012_ ]?$"))
+                    return "Country component is invalid: It should contain 3 numerical digits followed by 0, 1, 2, _ or space character.";
+            }
+            if (!Regex.IsMatch(h, @"^\d{6}$"))
+                return "Herd component is invalid: It should contain 6 numerical digits.";
+            if (!Regex.IsMatch(a, @"^\d{5}$"))
+                return "Animal component is invalid: It should contain 5 numerical digits.";
+            return null;
+        }
+
+        // UK eartag: UKEartag formats inherit EartagFormatBase.Validate which returns empty — no blocking error
+        if (c == "UK") return null;
+
+        // EC non-UK country codes: ECEartagFormat.Validate checks animal is 1–12 uppercase alphanumeric chars
+        string[] ecCodes = ["AT", "BE", "DE", "DK", "EL", "ES", "FI", "FR", "IE", "IT", "LU", "NL", "PT", "SE"];
+        if (ecCodes.Contains(c))
+        {
+            if (!Regex.IsMatch(a, @"^[0-9A-Z]{1,12}$"))
+                return "Animal component is invalid: It should contain 1 to 12 numerical or uppercase alphabetical characters.";
+            return null;
+        }
+
+        // Unknown / no country (NoCountryEartag): FreeEartagFormat / PreBarimoEartagFormat return empty — no blocking error
+        return null;
     }
 }

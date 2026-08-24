@@ -23,8 +23,21 @@ public class OtherOwnersModel(
     public IReadOnlyList<OtherOwnerRecord> OtherOwners { get; private set; } = [];
     public IEnumerable<LookupItem> OwnerTypes { get; private set; } = [];
 
-    [BindProperty]
-    public NewOwnerViewModel NewOwner { get; set; } = new();
+    // ── Sort/pagination ───────────────────────────────────────────────────────────
+    private const int PageSize = 10;
+    [BindProperty(SupportsGet = true)] public int    OPage { get; set; } = 1;
+    [BindProperty(SupportsGet = true)] public string OSort { get; set; } = "type";
+    [BindProperty(SupportsGet = true)] public string ODir  { get; set; } = "asc";
+    public int OtherOwnersTotalPages { get; private set; } = 1;
+    public int OtherOwnersTotalCount { get; private set; }
+
+    // ── Edit fields ───────────────────────────────────────────────────────────────
+    [BindProperty(SupportsGet = true)] public int EditOwnerId { get; set; }
+    [BindProperty] public string? EditOwnerType           { get; set; }
+    [BindProperty] public string? EditOwnerName           { get; set; }
+    [BindProperty] public string? EditOwnerCphh           { get; set; }
+    [BindProperty] public string? EditOwnerRowStampBase64 { get; set; }
+    [BindProperty] public NewOwnerViewModel NewOwner { get; set; } = new();
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -34,9 +47,24 @@ public class OtherOwnersModel(
 
     public async Task<IActionResult> OnPostAddOwnerAsync()
     {
+        // Must have either Name or CPHH (mirrors legacy lblOwnerError)
         if (string.IsNullOrWhiteSpace(NewOwner.Type))
-        {
             ModelState.AddModelError(string.Empty, "Owner type is required.");
+        if (string.IsNullOrWhiteSpace(NewOwner.Name) && string.IsNullOrWhiteSpace(NewOwner.Cphh))
+            ModelState.AddModelError(string.Empty, "You must enter either an owner name or a CPHH.");
+
+        // Only one Previous-type owner allowed (mirrors legacy lblPreviousError)
+        if (!string.IsNullOrWhiteSpace(NewOwner.Type))
+        {
+            var allOwners = await ownerRepository.GetByRbseAsync(Rbse);
+            var typeDesc  = OwnerTypes.FirstOrDefault(t => t.Code == NewOwner.Type)?.Description ?? "";
+            if (typeDesc.Contains("Previous", StringComparison.OrdinalIgnoreCase) &&
+                allOwners.Any(o => o.Type == NewOwner.Type))
+                ModelState.AddModelError(string.Empty, "You can only have one owner of type Previous.");
+        }
+
+        if (!ModelState.IsValid)
+        {
             await LoadAsync();
             return Page();
         }
@@ -57,6 +85,42 @@ public class OtherOwnersModel(
         return RedirectToPage(new { rbse = Rbse });
     }
 
+    public async Task<IActionResult> OnPostEditOwnerAsync()
+    {
+        if (string.IsNullOrWhiteSpace(EditOwnerType))
+        {
+            ModelState.AddModelError(nameof(EditOwnerType), "Owner type is required.");
+            await LoadAsync();
+            return Page();
+        }
+        if (string.IsNullOrWhiteSpace(EditOwnerName) && string.IsNullOrWhiteSpace(EditOwnerCphh))
+        {
+            ModelState.AddModelError(nameof(EditOwnerName), "You must enter either an owner name or a CPHH.");
+            await LoadAsync();
+            return Page();
+        }
+        // Previous-type uniqueness: exclude current record
+        var allOwners = await ownerRepository.GetByRbseAsync(Rbse);
+        var typeDesc  = OwnerTypes.FirstOrDefault(t => t.Code == EditOwnerType)?.Description ?? "";
+        if (typeDesc.Contains("Previous", StringComparison.OrdinalIgnoreCase) &&
+            allOwners.Any(o => o.Type == EditOwnerType && o.Id != EditOwnerId))
+        {
+            ModelState.AddModelError(nameof(EditOwnerType), "You can only have one owner of type Previous.");
+            await LoadAsync();
+            return Page();
+        }
+        var rowStamp = Convert.FromBase64String(EditOwnerRowStampBase64 ?? string.Empty);
+        using var conn = connectionFactory.CreateConnection();
+        conn.Open();
+        using var tx = conn.BeginTransaction();
+        await ownerRepository.EditAsync(
+            new EditOtherOwnerCommand(EditOwnerId, Rbse, EditOwnerType,
+                EditOwnerName, EditOwnerCphh, rowStamp), conn, tx);
+        tx.Commit();
+        TempData["Success"] = "Owner record updated.";
+        return RedirectToPage(new { rbse = Rbse });
+    }
+
     public async Task<IActionResult> OnPostDeleteOwnerAsync(int ownerId, string rowStampBase64)
     {
         var rowStamp = Convert.FromBase64String(rowStampBase64);
@@ -72,9 +136,25 @@ public class OtherOwnersModel(
 
     private async Task LoadAsync()
     {
-        OtherOwners = await ownerRepository.GetByRbseAsync(Rbse);
-        OwnerTypes = await lookups.GetLookupAsync(LookupTableId.OwnerType);
+        var allOwners = (await ownerRepository.GetByRbseAsync(Rbse)).ToList();
+        OtherOwnersTotalCount = allOwners.Count;
+        OtherOwnersTotalPages = Math.Max(1, (int)Math.Ceiling(allOwners.Count / (double)PageSize));
+        OPage = Math.Clamp(OPage, 1, OtherOwnersTotalPages);
+        IEnumerable<OtherOwnerRecord> sorted = OSort == "cphh"
+            ? (ODir == "desc" ? allOwners.OrderByDescending(o => o.Cphh) : allOwners.OrderBy(o => o.Cphh))
+            : (ODir == "desc" ? allOwners.OrderByDescending(o => o.Type) : allOwners.OrderBy(o => o.Type));
+        OtherOwners = sorted.Skip((OPage - 1) * PageSize).Take(PageSize).ToList().AsReadOnly();
+        OwnerTypes  = await lookups.GetLookupAsync(LookupTableId.OwnerType);
     }
+
+    public string OtherOwnersSortUrl(string col)
+    {
+        var dir = string.Equals(OSort, col, StringComparison.OrdinalIgnoreCase) && ODir == "asc" ? "desc" : "asc";
+        return $"?rbse={Uri.EscapeDataString(Rbse)}&OSort={col}&ODir={dir}&OPage=1";
+    }
+
+    public string OtherOwnersPageUrl(int page) =>
+        $"?rbse={Uri.EscapeDataString(Rbse)}&OPage={page}&OSort={OSort}&ODir={ODir}";
 
     public class NewOwnerViewModel
     {

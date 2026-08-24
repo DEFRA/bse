@@ -47,11 +47,28 @@ public class EditModel(
     public IEnumerable<BSE.SharedKernel.ILookupItem> ValuationAgeOptions { get; private set; } = [];
     public IEnumerable<BSE.SharedKernel.ILookupItem> CaseTypeOptions { get; private set; } = [];
 
-    // Tests grid (read-only summary)
+    // Tests grid
     public IReadOnlyList<CaseTestRecord> Tests { get; private set; } = [];
 
     // View Docs — SharePoint URL (RBSE appended by view, slashes stripped)
     public string SpolSiteUrl { get; private set; } = string.Empty;
+
+    public IEnumerable<ILookupItem> TestTypeOptions { get; private set; } = [];
+    public IEnumerable<ILookupItem> TestResultOptions { get; private set; } = [];
+
+    private const int TestsPageSize = 10;
+    [BindProperty(SupportsGet = true)] public int    TPage { get; set; } = 1;
+    [BindProperty(SupportsGet = true)] public string TSort { get; set; } = "type";
+    [BindProperty(SupportsGet = true)] public string TDir  { get; set; } = "asc";
+    public int TestsTotalPages { get; private set; } = 1;
+    public int TestsTotalCount { get; private set; }
+
+    [BindProperty] public string  NewTestType          { get; set; } = string.Empty;
+    [BindProperty] public string? NewTestResult        { get; set; }
+    [BindProperty(SupportsGet = true)] public int EditTestId { get; set; }
+    [BindProperty] public string  EditTestType          { get; set; } = string.Empty;
+    [BindProperty] public string? EditTestResult        { get; set; }
+    [BindProperty] public string? EditTestRowStampBase64 { get; set; }
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -70,10 +87,9 @@ public class EditModel(
             Case.ApplyCaseWork(caseWork);
 
         var batchTask = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
-        Tests = (await testRepository.GetByRbseAsync(Rbse)).ToList().AsReadOnly();
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
 
-        await Task.WhenAll(LoadLookupsAsync(), batchTask);
+        await Task.WhenAll(LoadLookupsAsync(), batchTask, LoadTestsAsync());
         BatchNumbers = (await batchTask).ToList().AsReadOnly();
         return Page();
     }
@@ -154,8 +170,11 @@ public class EditModel(
         var birthDateSourceTask  = lookups.GetLookupAsync(LookupTableId.BirthDateSource);
         var valuationAgeTask     = lookups.GetLookupAsync(LookupTableId.ValuationAge);
         var caseTypeTask         = lookups.GetLookupAsync(LookupTableId.CaseType);
+        var testTypeTask         = lookups.GetLookupAsync(LookupTableId.TestType);
+        var testResultTask       = lookups.GetLookupAsync(LookupTableId.TestResult);
 
-        await Task.WhenAll(fateTask, surveyTask, reportedLocationTask, birthDateSourceTask, valuationAgeTask, caseTypeTask);
+        await Task.WhenAll(fateTask, surveyTask, reportedLocationTask, birthDateSourceTask,
+                           valuationAgeTask, caseTypeTask, testTypeTask, testResultTask);
 
         FateOptions             = await fateTask;
         SurveyOptions           = await surveyTask;
@@ -163,5 +182,80 @@ public class EditModel(
         BirthDateSourceOptions  = await birthDateSourceTask;
         ValuationAgeOptions     = await valuationAgeTask;
         CaseTypeOptions         = await caseTypeTask;
+        TestTypeOptions         = await testTypeTask;
+        TestResultOptions       = await testResultTask;
     }
+
+    private async Task LoadTestsAsync()
+    {
+        var all = (await testRepository.GetByRbseAsync(Rbse)).ToList();
+        TestsTotalCount = all.Count;
+        TestsTotalPages = Math.Max(1, (int)Math.Ceiling(all.Count / (double)TestsPageSize));
+        TPage = Math.Clamp(TPage, 1, TestsTotalPages);
+        IEnumerable<CaseTestRecord> sorted = TSort switch
+        {
+            "result" => TDir == "desc" ? all.OrderByDescending(t => t.TestResultDescription) : all.OrderBy(t => t.TestResultDescription),
+            _        => TDir == "desc" ? all.OrderByDescending(t => t.TestTypeDescription)   : all.OrderBy(t => t.TestTypeDescription),
+        };
+        Tests = sorted.Skip((TPage - 1) * TestsPageSize).Take(TestsPageSize).ToList().AsReadOnly();
+    }
+
+    public async Task<IActionResult> OnPostAddTestAsync()
+    {
+        if (!User.IsInRole("DataEntry"))
+            return Forbid();
+        if (string.IsNullOrWhiteSpace(NewTestType))
+        {
+            ModelState.AddModelError(nameof(NewTestType), "Select a test type.");
+            var record = await caseService.GetCaseAsync(Rbse);
+            if (record is not null) { Case = CaseEditViewModel.FromRecord(record); var cw = await caseWorkRepository.GetByRbseAsync(Rbse); if (cw is not null) Case.ApplyCaseWork(cw); }
+            SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+            var batchTask = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
+            await Task.WhenAll(LoadLookupsAsync(), LoadTestsAsync(), batchTask);
+            BatchNumbers = (await batchTask).ToList().AsReadOnly();
+            return Page();
+        }
+        await testRepository.AddAsync(new AddTestCommand(Rbse.Replace("/", ""), NewTestType, NewTestResult));
+        TempData["Success"] = "Test record added.";
+        return RedirectToPage(new { rbse = Rbse });
+    }
+
+    public async Task<IActionResult> OnPostEditTestAsync()
+    {
+        if (!User.IsInRole("DataEntry"))
+            return Forbid();
+        if (string.IsNullOrWhiteSpace(EditTestType))
+        {
+            ModelState.AddModelError(nameof(EditTestType), "Select a test type.");
+            var record = await caseService.GetCaseAsync(Rbse);
+            if (record is not null) { Case = CaseEditViewModel.FromRecord(record); var cw = await caseWorkRepository.GetByRbseAsync(Rbse); if (cw is not null) Case.ApplyCaseWork(cw); }
+            SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+            var batchTask = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
+            await Task.WhenAll(LoadLookupsAsync(), LoadTestsAsync(), batchTask);
+            BatchNumbers = (await batchTask).ToList().AsReadOnly();
+            return Page();
+        }
+        var rowStamp = Convert.FromBase64String(EditTestRowStampBase64 ?? string.Empty);
+        await testRepository.EditAsync(new EditTestCommand(EditTestId, Rbse.Replace("/", ""), EditTestType, EditTestResult, rowStamp));
+        TempData["Success"] = "Test record updated.";
+        return RedirectToPage(new { rbse = Rbse });
+    }
+
+    public async Task<IActionResult> OnPostDeleteTestAsync(int id, string rowStampBase64)
+    {
+        if (!User.IsInRole("DataEntry"))
+            return Forbid();
+        await testRepository.DeleteAsync(id, Convert.FromBase64String(rowStampBase64));
+        TempData["Success"] = "Test record deleted.";
+        return RedirectToPage(new { rbse = Rbse });
+    }
+
+    public string TestsSortUrl(string col)
+    {
+        var dir = string.Equals(TSort, col, StringComparison.OrdinalIgnoreCase) && TDir == "asc" ? "desc" : "asc";
+        return $"?rbse={Uri.EscapeDataString(Rbse)}&TSort={col}&TDir={dir}&TPage=1";
+    }
+
+    public string TestsPageUrl(int page) =>
+        $"?rbse={Uri.EscapeDataString(Rbse)}&TPage={page}&TSort={TSort}&TDir={TDir}";
 }

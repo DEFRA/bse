@@ -47,6 +47,21 @@ public class FarmModel(
     public string? LocalAuthorityName { get; private set; }
     public IReadOnlyList<BatchNumberEntry> BatchNumbers { get; private set; } = [];
 
+    // ── Table pagination / sort state (matches legacy DataGridPager PageLinkCount=10) ──
+    public const int PageSize = 10;
+
+    [BindProperty(SupportsGet = true)] public int    LPage { get; set; } = 1;
+    [BindProperty(SupportsGet = true)] public string LSort { get; set; } = "cphh";
+    [BindProperty(SupportsGet = true)] public string LDir  { get; set; } = "asc";
+    public int LinkedFarmsTotalPages { get; private set; } = 1;
+    public int LinkedFarmsTotalCount { get; private set; }
+
+    [BindProperty(SupportsGet = true)] public int    HPage { get; set; } = 1;
+    [BindProperty(SupportsGet = true)] public string HSort { get; set; } = "year";
+    [BindProperty(SupportsGet = true)] public string HDir  { get; set; } = "desc";
+    public int HerdSizesTotalPages { get; private set; } = 1;
+    public int HerdSizesTotalCount { get; private set; }
+
     public string SpolSiteUrl { get; private set; } = string.Empty;
 
     [BindProperty]
@@ -54,6 +69,16 @@ public class FarmModel(
 
     [BindProperty]
     public HerdSizeFormViewModel NewHerdSize { get; set; } = new();
+
+    // ── Edit: Linked farm ──────────────────────────────────────────────────────
+    [BindProperty(SupportsGet = true)] public int EditLinkedFarmId { get; set; }
+    [BindProperty] public string? EditLinkedFarmCphh { get; set; }
+    [BindProperty] public string? EditLinkedFarmRowStampBase64 { get; set; }
+
+    // ── Edit: Herd size ────────────────────────────────────────────────────────
+    [BindProperty(SupportsGet = true)] public int EditHerdSizeId { get; set; }
+    [BindProperty] public HerdSizeFormViewModel EditHerdSize { get; set; } = new();
+    [BindProperty] public string? EditHerdSizeRowStampBase64 { get; set; }
 
     // ── GET ────────────────────────────────────────────────────────────────────
 
@@ -110,6 +135,57 @@ public class FarmModel(
         var rowStamp = Convert.FromBase64String(rowStampBase64);
         await relationRepo.DeleteAsync(id, rowStamp);
         TempData["Success"] = "Linked farm removed.";
+        return RedirectToPage(new { rbse = Rbse });
+    }
+
+    public async Task<IActionResult> OnPostEditLinkedFarmAsync()
+    {
+        if (!User.IsInRole("DataEntry"))
+            return Forbid();
+
+        Case = await caseService.GetCaseAsync(Rbse);
+
+        if (string.IsNullOrWhiteSpace(EditLinkedFarmCphh))
+        {
+            ModelState.AddModelError(nameof(EditLinkedFarmCphh), "Enter a CPHH.");
+            await LoadFromCase();
+            return Page();
+        }
+
+        var normalisedCphh = EditLinkedFarmCphh.Trim().ToUpperInvariant().Replace("/", "");
+
+        if (normalisedCphh.Length > 11)
+        {
+            ModelState.AddModelError(nameof(EditLinkedFarmCphh), "CPHH must be 11 characters or fewer.");
+            await LoadFromCase();
+            return Page();
+        }
+
+        if (Case?.Cphh is { } cphh)
+        {
+            // Cannot link a farm to itself
+            if (string.Equals(cphh.Replace("/", ""), normalisedCphh, StringComparison.OrdinalIgnoreCase))
+            {
+                ModelState.AddModelError(nameof(EditLinkedFarmCphh), "Cannot link a farm to itself.");
+                await LoadFromCase();
+                return Page();
+            }
+
+            // Duplicate CPHH check — exclude current record (mirrors legacy LinkedFarmsPager_RowSave)
+            var existing = await farmService.GetRelatedFarmsAsync(cphh);
+            if (existing.Any(f => string.Equals(f.RelatedCPHH, normalisedCphh, StringComparison.OrdinalIgnoreCase)
+                               && f.ID != EditLinkedFarmId))
+            {
+                ModelState.AddModelError(nameof(EditLinkedFarmCphh), "CPHH already exists in the Linked Farms list.");
+                await LoadFromCase();
+                return Page();
+            }
+
+            var rowStamp = Convert.FromBase64String(EditLinkedFarmRowStampBase64 ?? string.Empty);
+            await relationRepo.UpdateAsync(EditLinkedFarmId, normalisedCphh, rowStamp);
+        }
+
+        TempData["Success"] = "Linked farm updated.";
         return RedirectToPage(new { rbse = Rbse });
     }
 
@@ -178,6 +254,80 @@ public class FarmModel(
         return RedirectToPage(new { rbse = Rbse });
     }
 
+    public async Task<IActionResult> OnPostEditHerdSizeAsync()
+    {
+        if (!User.IsInRole("DataEntry"))
+            return Forbid();
+
+        if (EditHerdSize.HerdYear < 1980 || EditHerdSize.HerdYear > 2100)
+        {
+            ModelState.AddModelError("EditHerdSize.HerdYear", "Year must be a valid year (1980–2100).");
+            Case = await caseService.GetCaseAsync(Rbse);
+            await LoadFromCase();
+            return Page();
+        }
+
+        if (EditHerdSize.TotalSize <= 0)
+        {
+            ModelState.AddModelError("EditHerdSize.TotalSize", "Total size must be greater than zero.");
+            Case = await caseService.GetCaseAsync(Rbse);
+            await LoadFromCase();
+            return Page();
+        }
+
+        var rowStamp = EditHerdSizeRowStampBase64 is not null
+            ? Convert.FromBase64String(EditHerdSizeRowStampBase64)
+            : null;
+
+        await herdSizeRepo.UpdateAsync(new UpdateHerdSizeCommand(
+            EditHerdSizeId,
+            (short)EditHerdSize.HerdYear,
+            (short)EditHerdSize.TotalSize,
+            (short)EditHerdSize.Lactation1Size,
+            (short)EditHerdSize.Lactation2Size,
+            (short)EditHerdSize.Lactation3Size,
+            (short)EditHerdSize.Lactation4Size,
+            (short)EditHerdSize.Lactation5Size,
+            (short)EditHerdSize.Lactation6Size,
+            (short)EditHerdSize.Lactation7Size,
+            (short)EditHerdSize.Lactation8Size,
+            (short)EditHerdSize.Lactation9Size,
+            (short)EditHerdSize.Lactation10Size,
+            (short)EditHerdSize.Lactation10PlusSize,
+            rowStamp));
+
+        var lacTotal = EditHerdSize.Lactation1Size + EditHerdSize.Lactation2Size + EditHerdSize.Lactation3Size
+                     + EditHerdSize.Lactation4Size + EditHerdSize.Lactation5Size + EditHerdSize.Lactation6Size
+                     + EditHerdSize.Lactation7Size + EditHerdSize.Lactation8Size + EditHerdSize.Lactation9Size
+                     + EditHerdSize.Lactation10Size + EditHerdSize.Lactation10PlusSize;
+
+        if (lacTotal > 0 && lacTotal != EditHerdSize.TotalSize)
+            TempData["Warning"] = $"Herd size for {EditHerdSize.HerdYear} updated, but the lactation total ({lacTotal}) does not equal the total herd size ({EditHerdSize.TotalSize}).";
+        else
+            TempData["Success"] = $"Herd size for {EditHerdSize.HerdYear} updated.";
+
+        return RedirectToPage(new { rbse = Rbse });
+    }
+
+    // ── AJAX: farm status for a CPHH (mirrors legacy GetRelatedFarmDetails) ────
+
+    public async Task<IActionResult> OnGetLinkedFarmStatusAsync(string? cphh)
+    {
+        if (string.IsNullOrWhiteSpace(cphh))
+            return new JsonResult(new { status = (string?)null });
+
+        var normalised = cphh.Trim().ToUpperInvariant().Replace("/", "");
+        if (normalised.Length == 0 || normalised.Length > 11)
+            return new JsonResult(new { status = (string?)null });
+
+        var farm = await farmService.GetByCphhAsync(normalised);
+        var status = !string.IsNullOrWhiteSpace(farm?.OwnerName)
+            ? $"{farm.OwnerName}, {farm.Address1}"
+            : "BSE Free";
+
+        return new JsonResult(new { status });
+    }
+
     // ── Helpers ────────────────────────────────────────────────────────────────
 
     private async Task LoadAsync()
@@ -208,8 +358,36 @@ public class FarmModel(
 
         Farm              = await farmTask;
         ConfirmedCaseCount = await confirmedTask;
-        LinkedFarms       = (await linkedTask).ToList().AsReadOnly();
-        HerdSizes         = (await herdTask).OrderByDescending(h => h.HerdYear).ToList().AsReadOnly();
+        var allLinked = (await linkedTask).ToList();
+        LinkedFarmsTotalCount = allLinked.Count;
+        LinkedFarmsTotalPages = Math.Max(1, (int)Math.Ceiling(allLinked.Count / (double)PageSize));
+        IEnumerable<FarmRelationRecord> sortedLinked = LSort == "status"
+            ? (LDir == "desc" ? allLinked.OrderByDescending(f => f.Status) : allLinked.OrderBy(f => f.Status))
+            : (LDir == "desc" ? allLinked.OrderByDescending(f => f.RelatedCPHH) : allLinked.OrderBy(f => f.RelatedCPHH));
+        LPage = Math.Clamp(LPage, 1, LinkedFarmsTotalPages);
+        LinkedFarms = sortedLinked.Skip((LPage - 1) * PageSize).Take(PageSize).ToList().AsReadOnly();
+
+        var allHerd = (await herdTask).ToList();
+        HerdSizesTotalCount = allHerd.Count;
+        HerdSizesTotalPages = Math.Max(1, (int)Math.Ceiling(allHerd.Count / (double)PageSize));
+        IEnumerable<HerdSizeRecord> sortedHerd = HSort switch
+        {
+            "total"  => HDir == "asc" ? allHerd.OrderBy(h => h.TotalSize)            : allHerd.OrderByDescending(h => h.TotalSize),
+            "lac1"   => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation1Size)       : allHerd.OrderByDescending(h => h.Lactation1Size),
+            "lac2"   => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation2Size)       : allHerd.OrderByDescending(h => h.Lactation2Size),
+            "lac3"   => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation3Size)       : allHerd.OrderByDescending(h => h.Lactation3Size),
+            "lac4"   => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation4Size)       : allHerd.OrderByDescending(h => h.Lactation4Size),
+            "lac5"   => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation5Size)       : allHerd.OrderByDescending(h => h.Lactation5Size),
+            "lac6"   => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation6Size)       : allHerd.OrderByDescending(h => h.Lactation6Size),
+            "lac7"   => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation7Size)       : allHerd.OrderByDescending(h => h.Lactation7Size),
+            "lac8"   => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation8Size)       : allHerd.OrderByDescending(h => h.Lactation8Size),
+            "lac9"   => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation9Size)       : allHerd.OrderByDescending(h => h.Lactation9Size),
+            "lac10"  => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation10Size)      : allHerd.OrderByDescending(h => h.Lactation10Size),
+            "lac10p" => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation10PlusSize)  : allHerd.OrderByDescending(h => h.Lactation10PlusSize),
+            _        => HDir == "asc" ? allHerd.OrderBy(h => h.HerdYear)             : allHerd.OrderByDescending(h => h.HerdYear)
+        };
+        HPage = Math.Clamp(HPage, 1, HerdSizesTotalPages);
+        HerdSizes = sortedHerd.Skip((HPage - 1) * PageSize).Take(PageSize).ToList().AsReadOnly();
 
         if (Farm is null) return;
 
@@ -244,6 +422,26 @@ public class FarmModel(
             LocalAuthorityName = authorities.FirstOrDefault(a => a.Id == Farm.AuthorityID.Value)?.Name;
         }
     }
+
+    // ── Sort / pagination URL builders ─────────────────────────────────────────
+
+    public string LinkedFarmsSortUrl(string col)
+    {
+        var dir = string.Equals(LSort, col, StringComparison.OrdinalIgnoreCase) && LDir == "asc" ? "desc" : "asc";
+        return $"?LSort={col}&LDir={dir}&LPage=1&HSort={HSort}&HDir={HDir}&HPage={HPage}";
+    }
+
+    public string LinkedFarmsPageUrl(int page) =>
+        $"?LPage={page}&LSort={LSort}&LDir={LDir}&HSort={HSort}&HDir={HDir}&HPage={HPage}";
+
+    public string HerdSizeSortUrl(string col)
+    {
+        var dir = string.Equals(HSort, col, StringComparison.OrdinalIgnoreCase) && HDir == "asc" ? "desc" : "asc";
+        return $"?HSort={col}&HDir={dir}&HPage=1&LSort={LSort}&LDir={LDir}&LPage={LPage}";
+    }
+
+    public string HerdSizesPageUrl(int page) =>
+        $"?HPage={page}&HSort={HSort}&HDir={HDir}&LPage={LPage}&LSort={LSort}&LDir={LDir}";
 
     // ── View models ────────────────────────────────────────────────────────────
 

@@ -83,7 +83,12 @@ public class FinalResultEntryModel(
             Rbse: Rbse.Trim(),
             FinalResult: FinalResult,
             FinalResultDate: FinalResultDate,
-            Dbse: Dbse);
+            RetrospectiveTestType: null,
+            RetrospectiveResult: null,
+            RetrospectiveResultDate: null,
+            RetrospectiveComment: null,
+            LabComment: details.Case?.LabComment,
+            RowStamp: details.Case?.RowStamp ?? []);
 
         var result = await cases.SaveFinalResultAsync(command, userId);
 

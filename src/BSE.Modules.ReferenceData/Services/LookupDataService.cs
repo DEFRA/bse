@@ -37,13 +37,13 @@ public sealed class LookupDataService : ILookupDataService
             LookupTableId.AHRO =>
                 (await _repo.GetAHROAsync()).Select(x => new LookupItem(x.Id, x.Name)),
             LookupTableId.AnimalOrigin =>
-                (await _repo.GetAnimalOriginsAsync()).Select(x => new LookupItem(x.Id, x.Description)),
+                (await _repo.GetAnimalOriginsAsync()).Select(x => new LookupItem(x.Id, x.Code, x.Description)),
             LookupTableId.AnimalStatus =>
-                (await _repo.GetAnimalStatusesAsync()).Select(x => new LookupItem(x.Id, x.Description)),
+                (await _repo.GetAnimalStatusesAsync()).Select(x => new LookupItem(x.Id, x.Code, x.Description)),
             LookupTableId.BirthDateSource =>
                 await _repo.GetBirthDateSourcesAsync(),
             LookupTableId.Breed =>
-                (await _repo.GetBreedsAsync()).Select(x => new LookupItem(x.Id, x.FullName)),
+                (await _repo.GetBreedsAsync()).Select(x => new LookupItem(x.Id, x.Code, x.FullName)),
             LookupTableId.BSECounty =>
                 (await _repo.GetBSECountiesAsync()).Select(x => new LookupItem(x.Id, x.Code, x.Description)),
             LookupTableId.BSEForm =>
@@ -51,15 +51,15 @@ public sealed class LookupDataService : ILookupDataService
             LookupTableId.BSERegion =>
                 (await _repo.GetBSERegionsAsync()).Select(x => new LookupItem(x.Id, x.Name)),
             LookupTableId.CaseFate =>
-                (await _repo.GetCaseFatesAsync()).Select(x => new LookupItem(x.Id, x.Description)),
+                (await _repo.GetCaseFatesAsync()).Select(x => new LookupItem(x.Id, x.Code, x.Description)),
             LookupTableId.CaseType =>
-                (await _repo.GetCaseTypesAsync()).Select(x => new LookupItem(x.Id, x.Description)),
+                (await _repo.GetCaseTypesAsync()).Select(x => new LookupItem(x.Id, x.Code, x.Description)),
             LookupTableId.DocumentType =>
                 await _repo.GetDocumentTypesAsync(),
             LookupTableId.FeedRisk =>
                 await _repo.GetFeedRisksAsync(),
             LookupTableId.HerdType =>
-                (await _repo.GetHerdTypesAsync()).Select(x => new LookupItem(x.Id, x.Description)),
+                (await _repo.GetHerdTypesAsync()).Select(x => new LookupItem(x.Id, x.Code, x.Description)),
             LookupTableId.HorizontalRisk =>
                 await _repo.GetHorizontalRisksAsync(),
             LookupTableId.MaternalRisk =>
@@ -73,21 +73,21 @@ public sealed class LookupDataService : ILookupDataService
             LookupTableId.RegionalLab =>
                 await _repo.GetRegionalLabsAsync(),
             LookupTableId.RelationFate =>
-                (await _repo.GetRelationFatesAsync()).Select(x => new LookupItem(x.Id, x.Description)),
+                (await _repo.GetRelationFatesAsync()).Select(x => new LookupItem(x.Id, x.Code, x.Description)),
             LookupTableId.RelationType =>
                 await _repo.GetRelationTypesAsync(),
             LookupTableId.ReportedLocation =>
                 await _repo.GetReportedLocationsAsync(),
             LookupTableId.Sex =>
-                (await _repo.GetSexesAsync()).Select(x => new LookupItem(x.Id, x.Description)),
+                (await _repo.GetSexesAsync()).Select(x => new LookupItem(x.Id, x.Code, x.Description)),
             LookupTableId.Supplier =>
                 (await _repo.GetSuppliersAsync()).Select(x => new LookupItem(x.Id, x.Name)),
             LookupTableId.Survey =>
                 await _repo.GetSurveysAsync(),
             LookupTableId.TestResult =>
-                (await _repo.GetTestResultsAsync()).Select(x => new LookupItem(x.Id, x.Description)),
+                (await _repo.GetTestResultsAsync()).Select(x => new LookupItem(x.Id, x.Code, x.Description)),
             LookupTableId.TestType =>
-                (await _repo.GetTestTypesAsync()).Select(x => new LookupItem(x.Id, x.Description)),
+                (await _repo.GetTestTypesAsync()).Select(x => new LookupItem(x.Id, x.Code, x.Description)),
             LookupTableId.TSETestingSite =>
                 (await _repo.GetTSETestingSitesAsync()).Select(x => new LookupItem(x.Id, x.Name)),
             LookupTableId.UserGroup =>

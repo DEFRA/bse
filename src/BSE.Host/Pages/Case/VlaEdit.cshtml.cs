@@ -66,6 +66,16 @@ public class VlaEditModel(
             return Forbid();
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadLookupsAsync();
+
+        // Mirrors legacy EmptyPurchaseFields: clear purchase data when Origin is not Purchased
+        if (Case.Origin != "P")
+        {
+            Case.PurchaseDate        = null;
+            Case.PurchaseAgeInMonths = null;
+            Case.PurchasedCounty     = null;
+        }
+
+        ValidateVlaDomainRules();
         if (!ModelState.IsValid)
         {
             BatchNumbers = (await batchRepository.GetBatchNumbersByRbseAsync(Rbse)).ToList().AsReadOnly();
@@ -111,6 +121,86 @@ public class VlaEditModel(
 
         TempData["Success"] = $"Case {Rbse} has been updated.";
         return RedirectToPage(new { rbse = Rbse });
+    }
+
+    // Mirrors legacy UpdateSessionWithCaseDetails validation methods
+    private void ValidateVlaDomainRules()
+    {
+        var today     = DateTime.Today;
+        var formADate = Case.FormADate?.Date;
+
+        // BirthDate: after 1970-01-01, before FormADate or today
+        if (Case.BirthDate.HasValue)
+        {
+            if (Case.BirthDate.Value.Date < new DateTime(1970, 1, 1))
+                ModelState.AddModelError("Case.BirthDate", "Birth date must be after 31/12/1969.");
+            else
+            {
+                var limit = formADate ?? today;
+                if (Case.BirthDate.Value.Date >= limit)
+                    ModelState.AddModelError("Case.BirthDate",
+                        formADate.HasValue ? "Birth date must be before the Form A date." : "Birth date must be a past date.");
+            }
+        }
+
+        // PurchaseDate: after BirthDate, before FormADate or today
+        if (Case.PurchaseDate.HasValue)
+        {
+            if (Case.BirthDate.HasValue && Case.PurchaseDate.Value.Date <= Case.BirthDate.Value.Date)
+                ModelState.AddModelError("Case.PurchaseDate", "Purchase date must be after the birth date and before the Form A date.");
+            else
+            {
+                var limit = formADate ?? today;
+                if (Case.PurchaseDate.Value.Date >= limit)
+                    ModelState.AddModelError("Case.PurchaseDate",
+                        formADate.HasValue ? "Purchase date must be before the Form A date." : "Purchase date must be a past date.");
+            }
+        }
+
+        // HerdEntryDate: before FormADate or today
+        if (Case.HerdEntryDate.HasValue)
+        {
+            var limit = formADate ?? today;
+            if (Case.HerdEntryDate.Value.Date > limit)
+                ModelState.AddModelError("Case.HerdEntryDate",
+                    formADate.HasValue ? "Herd entry date must be before the Form A date." : "Herd entry date must be a past date.");
+        }
+
+        // OnsetDate: after BirthDate (if set), before FormADate or today
+        if (Case.OnsetDate.HasValue)
+        {
+            if (Case.BirthDate.HasValue && Case.OnsetDate.Value.Date <= Case.BirthDate.Value.Date)
+                ModelState.AddModelError("Case.OnsetDate", "Onset date must be after the date of birth and before the Form A date.");
+            else
+            {
+                var limit = formADate ?? today;
+                if (Case.OnsetDate.Value.Date > limit)
+                    ModelState.AddModelError("Case.OnsetDate",
+                        formADate.HasValue ? "Onset date must be before the Form A date." : "Onset date must be a past date.");
+            }
+        }
+
+        // MonthsPregnant and MonthsPostCalving: cannot both have values
+        if (Case.MonthsPregnant.HasValue && Case.MonthsPostCalving.HasValue)
+            ModelState.AddModelError("Case.MonthsPostCalving",
+                "You cannot enter values for both months pregnant and months post calving.");
+
+        // MonthsPregnant: 1–9; MonthsPostCalving: 1–3
+        if (Case.MonthsPregnant.HasValue && (Case.MonthsPregnant.Value < 1 || Case.MonthsPregnant.Value > 9))
+            ModelState.AddModelError("Case.MonthsPregnant", "Months pregnant must be between 1 and 9.");
+        if (Case.MonthsPostCalving.HasValue && (Case.MonthsPostCalving.Value < 1 || Case.MonthsPostCalving.Value > 3))
+            ModelState.AddModelError("Case.MonthsPostCalving", "Months post calving must be between 1 and 3.");
+
+        // SlaughterDate: after FormADate (or BirthDate) and not in the future
+        if (Case.SlaughterDate.HasValue)
+        {
+            if (Case.SlaughterDate.Value.Date > today)
+                ModelState.AddModelError("Case.SlaughterDate", "Slaughter date must not be in the future.");
+            if (formADate.HasValue && Case.SlaughterDate.Value.Date < formADate.Value)
+                ModelState.AddModelError("Case.SlaughterDate", "Slaughter date must be after the Form A date.");
+            else if (!formADate.HasValue && Case.BirthDate.HasValue && Case.SlaughterDate.Value.Date < Case.BirthDate.Value.Date)
+                ModelState.AddModelError("Case.SlaughterDate", "Slaughter date must be after the birth date.");
+        }
     }
 
     private async Task LoadLookupsAsync()
