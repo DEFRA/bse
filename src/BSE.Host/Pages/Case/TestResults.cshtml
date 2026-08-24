@@ -66,6 +66,7 @@
                     <td class="govuk-table__cell">
                         <form method="post" asp-page-handler="DeleteTest" style="display:inline" novalidate>
                             <input type="hidden" name="TestId" value="@t.Id" />
+                            <input type="hidden" name="RowStampBase64" value="@(t.RowStamp is not null ? Convert.ToBase64String(t.RowStamp) : string.Empty)" />
                             <input type="hidden" asp-for="Rbse" />
                             <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0"
                                     onclick="return confirm('Delete this test record?')">Delete</button>
