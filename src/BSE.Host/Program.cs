@@ -142,7 +142,7 @@ try
     //
     // SAML config is read from the Saml2 section in appsettings.json /
     // appsettings.{Environment}.json or environment variables SAML2__*.
-    // Never hardcode tenant IDs, entity IDs, or certificate thumbprints in source.
+    
     var bypassAuthentication = builder.Environment.IsDevelopment()
         && builder.Configuration.GetValue<bool>("Authentication:BypassEnabled");
 
@@ -259,8 +259,7 @@ try
 
     // -- Authorisation policies
     // Each policy requires exactly its own name as a role claim.
-    // GroupClaimsTransformation calls GetGroupPolicies SP (reading luGroupPolicy) and emits
-    // one ClaimTypes.Role per row - so changing luGroupPolicy rows changes access with no code deploy.
+    // GroupClaimsTransformation currently derives policy claims from a hardcoded switch on luUserGroup.Name
     // Source of truth: docs/Legacy-Page-Level-Access-Control.md (Section 5 access matrix)
     // Redirect authenticated-but-forbidden users to Home instead of returning 403.
     // Applies to both the dev-bypass path and the SAML path.
