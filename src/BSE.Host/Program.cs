@@ -142,6 +142,7 @@ try
     //
     // SAML config is read from the Saml2 section in appsettings.json /
     // appsettings.{Environment}.json or environment variables SAML2__*.
+    
     var bypassAuthentication = builder.Environment.IsDevelopment()
         && builder.Configuration.GetValue<bool>("Authentication:BypassEnabled");
 
@@ -251,6 +252,7 @@ options.Events.OnRedirectToLogin = ctx =>
 
     // ── Host services ──────────────────────────────────────────────────────────
     builder.Services.AddScoped<BSE.Host.Services.ICurrentUserService, BSE.Host.Services.CurrentUserService>();
+    builder.Services.AddScoped<BSE.Host.Services.IGeoLookupService, BSE.Host.Services.GeoLookupService>();
 
     // -- Authorisation policies
     // Each policy requires exactly its own name as a role claim.

@@ -4,5 +4,6 @@ namespace BSE.SharedKernel;
 public interface ILookupItem
 {
     int Id { get; }
+    string Code { get; }
     string Description { get; }
 }

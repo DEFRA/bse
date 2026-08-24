@@ -23,11 +23,12 @@
     </div>
 }
 
-<form method="post" novalidate>
-    @await Html.PartialAsync("_FarmFormFields", Model.Farm)
+<form method="post" novalidate id="farm-new-form">
+    <input type="hidden" name="Farm.CPHH" value="@Model.Farm.CPHH" />
+    @await Html.PartialAsync("_FarmFormFields", Model.Farm, new ViewDataDictionary(ViewData) { TemplateInfo = { HtmlFieldPrefix = "Farm" } })
 
     <div class="govuk-button-group">
         <button type="submit" class="govuk-button" data-module="govuk-button">Save farm</button>
-        <a asp-page="/Home" class="govuk-link">Cancel</a>
+        <a id="cancel-link" asp-page="/Home" class="govuk-link">Cancel</a>
     </div>
 </form>

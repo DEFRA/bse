@@ -1,10 +1,20 @@
 @page "{cphh}"
 @model BSE.Host.Pages.Farm.EditModel
 @{
-    ViewData["Title"] = "Edit farm";
+    ViewData["Title"] = $"Edit Farm — {BseFormat.FormatCphh(Model.Farm?.CPHH)}";
 }
 
-<h1 class="govuk-heading-l">Edit farm: <span class="bse-rbse">@Model.Farm?.CPHH</span></h1>
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Farm" asp-route-rbse="@Model.Rbse">@BseFormat.FormatRbse(Model.Rbse)</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Edit Farm</li>
+    </ol>
+</nav>
+
+<h1 class="govuk-heading-l">RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Rbse)</span></h1>
+
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Farm", Model.Rbse))
 
 @if (!ViewContext.ModelState.IsValid)
 {
@@ -23,11 +33,117 @@
     </div>
 }
 
-<form method="post" novalidate>
-    @await Html.PartialAsync("_FarmFormFields", Model.Farm)
+<form method="post" novalidate id="farm-edit-form">
+    <input type="hidden" name="Farm.CPHH" value="@Model.Farm?.CPHH" />
+    <input type="hidden" name="Rbse" value="@Model.Rbse" />
+    @await Html.PartialAsync("_FarmFormFields", Model.Farm, new ViewDataDictionary(ViewData) { TemplateInfo = { HtmlFieldPrefix = "Farm" } })
 
-    <div class="govuk-button-group">
-        <button type="submit" class="govuk-button" data-module="govuk-button">Save changes</button>
-        <a asp-page="/Farm/Details" asp-route-cphh="@Model.Farm?.CPHH" class="govuk-link">Cancel</a>
+    <div class="govuk-button-group govuk-!-margin-top-4">
+        <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+        <a id="cancel-link" asp-page="/Case/Farm" asp-route-rbse="@Model.Rbse" class="govuk-link">Cancel</a>
     </div>
 </form>
+
+@* Unsaved-changes warning — equivalent to legacy ExitConfirmation prompt *@
+<script>
+(function () {
+    var form = document.getElementById('farm-edit-form');
+    var cancelLink = document.getElementById('cancel-link');
+    var dirty = false;
+    var submitting = false;
+
+    form.addEventListener('change', function () { dirty = true; });
+    form.addEventListener('input',  function () { dirty = true; });
+    form.addEventListener('submit', function () { submitting = true; });
+
+    if (cancelLink) {
+        cancelLink.addEventListener('click', function (e) {
+            if (dirty) {
+                e.preventDefault();
+                if (window.confirm('You have unsaved changes. Click OK to discard them and leave, or Cancel to go back and save.')) {
+                    window.location.href = cancelLink.href;
+                }
+            }
+        });
+    }
+
+    window.addEventListener('beforeunload', function (e) {
+        if (dirty && !submitting) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+}());
+</script>
+
+@* Map reference — Estimate button and parish-boundary validation *@
+<script>
+(function () {
+    var estimateBtn  = document.getElementById('estimate-map-ref-btn');
+    var estimateMsg  = document.getElementById('estimate-map-ref-msg');
+    var mapRef1      = document.getElementById('MapRef1');
+    var mapRef2      = document.getElementById('MapRef2');
+    var mapRef3      = document.getElementById('MapRef3');
+    var cphhInput    = document.querySelector('input[name="Farm.CPHH"]');
+
+    function getCphh() { return cphhInput ? cphhInput.value.replace(/\//g, '') : ''; }
+
+    function getFullMapRef() {
+        return ((mapRef1 ? mapRef1.value.trim().toUpperCase() : '')
+              + (mapRef2 ? mapRef2.value.trim() : '')
+              + (mapRef3 ? mapRef3.value.trim() : ''));
+    }
+
+    function showMsg(text, isError) {
+        if (!estimateMsg) return;
+        estimateMsg.textContent  = text;
+        estimateMsg.style.display = text ? 'block' : 'none';
+        estimateMsg.className    = isError ? 'govuk-error-message' : 'govuk-hint';
+    }
+
+    if (estimateBtn) {
+        estimateBtn.addEventListener('click', function () {
+            var cphh = getCphh();
+            if (!cphh || cphh.length < 5) {
+                showMsg('A CPHH is required to estimate the map reference.', true);
+                return;
+            }
+            estimateBtn.disabled = true;
+            showMsg('Estimating\u2026', false);
+
+            fetch('?handler=EstimateMapReference&cphh=' + encodeURIComponent(cphh), { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function (r) { return r.json(); })
+                .then(function (d) {
+                    if (d.error) {
+                        showMsg(d.error, true);
+                    } else {
+                        if (mapRef1) mapRef1.value = d.mapRef1 || '';
+                        if (mapRef2) mapRef2.value = d.mapRef2 || '';
+                        if (mapRef3) mapRef3.value = d.mapRef3 || '';
+                        showMsg('Map reference estimated from parish centre.', false);
+                        validateMapRef();
+                    }
+                })
+                .catch(function () { showMsg('Could not contact server. Please try again.', true); })
+                .finally(function () { estimateBtn.disabled = false; });
+        });
+    }
+
+    function validateMapRef() {
+        var mapRef = getFullMapRef();
+        if (mapRef.length < 8) { showMsg('', false); return; }
+        var cphh = getCphh();
+        if (!cphh || cphh.length < 5) return;
+
+        fetch('?handler=ValidateMapReference&cphh=' + encodeURIComponent(cphh) + '&mapRef=' + encodeURIComponent(mapRef),
+              { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { return r.json(); })
+            .then(function (d) { showMsg(d.valid ? '' : (d.message || 'Map reference is outside the parish boundaries.'), !d.valid); })
+            .catch(function () { /* swallow — server-side check on POST handles final validation */ });
+    }
+
+    [mapRef1, mapRef2, mapRef3].forEach(function (el) {
+        if (el) el.addEventListener('blur', validateMapRef);
+    });
+}());
+</script>

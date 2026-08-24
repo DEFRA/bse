@@ -1,0 +1,126 @@
+﻿@page "{rbse}"
+@model BSE.Host.Pages.Case.FeedsModel
+@{
+    ViewData["Title"] = $"Feed history — {Model.Rbse}";
+    string rbseNoSlash = Model.Rbse.Replace("/", "");
+}
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Feeds</li>
+    </ol>
+</nav>
+
+<h1 class="govuk-heading-l">RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Rbse)</span></h1>
+
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Feeds", Model.Rbse))
+
+@if (TempData["Success"] is string successMsg)
+{
+    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert"
+         aria-labelledby="feeds-success-title" data-module="govuk-notification-banner">
+        <div class="govuk-notification-banner__header">
+            <h2 class="govuk-notification-banner__title" id="feeds-success-title">Success</h2>
+        </div>
+        <div class="govuk-notification-banner__content">
+            <p class="govuk-notification-banner__heading">@successMsg</p>
+        </div>
+    </div>
+}
+
+@if (!ViewContext.ModelState.IsValid)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@e.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+@* â”€â”€ Batch numbers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ *@
+@if (User.IsInRole("DataEntry") && Model.BatchNumbers.Count > 0)
+{
+    <div class="govuk-summary-card govuk-!-margin-bottom-4">
+        <div class="govuk-summary-card__title-wrapper">
+            <h2 class="govuk-summary-card__title">Batch numbers</h2>
+        </div>
+        <div class="govuk-summary-card__content">
+            <ul class="govuk-list">
+                @foreach (var b in Model.BatchNumbers)
+                {
+                    <li>@b.BatchNumber@(b.Document is not null ? $" — {b.Document}" : "")</li>
+                }
+            </ul>
+        </div>
+    </div>
+}
+@* -- Existing feed records -------------------------------------------------- *@
+@if (Model.Feeds.Count > 0)
+{
+    <table class="govuk-table">
+        <caption class="govuk-visually-hidden">Feed history for @Model.Rbse</caption>
+        <thead class="govuk-table__head">
+            <tr class="govuk-table__row">
+                @{
+                    var feedsBase = Url.Page("/Case/Feeds", new { rbse = Model.Rbse });
+                }
+                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Year from", ["Column"]="YearFrom", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=feedsBase })
+                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Year to", ["Column"]="YearTo", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=feedsBase })
+                <th scope="col" class="govuk-table__header">Ration type</th>
+                <th scope="col" class="govuk-table__header">Ration name</th>
+                <th scope="col" class="govuk-table__header">Supplier</th>
+                <th scope="col" class="govuk-table__header">Pre-purchase</th>
+                @if (User.IsInRole("DataEntry"))
+                {
+                    <th scope="col" class="govuk-table__header">Action</th>
+                }
+            </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+            @foreach (var f in Model.Feeds)
+            {
+                <tr class="govuk-table__row">
+                    <td class="govuk-table__cell">@f.YearFrom</td>
+                    <td class="govuk-table__cell">@f.YearTo</td>
+                    <td class="govuk-table__cell">@(f.RationDescription ?? f.RationType)</td>
+                    <td class="govuk-table__cell">@f.RationName</td>
+                    <td class="govuk-table__cell">@f.SupplierName</td>
+                    <td class="govuk-table__cell">@(f.IsPrePurchase ? "Yes" : "No")</td>
+                    @if (User.IsInRole("DataEntry"))
+                    {
+                    <td class="govuk-table__cell">
+                        <form method="post" asp-page-handler="DeleteFeed" style="display:inline" novalidate>
+                            <input type="hidden" name="FeedId" value="@f.Id" />
+                            <input type="hidden" asp-for="Rbse" />
+                            <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0"
+                                    onclick="return confirm('Delete this feed record?')">Delete</button>
+                        </form>
+                    </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p class="govuk-body govuk-!-colour-secondary">No feed records.</p>
+}
+
+
+@* -- Add feed record button -------------------------------------------------- *@
+@if (User.IsInRole("DataEntry"))
+{
+ <div class="govuk-button-group govuk-!-margin-top-2">
+ <a asp-page="/Case/FeedAdd" asp-route-rbse="@Model.Rbse" class="govuk-button govuk-button--secondary">Add a feed record</a>
+ </div>
+}
+

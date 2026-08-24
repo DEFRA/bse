@@ -90,30 +90,51 @@
 
     @if (Model.Filter.TotalCount > 0)
     {
+        var sortBase = "?" + string.Join("&", HttpContext.Request.Query
+            .Where(k => !string.Equals(k.Key, "Filter.SortColumn", StringComparison.OrdinalIgnoreCase)
+                     && !string.Equals(k.Key, "Filter.SortDesc", StringComparison.OrdinalIgnoreCase)
+                     && !string.Equals(k.Key, "Filter.PageNumber", StringComparison.OrdinalIgnoreCase)
+                     && !string.Equals(k.Key, "pageNumber", StringComparison.OrdinalIgnoreCase))
+            .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
+        var sortCol  = Model.Filter.SortColumn;
+        var sortDesc = Model.Filter.SortDesc;
+
         @await Html.PartialAsync("_ExportLink")
         <table class="govuk-table">
             <caption class="govuk-visually-hidden">Farm search results</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header">CPHH</th>
-                    <th scope="col" class="govuk-table__header">Owner name</th>
-                    <th scope="col" class="govuk-table__header">Address</th>
-                    <th scope="col" class="govuk-table__header">Correspondence address</th>
-                    <th scope="col" class="govuk-table__header">County</th>
-                    <th scope="col" class="govuk-table__header">Herdmark</th>
-                    <th scope="col" class="govuk-table__header">Numeric herdmark</th>
-                    <th scope="col" class="govuk-table__header">Map reference</th>
-                    <th scope="col" class="govuk-table__header">AHO</th>
-                    <th scope="col" class="govuk-table__header">Herd type</th>
-                    <th scope="col" class="govuk-table__header">Cases</th>
-                    <th scope="col" class="govuk-table__header">Confirmed</th>
+                    @{ ViewData["Label"] = "CPHH";                   ViewData["Column"] = "Cphh";                   ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Prefix"] = "Filter."; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Owner name";              ViewData["Column"] = "OwnerName"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Address";                 ViewData["Column"] = "Address"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Correspondence address";  ViewData["Column"] = "CorrespondenceAddress"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "County";                  ViewData["Column"] = "County"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Herdmark";                ViewData["Column"] = "Herdmark"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Numeric herdmark";        ViewData["Column"] = "NumericHerdmark"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Map reference";           ViewData["Column"] = "MapReference"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "AHO";                     ViewData["Column"] = "Aho"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Herd type";               ViewData["Column"] = "HerdType"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Cases";                   ViewData["Column"] = "CasesCount"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Confirmed cases";         ViewData["Column"] = "ConfirmedCasesCount"; }
+                    <partial name="_SortableHeader" />
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
                 @foreach (var r in Model.Filter.PagedResults)
                 {
                     <tr class="govuk-table__row">
-                        <td class="govuk-table__cell"><a asp-page="/Farm/Details" asp-route-cphh="@r.Cphh" class="govuk-link">@r.Cphh</a></td>
+                        <td class="govuk-table__cell"><a asp-page="/Farm/Details" asp-route-cphh="@r.Cphh" class="govuk-link">@BseFormat.FormatCphh(r.Cphh)</a></td>
                         <td class="govuk-table__cell">@r.OwnerName</td>
                         <td class="govuk-table__cell">@r.Address</td>
                         <td class="govuk-table__cell">@r.CorrespondenceAddress</td>

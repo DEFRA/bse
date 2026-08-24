@@ -1,0 +1,60 @@
+@page
+@model BSE.Host.Pages.CaseWork.ClosedReportModel
+@{
+    ViewData["Title"] = "Closed Cases Report";
+}
+
+<div class="govuk-grid-row">
+    <div class="govuk-grid-column-full">
+
+        <h1 class="govuk-heading-l">Closed Cases Report</h1>
+
+        @if (!Model.Cases.Any())
+        {
+            <p class="govuk-body">No closed cases found.</p>
+        }
+        else
+        {
+            <p class="govuk-body">@Model.Cases.Count closed case(s) found.</p>
+
+            <div class="govuk-!-overflow-x-auto">
+                <table class="govuk-table govuk-table--small-text-until-tablet">
+                    <thead class="govuk-table__head">
+                        <tr class="govuk-table__row">
+                            <th class="govuk-table__header" scope="col">RBSE</th>
+                            <th class="govuk-table__header" scope="col">Survey</th>
+                            <th class="govuk-table__header" scope="col">Form A</th>
+                            <th class="govuk-table__header" scope="col">Slaughter</th>
+                            <th class="govuk-table__header" scope="col">Fate</th>
+                            <th class="govuk-table__header" scope="col">RBSE Date</th>
+                            <th class="govuk-table__header" scope="col">Final Result</th>
+                            <th class="govuk-table__header" scope="col">Final Result Date</th>
+                            <th class="govuk-table__header" scope="col">Data Complete</th>
+                            <th class="govuk-table__header" scope="col">Paperwork Complete</th>
+                        </tr>
+                    </thead>
+                    <tbody class="govuk-table__body">
+                        @foreach (var c in Model.Cases)
+                        {
+                            <tr class="govuk-table__row">
+                                <td class="govuk-table__cell">
+                                    <a class="govuk-link" asp-page="/Case/Details" asp-route-rbse="@c.Rbse">@BseFormat.FormatRbse(c.Rbse)</a>
+                                </td>
+                                <td class="govuk-table__cell">@c.Survey</td>
+                                <td class="govuk-table__cell">@c.FormADate?.ToString("dd/MM/yyyy")</td>
+                                <td class="govuk-table__cell">@c.SlaughterDate?.ToString("dd/MM/yyyy")</td>
+                                <td class="govuk-table__cell">@c.Fate</td>
+                                <td class="govuk-table__cell">@c.RbseDate?.ToString("dd/MM/yyyy")</td>
+                                <td class="govuk-table__cell">@c.FinalResult</td>
+                                <td class="govuk-table__cell">@c.FinalResultDate?.ToString("dd/MM/yyyy")</td>
+                                <td class="govuk-table__cell">@c.DataCompleteDate?.ToString("dd/MM/yyyy")</td>
+                                <td class="govuk-table__cell">@c.PaperworkCompleteDate?.ToString("dd/MM/yyyy")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+    </div>
+</div>

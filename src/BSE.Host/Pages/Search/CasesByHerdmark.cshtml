@@ -38,37 +38,63 @@
 
     @if (Model.TotalCount > 0)
     {
+        var sortBase = "?" + string.Join("&", HttpContext.Request.Query
+            .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
+                     && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase)
+                     && !string.Equals(k.Key, "PageNumber", StringComparison.OrdinalIgnoreCase))
+            .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
+        var sortCol  = Model.SortColumn;
+        var sortDesc = Model.SortDesc;
+
         @await Html.PartialAsync("_ExportLink")
         <table class="govuk-table">
             <caption class="govuk-visually-hidden">Cases by herdmark results</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header">RBSE</th>
-                    <th scope="col" class="govuk-table__header">CPHH</th>
-                    <th scope="col" class="govuk-table__header">Sex</th>
-                    <th scope="col" class="govuk-table__header">Eartag</th>
-                    <th scope="col" class="govuk-table__header">Birth date</th>
-                    <th scope="col" class="govuk-table__header">Origin</th>
-                    <th scope="col" class="govuk-table__header">Date purchased</th>
-                    <th scope="col" class="govuk-table__header">Age at purchase</th>
-                    <th scope="col" class="govuk-table__header">Date onset</th>
-                    <th scope="col" class="govuk-table__header">Form A date</th>
-                    <th scope="col" class="govuk-table__header">Slaughter date</th>
-                    <th scope="col" class="govuk-table__header">Final result date</th>
-                    <th scope="col" class="govuk-table__header">Age at onset</th>
-                    <th scope="col" class="govuk-table__header">Fate</th>
-                    <th scope="col" class="govuk-table__header">Final result</th>
-                    <th scope="col" class="govuk-table__header">Survey</th>
-                    <th scope="col" class="govuk-table__header">Case status</th>
-                    <th scope="col" class="govuk-table__header">Time elapsed</th>
+                    @{ ViewData["Label"] = "RBSE";             ViewData["Column"] = "Rbse";                 ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "CPHH";             ViewData["Column"] = "Cphh"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Sex";              ViewData["Column"] = "Sex"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Eartag";           ViewData["Column"] = "Eartag"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Birth date";       ViewData["Column"] = "BirthDate"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Origin";           ViewData["Column"] = "Origin"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Date purchased";   ViewData["Column"] = "PurchaseDate"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Age at purchase";  ViewData["Column"] = "PurchaseAgeInMonths"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Date onset";       ViewData["Column"] = "OnsetDate"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Form A date";      ViewData["Column"] = "FormADate"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Slaughter date";   ViewData["Column"] = "SlaughterDate"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Final result date"; ViewData["Column"] = "FinalResultDate"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Age at onset";     ViewData["Column"] = "OnsetAgeInMonths"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Fate";             ViewData["Column"] = "Fate"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Final result";     ViewData["Column"] = "FinalResult"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Survey";           ViewData["Column"] = "Survey"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Case status";      ViewData["Column"] = "CaseStatus"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Time elapsed";     ViewData["Column"] = "TimeElapsed"; }
+                    <partial name="_SortableHeader" />
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
                 @foreach (var r in Model.PagedResults)
                 {
                     <tr class="govuk-table__row">
-                        <td class="govuk-table__cell bse-rbse"><a asp-page="/Case/Details" asp-route-rbse="@r.Rbse" class="govuk-link">@r.Rbse</a></td>
-                        <td class="govuk-table__cell">@r.Cphh</td>
+                        <td class="govuk-table__cell bse-rbse">@BseFormat.FormatRbse(r.Rbse)</td>
+                        <td class="govuk-table__cell">@BseFormat.FormatCphh(r.Cphh)</td>
                         <td class="govuk-table__cell">@r.Sex</td>
                         <td class="govuk-table__cell">@r.Eartag</td>
                         <td class="govuk-table__cell">@r.BirthDate?.ToString("dd/MM/yyyy")</td>

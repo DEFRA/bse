@@ -13,9 +13,13 @@
             <h2 class="govuk-error-summary__title">There is a problem</h2>
             <div class="govuk-error-summary__body">
                 <ul class="govuk-list govuk-error-summary__list">
-                    @foreach (var modelError in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    @if (ViewContext.ModelState["Filter.Rbse"]?.Errors.Count > 0)
                     {
-                        <li>@modelError.ErrorMessage</li>
+                        <li><a href="#Filter_Rbse">@ViewContext.ModelState["Filter.Rbse"]!.Errors[0].ErrorMessage</a></li>
+                    }
+                    @if (ViewContext.ModelState["Filter.Dbse"]?.Errors.Count > 0)
+                    {
+                        <li><a href="#Filter_Dbse">@ViewContext.ModelState["Filter.Dbse"]!.Errors[0].ErrorMessage</a></li>
                     }
                 </ul>
             </div>
@@ -28,19 +32,19 @@
         <div class="govuk-grid-column-two-thirds">
             <div class="govuk-form-group">
                 <label asp-for="Filter.Rbse" class="govuk-label">RBSE</label>
-                <div id="rbse-hint" class="govuk-hint">Enter in format nn/nn/nnnnn — for example, 00/26/00001.</div>
-                <input asp-for="Filter.Rbse" class="govuk-input govuk-!-width-two-thirds" aria-describedby="rbse-hint" />
+                <input asp-for="Filter.Rbse" class="govuk-input govuk-!-width-two-thirds" maxlength="11" />
                 <span asp-validation-for="Filter.Rbse" class="govuk-error-message"></span>
             </div>
 
             <div class="govuk-form-group">
                 <label asp-for="Filter.Eartag" class="govuk-label">Eartag (starting with...)</label>
-                <input asp-for="Filter.Eartag" class="govuk-input govuk-!-width-two-thirds" />
+                <input asp-for="Filter.Eartag" class="govuk-input govuk-!-width-two-thirds" maxlength="35" />
             </div>
 
             <div class="govuk-form-group">
                 <label asp-for="Filter.Dbse" class="govuk-label">DBSE</label>
-                <input asp-for="Filter.Dbse" class="govuk-input govuk-!-width-two-thirds" />
+                <div id="dbse-hint" class="govuk-hint">Enter DBSE in the format YY/NNNNN or YYNNNNN.</div>
+                <input asp-for="Filter.Dbse" class="govuk-input govuk-!-width-two-thirds" aria-describedby="dbse-hint" maxlength="8" />
                 <span asp-validation-for="Filter.Dbse" class="govuk-error-message"></span>
             </div>
 
@@ -99,10 +103,8 @@
 
             <div class="govuk-form-group">
                 <label asp-for="Filter.Notes" class="govuk-label">Notes (partial search)</label>
-                <textarea asp-for="Filter.Notes" class="govuk-textarea govuk-!-width-two-thirds" rows="5"></textarea>
+                <textarea asp-for="Filter.Notes" class="govuk-textarea govuk-!-width-two-thirds" rows="5" maxlength="500"></textarea>
             </div>
-            <p class="govuk-body"><em>Note: % character can be used as wildcard character in text fields</em></p>
-
             <div class="govuk-form-group">
                 <fieldset class="govuk-fieldset" role="group" aria-describedby="form-a-date-hint">
                     <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">Form A Date Between</legend>
@@ -193,48 +195,74 @@
 
     @if (Model.Filter.TotalCount > 0)
     {
+        @* Base URL for sort links: all current query params except sort/page keys *@
+        var sortBase = "?" + string.Join("&", HttpContext.Request.Query
+            .Where(k => !string.Equals(k.Key, "Filter.SortColumn", StringComparison.OrdinalIgnoreCase)
+                     && !string.Equals(k.Key, "Filter.SortDesc", StringComparison.OrdinalIgnoreCase)
+                     && !string.Equals(k.Key, "Filter.PageNumber", StringComparison.OrdinalIgnoreCase)
+                     && !string.Equals(k.Key, "pageNumber", StringComparison.OrdinalIgnoreCase))
+            .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
+        var sortCol  = Model.Filter.SortColumn;
+        var sortDesc = Model.Filter.SortDesc;
+
         <table class="govuk-table">
             <caption class="govuk-visually-hidden">Case search results</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header">RBSE</th>
-                    <th scope="col" class="govuk-table__header">CPHH</th>
-                    <th scope="col" class="govuk-table__header">Sex</th>
-                    <th scope="col" class="govuk-table__header">Survey</th>
-                    <th scope="col" class="govuk-table__header">Eartag</th>
-                    <th scope="col" class="govuk-table__header">Birth date</th>
-                    <th scope="col" class="govuk-table__header">Birth date est</th>
-                    <th scope="col" class="govuk-table__header">Form A date</th>
-                    <th scope="col" class="govuk-table__header">Fate</th>
-                    <th scope="col" class="govuk-table__header">Final result</th>
-                    <th scope="col" class="govuk-table__header">Final result date</th>
-                    <th scope="col" class="govuk-table__header">DBSE</th>
-                    <th scope="col" class="govuk-table__header">Notes</th>
-                    <th scope="col" class="govuk-table__header">BAB notes</th>
-                    <th scope="col" class="govuk-table__header">Origin</th>
-                    <th scope="col" class="govuk-table__header">Valuation age</th>
+                    @{ ViewData["Label"] = "RBSE";             ViewData["Column"] = "Rbse";            ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Prefix"] = "Filter."; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "CPHH";             ViewData["Column"] = "Cphh"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Sex";              ViewData["Column"] = "Sex"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Survey";           ViewData["Column"] = "Survey"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Eartag";           ViewData["Column"] = "Eartag"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Birth date";       ViewData["Column"] = "BirthDate"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Birth date est";   ViewData["Column"] = "IsBirthDateEst"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Origin";           ViewData["Column"] = "Origin"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Form A date";      ViewData["Column"] = "FormADate"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Fate";             ViewData["Column"] = "Fate"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Final result";     ViewData["Column"] = "FinalResult"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Final result date"; ViewData["Column"] = "FinalResultDate"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "DBSE";             ViewData["Column"] = "Dbse"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Valuation age";    ViewData["Column"] = "ValuationAge"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Notes";            ViewData["Column"] = "Notes"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "BAB notes";        ViewData["Column"] = "BabNotes"; }
+                    <partial name="_SortableHeader" />
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
                 @foreach (var r in Model.Filter.PagedResults)
                 {
                     <tr class="govuk-table__row">
-                        <td class="govuk-table__cell bse-rbse"><a asp-page="/Case/Details" asp-route-rbse="@r.Rbse" class="govuk-link">@r.Rbse</a></td>
-                        <td class="govuk-table__cell">@r.Cphh</td>
+                        <td class="govuk-table__cell bse-rbse">@BseFormat.FormatRbse(r.Rbse)</td>
+                        <td class="govuk-table__cell">@BseFormat.FormatCphh(r.Cphh)</td>
                         <td class="govuk-table__cell">@r.Sex</td>
                         <td class="govuk-table__cell">@r.Survey</td>
                         <td class="govuk-table__cell">@r.Eartag</td>
                         <td class="govuk-table__cell">@r.BirthDate?.ToString("dd/MM/yyyy")</td>
                         <td class="govuk-table__cell">@r.IsBirthDateEst</td>
+                        <td class="govuk-table__cell">@r.Origin</td>
                         <td class="govuk-table__cell">@r.FormADate?.ToString("dd/MM/yyyy")</td>
                         <td class="govuk-table__cell">@r.Fate</td>
                         <td class="govuk-table__cell">@r.FinalResult</td>
                         <td class="govuk-table__cell">@r.FinalResultDate?.ToString("dd/MM/yyyy")</td>
                         <td class="govuk-table__cell">@r.Dbse</td>
+                        <td class="govuk-table__cell">@r.ValuationAge</td>
                         <td class="govuk-table__cell">@r.Notes</td>
                         <td class="govuk-table__cell">@r.BabNotes</td>
-                        <td class="govuk-table__cell">@r.Origin</td>
-                        <td class="govuk-table__cell">@r.ValuationAge</td>
                     </tr>
                 }
             </tbody>
@@ -247,8 +275,7 @@
                 .Where(k => !string.Equals(k.Key, "Filter.PageNumber", StringComparison.OrdinalIgnoreCase)
                          && !string.Equals(k.Key, "pageNumber", StringComparison.OrdinalIgnoreCase))
                 .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}")
-                .ToList();
-            Func<int, string> PageUrl = p => "?" + string.Join("&", qs) + "&Filter.PageNumber=" + p;
+                .ToList();            Func<int, string> PageUrl = p => "?" + string.Join("&", qs) + "&Filter.PageNumber=" + p;
             int currentPage = Model.Filter.PageNumber;
             int totalPages  = Model.Filter.TotalPages;
             <nav class="govuk-pagination" aria-label="Pagination">

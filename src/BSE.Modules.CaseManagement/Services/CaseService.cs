@@ -81,7 +81,7 @@ public sealed class CaseService : ICaseService
 
             // ── 3. BAB data ──────────────────────────────────────────────
             if (command.Bab is not null)
-                await _babRepository.AddAsync(command.Bab, connection, transaction);
+                await _babRepository.AddAsync(command.Bab, null, connection, transaction);
 
             // ── 4. Feed history ──────────────────────────────────────────
             foreach (var feed in command.Feeds)
@@ -136,7 +136,7 @@ public sealed class CaseService : ICaseService
 
             // ── 3. BAB data ──────────────────────────────────────────────
             if (command.Bab is not null)
-                await _babRepository.EditAsync(command.Bab, connection, transaction);
+                await _babRepository.EditAsync(command.Bab, null, connection, transaction);
 
             // ── 4. Dam/Sire pedigree ─────────────────────────────────────
             if (command.DamSire is not null)

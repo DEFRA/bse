@@ -1,0 +1,32 @@
+@* Renders a GDS-compliant sortable <th> for a search results table.
+   Parameters (passed via ViewData):
+     Label        - column display text
+     Column       - sort key string (matches SortColumn values in the view model)
+     SortColumn   - currently active sort column (string)
+     SortDesc     - current sort is descending (bool)
+     BaseUrl      - query string base (all params except SortColumn/SortDesc/PageNumber)
+*@
+@{
+    var label      = (string)ViewData["Label"]!;
+    var column     = (string)ViewData["Column"]!;
+    var sortCol    = (string?)ViewData["SortColumn"] ?? "";
+    var sortDesc   = (bool?)ViewData["SortDesc"] ?? false;
+    var baseUrl    = (string?)ViewData["BaseUrl"] ?? "?";
+    var prefix     = (string?)ViewData["Prefix"] ?? "";
+
+    bool isActive  = string.Equals(sortCol, column, StringComparison.OrdinalIgnoreCase);
+    bool nextDesc  = isActive && !sortDesc;   // toggle on second click
+
+    var joiner = baseUrl.Contains('?') ? "&" : "?";
+    if (baseUrl.EndsWith('?') || baseUrl.EndsWith('&')) joiner = "";
+
+    var href = baseUrl
+        + joiner + $"{prefix}SortColumn=" + Uri.EscapeDataString(column)
+        + $"&{prefix}SortDesc=" + nextDesc.ToString().ToLowerInvariant();
+
+    string ariaSort = isActive ? (sortDesc ? "descending" : "ascending") : "none";
+    string indicator = isActive ? (sortDesc ? " ▼" : " ▲") : "";
+}
+<th scope="col" class="govuk-table__header" aria-sort="@ariaSort">
+    <a class="govuk-link govuk-link--no-visited-state bse-sort-link" href="@href">@label@indicator</a>
+</th>

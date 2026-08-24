@@ -1,0 +1,270 @@
+﻿@page "{rbse}"
+@model BSE.Host.Pages.Case.ClinicalModel
+@{
+    ViewData["Title"] = $"Clinical signs and visits — {Model.Rbse}";
+    string rbseNoSlash = Model.Rbse.Replace("/", "");
+    var c = Model.Signs;
+    var checkedSigns = new System.Collections.Generic.List<string>();
+    if (c.Apprehension) checkedSigns.Add("Apprehension");
+    if (c.HypersensitiveTouch) checkedSigns.Add("Hypersensitive to touch");
+    if (c.HypersensitiveSound) checkedSigns.Add("Hypersensitive to sound");
+    if (c.Maniacal) checkedSigns.Add("Maniacal");
+    if (c.PanicStricken) checkedSigns.Add("Panic stricken");
+    if (c.TemperamentChange) checkedSigns.Add("Temperament change");
+    if (c.AbnormalHeadCarriage) checkedSigns.Add("Abnormal head carriage");
+    if (c.EarTwitching) checkedSigns.Add("Ear twitching");
+    if (c.EarsOddAngle) checkedSigns.Add("Ears at odd angle");
+    if (c.AbnormalBehaviour) checkedSigns.Add("Abnormal behaviour");
+    if (c.HeadShyness) checkedSigns.Add("Head shyness");
+    if (c.LickingFlank) checkedSigns.Add("Licking flank");
+    if (c.LickingNose) checkedSigns.Add("Licking nose");
+    if (c.Kicking) checkedSigns.Add("Kicking");
+    if (c.ReluctantDoorways) checkedSigns.Add("Reluctant to enter doorways");
+    if (c.HeadPressing) checkedSigns.Add("Head pressing");
+    if (c.HeadRubbing) checkedSigns.Add("Head rubbing");
+    if (c.TeethGrinding) checkedSigns.Add("Teeth grinding");
+    if (c.Blindness) checkedSigns.Add("Blindness");
+    if (c.Circling) checkedSigns.Add("Circling");
+    if (c.HindAtaxia) checkedSigns.Add("Hind ataxia");
+    if (c.Falling) checkedSigns.Add("Falling");
+    if (c.Paresis) checkedSigns.Add("Paresis");
+    if (c.ForeAtaxia) checkedSigns.Add("Fore ataxia");
+    if (c.Recumbent) checkedSigns.Add("Recumbent");
+    if (c.Tremor) checkedSigns.Add("Tremor");
+    if (c.KnucklingFetlock) checkedSigns.Add("Knuckling fetlock");
+    if (c.WeightLoss) checkedSigns.Add("Weight loss");
+    if (c.ConditionLoss) checkedSigns.Add("Condition loss");
+    if (c.MilkYield) checkedSigns.Add("Milk yield loss");
+}
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Clinical</li>
+    </ol>
+</nav>
+
+<h1 class="govuk-heading-l">RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Rbse)</span></h1>
+
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Clinical", Model.Rbse))
+
+@if (TempData["Success"] is string successMsg)
+{
+    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert"
+         aria-labelledby="clinical-success-title" data-module="govuk-notification-banner">
+        <div class="govuk-notification-banner__header">
+            <h2 class="govuk-notification-banner__title" id="clinical-success-title">Success</h2>
+        </div>
+        <div class="govuk-notification-banner__content">
+            <p class="govuk-notification-banner__heading">@successMsg</p>
+        </div>
+    </div>
+}
+
+@* -- Batch numbers ------------------------------------------------------------ *@
+@if (User.IsInRole("DataEntry") && Model.BatchNumbers.Count > 0)
+{
+    <div class="govuk-summary-card govuk-!-margin-bottom-4">
+        <div class="govuk-summary-card__title-wrapper">
+            <h2 class="govuk-summary-card__title">Batch numbers</h2>
+        </div>
+        <div class="govuk-summary-card__content">
+            <ul class="govuk-list">
+                @foreach (var b in Model.BatchNumbers)
+                {
+                    <li>@b.BatchNumber@(b.Document is not null ? $" — {b.Document}" : "")</li>
+                }
+            </ul>
+        </div>
+    </div>
+}
+
+@* -- Clinical signs ----------------------------------------------------------- *@
+<h2 class="govuk-heading-m">Clinical signs</h2>
+
+@* -- READ-ONLY SIGNS VIEW --------------------------------------------------- *@
+<div class="govuk-button-group govuk-!-margin-bottom-4">
+    @if (User.IsInRole("DataEntry"))
+    {
+        <a asp-page="/Case/ClinicalEdit" asp-route-rbse="@Model.Rbse"
+       class="govuk-button govuk-button--secondary">Edit clinical signs</a>
+    }
+    </div>
+
+@if (checkedSigns.Count > 0)
+{
+    <ul class="govuk-list govuk-list--bullet">
+        @foreach (var sign in checkedSigns)
+        {
+            <li>@sign</li>
+        }
+    </ul>
+}
+else
+{
+    <p class="govuk-body govuk-!-colour-secondary">No clinical signs recorded.</p>
+}
+
+@* -- Clinical visits ---------------------------------------------------------- *@
+<h2 class="govuk-heading-m govuk-!-margin-top-6">Clinical visits</h2>
+
+@{
+    var addDateError  = ViewData.ModelState[nameof(Model.VisitDate)]?.Errors.FirstOrDefault()?.ErrorMessage;
+    var editDateError = ViewData.ModelState[nameof(Model.EditVisitDate)]?.Errors.FirstOrDefault()?.ErrorMessage;
+    bool hasEditError = editDateError is not null;
+}
+
+@if (!ViewContext.ModelState.IsValid && (addDateError is not null || editDateError is not null))
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@e.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+@if (Model.VisitsTotalCount > 0)
+{
+    <table class="govuk-table">
+        <caption class="govuk-visually-hidden">Clinical visits for @BseFormat.FormatRbse(Model.Rbse)</caption>
+        <thead class="govuk-table__head">
+            <tr class="govuk-table__row">
+                <th scope="col" class="govuk-table__header"
+                    aria-sort="@(Model.VDir == "asc" ? "ascending" : "descending")">
+                    <a class="govuk-link govuk-link--no-visited-state" href="@Model.VisitsSortUrl()">Visit date</a>
+                </th>
+                @if (User.IsInRole("DataEntry"))
+                {
+                    <th scope="col" class="govuk-table__header">Action</th>
+                }
+            </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+            @foreach (var v in Model.Visits)
+            {
+                bool isEditRow = hasEditError && Model.EditVisitId == v.Id;
+                <tr class="govuk-table__row">
+                    <td class="govuk-table__cell">@v.VisitDate?.ToString("dd/MM/yyyy")</td>
+                    @if (User.IsInRole("DataEntry"))
+                    {
+                        <td class="govuk-table__cell">
+                            <details class="govuk-details" data-module="govuk-details" @(isEditRow ? "open" : null)>
+                                <summary class="govuk-details__summary">
+                                    <span class="govuk-details__summary-text">Edit</span>
+                                </summary>
+                                <div class="govuk-details__text">
+                                    @if (isEditRow)
+                                    {
+                                        <div class="govuk-error-summary" data-module="govuk-error-summary"><div role="alert"><h2 class="govuk-error-summary__title">There is a problem</h2><div class="govuk-error-summary__body"><ul class="govuk-list govuk-error-summary__list"><li>@editDateError</li></ul></div></div></div>
+                                    }
+                                    <form method="post" asp-page-handler="EditVisit" novalidate>
+                                        <input type="hidden" name="EditVisitId" value="@v.Id" />
+                                        <input type="hidden" name="EditVisitRowStampBase64" value="@Convert.ToBase64String(v.RowStamp ?? [])" />
+                                        <input type="hidden" name="Rbse" value="@Model.Rbse" />
+                                        <div class="govuk-form-group @(isEditRow && editDateError is not null ? "govuk-form-group--error" : "")">
+                                            <label class="govuk-label" for="edit-date-@v.Id">Visit date</label>
+                                            @if (isEditRow && editDateError is not null)
+                                            {
+                                                <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @editDateError</p>
+                                            }
+                                            <input class="govuk-input govuk-input--width-10 @(isEditRow && editDateError is not null ? "govuk-input--error" : "")"
+                                                   id="edit-date-@v.Id" name="EditVisitDate" type="date"
+                                                   value="@((isEditRow ? Model.EditVisitDate : v.VisitDate)?.ToString("yyyy-MM-dd"))" />
+                                        </div>
+                                        <button type="submit" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">Save changes</button>
+                                    </form>
+                                </div>
+                            </details>
+                            <form method="post" asp-page-handler="DeleteVisit" style="display:inline" novalidate>
+                                <input type="hidden" name="VisitId" value="@v.Id" />
+                                <input type="hidden" asp-for="Rbse" />
+                                <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0"
+                                        onclick="return confirm('Delete this visit date?')">Delete</button>
+                            </form>
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @if (Model.VisitsTotalPages > 1)
+    {
+        <nav class="govuk-pagination" role="navigation" aria-label="Clinical visits pagination">
+            @if (Model.VPage > 1)
+            {
+                <div class="govuk-pagination__prev">
+                    <a class="govuk-link govuk-pagination__link" href="@Model.VisitsPageUrl(Model.VPage - 1)" rel="prev">
+                        <svg class="govuk-pagination__icon govuk-pagination__icon--prev" xmlns="http://www.w3.org/2000/svg" height="13" width="15" focusable="false" aria-hidden="true" viewBox="0 0 15 13"><path d="m6.5938-0.0078125-6.7266 6.7266 6.7441 6.4062 1.377-1.449-4.1856-3.9768h12.896v-2h-12.984l4.2931-4.293-1.414-1.414z"/></svg>
+                        <span class="govuk-pagination__link-title">Previous<span class="govuk-visually-hidden"> page</span></span>
+                    </a>
+                </div>
+            }
+            <ul class="govuk-pagination__list">
+                @{ int startPage = Math.Max(1, Model.VPage - 4); int endPage = Math.Min(Model.VisitsTotalPages, startPage + 9); }
+                @for (int p = startPage; p <= endPage; p++)
+                {
+                    if (p == Model.VPage)
+                    {
+                        <li class="govuk-pagination__item govuk-pagination__item--current">
+                            <a class="govuk-link govuk-pagination__link" href="@Model.VisitsPageUrl(p)" aria-label="Page @p" aria-current="page">@p</a>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="govuk-pagination__item">
+                            <a class="govuk-link govuk-pagination__link" href="@Model.VisitsPageUrl(p)" aria-label="Page @p">@p</a>
+                        </li>
+                    }
+                }
+            </ul>
+            @if (Model.VPage < Model.VisitsTotalPages)
+            {
+                <div class="govuk-pagination__next">
+                    <a class="govuk-link govuk-pagination__link" href="@Model.VisitsPageUrl(Model.VPage + 1)" rel="next">
+                        <span class="govuk-pagination__link-title">Next<span class="govuk-visually-hidden"> page</span></span>
+                        <svg class="govuk-pagination__icon govuk-pagination__icon--next" xmlns="http://www.w3.org/2000/svg" height="13" width="15" focusable="false" aria-hidden="true" viewBox="0 0 15 13"><path d="m8.107-0.0078125-1.4136 1.414 4.2926 4.293h-12.986v2h12.896l-4.1855 3.9766 1.377 1.4492 6.7441-6.4062-6.7246-6.7246z"/></svg>
+                    </a>
+                </div>
+            }
+        </nav>
+    }
+}
+else
+{
+    <p class="govuk-body govuk-hint">No clinical visits recorded.</p>
+}
+
+@if (User.IsInRole("DataEntry"))
+{
+<details class="govuk-details govuk-!-margin-top-4" data-module="govuk-details">
+    <summary class="govuk-details__summary">
+        <span class="govuk-details__summary-text">Add a clinical visit</span>
+    </summary>
+    <div class="govuk-details__text">
+        <form method="post" asp-page-handler="AddVisit" novalidate>
+            <input type="hidden" asp-for="Rbse" />
+            <div class="govuk-form-group @(addDateError is not null ? "govuk-form-group--error" : "")">
+                <label class="govuk-label" for="visit-date">Visit date</label>
+                @if (addDateError is not null)
+                {
+                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @addDateError</p>
+                }
+                <input id="visit-date" name="VisitDate" type="date"
+                       class="govuk-input govuk-input--width-10 @(addDateError is not null ? "govuk-input--error" : "")"
+                       value="@Model.VisitDate?.ToString("yyyy-MM-dd")" />
+            </div>
+            <button type="submit" class="govuk-button" data-module="govuk-button">Add visit</button>
+        </form>
+    </div>
+</details>
+}
+

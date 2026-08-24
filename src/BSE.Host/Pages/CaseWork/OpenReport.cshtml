@@ -1,0 +1,69 @@
+@page
+@model BSE.Host.Pages.CaseWork.OpenReportModel
+@{
+    ViewData["Title"] = "Open Cases Report";
+}
+
+<div class="govuk-grid-row">
+    <div class="govuk-grid-column-full">
+
+        <h1 class="govuk-heading-l">Open Cases Report</h1>
+
+        @if (!Model.Cases.Any())
+        {
+            <p class="govuk-body">No open cases found.</p>
+        }
+        else
+        {
+            <p class="govuk-body">@Model.Cases.Count open case(s) found.</p>
+
+            <div class="govuk-!-overflow-x-auto">
+                <table class="govuk-table govuk-table--small-text-until-tablet">
+                    <thead class="govuk-table__head">
+                        <tr class="govuk-table__row">
+                            <th class="govuk-table__header" scope="col">RBSE</th>
+                            <th class="govuk-table__header" scope="col">Survey</th>
+                            <th class="govuk-table__header" scope="col">Form A</th>
+                            <th class="govuk-table__header" scope="col">Slaughter</th>
+                            <th class="govuk-table__header" scope="col">Fate</th>
+                            <th class="govuk-table__header" scope="col">RBSE Date</th>
+                            <th class="govuk-table__header" scope="col">Active Memo Due</th>
+                            <th class="govuk-table__header" scope="col">Annex A Due</th>
+                            <th class="govuk-table__header" scope="col">Annex B Due</th>
+                            <th class="govuk-table__header" scope="col">Lab Chase Due</th>
+                            <th class="govuk-table__header" scope="col">BARB Due</th>
+                            <th class="govuk-table__header" scope="col">Final Result</th>
+                        </tr>
+                    </thead>
+                    <tbody class="govuk-table__body">
+                        @foreach (var c in Model.Cases)
+                        {
+                            <tr class="govuk-table__row">
+                                <td class="govuk-table__cell">
+                                    <a class="govuk-link" asp-page="/Case/Details" asp-route-rbse="@c.Rbse">@BseFormat.FormatRbse(c.Rbse)</a>
+                                </td>
+                                <td class="govuk-table__cell">@c.Survey</td>
+                                <td class="govuk-table__cell">@c.FormADate?.ToString("dd/MM/yyyy")</td>
+                                <td class="govuk-table__cell">@c.SlaughterDate?.ToString("dd/MM/yyyy")</td>
+                                <td class="govuk-table__cell">@c.Fate</td>
+                                <td class="govuk-table__cell">@c.RbseDate?.ToString("dd/MM/yyyy")</td>
+                                <td class="govuk-table__cell"><span class="@(Model.IsOverdue(c.ActiveMemoDueDate) ? "govuk-tag govuk-tag--red" : "")">@c.ActiveMemoDueDate?.ToString("dd/MM/yyyy")</span></td>
+                                <td class="govuk-table__cell"><span class="@(Model.IsOverdue(c.AnnexADueDate) ? "govuk-tag govuk-tag--red" : "")">@c.AnnexADueDate?.ToString("dd/MM/yyyy")</span></td>
+                                <td class="govuk-table__cell"><span class="@(Model.IsOverdue(c.AnnexBDueDate) ? "govuk-tag govuk-tag--red" : "")">@c.AnnexBDueDate?.ToString("dd/MM/yyyy")</span></td>
+                                <td class="govuk-table__cell"><span class="@(Model.IsOverdue(c.LabChaseDueDate) ? "govuk-tag govuk-tag--red" : "")">@c.LabChaseDueDate?.ToString("dd/MM/yyyy")</span></td>
+                                <td class="govuk-table__cell">
+                                    @if (c.BarbMemoDue == "Yes")
+                                    {
+                                        <strong class="govuk-tag govuk-tag--red">Yes</strong>
+                                    }
+                                </td>
+                                <td class="govuk-table__cell">@c.FinalResult</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+    </div>
+</div>

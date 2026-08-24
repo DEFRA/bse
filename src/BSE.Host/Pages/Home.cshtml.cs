@@ -130,7 +130,7 @@ public class HomeModel(IBatchService batchService, ICaseRepository caseRepositor
             return Page();
         }
         var normalized = RbseHelper.ParseToRaw(LookupRbse);
-        return RedirectToPage("/Case/Lookup", new { Rbse = normalized });
+        return RedirectToPage("/Case/Farm", new { Rbse = normalized });
     }
 
     /// <summary>Batch fields are pre-filled via redirect so the user sees the assigned number — matches legacy behaviour.</summary>

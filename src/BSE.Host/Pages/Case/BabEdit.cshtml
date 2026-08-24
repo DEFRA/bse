@@ -1,0 +1,215 @@
+@page "{rbse}"
+@model BSE.Host.Pages.Case.BabEditModel
+@{
+    ViewData["Title"] = $"Edit BAB — {Model.Rbse}";
+    string rbseNoSlash = Model.Rbse.Replace("/", "");
+    string Desc(IEnumerable<BSE.SharedKernel.ILookupItem> opts, string? code) =>
+        opts.FirstOrDefault(o => o.Code == code)?.Description ?? code ?? "—";
+}
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Bab" asp-route-rbse="@Model.Rbse">@BseFormat.FormatRbse(Model.Rbse)</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Edit BAB</li>
+    </ol>
+</nav>
+
+<h1 class="govuk-heading-l">RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Rbse)</span></h1>
+
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("BAB", Model.Rbse))
+
+@if (TempData["Success"] is string successMsg)
+{
+    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert"
+         aria-labelledby="bab-edit-success-title" data-module="govuk-notification-banner">
+        <div class="govuk-notification-banner__header">
+            <h2 class="govuk-notification-banner__title" id="bab-edit-success-title">Success</h2>
+        </div>
+        <div class="govuk-notification-banner__content">
+            <p class="govuk-notification-banner__heading">@successMsg</p>
+        </div>
+    </div>
+}
+
+@if (!ViewContext.ModelState.IsValid)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@e.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+<form method="post" asp-page-handler="SaveBab" novalidate>
+    <input type="hidden" asp-for="Rbse" />
+    @if (Model.RowStampBase64 is not null)
+    {
+        <input type="hidden" name="RowStampBase64" value="@Model.RowStampBase64" />
+    }
+
+    <h2 class="govuk-heading-m">Born-After-Ban details</h2>
+
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="bab-notes">Notes</label>
+        <textarea id="bab-notes" name="Bab.Notes" class="govuk-textarea" rows="3" maxlength="500">@Model.Bab?.Notes</textarea>
+    </div>
+
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="bab-origin">Origin</label>
+        <div class="govuk-hint">Select &ldquo;Purchased&rdquo; to enable the traced origin farm fields.</div>
+        <select id="bab-origin" name="Origin" class="govuk-select govuk-!-width-one-half">
+            <option value="">— select —</option>
+            @foreach (var o in Model.AnimalOrigins)
+            {
+                if (o.Code == Model.Origin)
+                {
+                    <option value="@o.Code" selected="selected">@o.Description</option>
+                }
+                else
+                {
+                    <option value="@o.Code">@o.Description</option>
+                }
+            }
+        </select>
+    </div>
+
+    <div id="bab-traced-section" @(Model.Origin != "P" ? "style=\"display:none\"" : "")>
+
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="bab-natal-cphh">Traced CPHH</label>
+        <div class="govuk-hint">The CPHH of the farm where the animal was born (11 digits).</div>
+        <input id="bab-natal-cphh" name="Bab.NatalCphh" class="govuk-input govuk-!-width-one-half"
+               value="@Model.Bab?.NatalCphh" maxlength="11" inputmode="numeric" />
+    </div>
+
+    <h2 class="govuk-heading-m">Traced origin farm</h2>
+
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="bab-traced-name">Traced Name</label>
+        <input id="bab-traced-name" name="Bab.TracedName" class="govuk-input govuk-!-width-two-thirds"
+               value="@Model.Bab?.TracedName" maxlength="30" />
+    </div>
+
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="bab-addr1">Traced Address</label>
+        <input id="bab-addr1" name="Bab.TracedAddress1" class="govuk-input govuk-!-width-two-thirds govuk-!-margin-bottom-1"
+               value="@Model.Bab?.TracedAddress1" maxlength="30" aria-label="Address line 1" />
+        <input id="bab-addr2" name="Bab.TracedAddress2" class="govuk-input govuk-!-width-two-thirds govuk-!-margin-bottom-1"
+               value="@Model.Bab?.TracedAddress2" maxlength="30" aria-label="Address line 2" />
+        <input id="bab-addr3" name="Bab.TracedAddress3" class="govuk-input govuk-!-width-two-thirds"
+               value="@Model.Bab?.TracedAddress3" maxlength="30" aria-label="Address line 3" />
+    </div>
+
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="bab-postcode">Traced Postcode</label>
+        <input id="bab-postcode" name="Bab.TracedPostcode" class="govuk-input govuk-!-width-one-third"
+               value="@Model.Bab?.TracedPostcode" maxlength="10" />
+    </div>
+
+    </div>@* end bab-traced-section *@
+
+    <h2 class="govuk-heading-m">Risk factors</h2>
+
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="bab-feed-risk">Feed Risk</label>
+        <select id="bab-feed-risk" name="Bab.FeedRisk" class="govuk-select govuk-!-width-one-half">
+            <option value="">— select —</option>
+            @foreach (var r in Model.FeedRisks)
+            {
+                if (r.Code == Model.Bab?.FeedRisk)
+                {
+                    <option value="@r.Code" selected="selected">@r.Description</option>
+                }
+                else
+                {
+                    <option value="@r.Code">@r.Description</option>
+                }
+            }
+        </select>
+    </div>
+
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="bab-horiz-risk">Horizontal Risk</label>
+        <select id="bab-horiz-risk" name="Bab.HorizontalRisk" class="govuk-select govuk-!-width-one-half">
+            <option value="">— select —</option>
+            @foreach (var r in Model.HorizontalRisks)
+            {
+                if (r.Code == Model.Bab?.HorizontalRisk)
+                {
+                    <option value="@r.Code" selected="selected">@r.Description</option>
+                }
+                else
+                {
+                    <option value="@r.Code">@r.Description</option>
+                }
+            }
+        </select>
+    </div>
+
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="bab-mat-risk">Maternal Risk</label>
+        <select id="bab-mat-risk" name="Bab.MaternalRisk" class="govuk-select govuk-!-width-one-half">
+            <option value="">— select —</option>
+            @foreach (var r in Model.MaternalRisks)
+            {
+                if (r.Code == Model.Bab?.MaternalRisk)
+                {
+                    <option value="@r.Code" selected="selected">@r.Description</option>
+                }
+                else
+                {
+                    <option value="@r.Code">@r.Description</option>
+                }
+            }
+        </select>
+    </div>
+
+    <div class="govuk-button-group govuk-!-margin-top-4">
+        <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+        <a asp-page="/Case/Bab" asp-route-rbse="@Model.Rbse" class="govuk-link">Cancel</a>
+    </div>
+</form>
+
+<script>
+(function () {
+    var sel = document.getElementById('bab-origin');
+    var sec = document.getElementById('bab-traced-section');
+
+    function hasTracedData() {
+        return ['bab-natal-cphh', 'bab-traced-name', 'bab-addr1', 'bab-addr2', 'bab-addr3', 'bab-postcode']
+            .some(function (id) { var el = document.getElementById(id); return el && el.value.trim() !== ''; });
+    }
+
+    function clearTracedFields() {
+        ['bab-natal-cphh', 'bab-traced-name', 'bab-addr1', 'bab-addr2', 'bab-addr3', 'bab-postcode']
+            .forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ''; });
+    }
+
+    // mirrors legacy ddlOrigin_SelectedIndexChanged → EmptyTracedFields + EmptyPurchaseFields + ShowMessage
+    function handleChange(showWarning) {
+        if (!sel || !sec) return;
+        var isPurchased = sel.value === 'P';
+        if (!isPurchased && showWarning) {
+            var msgs = [];
+            if (hasTracedData())
+                msgs.push('Trace data has been entered on this Case.  If you click Save then this data will be lost.');
+            msgs.push('Purchase data entered on the Case (VLA) tab will also be cleared.');
+            alert(msgs.join('\n\n'));
+            clearTracedFields();
+        }
+        sec.style.display = isPurchased ? '' : 'none';
+    }
+
+    if (sel) sel.addEventListener('change', function () { handleChange(true); });
+    handleChange(false);
+}());
+</script>

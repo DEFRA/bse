@@ -1,55 +1,331 @@
-@model BSE.Host.Models.ViewModels.FarmEditViewModel
+﻿@model BSE.Host.Models.ViewModels.FarmEditViewModel
+@using BSE.Modules.ReferenceData.Models
+@{
+    var countyOptions      = ViewData["CountyOptions"]           as IEnumerable<BSE.SharedKernel.ILookupItem> ?? Enumerable.Empty<BSE.SharedKernel.ILookupItem>();
+    var ahoOptions         = ViewData["AhoOptions"]              as IEnumerable<BSE.SharedKernel.ILookupItem> ?? Enumerable.Empty<BSE.SharedKernel.ILookupItem>();
+    var herdTypeOptions    = ViewData["HerdTypeOptions"]         as IEnumerable<LuHerdType>                   ?? Enumerable.Empty<LuHerdType>();
+    var pedigreeOptions    = ViewData["PedigreeOptions"]         as IEnumerable<BSE.SharedKernel.ILookupItem> ?? Enumerable.Empty<BSE.SharedKernel.ILookupItem>();
+    var authCountyOptions  = ViewData["AuthorityCountyOptions"]  as IEnumerable<BSE.SharedKernel.ILookupItem> ?? Enumerable.Empty<BSE.SharedKernel.ILookupItem>();
+    var authorityOptions   = ViewData["AuthorityOptions"]        as IEnumerable<LuAuthority>                  ?? Enumerable.Empty<LuAuthority>();
+    var adnsOptions        = ViewData["AdnsOptions"]             as IEnumerable<LuADNSRegion>                 ?? Enumerable.Empty<LuADNSRegion>();
+}
+
+@* ── Owner ── *@
+<h2 class="govuk-heading-s">Owner</h2>
 
 <div class="govuk-form-group">
-    <label asp-for="CPHH" class="govuk-label">CPHH</label>
-    <input asp-for="CPHH" class="govuk-input govuk-!-width-one-half" />
-    <span asp-validation-for="CPHH" class="govuk-error-message"></span>
-</div>
-<div class="govuk-form-group">
     <label asp-for="OwnerName" class="govuk-label">Owner name</label>
-    <input asp-for="OwnerName" class="govuk-input govuk-!-width-two-thirds" />
+    <input asp-for="OwnerName" id="OwnerName" class="govuk-input govuk-!-width-two-thirds" maxlength="100" />
 </div>
-<div class="govuk-form-group">
-    <label asp-for="County" class="govuk-label">County</label>
-    <input asp-for="County" class="govuk-input govuk-!-width-one-half" />
-</div>
+
+@* ── Address ── *@
+<h2 class="govuk-heading-s">Address</h2>
+
 <div class="govuk-form-group">
     <label asp-for="Address1" class="govuk-label">Address line 1</label>
-    <input asp-for="Address1" class="govuk-input govuk-!-width-two-thirds" />
+    <input asp-for="Address1" id="Address1" class="govuk-input govuk-!-width-two-thirds" maxlength="50" />
 </div>
 <div class="govuk-form-group">
     <label asp-for="Address2" class="govuk-label">Address line 2</label>
-    <input asp-for="Address2" class="govuk-input govuk-!-width-two-thirds" />
+    <input asp-for="Address2" id="Address2" class="govuk-input govuk-!-width-two-thirds" maxlength="50" />
 </div>
 <div class="govuk-form-group">
     <label asp-for="Address3" class="govuk-label">Address line 3</label>
-    <input asp-for="Address3" class="govuk-input govuk-!-width-two-thirds" />
+    <input asp-for="Address3" id="Address3" class="govuk-input govuk-!-width-two-thirds" maxlength="50" />
 </div>
 <div class="govuk-form-group">
     <label asp-for="Postcode" class="govuk-label">Postcode</label>
-    <input asp-for="Postcode" class="govuk-input govuk-!-width-one-third" />
+    <input asp-for="Postcode" id="Postcode" class="govuk-input govuk-input--width-10" maxlength="10" />
 </div>
-<div class="govuk-form-group">
-    <label asp-for="Parish" class="govuk-label">Parish</label>
-    <input asp-for="Parish" class="govuk-input govuk-!-width-one-half" />
-</div>
-<div class="govuk-form-group">
-    <label asp-for="Herdmark1" class="govuk-label">Herdmark</label>
-    <input asp-for="Herdmark1" class="govuk-input govuk-!-width-one-half" />
-</div>
-<div class="govuk-form-group">
-    <label asp-for="AHO" class="govuk-label">AHO</label>
-    <input asp-for="AHO" class="govuk-input govuk-!-width-one-half" />
-</div>
-<div class="govuk-form-group">
-    <label asp-for="HerdType" class="govuk-label">Herd type</label>
-    <input asp-for="HerdType" class="govuk-input govuk-!-width-one-half" />
-</div>
+
+@* ── Correspondence address ── *@
+<h2 class="govuk-heading-s">Correspondence address</h2>
+
 <div class="govuk-form-group">
     <div class="govuk-checkboxes" data-module="govuk-checkboxes">
         <div class="govuk-checkboxes__item">
-            <input asp-for="IsDealer" class="govuk-checkboxes__input" />
-            <label asp-for="IsDealer" class="govuk-label govuk-checkboxes__label">Dealer</label>
+            <input class="govuk-checkboxes__input" id="use-above-address" type="checkbox" value="true" />
+            <label class="govuk-label govuk-checkboxes__label" for="use-above-address">
+                Use above address
+            </label>
         </div>
     </div>
 </div>
+
+<div class="govuk-form-group">
+    <label asp-for="CorrespondenceAddress1" class="govuk-label">Correspondence address line 1</label>
+    <input asp-for="CorrespondenceAddress1" id="CorrespondenceAddress1" class="govuk-input govuk-!-width-two-thirds" maxlength="50" />
+</div>
+<div class="govuk-form-group">
+    <label asp-for="CorrespondenceAddress2" class="govuk-label">Correspondence address line 2</label>
+    <input asp-for="CorrespondenceAddress2" id="CorrespondenceAddress2" class="govuk-input govuk-!-width-two-thirds" maxlength="50" />
+</div>
+<div class="govuk-form-group">
+    <label asp-for="CorrespondenceAddress3" class="govuk-label">Correspondence address line 3</label>
+    <input asp-for="CorrespondenceAddress3" id="CorrespondenceAddress3" class="govuk-input govuk-!-width-two-thirds" maxlength="50" />
+</div>
+<div class="govuk-form-group">
+    <label asp-for="CorrespondencePostcode" class="govuk-label">Correspondence postcode</label>
+    <input asp-for="CorrespondencePostcode" id="CorrespondencePostcode" class="govuk-input govuk-input--width-10" maxlength="10" />
+</div>
+
+@* ── Location (Parish, District, County, Map reference) ── *@
+<h2 class="govuk-heading-s">Location</h2>
+
+<div class="govuk-form-group">
+    <label asp-for="Parish" class="govuk-label">Parish</label>
+    <input asp-for="Parish" class="govuk-input govuk-!-width-one-half" maxlength="50" />
+</div>
+<div class="govuk-form-group">
+    <label asp-for="District" class="govuk-label">District</label>
+    <input asp-for="District" class="govuk-input govuk-!-width-one-half" maxlength="50" />
+</div>
+<div class="govuk-form-group">
+    <label asp-for="County" class="govuk-label">County</label>
+    <select asp-for="County" class="govuk-select">
+        <option value="">-- Select --</option>
+        @foreach (var c in countyOptions)
+        {
+            <option value="@c.Code" selected="@(c.Code == Model.County ? "selected" : null)">@c.Description</option>
+        }
+    </select>
+</div>
+
+@* Map reference — three inline boxes: 2-letter OS grid prefix + 3-digit easting + 3-digit northing *@
+<div class="govuk-form-group" id="map-reference-group">
+    <fieldset class="govuk-fieldset" aria-describedby="map-reference-hint">
+        <legend class="govuk-fieldset__legend">Map reference</legend>
+        <div id="map-reference-hint" class="govuk-hint">OS grid prefix (2 letters), easting (3 digits), northing (3 digits) — or click Estimate to populate automatically</div>
+        <div class="govuk-date-input">
+            <div class="govuk-date-input__item">
+                <div class="govuk-form-group">
+                    <label class="govuk-label govuk-date-input__label" for="MapRef1">Grid sq.</label>
+                    <input asp-for="MapRef1" id="MapRef1" class="govuk-input govuk-date-input__input govuk-input--width-3"
+                           maxlength="2" spellcheck="false" autocomplete="off" style="text-transform:uppercase" />
+                </div>
+            </div>
+            <div class="govuk-date-input__item">
+                <div class="govuk-form-group">
+                    <label class="govuk-label govuk-date-input__label" for="MapRef2">Easting</label>
+                    <input asp-for="MapRef2" id="MapRef2" class="govuk-input govuk-date-input__input govuk-input--width-4"
+                           maxlength="3" spellcheck="false" autocomplete="off" />
+                </div>
+            </div>
+            <div class="govuk-date-input__item">
+                <div class="govuk-form-group">
+                    <label class="govuk-label govuk-date-input__label" for="MapRef3">Northing</label>
+                    <input asp-for="MapRef3" id="MapRef3" class="govuk-input govuk-date-input__input govuk-input--width-4"
+                           maxlength="3" spellcheck="false" autocomplete="off" />
+                </div>
+            </div>
+        </div>
+    </fieldset>
+    <button type="button" id="estimate-map-ref-btn"
+            class="govuk-button govuk-button--secondary govuk-!-margin-top-2 govuk-!-margin-bottom-1">Estimate</button>
+    <p id="estimate-map-ref-msg" class="govuk-hint" style="display:none"></p>
+</div>
+
+@* ── Authority and ADNS region ── *@
+<h2 class="govuk-heading-s">Authority and ADNS region</h2>
+
+<div class="govuk-form-group">
+    <label class="govuk-label" for="AuthorityCountyID">Authority county</label>
+    <select id="AuthorityCountyID" name="Farm.AuthorityCountyID" class="govuk-select">
+        <option value="">-- Select --</option>
+        @foreach (var ac in authCountyOptions)
+        {
+            <option value="@ac.Id" selected="@(ac.Id == Model.AuthorityCountyID ? "selected" : null)">@ac.Description</option>
+        }
+    </select>
+</div>
+<div class="govuk-form-group">
+    <label class="govuk-label" for="AuthorityID">Local authority</label>
+    <select id="AuthorityID" name="Farm.AuthorityID" class="govuk-select">
+        <option value="">-- Select --</option>
+        @foreach (var a in authorityOptions)
+        {
+            <option value="@a.Id" selected="@(a.Id == Model.AuthorityID ? "selected" : null)">@a.Name</option>
+        }
+    </select>
+</div>
+<div class="govuk-form-group">
+    <label class="govuk-label" for="ADNSRegionID">ADNS region</label>
+    <select id="ADNSRegionID" name="Farm.ADNSRegionID" class="govuk-select">
+        <option value="">-- Select --</option>
+        @foreach (var r in adnsOptions)
+        {
+            <option value="@r.Id" selected="@(r.Id == Model.ADNSRegionID ? "selected" : null)">@r.Name</option>
+        }
+    </select>
+</div>
+
+@* ── Herd details ── *@
+<h2 class="govuk-heading-s">Herd details</h2>
+
+<div class="govuk-form-group">
+    <label asp-for="Herdmark1" class="govuk-label">Herdmark 1</label>
+    <input asp-for="Herdmark1" class="govuk-input govuk-!-width-one-quarter" maxlength="8" spellcheck="false" />
+</div>
+<div class="govuk-form-group">
+    <label asp-for="NumericHerdmark1" class="govuk-label">Numeric herdmark 1</label>
+    <input asp-for="NumericHerdmark1" class="govuk-input govuk-!-width-one-quarter" maxlength="6" spellcheck="false" />
+</div>
+<div class="govuk-form-group">
+    <label asp-for="Herdmark2" class="govuk-label">Herdmark 2</label>
+    <input asp-for="Herdmark2" class="govuk-input govuk-!-width-one-quarter" maxlength="8" spellcheck="false" />
+</div>
+<div class="govuk-form-group">
+    <label asp-for="NumericHerdmark2" class="govuk-label">Numeric herdmark 2</label>
+    <input asp-for="NumericHerdmark2" class="govuk-input govuk-!-width-one-quarter" maxlength="6" spellcheck="false" />
+</div>
+<div class="govuk-form-group">
+    <label asp-for="Herdmark3" class="govuk-label">Herdmark 3</label>
+    <input asp-for="Herdmark3" class="govuk-input govuk-!-width-one-quarter" maxlength="8" spellcheck="false" />
+</div>
+<div class="govuk-form-group">
+    <label asp-for="HerdType" class="govuk-label">Herd type</label>
+    <select asp-for="HerdType" class="govuk-select">
+        <option value="">-- Select --</option>
+        @foreach (var h in herdTypeOptions)
+        {
+            <option value="@h.Code" selected="@(h.Code == Model.HerdType ? "selected" : null)">@h.Description</option>
+        }
+    </select>
+</div>
+<div class="govuk-form-group">
+    <label asp-for="PedigreeType" class="govuk-label">Pedigree</label>
+    <select asp-for="PedigreeType" class="govuk-select">
+        <option value="">-- Select --</option>
+        @foreach (var p in pedigreeOptions)
+        {
+            <option value="@p.Code" selected="@(p.Code == Model.PedigreeType ? "selected" : null)">@p.Description</option>
+        }
+    </select>
+</div>
+<div class="govuk-form-group">
+    <label asp-for="AHO" class="govuk-label">AHO</label>
+    <select asp-for="AHO" class="govuk-select">
+        <option value="">-- Select --</option>
+        @foreach (var a in ahoOptions)
+        {
+            <option value="@a.Code" selected="@(a.Code == Model.AHO ? "selected" : null)">@a.Description</option>
+        }
+    </select>
+</div>
+<div class="govuk-checkboxes govuk-!-margin-bottom-6" data-module="govuk-checkboxes">
+    <div class="govuk-checkboxes__item">
+        <input asp-for="IsDealer" class="govuk-checkboxes__input" />
+        <label asp-for="IsDealer" class="govuk-label govuk-checkboxes__label">Is a dealer?</label>
+    </div>
+</div>
+
+@* ── JS: "Use above address" checkbox ── *@
+<script>
+(function () {
+    var cb = document.getElementById('use-above-address');
+    if (!cb) return;
+    cb.addEventListener('change', function () {
+        if (!cb.checked) return;
+        var get = function (id) { var el = document.getElementById(id); return el ? el.value : ''; };
+        document.getElementById('CorrespondenceAddress1').value = get('Address1');
+        document.getElementById('CorrespondenceAddress2').value = get('Address2');
+        document.getElementById('CorrespondenceAddress3').value = get('Address3');
+        document.getElementById('CorrespondencePostcode').value  = get('Postcode');
+    });
+}());
+</script>
+
+@* ── JS: Estimate map reference ── *@
+@* The handler returns { mapRef1: "SP", mapRef2: "234", mapRef3: "678" } *@
+@* matching the legacy 3-part format: 2-letter OS grid square + 3-digit easting + 3-digit northing *@
+<script>
+(function () {
+    var estimateBtn = document.getElementById('estimate-map-ref-btn');
+    var msgEl       = document.getElementById('estimate-map-ref-msg');
+    if (!estimateBtn) return;
+
+    estimateBtn.addEventListener('click', function () {
+        msgEl.style.display = 'none';
+        msgEl.textContent   = '';
+
+        var cphhInput = document.querySelector('[name="Farm.CPHH"]');
+        var cphh = cphhInput ? cphhInput.value : '';
+        if (!cphh) {
+            msgEl.className     = 'govuk-error-message';
+            msgEl.textContent   = 'CPHH is not available — save the farm record first.';
+            msgEl.style.display = '';
+            return;
+        }
+
+        estimateBtn.disabled = true;
+        estimateBtn.textContent = 'Estimating…';
+
+        fetch('?handler=EstimateMapReference&cphh=' + encodeURIComponent(cphh))
+            .then(function (r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
+            .then(function (data) {
+                if (data.error) {
+                    msgEl.className     = 'govuk-error-message';
+                    msgEl.textContent   = data.error;
+                    msgEl.style.display = '';
+                } else {
+                    document.getElementById('MapRef1').value = (data.mapRef1 || '').toUpperCase();
+                    document.getElementById('MapRef2').value = data.mapRef2 || '';
+                    document.getElementById('MapRef3').value = data.mapRef3 || '';
+                    msgEl.className     = 'govuk-hint';
+                    msgEl.textContent   = 'Map reference estimated from parish centre.';
+                    msgEl.style.display = '';
+                }
+            })
+            .catch(function () {
+                msgEl.className     = 'govuk-error-message';
+                msgEl.textContent   = 'Unable to estimate map reference. Please try again.';
+                msgEl.style.display = '';
+            })
+            .finally(function () {
+                estimateBtn.disabled    = false;
+                estimateBtn.textContent = 'Estimate';
+            });
+    });
+}());
+</script>
+
+@* ── JS: Cascading dropdowns — Authority County → Local Authority → ADNS Region ── *@
+<script>
+(function () {
+    var countySelect    = document.getElementById('AuthorityCountyID');
+    var authoritySelect = document.getElementById('AuthorityID');
+    var adnsSelect      = document.getElementById('ADNSRegionID');
+
+    function repopulate(select, items) {
+        select.innerHTML = '<option value="">-- Select --</option>';
+        items.forEach(function (item) {
+            var opt = document.createElement('option');
+            opt.value = item.id;
+            opt.textContent = item.name;
+            select.appendChild(opt);
+        });
+    }
+
+    countySelect.addEventListener('change', function () {
+        var countyId = countySelect.value;
+        repopulate(authoritySelect, []);
+        repopulate(adnsSelect, []);
+        if (!countyId) return;
+        fetch('?handler=Authorities&authorityCountyId=' + encodeURIComponent(countyId))
+            .then(function (r) { return r.json(); })
+            .then(function (items) { repopulate(authoritySelect, items); });
+    });
+
+    authoritySelect.addEventListener('change', function () {
+        var authId = authoritySelect.value;
+        repopulate(adnsSelect, []);
+        if (!authId) return;
+        fetch('?handler=AdnsRegions&authorityId=' + encodeURIComponent(authId))
+            .then(function (r) { return r.json(); })
+            .then(function (items) { repopulate(adnsSelect, items); });
+    });
+}());
+</script>

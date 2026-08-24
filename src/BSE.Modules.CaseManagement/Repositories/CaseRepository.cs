@@ -97,8 +97,15 @@ public sealed class CaseRepository : DapperRepository, ICaseRepository
         p.Add("@RBSE", c.Rbse);
         p.Add("@FinalResult", c.FinalResult);
         p.Add("@FinalResultDate", c.FinalResultDate);
-        p.Add("@DBSE", c.Dbse);
+        p.Add("@RetrospectiveTestType", c.RetrospectiveTestType);
+        p.Add("@RetrospectiveResult", c.RetrospectiveResult);
+        p.Add("@RetrospectiveResultDate", c.RetrospectiveResultDate);
+        p.Add("@RetrospectiveComment", c.RetrospectiveComment);
+        p.Add("@Rowstamp", c.RowStamp);
         p.Add("@UserID", userId);
+        p.Add("@AlternateDiagnosis", (string?)null);
+        p.Add("@LabComment", c.LabComment);
+        p.Add("@DBSE", dbType: System.Data.DbType.String, size: 7, direction: ParameterDirection.Output);
         await ExecuteAsync("EditCaseFinalResult", p, connection, transaction);
         return (EditCaseResult)p.Get<int>("ReturnValue");
     }
@@ -228,4 +235,5 @@ public sealed class CaseRepository : DapperRepository, ICaseRepository
         p.Add("@LabComment", c.LabComment); p.Add("@CaseType", c.CaseType);
         return p;
     }
-}
+
+    }

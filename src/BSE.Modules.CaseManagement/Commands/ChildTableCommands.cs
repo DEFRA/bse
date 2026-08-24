@@ -73,4 +73,12 @@ public sealed record AddEditDamSireCommand(
 // ── Final Result ──────────────────────────────────────────────────────────────
 
 public record EditFinalResultCommand(
-    string Rbse, string? FinalResult, DateTime? FinalResultDate, string? Dbse);
+    string Rbse,
+    string? FinalResult,
+    DateTime? FinalResultDate,
+    string? RetrospectiveTestType,
+    string? RetrospectiveResult,
+    DateTime? RetrospectiveResultDate,
+    string? RetrospectiveComment,
+    string? LabComment,
+    byte[] RowStamp);

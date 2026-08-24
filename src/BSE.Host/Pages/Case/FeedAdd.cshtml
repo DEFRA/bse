@@ -1,0 +1,89 @@
+﻿@page "{rbse}"
+@model BSE.Host.Pages.Case.FeedAddModel
+@{
+    ViewData["Title"] = $"Add Feed Record — {Model.Rbse}";
+}
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Feeds" asp-route-rbse="@Model.Rbse">@BseFormat.FormatRbse(Model.Rbse)</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Add Feed Record</li>
+    </ol>
+</nav>
+
+<h1 class="govuk-heading-l">RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Rbse)</span></h1>
+
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Feeds", Model.Rbse))
+
+@if (!ViewContext.ModelState.IsValid)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@e.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+<h2 class="govuk-heading-m">Add a feed record</h2>
+
+<form method="post" novalidate>
+    <input type="hidden" name="Rbse" value="@Model.Rbse" />
+
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="feed-year-from">Year from</label>
+        <input id="feed-year-from" name="NewFeed.YearFrom" type="text" inputmode="numeric"
+               class="govuk-input govuk-input--width-4" />
+    </div>
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="feed-year-to">Year to</label>
+        <input id="feed-year-to" name="NewFeed.YearTo" type="text" inputmode="numeric"
+               class="govuk-input govuk-input--width-4" />
+    </div>
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="feed-ration-type">Ration type</label>
+        <select id="feed-ration-type" name="NewFeed.RationType" class="govuk-select govuk-!-width-one-half">
+            <option value="">— select —</option>
+            @foreach (var rt in Model.RationTypes)
+            {
+                <option value="@rt.Code">@rt.Description</option>
+            }
+        </select>
+    </div>
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="feed-ration-name">Ration name</label>
+        <input id="feed-ration-name" name="NewFeed.RationName" class="govuk-input govuk-!-width-two-thirds" />
+    </div>
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="feed-supplier">Supplier</label>
+        <select id="feed-supplier" name="NewFeed.SupplierId" class="govuk-select govuk-!-width-two-thirds">
+            <option value="">— none —</option>
+            @foreach (var s in Model.Suppliers)
+            {
+                <option value="@s.Id">@s.Description</option>
+            }
+        </select>
+    </div>
+    <div class="govuk-form-group">
+        <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+            <div class="govuk-checkboxes__item">
+                <input id="feed-pre-purchase" name="NewFeed.IsPrePurchase" type="checkbox"
+                       class="govuk-checkboxes__input" value="true" />
+                <label class="govuk-label govuk-checkboxes__label" for="feed-pre-purchase">Pre-purchase</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="govuk-button-group">
+        <button type="submit" class="govuk-button" data-module="govuk-button">Add feed record</button>
+        <a asp-page="/Case/Feeds" asp-route-rbse="@Model.Rbse" class="govuk-link">Cancel</a>
+    </div>
+</form>

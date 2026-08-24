@@ -11,6 +11,10 @@ public interface ITestRepository
     Task AddAsync(AddTestCommand command, IDbConnection connection, IDbTransaction transaction);
     Task EditAsync(EditTestCommand command, IDbConnection connection, IDbTransaction transaction);
     Task DeleteAsync(int id, IDbConnection connection, IDbTransaction transaction);
+    // Standalone variants for direct Razor Page CRUD handlers (no external transaction)
+    Task AddAsync(AddTestCommand command);
+    Task EditAsync(EditTestCommand command);
+    Task DeleteAsync(int id, byte[] rowStamp);
 }
 
 public sealed class TestRepository : DapperRepository, ITestRepository
@@ -24,10 +28,19 @@ public sealed class TestRepository : DapperRepository, ITestRepository
         => ExecuteAsync("AddTest", new { RBSE = c.Rbse, TestType = c.TestType, TestResult = c.TestResult }, conn, tx);
 
     public Task EditAsync(EditTestCommand c, IDbConnection conn, IDbTransaction tx)
-        => ExecuteAsync("EditTest", new { ID = c.Id, RBSE = c.Rbse, TestType = c.TestType, TestResult = c.TestResult, RowStamp = c.RowStamp }, conn, tx);
+        => ExecuteAsync("EditTest", new { ID = c.Id, TestType = c.TestType, TestResult = c.TestResult, RowStamp = c.RowStamp }, conn, tx);
 
     public Task DeleteAsync(int id, IDbConnection conn, IDbTransaction tx)
         => ExecuteAsync("DeleteTest", new { ID = id }, conn, tx);
+
+    public Task AddAsync(AddTestCommand c)
+        => ExecuteAsync("AddTest", new { RBSE = c.Rbse, TestType = c.TestType, TestResult = c.TestResult });
+
+    public Task EditAsync(EditTestCommand c)
+        => ExecuteAsync("EditTest", new { ID = c.Id, TestType = c.TestType, TestResult = c.TestResult, RowStamp = c.RowStamp });
+
+    public Task DeleteAsync(int id, byte[] rowStamp)
+        => ExecuteAsync("DeleteTest", new { ID = id, RowStamp = rowStamp });
 }
 
 public interface IOtherOwnerRepository

@@ -38,5 +38,6 @@ public enum LookupTableId
     TSETestingSite,
     UserGroup,
     ValuationAge,
-    AuthorityCounty
+    AuthorityCounty,
+    LocalAuthority
 }

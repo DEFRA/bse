@@ -25,6 +25,12 @@ public sealed class CaseWorkRepository : DapperRepository, ICaseWorkRepository
     public Task SetMinuteSentDateAsync(string rbse, string minuteType)
         => ExecuteAsync("SetMinuteSentDate", new { RBSE = rbse, MinuteType = minuteType });
 
+    public Task<IEnumerable<CaseWorkEntryRecord>> GetOpenCasesAsync()
+        => QueryAsync<CaseWorkEntryRecord>("GetOpenCaseReportData");
+
+    public Task<IEnumerable<CaseWorkEntryRecord>> GetClosedCasesAsync()
+        => QueryAsync<CaseWorkEntryRecord>("GetClosedCaseReportData");
+
     public Task EditEntryAsync(EditCaseWorkEntryCommand c)
         => ExecuteAsync("EditCaseWorkEntry", new
         {
@@ -90,4 +96,19 @@ public sealed class CaseWorkRepository : DapperRepository, ICaseWorkRepository
             SummarySheetReceivedDate = c.SummarySheetReceivedDate,
             PaperworkCompleteDate = c.PaperworkCompleteDate
         }, conn, tx);
+
+    public Task EditAsync(EditCaseWorkCommand c)
+        => ExecuteAsync("EditCaseWork", new
+        {
+            RBSE = c.Rbse,
+            RBSEDate = c.RbseDate,
+            Barcode = c.Barcode,
+            AHFReference = c.AhfReference,
+            PurchaserBSE1ReceivedDate = c.PurchaserBse1ReceivedDate,
+            BreederBSE1ReceivedDate = c.BreederBse1ReceivedDate,
+            Vendor1BSE1ReceivedDate = c.Vendor1Bse1ReceivedDate,
+            HomebredBSE1ReceivedDate = c.HomebredBse1ReceivedDate,
+            SummarySheetReceivedDate = c.SummarySheetReceivedDate,
+            PaperworkCompleteDate = c.PaperworkCompleteDate
+        });
 }

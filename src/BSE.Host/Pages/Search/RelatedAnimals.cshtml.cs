@@ -24,18 +24,20 @@ public class RelatedAnimalsModel : PageModel
     }
 
     [BindProperty(SupportsGet = true)]
-    [System.ComponentModel.DataAnnotations.RegularExpression("^(?:\\d{9})?$", ErrorMessage = "Enter RBSE as 9 digits.")]
+    [System.ComponentModel.DataAnnotations.RegularExpression(@"^(\d{9}|\d{2}/\d{2}/\d{5})?$", ErrorMessage = "Enter RBSE as 9 digits or in the format XX/XX/XXXXX.")]
     public string? Rbse { get; set; }
 
     [BindProperty(SupportsGet = true)] public string? Name { get; set; }
     [BindProperty(SupportsGet = true)] public string? Eartag { get; set; }
 
     [BindProperty(SupportsGet = true)]
-    [System.ComponentModel.DataAnnotations.RegularExpression("^(?:\\d{9})?$", ErrorMessage = "Enter RBSE as 9 digits.")]
+    [System.ComponentModel.DataAnnotations.RegularExpression(@"^(\d{9}|\d{2}/\d{2}/\d{5})?$", ErrorMessage = "Enter RBSE as 9 digits or in the format XX/XX/XXXXX.")]
     public string? RelationRbse { get; set; }
 
     [BindProperty(SupportsGet = true)] public string? RelationType { get; set; }
     [BindProperty(SupportsGet = true)] public int PageNumber { get; set; } = 1;
+    [BindProperty(SupportsGet = true)] public string SortColumn { get; set; } = "";
+    [BindProperty(SupportsGet = true)] public bool SortDesc { get; set; }
 
     public IReadOnlyList<LookupItem> RelationTypeOptions { get; private set; } = [];
     public IReadOnlyList<RelatedAnimalResult> Results { get; private set; } = [];
@@ -43,7 +45,34 @@ public class RelatedAnimalsModel : PageModel
     public int TotalCount => Results.Count;
     public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
     public IReadOnlyList<RelatedAnimalResult> PagedResults =>
-        Results.Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
+        ApplySorting(Results)
+            .Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
+
+    private IEnumerable<RelatedAnimalResult> ApplySorting(IReadOnlyList<RelatedAnimalResult> source) =>
+        (SortColumn?.ToLowerInvariant(), SortDesc) switch
+        {
+            ("cphh",         false) => source.OrderBy(r => r.Cphh),
+            ("cphh",         true)  => source.OrderByDescending(r => r.Cphh),
+            ("relationtype", false) => source.OrderBy(r => r.RelationType),
+            ("relationtype", true)  => source.OrderByDescending(r => r.RelationType),
+            ("relsex",       false) => source.OrderBy(r => r.RelSex),
+            ("relsex",       true)  => source.OrderByDescending(r => r.RelSex),
+            ("eartag",       false) => source.OrderBy(r => r.Eartag),
+            ("eartag",       true)  => source.OrderByDescending(r => r.Eartag),
+            ("relbirthdate", false) => source.OrderBy(r => r.RelBirthDate),
+            ("relbirthdate", true)  => source.OrderByDescending(r => r.RelBirthDate),
+            ("relfate",      false) => source.OrderBy(r => r.RelFate),
+            ("relfate",      true)  => source.OrderByDescending(r => r.RelFate),
+            ("leftdate",     false) => source.OrderBy(r => r.LeftDate),
+            ("leftdate",     true)  => source.OrderByDescending(r => r.LeftDate),
+            ("relname",      false) => source.OrderBy(r => r.RelName),
+            ("relname",      true)  => source.OrderByDescending(r => r.RelName),
+            ("releartag",    false) => source.OrderBy(r => r.RelEartag),
+            ("releartag",    true)  => source.OrderByDescending(r => r.RelEartag),
+            ("relationrbse", false) => source.OrderBy(r => r.RelationRbse),
+            ("relationrbse", true)  => source.OrderByDescending(r => r.RelationRbse),
+            _                       => source.OrderBy(r => r.Rbse),
+        };
 
     public async Task OnGetAsync()
     {
@@ -53,7 +82,7 @@ public class RelatedAnimalsModel : PageModel
         if (HasAnyFilter())
         {
             var results = await _search.GetRelatedAnimalsAsync(
-                Rbse ?? "", Name ?? "", Eartag ?? "", RelationRbse ?? "", RelationType ?? "");
+                (Rbse ?? "").Replace("/", ""), Name ?? "", Eartag ?? "", (RelationRbse ?? "").Replace("/", ""), RelationType ?? "");
             Results = results.ToList().AsReadOnly();
             HasSearched = true;
             if (PageNumber < 1) PageNumber = 1;
@@ -65,7 +94,7 @@ public class RelatedAnimalsModel : PageModel
     {
         if (!HasAnyFilter()) return RedirectToPage();
         var rows = await _search.GetRelatedAnimalsAsync(
-            Rbse ?? "", Name ?? "", Eartag ?? "", RelationRbse ?? "", RelationType ?? "");
+            (Rbse ?? "").Replace("/", ""), Name ?? "", Eartag ?? "", (RelationRbse ?? "").Replace("/", ""), RelationType ?? "");
 
         using var wb = new XLWorkbook();
         var ws = wb.Worksheets.Add("Results");

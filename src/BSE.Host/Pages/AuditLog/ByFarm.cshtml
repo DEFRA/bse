@@ -1,0 +1,107 @@
+@page
+@model ByFarmModel
+@{
+    ViewData["Title"] = Model.HasSearched
+        ? $"Farm audit log — CPHH {Model.Cphh}"
+        : "Farm audit log";
+}
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item">
+            <a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a>
+        </li>
+        @if (!string.IsNullOrWhiteSpace(Model.Rbse))
+        {
+            <li class="govuk-breadcrumbs__list-item">
+                <a class="govuk-breadcrumbs__link" asp-page="/Case/Farm" asp-route-rbse="@Model.Rbse">Case @BseFormat.FormatRbse(Model.Rbse) (Farm)</a>
+            </li>
+        }
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Farm audit log</li>
+    </ol>
+</nav>
+
+@if (!string.IsNullOrWhiteSpace(Model.Rbse))
+{
+    <a asp-page="/Case/Farm" asp-route-rbse="@Model.Rbse" class="govuk-back-link">Back to farm</a>
+}
+
+<h1 class="govuk-heading-l">
+    @if (Model.HasSearched)
+    {
+        <text>Farm audit log — CPHH: @BseFormat.FormatCphh(Model.Cphh)</text>
+    }
+    else
+    {
+        <text>Farm audit log</text>
+    }
+</h1>
+
+@if (string.IsNullOrWhiteSpace(Model.Rbse))
+{
+    @* Standalone search form — only shown when not arriving from a case context *@
+    <form method="get" novalidate class="govuk-!-margin-bottom-6">
+        <div class="govuk-form-group">
+            <label asp-for="Cphh" class="govuk-label">CPHH number</label>
+            <input asp-for="Cphh" type="text" class="govuk-input govuk-input--width-20" spellcheck="false" autocomplete="off" />
+        </div>
+        <div class="govuk-button-group">
+            <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
+            <a asp-page="/AuditLog/ByFarm" class="govuk-link">Clear search</a>
+        </div>
+    </form>
+}
+
+@if (Model.HasSearched)
+{
+    if (!Model.Entries.Any())
+    {
+        <p class="govuk-body">No audit log entries found for CPHH <strong>@BseFormat.FormatCphh(Model.Cphh)</strong>.</p>
+    }
+    else
+    {
+        <p class="govuk-body govuk-!-margin-bottom-4">@Model.Entries.Count() @(Model.Entries.Count() == 1 ? "entry" : "entries") found.</p>
+        <table class="govuk-table">
+            <caption class="govuk-visually-hidden">Audit log entries for farm @BseFormat.FormatCphh(Model.Cphh)</caption>
+            <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                    <th scope="col" class="govuk-table__header">Table</th>
+                    <th scope="col" class="govuk-table__header">Field</th>
+                    <th scope="col" class="govuk-table__header govuk-!-width-one-sixth">Date/time</th>
+                    <th scope="col" class="govuk-table__header">User</th>
+                    <th scope="col" class="govuk-table__header">Before</th>
+                    <th scope="col" class="govuk-table__header">After</th>
+                    <th scope="col" class="govuk-table__header">Reason</th>
+                    <th scope="col" class="govuk-table__header">Key</th>
+                </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+                @foreach (var e in Model.Entries)
+                {
+                    <tr class="govuk-table__row">
+                        <td class="govuk-table__cell">@e.TableName</td>
+                        <td class="govuk-table__cell">@e.FieldName</td>
+                        <td class="govuk-table__cell">@e.DateTime.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td class="govuk-table__cell">@e.UserName</td>
+                        <td class="govuk-table__cell">@e.BeforeValue</td>
+                        <td class="govuk-table__cell">@e.AfterValue</td>
+                        <td class="govuk-table__cell">@e.Reason</td>
+                        <td class="govuk-table__cell">@e.Key</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        @await Html.PartialAsync("_ExportLink")
+    }
+
+    <div class="govuk-button-group govuk-!-margin-top-4">
+        @if (!string.IsNullOrWhiteSpace(Model.Rbse))
+        {
+            <a asp-page="/Case/Farm" asp-route-rbse="@Model.Rbse" class="govuk-button govuk-button--secondary">Return to farm</a>
+        }
+        else
+        {
+            <a asp-page="/Home" class="govuk-button govuk-button--secondary">Return</a>
+        }
+    </div>
+}

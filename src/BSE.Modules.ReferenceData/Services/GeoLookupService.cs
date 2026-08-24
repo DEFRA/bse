@@ -17,4 +17,10 @@ public sealed class GeoLookupService : IGeoLookupService
 
     public Task<IEnumerable<LuBSECounty>> GetNonGBCountyAsync()
         => _repo.GetNonGBCountiesAsync();
+
+    public Task<MapReference?> GetXYReferenceByPrefixCodeAsync(string code)
+        => _repo.GetXYReferenceByPrefixCodeAsync(code);
+
+    public Task<string?> GetPrefixCodeByXYReferenceAsync(string xCoordPrefix, string yCoordPrefix)
+        => _repo.GetPrefixCodeByXYReferenceAsync(xCoordPrefix, yCoordPrefix);
 }

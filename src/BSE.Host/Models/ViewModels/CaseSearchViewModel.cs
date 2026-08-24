@@ -9,7 +9,7 @@ public class CaseSearchViewModel
     public const int PageSize = 50;
 
     // --- Filter inputs ---
-    [RegularExpression("^(?:\\d{9})?$", ErrorMessage = "Enter RBSE as 9 digits (for example 000000001).")]
+    [RegularExpression(@"^(\d{9}|\d{2}/\d{2}/\d{5})?$", ErrorMessage = "Enter RBSE as 9 digits or in the format XX/XX/XXXXX.")]
     public string Rbse { get; set; } = "";
 
     public string Eartag { get; set; } = "";
@@ -37,6 +37,10 @@ public class CaseSearchViewModel
     // --- Pagination ---
     public int PageNumber { get; set; } = 1;
 
+    // --- Sorting ---
+    public string SortColumn { get; set; } = "";
+    public bool SortDesc { get; set; }
+
     // --- Results ---
     public IReadOnlyList<CaseSearchResult> Results { get; set; } = [];
     public bool HasSearched { get; set; }
@@ -45,10 +49,47 @@ public class CaseSearchViewModel
     public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
 
     public IReadOnlyList<CaseSearchResult> PagedResults =>
-        Results.Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
+        ApplySorting(Results)
+            .Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
+
+    private IEnumerable<CaseSearchResult> ApplySorting(IReadOnlyList<CaseSearchResult> source) =>
+        (SortColumn?.ToLowerInvariant(), SortDesc) switch
+        {
+            ("cphh",            false) => source.OrderBy(r => r.Cphh),
+            ("cphh",            true)  => source.OrderByDescending(r => r.Cphh),
+            ("sex",             false) => source.OrderBy(r => r.Sex),
+            ("sex",             true)  => source.OrderByDescending(r => r.Sex),
+            ("survey",          false) => source.OrderBy(r => r.Survey),
+            ("survey",          true)  => source.OrderByDescending(r => r.Survey),
+            ("eartag",          false) => source.OrderBy(r => r.Eartag),
+            ("eartag",          true)  => source.OrderByDescending(r => r.Eartag),
+            ("birthdate",       false) => source.OrderBy(r => r.BirthDate),
+            ("birthdate",       true)  => source.OrderByDescending(r => r.BirthDate),
+            ("isbirthdateest",  false) => source.OrderBy(r => r.IsBirthDateEst),
+            ("isbirthdateest",  true)  => source.OrderByDescending(r => r.IsBirthDateEst),
+            ("origin",          false) => source.OrderBy(r => r.Origin),
+            ("origin",          true)  => source.OrderByDescending(r => r.Origin),
+            ("formadate",       false) => source.OrderBy(r => r.FormADate),
+            ("formadate",       true)  => source.OrderByDescending(r => r.FormADate),
+            ("fate",            false) => source.OrderBy(r => r.Fate),
+            ("fate",            true)  => source.OrderByDescending(r => r.Fate),
+            ("finalresult",     false) => source.OrderBy(r => r.FinalResult),
+            ("finalresult",     true)  => source.OrderByDescending(r => r.FinalResult),
+            ("finalresultdate", false) => source.OrderBy(r => r.FinalResultDate),
+            ("finalresultdate", true)  => source.OrderByDescending(r => r.FinalResultDate),
+            ("dbse",            false) => source.OrderBy(r => r.Dbse),
+            ("dbse",            true)  => source.OrderByDescending(r => r.Dbse),
+            ("valuationage",    false) => source.OrderBy(r => r.ValuationAge),
+            ("valuationage",    true)  => source.OrderByDescending(r => r.ValuationAge),
+            ("notes",           false) => source.OrderBy(r => r.Notes),
+            ("notes",           true)  => source.OrderByDescending(r => r.Notes),
+            ("babnotes",        false) => source.OrderBy(r => r.BabNotes),
+            ("babnotes",        true)  => source.OrderByDescending(r => r.BabNotes),
+            _                          => source.OrderBy(r => r.Rbse),
+        };
 
     public CaseSearchQuery ToQuery() => new(
-        Rbse: Rbse ?? "",
+        Rbse: (Rbse ?? "").Replace("/", ""),
         Eartag: Eartag ?? "",
         Dbse: Dbse ?? "",
         Fate: Fate ?? "",

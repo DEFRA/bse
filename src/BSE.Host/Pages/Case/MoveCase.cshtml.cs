@@ -19,6 +19,7 @@ public class MoveCaseModel(ICaseService caseService, ICurrentUserService current
     public string NewCphh { get; set; } = string.Empty;
 
     public string? ErrorMessage { get; private set; }
+    public bool ShowNewFarmPrompt { get; private set; }
 
     public IActionResult OnGet() => Page();
 
@@ -36,16 +37,23 @@ public class MoveCaseModel(ICaseService caseService, ICurrentUserService current
             return RedirectToPage("/Case/Details", new { rbse = Rbse });
         }
 
-        ErrorMessage = result switch
+        if (result == MoveCaseResult.NewFarmNotFound)
         {
-            MoveCaseResult.NewFarmNotFound => $"Farm '{NewCphh}' not found.",
-            MoveCaseResult.RbseNotFound => "Case not found.",
-            MoveCaseResult.NoOldFarmCases => "No cases found on the original farm.",
-            MoveCaseResult.AuditLogError => "Audit log error during move.",
-            MoveCaseResult.CaseUpdateError => "Database error updating case farm.",
-            MoveCaseResult.OldFarmDeleteError => "Case moved but old farm cleanup failed.",
-            _ => $"Move failed: {result}"
-        };
+            ShowNewFarmPrompt = true;
+            ErrorMessage = $"Farm '{NewCphh}' not found. You can create a new farm below, then retry.";
+        }
+        else
+        {
+            ErrorMessage = result switch
+            {
+                MoveCaseResult.RbseNotFound => "Case not found.",
+                MoveCaseResult.NoOldFarmCases => "No cases found on the original farm.",
+                MoveCaseResult.AuditLogError => "Audit log error during move.",
+                MoveCaseResult.CaseUpdateError => "Database error updating case farm.",
+                MoveCaseResult.OldFarmDeleteError => "Case moved but old farm cleanup failed.",
+                _ => $"Move failed: {result}"
+            };
+        }
 
         return Page();
     }

@@ -29,13 +29,19 @@ public class CasesByHoldingHerdmarkModel : PageModel
     public string? NumericHerdmark { get; set; }
     [BindProperty(SupportsGet = true)] public bool IncludeNonGb { get; set; }
     [BindProperty(SupportsGet = true)] public int PageNumber { get; set; } = 1;
+    [BindProperty(SupportsGet = true)] public string SortColumn { get; set; } = "";
+    [BindProperty(SupportsGet = true)] public bool SortDesc { get; set; }
 
     public IReadOnlyList<CaseDetailSearchResult> Results { get; private set; } = [];
     public bool HasSearched { get; private set; }
     public int TotalCount => Results.Count;
     public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
     public IReadOnlyList<CaseDetailSearchResult> PagedResults =>
-        Results.Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
+        ApplySorting(Results)
+            .Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
+
+    private IEnumerable<CaseDetailSearchResult> ApplySorting(IReadOnlyList<CaseDetailSearchResult> source) =>
+        CaseDetailSort.Apply(source, SortColumn, SortDesc);
 
     public async Task OnGetAsync()
     {
