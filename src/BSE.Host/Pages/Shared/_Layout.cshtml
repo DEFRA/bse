@@ -63,9 +63,12 @@
                             }
                             @if (User.Identity?.IsAuthenticated == true)
                             {
-                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Help/Index">Help</a></li>
-                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Account/Logout">Sign out</a></li>
-                            }
+<li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Help/Index">Help</a></li>
+<li class="govuk-service-navigation__item">
+    <form method="post" action="/auth/signout" asp-antiforgery="true">
+        <button type="submit" class="govuk-service-navigation__link bse-signout-btn">Sign out</button>
+    </form>
+</li>
                         </ul>
                     </nav>
                     @if (User.Identity?.IsAuthenticated == true)
