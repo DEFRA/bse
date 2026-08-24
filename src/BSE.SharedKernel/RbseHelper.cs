@@ -63,7 +63,7 @@ public static class RbseHelper
             return $"{s[..2]}/{s[2..4]}/{s[4..]}";
 
         // Must match at least one slash with surrounding digits
-        if (!System.Text.RegularExpressions.Regex.IsMatch(s, @"[0-9]{0,2}/?[0-9X]{0,2}/[0-9]{0,5}"))
+        if (!System.Text.RegularExpressions.Regex.IsMatch(s, @"^[0-9]{0,2}/?[0-9X]{0,2}/[0-9]{0,5}$"))
             return s;
 
         int iFirstDash = s.IndexOf('/') + 1; // 1-based, mirrors VB InStr
