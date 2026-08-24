@@ -78,7 +78,7 @@
             <tbody class="govuk-table__body">
                 @foreach (var c in Model.Preview.Cases)
                 {
-                    <tr class="govuk-table__row"><td class="govuk-table__cell">@c.Rbse</td><td class="govuk-table__cell">@c.AdnsReference</td><td class="govuk-table__cell">@c.AdnsRegionName</td><td class="govuk-table__cell">@c.ConfirmationDate.ToShortDateString()</td></tr>
+                    <tr class="govuk-table__row"><td class="govuk-table__cell">@c.Rbse</td><td class="govuk-table__cell">@c.AdnsReference</td><td class="govuk-table__cell">@c.AdnsRegionName</td><td class="govuk-table__cell">@c.ConfirmationDate.ToString("dd/MM/yyyy")</td></tr>
                 }
             </tbody>
         </table>

@@ -1,11 +1,28 @@
-@page "{rbse}"
+@page "{rbse?}"
 @model CaseWorkMenuModel
 @{
-    ViewData["Title"] = "Case work";
+    ViewData["Title"] = string.IsNullOrEmpty(Model.Rbse) ? "Casework menu" : $"Case work \u2014 {Model.Rbse}";
 }
 
-<div>
-    <h1 class="govuk-heading-l">Case work — @Model.Rbse</h1>
+<h1 class="govuk-heading-l">@(string.IsNullOrEmpty(Model.Rbse) ? "Casework menu" : $"Case work \u2014 {Model.Rbse}")</h1>
+
+@* \u2500\u2500 Standalone menu (navigated from home page without a case RBSE) \u2500\u2500 *@
+@if (string.IsNullOrEmpty(Model.Rbse))
+{
+    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+        <ol class="govuk-breadcrumbs__list">
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+            <li class="govuk-breadcrumbs__list-item" aria-current="page">Casework menu</li>
+        </ol>
+    </nav>
+    <ul class="govuk-list govuk-list--spaced">
+        <li><a asp-page="/CaseWork/OpenCases" class="govuk-link">View all open cases</a></li>
+        <li><a asp-page="/CaseWork/ClosedCases" class="govuk-link">View all closed cases</a></li>
+    </ul>
+}
+else
+{
+    <div>
     <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
         <ol class="govuk-breadcrumbs__list">
             <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
@@ -57,3 +74,4 @@
         </ul>
     }
 </div>
+}

@@ -9,22 +9,32 @@
     <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
         <ol class="govuk-breadcrumbs__list">
             <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/AuditLog/Menu">Audit log</a></li>
             <li class="govuk-breadcrumbs__list-item" aria-current="page">Audit log by user</li>
         </ol>
     </nav>
 
     <form method="get" novalidate class="govuk-!-margin-bottom-6">
+        <div class="govuk-form-group @(Model.ValidationError is not null ? "govuk-form-group--error" : "")">
+            <label asp-for="UserId" class="govuk-label">User</label>
+            @if (Model.ValidationError is not null)
+            {
+                <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.ValidationError</p>
+            }
+            <select asp-for="UserId" asp-items="Model.Users"
+                    class="govuk-select @(Model.ValidationError is not null ? "govuk-select--error" : "")">
+                <option value="0">Select a user</option>
+            </select>
+        </div>
         <div class="govuk-form-group">
             <label asp-for="StartDate" class="govuk-label">From</label>
-            <input asp-for="StartDate" type="date" class="govuk-input govuk-input--width-10" />
+            <input asp-for="StartDate" type="date" class="govuk-input govuk-input--width-10"
+                   value="@Model.StartDate.ToString("yyyy-MM-dd")" />
         </div>
         <div class="govuk-form-group">
             <label asp-for="EndDate" class="govuk-label">To</label>
-            <input asp-for="EndDate" type="date" class="govuk-input govuk-input--width-10" />
-        </div>
-        <div class="govuk-form-group">
-            <label asp-for="UserId" class="govuk-label">User ID</label>
-            <input asp-for="UserId" type="number" class="govuk-input govuk-input--width-5" />
+            <input asp-for="EndDate" type="date" class="govuk-input govuk-input--width-10"
+                   value="@Model.EndDate.ToString("yyyy-MM-dd")" />
         </div>
         <div class="govuk-button-group">
             <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>

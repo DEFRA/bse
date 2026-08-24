@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.AuditLog;
 
-[Authorize(Policy = "Authenticated")]
+[Authorize(Policy = "AuditAccess")]
 public class ByDateModel(IAuditLogService auditLogService) : PageModel
 {
     [BindProperty(SupportsGet = true)]

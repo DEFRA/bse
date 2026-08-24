@@ -9,6 +9,7 @@
     <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
         <ol class="govuk-breadcrumbs__list">
             <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Bsess/Menu">BSESS check</a></li>
             <li class="govuk-breadcrumbs__list-item" aria-current="page">BSESS check by date</li>
         </ol>
     </nav>
@@ -38,8 +39,8 @@
                         <td class="govuk-table__cell"><a asp-page="/Case/Details" asp-route-rbse="@d.Rbse" class="govuk-link">@d.Rbse</a></td>
                         <td class="govuk-table__cell">@d.BsessEartag</td>
                         <td class="govuk-table__cell">@d.BseEartag</td>
-                        <td class="govuk-table__cell">@d.BsessBirthDate?.ToShortDateString()</td>
-                        <td class="govuk-table__cell">@d.BseBirthDate?.ToShortDateString()</td>
+                        <td class="govuk-table__cell">@d.BsessBirthDate?.ToString("dd/MM/yyyy")</td>
+                        <td class="govuk-table__cell">@d.BseBirthDate?.ToString("dd/MM/yyyy")</td>
                         <td class="govuk-table__cell">@d.BsessTestGroup</td>
                         <td class="govuk-table__cell">@d.BseTestGroup</td>
                     </tr>

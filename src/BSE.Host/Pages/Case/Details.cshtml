@@ -17,7 +17,7 @@
     return;
 }
 
-<h1 class="govuk-heading-l">Case: <span class="bse-rbse">@Model.Case.Rbse</span></h1>
+<h1 class="govuk-heading-l">Case: <span class="bse-rbse">@RbseHelper.Format(Model.Case.Rbse)</span></h1>
 
 <div class="govuk-button-group">
     <a asp-page="/Case/Edit" asp-route-rbse="@Model.Case.Rbse" class="govuk-button">Edit</a>

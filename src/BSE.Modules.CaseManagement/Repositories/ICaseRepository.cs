@@ -31,4 +31,5 @@ public interface ICaseRepository
     Task<DeleteCaseResult> DeleteCaseAsync(string rbse, int userId);
     Task<MoveCaseResult> MoveCaseAsync(string rbse, string newCphh, int userId);
     Task<ChangeRbseResult> ChangeRbseAsync(string oldRbse, string newRbse, int userId);
+    Task<AddNonGbCaseResult> AddNonGbCaseAsync(AddNonGbCaseCommand command, int userId);
 }
