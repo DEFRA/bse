@@ -32,9 +32,9 @@ public class EditModel : PageModel
 
     [BindProperty] public FarmEditViewModel? Farm { get; set; }
 
-    public async Task<IActionResult> OnGetAsync(string cphh, string rbse)
+    public async Task<IActionResult> OnGetAsync(string cphh, string? rbse = null)
     {
-        Rbse = rbse;
+        Rbse = rbse ?? string.Empty;
         var record = await _farm.GetByCphhAsync(cphh);
         if (record is null) return NotFound();
 
