@@ -53,13 +53,10 @@ public class TestResultsModel(
         return RedirectToPage(new { rbse = Rbse });
     }
 
-    public async Task<IActionResult> OnPostDeleteTestAsync(int testId)
+    public async Task<IActionResult> OnPostDeleteTestAsync(int testId, string rowStampBase64)
     {
-        using var conn = connectionFactory.CreateConnection();
-        conn.Open();
-        using var tx = conn.BeginTransaction();
-        await testRepository.DeleteAsync(testId, conn, tx);
-        tx.Commit();
+        var rowStamp = Convert.FromBase64String(rowStampBase64);
+        await testRepository.DeleteAsync(testId, rowStamp);
 
         TempData["Success"] = "Test record deleted.";
         return RedirectToPage(new { rbse = Rbse });
