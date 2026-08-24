@@ -314,18 +314,21 @@ try
     app.UseAuthentication();
     app.UseAuthorization();
 
-    // ── Sign-out endpoint ─────────────────────────────────────────────────────
-    // SP-initiated SLO: clears the local auth cookie then redirects to Entra ID
-    // SLO endpoint. In bypass mode just clears the local session and goes home.
-    // Not a UI page — invoked via POST from the layout sign-out form.
-    app.MapPost("/auth/signout", async (HttpContext ctx) =>
+// ── Sign-out endpoint ─────────────────────────────────────────────────────
+// SP-initiated SLO: clears the local auth cookie then redirects to Entra ID
+// SLO endpoint. In bypass mode just redirects home.
+// Not a UI page — invoked via POST from the layout sign-out form.
+app.MapPost("/auth/signout", async (HttpContext ctx) =>
+{
+    if (bypassAuthentication)
     {
-        await ctx.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        if (!bypassAuthentication)
-            await ctx.SignOutAsync(Saml2Defaults.Scheme);
-        else
-            ctx.Response.Redirect("/Home");
-    }).AllowAnonymous();
+        ctx.Response.Redirect("/Home");
+        return;
+    }
+
+    await ctx.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+    await ctx.SignOutAsync(Saml2Defaults.Scheme);
+}).RequireAuthorization();
 
     // Liveness: always returns 200 — no health checks evaluated.
     // AllowAnonymous ensures the liveness probe is reachable even when OIDC is not yet configured.
