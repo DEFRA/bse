@@ -1,0 +1,100 @@
+trigger:
+  branches:
+    include:
+      - develop
+
+pr:
+  branches:
+    include:
+      - develop
+
+variables:
+  - name: buildConfiguration
+    value: 'Release'
+
+  - name: solution
+    value: 'src/BSE.slnx'
+
+  - name: webProject
+    value: 'src/BSE.Host/BSE.Host.csproj'
+
+  - name: azureServiceConnection
+    value: 'AZR-BSE-DEV1'
+
+  - name: appName
+    value: 'DEVBSEWEBAW1401'
+
+stages:
+
+- stage: Build
+  displayName: Build and test
+  jobs:
+  - job: build
+    pool:
+      vmImage: 'ubuntu-24.04'
+    steps:
+
+    - checkout: self
+      fetchDepth: 1
+      persistCredentials: false
+
+    - task: UseDotNet@2
+      displayName: 'Install .NET SDK'
+      inputs:
+        useGlobalJson: true
+
+    - script: dotnet restore $(solution)
+      displayName: 'Restore dependencies'
+
+    - script: dotnet build $(solution) --configuration $(buildConfiguration) --no-restore
+      displayName: 'Build'
+
+    - script: dotnet test $(solution) --configuration $(buildConfiguration) --no-build --logger trx
+      displayName: 'Run tests'
+
+    - task: PublishTestResults@2
+      displayName: 'Publish test results'
+      condition: succeededOrFailed()
+      inputs:
+        testResultsFormat: VSTest
+        testResultsFiles: '**/*.trx'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish BSE.Host'
+      inputs:
+        command: publish
+        publishWebProjects: false
+        projects: '$(webProject)'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
+        zipAfterPublish: true
+
+    - publish: '$(Build.ArtifactStagingDirectory)'
+      artifact: drop
+      displayName: 'Publish artifact'
+
+- stage: Deploy
+  displayName: Deploy to Dev
+  dependsOn: Build
+  condition: >-
+    and(succeeded(),
+        eq(variables['Build.SourceBranch'], 'refs/heads/develop'),
+        ne(variables['Build.Reason'], 'PullRequest'))
+  jobs:
+  - deployment: deploy_dev
+    environment: 'dev'
+    pool:
+      name: 'DEFRA-COMMON-UBUNTU-SSV3'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: drop
+          - task: AzureWebApp@1
+            inputs:
+              azureSubscription: 'AZR-BSE-DEV1'
+              appType: 'webAppLinux'
+              appName: 'DEVBSEWEBAW1401'
+              package: '$(Pipeline.Workspace)/drop/*.zip'
+              runtimeStack: 'DOTNETCORE|10.0'
+              deploymentMethod: 'zipDeploy'
