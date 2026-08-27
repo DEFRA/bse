@@ -1,6 +1,6 @@
 trigger: none
 
-pool: DEFRA-COMMON-WINDOWS-SSV3  
+pool: DEFRA-COMMON-UBUNTU-SSV5  
 
 steps:
   - checkout: none
