@@ -2,12 +2,7 @@ trigger:
   branches:
     include:
       - develop
-
-pr:
-  branches:
-    include:
-      - develop
-
+      
 variables:
   - name: buildConfiguration
     value: 'Release'
