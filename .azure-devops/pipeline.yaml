@@ -79,7 +79,7 @@ stages:
   - deployment: deploy_dev
     environment: 'dev'
     pool:
-      name: 'DEFRA-COMMON-UBUNTU-SSV5'
+      name: 'DEFRA-COMMON-UBUNTU-SSV3'
     strategy:
       runOnce:
         deploy:
