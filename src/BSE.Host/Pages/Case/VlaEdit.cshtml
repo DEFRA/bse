@@ -169,9 +169,8 @@
                value="@DateVal(Model.Case.PurchaseDate)" />
     </div>
     <div class="govuk-form-group @(ViewData.ModelState["Case.PurchaseAgeInMonths"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
-        <fieldset class="govuk-fieldset" aria-describedby="age-purchased-hint">
+        <fieldset class="govuk-fieldset">
             <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">Age purchased</legend>
-            <div id="age-purchased-hint" class="govuk-hint">Enter years and months, or click Calculate if Date of birth and Date purchased are both set.</div>
             @if (ViewData.ModelState["Case.PurchaseAgeInMonths"]?.Errors.Count > 0)
             {
                 <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["Case.PurchaseAgeInMonths"]!.Errors[0].ErrorMessage</p>
@@ -259,9 +258,8 @@
         <input asp-for="Case.MonthsPostCalving" type="number" class="govuk-input govuk-input--width-5 @(ViewData.ModelState["Case.MonthsPostCalving"]?.Errors.Count > 0 ? "govuk-input--error" : "")" min="1" max="3" />
     </div>
     <div class="govuk-form-group @(ViewData.ModelState["Case.OnsetAgeInMonths"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
-        <fieldset class="govuk-fieldset" aria-describedby="onset-age-hint">
+        <fieldset class="govuk-fieldset">
             <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">Onset age</legend>
-            <div id="onset-age-hint" class="govuk-hint">Enter years and months, or click Calculate if Date of birth and Onset date are both set.</div>
             @if (ViewData.ModelState["Case.OnsetAgeInMonths"]?.Errors.Count > 0)
             {
                 <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["Case.OnsetAgeInMonths"]!.Errors[0].ErrorMessage</p>

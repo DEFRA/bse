@@ -68,6 +68,24 @@ public class DefraEditModel(
     {
         await LoadLookupsAsync();
 
+        // Mirrors legacy CaseEntryDEFRA: clear dependent dates when anchor date is removed
+        if (!Case.FormADate.HasValue)
+        {
+            Case.FormAResubmittedDate = null;
+            Case.FormBDate            = null;
+            Case.FormCDate            = null;
+            Case.Fate                 = null;
+        }
+        else if (!Case.FormBDate.HasValue)
+        {
+            Case.FormCDate = null;
+            Case.Fate      = null;
+        }
+
+        // Mirrors legacy CaseEntryDEFRA: default SlaughterDate to FormBDate when not yet set by VLA
+        if (Case.FormBDate.HasValue && !Case.SlaughterDate.HasValue)
+            Case.SlaughterDate = Case.FormBDate;
+
         ValidateDomainRules();
 
         if (!ModelState.IsValid)
@@ -281,8 +299,18 @@ public class DefraEditModel(
             return null;
         }
 
-        // UK eartag: UKEartag formats inherit EartagFormatBase.Validate which returns empty — no blocking error
-        if (c == "UK") return null;
+        // UK electoral eartag (Format 9): 6-digit herd (2-digit electoral code + 4-digit herd number)
+        // + 9-char animal (8 digits + 1 alpha check from modulo-23 table) — ports legacy checkCheckDigitFormat9
+        if (c == "UK")
+        {
+            if (h.Length == 6 && h.All(char.IsDigit) &&
+                a.Length == 9 && a[..8].All(char.IsDigit) && char.IsLetter(a[8]))
+            {
+                if (!CheckDigitFormat9(h, a))
+                    return "Eartag check digit is invalid.";
+            }
+            return null;
+        }
 
         // EC non-UK country codes: ECEartagFormat.Validate checks animal is 1–12 uppercase alphanumeric chars
         string[] ecCodes = ["AT", "BE", "DE", "DK", "EL", "ES", "FI", "FR", "IE", "IT", "LU", "NL", "PT", "SE"];
@@ -295,5 +323,22 @@ public class DefraEditModel(
 
         // Unknown / no country (NoCountryEartag): FreeEartagFormat / PreBarimoEartagFormat return empty — no blocking error
         return null;
+    }
+
+    // Ports BSELib.EartagValidation.checkCheckDigitFormat9: modulo-23 alpha check for UK electoral eartags.
+    private static bool CheckDigitFormat9(string herd, string animal)
+    {
+        var electoralId = herd[..2];
+        var herdNum     = herd[2..].PadLeft(4, '0');
+        var animalNum   = animal[..^1];
+
+        if (!long.TryParse(electoralId + herdNum, out long electoralHerd) ||
+            !long.TryParse(animalNum,             out long animalPart))
+            return true; // non-numeric — cannot verify, pass through
+
+        var check    = electoralHerd * 10000 + animalPart;
+        var mod      = (int)(check % 23);
+        var alphabet = "ABCDEFHIKLMNOPRSTUVWXYZ"; // 23 chars — no G, J, Q (mirrors legacy Split array)
+        return mod < alphabet.Length && animal[^1] == alphabet[mod];
     }
 }

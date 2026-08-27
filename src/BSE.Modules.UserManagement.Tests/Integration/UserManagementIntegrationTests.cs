@@ -76,7 +76,7 @@ public sealed class UserManagementIntegrationTests : IClassFixture<UserManagemen
         // Configure factory with this specific UPN for this test.
         var client = _factory.WithWebHostBuilder(b =>
             b.ConfigureServices(s =>
-                s.PostConfigure<TestAuthOptions>(opts =>
+                s.PostConfigure<TestAuthOptions>(TestAuthHandler.SchemeName, opts =>
                     opts.DefaultUpn = upn)))
             .CreateClient();
 
