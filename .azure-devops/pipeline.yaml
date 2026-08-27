@@ -41,7 +41,8 @@ stages:
     - task: UseDotNet@2
       displayName: 'Install .NET SDK'
       inputs:
-        useGlobalJson: true
+        packageType: sdk
+        version: '10.0.x'
 
     - script: dotnet restore $(solution)
       displayName: 'Restore dependencies'
