@@ -195,6 +195,11 @@ options.Events.OnRedirectToLogin = ctx =>
             {
                 options.SPOptions.EntityId = new EntityId(saml2Config.SPEntityId);
 
+                // Pin the public origin so the correct ACS Reply URL is sent to Entra ID
+                // regardless of which port/protocol the request arrives on locally.
+                if (!string.IsNullOrWhiteSpace(saml2Config.PublicOrigin))
+                    options.SPOptions.PublicOrigin = new Uri(saml2Config.PublicOrigin);
+
                 // SP signing certificate — placeholder; wire Key Vault reference before production deploy.
                 // Leaving ServiceCertificates empty is acceptable for local SAML testing only.
                 // Add the certificate here when the thumbprint is provisioned:

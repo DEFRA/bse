@@ -99,9 +99,8 @@
     <h2 class="govuk-heading-m">Animal identification</h2>
 
     <div class="govuk-form-group @(eEartag is not null ? "govuk-form-group--error" : "")">
-        <fieldset class="govuk-fieldset" aria-describedby="eartag-hint@(eEartag is not null ? " eartag-error" : "")">
+        <fieldset class="govuk-fieldset" aria-describedby="@(eEartag is not null ? "eartag-error" : "")">
             <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">Eartag</legend>
-            <div id="eartag-hint" class="govuk-hint">Country code (up to 4 characters), herdmark (up to 8 characters), animal number (up to 25 characters)</div>
             @if (eEartag is not null)
             {
                 <p id="eartag-error" class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eEartag</p>

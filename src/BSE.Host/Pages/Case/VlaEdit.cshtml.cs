@@ -75,6 +75,10 @@ public class VlaEditModel(
             Case.PurchasedCounty     = null;
         }
 
+        // Mirrors legacy CaseEntryDEFRA: default SlaughterDate to FormBDate when not yet set
+        if (Case.FormBDate.HasValue && !Case.SlaughterDate.HasValue)
+            Case.SlaughterDate = Case.FormBDate;
+
         ValidateVlaDomainRules();
         if (!ModelState.IsValid)
         {

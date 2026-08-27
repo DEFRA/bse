@@ -47,4 +47,14 @@ public sealed class Saml2Configuration
     /// In production, reference an Azure Key Vault certificate — never commit a real thumbprint.
     /// </summary>
     public string? SPCertificateThumbprint { get; init; }
+
+    /// <summary>
+    /// Overrides the public-facing origin that Sustainsys.Saml2 uses when building the
+    /// ACS (Reply) URL included in the SAML AuthnRequest sent to Entra ID.
+    /// Required when the app sits behind a reverse proxy, or when the request origin
+    /// (e.g. http://localhost:53643) differs from the registered Reply URL.
+    /// Example: <c>https://localhost:53642</c> for local development.
+    /// Leave null to let Sustainsys infer from the incoming request.
+    /// </summary>
+    public string? PublicOrigin { get; init; }
 }
