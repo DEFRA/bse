@@ -9,9 +9,11 @@ namespace BSE.Modules.UserManagement.Identity;
 /// Registered as scoped so it is recreated per request.
 /// </summary>
 /// <remarks>
-/// UPN claim resolution order (Azure AD format):
-/// 1. <c>preferred_username</c> — standard Azure AD OIDC claim
-/// 2. <c>ClaimTypes.Upn</c> — legacy Windows/Kerberos UPN fallback
+/// Email claim resolution order (matches Entra ID SAML/OIDC assertion output):
+/// 1. <c>emailaddress</c> — canonical internal claim added by AcsCommandResultCreated
+/// 2. <c>ClaimTypes.Email</c> — standard .NET email claim type
+/// 3. <c>preferred_username</c> — Azure AD OIDC fallback
+/// 4. <c>ClaimTypes.Upn</c> — legacy Windows/Kerberos UPN fallback
 /// </remarks>
 public sealed class ClaimsUserContext : IUserContext
 {
@@ -24,8 +26,9 @@ public sealed class ClaimsUserContext : IUserContext
     /// </summary>
     public const string BseGroupIdClaimType = "bse:groupId";
 
-    // Primary Azure AD claim name for UPN.
-    public const string PreferredUsernameClaim = "preferred_username";
+    // Canonical internal claim for the user's email / UPN — added by AcsCommandResultCreated
+    // from the Entra ID SAML assertion. Mirrors the reference ExtractEmail priority order.
+    public const string EmailClaimType = "emailaddress";
 
     private readonly ClaimsPrincipal _principal;
 
@@ -35,7 +38,9 @@ public sealed class ClaimsUserContext : IUserContext
     }
 
     public string Upn =>
-        _principal.FindFirstValue(PreferredUsernameClaim)
+        _principal.FindFirstValue(EmailClaimType)
+        ?? _principal.FindFirstValue(ClaimTypes.Email)
+        ?? _principal.FindFirstValue("preferred_username")
         ?? _principal.FindFirstValue(ClaimTypes.Upn)
         ?? string.Empty;
 

@@ -13,18 +13,16 @@ namespace BSE.Modules.UserManagement.Identity;
 /// </list>
 /// </summary>
 /// <remarks>
-/// Lookup strategy (UPN-first with NTLogin fallback):
+/// Lookup strategy (email-first with NTLogin fallback):
 /// <list type="number">
-///   <item>Read UPN from <c>preferred_username</c> claim (Azure AD format), falling back to
-///         <see cref="ClaimTypes.Upn"/>.</item>
+///   <item>Read email from <c>emailaddress</c> claim (added by AcsCommandResultCreated from Entra SAML assertion),
+///         falling back to <c>ClaimTypes.Email</c>, <c>preferred_username</c>, then <c>ClaimTypes.Upn</c>.</item>
 ///   <item>Call <see cref="IUserRepository.GetByUpnAsync"/>. Returns a match once the UPN column
 ///         is populated (after <c>AddUserUpnColumn.sql</c> + SP update).</item>
-///   <item>If not found, derive NTLogin from the UPN local part (before '@') and call
+///   <item>If not found, derive NTLogin from the email local part (before '@') and call
 ///         <see cref="IUserRepository.GetByNtLoginAsync"/>. This is the transition-period heuristic
-///         that works when database NTLogin equals the UPN local part.</item>
+///         that works when database NTLogin equals the email local part.</item>
 /// </list>
-/// When real Azure AD is wired (env vars OIDC__Authority / OIDC__ClientId / OIDC__ClientSecret
-/// set), this transformation runs unchanged — no code changes required.
 /// </remarks>
 public sealed class GroupClaimsTransformation : IClaimsTransformation
 {
@@ -47,7 +45,9 @@ public sealed class GroupClaimsTransformation : IClaimsTransformation
         if (principal.HasClaim(c => c.Type == ClaimsUserContext.BseGroupIdClaimType))
             return principal;
 
-        var upn = principal.FindFirstValue(ClaimsUserContext.PreferredUsernameClaim)
+        var upn = principal.FindFirstValue(ClaimsUserContext.EmailClaimType)
+                  ?? principal.FindFirstValue(ClaimTypes.Email)
+                  ?? principal.FindFirstValue("preferred_username")
                   ?? principal.FindFirstValue(ClaimTypes.Upn);
 
         if (string.IsNullOrWhiteSpace(upn))
