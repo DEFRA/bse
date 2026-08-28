@@ -1,4 +1,4 @@
-using BSE.Host.Cache;
+﻿using BSE.Host.Cache;
 using BSE.Host.Authentication;
 using BSE.Host.HealthChecks;
 using BSE.Infrastructure;
@@ -15,6 +15,7 @@ using BSE.Modules.FarmManagement;
 using BSE.Modules.ReferenceData;
 using BSE.Modules.Search;
 using BSE.Modules.UserManagement;
+using BSE.Modules.UserManagement.Identity;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -227,30 +228,74 @@ try
 
                 options.IdentityProviders.Add(idp);
 
-                // Map the UPN/email claim from the Entra ID SAML assertion into
-                // preferred_username so GroupClaimsTransformation can look up the
-                // user in the database — identical path to the dev bypass.
+                // Extract the user's email from the Entra ID SAML assertion and add it
+                // as the canonical 'emailaddress' claim so GroupClaimsTransformation
+                // can look up the user in the database.
+                // Priority: ClaimTypes.Email → schema emailaddress URI → NameIdentifier.
                 // Assertion payloads are never logged (GDPR / Defra SDS Logging Standards).
                 options.Notifications.AcsCommandResultCreated = (result, _) =>
                 {
                     if (result.Principal?.Identity is not System.Security.Claims.ClaimsIdentity identity)
                         return;
 
-                    var upn =
-                        identity.FindFirst(System.Security.Claims.ClaimTypes.Upn)?.Value
+                    var email =
+                        identity.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
                         ?? identity.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value
                         ?? identity.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
-                    if (!string.IsNullOrWhiteSpace(upn)
-                        && !identity.HasClaim(c => c.Type == "emailaddress"))
+                    if (!string.IsNullOrWhiteSpace(email)
+                        && !identity.HasClaim(c => c.Type == ClaimsUserContext.EmailClaimType))
                     {
-                        identity.AddClaim(new System.Security.Claims.Claim("emailaddress", upn));
+                        identity.AddClaim(new System.Security.Claims.Claim(ClaimsUserContext.EmailClaimType, email));
                     }
                 };
             });
     }
 
-    // ── Razor Pages ────────────────────────────────────────────────────────────
+    // ── Forwarded headers (service registration) ────────────────────────────────
+    // Registered here (before Build) so the options are available to all middleware.
+    // dev-bse.azure.defra.cloud terminates TLS and forwards to the App Service's
+    // default hostname. Without this, Request.Scheme/Request.Host reflect the
+    // raw azurewebsites.net origin, causing absolute redirects to leak that hostname.
+    // Azure's edge proxy IPs are not fixed, so KnownNetworks/KnownProxies are cleared
+    // to trust forwarded headers regardless of hop address — safe because the
+    // azurewebsites.net endpoint is access-restricted to Front Door / App Gateway only.
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor
+                                 | ForwardedHeaders.XForwardedProto
+                                 | ForwardedHeaders.XForwardedHost;
+        options.KnownNetworks.Clear();
+        options.KnownProxies.Clear();
+    });
+
+    // ── Cookie redirect URIs — force relative ─────────────────────────────────────
+    // The default cookie challenge/forbid handlers build an ABSOLUTE redirect URI from
+    // Request.Scheme/Request.Host. Behind a reverse proxy, that can leak the App
+    // Service origin hostname instead of the public custom domain. Forcing a relative
+    // redirect removes the dependency on Request.Host entirely — the browser resolves
+    // it against whatever host is in the address bar. Mirrors Histo.
+    builder.Services.PostConfigure<CookieAuthenticationOptions>(
+        CookieAuthenticationDefaults.AuthenticationScheme, options =>
+    {
+        var originalLogin = options.Events.OnRedirectToLogin;
+        options.Events.OnRedirectToLogin = context =>
+        {
+            if (Uri.TryCreate(context.RedirectUri, UriKind.Absolute, out var abs))
+                context.RedirectUri = abs.PathAndQuery;
+            return originalLogin(context);
+        };
+
+        var originalDenied = options.Events.OnRedirectToAccessDenied;
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            if (Uri.TryCreate(context.RedirectUri, UriKind.Absolute, out var abs))
+                context.RedirectUri = abs.PathAndQuery;
+            return originalDenied(context);
+        };
+    });
+
+    // ── Razor Pages
     builder.Services.AddRazorPages(options =>
     {
         options.Conventions.AuthorizeFolder("/");
@@ -320,24 +365,7 @@ try
 
     var app = builder.Build();
 
-    // ── Forwarded headers ─────────────────────────────────────────────────────────
-    // Must be first: Azure App Service / Front Door / App Gateway forward the real
-    // public hostname via X-Forwarded-Host and X-Forwarded-Proto.
-    // Without this, ASP.NET Core builds redirect URLs from the raw azurewebsites.net
-    // hostname, causing post-SAML login to redirect to the wrong host.
-    //
-    // KnownNetworks / KnownProxies are cleared so Azure's proxy IPs are trusted.
-    // This is safe because the *.azurewebsites.net endpoint is locked down to
-    // Front Door / App Gateway traffic only via network access restrictions.
-    var forwardedHeadersOptions = new ForwardedHeadersOptions
-    {
-        ForwardedHeaders = ForwardedHeaders.XForwardedFor
-                         | ForwardedHeaders.XForwardedProto
-                         | ForwardedHeaders.XForwardedHost
-    };
-    forwardedHeadersOptions.KnownNetworks.Clear();
-    forwardedHeadersOptions.KnownProxies.Clear();
-    app.UseForwardedHeaders(forwardedHeadersOptions);
+    app.UseForwardedHeaders(); // options registered via builder.Services.Configure<ForwardedHeadersOptions> above
 
     app.UseExceptionHandler("/Error");
     app.UseSerilogRequestLogging();
