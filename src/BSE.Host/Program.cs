@@ -234,7 +234,7 @@ options.Events.OnRedirectToLogin = ctx =>
                         ?? identity.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
                     if (!string.IsNullOrWhiteSpace(upn)
-                        && !identity.HasClaim(c => c.Type == "preferred_username"))
+                        && !identity.HasClaim(c => c.Type == "emailaddress"))
                     {
                         identity.AddClaim(new System.Security.Claims.Claim("preferred_username", upn));
                     }
