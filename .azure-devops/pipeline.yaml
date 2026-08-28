@@ -71,6 +71,7 @@ stages:
 - stage: Deploy
   displayName: Deploy to Dev
   dependsOn: Build
+  trigger: manual
   condition: >-
     and(succeeded(),
         eq(variables['Build.SourceBranch'], 'refs/heads/develop'),
