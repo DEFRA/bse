@@ -318,12 +318,19 @@ options.Events.OnRedirectToLogin = ctx =>
     // public hostname via X-Forwarded-Host and X-Forwarded-Proto.
     // Without this, ASP.NET Core builds redirect URLs from the raw azurewebsites.net
     // hostname, causing post-SAML login to redirect to the wrong host.
-    app.UseForwardedHeaders(new ForwardedHeadersOptions
+    //
+    // KnownNetworks / KnownProxies are cleared so Azure's proxy IPs are trusted.
+    // This is safe because the *.azurewebsites.net endpoint is locked down to
+    // Front Door / App Gateway traffic only via network access restrictions.
+    var forwardedHeadersOptions = new ForwardedHeadersOptions
     {
-        ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor
-                         | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
-                         | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedHost
-    });
+        ForwardedHeaders = ForwardedHeaders.XForwardedFor
+                         | ForwardedHeaders.XForwardedProto
+                         | ForwardedHeaders.XForwardedHost
+    };
+    forwardedHeadersOptions.KnownNetworks.Clear();
+    forwardedHeadersOptions.KnownProxies.Clear();
+    app.UseForwardedHeaders(forwardedHeadersOptions);
 
     app.UseExceptionHandler("/Error");
     app.UseSerilogRequestLogging();
