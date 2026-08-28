@@ -312,6 +312,7 @@ options.Events.OnRedirectToLogin = ctx =>
 
     var app = builder.Build();
 
+    app.UseExceptionHandler("/Error");
     app.UseSerilogRequestLogging();
     app.UseAuthentication();
     app.UseAuthorization();
