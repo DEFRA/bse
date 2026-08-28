@@ -182,9 +182,16 @@ try
             })
             .AddCookie(options =>
             {
-                // Redirect to Entra ID challenge when the cookie expires.
-options.Events.OnRedirectToLogin = ctx =>
-    ctx.HttpContext.ChallengeAsync(Saml2Defaults.Scheme);
+                options.Events.OnRedirectToLogin = async ctx =>
+
+                {
+                    await ctx.HttpContext.ChallengeAsync(
+                        Saml2Defaults.Scheme,
+                        new AuthenticationProperties
+                        {
+                            RedirectUri = "/Home"
+                        });
+                };
                 // Redirect authenticated users with insufficient permissions to Home, not a 403.
                 options.Events.OnRedirectToAccessDenied = ctx =>
                 {
