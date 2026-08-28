@@ -20,6 +20,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.HttpOverrides;
 using Sustainsys.Saml2;
 using Sustainsys.Saml2.AspNetCore2;
 using Sustainsys.Saml2.Metadata;
@@ -311,6 +312,18 @@ options.Events.OnRedirectToLogin = ctx =>
     });
 
     var app = builder.Build();
+
+    // ── Forwarded headers ─────────────────────────────────────────────────────────
+    // Must be first: Azure App Service / Front Door / App Gateway forward the real
+    // public hostname via X-Forwarded-Host and X-Forwarded-Proto.
+    // Without this, ASP.NET Core builds redirect URLs from the raw azurewebsites.net
+    // hostname, causing post-SAML login to redirect to the wrong host.
+    app.UseForwardedHeaders(new ForwardedHeadersOptions
+    {
+        ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor
+                         | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
+                         | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedHost
+    });
 
     app.UseExceptionHandler("/Error");
     app.UseSerilogRequestLogging();
