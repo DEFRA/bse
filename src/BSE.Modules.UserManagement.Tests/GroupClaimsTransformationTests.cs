@@ -4,6 +4,7 @@ using BSE.Modules.UserManagement.Models;
 using BSE.Modules.UserManagement.Repositories;
 using BSE.SharedKernel;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Xunit;
 
@@ -12,11 +13,12 @@ namespace BSE.Modules.UserManagement.Tests;
 public sealed class GroupClaimsTransformationTests
 {
     private readonly IUserRepository _repo = Substitute.For<IUserRepository>();
+    private readonly ILogger<GroupClaimsTransformation> _logger = Substitute.For<ILogger<GroupClaimsTransformation>>();
     private readonly GroupClaimsTransformation _sut;
 
     public GroupClaimsTransformationTests()
     {
-        _sut = new GroupClaimsTransformation(_repo);
+        _sut = new GroupClaimsTransformation(_repo, _logger);
     }
 
     // ── Helper ─────────────────────────────────────────────────────────────────
