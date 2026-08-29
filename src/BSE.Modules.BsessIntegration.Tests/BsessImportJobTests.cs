@@ -16,6 +16,7 @@ public class BsessImportJobTests
     {
         var options = Options.Create(new BsessEtlOptions
         {
+            SourceConnectionString = "Server=test;Database=test;",
             ImportIntervalMinutes = intervalMinutes,
             MaxRetryAttempts = maxRetryAttempts,
             RetryDelaySeconds = retryDelaySeconds
