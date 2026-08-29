@@ -31,6 +31,14 @@ public sealed class BsessImportJob : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        if (!_options.IsEnabled)
+        {
+            _logger.LogInformation(
+                "BSESS import job is disabled — BsessEtl:SourceConnectionString is not configured. " +
+                "Set environment variable BsessEtl__SourceConnectionString to enable.");
+            return;
+        }
+
         AsyncRetryPolicy retryPolicy = Policy
             .Handle<Exception>(ex => ex is not OperationCanceledException)
             .WaitAndRetryAsync(
