@@ -19,7 +19,7 @@ namespace BSE.Modules.UserManagement.Identity;
 /// <list type="number">
 ///   <item>Read email from <c>emailaddress</c> claim (added by AcsCommandResultCreated from Entra SAML assertion),
 ///         falling back to <c>ClaimTypes.Email</c>, <c>preferred_username</c>, then <c>ClaimTypes.Upn</c>.</item>
-///   <item>Call <see cref="IUserRepository.GetByUpnAsync"/>. Returns a match once the UPN column
+///   <item>Call <see cref="IUserRepository.GetByEmailAsync"/>. Returns a match once the UPN column
 ///         is populated (after <c>AddUserUpnColumn.sql</c> + SP update).</item>
 ///   <item>If not found, derive NTLogin from the email local part (before '@') and call
 ///         <see cref="IUserRepository.GetByNtLoginAsync"/>.</item>
@@ -55,16 +55,20 @@ public sealed class GroupClaimsTransformation : IClaimsTransformation
 
         var upn = principal.FindFirstValue(ClaimsUserContext.EmailClaimType)
                   ?? principal.FindFirstValue(ClaimTypes.Email)
-                  ?? principal.FindFirstValue("preferred_username")
+                  ?? principal.FindFirstValue("preferred_username")   // DevBypass emits "DS000104@dev.local"
                   ?? principal.FindFirstValue(ClaimTypes.Upn);
+
+        _logger.LogDebug("GroupClaimsTransformation: resolved UPN '{Upn}'", upn);
 
         if (string.IsNullOrWhiteSpace(upn))
             return principal;
 
         try
         {
-            var user = await _userRepository.GetByUpnAsync(upn)
+            var user = await _userRepository.GetByEmailAsync(upn)
                        ?? await _userRepository.GetByNtLoginAsync(DeriveNtLoginFromUpn(upn));
+
+            _logger.LogDebug("user from DB : resolved user '{user}'", user);
 
             if (user is null)
                 return principal;

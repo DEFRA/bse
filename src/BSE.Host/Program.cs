@@ -45,6 +45,7 @@ try
         config
             .MinimumLevel.Information()
             .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+            .ReadFrom.Configuration(context.Configuration)   // ← picks up Serilog:MinimumLevel:Override from appsettings
             .Enrich.FromLogContext();
 
         // Structured JSON in non-Development environments; plain text locally.
