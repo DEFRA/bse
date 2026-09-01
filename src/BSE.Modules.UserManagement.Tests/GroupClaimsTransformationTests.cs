@@ -54,7 +54,7 @@ public sealed class GroupClaimsTransformationTests
         var result = await _sut.TransformAsync(principal);
 
         result.Should().BeSameAs(principal);
-        await _repo.DidNotReceive().GetByUpnAsync(Arg.Any<string>());
+        await _repo.DidNotReceive().GetByEmailAsync(Arg.Any<string>());
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public sealed class GroupClaimsTransformationTests
         var result = await _sut.TransformAsync(principal);
 
         result.Should().BeSameAs(principal);
-        await _repo.DidNotReceive().GetByUpnAsync(Arg.Any<string>());
+        await _repo.DidNotReceive().GetByEmailAsync(Arg.Any<string>());
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public sealed class GroupClaimsTransformationTests
     {
         const string upn = "alice@test.domain";
         var user = MakeUser(UserGroup.DataEntry);
-        _repo.GetByUpnAsync(upn).Returns(user);
+        _repo.GetByEmailAsync(upn).Returns(user);
 
         var principal = AuthenticatedPrincipal(new Claim("preferred_username", upn));
         var result = await _sut.TransformAsync(principal);
@@ -108,7 +108,7 @@ public sealed class GroupClaimsTransformationTests
         const string upn = "bob.smith@test.domain";
         var user = MakeUser(UserGroup.Admin);
 
-        _repo.GetByUpnAsync(upn).Returns((User?)null);
+        _repo.GetByEmailAsync(upn).Returns((User?)null);
         _repo.GetByNtLoginAsync("bob.smith").Returns(user);
 
         var principal = AuthenticatedPrincipal(new Claim("preferred_username", upn));
@@ -125,7 +125,7 @@ public sealed class GroupClaimsTransformationTests
     public async Task BothLookups_Fail_ClaimsUnchanged()
     {
         const string upn = "unknown@test.domain";
-        _repo.GetByUpnAsync(upn).Returns((User?)null);
+        _repo.GetByEmailAsync(upn).Returns((User?)null);
         _repo.GetByNtLoginAsync("unknown").Returns((User?)null);
 
         var principal = AuthenticatedPrincipal(new Claim("preferred_username", upn));
@@ -140,7 +140,7 @@ public sealed class GroupClaimsTransformationTests
     {
         const string upn = "charlie@legacy.domain";
         var user = MakeUser(UserGroup.ReadOnly);
-        _repo.GetByUpnAsync(upn).Returns(user);
+        _repo.GetByEmailAsync(upn).Returns(user);
 
         // No preferred_username — only ClaimTypes.Upn
         var principal = AuthenticatedPrincipal(new Claim(ClaimTypes.Upn, upn));
@@ -159,7 +159,7 @@ public sealed class GroupClaimsTransformationTests
     public async Task AllGroups_AreIssuedCorrectly(UserGroup group)
     {
         const string upn = "grouptest@domain.com";
-        _repo.GetByUpnAsync(upn).Returns(MakeUser(group));
+        _repo.GetByEmailAsync(upn).Returns(MakeUser(group));
 
         var principal = AuthenticatedPrincipal(new Claim("preferred_username", upn));
         var result = await _sut.TransformAsync(principal);

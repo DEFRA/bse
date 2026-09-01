@@ -24,7 +24,7 @@ public sealed class CurrentUserService : ICurrentUserService
         var upn = _context.Upn;
         var ntLogin = upn.IndexOf('@') > 0 ? upn[..upn.IndexOf('@')] : upn;
 
-        var user = await _repository.GetByUpnAsync(upn)
+        var user = await _repository.GetByEmailAsync(upn)
                 ?? await _repository.GetByNtLoginAsync(ntLogin);
 
         if (user is null)

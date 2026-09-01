@@ -36,19 +36,34 @@ public sealed class UserRepository : DapperRepository, IUserRepository
         string GroupName,
         string? Email);
 
+    // GetUserByEmail: ID, Name, UserGroup, GroupName, Email (Email is the input parameter)
+    private sealed record GetUserByEmailRow(
+        int ID,
+        string NTLogin,
+        string Name,
+        int UserGroup,
+        string GroupName,
+        string? Email);
+
     // -- Interface implementation
 
-    public async Task<User?> GetByUpnAsync(string upn)
+    public async Task<User?> GetByEmailAsync(string email)
     {
-        // The UPN column is added by AddUserUpnColumn.sql (preparatory script in this slice).
-        // The GetUsers SP does not currently SELECT the UPN column; once that SP is updated,
-        // Dapper will populate it and this filter will start resolving matches.
-        // Until then, all rows have UPN = null and this returns null — triggering NTLogin fallback.
-        var rows = await QueryAsync<GetUsersRow>("GetUsers");
-        // UPN is not yet returned by GetUsers SP; all rows have null UPN until SP is updated.
-        var row = rows.FirstOrDefault(r =>
-            false);
-        return row is null ? null : MapToUser(row);
+        // GetUserByEmail filters IsActive = 1; inactive users return null.
+        var row = await QuerySingleOrDefaultAsync<GetUserByEmailRow>(
+            "GetUserByEmail", new { Email = email });
+        if (row is null) return null;
+
+        return new User(
+            UserId: row.ID,
+            NTLogin: row.NTLogin,
+            Upn: null,          // not returned by this SP; populated after UPN migration
+            UserName: row.Name,
+            Email: email,
+            IsActive: true,     // SP only returns active users
+            UserGroupId: row.UserGroup,
+            UserGroup: ToUserGroup(row.UserGroup),
+            GroupName: row.GroupName);   // luUserGroup.Name from DB join
     }
 
     public async Task<User?> GetByNtLoginAsync(string ntLogin)

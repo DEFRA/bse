@@ -46,7 +46,7 @@ public sealed class UserManagementIntegrationTests : IClassFixture<UserManagemen
         const string upn = "testuser@placeholder.domain";
         var user = new User(1, "testuser", upn, "Test User", null, true, (int)UserGroup.DataEntry, UserGroup.DataEntry,
             GroupName: "DEFRA Data Entry");
-        _factory.MockUserRepository.GetByUpnAsync(upn).Returns(user);
+        _factory.MockUserRepository.GetByEmailAsync(upn).Returns(user);
 
         var client = _factory.CreateClient();
 
@@ -69,9 +69,9 @@ public sealed class UserManagementIntegrationTests : IClassFixture<UserManagemen
             GroupName: "DEFRA Viewer");
 
         _factory.MockUserRepository.ClearReceivedCalls();
-        _factory.MockUserRepository.GetByUpnAsync(upn).Returns((User?)null);
+        _factory.MockUserRepository.GetByEmailAsync(upn).Returns((User?)null);
         _factory.MockUserRepository.GetByNtLoginAsync(ntLogin).Returns(user);
-        _factory.MockUserRepository.GetByUpnAsync(Arg.Is<string>(s => s != upn)).Returns((User?)null);
+        _factory.MockUserRepository.GetByEmailAsync(Arg.Is<string>(s => s != upn)).Returns((User?)null);
 
         // Configure factory with this specific UPN for this test.
         var client = _factory.WithWebHostBuilder(b =>
