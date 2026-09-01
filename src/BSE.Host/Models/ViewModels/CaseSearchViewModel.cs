@@ -4,10 +4,8 @@ using BSE.Modules.Search.Models;
 
 namespace BSE.Host.Models.ViewModels;
 
-public class CaseSearchViewModel
+public class CaseSearchViewModel : SearchViewModelBase<CaseSearchResult>
 {
-    public const int PageSize = 50;
-
     // --- Filter inputs ---
     [RegularExpression(@"^(\d{9}|\d{2}/\d{2}/\d{5})?$", ErrorMessage = "Enter RBSE as 9 digits or in the format XX/XX/XXXXX.")]
     public string Rbse { get; set; } = "";
@@ -34,25 +32,9 @@ public class CaseSearchViewModel
     public string? EarliestBirthDate { get; set; }
     public string? LatestBirthDate { get; set; }
 
-    // --- Pagination ---
-    public int PageNumber { get; set; } = 1;
+    protected override int PageSize => 10;
 
-    // --- Sorting ---
-    public string SortColumn { get; set; } = "";
-    public bool SortDesc { get; set; }
-
-    // --- Results ---
-    public IReadOnlyList<CaseSearchResult> Results { get; set; } = [];
-    public bool HasSearched { get; set; }
-
-    public int TotalCount => Results.Count;
-    public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
-
-    public IReadOnlyList<CaseSearchResult> PagedResults =>
-        ApplySorting(Results)
-            .Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
-
-    private IEnumerable<CaseSearchResult> ApplySorting(IReadOnlyList<CaseSearchResult> source) =>
+    protected override IEnumerable<CaseSearchResult> ApplySorting(IReadOnlyList<CaseSearchResult> source) =>
         (SortColumn?.ToLowerInvariant(), SortDesc) switch
         {
             ("cphh",            false) => source.OrderBy(r => r.Cphh),

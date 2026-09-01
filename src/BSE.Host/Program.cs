@@ -231,10 +231,32 @@ try
                 // Extract the user's email from the Entra ID SAML assertion and add it
                 // as the canonical 'emailaddress' claim so GroupClaimsTransformation
                 // can look up the user in the database.
-                // Priority: ClaimTypes.Email → schema emailaddress URI → NameIdentifier.
+                //
+                // Also rewrite the post-ACS Location redirect to use PublicOrigin.
+                // Sustainsys builds the redirect URL from Request.Host, which behind
+                // Azure Front Door can resolve to devbsewebaw1401.azurewebsites.net
+                // before UseForwardedHeaders() corrects Request.Host. This guarantees
+                // the 303 Location header always uses dev-bse.azure.defra.cloud.
                 // Assertion payloads are never logged (GDPR / Defra SDS Logging Standards).
                 options.Notifications.AcsCommandResultCreated = (result, _) =>
                 {
+                    // Fix post-ACS redirect hostname ----------------------------
+                    if (!string.IsNullOrWhiteSpace(saml2Config.PublicOrigin)
+                        && result.Location is { IsAbsoluteUri: true } location)
+                    {
+                        var origin = new Uri(saml2Config.PublicOrigin);
+                        if (!string.Equals(location.Host, origin.Host, StringComparison.OrdinalIgnoreCase))
+                        {
+                            result.Location = new UriBuilder(location)
+                            {
+                                Scheme = origin.Scheme,
+                                Host   = origin.Host,
+                                Port   = origin.IsDefaultPort ? -1 : origin.Port
+                            }.Uri;
+                        }
+                    }
+
+                    // Extract email claim ---------------------------------------
                     if (result.Principal?.Identity is not System.Security.Claims.ClaimsIdentity identity)
                         return;
 

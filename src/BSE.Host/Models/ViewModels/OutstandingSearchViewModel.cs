@@ -2,7 +2,7 @@ using BSE.Modules.Search.Models;
 
 namespace BSE.Host.Models.ViewModels;
 
-public class OutstandingSearchViewModel
+public class OutstandingSearchViewModel : SearchViewModelBase<OutstandingCaseResult>
 {
     public DateTime? EarliestFormADate { get; set; }
     public DateTime? LatestFormADate { get; set; }
@@ -10,22 +10,9 @@ public class OutstandingSearchViewModel
 
     public string SearchType { get; set; } = "BSE1"; // BSE1 | Fates | Results
 
-    public int PageNumber { get; set; } = 1;
-    public string SortColumn { get; set; } = "";
-    public bool SortDesc { get; set; }
+    protected override int PageSize => 10;
 
-    public IReadOnlyList<OutstandingCaseResult> Results { get; set; } = [];
-    public bool HasSearched { get; set; }
-
-    public const int PageSize = 50;
-    public int TotalCount => Results.Count;
-    public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
-
-    public IReadOnlyList<OutstandingCaseResult> PagedResults =>
-        ApplySorting(Results)
-            .Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
-
-    private IEnumerable<OutstandingCaseResult> ApplySorting(IReadOnlyList<OutstandingCaseResult> source) =>
+    protected override IEnumerable<OutstandingCaseResult> ApplySorting(IReadOnlyList<OutstandingCaseResult> source) =>
         (SortColumn?.ToLowerInvariant(), SortDesc) switch
         {
             ("cphh",        false) => source.OrderBy(r => r.Cphh),
