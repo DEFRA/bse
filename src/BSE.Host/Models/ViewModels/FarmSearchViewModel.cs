@@ -3,7 +3,7 @@ using BSE.Modules.Search.Models;
 
 namespace BSE.Host.Models.ViewModels;
 
-public class FarmSearchViewModel
+public class FarmSearchViewModel : SearchViewModelBase<FarmSearchResult>
 {
     [RegularExpression("^(?:\\d{2}(/)?\\d{3}(/)?\\d{4}(/)?\\d{2})?$", ErrorMessage = "Enter CPHH in the format NN/NNN/NNNN/NN or digits only.")]
     public string? Cphh { get; set; }
@@ -17,22 +17,9 @@ public class FarmSearchViewModel
     public string? Aho { get; set; }
     public bool IncludeNonGb { get; set; }
 
-    public int PageNumber { get; set; } = 1;
-    public string SortColumn { get; set; } = "";
-    public bool SortDesc { get; set; }
+    protected override int PageSize => 10;
 
-    public IReadOnlyList<FarmSearchResult> Results { get; set; } = [];
-    public bool HasSearched { get; set; }
-
-    public const int PageSize = 50;
-    public int TotalCount => Results.Count;
-    public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
-
-    public IReadOnlyList<FarmSearchResult> PagedResults =>
-        ApplySorting(Results)
-            .Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
-
-    private IEnumerable<FarmSearchResult> ApplySorting(IReadOnlyList<FarmSearchResult> source) =>
+    protected override IEnumerable<FarmSearchResult> ApplySorting(IReadOnlyList<FarmSearchResult> source) =>
         (SortColumn?.ToLowerInvariant(), SortDesc) switch
         {
             ("ownername",             false) => source.OrderBy(r => r.OwnerName),
