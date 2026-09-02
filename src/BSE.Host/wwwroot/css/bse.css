@@ -5,15 +5,23 @@
     font-weight: bold;
 }
 
-/* Sortable column header links */
-.bse-sort-link {
+/* Sortable table header links (Justice/GDS pattern-inspired) */
+.bse-sortable-header__button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     color: inherit;
     text-decoration: none;
     white-space: nowrap;
 }
 
-.bse-sort-link:hover {
+.bse-sortable-header__button:hover {
     text-decoration: underline;
+}
+
+.bse-sortable-header__icon {
+    font-size: 0.95em;
+    line-height: 1;
 }
 
 /* User and group info displayed in the service navigation bar */
