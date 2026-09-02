@@ -13,12 +13,6 @@ variables:
   - name: webProject
     value: 'src/BSE.Host/BSE.Host.csproj'
 
-  - name: azureServiceConnection
-    value: 'AZR-BSE-DEV1'
-
-  - name: appName
-    value: 'DEVBSEWEBAW1401'
-
 stages:
 
 - stage: Build
@@ -68,18 +62,25 @@ stages:
       artifact: drop
       displayName: 'Publish artifact'
 
-- stage: Deploy
+- stage: Deploy_Dev
   displayName: Deploy to Dev
   dependsOn: Build
   condition: >-
     and(succeeded(),
         eq(variables['Build.SourceBranch'], 'refs/heads/develop'),
         ne(variables['Build.Reason'], 'PullRequest'))
+  variables:
+    - name: azureServiceConnection
+      value: 'AZR-BSE-DEV1'
+    - name: appName
+      value: 'DEVBSEWEBAW1401'
+    - name: agentPool
+      value: 'DEFRA-COMMON-UBUNTU-SSV3'
   jobs:
   - deployment: deploy_dev
     environment: 'dev'
     pool:
-      name: 'DEFRA-COMMON-UBUNTU-SSV3'
+      name: $(agentPool)
     strategy:
       runOnce:
         deploy:
@@ -88,9 +89,43 @@ stages:
             artifact: drop
           - task: AzureWebApp@1
             inputs:
-              azureSubscription: 'AZR-BSE-DEV1'
+              azureSubscription: '$(azureServiceConnection)'
               appType: 'webAppLinux'
-              appName: 'DEVBSEWEBAW1401'
+              appName: '$(appName)'
+              package: '$(Pipeline.Workspace)/drop/*.zip'
+              runtimeStack: 'DOTNETCORE|10.0'
+              deploymentMethod: 'zipDeploy'
+
+- stage: Deploy_Test
+  displayName: Deploy to Test
+  dependsOn: Deploy_Dev
+  condition: >-
+    and(succeeded(),
+        eq(variables['Build.SourceBranch'], 'refs/heads/develop'),
+        ne(variables['Build.Reason'], 'PullRequest'))
+  variables:
+    - name: azureServiceConnection
+      value: 'AZR-BSE-TST1'
+    - name: appName
+      value: 'TSTBSEWEBAW1401'       
+    - name: agentPool
+      value: 'DEFRA-COMMON-UBUNTU-SSV3' 
+  jobs:
+  - deployment: deploy_test
+    environment: 'test'
+    pool:
+      name: $(agentPool)
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: drop
+          - task: AzureWebApp@1
+            inputs:
+              azureSubscription: '$(azureServiceConnection)'
+              appType: 'webAppLinux'
+              appName: '$(appName)'
               package: '$(Pipeline.Workspace)/drop/*.zip'
               runtimeStack: 'DOTNETCORE|10.0'
               deploymentMethod: 'zipDeploy'
