@@ -70,15 +70,13 @@ stages:
         eq(variables['Build.SourceBranch'], 'refs/heads/develop'),
         ne(variables['Build.Reason'], 'PullRequest'))
   variables:
-    - name: azureServiceConnection
-      value: 'AZR-BSE-DEV1'
     - name: appName
       value: 'DEVBSEWEBAW1401'
     - name: agentPool
       value: 'DEFRA-COMMON-UBUNTU-SSV3'
   jobs:
   - deployment: deploy_dev
-    environment: 'dev'
+    environment: 'DEV'     
     pool:
       name: $(agentPool)
     strategy:
@@ -89,7 +87,7 @@ stages:
             artifact: drop
           - task: AzureWebApp@1
             inputs:
-              azureSubscription: '$(azureServiceConnection)'
+              azureSubscription: 'AZR-BSE-DEV1'
               appType: 'webAppLinux'
               appName: '$(appName)'
               package: '$(Pipeline.Workspace)/drop/*.zip'
@@ -104,15 +102,13 @@ stages:
         eq(variables['Build.SourceBranch'], 'refs/heads/develop'),
         ne(variables['Build.Reason'], 'PullRequest'))
   variables:
-    - name: azureServiceConnection
-      value: 'AZR-BSE-TST1'
     - name: appName
-      value: 'TSTBSEWEBAW1401'       
+      value: 'TSTBSEWEBAW1401'
     - name: agentPool
-      value: 'DEFRA-COMMON-UBUNTU-SSV3' 
+      value: 'DEFRA-COMMON-UBUNTU-SSV3'
   jobs:
   - deployment: deploy_test
-    environment: 'tst'
+    environment: 'TST'
     pool:
       name: $(agentPool)
     strategy:
@@ -123,7 +119,7 @@ stages:
             artifact: drop
           - task: AzureWebApp@1
             inputs:
-              azureSubscription: '$(azureServiceConnection)'
+              azureSubscription: 'AZR-BSE-TST1'
               appType: 'webAppLinux'
               appName: '$(appName)'
               package: '$(Pipeline.Workspace)/drop/*.zip'
