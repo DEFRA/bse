@@ -20,7 +20,8 @@
         <h2 class="govuk-heading-m">@Model.Entries.Count() new farms</h2>
         var sortBase = "?" + string.Join("&", HttpContext.Request.Query
             .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
-                     && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase))
+                     && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase)
+                     && !string.Equals(k.Key, "PageNumber", StringComparison.OrdinalIgnoreCase))
             .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
         var sortCol  = Model.SortColumn;
         var sortDesc = Model.SortDesc;
@@ -43,7 +44,7 @@
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
-                @foreach (var e in Model.Entries)
+                @foreach (var e in Model.PagedEntries)
                 {
                     <tr class="govuk-table__row">
                         <td class="govuk-table__cell">@e.DateTime.ToString("dd/MM/yyyy HH:mm")</td>
@@ -56,6 +57,7 @@
                 }
             </tbody>
         </table>
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
     }
     else if (Model.HasSearched)
     {
