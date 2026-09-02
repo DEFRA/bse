@@ -50,16 +50,14 @@
     {
         <h2 class="govuk-heading-m">Preview — @Model.Preview.Cases.Count cases</h2>
         <p class="govuk-body"><strong>Subject:</strong> @Model.Preview.EmailSubject</p>
-        @{
-            var sortBase = "?" + string.Join("&", HttpContext.Request.Query
-                .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
-                         && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase)
-                         && !string.Equals(k.Key, "PageNumber", StringComparison.OrdinalIgnoreCase))
-                .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
-            ViewData["SortColumn"] = Model.SortColumn;
-            ViewData["SortDesc"] = Model.SortDesc;
-            ViewData["BaseUrl"] = sortBase;
-        }
+        var sortBase = "?" + string.Join("&", HttpContext.Request.Query
+            .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
+                     && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase)
+                     && !string.Equals(k.Key, "PageNumber", StringComparison.OrdinalIgnoreCase))
+            .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
+        ViewData["SortColumn"] = Model.SortColumn;
+        ViewData["SortDesc"] = Model.SortDesc;
+        ViewData["BaseUrl"] = sortBase;
         <table class="govuk-table">
             <caption class="govuk-visually-hidden">Northern Ireland ADNS preview cases</caption>
             <thead class="govuk-table__head">
