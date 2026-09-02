@@ -69,16 +69,11 @@ stages:
     and(succeeded(),
         eq(variables['Build.SourceBranch'], 'refs/heads/develop'),
         ne(variables['Build.Reason'], 'PullRequest'))
-  variables:
-    - name: appName
-      value: 'DEVBSEWEBAW1401'
-    - name: agentPool
-      value: 'DEFRA-COMMON-UBUNTU-SSV3'
   jobs:
   - deployment: deploy_dev
     environment: 'DEV'     
     pool:
-      name: $(agentPool)
+      name: 'DEFRA-COMMON-UBUNTU-SSV3'
     strategy:
       runOnce:
         deploy:
@@ -89,7 +84,7 @@ stages:
             inputs:
               azureSubscription: 'AZR-BSE-DEV1'
               appType: 'webAppLinux'
-              appName: '$(appName)'
+              appName: 'DEVBSEWEBAW1401'
               package: '$(Pipeline.Workspace)/drop/*.zip'
               runtimeStack: 'DOTNETCORE|10.0'
               deploymentMethod: 'zipDeploy'
@@ -101,16 +96,11 @@ stages:
     and(succeeded(),
         eq(variables['Build.SourceBranch'], 'refs/heads/develop'),
         ne(variables['Build.Reason'], 'PullRequest'))
-  variables:
-    - name: appName
-      value: 'TSTBSEWEBAW1401'
-    - name: agentPool
-      value: 'DEFRA-COMMON-UBUNTU-SSV3'
   jobs:
   - deployment: deploy_test
     environment: 'TST'
     pool:
-      name: $(agentPool)
+      name: 'DEFRA-COMMON-UBUNTU-SSV3'
     strategy:
       runOnce:
         deploy:
@@ -121,7 +111,7 @@ stages:
             inputs:
               azureSubscription: 'AZR-BSE-TST1'
               appType: 'webAppLinux'
-              appName: '$(appName)'
+              appName: 'TSTBSEWEBAW1401'
               package: '$(Pipeline.Workspace)/drop/*.zip'
               runtimeStack: 'DOTNETCORE|10.0'
               deploymentMethod: 'zipDeploy'
