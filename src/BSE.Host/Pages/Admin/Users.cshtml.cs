@@ -32,11 +32,31 @@ public class UsersModel(IUserManagementService userManagementService, ILookupDat
     [BindProperty] public bool EditIsActive { get; set; }
     [BindProperty] public int EditUserGroupId { get; set; }
 
+    [BindProperty(SupportsGet = true)] public string SortColumn { get; set; } = string.Empty;
+    [BindProperty(SupportsGet = true)] public bool SortDesc { get; set; }
+
     public async Task<IActionResult> OnGetAsync()
     {
-        Users = await userManagementService.GetAllUsersAsync();
         UserGroups = await lookupDataService.GetUserGroupsAsync();
+        Users = ApplySorting(await userManagementService.GetAllUsersAsync());
         return Page();
+    }
+
+    private IEnumerable<User> ApplySorting(IEnumerable<User> users)
+    {
+        Func<User, object?> keySelector = SortColumn switch
+        {
+            "NTLogin" => u => u.NTLogin,
+            "UserName" => u => u.UserName,
+            "Email" => u => u.Email,
+            "Group" => u => UserGroups.FirstOrDefault(g => g.Id == u.UserGroupId)?.Name,
+            "IsActive" => u => u.IsActive,
+            _ => u => u.UserId,
+        };
+
+        return SortDesc
+            ? users.OrderByDescending(keySelector)
+            : users.OrderBy(keySelector);
     }
 
     public async Task<IActionResult> OnPostAddAsync()
@@ -49,6 +69,7 @@ public class UsersModel(IUserManagementService userManagementService, ILookupDat
             ModelState.AddModelError(nameof(UserGroupId), "Select a user group");
 
         Users = await userManagementService.GetAllUsersAsync();
+        UserGroups = await lookupDataService.GetUserGroupsAsync();
 
         if (ModelState.IsValid)
         {
@@ -61,7 +82,7 @@ public class UsersModel(IUserManagementService userManagementService, ILookupDat
 
         if (!ModelState.IsValid)
         {
-            UserGroups = await lookupDataService.GetUserGroupsAsync();
+            Users = ApplySorting(Users);
             return Page();
         }
 
@@ -90,6 +111,7 @@ public class UsersModel(IUserManagementService userManagementService, ILookupDat
             ModelState.AddModelError(nameof(EditUserGroupId), "Select a user group");
 
         Users = await userManagementService.GetAllUsersAsync();
+        UserGroups = await lookupDataService.GetUserGroupsAsync();
 
         if (ModelState.IsValid)
         {
@@ -102,7 +124,7 @@ public class UsersModel(IUserManagementService userManagementService, ILookupDat
 
         if (!ModelState.IsValid)
         {
-            UserGroups = await lookupDataService.GetUserGroupsAsync();
+            Users = ApplySorting(Users);
             return Page();
         }
 

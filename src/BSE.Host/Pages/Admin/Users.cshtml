@@ -91,10 +91,32 @@
     </details>
 
     <h2 class="govuk-heading-m">Users</h2>
+    @{
+        var usersSortBase = "?" + string.Join("&", HttpContext.Request.Query
+            .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
+                     && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase))
+            .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
+        var usersSortCol  = Model.SortColumn;
+        var usersSortDesc = Model.SortDesc;
+    }
     <table class="govuk-table">
         <caption class="govuk-visually-hidden">Users</caption>
         <thead class="govuk-table__head">
-            <tr class="govuk-table__row"><th scope="col" class="govuk-table__header">ID</th><th scope="col" class="govuk-table__header">NT login</th><th scope="col" class="govuk-table__header">UPN</th><th scope="col" class="govuk-table__header">Name</th><th scope="col" class="govuk-table__header">Email</th><th scope="col" class="govuk-table__header">Group</th><th scope="col" class="govuk-table__header">Active</th><th scope="col" class="govuk-table__header">Actions</th></tr>
+            <tr class="govuk-table__row">
+                @{ ViewData["Label"] = "ID";       ViewData["Column"] = "UserId";   ViewData["SortColumn"] = usersSortCol; ViewData["SortDesc"] = usersSortDesc; ViewData["BaseUrl"] = usersSortBase; ViewData["Prefix"] = ""; }
+                <partial name="_SortableHeader" />
+                @{ ViewData["Label"] = "NT login"; ViewData["Column"] = "NTLogin"; }
+                <partial name="_SortableHeader" />
+                @{ ViewData["Label"] = "Name";     ViewData["Column"] = "UserName"; }
+                <partial name="_SortableHeader" />
+                @{ ViewData["Label"] = "Email";    ViewData["Column"] = "Email"; }
+                <partial name="_SortableHeader" />
+                @{ ViewData["Label"] = "Group";    ViewData["Column"] = "Group"; }
+                <partial name="_SortableHeader" />
+                @{ ViewData["Label"] = "Active";   ViewData["Column"] = "IsActive"; }
+                <partial name="_SortableHeader" />
+                <th scope="col" class="govuk-table__header">Actions</th>
+            </tr>
         </thead>
         <tbody class="govuk-table__body">
             @foreach (var u in Model.Users)
@@ -103,7 +125,6 @@
                 <tr class="govuk-table__row">
                     <td class="govuk-table__cell">@u.UserId</td>
                     <td class="govuk-table__cell">@u.NTLogin</td>
-                    <td class="govuk-table__cell">@u.Upn</td>
                     <td class="govuk-table__cell">@u.UserName</td>
                     <td class="govuk-table__cell">@u.Email</td>
                     <td class="govuk-table__cell">@(Model.UserGroups.FirstOrDefault(g => g.Id == u.UserGroupId)?.Name)</td>

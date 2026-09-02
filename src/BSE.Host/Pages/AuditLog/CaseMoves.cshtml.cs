@@ -11,6 +11,8 @@ public class CaseMovesModel(IAuditLogService auditLogService) : PageModel
 {
     [BindProperty(SupportsGet = true)] public DateTime StartDate { get; set; } = DateTime.Today.AddMonths(-1);
     [BindProperty(SupportsGet = true)] public DateTime EndDate { get; set; } = DateTime.Today;
+    [BindProperty(SupportsGet = true)] public string SortColumn { get; set; } = string.Empty;
+    [BindProperty(SupportsGet = true)] public bool SortDesc { get; set; }
 
     public IEnumerable<AuditLogCaseMoveEntry> Entries { get; private set; } = [];
     public bool HasSearched { get; private set; }
@@ -20,8 +22,23 @@ public class CaseMovesModel(IAuditLogService auditLogService) : PageModel
         if (Request.Query.ContainsKey(nameof(StartDate)))
         {
             HasSearched = true;
-            Entries = (await auditLogService.GetCaseMovesAsync(StartDate, EndDate)).Cast<AuditLogCaseMoveEntry>();
+            Entries = ApplySorting((await auditLogService.GetCaseMovesAsync(StartDate, EndDate)).Cast<AuditLogCaseMoveEntry>());
         }
         return Page();
+    }
+
+    private IEnumerable<AuditLogCaseMoveEntry> ApplySorting(IEnumerable<AuditLogCaseMoveEntry> entries)
+    {
+        Func<AuditLogCaseMoveEntry, object?> keySelector = SortColumn switch
+        {
+            "User" => e => e.UserName,
+            "Key" => e => e.Key,
+            "Before" => e => e.BeforeValue,
+            "After" => e => e.AfterValue,
+            "HasBatches" => e => e.HasBatches,
+            _ => e => e.DateTime,
+        };
+
+        return SortDesc ? entries.OrderByDescending(keySelector) : entries.OrderBy(keySelector);
     }
 }
