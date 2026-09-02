@@ -22,11 +22,21 @@
 
     var href = baseUrl
         + joiner + $"{prefix}SortColumn=" + Uri.EscapeDataString(column)
-        + $"&{prefix}SortDesc=" + nextDesc.ToString().ToLowerInvariant();
+        + $"&{prefix}SortDesc=" + nextDesc.ToString().ToLowerInvariant()
+        + $"&{prefix}PageNumber=1";
 
     string ariaSort = isActive ? (sortDesc ? "descending" : "ascending") : "none";
-    string indicator = isActive ? (sortDesc ? " ▼" : " ▲") : "";
+    string indicator = isActive ? (sortDesc ? "▼" : "▲") : "↕";
+    string screenReaderText = isActive
+        ? (sortDesc
+            ? $"Sorted descending. Activate to sort {label} ascending."
+            : $"Sorted ascending. Activate to sort {label} descending.")
+        : $"Not sorted. Activate to sort {label} ascending.";
 }
 <th scope="col" class="govuk-table__header" aria-sort="@ariaSort">
-    <a class="govuk-link govuk-link--no-visited-state bse-sort-link" href="@href">@label@indicator</a>
+    <a class="govuk-link govuk-link--no-visited-state bse-sortable-header__button" href="@href">
+        <span>@label</span>
+        <span aria-hidden="true" class="bse-sortable-header__icon">@indicator</span>
+        <span class="govuk-visually-hidden">@screenReaderText</span>
+    </a>
 </th>
