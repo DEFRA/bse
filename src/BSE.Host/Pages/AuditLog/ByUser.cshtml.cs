@@ -11,6 +11,8 @@ namespace BSE.Host.Pages.AuditLog;
 [Authorize(Policy = "AuditAccess")]
 public class ByUserModel(IAuditLogService auditLogService, IUserManagementService userManagementService) : PageModel
 {
+    private const int PageSize = 10;
+
     [BindProperty(SupportsGet = true)]
     public DateTime StartDate { get; set; } = DateTime.Today.AddMonths(-1);
     [BindProperty(SupportsGet = true)]
@@ -19,11 +21,15 @@ public class ByUserModel(IAuditLogService auditLogService, IUserManagementServic
     public int UserId { get; set; }
     [BindProperty(SupportsGet = true)] public string SortColumn { get; set; } = string.Empty;
     [BindProperty(SupportsGet = true)] public bool SortDesc { get; set; }
+    [BindProperty(SupportsGet = true)] public int PageNumber { get; set; } = 1;
 
     public IEnumerable<SelectListItem> Users { get; private set; } = [];
     public IEnumerable<AuditLogEntry> Entries { get; private set; } = [];
     public bool HasSearched { get; private set; }
     public string? ValidationError { get; private set; }
+    public int TotalCount => Entries.Count();
+    public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
+    public IReadOnlyList<AuditLogEntry> PagedEntries => Entries.Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
 
     public async Task<IActionResult> OnGetAsync()
     {

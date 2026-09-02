@@ -12,8 +12,14 @@ namespace BSE.Host.Pages.Admin;
 [Authorize(Policy = "VLAMaintenance")]
 public class UsersModel(IUserManagementService userManagementService, ILookupDataService lookupDataService) : PageModel
 {
+    private const int PageSize = 10;
+
     public IEnumerable<User> Users { get; private set; } = [];
     public IEnumerable<LuUserGroup> UserGroups { get; private set; } = [];
+
+    public int TotalCount => Users.Count();
+    public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
+    public IReadOnlyList<User> PagedUsers => Users.Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
 
     // Add form fields
     [BindProperty] public string NTLogin { get; set; } = string.Empty;
@@ -34,6 +40,7 @@ public class UsersModel(IUserManagementService userManagementService, ILookupDat
 
     [BindProperty(SupportsGet = true)] public string SortColumn { get; set; } = string.Empty;
     [BindProperty(SupportsGet = true)] public bool SortDesc { get; set; }
+    [BindProperty(SupportsGet = true)] public int PageNumber { get; set; } = 1;
 
     public async Task<IActionResult> OnGetAsync()
     {

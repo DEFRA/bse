@@ -73,15 +73,35 @@
         <table class="govuk-table">
             <caption class="govuk-visually-hidden">Great Britain ADNS preview cases</caption>
             <thead class="govuk-table__head">
-                <tr class="govuk-table__row"><th scope="col" class="govuk-table__header">RBSE</th><th scope="col" class="govuk-table__header">ADNS ref</th><th scope="col" class="govuk-table__header">Region</th><th scope="col" class="govuk-table__header">Confirmation date</th></tr>
+                <tr class="govuk-table__row">
+                    @{
+                        var sortBase = "?" + string.Join("&", HttpContext.Request.Query
+                            .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
+                                     && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase)
+                                     && !string.Equals(k.Key, "PageNumber", StringComparison.OrdinalIgnoreCase))
+                            .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
+                        ViewData["SortColumn"] = Model.SortColumn;
+                        ViewData["SortDesc"] = Model.SortDesc;
+                        ViewData["BaseUrl"] = sortBase;
+                        ViewData["Label"] = "RBSE"; ViewData["Column"] = "Rbse";
+                    }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "ADNS ref"; ViewData["Column"] = "AdnsReference"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Region"; ViewData["Column"] = "Region"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Confirmation date"; ViewData["Column"] = "ConfirmationDate"; }
+                    <partial name="_SortableHeader" />
+                </tr>
             </thead>
             <tbody class="govuk-table__body">
-                @foreach (var c in Model.Preview.Cases)
+                @foreach (var c in Model.PagedCases)
                 {
                     <tr class="govuk-table__row"><td class="govuk-table__cell">@c.Rbse</td><td class="govuk-table__cell">@c.AdnsReference</td><td class="govuk-table__cell">@c.AdnsRegionName</td><td class="govuk-table__cell">@c.ConfirmationDate.ToString("dd/MM/yyyy")</td></tr>
                 }
             </tbody>
         </table>
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
 
         <h3 class="govuk-heading-s">Summary by region</h3>
         <table class="govuk-table">

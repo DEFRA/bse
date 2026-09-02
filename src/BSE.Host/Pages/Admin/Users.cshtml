@@ -94,7 +94,8 @@
     @{
         var usersSortBase = "?" + string.Join("&", HttpContext.Request.Query
             .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
-                     && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase))
+                     && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase)
+                     && !string.Equals(k.Key, "PageNumber", StringComparison.OrdinalIgnoreCase))
             .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
         var usersSortCol  = Model.SortColumn;
         var usersSortDesc = Model.SortDesc;
@@ -119,7 +120,7 @@
             </tr>
         </thead>
         <tbody class="govuk-table__body">
-            @foreach (var u in Model.Users)
+            @foreach (var u in Model.PagedUsers)
             {
                 bool isErrorRow = editHasErrors && Model.EditUserId == u.UserId;
                 <tr class="govuk-table__row">
@@ -191,4 +192,5 @@
             }
         </tbody>
     </table>
+    @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
 </div>

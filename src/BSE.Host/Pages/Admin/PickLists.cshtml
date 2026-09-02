@@ -14,13 +14,31 @@
     </nav>
 
     <h2 class="govuk-heading-m">Editable reference tables</h2>
+    @{
+        var sortBase = "?" + string.Join("&", HttpContext.Request.Query
+            .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
+                     && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase)
+                     && !string.Equals(k.Key, "PageNumber", StringComparison.OrdinalIgnoreCase))
+            .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
+        ViewData["SortColumn"] = Model.SortColumn;
+        ViewData["SortDesc"] = Model.SortDesc;
+        ViewData["BaseUrl"] = sortBase;
+    }
     <table class="govuk-table">
         <caption class="govuk-visually-hidden">Editable reference tables</caption>
         <thead class="govuk-table__head">
-            <tr class="govuk-table__row"><th scope="col" class="govuk-table__header">ID</th><th scope="col" class="govuk-table__header">Table</th><th scope="col" class="govuk-table__header">Description</th><th scope="col" class="govuk-table__header">Action</th></tr>
+            <tr class="govuk-table__row">
+                @{ ViewData["Label"] = "ID"; ViewData["Column"] = "Id"; }
+                <partial name="_SortableHeader" />
+                @{ ViewData["Label"] = "Table"; ViewData["Column"] = "Table"; }
+                <partial name="_SortableHeader" />
+                @{ ViewData["Label"] = "Description"; ViewData["Column"] = "Description"; }
+                <partial name="_SortableHeader" />
+                <th scope="col" class="govuk-table__header">Action</th>
+            </tr>
         </thead>
         <tbody class="govuk-table__body">
-            @foreach (var lookup in Model.Lookups)
+            @foreach (var lookup in Model.PagedLookups)
             {
                 <tr class="govuk-table__row">
                     <td class="govuk-table__cell">@lookup.Id</td>
@@ -31,4 +49,5 @@
             }
         </tbody>
     </table>
+    @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
 </div>
