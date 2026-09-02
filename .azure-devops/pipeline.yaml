@@ -96,8 +96,8 @@ stages:
               runtimeStack: 'DOTNETCORE|10.0'
               deploymentMethod: 'zipDeploy'
 
-- stage: Deploy_Tst
-  displayName: Deploy to Tst
+- stage: Deploy_Test
+  displayName: Deploy to Test
   dependsOn: Deploy_Dev
   condition: >-
     and(succeeded(),
@@ -112,7 +112,7 @@ stages:
       value: 'DEFRA-COMMON-UBUNTU-SSV3' 
   jobs:
   - deployment: deploy_test
-    environment: 'test'
+    environment: 'tst'
     pool:
       name: $(agentPool)
     strategy:
