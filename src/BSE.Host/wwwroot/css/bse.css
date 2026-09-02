@@ -5,23 +5,43 @@
     font-weight: bold;
 }
 
-/* Sortable table header links (Justice/GDS pattern-inspired) */
-.bse-sortable-header__button {
+/* Sortable table header links (MOJ sortable-table pattern style) */
+.moj-sortable-table__button {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    color: inherit;
-    text-decoration: none;
+    color: #1d70b8;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    font-weight: 700;
     white-space: nowrap;
 }
 
-.bse-sortable-header__button:hover {
+.moj-sortable-table__button:hover {
+    color: #003078;
     text-decoration: underline;
 }
 
-.bse-sortable-header__icon {
-    font-size: 0.95em;
+.moj-sortable-table__button:focus {
+    outline: 3px solid transparent;
+    color: #0b0c0c;
+    background-color: #ffdd00;
+    box-shadow: 0 -2px #ffdd00, 0 4px #0b0c0c;
+    text-decoration: none;
+}
+
+.moj-sortable-table__icon {
+    font-size: 0.9em;
     line-height: 1;
+}
+
+.govuk-table__header[aria-sort="ascending"] .moj-sortable-table__icon,
+.govuk-table__header[aria-sort="descending"] .moj-sortable-table__icon {
+    color: #0b0c0c;
+}
+
+.govuk-table__header[aria-sort="none"] .moj-sortable-table__icon {
+    color: #6f777b;
 }
 
 /* User and group info displayed in the service navigation bar */
