@@ -1,4 +1,4 @@
-@* Renders a GDS-compliant sortable <th> for a search results table.
+@* Renders a server-side sortable <th> aligned to the MOJ/GDS sortable-table pattern.
    Parameters (passed via ViewData):
      Label        - column display text
      Column       - sort key string (matches SortColumn values in the view model)
@@ -26,7 +26,7 @@
         + $"&{prefix}PageNumber=1";
 
     string ariaSort = isActive ? (sortDesc ? "descending" : "ascending") : "none";
-    string indicator = isActive ? (sortDesc ? "▼" : "▲") : "↕";
+    string indicator = isActive ? (sortDesc ? "▼" : "▲") : "⇅";
     string screenReaderText = isActive
         ? (sortDesc
             ? $"Sorted descending. Activate to sort {label} ascending."
@@ -34,9 +34,9 @@
         : $"Not sorted. Activate to sort {label} ascending.";
 }
 <th scope="col" class="govuk-table__header" aria-sort="@ariaSort">
-    <a class="govuk-link govuk-link--no-visited-state bse-sortable-header__button" href="@href">
+    <a class="govuk-link govuk-link--no-visited-state moj-sortable-table__button" href="@href">
         <span>@label</span>
-        <span aria-hidden="true" class="bse-sortable-header__icon">@indicator</span>
+        <span aria-hidden="true" class="moj-sortable-table__icon">@indicator</span>
         <span class="govuk-visually-hidden">@screenReaderText</span>
     </a>
 </th>
