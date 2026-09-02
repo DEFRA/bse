@@ -96,8 +96,8 @@ stages:
               runtimeStack: 'DOTNETCORE|10.0'
               deploymentMethod: 'zipDeploy'
 
-- stage: Deploy_TST
-  displayName: Deploy to TST
+- stage: Deploy_Tst
+  displayName: Deploy to Tst
   dependsOn: Deploy_Dev
   condition: >-
     and(succeeded(),
