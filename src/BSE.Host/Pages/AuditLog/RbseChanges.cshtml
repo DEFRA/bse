@@ -18,10 +18,29 @@
     @if (Model.Entries.Any())
     {
         <h2 class="govuk-heading-m">@Model.Entries.Count() RBSE changes</h2>
+        var sortBase = "?" + string.Join("&", HttpContext.Request.Query
+            .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
+                     && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase))
+            .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
+        var sortCol  = Model.SortColumn;
+        var sortDesc = Model.SortDesc;
         <table class="govuk-table">
             <caption class="govuk-visually-hidden">RBSE change audit log entries</caption>
             <thead class="govuk-table__head">
-                <tr class="govuk-table__row"><th scope="col" class="govuk-table__header">Date/time</th><th scope="col" class="govuk-table__header">User</th><th scope="col" class="govuk-table__header">Key</th><th scope="col" class="govuk-table__header">Before</th><th scope="col" class="govuk-table__header">After</th><th scope="col" class="govuk-table__header">Has batches</th></tr>
+                <tr class="govuk-table__row">
+                    @{ ViewData["Label"] = "Date/time";   ViewData["Column"] = "DateTime";   ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Prefix"] = ""; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "User";         ViewData["Column"] = "User"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Key";          ViewData["Column"] = "Key"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Before";       ViewData["Column"] = "Before"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "After";        ViewData["Column"] = "After"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Has batches";  ViewData["Column"] = "HasBatches"; }
+                    <partial name="_SortableHeader" />
+                </tr>
             </thead>
             <tbody class="govuk-table__body">
                 @foreach (var e in Model.Entries)

@@ -61,18 +61,32 @@
     else
     {
         <p class="govuk-body govuk-!-margin-bottom-4">@Model.Entries.Count() @(Model.Entries.Count() == 1 ? "entry" : "entries") found.</p>
+        var sortBase = "?" + string.Join("&", HttpContext.Request.Query
+            .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
+                     && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase))
+            .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
+        var sortCol  = Model.SortColumn;
+        var sortDesc = Model.SortDesc;
         <table class="govuk-table">
             <caption class="govuk-visually-hidden">Audit log entries for farm @BseFormat.FormatCphh(Model.Cphh)</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header">Table</th>
-                    <th scope="col" class="govuk-table__header">Field</th>
-                    <th scope="col" class="govuk-table__header govuk-!-width-one-sixth">Date/time</th>
-                    <th scope="col" class="govuk-table__header">User</th>
-                    <th scope="col" class="govuk-table__header">Before</th>
-                    <th scope="col" class="govuk-table__header">After</th>
-                    <th scope="col" class="govuk-table__header">Reason</th>
-                    <th scope="col" class="govuk-table__header">Key</th>
+                    @{ ViewData["Label"] = "Table";     ViewData["Column"] = "Table"; ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Prefix"] = ""; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Field";     ViewData["Column"] = "Field"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Date/time"; ViewData["Column"] = "DateTime"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "User";      ViewData["Column"] = "User"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Before";    ViewData["Column"] = "Before"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "After";     ViewData["Column"] = "After"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Reason";    ViewData["Column"] = "Reason"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Key";       ViewData["Column"] = "Key"; }
+                    <partial name="_SortableHeader" />
                 </tr>
             </thead>
             <tbody class="govuk-table__body">

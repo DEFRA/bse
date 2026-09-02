@@ -26,17 +26,19 @@
         + $"&{prefix}PageNumber=1";
 
     string ariaSort = isActive ? (sortDesc ? "descending" : "ascending") : "none";
-    string indicator = isActive ? (sortDesc ? "▼" : "▲") : "⇅";
     string screenReaderText = isActive
         ? (sortDesc
             ? $"Sorted descending. Activate to sort {label} ascending."
             : $"Sorted ascending. Activate to sort {label} descending.")
         : $"Not sorted. Activate to sort {label} ascending.";
 }
-<th scope="col" class="govuk-table__header" aria-sort="@ariaSort">
-    <a class="govuk-link govuk-link--no-visited-state moj-sortable-table__button" href="@href">
-        <span>@label</span>
-        <span aria-hidden="true" class="moj-sortable-table__icon">@indicator</span>
+<th scope="col" class="govuk-table__header moj-sortable-table__heading" aria-sort="@ariaSort">
+    <a class="moj-sortable-table__button" href="@href">
+        @label
+        <span class="moj-sortable-table__icons" aria-hidden="true">
+            <span class="moj-sortable-table__icon moj-sortable-table__icon--up"></span>
+            <span class="moj-sortable-table__icon moj-sortable-table__icon--down"></span>
+        </span>
         <span class="govuk-visually-hidden">@screenReaderText</span>
     </a>
 </th>

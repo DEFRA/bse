@@ -17,6 +17,8 @@ public class ByUserModel(IAuditLogService auditLogService, IUserManagementServic
     public DateTime EndDate { get; set; } = DateTime.Today;
     [BindProperty(SupportsGet = true)]
     public int UserId { get; set; }
+    [BindProperty(SupportsGet = true)] public string SortColumn { get; set; } = string.Empty;
+    [BindProperty(SupportsGet = true)] public bool SortDesc { get; set; }
 
     public IEnumerable<SelectListItem> Users { get; private set; } = [];
     public IEnumerable<AuditLogEntry> Entries { get; private set; } = [];
@@ -39,8 +41,25 @@ public class ByUserModel(IAuditLogService auditLogService, IUserManagementServic
                 return Page();
             }
             HasSearched = true;
-            Entries = await auditLogService.GetByUserAsync(StartDate, EndDate, UserId);
+            Entries = ApplySorting(await auditLogService.GetByUserAsync(StartDate, EndDate, UserId));
         }
         return Page();
+    }
+
+    private IEnumerable<AuditLogEntry> ApplySorting(IEnumerable<AuditLogEntry> entries)
+    {
+        Func<AuditLogEntry, object?> keySelector = SortColumn switch
+        {
+            "User" => e => e.UserName,
+            "Table" => e => e.TableName,
+            "Field" => e => e.FieldName,
+            "Key" => e => e.Key,
+            "Before" => e => e.BeforeValue,
+            "After" => e => e.AfterValue,
+            "Reason" => e => e.Reason,
+            _ => e => e.DateTime,
+        };
+
+        return SortDesc ? entries.OrderByDescending(keySelector) : entries.OrderBy(keySelector);
     }
 }
