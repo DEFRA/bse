@@ -43,21 +43,36 @@
         else
         {
             <h2 class="govuk-heading-m">@Model.Results.Count result(s)</h2>
+            var sortBase = "?" + string.Join("&", HttpContext.Request.Query
+                .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
+                         && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase)
+                         && !string.Equals(k.Key, "PageNumber", StringComparison.OrdinalIgnoreCase))
+                .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
+            ViewData["SortColumn"] = Model.SortColumn;
+            ViewData["SortDesc"] = Model.SortDesc;
+            ViewData["BaseUrl"] = sortBase;
             <table class="govuk-table">
                 <caption class="govuk-visually-hidden">CPHH search results</caption>
                 <thead class="govuk-table__head">
                     <tr class="govuk-table__row">
-                        <th scope="col" class="govuk-table__header">CPHH</th>
-                        <th scope="col" class="govuk-table__header">Owner name</th>
-                        <th scope="col" class="govuk-table__header">Address</th>
-                        <th scope="col" class="govuk-table__header">County</th>
-                        <th scope="col" class="govuk-table__header">Herdmark</th>
-                        <th scope="col" class="govuk-table__header">Cases</th>
-                        <th scope="col" class="govuk-table__header">Confirmed</th>
+                        @{ ViewData["Label"] = "CPHH"; ViewData["Column"] = "Cphh"; }
+                        <partial name="_SortableHeader" />
+                        @{ ViewData["Label"] = "Owner name"; ViewData["Column"] = "OwnerName"; }
+                        <partial name="_SortableHeader" />
+                        @{ ViewData["Label"] = "Address"; ViewData["Column"] = "Address"; }
+                        <partial name="_SortableHeader" />
+                        @{ ViewData["Label"] = "County"; ViewData["Column"] = "County"; }
+                        <partial name="_SortableHeader" />
+                        @{ ViewData["Label"] = "Herdmark"; ViewData["Column"] = "Herdmark"; }
+                        <partial name="_SortableHeader" />
+                        @{ ViewData["Label"] = "Cases"; ViewData["Column"] = "CasesCount"; }
+                        <partial name="_SortableHeader" />
+                        @{ ViewData["Label"] = "Confirmed"; ViewData["Column"] = "ConfirmedCasesCount"; }
+                        <partial name="_SortableHeader" />
                     </tr>
                 </thead>
                 <tbody class="govuk-table__body">
-                    @foreach (var f in Model.Results)
+                    @foreach (var f in Model.PagedResults)
                     {
                         <tr class="govuk-table__row">
                             <td class="govuk-table__cell">
@@ -73,6 +88,7 @@
                     }
                 </tbody>
             </table>
+            @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
         }
     }
 </div>

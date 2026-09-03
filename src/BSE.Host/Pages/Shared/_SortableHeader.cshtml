@@ -1,4 +1,4 @@
-@* Renders a GDS-compliant sortable <th> for a search results table.
+@* Renders a server-side sortable <th> aligned to the MOJ/GDS sortable-table pattern.
    Parameters (passed via ViewData):
      Label        - column display text
      Column       - sort key string (matches SortColumn values in the view model)
@@ -22,11 +22,23 @@
 
     var href = baseUrl
         + joiner + $"{prefix}SortColumn=" + Uri.EscapeDataString(column)
-        + $"&{prefix}SortDesc=" + nextDesc.ToString().ToLowerInvariant();
+        + $"&{prefix}SortDesc=" + nextDesc.ToString().ToLowerInvariant()
+        + $"&{prefix}PageNumber=1";
 
     string ariaSort = isActive ? (sortDesc ? "descending" : "ascending") : "none";
-    string indicator = isActive ? (sortDesc ? " ▼" : " ▲") : "";
+    string screenReaderText = isActive
+        ? (sortDesc
+            ? $"Sorted descending. Activate to sort {label} ascending."
+            : $"Sorted ascending. Activate to sort {label} descending.")
+        : $"Not sorted. Activate to sort {label} ascending.";
 }
-<th scope="col" class="govuk-table__header" aria-sort="@ariaSort">
-    <a class="govuk-link govuk-link--no-visited-state bse-sort-link" href="@href">@label@indicator</a>
+<th scope="col" class="govuk-table__header moj-sortable-table__heading" aria-sort="@ariaSort">
+    <a class="moj-sortable-table__button" href="@href">
+        @label
+        <span class="moj-sortable-table__icons" aria-hidden="true">
+            <span class="moj-sortable-table__icon moj-sortable-table__icon--up"></span>
+            <span class="moj-sortable-table__icon moj-sortable-table__icon--down"></span>
+        </span>
+        <span class="govuk-visually-hidden">@screenReaderText</span>
+    </a>
 </th>

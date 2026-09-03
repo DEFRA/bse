@@ -5,15 +5,64 @@
     font-weight: bold;
 }
 
-/* Sortable column header links */
-.bse-sort-link {
-    color: inherit;
+/* Sortable table header links (MOJ sortable-table pattern style) */
+.moj-sortable-table__heading {
+    vertical-align: top;
+}
+
+.moj-sortable-table__button {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #1d70b8;
     text-decoration: none;
+    font-weight: 700;
     white-space: nowrap;
 }
 
-.bse-sort-link:hover {
+.moj-sortable-table__button:hover {
+    color: #003078;
     text-decoration: underline;
+}
+
+.moj-sortable-table__button:focus {
+    outline: 3px solid transparent;
+    color: #0b0c0c;
+    background-color: #ffdd00;
+    box-shadow: 0 -2px #ffdd00, 0 4px #0b0c0c;
+    text-decoration: none;
+}
+
+/* Stacked up/down triangle icons, mirroring the MOJ sortable-table pattern */
+.moj-sortable-table__icons {
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+}
+
+.moj-sortable-table__icon {
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+}
+
+.moj-sortable-table__icon--up {
+    border-bottom: 5px solid #b1b4b6;
+}
+
+.moj-sortable-table__icon--down {
+    border-top: 5px solid #b1b4b6;
+}
+
+.govuk-table__header[aria-sort="ascending"] .moj-sortable-table__icon--up {
+    border-bottom-color: #0b0c0c;
+}
+
+.govuk-table__header[aria-sort="descending"] .moj-sortable-table__icon--down {
+    border-top-color: #0b0c0c;
 }
 
 /* User and group info displayed in the service navigation bar */

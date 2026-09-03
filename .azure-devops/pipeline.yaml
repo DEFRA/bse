@@ -13,12 +13,6 @@ variables:
   - name: webProject
     value: 'src/BSE.Host/BSE.Host.csproj'
 
-  - name: azureServiceConnection
-    value: 'AZR-BSE-DEV1'
-
-  - name: appName
-    value: 'DEVBSEWEBAW1401'
-
 stages:
 
 - stage: Build
@@ -68,13 +62,24 @@ stages:
       artifact: drop
       displayName: 'Publish artifact'
 
-- stage: Deploy
+- stage: Deploy_Dev
   displayName: Deploy to Dev
   dependsOn: Build
   condition: >-
     and(succeeded(),
         eq(variables['Build.SourceBranch'], 'refs/heads/develop'),
         ne(variables['Build.Reason'], 'PullRequest'))
+  variables:
+    - name: appName
+      value: 'DEVBSEWEBAW1401'
+    - name: tenantId
+      value: '770a2450-0227-4c62-90c7-4e38537f1102'
+    - name: appId
+      value: '3eeeb482-eea0-4bb5-85a9-9a6fefb27a23'
+    - name: sqlServer
+      value: 'devbseinfsq1401.database.windows.net,1433'
+    - name: dbName
+      value: 'BSE'
   jobs:
   - deployment: deploy_dev
     environment: 'dev'
@@ -90,7 +95,41 @@ stages:
             inputs:
               azureSubscription: 'AZR-BSE-DEV1'
               appType: 'webAppLinux'
-              appName: 'DEVBSEWEBAW1401'
+              appName: '$(appName)'
+              package: '$(Pipeline.Workspace)/drop/*.zip'
+              runtimeStack: 'DOTNETCORE|10.0'
+              deploymentMethod: 'zipDeploy'
+              appSettings: >-
+                -Saml2__SPEntityId "https://dev-bse.azure.defra.cloud"
+                -Saml2__PublicOrigin "https://dev-bse.azure.defra.cloud"
+                -Saml2__IdPEntityId "https://sts.windows.net/$(tenantId)/"
+                -Saml2__IdPMetadataUrl "https://login.microsoftonline.com/$(tenantId)/federationmetadata/2007-06/federationmetadata.xml?appid=$(appId)"
+                -Authentication__BypassEnabled "false"
+                -ConnectionStrings__BSE "Server=tcp:$(sqlServer);Database=$(dbName);Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Managed Identity;"
+
+- stage: Deploy_Test
+  displayName: Deploy to Test
+  dependsOn: Build
+  condition: >-
+    and(succeeded(),
+        eq(variables['Build.SourceBranch'], 'refs/heads/test'),
+        ne(variables['Build.Reason'], 'PullRequest'))
+  jobs:
+  - deployment: deploy_test
+    environment: 'TST'
+    pool:
+      name: 'DEFRA-COMMON-UBUNTU-SSV3'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: drop
+          - task: AzureWebApp@1
+            inputs:
+              azureSubscription: 'AZR-BSE-TST1'
+              appType: 'webAppLinux'
+              appName: 'TSTBSEWEBAW1401'
               package: '$(Pipeline.Workspace)/drop/*.zip'
               runtimeStack: 'DOTNETCORE|10.0'
               deploymentMethod: 'zipDeploy'
