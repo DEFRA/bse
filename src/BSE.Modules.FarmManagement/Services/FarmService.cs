@@ -29,35 +29,38 @@ public sealed class FarmService : IFarmService
     }
 
     public Task<FarmRecord?> GetByCphhAsync(string cphh)
-        => _farmRepository.GetByCphhAsync(cphh);
+        => _farmRepository.GetByCphhAsync(CphhNormalizer.Normalize(cphh));
 
     public Task<FarmDetailRecord> GetDetailsByCphhAsync(string cphh)
-        => _farmRepository.GetDetailsByCphhAsync(cphh);
+        => _farmRepository.GetDetailsByCphhAsync(CphhNormalizer.Normalize(cphh));
 
     public Task<IEnumerable<FarmSummaryRecord>> GetByCphAsync(string cph)
         => _farmRepository.GetByCphAsync(cph);
 
     public Task AddAsync(AddFarmCommand command, int userId)
-        => _farmRepository.AddAsync(command, userId);
+        => _farmRepository.AddAsync(command with { CPHH = CphhNormalizer.Normalize(command.CPHH) }, userId);
 
     public Task UpdateAsync(UpdateFarmCommand command, int userId)
-        => _farmRepository.UpdateAsync(command, userId);
+        => _farmRepository.UpdateAsync(command with { CPHH = CphhNormalizer.Normalize(command.CPHH) }, userId);
 
     public Task<ChangeCphhResult> ChangeCphhAsync(string oldCphh, string newCphh, int userId)
-        => _farmRepository.ChangeCphhAsync(oldCphh, newCphh, userId);
+        => _farmRepository.ChangeCphhAsync(
+            CphhNormalizer.Normalize(oldCphh),
+            CphhNormalizer.Normalize(newCphh),
+            userId);
 
     public Task<int> GetConfirmedCaseCountAsync(string cphh)
-        => _farmRepository.GetConfirmedCaseCountAsync(cphh);
+        => _farmRepository.GetConfirmedCaseCountAsync(CphhNormalizer.Normalize(cphh));
 
     public Task<int> GetCaseCountByCphhAsync(string cphh)
-        => _farmRepository.GetCaseCountByCphhAsync(cphh);
+        => _farmRepository.GetCaseCountByCphhAsync(CphhNormalizer.Normalize(cphh));
 
     public Task<IEnumerable<FarmRelationRecord>> GetRelatedFarmsAsync(string cphh)
-        => _relationRepository.GetRelatedFarmAsync(cphh);
+        => _relationRepository.GetRelatedFarmAsync(CphhNormalizer.Normalize(cphh));
 
     public Task<IEnumerable<HerdSizeRecord>> GetHerdSizesAsync(string cphh)
-        => _herdSizeRepository.GetByCphhAsync(cphh);
+        => _herdSizeRepository.GetByCphhAsync(CphhNormalizer.Normalize(cphh));
 
     public Task<IEnumerable<VetnetRecord>> GetVetnetDetailsAsync(string cphh)
-        => _vetnetRepository.GetByCphhAsync(cphh);
+        => _vetnetRepository.GetByCphhAsync(CphhNormalizer.Normalize(cphh));
 }

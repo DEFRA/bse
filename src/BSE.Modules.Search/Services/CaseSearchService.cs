@@ -1,5 +1,6 @@
 using BSE.Modules.Search.Models;
 using BSE.Modules.Search.Repositories;
+using BSE.SharedKernel;
 
 namespace BSE.Modules.Search.Services;
 
@@ -17,7 +18,7 @@ public sealed class CaseSearchService : ICaseSearchService
 
     public Task<IReadOnlyList<CaseDetailSearchResult>> GetCasesByCphhAsync(
         string cphh, string herdmark, string numericHerdmark, bool includeNonGb, CancellationToken ct = default)
-        => _repository.GetCasesByCphhAsync(cphh, herdmark, numericHerdmark, includeNonGb, ct);
+        => _repository.GetCasesByCphhAsync(CphhNormalizer.Normalize(cphh), herdmark, numericHerdmark, includeNonGb, ct);
 
     public Task<IReadOnlyList<CaseDetailSearchResult>> GetCasesByEartagHerdmarkAsync(
         string eartagHerdmark, bool includeNonGb, CancellationToken ct = default)

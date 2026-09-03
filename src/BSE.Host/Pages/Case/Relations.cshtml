@@ -126,12 +126,12 @@ else
                 @{
                     var relBase = Url.Page("/Case/Relations", new { rbse = Model.Rbse });
                 }
-                <th scope="col" class="govuk-table__header">Type</th>
+                <th scope="col" class="govuk-table__header">Relation Type</th>
                 <th scope="col" class="govuk-table__header">Eartag</th>
-                <th scope="col" class="govuk-table__header">Relation RBSE</th>
+                <th scope="col" class="govuk-table__header">RBSE</th>
                 @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Sex", ["Column"]="Sex", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
-                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Birth date", ["Column"]="BirthDate", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
-                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Left date", ["Column"]="LeftDate", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
+                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Birth Date", ["Column"]="BirthDate", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
+                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Date Left", ["Column"]="LeftDate", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
                 <th scope="col" class="govuk-table__header">Fate</th>
                 @if (User.IsInRole("DataEntry"))
                 {

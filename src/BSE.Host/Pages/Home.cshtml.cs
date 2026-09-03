@@ -125,7 +125,7 @@ public class HomeModel(IBatchService batchService, ICaseRepository caseRepositor
     {
         if (string.IsNullOrWhiteSpace(LookupRbse))
         {
-            ModelState.AddModelError(nameof(LookupRbse), "Enter an RBSE number.");
+            ModelState.AddModelError(nameof(LookupRbse), "You must enter a RBSE number");
             await OnGetAsync();
             return Page();
         }

@@ -60,10 +60,11 @@ public class CasesByHerdmarkModel : PageModel
     {
         using var wb = new XLWorkbook();
         var ws = wb.Worksheets.Add("Results");
-        string[] headers = ["RBSE", "CPHH", "Sex", "Eartag", "Birth Date", "Origin",
-            "Date Purchased", "Age at Purchase", "Date Onset", "Form A Date",
-            "Slaughter Date", "Final Result Date", "Age at Onset",
-            "Fate", "Final Result", "Survey", "Case Status", "Time Elapsed"];
+        // Legacy exported the raw result-set column names, not the on-screen captions.
+        string[] headers = ["RBSE", "CPHH", "Sex", "Eartag", "BirthDate", "Origin",
+            "PurchaseDate", "PurchaseAgeInMonths", "OnsetDate", "FormADate",
+            "SlaughterDate", "FinalResultDate", "OnsetAgeInMonths",
+            "Fate", "FinalResult", "Survey", "CaseStatus", "TimeElapsed"];
         for (var c = 1; c <= headers.Length; c++) { ws.Cell(1, c).Value = headers[c - 1]; ws.Cell(1, c).Style.Font.Bold = true; }
         var row = 2;
         foreach (var r in rows)

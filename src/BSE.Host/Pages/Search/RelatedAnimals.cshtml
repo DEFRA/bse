@@ -6,6 +6,20 @@
 
 <h1 class="govuk-heading-l">Related Animal Search</h1>
 
+@if (Model.NoCriteria)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    <li><a href="#Rbse">@BSE.Host.Pages.Search.RelatedAnimalsModel.NoCriteriaMessage</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
 <form method="get" novalidate>
     <div class="govuk-grid-row">
         <div class="govuk-grid-column-two-thirds">
@@ -73,23 +87,23 @@
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "CPHH";                ViewData["Column"] = "Cphh"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Relation type";       ViewData["Column"] = "RelationType"; }
+                    @{ ViewData["Label"] = "Relation";       ViewData["Column"] = "RelationType"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Relation sex";        ViewData["Column"] = "RelSex"; }
+                    @{ ViewData["Label"] = "Sex";            ViewData["Column"] = "RelSex"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Eartag";              ViewData["Column"] = "Eartag"; }
+                    @{ ViewData["Label"] = "Eartag";         ViewData["Column"] = "Eartag"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Relation birth date"; ViewData["Column"] = "RelBirthDate"; }
+                    @{ ViewData["Label"] = "Rel Birth Date"; ViewData["Column"] = "RelBirthDate"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Relation fate";       ViewData["Column"] = "RelFate"; }
+                    @{ ViewData["Label"] = "Rel Fate";       ViewData["Column"] = "RelFate"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Date left";           ViewData["Column"] = "LeftDate"; }
+                    @{ ViewData["Label"] = "Date Left";      ViewData["Column"] = "LeftDate"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Name";                ViewData["Column"] = "RelName"; }
+                    @{ ViewData["Label"] = "Rel Name";       ViewData["Column"] = "RelName"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Relation eartag";     ViewData["Column"] = "RelEartag"; }
+                    @{ ViewData["Label"] = "Rel Eartag";     ViewData["Column"] = "RelEartag"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Relation RBSE";       ViewData["Column"] = "RelationRbse"; }
+                    @{ ViewData["Label"] = "Rel RBSE";       ViewData["Column"] = "RelationRbse"; }
                     <partial name="_SortableHeader" />
                 </tr>
             </thead>
