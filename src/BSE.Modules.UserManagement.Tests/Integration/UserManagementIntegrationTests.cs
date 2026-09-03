@@ -11,7 +11,9 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using NSubstitute;
 
 namespace BSE.Modules.UserManagement.Tests.Integration;
@@ -42,7 +44,8 @@ public sealed class UserManagementIntegrationTests : IClassFixture<UserManagemen
     [Fact]
     public async Task AuthenticatedUser_ReceivesCorrectGroupClaim()
     {
-        // Arrange: the factory's mock repository is configured to return DataEntry for testuser.
+        // Arrange: current test host runs with DevBypass identity from appsettings.Development.json.
+        // Mock that identity to assert group claim transformation still works.
         const string upn = "testuser@placeholder.domain";
         var user = new User(1, "testuser", upn, "Test User", null, true, (int)UserGroup.DataEntry, UserGroup.DataEntry,
             GroupName: "DEFRA Data Entry");
@@ -62,9 +65,9 @@ public sealed class UserManagementIntegrationTests : IClassFixture<UserManagemen
     [Fact]
     public async Task AuthenticatedUser_NtLoginFallback_ResolvesGroup()
     {
-        // Arrange: UPN lookup fails, NTLogin fallback succeeds.
-        const string upn = "bob.legacy@placeholder.domain";
-        const string ntLogin = "bob.legacy";
+        // Arrange: UPN lookup fails, NTLogin fallback succeeds for DevBypass identity.
+        const string upn = "testuser@placeholder.domain";
+        const string ntLogin = "testuser";
         var user = new User(2, ntLogin, null, "Bob Legacy", null, true, (int)UserGroup.ReadOnly, UserGroup.ReadOnly,
             GroupName: "DEFRA Viewer");
 
@@ -73,12 +76,7 @@ public sealed class UserManagementIntegrationTests : IClassFixture<UserManagemen
         _factory.MockUserRepository.GetByNtLoginAsync(ntLogin).Returns(user);
         _factory.MockUserRepository.GetByEmailAsync(Arg.Is<string>(s => s != upn)).Returns((User?)null);
 
-        // Configure factory with this specific UPN for this test.
-        var client = _factory.WithWebHostBuilder(b =>
-            b.ConfigureServices(s =>
-                s.PostConfigure<TestAuthOptions>(TestAuthHandler.SchemeName, opts =>
-                    opts.DefaultUpn = upn)))
-            .CreateClient();
+        var client = _factory.CreateClient();
 
         var response = await client.GetAsync("/test/group-claim");
 
@@ -103,16 +101,23 @@ public sealed class UserManagementWebFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(Microsoft.AspNetCore.Hosting.IWebHostBuilder builder)
     {
-        builder.ConfigureServices(services =>
+        builder.UseSetting("Authentication:BypassEnabled", "false");
+        builder.UseSetting("Authentication:UseWindowsIdentity", "false");
+        builder.UseSetting("Authentication:DevUserNtLogin", "testuser@placeholder.domain");
+
+        builder.ConfigureTestServices(services =>
         {
-            // Replace OIDC authentication with test handler.
-            services.AddAuthentication(TestAuthHandler.SchemeName)
-                    .AddScheme<TestAuthOptions, TestAuthHandler>(TestAuthHandler.SchemeName, _ => { });
+            // Override authentication defaults after Program.cs registrations.
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = TestAuthHandler.SchemeName;
+                options.DefaultChallengeScheme = TestAuthHandler.SchemeName;
+                options.DefaultScheme = TestAuthHandler.SchemeName;
+            })
+            .AddScheme<TestAuthOptions, TestAuthHandler>(TestAuthHandler.SchemeName, _ => { });
 
             // Replace repository with mock — no database connection required.
-            var descriptor = services.SingleOrDefault(
-                d => d.ServiceType == typeof(IUserRepository));
-            if (descriptor is not null) services.Remove(descriptor);
+            services.RemoveAll<IUserRepository>();
             services.AddScoped<IUserRepository>(_ => MockUserRepository);
 
             // Probe endpoint: returns the resolved bse:group claim value.
