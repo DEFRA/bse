@@ -109,10 +109,10 @@ stages:
 
 - stage: Deploy_Test
   displayName: Deploy to Test
-  dependsOn: Deploy_Dev
+  dependsOn: Build
   condition: >-
     and(succeeded(),
-        eq(variables['Build.SourceBranch'], 'refs/heads/develop'),
+        eq(variables['Build.SourceBranch'], 'refs/heads/test'),
         ne(variables['Build.Reason'], 'PullRequest'))
   jobs:
   - deployment: deploy_test
