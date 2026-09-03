@@ -1,0 +1,373 @@
+﻿@page "{rbse}"
+@model EditModel
+@using BSE.Modules.CaseManagement.Models
+@{
+    ViewData["Title"] = $"Case {Model.Case.Rbse} — DEFRA tab";
+    string D(DateTime? d) => d?.ToString("dd/MM/yyyy") ?? "—";
+    string Desc(IEnumerable<BSE.SharedKernel.ILookupItem> opts, string? code) =>
+        opts.FirstOrDefault(o => o.Code == code)?.Description ?? code ?? "—";
+    string rbseNoSlash = Model.Case.Rbse.Replace("/", "");
+}
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Case (DEFRA)</li>
+    </ol>
+</nav>
+
+<h1 class="govuk-heading-l">RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Case.Rbse)</span></h1>
+
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Case (DEFRA)", Model.Case.Rbse))
+
+@if (TempData["Success"] is string successMsg)
+{
+    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert"
+         aria-labelledby="defra-success-title" data-module="govuk-notification-banner">
+        <div class="govuk-notification-banner__header">
+            <h2 class="govuk-notification-banner__title" id="defra-success-title">Success</h2>
+        </div>
+        <div class="govuk-notification-banner__content">
+            <p class="govuk-notification-banner__heading">@successMsg</p>
+        </div>
+    </div>
+}
+
+@* -- Batch numbers ------------------------------------------------------------ *@
+@if (User.IsInRole("DataEntry") && Model.BatchNumbers.Count > 0)
+{
+    <div class="govuk-summary-card govuk-!-margin-bottom-4">
+        <div class="govuk-summary-card__title-wrapper">
+            <h2 class="govuk-summary-card__title">Batch numbers</h2>
+        </div>
+        <div class="govuk-summary-card__content">
+            <ul class="govuk-list">
+                @foreach (var b in Model.BatchNumbers)
+                {
+                    <li>@b.BatchNumber@(b.Document is not null ? $" — {b.Document}" : "")</li>
+                }
+            </ul>
+        </div>
+    </div>
+}
+
+@* -- READ-ONLY VIEW --------------------------------------------------------- *@
+<div class="govuk-button-group govuk-!-margin-bottom-4">
+    @if (User.IsInRole("DataEntry"))
+    {
+        <a asp-page="/Case/DefraEdit" asp-route-rbse="@Model.Case.Rbse"
+       class="govuk-button govuk-button--secondary">Edit case (DEFRA) details</a>
+    }
+        <a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse" class="govuk-link">Case audit log</a>
+        @if (!string.IsNullOrEmpty(Model.SpolSiteUrl))
+        {
+            <a href="@(Model.SpolSiteUrl)@rbseNoSlash" target="_blank" rel="noopener noreferrer" class="govuk-link">
+                View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
+            </a>
+        }
+    </div>
+
+    <h2 class="govuk-heading-m">Animal identification</h2>
+    <dl class="govuk-summary-list">
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Eartag</dt>
+            <dd class="govuk-summary-list__value">@Model.Case.EartagCountry @Model.Case.EartagHerdmark @Model.Case.Eartag</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Previous eartag</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.PreviousEartag ?? "—")</dd>
+        </div>
+    </dl>
+
+    <h2 class="govuk-heading-m">Key dates and fate</h2>
+    <dl class="govuk-summary-list">
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">BSE-1 date received</dt>
+            <dd class="govuk-summary-list__value">@D(Model.Case.Bse1ReceivedDate)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Form A date</dt>
+            <dd class="govuk-summary-list__value">@D(Model.Case.FormADate)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Form A resubmitted date</dt>
+            <dd class="govuk-summary-list__value">@D(Model.Case.FormAResubmittedDate)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Form B date</dt>
+            <dd class="govuk-summary-list__value">@D(Model.Case.FormBDate)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Fate (Form B reason)</dt>
+            <dd class="govuk-summary-list__value">@Desc(Model.FateOptions, Model.Case.Fate)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Form C date</dt>
+            <dd class="govuk-summary-list__value">@D(Model.Case.FormCDate)</dd>
+        </div>
+    </dl>
+
+    <h2 class="govuk-heading-m">Results</h2>
+    <dl class="govuk-summary-list">
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Final result date</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.FinalResultDate?.ToString("dd/MM/yyyy") ?? "—")</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Final result</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.FinalResult ?? "—")</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">DBSE</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.Dbse ?? "—")</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Case type</dt>
+            <dd class="govuk-summary-list__value">@Desc(Model.CaseTypeOptions, Model.Case.CaseType)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Lab comment</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.LabComment ?? "—")</dd>
+        </div>
+    </dl>
+
+    @* ── Test records — full CRUD with GDS pagination and sorting ── *@
+    @{
+        var editTestTypeError = ViewData.ModelState[nameof(Model.EditTestType)]?.Errors.FirstOrDefault()?.ErrorMessage;
+        var newTestTypeError  = ViewData.ModelState[nameof(Model.NewTestType)]?.Errors.FirstOrDefault()?.ErrorMessage;
+        bool hasTestEditError = editTestTypeError is not null;
+        bool hasTestAddError  = newTestTypeError  is not null;
+    }
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+    <h2 class="govuk-heading-m">Test records</h2>
+    @if (Model.TestsTotalCount > 0)
+    {
+        <table class="govuk-table">
+            <caption class="govuk-visually-hidden">Test records for @BseFormat.FormatRbse(Model.Case.Rbse)</caption>
+            <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.TSort=="type" ? (Model.TDir=="asc" ? "ascending" : "descending") : "none")">
+                        <a class="govuk-link govuk-link--no-visited-state" href="@Model.TestsSortUrl("type")">Test type</a>
+                    </th>
+                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.TSort=="result" ? (Model.TDir=="asc" ? "ascending" : "descending") : "none")">
+                        <a class="govuk-link govuk-link--no-visited-state" href="@Model.TestsSortUrl("result")">Test result</a>
+                    </th>
+                    @if (User.IsInRole("DataEntry"))
+                    {
+                        <th scope="col" class="govuk-table__header">Action</th>
+                    }
+                </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+                @foreach (var t in Model.Tests)
+                {
+                    bool isEditRow = hasTestEditError && Model.EditTestId == t.Id;
+                    <tr class="govuk-table__row">
+                        <td class="govuk-table__cell">@(t.TestTypeDescription ?? t.TestType)</td>
+                        <td class="govuk-table__cell">@(t.TestResultDescription ?? t.TestResult)</td>
+                        @if (User.IsInRole("DataEntry"))
+                        {
+                        <td class="govuk-table__cell">
+                            <details class="govuk-details" data-module="govuk-details" @(isEditRow ? "open" : null)>
+                                <summary class="govuk-details__summary"><span class="govuk-details__summary-text">Edit</span></summary>
+                                <div class="govuk-details__text">
+                                    @if (isEditRow)
+                                    {
+                                        <div class="govuk-error-summary" data-module="govuk-error-summary"><div role="alert"><h2 class="govuk-error-summary__title">There is a problem</h2><div class="govuk-error-summary__body"><ul class="govuk-list govuk-error-summary__list"><li>@editTestTypeError</li></ul></div></div></div>
+                                    }
+                                    <form method="post" asp-page-handler="EditTest" novalidate>
+                                        <input type="hidden" name="EditTestId" value="@t.Id" />
+                                        <input type="hidden" name="EditTestRowStampBase64" value="@(t.RowStamp is not null ? Convert.ToBase64String(t.RowStamp) : "")" />
+                                        <div class="govuk-form-group @(isEditRow ? "govuk-form-group--error" : "")">
+                                            <label class="govuk-label" for="edit-tt-@t.Id">Test type</label>
+                                            @if (isEditRow) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @editTestTypeError</p> }
+                                            <select class="govuk-select @(isEditRow ? "govuk-select--error" : "")" id="edit-tt-@t.Id" name="EditTestType">
+                                                <option value="">-- Select --</option>
+                                                @foreach (var o in Model.TestTypeOptions)
+                                                {
+                                                    var sel = o.Code == (isEditRow ? Model.EditTestType : t.TestType) ? "selected" : null;
+                                                    <option value="@o.Code" selected="@sel">@o.Description</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <div class="govuk-form-group">
+                                            <label class="govuk-label" for="edit-tr-@t.Id">Test result</label>
+                                            <select class="govuk-select" id="edit-tr-@t.Id" name="EditTestResult">
+                                                <option value="">-- Select --</option>
+                                                @foreach (var o in Model.TestResultOptions)
+                                                {
+                                                    var sel2 = o.Code == (isEditRow ? Model.EditTestResult : t.TestResult) ? "selected" : null;
+                                                    <option value="@o.Code" selected="@sel2">@o.Description</option>
+                                                }
+                                            </select>
+                                        </div>
+                                        <button type="submit" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">Save changes</button>
+                                    </form>
+                                </div>
+                            </details>
+                            <form method="post" asp-page-handler="DeleteTest" novalidate>
+                                <input type="hidden" name="id" value="@t.Id" />
+                                <input type="hidden" name="rowStampBase64" value="@(t.RowStamp is not null ? Convert.ToBase64String(t.RowStamp) : "")" />
+                                <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0"
+                                        onclick="return confirm('Delete this test record?')">Delete</button>
+                            </form>
+                        </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+        @if (Model.TestsTotalPages > 1)
+        {
+            <nav class="govuk-pagination" role="navigation" aria-label="Test records pagination">
+                @if (Model.TPage > 1)
+                {
+                    <div class="govuk-pagination__prev">
+                        <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(Model.TPage - 1)" rel="prev">
+                            <svg class="govuk-pagination__icon govuk-pagination__icon--prev" xmlns="http://www.w3.org/2000/svg" height="13" width="15" focusable="false" aria-hidden="true" viewBox="0 0 15 13"><path d="m6.5938-0.0078125-6.7266 6.7266 6.7441 6.4062 1.377-1.449-4.1856-3.9768h12.896v-2h-12.984l4.2931-4.293-1.414-1.414z"/></svg>
+                            <span class="govuk-pagination__link-title">Previous<span class="govuk-visually-hidden"> page</span></span>
+                        </a>
+                    </div>
+                }
+                <ul class="govuk-pagination__list">
+                    @{ int tStart = Math.Max(1, Model.TPage - 4); int tEnd = Math.Min(Model.TestsTotalPages, tStart + 9); if (tEnd - tStart < 9) tStart = Math.Max(1, tEnd - 9); }
+                    @for (int p = tStart; p <= tEnd; p++)
+                    {
+                        bool tCur = p == Model.TPage;
+                        <li class="govuk-pagination__item @(tCur ? "govuk-pagination__item--current" : "")">
+                            @if (tCur) { <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(p)" aria-label="Page @p" aria-current="page">@p</a> }
+                            else       { <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(p)" aria-label="Page @p">@p</a> }
+                        </li>
+                    }
+                </ul>
+                @if (Model.TPage < Model.TestsTotalPages)
+                {
+                    <div class="govuk-pagination__next">
+                        <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(Model.TPage + 1)" rel="next">
+                            <span class="govuk-pagination__link-title">Next<span class="govuk-visually-hidden"> page</span></span>
+                            <svg class="govuk-pagination__icon govuk-pagination__icon--next" xmlns="http://www.w3.org/2000/svg" height="13" width="15" focusable="false" aria-hidden="true" viewBox="0 0 15 13"><path d="m8.107-0.0078125-1.4136 1.414 4.2926 4.293h-12.986v2h12.896l-4.1855 3.9766 1.377 1.4492 6.7441-6.4062-6.7246-6.7246z"/></svg>
+                        </a>
+                    </div>
+                }
+            </nav>
+        }
+    }
+    else
+    {
+        <p class="govuk-body">No test records for this case.</p>
+    }
+
+    @if (User.IsInRole("DataEntry"))
+    {
+    <details class="govuk-details" data-module="govuk-details" @(hasTestAddError ? "open" : null)>
+        <summary class="govuk-details__summary"><span class="govuk-details__summary-text">Add test record</span></summary>
+        <div class="govuk-details__text">
+            @if (hasTestAddError)
+            {
+                <div class="govuk-error-summary" data-module="govuk-error-summary"><div role="alert"><h2 class="govuk-error-summary__title">There is a problem</h2><div class="govuk-error-summary__body"><ul class="govuk-list govuk-error-summary__list"><li><a href="#new-tt">@newTestTypeError</a></li></ul></div></div></div>
+            }
+            <form method="post" asp-page-handler="AddTest" novalidate>
+                <div class="govuk-form-group @(hasTestAddError ? "govuk-form-group--error" : "")">
+                    <label class="govuk-label" for="new-tt">Test type</label>
+                    @if (hasTestAddError) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @newTestTypeError</p> }
+                    <select class="govuk-select @(hasTestAddError ? "govuk-select--error" : "")" id="new-tt" name="NewTestType">
+                        <option value="">-- Select --</option>
+                        @foreach (var o in Model.TestTypeOptions)
+                        {
+                            <option value="@o.Code" selected="@(o.Code == Model.NewTestType ? "selected" : null)">@o.Description</option>
+                        }
+                    </select>
+                </div>
+                <div class="govuk-form-group">
+                    <label class="govuk-label" for="new-tr">Test result</label>
+                    <select class="govuk-select" id="new-tr" name="NewTestResult">
+                        <option value="">-- Select --</option>
+                        @foreach (var o in Model.TestResultOptions)
+                        {
+                            <option value="@o.Code" selected="@(o.Code == Model.NewTestResult ? "selected" : null)">@o.Description</option>
+                        }
+                    </select>
+                </div>
+                <button type="submit" class="govuk-button" data-module="govuk-button">Add test record</button>
+            </form>
+        </div>
+    </details>
+    }
+
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+
+    <h2 class="govuk-heading-m">Animal details</h2>
+    <dl class="govuk-summary-list">
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Date of birth</dt>
+            <dd class="govuk-summary-list__value">@D(Model.Case.BirthDate)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Is DOB estimated?</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.IsBirthDateEst ? "Yes" : "No")</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Date of birth source</dt>
+            <dd class="govuk-summary-list__value">@Desc(Model.BirthDateSourceOptions, Model.Case.BirthDateSource)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Reported location</dt>
+            <dd class="govuk-summary-list__value">@Desc(Model.ReportedLocationOptions, Model.Case.ReportedLocation)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Survey</dt>
+            <dd class="govuk-summary-list__value">@Desc(Model.SurveyOptions, Model.Case.Survey)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Valuation age</dt>
+            <dd class="govuk-summary-list__value">@Desc(Model.ValuationAgeOptions, Model.Case.ValuationAge)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Notes</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.Notes ?? "—")</dd>
+        </div>
+    </dl>
+
+    <h2 class="govuk-heading-m">BSE-1 receipts</h2>
+    <dl class="govuk-summary-list">
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Purchaser BSE-1 received?</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.IsPurchaserBse1Received ? "Yes" : "No")@(Model.Case.HasCaseWork && Model.Case.PurchaserBse1ReceivedDate.HasValue ? $" ({D(Model.Case.PurchaserBse1ReceivedDate)})" : "")</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Breeder BSE-1 received?</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.IsBreederBse1Received ? "Yes" : "No")@(Model.Case.HasCaseWork && Model.Case.BreederBse1ReceivedDate.HasValue ? $" ({D(Model.Case.BreederBse1ReceivedDate)})" : "")</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Vendor 1 BSE-1 received?</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.IsVendor1Bse1Received ? "Yes" : "No")@(Model.Case.HasCaseWork && Model.Case.Vendor1Bse1ReceivedDate.HasValue ? $" ({D(Model.Case.Vendor1Bse1ReceivedDate)})" : "")</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Homebred BSE-1 received?</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.IsHomebredBse1Received ? "Yes" : "No")@(Model.Case.HasCaseWork && Model.Case.HomebredBse1ReceivedDate.HasValue ? $" ({D(Model.Case.HomebredBse1ReceivedDate)})" : "")</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Summary sheet received?</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.IsSummarySheetReceived ? "Yes" : "No")@(Model.Case.HasCaseWork && Model.Case.SummarySheetReceivedDate.HasValue ? $" ({D(Model.Case.SummarySheetReceivedDate)})" : "")</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Paperwork complete?</dt>
+            <dd class="govuk-summary-list__value">@(Model.Case.IsPaperworkComplete ? "Yes" : "No")@(Model.Case.HasCaseWork && Model.Case.PaperworkCompleteDate.HasValue ? $" ({D(Model.Case.PaperworkCompleteDate)})" : "")</dd>
+        </div>
+    </dl>
+
+    @if (Model.Case.HasCaseWork)
+    {
+        <h2 class="govuk-heading-m">Casework</h2>
+        <dl class="govuk-summary-list">
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">Barcode</dt>
+                <dd class="govuk-summary-list__value">@(Model.Case.Barcode ?? "—")</dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">AHF reference</dt>
+                <dd class="govuk-summary-list__value">@(Model.Case.AhfReference ?? "—")</dd>
+            </div>
+        </dl>
+    }
+

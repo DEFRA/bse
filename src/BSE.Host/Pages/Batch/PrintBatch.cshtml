@@ -1,0 +1,102 @@
+@page
+@model BSE.Host.Pages.Batch.PrintBatchModel
+@{
+    ViewData["Title"] = "Print batch";
+    var batchYearError   = Model.ModelState[nameof(Model.BatchYear)]?.Errors.FirstOrDefault()?.ErrorMessage;
+    var batchNumberError = Model.ModelState[nameof(Model.BatchNumber)]?.Errors.FirstOrDefault()?.ErrorMessage;
+    var reportTypeError  = Model.ModelState[nameof(Model.ReportType)]?.Errors.FirstOrDefault()?.ErrorMessage;
+    var generalError     = Model.ModelState[string.Empty]?.Errors.FirstOrDefault()?.ErrorMessage;
+    bool hasError = batchYearError is not null || batchNumberError is not null
+                    || reportTypeError is not null || generalError is not null;
+}
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Print batch</li>
+    </ol>
+</nav>
+
+<h1 class="govuk-heading-l">Print batch</h1>
+
+@if (hasError)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @if (batchYearError is not null)   { <li><a href="#batch-year">@batchYearError</a></li> }
+                    @if (batchNumberError is not null) { <li><a href="#batch-number">@batchNumberError</a></li> }
+                    @if (reportTypeError is not null)  { <li><a href="#report-type">@reportTypeError</a></li> }
+                    @if (generalError is not null)     { <li>@generalError</li> }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+<form method="post" asp-page-handler="Download" novalidate>
+
+    @* ── Batch number ──────────────────────────────────────────────────── *@
+    <div class="govuk-form-group @(batchYearError is not null || batchNumberError is not null ? "govuk-form-group--error" : "")">
+        <fieldset class="govuk-fieldset">
+            <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">
+                Batch number
+            </legend>
+            <div class="govuk-hint">Enter the year and number — for example, 2026 and 1.</div>
+            @if (batchYearError is not null)
+            {
+                <p id="batch-year-error" class="govuk-error-message">
+                    <span class="govuk-visually-hidden">Error:</span> @batchYearError
+                </p>
+            }
+            @if (batchNumberError is not null)
+            {
+                <p id="batch-number-error" class="govuk-error-message">
+                    <span class="govuk-visually-hidden">Error:</span> @batchNumberError
+                </p>
+            }
+            <div class="govuk-!-display-flex govuk-!-gap-3 govuk-!-align-items-end">
+                <div>
+                    <label class="govuk-label" for="batch-year">Year</label>
+                    <input id="batch-year" name="BatchYear" type="text" inputmode="numeric"
+                           class="govuk-input govuk-input--width-4 @(batchYearError is not null ? "govuk-input--error" : "")"
+                           value="@Model.BatchYear" autocomplete="off" />
+                </div>
+                <div>
+                    <label class="govuk-label" for="batch-number">Number</label>
+                    <input id="batch-number" name="BatchNumber" type="text" inputmode="numeric"
+                           class="govuk-input govuk-input--width-4 @(batchNumberError is not null ? "govuk-input--error" : "")"
+                           value="@Model.BatchNumber" autocomplete="off" />
+                </div>
+            </div>
+        </fieldset>
+    </div>
+
+    @* ── Report type ───────────────────────────────────────────────────── *@
+    <div class="govuk-form-group @(reportTypeError is not null ? "govuk-form-group--error" : "")">
+        <label class="govuk-label govuk-label--m" for="report-type">Report type</label>
+        @if (reportTypeError is not null)
+        {
+            <p id="report-type-error" class="govuk-error-message">
+                <span class="govuk-visually-hidden">Error:</span> @reportTypeError
+            </p>
+        }
+        <select id="report-type" name="ReportType"
+                class="govuk-select @(reportTypeError is not null ? "govuk-select--error" : "")">
+            <option value="">— select —</option>
+            @foreach (var (value, label) in BSE.Host.Pages.Batch.PrintBatchModel.ReportTypes)
+            {
+                <option value="@value" selected="@(Model.ReportType == value ? "selected" : null)">@label</option>
+            }
+        </select>
+    </div>
+
+    @* ── Actions ───────────────────────────────────────────────────────── *@
+    <div class="govuk-button-group">
+        <button type="submit" class="govuk-button" data-module="govuk-button">Download</button>
+        <a asp-page="/Home" class="govuk-link">Cancel</a>
+    </div>
+
+</form>

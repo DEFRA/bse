@@ -1,0 +1,87 @@
+@page
+@model BSE.Host.Pages.Case.NewModel
+@{
+    ViewData["Title"] = "Create a new case";
+}
+
+<h1 class="govuk-heading-l">Create a new case</h1>
+
+@if (!ViewContext.ModelState.IsValid)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var modelError in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@modelError.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+<form method="post" novalidate>
+    <div class="govuk-form-group">
+        <label asp-for="Rbse" class="govuk-label">RBSE</label>
+        <div class="govuk-hint">Enter in format nn/nn/nnnnn — for example, 00/26/00001.</div>
+        <input asp-for="Rbse" class="govuk-input govuk-!-width-one-half" />
+        <span asp-validation-for="Rbse" class="govuk-error-message"></span>
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="Cphh" class="govuk-label">CPHH</label>
+        <input asp-for="Cphh" class="govuk-input govuk-!-width-one-half" />
+        <span asp-validation-for="Cphh" class="govuk-error-message"></span>
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="Survey" class="govuk-label">Survey</label>
+        <input asp-for="Survey" class="govuk-input govuk-!-width-one-third" />
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="Sex" class="govuk-label">Sex</label>
+        <input asp-for="Sex" class="govuk-input govuk-!-width-one-quarter" />
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="Breed" class="govuk-label">Breed</label>
+        <input asp-for="Breed" class="govuk-input govuk-!-width-one-half" />
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="EartagCountry" class="govuk-label">Eartag country</label>
+        <input asp-for="EartagCountry" class="govuk-input govuk-!-width-one-quarter" />
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="EartagHerdmark" class="govuk-label">Eartag herdmark</label>
+        <input asp-for="EartagHerdmark" class="govuk-input govuk-!-width-one-half" />
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="Eartag" class="govuk-label">Eartag</label>
+        <input asp-for="Eartag" class="govuk-input govuk-!-width-two-thirds" />
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="BirthDate" class="govuk-label">Birth date</label>
+        <input asp-for="BirthDate" type="date" class="govuk-input govuk-input--width-10" />
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="FormADate" class="govuk-label">Form A date</label>
+        <input asp-for="FormADate" type="date" class="govuk-input govuk-input--width-10" />
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="Fate" class="govuk-label">Fate</label>
+        <input asp-for="Fate" class="govuk-input govuk-!-width-one-half" />
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="Origin" class="govuk-label">Origin</label>
+        <input asp-for="Origin" class="govuk-input govuk-!-width-one-half" />
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="Notes" class="govuk-label">Notes</label>
+        <textarea asp-for="Notes" class="govuk-textarea" rows="4"></textarea>
+    </div>
+
+    <div class="govuk-button-group">
+        <button type="submit" class="govuk-button" data-module="govuk-button">Create case</button>
+        <a asp-page="/Home" class="govuk-link">Cancel</a>
+    </div>
+</form>

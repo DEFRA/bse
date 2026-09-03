@@ -1,0 +1,119 @@
+@page
+@model NiModel
+@{
+    ViewData["Title"] = "ADNS export — Northern Ireland";
+}
+
+<div>
+    <h1 class="govuk-heading-l">ADNS export — Northern Ireland</h1>
+    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+        <ol class="govuk-breadcrumbs__list">
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/AdnsExport/Menu">ADNS export</a></li>
+            <li class="govuk-breadcrumbs__list-item" aria-current="page">NI</li>
+        </ol>
+    </nav>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="govuk-error-summary" data-module="govuk-error-summary"><div role="alert"><h2 class="govuk-error-summary__title">There is a problem</h2><div class="govuk-error-summary__body"><ul class="govuk-list govuk-error-summary__list"><li>@Model.ErrorMessage</li></ul></div></div></div>
+    }
+
+    @if (Model.Preview is null)
+    {
+        <h2 class="govuk-heading-m">NI export — case list</h2>
+        <form method="post" asp-page-handler="Preview" id="niForm" novalidate>
+            <input type="hidden" asp-for="EmailReference" />
+            <div class="govuk-form-group">
+                <label asp-for="EmailReference" class="govuk-label">Email reference</label>
+                <input asp-for="EmailReference" class="govuk-input govuk-!-width-one-half" />
+            </div>
+
+            <div id="caseRows">
+                <div class="case-row govuk-!-margin-bottom-4">
+                    <div class="govuk-form-group"><label class="govuk-label" for="cases-0-rbse">RBSE</label><input id="cases-0-rbse" name="Cases[0].Rbse" class="govuk-input govuk-!-width-one-half" /></div>
+                    <div class="govuk-form-group"><label class="govuk-label" for="cases-0-adns-year">ADNS year</label><input id="cases-0-adns-year" name="Cases[0].AdnsYear" type="number" class="govuk-input govuk-input--width-5" value="@DateTime.Today.Year" /></div>
+                    <div class="govuk-form-group"><label class="govuk-label" for="cases-0-adns-number">ADNS number</label><input id="cases-0-adns-number" name="Cases[0].AdnsNumber" type="number" class="govuk-input govuk-input--width-5" /></div>
+                    <div class="govuk-form-group"><label class="govuk-label" for="cases-0-adns-region-id">Region ID</label><input id="cases-0-adns-region-id" name="Cases[0].AdnsRegionId" type="number" class="govuk-input govuk-input--width-5" /></div>
+                    <div class="govuk-form-group"><label class="govuk-label" for="cases-0-adns-region-name">Region name</label><input id="cases-0-adns-region-name" name="Cases[0].AdnsRegionName" class="govuk-input govuk-!-width-one-half" /></div>
+                    <div class="govuk-form-group"><label class="govuk-label" for="cases-0-confirmation-date">Confirmation date</label><input id="cases-0-confirmation-date" name="Cases[0].ConfirmationDate" type="date" class="govuk-input govuk-input--width-10" /></div>
+                </div>
+            </div>
+
+            <div class="govuk-button-group">
+                <button type="button" class="govuk-button govuk-button--secondary" data-module="govuk-button" onclick="addRow()">Add row</button>
+                <button type="submit" class="govuk-button" data-module="govuk-button">Preview</button>
+            </div>
+        </form>
+    }
+    else
+    {
+        <h2 class="govuk-heading-m">Preview — @Model.Preview.Cases.Count cases</h2>
+        <p class="govuk-body"><strong>Subject:</strong> @Model.Preview.EmailSubject</p>
+        var sortBase = "?" + string.Join("&", HttpContext.Request.Query
+            .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
+                     && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase)
+                     && !string.Equals(k.Key, "PageNumber", StringComparison.OrdinalIgnoreCase))
+            .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
+        ViewData["SortColumn"] = Model.SortColumn;
+        ViewData["SortDesc"] = Model.SortDesc;
+        ViewData["BaseUrl"] = sortBase;
+        <table class="govuk-table">
+            <caption class="govuk-visually-hidden">Northern Ireland ADNS preview cases</caption>
+            <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                    @{ ViewData["Label"] = "RBSE"; ViewData["Column"] = "Rbse"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Region"; ViewData["Column"] = "Region"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "ADNS ref"; ViewData["Column"] = "AdnsReference"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Confirmation"; ViewData["Column"] = "ConfirmationDate"; }
+                    <partial name="_SortableHeader" />
+                </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+                @foreach (var c in Model.PagedCases)
+                {
+                    <tr class="govuk-table__row"><td class="govuk-table__cell">@c.Rbse</td><td class="govuk-table__cell">@c.AdnsRegionName</td><td class="govuk-table__cell">@c.AdnsReference</td><td class="govuk-table__cell">@c.ConfirmationDate.ToString("dd/MM/yyyy")</td></tr>
+                }
+            </tbody>
+        </table>
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
+
+        <form method="post" asp-page-handler="Dispatch" novalidate>
+            <input type="hidden" asp-for="EmailReference" />
+            <div class="govuk-form-group"><label asp-for="UserEmailAddress" class="govuk-label">Your email address</label><input asp-for="UserEmailAddress" type="email" class="govuk-input govuk-!-width-one-half" /></div>
+            <div class="govuk-form-group">
+                <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                    <div class="govuk-checkboxes__item">
+                        <input asp-for="SaveAdnsData" type="checkbox" class="govuk-checkboxes__input" checked />
+                        <label asp-for="SaveAdnsData" class="govuk-label govuk-checkboxes__label">Save ADNS data to database</label>
+                    </div>
+                </div>
+            </div>
+            <div class="govuk-button-group">
+                <button type="submit" class="govuk-button" data-module="govuk-button">Dispatch</button>
+                <a asp-page="/AdnsExport/Ni" class="govuk-link">Start over</a>
+            </div>
+        </form>
+    }
+</div>
+
+<script>
+    let rowIndex = 1;
+    function addRow() {
+        const container = document.getElementById('caseRows');
+        const row = document.createElement('div');
+        row.className = 'case-row govuk-!-margin-bottom-4';
+        row.innerHTML = `
+            <div class="govuk-form-group"><input name="Cases[${rowIndex}].Rbse" class="govuk-input govuk-!-width-one-half" aria-label="RBSE" placeholder="RBSE" /></div>
+            <div class="govuk-form-group"><input name="Cases[${rowIndex}].AdnsYear" type="number" class="govuk-input govuk-input--width-5" aria-label="ADNS year" value="@DateTime.Today.Year" /></div>
+            <div class="govuk-form-group"><input name="Cases[${rowIndex}].AdnsNumber" type="number" class="govuk-input govuk-input--width-5" aria-label="ADNS number" /></div>
+            <div class="govuk-form-group"><input name="Cases[${rowIndex}].AdnsRegionId" type="number" class="govuk-input govuk-input--width-5" aria-label="Region ID" /></div>
+            <div class="govuk-form-group"><input name="Cases[${rowIndex}].AdnsRegionName" class="govuk-input govuk-!-width-one-half" aria-label="Region name" /></div>
+            <div class="govuk-form-group"><input name="Cases[${rowIndex}].ConfirmationDate" type="date" class="govuk-input govuk-input--width-10" aria-label="Confirmation date" /></div>`;
+        container.appendChild(row);
+        rowIndex++;
+    }
+</script>

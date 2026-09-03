@@ -1,0 +1,77 @@
+@page "{rbse}"
+@model CaseWorkEntryModel
+@{
+    ViewData["Title"] = "Edit case work entry";
+}
+
+<div>
+    <h1 class="govuk-heading-l">Edit case work entry — @BseFormat.FormatRbse(Model.Rbse)</h1>
+    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+        <ol class="govuk-breadcrumbs__list">
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/CaseWork/Menu" asp-route-rbse="@Model.Rbse">Case work</a></li>
+            <li class="govuk-breadcrumbs__list-item" aria-current="page">Entry</li>
+        </ol>
+    </nav>
+
+    @if (Model.Entry is null)
+    {
+        <div class="govuk-warning-text">
+            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+            <strong class="govuk-warning-text__text">
+                <span class="govuk-warning-text__assistive">Warning</span>
+                No case work entry found for @BseFormat.FormatRbse(Model.Rbse).
+            </strong>
+        </div>
+    }
+    else
+    {
+        <form method="post" novalidate>
+            <input type="hidden" asp-for="Rbse" />
+
+            <h2 class="govuk-heading-m">Casework details</h2>
+
+            <div class="govuk-form-group"><label class="govuk-label" for="barcode">Barcode</label><input id="barcode" name="Barcode" class="govuk-input govuk-!-width-one-half" value="@Model.Entry.Barcode" /></div>
+            <div class="govuk-form-group"><label class="govuk-label" for="ahf-reference">AHF reference</label><input id="ahf-reference" name="AhfReference" class="govuk-input govuk-!-width-one-half" value="@Model.Entry.AhfReference" /></div>
+            <div class="govuk-form-group"><label class="govuk-label" for="rbse-date">RBSE date</label><input id="rbse-date" name="RbseDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.RbseDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label" for="purchaser-bse1-received-date">Purchaser BSE-1 received</label><input id="purchaser-bse1-received-date" name="PurchaserBse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.PurchaserBse1ReceivedDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label" for="breeder-bse1-received-date">Breeder BSE-1 received</label><input id="breeder-bse1-received-date" name="BreederBse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.BreederBse1ReceivedDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label" for="vendor1-bse1-received-date">Vendor 1 BSE-1 received</label><input id="vendor1-bse1-received-date" name="Vendor1Bse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.Vendor1Bse1ReceivedDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label" for="homebred-bse1-received-date">Homebred BSE-1 received</label><input id="homebred-bse1-received-date" name="HomebredBse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.HomebredBse1ReceivedDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label" for="summary-sheet-received-date">Summary sheet received</label><input id="summary-sheet-received-date" name="SummarySheetReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.SummarySheetReceivedDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label" for="paperwork-complete-date">Paperwork complete</label><input id="paperwork-complete-date" name="PaperworkCompleteDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.PaperworkCompleteDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label" for="active-memo-date">Active memo date</label><input id="active-memo-date" name="ActiveMemoDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.ActiveMemoDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label" for="annex-a-date">Annex A date</label><input id="annex-a-date" name="AnnexADate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.AnnexADate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label" for="annex-b-date">Annex B date</label><input id="annex-b-date" name="AnnexBDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.AnnexBDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label" for="annex-c-date">Annex C date</label><input id="annex-c-date" name="AnnexCDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.AnnexCDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label" for="annex-d-date">Annex D date</label><input id="annex-d-date" name="AnnexDDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.AnnexDDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label" for="regional-lab">Regional lab</label><input id="regional-lab" name="RegionalLab" class="govuk-input govuk-!-width-one-half" value="@Model.Entry.RegionalLab" /></div>
+            <div class="govuk-form-group"><label class="govuk-label" for="received-by-regional-lab-date">Received by regional lab</label><input id="received-by-regional-lab-date" name="ReceivedByRegionalLabDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.ReceivedByRegionalLabDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label" for="initial-received-date">Initial received date</label><input id="initial-received-date" name="InitialReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.InitialReceivedDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label" for="final-received-date">Final received date</label><input id="final-received-date" name="FinalReceivedDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.FinalReceivedDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label" for="final-sent-date">Final sent date</label><input id="final-sent-date" name="FinalSentDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.FinalSentDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label" for="lab-chased-date">Lab chased date</label><input id="lab-chased-date" name="LabChasedDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.LabChasedDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label" for="barb-minute-sent-date">BARB minute sent date</label><input id="barb-minute-sent-date" name="BarbMinuteSentDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.BarbMinuteSentDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label" for="post2000-sent-date">Post-2000 sent date</label><input id="post2000-sent-date" name="Post2000SentDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.Post2000SentDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label" for="data-complete-date">Data complete date</label><input id="data-complete-date" name="DataCompleteDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.DataCompleteDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label" for="tse-testing-site">TSE testing site</label><input id="tse-testing-site" name="TseTestingSite" class="govuk-input govuk-!-width-one-half" value="@Model.Entry.TseTestingSite" /></div>
+            <div class="govuk-form-group"><label class="govuk-label" for="sampling-date">Sampling date</label><input id="sampling-date" name="SamplingDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.Entry.SamplingDate?.ToString("yyyy-MM-dd")" /></div>
+            <div class="govuk-form-group"><label class="govuk-label" for="ahro-id">AHRO ID</label><input id="ahro-id" name="AhroId" type="number" class="govuk-input govuk-input--width-5" value="@Model.Entry.Ahro" /></div>
+            <div class="govuk-form-group"><label class="govuk-label" for="case-work-notes">Case work notes</label><textarea id="case-work-notes" name="CaseWorkNotes" class="govuk-textarea" rows="4">@Model.Entry.CaseWorkNotes</textarea></div>
+
+            <div class="govuk-form-group">
+                <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                    <div class="govuk-checkboxes__item">
+                        <input id="is-case-closed" name="IsCaseClosed" type="checkbox" class="govuk-checkboxes__input" @(Model.Entry.IsCaseClosed == true ? "checked" : "") />
+                        <label class="govuk-label govuk-checkboxes__label" for="is-case-closed">Case closed</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="govuk-button-group">
+                <button type="submit" class="govuk-button" data-module="govuk-button">Save changes</button>
+                <a asp-page="/CaseWork/Menu" asp-route-rbse="@Model.Rbse" class="govuk-link">Cancel</a>
+            </div>
+        </form>
+    }
+</div>

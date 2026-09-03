@@ -1,0 +1,100 @@
+@page "{rbse}/{type}"
+@model MinuteModel
+@{
+    ViewData["Title"] = $"{Model.MinuteTypeLabel} — {Model.Rbse}";
+}
+
+<div>
+    <h1 class="govuk-heading-l">@Model.MinuteTypeLabel — @BseFormat.FormatRbse(Model.Rbse)</h1>
+    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+        <ol class="govuk-breadcrumbs__list">
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/CaseWork/Menu" asp-route-rbse="@Model.Rbse">Case work</a></li>
+            <li class="govuk-breadcrumbs__list-item" aria-current="page">@Model.MinuteTypeLabel</li>
+        </ol>
+    </nav>
+
+    @if (Model.Details is null)
+    {
+        <div class="govuk-warning-text">
+            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+            <strong class="govuk-warning-text__text">
+                <span class="govuk-warning-text__assistive">Warning</span>
+                No details found for @BseFormat.FormatRbse(Model.Rbse) / @Model.Type.
+            </strong>
+        </div>
+    }
+    else
+    {
+        <h2 class="govuk-heading-m">@Model.MinuteTypeLabel details</h2>
+        <dl class="govuk-summary-list">
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@BseFormat.FormatRbse(Model.Details.Rbse)</dd></div>
+            @if (Model.Details.Cphh is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">CPHH</dt><dd class="govuk-summary-list__value">@BseFormat.FormatCphh(Model.Details.Cphh)</dd></div>
+            }
+            @if (Model.Details.Eartag is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Eartag</dt><dd class="govuk-summary-list__value">@Model.Details.EartagCountry @Model.Details.EartagHerdmark / @Model.Details.Eartag</dd></div>
+            }
+            @if (Model.Details.BirthDate is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Birth date</dt><dd class="govuk-summary-list__value">@Model.Details.BirthDate?.ToShortDateString()</dd></div>
+            }
+            @if (Model.Details.SlaughterDate is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Slaughter date</dt><dd class="govuk-summary-list__value">@Model.Details.SlaughterDate?.ToShortDateString()</dd></div>
+            }
+            @if (Model.Details.SurveyDescription is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Survey</dt><dd class="govuk-summary-list__value">@Model.Details.SurveyDescription</dd></div>
+            }
+            @if (Model.Details.AhoName is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">AHO</dt><dd class="govuk-summary-list__value">@Model.Details.AhoNumber — @Model.Details.AhoName</dd></div>
+            }
+            @if (Model.Details.OwnerName is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Owner</dt><dd class="govuk-summary-list__value">@Model.Details.OwnerName</dd></div>
+            }
+            @if (Model.Details.ActiveMemoDate is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Active memo date</dt><dd class="govuk-summary-list__value">@Model.Details.ActiveMemoDate?.ToShortDateString()</dd></div>
+            }
+            @if (Model.Details.AnnexADate is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Annex A date</dt><dd class="govuk-summary-list__value">@Model.Details.AnnexADate?.ToShortDateString()</dd></div>
+            }
+            @if (Model.Details.AnnexBDate is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Annex B date</dt><dd class="govuk-summary-list__value">@Model.Details.AnnexBDate?.ToShortDateString()</dd></div>
+            }
+            @if (Model.Details.AnnexCDate is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Annex C date</dt><dd class="govuk-summary-list__value">@Model.Details.AnnexCDate?.ToShortDateString()</dd></div>
+            }
+            @if (Model.Details.AnnexDDate is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Annex D date</dt><dd class="govuk-summary-list__value">@Model.Details.AnnexDDate?.ToShortDateString()</dd></div>
+            }
+            @if (Model.Details.TseTestingSite is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">TSE testing site</dt><dd class="govuk-summary-list__value">@Model.Details.TseTestingSite</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Sampling date</dt><dd class="govuk-summary-list__value">@Model.Details.SamplingDate?.ToShortDateString()</dd></div>
+            }
+            @if (Model.Details.TestResult is not null)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Test result</dt><dd class="govuk-summary-list__value">@Model.Details.TestResult</dd></div>
+            }
+        </dl>
+
+        <form method="post" novalidate>
+            <input type="hidden" asp-for="Rbse" />
+            <input type="hidden" asp-for="Type" />
+            <div class="govuk-button-group">
+                <button type="submit" class="govuk-button" data-module="govuk-button">Mark as sent today</button>
+                <a asp-page="/CaseWork/Menu" asp-route-rbse="@Model.Rbse" class="govuk-link">Back</a>
+            </div>
+        </form>
+    }
+</div>

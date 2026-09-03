@@ -1,0 +1,13 @@
+trigger: none
+
+pool: DEFRA-COMMON-WINDOWS-SSV5  
+
+steps:
+  - checkout: none
+  - script: |
+      echo "--- DNS ---"
+      getent hosts DEVBSEWEBAW1401.scm.azurewebsites.net || echo "DNS FAILED"
+      echo "--- HTTP ---"
+      curl -s -o /dev/null -w "HTTP %{http_code} in %{time_total}s\n" \
+        --max-time 20 https://DEVBSEWEBAW1401.scm.azurewebsites.net || echo "CONNECT FAILED"
+    displayName: Probe SCM endpoint

@@ -1,0 +1,21 @@
+@page
+@model BSE.Host.Pages.ErrorModel
+@{
+    ViewData["Title"] = "Error";
+    Layout = "_Layout";
+}
+
+<h1 class="govuk-heading-l">There is a problem</h1>
+
+<div class="govuk-error-summary" data-module="govuk-error-summary">
+    <div role="alert">
+        <h2 class="govuk-error-summary__title">We could not complete your request</h2>
+        <div class="govuk-error-summary__body">
+            <ul class="govuk-list govuk-error-summary__list">
+                <li>@(Model.Message ?? "An unexpected error occurred. Try again or contact support if the problem persists.")</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<a asp-page="/Home" class="govuk-button">Return to home</a>

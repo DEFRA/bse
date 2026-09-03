@@ -1,0 +1,34 @@
+@page
+@model BSE.Host.Pages.Farm.NewModel
+@{
+    ViewData["Title"] = "Create a new farm";
+}
+
+<h1 class="govuk-heading-l">Create a new farm</h1>
+
+@if (!ViewContext.ModelState.IsValid)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var modelError in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@modelError.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+<form method="post" novalidate id="farm-new-form">
+    <input type="hidden" name="Farm.CPHH" value="@Model.Farm.CPHH" />
+    @await Html.PartialAsync("_FarmFormFields", Model.Farm, new ViewDataDictionary(ViewData) { TemplateInfo = { HtmlFieldPrefix = "Farm" } })
+
+    <div class="govuk-button-group">
+        <button type="submit" class="govuk-button" data-module="govuk-button">Save farm</button>
+        <a id="cancel-link" asp-page="/Home" class="govuk-link">Cancel</a>
+    </div>
+</form>

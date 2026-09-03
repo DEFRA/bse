@@ -1,0 +1,67 @@
+@page "{rbse?}"
+@model RbseChangeModel
+@{
+    ViewData["Title"] = "Change RBSE";
+}
+
+<div>
+    <h1 class="govuk-heading-l">Change RBSE</h1>
+
+    @* ── Step 1: lookup (navigated from home page without a known RBSE) ── *@
+    @if (string.IsNullOrEmpty(Model.OldRbse))
+    {
+        <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+            <ol class="govuk-breadcrumbs__list">
+                <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+                <li class="govuk-breadcrumbs__list-item" aria-current="page">RBSE change</li>
+            </ol>
+        </nav>
+        <form method="get" novalidate>
+            <div class="govuk-form-group">
+                <label class="govuk-label" for="rbse-lookup">Enter current RBSE</label>
+                <div class="govuk-hint">Enter 9 digits with no slashes — for example, 002600001.</div>
+                <input id="rbse-lookup" name="OldRbse" type="text" class="govuk-input govuk-input--width-10" autocomplete="off" />
+            </div>
+            <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Look up</button>
+        </form>
+    }
+    else
+    {
+        <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+            <ol class="govuk-breadcrumbs__list">
+                <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+                <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Details" asp-route-rbse="@Model.OldRbse">Case @Model.OldRbse</a></li>
+                <li class="govuk-breadcrumbs__list-item" aria-current="page">Change RBSE</li>
+            </ol>
+        </nav>
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div class="govuk-error-summary" data-module="govuk-error-summary">
+                <div role="alert">
+                    <h2 class="govuk-error-summary__title">There is a problem</h2>
+                    <div class="govuk-error-summary__body">
+                        <ul class="govuk-list govuk-error-summary__list">
+                            <li>@Model.ErrorMessage</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <h2 class="govuk-heading-m">Change RBSE for @Model.OldRbse</h2>
+        <form method="post" novalidate>
+            <input type="hidden" asp-for="OldRbse" />
+            <div class="govuk-form-group">
+                <label asp-for="NewRbse" class="govuk-label">New RBSE</label>
+                <div class="govuk-hint">Enter in format nn/nn/nnnnn — for example, 00/26/00001. The new RBSE must not already exist in the system.</div>
+                <input asp-for="NewRbse" class="govuk-input govuk-!-width-one-half" />
+                <span asp-validation-for="NewRbse" class="govuk-error-message"></span>
+            </div>
+            <div class="govuk-button-group">
+                <button type="submit" class="govuk-button" data-module="govuk-button">Change RBSE</button>
+                <a asp-page="/Case/Details" asp-route-rbse="@Model.OldRbse" class="govuk-link">Cancel</a>
+            </div>
+        </form>
+    }
+</div>

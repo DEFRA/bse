@@ -1,0 +1,77 @@
+@page "{rbse?}"
+@model CaseWorkMenuModel
+@{
+    ViewData["Title"] = string.IsNullOrEmpty(Model.Rbse) ? "Casework menu" : $"Case work \u2014 {Model.Rbse}";
+}
+
+<h1 class="govuk-heading-l">@(string.IsNullOrEmpty(Model.Rbse) ? "Casework menu" : $"Case work \u2014 {Model.Rbse}")</h1>
+
+@* \u2500\u2500 Standalone menu (navigated from home page without a case RBSE) \u2500\u2500 *@
+@if (string.IsNullOrEmpty(Model.Rbse))
+{
+    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+        <ol class="govuk-breadcrumbs__list">
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+            <li class="govuk-breadcrumbs__list-item" aria-current="page">Casework menu</li>
+        </ol>
+    </nav>
+    <ul class="govuk-list govuk-list--spaced">
+        <li><a asp-page="/CaseWork/OpenCases" class="govuk-link">View all open cases</a></li>
+        <li><a asp-page="/CaseWork/ClosedCases" class="govuk-link">View all closed cases</a></li>
+    </ul>
+}
+else
+{
+    <div>
+    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+        <ol class="govuk-breadcrumbs__list">
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Details" asp-route-rbse="@Model.Rbse">Case @Model.Rbse</a></li>
+            <li class="govuk-breadcrumbs__list-item" aria-current="page">Case work</li>
+        </ol>
+    </nav>
+
+    @if (Model.Record is null)
+    {
+        <div class="govuk-warning-text">
+            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+            <strong class="govuk-warning-text__text">
+                <span class="govuk-warning-text__assistive">Warning</span>
+                No case work record found for @Model.Rbse.
+            </strong>
+        </div>
+        <a asp-page="/Case/Lookup" class="govuk-link">Back to lookup</a>
+    }
+    else
+    {
+        <div class="govuk-button-group govuk-!-margin-bottom-4">
+            <a asp-page="/CaseWork/Entry" asp-route-rbse="@Model.Rbse" class="govuk-button">Edit case work entry</a>
+        </div>
+
+        <h2 class="govuk-heading-m">Case work summary</h2>
+        <dl class="govuk-summary-list">
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@Model.Record.Rbse</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE date</dt><dd class="govuk-summary-list__value">@Model.Record.RbseDate?.ToShortDateString()</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Barcode</dt><dd class="govuk-summary-list__value">@Model.Record.Barcode</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">AHF reference</dt><dd class="govuk-summary-list__value">@Model.Record.AhfReference</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Purchaser BSE-1 received</dt><dd class="govuk-summary-list__value">@Model.Record.PurchaserBse1ReceivedDate?.ToShortDateString()</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Breeder BSE-1 received</dt><dd class="govuk-summary-list__value">@Model.Record.BreederBse1ReceivedDate?.ToShortDateString()</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Vendor 1 BSE-1 received</dt><dd class="govuk-summary-list__value">@Model.Record.Vendor1Bse1ReceivedDate?.ToShortDateString()</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Homebred BSE-1 received</dt><dd class="govuk-summary-list__value">@Model.Record.HomebredBse1ReceivedDate?.ToShortDateString()</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Summary sheet received</dt><dd class="govuk-summary-list__value">@Model.Record.SummarySheetReceivedDate?.ToShortDateString()</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Paperwork complete</dt><dd class="govuk-summary-list__value">@Model.Record.PaperworkCompleteDate?.ToShortDateString()</dd></div>
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Case closed</dt><dd class="govuk-summary-list__value">@(Model.Record.IsCaseClosed ? "Yes" : "No")</dd></div>
+        </dl>
+
+        <h2 class="govuk-heading-m">Minute letters</h2>
+        <ul class="govuk-list govuk-list--bullet">
+            @foreach (var minute in new[] { ("ActiveMemo", "Active memo"), ("AnnexA", "Annex A"), ("AnnexB", "Annex B"), ("AnnexC", "Annex C"), ("AnnexD", "Annex D"), ("AMFS", "AMFS (fallen stock)") })
+            {
+                <li>
+                    <a asp-page="/CaseWork/Minute" asp-route-rbse="@Model.Rbse" asp-route-type="@minute.Item1" class="govuk-link">@minute.Item2</a>
+                </li>
+            }
+        </ul>
+    }
+</div>
+}

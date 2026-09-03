@@ -1,0 +1,248 @@
+@page
+@model BSE.Host.Pages.HomeModel
+@{
+    ViewData["Title"] = "BSE system";
+    var batchYearError   = Model.ModelState[nameof(Model.BatchYear)]?.Errors.FirstOrDefault()?.ErrorMessage;
+    var batchNumberError = Model.ModelState[nameof(Model.BatchNumber)]?.Errors.FirstOrDefault()?.ErrorMessage;
+    var hasBatchError    = batchYearError is not null || batchNumberError is not null;
+    var rbseError        = Model.ModelState[nameof(Model.LookupRbse)]?.Errors.FirstOrDefault()?.ErrorMessage;
+    var hasAnyError      = hasBatchError || rbseError is not null;
+}
+
+<h1 class="govuk-heading-l">BSE system</h1>
+
+@* ── Error summary (batch panel validation) ──────────────────────────────────── *@
+@if (hasBatchError)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @if (batchYearError is not null)
+                    {
+                        <li><a href="#batch-year">@batchYearError</a></li>
+                    }
+                    @if (batchNumberError is not null)
+                    {
+                        <li><a href="#batch-number">@batchNumberError</a></li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+@* ── Batch Number panel — VLA Data Entry + VLA Maintenance ────────────────────── *@
+@if (User.IsInRole("VLAAccess"))
+{
+    <section aria-labelledby="batch-panel-heading" class="govuk-!-margin-bottom-6">
+        <h2 class="govuk-heading-m" id="batch-panel-heading">Batch number</h2>
+        <p class="govuk-body">Only enter a batch number if you are entering a batch of case details.</p>
+
+        <div class="govuk-grid-row">
+            <div class="govuk-grid-column-two-thirds">
+                <form method="post">
+                    <div class="govuk-form-group @(hasBatchError ? "govuk-form-group--error" : "")">
+                        <fieldset class="govuk-fieldset" aria-describedby="@(hasBatchError ? "batch-error" : "batch-hint")">
+                            <legend class="govuk-fieldset__legend">
+                                Enter batch number
+                            </legend>
+                          
+                            @if (hasBatchError)
+                            {
+                                <p id="batch-error" class="govuk-error-message">
+                                    <span class="govuk-visually-hidden">Error:</span>
+                                    @(batchYearError ?? batchNumberError)
+                                </p>
+                            }
+                            <div class="govuk-!-display-flex govuk-!-gap-3 govuk-!-align-items-end">
+                                <div>
+                                    <label class="govuk-label govuk-!-font-weight-bold" for="batch-year">Year</label>
+                                    <input id="batch-year" name="BatchYear" type="text" inputmode="numeric"
+                                           class="govuk-input govuk-input--width-4 @(batchYearError is not null || Model.BatchNotFound ? "govuk-input--error" : "")"
+                                           value="@Model.BatchYear" autocomplete="off" />
+                                </div>
+                                <div>
+                                    <label class="govuk-label govuk-!-font-weight-bold" for="batch-number">Number</label>
+                                    <input id="batch-number" name="BatchNumber" type="text" inputmode="numeric"
+                                           class="govuk-input govuk-input--width-5 @(batchNumberError is not null || Model.BatchNotFound ? "govuk-input--error" : "")"
+                                           value="@Model.BatchNumber" autocomplete="off" />
+                                </div>
+                        
+                                <div>
+                                    <button type="submit" asp-page-handler="CreateBatch"
+                                            class="govuk-button govuk-button--secondary"
+                                            data-module="govuk-button">Create new</button>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </div>
+                </form>
+            </div>
+
+            @if (Model.LatestBatches.Count > 0)
+            {
+                <div class="govuk-grid-column-one-third">
+                    <table class="govuk-table govuk-!-font-size-16">
+                        <caption class="govuk-table__caption govuk-table__caption--s govuk-visually-hidden">Recent batches</caption>
+                        <thead class="govuk-table__head">
+                            <tr class="govuk-table__row">
+                                <th scope="col" class="govuk-table__header">Batch number</th>
+                                <th scope="col" class="govuk-table__header govuk-table__header--numeric">Cases</th>
+                            </tr>
+                        </thead>
+                        <tbody class="govuk-table__body">
+                            @foreach (var b in Model.LatestBatches)
+                            {
+                                <tr class="govuk-table__row">
+                                    <td class="govuk-table__cell">@b.Batch</td>
+                                    <td class="govuk-table__cell govuk-table__cell--numeric">@b.CaseCount</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </section>
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-bottom-6" />
+}
+
+@* ── RBSE Number panel — all DEFRA groups + VLA Data Entry + VLA Maintenance ─── *@
+@if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess"))
+{
+    <section aria-labelledby="rbse-panel-heading" class="govuk-!-margin-bottom-6">
+        <h2 class="govuk-heading-m" id="rbse-panel-heading">RBSE number</h2>
+
+        <form method="post" asp-page-handler="RbseLookup" class="govuk-!-margin-bottom-4">
+            <div class="govuk-form-group @(rbseError is not null ? "govuk-form-group--error" : "")">
+                <label class="govuk-label" for="rbse-lookup">Enter RBSE to open case</label>
+                @if (rbseError is not null)
+                {
+                    <p id="rbse-error" class="govuk-error-message">
+                        <span class="govuk-visually-hidden">Error:</span>
+                        @rbseError
+                    </p>
+                }
+                <input id="rbse-lookup" name="LookupRbse" type="text"
+                       class="govuk-input govuk-input--width-10 @(rbseError is not null ? "govuk-input--error" : "")"
+                       value="@Model.LookupRbse" autocomplete="off"
+                       aria-describedby="@(rbseError is not null ? "rbse-error" : "")" />
+            </div>
+            <button type="submit" class="govuk-button govuk-button--secondary"
+                    data-module="govuk-button">Go</button>
+        </form>
+
+        <table class="govuk-table govuk-!-font-size-16">
+            <caption class="govuk-table__caption govuk-table__caption--s govuk-visually-hidden">Latest RBSE and DBSE references</caption>
+            <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                    <th scope="col" class="govuk-table__header"></th>
+                    <th scope="col" class="govuk-table__header">RBSE</th>
+                    <th scope="col" class="govuk-table__header">DBSE</th>
+                </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+                <tr class="govuk-table__row">
+                    <th scope="row" class="govuk-table__header govuk-!-font-weight-regular">Latest in current year</th>
+                    <td class="govuk-table__cell">@(Model.LatestRbseCurrentYear ?? "—")</td>
+                    <td class="govuk-table__cell">@(Model.LatestDbseCurrentYear ?? "—")</td>
+                </tr>
+                <tr class="govuk-table__row">
+                    <th scope="row" class="govuk-table__header govuk-!-font-weight-regular">Latest in previous year</th>
+                    <td class="govuk-table__cell">@(Model.LatestRbsePreviousYear ?? "—")</td>
+                    <td class="govuk-table__cell">@(Model.LatestDbsePreviousYear ?? "—")</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-bottom-6" />
+}
+
+@* Quick-case and quick-farm inputs removed — Home now exposes only Batch and RBSE inputs per migration requirement *@
+
+<div class="govuk-grid-row">
+    @* Column 1: Search *@
+    <div class="govuk-grid-column-one-third">
+        <h2 class="govuk-heading-m">Search</h2>
+        <ul class="govuk-list">
+            <li><a asp-page="/Search/Cases" class="govuk-link">Cases</a></li>
+            <li><a asp-page="/Search/CasesByHerdmark" class="govuk-link">Cases by herdmark</a></li>
+            <li><a asp-page="/Search/CasesByHoldingHerdmark" class="govuk-link">Cases by holding/herdmark</a></li>
+            <li><a asp-page="/Search/Farms" class="govuk-link">Farms</a></li>
+            <li><a asp-page="/Search/Outstanding" class="govuk-link">Outstanding data</a></li>
+            <li><a asp-page="/Search/RelatedAnimals" class="govuk-link">Related animals</a></li>
+        </ul>
+    </div>
+
+    @* Column 2: Casework and reports *@
+    <div class="govuk-grid-column-one-third">
+        @if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess") || User.IsInRole("VLAMaintenance"))
+        {
+            <h2 class="govuk-heading-m">Casework and reports</h2>
+        }
+        
+        <ul class="govuk-list">
+            @if (User.IsInRole("VLAMaintenance"))
+            {
+                <li><a asp-page="/CaseWork/Menu" class="govuk-link">Casework menu</a></li>
+            }
+            @if (User.IsInRole("VLAAccess"))
+            {
+                <li><a asp-page="/CaseWork/PrintBatch" class="govuk-link">Print batch</a></li>
+            }
+            @if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess"))
+            {
+                <li><a asp-page="/AuditLog/Menu" class="govuk-link">Audit log</a></li>
+                <li><a asp-page="/Bsess/Menu" class="govuk-link">BSESS check</a></li>
+            }
+        </ul>
+    </div>
+
+    @* Column 3: Exports + Case maintenance + Administration *@
+    <div class="govuk-grid-column-one-third">
+        @if (User.IsInRole("DEFRAMaintenance") || User.IsInRole("VLAAccess"))
+        {
+            <h2 class="govuk-heading-m">Exports</h2>
+            <ul class="govuk-list">
+                @if (User.IsInRole("DEFRAMaintenance"))
+                {
+                    <li><a asp-page="/AdnsExport/Menu" class="govuk-link">ADNS export</a></li>
+                }
+                @if (User.IsInRole("VLAAccess"))
+                {
+                    <li><a asp-page="/OssExport/Menu" class="govuk-link">OSS export</a></li>
+                }
+            </ul>
+        }
+
+        @if (User.IsInRole("DEFRAMaintenance"))
+        {
+            <h2 class="govuk-heading-m">Maintenance</h2>
+            <ul class="govuk-list">
+                <li><a asp-page="/Case/FinalResultEntry" class="govuk-link">Final result entry</a></li>
+                <li><a asp-page="/Farm/CphhChange" class="govuk-link">CPHH change</a></li>
+                <li><a asp-page="/Case/RbseChange" class="govuk-link">RBSE change</a></li>
+                <li><a asp-page="/Case/MoveCase" class="govuk-link">Move case</a></li>
+                <li><a asp-page="/Case/Delete" class="govuk-link">Delete case</a></li>
+            </ul>
+        }
+
+        @if (User.IsInRole("VLAMaintenance") || User.IsInRole("PickListAccess"))
+        {
+            <h2 class="govuk-heading-m">Administration</h2>
+            <ul class="govuk-list">
+                @if (User.IsInRole("VLAMaintenance"))
+                {
+                    <li><a asp-page="/Admin/Users" class="govuk-link">Manage users</a></li>
+                }
+                @if (User.IsInRole("PickListAccess"))
+                {
+                    <li><a asp-page="/Admin/PickLists" class="govuk-link">Manage pick lists</a></li>
+                }
+            </ul>
+        }
+    </div>
+</div>
+

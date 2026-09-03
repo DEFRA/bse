@@ -1,0 +1,8 @@
+# Files excluded from GitHub Copilot indexing.
+# Production and UAT configuration may contain real tenant IDs, entity IDs,
+# certificate thumbprints, and Key Vault references.
+# Per identity-migration-saml.agent.md and auth-aspnetcore.instructions.md.
+
+src/BSE.Host/appsettings.UAT.json
+src/BSE.Host/appsettings.Production.json
+ENTRA-REGISTRATION.md

@@ -1,0 +1,15 @@
+@model BSE.Host.Models.ViewModels.AuditDateRangeViewModel
+
+<form method="get" novalidate class="govuk-!-margin-bottom-6">
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="audit-start-date">From</label>
+        <input id="audit-start-date" name="StartDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.StartDate.ToString("yyyy-MM-dd")" />
+    </div>
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="audit-end-date">To</label>
+        <input id="audit-end-date" name="EndDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.EndDate.ToString("yyyy-MM-dd")" />
+    </div>
+    <div class="govuk-button-group">
+        <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
+    </div>
+</form>

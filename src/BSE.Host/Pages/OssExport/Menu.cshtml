@@ -1,0 +1,65 @@
+@page
+@model OssExportMenuModel
+@{
+    ViewData["Title"] = "OSS export";
+}
+
+<h1 class="govuk-heading-l">OSS export</h1>
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">OSS export</li>
+    </ol>
+</nav>
+
+@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary"><div role="alert"><h2 class="govuk-error-summary__title">There is a problem</h2><div class="govuk-error-summary__body"><ul class="govuk-list govuk-error-summary__list"><li>@Model.ErrorMessage</li></ul></div></div></div>
+}
+
+@* ── BSE1 ───────────────────────────────────────────────────────────────── *@
+<h2 class="govuk-heading-m" id="oss-bse1">BSE1</h2>
+<p class="govuk-body">Populate the OSS staging tables. A new BSE1 batch number is created automatically.</p>
+<form method="post" asp-page-handler="Populate" novalidate>
+    <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Populate staging tables</button>
+</form>
+
+@if (Model.BatchResult is not null)
+{
+    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert" aria-labelledby="oss-success-title" data-module="govuk-notification-banner">
+        <div class="govuk-notification-banner__header"><h2 class="govuk-notification-banner__title" id="oss-success-title">Success</h2></div>
+        <div class="govuk-notification-banner__content"><p class="govuk-notification-banner__heading">Staging tables populated. Batch @Model.BatchResult.BatchYear/@Model.BatchResult.BatchNumber created (ID: @Model.BatchResult.BatchId).</p></div>
+    </div>
+}
+
+<hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-top-4 govuk-!-margin-bottom-6" />
+
+@* ── BSE1b ──────────────────────────────────────────────────────────────── *@
+<h2 class="govuk-heading-m" id="oss-bse1b">BSE1b</h2>
+<p class="govuk-body">Look up an RBSE to view the OSS cover sheet details for that case.</p>
+<form method="get" novalidate>
+    <div class="govuk-form-group">
+        <label asp-for="Rbse" class="govuk-label">RBSE</label>
+        <div class="govuk-hint">Enter 9 digits with no slashes — for example, 002600001.</div>
+        <input asp-for="Rbse" class="govuk-input govuk-input--width-10" />
+    </div>
+    <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Look up</button>
+</form>
+
+@if (Model.ExportRecord is not null)
+{
+    <h3 class="govuk-heading-s">Cover sheet — @Model.ExportRecord.Rbse</h3>
+    <dl class="govuk-summary-list">
+        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@Model.ExportRecord.Rbse</dd></div>
+        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">CPHH</dt><dd class="govuk-summary-list__value">@Model.ExportRecord.Cphh</dd></div>
+        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Owner</dt><dd class="govuk-summary-list__value">@Model.ExportRecord.OwnerName</dd></div>
+        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Address</dt><dd class="govuk-summary-list__value">@Model.ExportRecord.Address1</dd></div>
+    </dl>
+}
+else if (Model.HasSearched)
+{
+    <div class="govuk-warning-text">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text"><span class="govuk-warning-text__assistive">Warning</span>No OSS export record found for @Model.Rbse.</strong>
+    </div>
+}

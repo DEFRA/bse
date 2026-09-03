@@ -1,0 +1,117 @@
+@page
+@model BSE.Host.Pages.Search.RelatedAnimalsModel
+@{
+    ViewData["Title"] = "Related Animal Search";
+}
+
+<h1 class="govuk-heading-l">Related Animal Search</h1>
+
+<form method="get" novalidate>
+    <div class="govuk-grid-row">
+        <div class="govuk-grid-column-two-thirds">
+            <div class="govuk-form-group">
+                <label asp-for="Rbse" class="govuk-label">RBSE Of Case</label>
+                <input asp-for="Rbse" class="govuk-input govuk-!-width-two-thirds" maxlength="11" />
+                <span asp-validation-for="Rbse" class="govuk-error-message"></span>
+            </div>
+
+            <div class="govuk-form-group">
+                <label asp-for="Eartag" class="govuk-label">Eartag of Related Animal (starting with...)</label>
+                <input asp-for="Eartag" class="govuk-input govuk-!-width-two-thirds" />
+            </div>
+
+            <div class="govuk-form-group">
+                <label asp-for="RelationRbse" class="govuk-label">RBSE of Related Animal</label>
+                <input asp-for="RelationRbse" class="govuk-input govuk-!-width-two-thirds" maxlength="11" />
+                <span asp-validation-for="RelationRbse" class="govuk-error-message"></span>
+            </div>
+
+            <div class="govuk-form-group">
+                <label asp-for="RelationType" class="govuk-label">Relation Type</label>
+                <select asp-for="RelationType" class="govuk-select govuk-!-width-two-thirds">
+                    <option value=""></option>
+                    @foreach (var item in Model.RelationTypeOptions)
+                    {
+                        <option value="@item.Code">@item.Description</option>
+                    }
+                </select>
+            </div>
+
+            <div class="govuk-form-group">
+                <label asp-for="Name" class="govuk-label">Name of Related Animal (starting with...)</label>
+                <input asp-for="Name" class="govuk-input govuk-!-width-two-thirds" />
+            </div>
+
+            <div class="govuk-button-group">
+                <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
+                <a asp-page="/Home" class="govuk-link">Search Menu</a>
+            </div>
+        </div>
+    </div>
+</form>
+
+@if (Model.HasSearched)
+{
+    <p class="govuk-body">@Model.TotalCount result(s) found.</p>
+
+    @if (Model.TotalCount > 0)
+    {
+        var sortBase = "?" + string.Join("&", HttpContext.Request.Query
+            .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
+                     && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase)
+                     && !string.Equals(k.Key, "PageNumber", StringComparison.OrdinalIgnoreCase))
+            .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
+        var sortCol  = Model.SortColumn;
+        var sortDesc = Model.SortDesc;
+
+        @await Html.PartialAsync("_ExportLink")
+        <table class="govuk-table">
+            <caption class="govuk-visually-hidden">Related animal results</caption>
+            <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                    @{ ViewData["Label"] = "RBSE";                ViewData["Column"] = "Rbse";         ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "CPHH";                ViewData["Column"] = "Cphh"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Relation type";       ViewData["Column"] = "RelationType"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Relation sex";        ViewData["Column"] = "RelSex"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Eartag";              ViewData["Column"] = "Eartag"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Relation birth date"; ViewData["Column"] = "RelBirthDate"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Relation fate";       ViewData["Column"] = "RelFate"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Date left";           ViewData["Column"] = "LeftDate"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Name";                ViewData["Column"] = "RelName"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Relation eartag";     ViewData["Column"] = "RelEartag"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Relation RBSE";       ViewData["Column"] = "RelationRbse"; }
+                    <partial name="_SortableHeader" />
+                </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+                @foreach (var r in Model.PagedResults)
+                {
+                    <tr class="govuk-table__row">
+                        <td class="govuk-table__cell bse-rbse">@BseFormat.FormatRbse(r.Rbse)</td>
+                        <td class="govuk-table__cell">@BseFormat.FormatCphh(r.Cphh)</td>
+                        <td class="govuk-table__cell">@r.RelationType</td>
+                        <td class="govuk-table__cell">@r.RelSex</td>
+                        <td class="govuk-table__cell">@r.Eartag</td>
+                        <td class="govuk-table__cell">@r.RelBirthDate</td>
+                        <td class="govuk-table__cell">@r.RelFate</td>
+                        <td class="govuk-table__cell">@r.LeftDate?.ToString("dd/MM/yyyy")</td>
+                        <td class="govuk-table__cell">@r.RelName</td>
+                        <td class="govuk-table__cell">@r.RelEartag</td>
+                        <td class="govuk-table__cell bse-rbse">@BseFormat.FormatRbse(r.RelationRbse)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
+    }
+}

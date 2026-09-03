@@ -1,0 +1,60 @@
+@page
+@model CiModel
+@{
+    ViewData["Title"] = "ADNS export — Channel Islands";
+}
+
+<div>
+    <h1 class="govuk-heading-l">ADNS export — Channel Islands</h1>
+    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+        <ol class="govuk-breadcrumbs__list">
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/AdnsExport/Menu">ADNS export</a></li>
+            <li class="govuk-breadcrumbs__list-item" aria-current="page">CI</li>
+        </ol>
+    </nav>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="govuk-error-summary" data-module="govuk-error-summary"><div role="alert"><h2 class="govuk-error-summary__title">There is a problem</h2><div class="govuk-error-summary__body"><ul class="govuk-list govuk-error-summary__list"><li>@Model.ErrorMessage</li></ul></div></div></div>
+    }
+
+    @if (Model.Preview is null)
+    {
+        <h2 class="govuk-heading-m">Channel Islands export</h2>
+        <form method="post" asp-page-handler="Preview" novalidate>
+            <div class="govuk-form-group"><label asp-for="EmailReference" class="govuk-label">Email reference</label><input asp-for="EmailReference" class="govuk-input govuk-!-width-one-half" /></div>
+            <div class="govuk-form-group"><label asp-for="AdnsYear" class="govuk-label">ADNS year</label><input asp-for="AdnsYear" type="number" class="govuk-input govuk-input--width-5" /></div>
+            <div class="govuk-form-group"><label asp-for="StartAdnsNumber" class="govuk-label">Start ADNS number</label><input asp-for="StartAdnsNumber" type="number" class="govuk-input govuk-input--width-5" /></div>
+            <div class="govuk-form-group"><label asp-for="JerseyCases" class="govuk-label">Jersey cases</label><input asp-for="JerseyCases" type="number" class="govuk-input govuk-input--width-4" min="0" /></div>
+            <div class="govuk-form-group"><label asp-for="GuernseyCases" class="govuk-label">Guernsey cases</label><input asp-for="GuernseyCases" type="number" class="govuk-input govuk-input--width-4" min="0" /></div>
+            <div class="govuk-form-group"><label asp-for="IsleOfManCases" class="govuk-label">Isle of Man cases</label><input asp-for="IsleOfManCases" type="number" class="govuk-input govuk-input--width-4" min="0" /></div>
+            <div class="govuk-form-group"><label asp-for="ConfirmationDate" class="govuk-label">Confirmation date</label><input asp-for="ConfirmationDate" type="date" class="govuk-input govuk-input--width-10" /></div>
+            <button type="submit" class="govuk-button" data-module="govuk-button">Preview</button>
+        </form>
+    }
+    else
+    {
+        <h2 class="govuk-heading-m">Preview — @Model.Preview.Cases.Count cases</h2>
+        <p class="govuk-body"><strong>Subject:</strong> @Model.Preview.EmailSubject</p>
+        <table class="govuk-table">
+            <caption class="govuk-visually-hidden">Channel Islands ADNS preview cases</caption>
+            <thead class="govuk-table__head"><tr class="govuk-table__row"><th scope="col" class="govuk-table__header">Region</th><th scope="col" class="govuk-table__header">ADNS ref</th><th scope="col" class="govuk-table__header">Confirmation</th></tr></thead>
+            <tbody class="govuk-table__body">
+                @foreach (var c in Model.Preview.Cases)
+                {
+                    <tr class="govuk-table__row"><td class="govuk-table__cell">@c.AdnsRegionName</td><td class="govuk-table__cell">@c.AdnsReference</td><td class="govuk-table__cell">@c.ConfirmationDate.ToString("dd/MM/yyyy")</td></tr>
+                }
+            </tbody>
+        </table>
+
+        <form method="post" asp-page-handler="Dispatch" novalidate>
+            <input type="hidden" asp-for="EmailReference" />
+            <div class="govuk-form-group"><label asp-for="UserEmailAddress" class="govuk-label">Your email address</label><input asp-for="UserEmailAddress" type="email" class="govuk-input govuk-!-width-one-half" /></div>
+            <div class="govuk-button-group">
+                <button type="submit" class="govuk-button" data-module="govuk-button">Dispatch</button>
+                <a asp-page="/AdnsExport/Ci" class="govuk-link">Start over</a>
+            </div>
+        </form>
+    }
+</div>

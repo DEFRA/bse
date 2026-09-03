@@ -1,0 +1,89 @@
+@page
+@model BSE.Host.Pages.CaseWork.PrintBatchModel
+@{
+    ViewData["Title"] = "Print batch";
+}
+
+<h1 class="govuk-heading-l">Print batch</h1>
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Print batch</li>
+    </ol>
+</nav>
+
+<form method="get" novalidate>
+    <div class="govuk-form-group">
+        <fieldset class="govuk-fieldset">
+            <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">Enter batch number</legend>
+            <div class="govuk-hint">Year and number — for example, 2026 and 1.</div>
+            <div class="govuk-!-display-flex govuk-!-gap-3 govuk-!-align-items-end">
+                <div>
+                    <label class="govuk-label govuk-!-font-weight-bold" for="batch-year">Year</label>
+                    <input id="batch-year" name="BatchYear" type="text" inputmode="numeric"
+                           class="govuk-input govuk-input--width-4"
+                           value="@Model.BatchYear" autocomplete="off" />
+                </div>
+                <div>
+                    <label class="govuk-label govuk-!-font-weight-bold" for="batch-number">Number</label>
+                    <input id="batch-number" name="BatchNumber" type="text" inputmode="numeric"
+                           class="govuk-input govuk-input--width-5"
+                           value="@Model.BatchNumber" autocomplete="off" />
+                </div>
+                <div>
+                    <button type="submit" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0"
+                            data-module="govuk-button">View</button>
+                </div>
+            </div>
+        </fieldset>
+    </div>
+</form>
+
+@if (Model.IsNotFound)
+{
+    <div class="govuk-warning-text">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text">
+            <span class="govuk-warning-text__assistive">Warning</span>
+            Batch @Model.BatchYear/@Model.BatchNumber was not found.
+        </strong>
+    </div>
+}
+
+@if (Model.HasSearched && !Model.IsNotFound)
+{
+    <h2 class="govuk-heading-m">Batch @Model.BatchYear/@Model.BatchNumber — @Model.Cases.Count case(s)</h2>
+
+    @if (Model.Cases.Count == 0)
+    {
+        <p class="govuk-body">No cases are recorded against this batch.</p>
+    }
+    else
+    {
+        <table class="govuk-table">
+            <caption class="govuk-table__caption govuk-table__caption--s govuk-visually-hidden">Cases in batch @Model.BatchYear/@Model.BatchNumber</caption>
+            <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                    <th scope="col" class="govuk-table__header">RBSE</th>
+                    <th scope="col" class="govuk-table__header">CPHH</th>
+                </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+                @foreach (var c in Model.Cases)
+                {
+                    <tr class="govuk-table__row">
+                        <td class="govuk-table__cell">
+                            <a asp-page="/Case/Details" asp-route-rbse="@c.Rbse" class="govuk-link">@c.Rbse</a>
+                        </td>
+                        <td class="govuk-table__cell">@(c.Cphh ?? "—")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <p class="govuk-body">
+            <a href="javascript:window.print()" class="govuk-link">Print this page</a>
+        </p>
+    }
+}

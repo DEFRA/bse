@@ -1,0 +1,109 @@
+@page "{rbse}"
+@model BSE.Host.Pages.Case.ClinicalEditModel
+@{
+    ViewData["Title"] = $"Edit Clinical Signs — {Model.Rbse}";
+    string rbseNoSlash = Model.Rbse.Replace("/", "");
+    var c = Model.Signs;
+}
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Clinical" asp-route-rbse="@Model.Rbse">@BseFormat.FormatRbse(Model.Rbse)</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Edit Clinical Signs</li>
+    </ol>
+</nav>
+
+<h1 class="govuk-heading-l">RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Rbse)</span></h1>
+
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Clinical", Model.Rbse))
+
+@if (TempData["Success"] is string successMsg)
+{
+    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert"
+         aria-labelledby="clinical-edit-success-title" data-module="govuk-notification-banner">
+        <div class="govuk-notification-banner__header">
+            <h2 class="govuk-notification-banner__title" id="clinical-edit-success-title">Success</h2>
+        </div>
+        <div class="govuk-notification-banner__content">
+            <p class="govuk-notification-banner__heading">@successMsg</p>
+        </div>
+    </div>
+}
+
+@if (!ViewContext.ModelState.IsValid)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@e.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+<h2 class="govuk-heading-m">Clinical signs</h2>
+
+<form id="edit-clinical-form" method="post" asp-page-handler="SaveSigns" novalidate>
+    <input type="hidden" asp-for="Rbse" />
+    @if (Model.ClinicalRowStampBase64 is not null)
+    {
+        <input type="hidden" name="ClinicalRowStampBase64" value="@Model.ClinicalRowStampBase64" />
+    }
+
+    <fieldset class="govuk-fieldset">
+        <legend class="govuk-fieldset__legend">Neurological / behavioural signs</legend>
+        <div class="govuk-checkboxes govuk-checkboxes--small" data-module="govuk-checkboxes">
+            @{
+                void Chk(string id, string name, bool val, string label)
+                {
+                    <div class="govuk-checkboxes__item">
+                        <input id="@id" name="@name" type="checkbox" class="govuk-checkboxes__input" value="true" @(val ? "checked" : "") />
+                        <label class="govuk-label govuk-checkboxes__label" for="@id">@label</label>
+                    </div>
+                }
+            }
+            @{ Chk("cs-apprehension",   "Signs.Apprehension",         c.Apprehension,         "Apprehension"); }
+            @{ Chk("cs-hypertouch",     "Signs.HypersensitiveTouch",  c.HypersensitiveTouch,  "Hypersensitive to touch"); }
+            @{ Chk("cs-hypersound",     "Signs.HypersensitiveSound",  c.HypersensitiveSound,  "Hypersensitive to sound"); }
+            @{ Chk("cs-maniacal",       "Signs.Maniacal",             c.Maniacal,             "Maniacal"); }
+            @{ Chk("cs-panic",          "Signs.PanicStricken",        c.PanicStricken,        "Panic stricken"); }
+            @{ Chk("cs-temp",           "Signs.TemperamentChange",    c.TemperamentChange,    "Temperament change"); }
+            @{ Chk("cs-headcarriage",   "Signs.AbnormalHeadCarriage", c.AbnormalHeadCarriage, "Abnormal head carriage"); }
+            @{ Chk("cs-eartwich",       "Signs.EarTwitching",         c.EarTwitching,         "Ear twitching"); }
+            @{ Chk("cs-earangle",       "Signs.EarsOddAngle",         c.EarsOddAngle,         "Ears at odd angle"); }
+            @{ Chk("cs-behaviour",      "Signs.AbnormalBehaviour",    c.AbnormalBehaviour,    "Abnormal behaviour"); }
+            @{ Chk("cs-headshy",        "Signs.HeadShyness",          c.HeadShyness,          "Head shyness"); }
+            @{ Chk("cs-lickflank",      "Signs.LickingFlank",         c.LickingFlank,         "Licking flank"); }
+            @{ Chk("cs-licknose",       "Signs.LickingNose",          c.LickingNose,          "Licking nose"); }
+            @{ Chk("cs-kicking",        "Signs.Kicking",              c.Kicking,              "Kicking"); }
+            @{ Chk("cs-doors",          "Signs.ReluctantDoorways",    c.ReluctantDoorways,    "Reluctant to enter doorways"); }
+            @{ Chk("cs-pressing",       "Signs.HeadPressing",         c.HeadPressing,         "Head pressing"); }
+            @{ Chk("cs-rubbing",        "Signs.HeadRubbing",          c.HeadRubbing,          "Head rubbing"); }
+            @{ Chk("cs-teeth",          "Signs.TeethGrinding",        c.TeethGrinding,        "Teeth grinding"); }
+            @{ Chk("cs-blind",          "Signs.Blindness",            c.Blindness,            "Blindness"); }
+            @{ Chk("cs-circle",         "Signs.Circling",             c.Circling,             "Circling"); }
+            @{ Chk("cs-hindatax",       "Signs.HindAtaxia",           c.HindAtaxia,           "Hind ataxia"); }
+            @{ Chk("cs-falling",        "Signs.Falling",              c.Falling,              "Falling"); }
+            @{ Chk("cs-paresis",        "Signs.Paresis",              c.Paresis,              "Paresis"); }
+            @{ Chk("cs-foreatax",       "Signs.ForeAtaxia",           c.ForeAtaxia,           "Fore ataxia"); }
+            @{ Chk("cs-recumb",         "Signs.Recumbent",            c.Recumbent,            "Recumbent"); }
+            @{ Chk("cs-tremor",         "Signs.Tremor",               c.Tremor,               "Tremor"); }
+            @{ Chk("cs-knuckle",        "Signs.KnucklingFetlock",     c.KnucklingFetlock,     "Knuckling fetlock"); }
+            @{ Chk("cs-weight",         "Signs.WeightLoss",           c.WeightLoss,           "Weight loss"); }
+            @{ Chk("cs-cond",           "Signs.ConditionLoss",        c.ConditionLoss,        "Condition loss"); }
+            @{ Chk("cs-milk",           "Signs.MilkYield",            c.MilkYield,            "Milk yield loss"); }
+        </div>
+    </fieldset>
+
+    <div class="govuk-button-group govuk-!-margin-top-4">
+        <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+        <a asp-page="/Case/Clinical" asp-route-rbse="@Model.Rbse" class="govuk-link">Cancel</a>
+    </div>
+</form>

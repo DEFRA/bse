@@ -1,0 +1,56 @@
+@page "{cphh?}"
+@model BSE.Host.Pages.Farm.CphhChangeModel
+@{
+    ViewData["Title"] = "Change CPHH";
+}
+
+<h1 class="govuk-heading-l">Change CPHH</h1>
+
+@* ── Step 1: lookup (navigated from home page without a known CPHH) ─────── *@
+@if (string.IsNullOrEmpty(Model.OldCphh))
+{
+    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+        <ol class="govuk-breadcrumbs__list">
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+            <li class="govuk-breadcrumbs__list-item" aria-current="page">CPHH change</li>
+        </ol>
+    </nav>
+    <form method="get" novalidate>
+        <div class="govuk-form-group">
+            <label class="govuk-label" for="cphh-lookup">Enter current CPHH to change</label>
+            <div class="govuk-hint">Enter the existing CPHH — for example, 12/345/6789/01.</div>
+            <input id="cphh-lookup" name="cphh" type="text" class="govuk-input govuk-!-width-one-half" autocomplete="off" />
+        </div>
+        <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Look up</button>
+    </form>
+}
+else
+{
+    <p class="govuk-body">Current CPHH: <strong>@Model.OldCphh</strong></p>
+
+    <form method="post" novalidate>
+        <div class="govuk-form-group">
+            <label asp-for="NewCphh" class="govuk-label">New CPHH</label>
+            <div class="govuk-hint">The new CPHH must not already exist in the system.</div>
+            <input asp-for="NewCphh" class="govuk-input govuk-!-width-one-half" />
+            <span asp-validation-for="NewCphh" class="govuk-error-message"></span>
+        </div>
+        @if (Model.ErrorMessage != null)
+        {
+            <div class="govuk-error-summary" data-module="govuk-error-summary">
+                <div role="alert">
+                    <h2 class="govuk-error-summary__title">There is a problem</h2>
+                    <div class="govuk-error-summary__body">
+                        <ul class="govuk-list govuk-error-summary__list">
+                            <li>@Model.ErrorMessage</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        }
+        <div class="govuk-button-group">
+            <button type="submit" class="govuk-button govuk-button--warning" data-module="govuk-button">Change CPHH</button>
+            <a asp-page="/Farm/Details" asp-route-cphh="@Model.OldCphh" class="govuk-link">Cancel</a>
+        </div>
+    </form>
+}

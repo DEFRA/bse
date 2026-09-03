@@ -1,0 +1,94 @@
+@page
+@model CphhModel
+@{
+    ViewData["Title"] = "CPHH Search";
+}
+
+<div>
+    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+        <ol class="govuk-breadcrumbs__list">
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+            <li class="govuk-breadcrumbs__list-item" aria-current="page">CPHH Search</li>
+        </ol>
+    </nav>
+    <h1 class="govuk-heading-l">CPHH Search</h1>
+
+    <p class="govuk-body">Search for a farm by CPHH component parts. Enter at least one field.</p>
+
+    <form method="get" novalidate class="govuk-!-margin-bottom-6">
+        <div class="govuk-form-group">
+            <label asp-for="Parish" class="govuk-label">Parish code</label>
+            <input asp-for="Parish" type="text" class="govuk-input govuk-input--width-5" spellcheck="false" autocomplete="off" maxlength="2" />
+        </div>
+        <div class="govuk-form-group">
+            <label asp-for="County" class="govuk-label">County code</label>
+            <input asp-for="County" type="text" class="govuk-input govuk-input--width-5" spellcheck="false" autocomplete="off" maxlength="2" />
+        </div>
+        <div class="govuk-form-group">
+            <label asp-for="Herdmark" class="govuk-label">Herdmark</label>
+            <input asp-for="Herdmark" type="text" class="govuk-input govuk-input--width-10" spellcheck="false" autocomplete="off" maxlength="6" />
+        </div>
+        <div class="govuk-button-group">
+            <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
+            <a asp-page="/Search/Cphh" class="govuk-link">Clear search</a>
+        </div>
+    </form>
+
+    @if (Model.HasSearched)
+    {
+        if (!Model.Results.Any())
+        {
+            <p class="govuk-body">No farms found matching those CPHH components.</p>
+        }
+        else
+        {
+            <h2 class="govuk-heading-m">@Model.Results.Count result(s)</h2>
+            var sortBase = "?" + string.Join("&", HttpContext.Request.Query
+                .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
+                         && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase)
+                         && !string.Equals(k.Key, "PageNumber", StringComparison.OrdinalIgnoreCase))
+                .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
+            ViewData["SortColumn"] = Model.SortColumn;
+            ViewData["SortDesc"] = Model.SortDesc;
+            ViewData["BaseUrl"] = sortBase;
+            <table class="govuk-table">
+                <caption class="govuk-visually-hidden">CPHH search results</caption>
+                <thead class="govuk-table__head">
+                    <tr class="govuk-table__row">
+                        @{ ViewData["Label"] = "CPHH"; ViewData["Column"] = "Cphh"; }
+                        <partial name="_SortableHeader" />
+                        @{ ViewData["Label"] = "Owner name"; ViewData["Column"] = "OwnerName"; }
+                        <partial name="_SortableHeader" />
+                        @{ ViewData["Label"] = "Address"; ViewData["Column"] = "Address"; }
+                        <partial name="_SortableHeader" />
+                        @{ ViewData["Label"] = "County"; ViewData["Column"] = "County"; }
+                        <partial name="_SortableHeader" />
+                        @{ ViewData["Label"] = "Herdmark"; ViewData["Column"] = "Herdmark"; }
+                        <partial name="_SortableHeader" />
+                        @{ ViewData["Label"] = "Cases"; ViewData["Column"] = "CasesCount"; }
+                        <partial name="_SortableHeader" />
+                        @{ ViewData["Label"] = "Confirmed"; ViewData["Column"] = "ConfirmedCasesCount"; }
+                        <partial name="_SortableHeader" />
+                    </tr>
+                </thead>
+                <tbody class="govuk-table__body">
+                    @foreach (var f in Model.PagedResults)
+                    {
+                        <tr class="govuk-table__row">
+                            <td class="govuk-table__cell">
+                                <a class="govuk-link" asp-page="/Farm/Details" asp-route-cphh="@f.Cphh">@BseFormat.FormatCphh(f.Cphh)</a>
+                            </td>
+                            <td class="govuk-table__cell">@f.OwnerName</td>
+                            <td class="govuk-table__cell">@f.Address</td>
+                            <td class="govuk-table__cell">@f.County</td>
+                            <td class="govuk-table__cell">@f.Herdmark</td>
+                            <td class="govuk-table__cell">@f.CasesCount</td>
+                            <td class="govuk-table__cell">@f.ConfirmedCasesCount</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
+        }
+    }
+</div>
