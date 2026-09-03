@@ -46,7 +46,8 @@
         <div class="govuk-grid-column-two-thirds">
             <div class="govuk-form-group">
                 <label asp-for="Filter.Rbse" class="govuk-label">RBSE</label>
-                <input asp-for="Filter.Rbse" class="govuk-input govuk-!-width-two-thirds" maxlength="11" />
+                <div id="rbse-hint" class="govuk-hint">RBSE Format: NN/NN/NNNNN</div>
+                <input asp-for="Filter.Rbse" class="govuk-input govuk-!-width-two-thirds" aria-describedby="rbse-hint" maxlength="11" />
                 <span asp-validation-for="Filter.Rbse" class="govuk-error-message"></span>
             </div>
 

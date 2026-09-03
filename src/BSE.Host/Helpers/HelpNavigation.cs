@@ -68,7 +68,6 @@ public static class HelpNavigation
         ("/OssExport/Menu", "oss-export"),
 
         ("/Admin/PickLists", "PickListMaintenance"),
-        ("/Admin/PickListEdit", "PickListMaintenance"),
         ("/Admin/Users", "UserMaintenance"),
 
         ("/Error", "application-error")

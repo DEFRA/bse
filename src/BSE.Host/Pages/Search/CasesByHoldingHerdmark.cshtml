@@ -25,7 +25,8 @@
         <div class="govuk-grid-column-two-thirds">
             <div class="govuk-form-group">
                 <label asp-for="Cphh" class="govuk-label">CPH(H)</label>
-                <input asp-for="Cphh" class="govuk-input govuk-!-width-two-thirds" />
+                <div id="cphh-hint" class="govuk-hint">CPHH Format: NN[/]NNN[/]NNNN[/NN]</div>
+                <input asp-for="Cphh" class="govuk-input govuk-!-width-two-thirds" aria-describedby="cphh-hint" />
                 <span asp-validation-for="Cphh" class="govuk-error-message"></span>
             </div>
 

@@ -2,6 +2,7 @@ namespace BSE.SharedKernel;
 
 public static class CphhNormalizer
 {
+    // Legacy CPHH.ascx RemoveAlphas kept digits only, so any other punctuation is dropped too.
     public static string Normalize(string? cphh)
     {
         if (string.IsNullOrWhiteSpace(cphh))
@@ -9,11 +10,6 @@ public static class CphhNormalizer
             return string.Empty;
         }
 
-        return cphh
-            .Replace("/", string.Empty, StringComparison.Ordinal)
-            .Replace(" ", string.Empty, StringComparison.Ordinal)
-            .Replace("-", string.Empty, StringComparison.Ordinal)
-            .Trim()
-            .ToUpperInvariant();
+        return string.Concat(cphh.Where(char.IsDigit));
     }
 }
