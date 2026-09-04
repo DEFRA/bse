@@ -70,15 +70,6 @@ public class FarmModel(
     [BindProperty]
     public HerdSizeFormViewModel NewHerdSize { get; set; } = new();
 
-    // ── Edit: Linked farm ──────────────────────────────────────────────────────
-    [BindProperty(SupportsGet = true)] public int EditLinkedFarmId { get; set; }
-    [BindProperty] public string? EditLinkedFarmCphh { get; set; }
-    [BindProperty] public string? EditLinkedFarmRowStampBase64 { get; set; }
-
-    // ── Edit: Herd size ────────────────────────────────────────────────────────
-    [BindProperty(SupportsGet = true)] public int EditHerdSizeId { get; set; }
-    [BindProperty] public HerdSizeFormViewModel EditHerdSize { get; set; } = new();
-    [BindProperty] public string? EditHerdSizeRowStampBase64 { get; set; }
 
     // ── GET ────────────────────────────────────────────────────────────────────
 
@@ -138,56 +129,6 @@ public class FarmModel(
         return RedirectToPage(new { rbse = Rbse });
     }
 
-    public async Task<IActionResult> OnPostEditLinkedFarmAsync()
-    {
-        if (!User.IsInRole("DataEntry"))
-            return Forbid();
-
-        Case = await caseService.GetCaseAsync(Rbse);
-
-        if (string.IsNullOrWhiteSpace(EditLinkedFarmCphh))
-        {
-            ModelState.AddModelError(nameof(EditLinkedFarmCphh), "Enter a CPHH.");
-            await LoadFromCase();
-            return Page();
-        }
-
-        var normalisedCphh = EditLinkedFarmCphh.Trim().ToUpperInvariant().Replace("/", "");
-
-        if (normalisedCphh.Length > 11)
-        {
-            ModelState.AddModelError(nameof(EditLinkedFarmCphh), "CPHH must be 11 characters or fewer.");
-            await LoadFromCase();
-            return Page();
-        }
-
-        if (Case?.Cphh is { } cphh)
-        {
-            // Cannot link a farm to itself
-            if (string.Equals(cphh.Replace("/", ""), normalisedCphh, StringComparison.OrdinalIgnoreCase))
-            {
-                ModelState.AddModelError(nameof(EditLinkedFarmCphh), "Cannot link a farm to itself.");
-                await LoadFromCase();
-                return Page();
-            }
-
-            // Duplicate CPHH check — exclude current record (mirrors legacy LinkedFarmsPager_RowSave)
-            var existing = await farmService.GetRelatedFarmsAsync(cphh);
-            if (existing.Any(f => string.Equals(f.RelatedCPHH, normalisedCphh, StringComparison.OrdinalIgnoreCase)
-                               && f.ID != EditLinkedFarmId))
-            {
-                ModelState.AddModelError(nameof(EditLinkedFarmCphh), "CPHH already exists in the Linked Farms list.");
-                await LoadFromCase();
-                return Page();
-            }
-
-            var rowStamp = Convert.FromBase64String(EditLinkedFarmRowStampBase64 ?? string.Empty);
-            await relationRepo.UpdateAsync(EditLinkedFarmId, normalisedCphh, rowStamp);
-        }
-
-        TempData["Success"] = "Linked farm updated.";
-        return RedirectToPage(new { rbse = Rbse });
-    }
 
     // ── POST: Herd sizes ───────────────────────────────────────────────────────
 
@@ -251,61 +192,6 @@ public class FarmModel(
         var rowStamp = Convert.FromBase64String(rowStampBase64);
         await herdSizeRepo.DeleteAsync(id, rowStamp);
         TempData["Success"] = "Herd size record deleted.";
-        return RedirectToPage(new { rbse = Rbse });
-    }
-
-    public async Task<IActionResult> OnPostEditHerdSizeAsync()
-    {
-        if (!User.IsInRole("DataEntry"))
-            return Forbid();
-
-        if (EditHerdSize.HerdYear < 1980 || EditHerdSize.HerdYear > 2100)
-        {
-            ModelState.AddModelError("EditHerdSize.HerdYear", "Year must be a valid year (1980–2100).");
-            Case = await caseService.GetCaseAsync(Rbse);
-            await LoadFromCase();
-            return Page();
-        }
-
-        if (EditHerdSize.TotalSize <= 0)
-        {
-            ModelState.AddModelError("EditHerdSize.TotalSize", "Total size must be greater than zero.");
-            Case = await caseService.GetCaseAsync(Rbse);
-            await LoadFromCase();
-            return Page();
-        }
-
-        var rowStamp = EditHerdSizeRowStampBase64 is not null
-            ? Convert.FromBase64String(EditHerdSizeRowStampBase64)
-            : null;
-
-        await herdSizeRepo.UpdateAsync(new UpdateHerdSizeCommand(
-            EditHerdSizeId,
-            (short)EditHerdSize.HerdYear,
-            (short)EditHerdSize.TotalSize,
-            (short)EditHerdSize.Lactation1Size,
-            (short)EditHerdSize.Lactation2Size,
-            (short)EditHerdSize.Lactation3Size,
-            (short)EditHerdSize.Lactation4Size,
-            (short)EditHerdSize.Lactation5Size,
-            (short)EditHerdSize.Lactation6Size,
-            (short)EditHerdSize.Lactation7Size,
-            (short)EditHerdSize.Lactation8Size,
-            (short)EditHerdSize.Lactation9Size,
-            (short)EditHerdSize.Lactation10Size,
-            (short)EditHerdSize.Lactation10PlusSize,
-            rowStamp));
-
-        var lacTotal = EditHerdSize.Lactation1Size + EditHerdSize.Lactation2Size + EditHerdSize.Lactation3Size
-                     + EditHerdSize.Lactation4Size + EditHerdSize.Lactation5Size + EditHerdSize.Lactation6Size
-                     + EditHerdSize.Lactation7Size + EditHerdSize.Lactation8Size + EditHerdSize.Lactation9Size
-                     + EditHerdSize.Lactation10Size + EditHerdSize.Lactation10PlusSize;
-
-        if (lacTotal > 0 && lacTotal != EditHerdSize.TotalSize)
-            TempData["Warning"] = $"Herd size for {EditHerdSize.HerdYear} updated, but the lactation total ({lacTotal}) does not equal the total herd size ({EditHerdSize.TotalSize}).";
-        else
-            TempData["Success"] = $"Herd size for {EditHerdSize.HerdYear} updated.";
-
         return RedirectToPage(new { rbse = Rbse });
     }
 

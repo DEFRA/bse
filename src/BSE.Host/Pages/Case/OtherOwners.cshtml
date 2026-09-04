@@ -47,9 +47,6 @@
 <p class="govuk-body govuk-hint">Previous and other owners of this animal, used during BSE tracing.</p>
 
 @{
-    var editTypeError = ViewData.ModelState[nameof(Model.EditOwnerType)]?.Errors.FirstOrDefault()?.ErrorMessage;
-    var editNameError = ViewData.ModelState[nameof(Model.EditOwnerName)]?.Errors.FirstOrDefault()?.ErrorMessage;
-    bool hasEditError = editTypeError is not null || editNameError is not null;
     string TypeDesc(string? code) =>
         Model.OwnerTypes.FirstOrDefault(t => t.Code == code)?.Description ?? code ?? "—";
 }
@@ -73,65 +70,20 @@
         <tbody class="govuk-table__body">
             @foreach (var o in Model.OtherOwners)
             {
-                bool isEditRow = hasEditError && Model.EditOwnerId == o.Id;
                 <tr class="govuk-table__row">
                     <td class="govuk-table__cell">@TypeDesc(o.Type)</td>
                     <td class="govuk-table__cell">@(o.Name ?? "—")</td>
                     <td class="govuk-table__cell">@BseFormat.FormatCphh(o.Cphh)</td>
                     <td class="govuk-table__cell">
-                        <details class="govuk-details" data-module="govuk-details" @(isEditRow ? "open" : null)>
-                            <summary class="govuk-details__summary"><span class="govuk-details__summary-text">Edit</span></summary>
-                            <div class="govuk-details__text">
-                                @if (isEditRow)
-                                {
-                                    <div class="govuk-error-summary" data-module="govuk-error-summary"><div role="alert"><h2 class="govuk-error-summary__title">There is a problem</h2><div class="govuk-error-summary__body"><ul class="govuk-list govuk-error-summary__list">
-                                        @if (editTypeError is not null) { <li>@editTypeError</li> }
-                                        @if (editNameError is not null) { <li>@editNameError</li> }
-                                    </ul></div></div></div>
-                                }
-                                <form method="post" asp-page-handler="EditOwner" novalidate>
-                                    <input type="hidden" name="EditOwnerId" value="@o.Id" />
-                                    <input type="hidden" name="EditOwnerRowStampBase64" value="@Convert.ToBase64String(o.RowStamp ?? [])" />
-                                    <input type="hidden" name="Rbse" value="@Model.Rbse" />
-                                    <div class="govuk-form-group @(isEditRow && editTypeError is not null ? "govuk-form-group--error" : "")">
-                                        <label class="govuk-label" for="edit-type-@o.Id">Owner type</label>
-                                        @if (isEditRow && editTypeError is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @editTypeError</p> }
-                                        <select class="govuk-select @(isEditRow && editTypeError is not null ? "govuk-select--error" : "")" id="edit-type-@o.Id" name="EditOwnerType">
-                                            <option value="">— select —</option>
-                                            @foreach (var ot in Model.OwnerTypes)
-                                            {
-                                                if (ot.Code == (isEditRow ? Model.EditOwnerType : o.Type))
-                                                {
-                                                    <option value="@ot.Code" selected="selected">@ot.Description</option>
-                                                }
-                                                else
-                                                {
-                                                    <option value="@ot.Code">@ot.Description</option>
-                                                }
-                                            }
-                                        </select>
-                                    </div>
-                                    <div class="govuk-form-group @(isEditRow && editNameError is not null ? "govuk-form-group--error" : "")">
-                                        <label class="govuk-label" for="edit-name-@o.Id">Name</label>
-                                        @if (isEditRow && editNameError is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @editNameError</p> }
-                                        <input class="govuk-input govuk-!-width-two-thirds @(isEditRow && editNameError is not null ? "govuk-input--error" : "")"
-                                               id="edit-name-@o.Id" name="EditOwnerName"
-                                               value="@(isEditRow ? Model.EditOwnerName : o.Name)" maxlength="30" />
-                                    </div>
-                                    <div class="govuk-form-group">
-                                        <label class="govuk-label" for="edit-cphh-@o.Id">CPHH</label>
-                                        <input class="govuk-input govuk-!-width-one-half" id="edit-cphh-@o.Id" name="EditOwnerCphh"
-                                               value="@(isEditRow ? Model.EditOwnerCphh : o.Cphh)" maxlength="11" />
-                                    </div>
-                                    <button type="submit" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">Save changes</button>
-                                </form>
-                            </div>
-                        </details>
+                        <a class="govuk-link govuk-!-margin-right-3"
+                           asp-page="/Case/OtherOwnerEdit"
+                           asp-route-rbse="@Model.Rbse"
+                           asp-route-id="@o.Id">Edit</a>
                         <form method="post" asp-page-handler="DeleteOwner" style="display:inline" novalidate>
                             <input type="hidden" name="OwnerId" value="@o.Id" />
                             <input type="hidden" name="RowStampBase64" value="@Convert.ToBase64String(o.RowStamp ?? [])" />
                             <input type="hidden" asp-for="Rbse" />
-                            <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0"
+                            <button type="submit" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0"
                                     onclick="return confirm('Delete this owner record?')">Delete</button>
                         </form>
                     </td>

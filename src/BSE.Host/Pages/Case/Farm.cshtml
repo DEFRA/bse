@@ -251,10 +251,6 @@
 
 @* ── Linked farms ─────────────────────────────────────────────────────────────── *@
 <h2 class="govuk-heading-m">Linked farms</h2>
-@{
-    var editLfError = ViewData.ModelState[nameof(Model.EditLinkedFarmCphh)]?.Errors.FirstOrDefault()?.ErrorMessage;
-    bool hasLfError = editLfError is not null;
-}
 
 @if (Model.LinkedFarmsTotalCount > 0)
 {
@@ -283,43 +279,15 @@
                     <td class="govuk-table__cell">
                         @if (User.IsInRole("DataEntry"))
                         {
-                            bool isLfEditRow = hasLfError && Model.EditLinkedFarmId == lf.ID;
-                            <details class="govuk-details" data-module="govuk-details" @(isLfEditRow ? "open" : null)>
-                                <summary class="govuk-details__summary">
-                                    <span class="govuk-details__summary-text">Edit</span>
-                                </summary>
-                                <div class="govuk-details__text">
-                                    @if (isLfEditRow)
-                                    {
-                                        <div class="govuk-error-summary" data-module="govuk-error-summary">
-                                            <div role="alert"><h2 class="govuk-error-summary__title">There is a problem</h2>
-                                            <div class="govuk-error-summary__body"><ul class="govuk-list govuk-error-summary__list">
-                                                <li><a href="#edit-lf-cphh-@lf.ID">@editLfError</a></li>
-                                            </ul></div></div>
-                                        </div>
-                                    }
-                                    <form method="post" asp-page-handler="EditLinkedFarm" novalidate>
-                                        <input type="hidden" name="EditLinkedFarmId" value="@lf.ID" />
-                                        <input type="hidden" name="EditLinkedFarmRowStampBase64" value="@(lf.RowStamp is not null ? Convert.ToBase64String(lf.RowStamp) : "")" />
-                                        <input type="hidden" name="Rbse" value="@Model.Rbse" />
-                                        <div class="govuk-form-group @(isLfEditRow ? "govuk-form-group--error" : "")">
-                                            <label class="govuk-label" for="edit-lf-cphh-@lf.ID">CPHH</label>
-                                            @if (isLfEditRow) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @editLfError</p> }
-                                            <input class="govuk-input govuk-!-width-one-third @(isLfEditRow ? "govuk-input--error" : "")"
-                                                   id="edit-lf-cphh-@lf.ID" name="EditLinkedFarmCphh"
-                                                   value="@(isLfEditRow ? Model.EditLinkedFarmCphh : BseFormat.FormatCphh(lf.RelatedCPHH))"
-                                                   data-lf-lookup spellcheck="false" autocomplete="off" />
-                                        </div>
-                                        <p class="govuk-hint lf-lookup-status" style="display:none"></p>
-                                        <button type="submit" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">Save changes</button>
-                                    </form>
-                                </div>
-                            </details>
-                            <form method="post" asp-page-handler="DeleteLinkedFarm" novalidate>
+                            <a class="govuk-link govuk-!-margin-right-3"
+                               asp-page="/Case/FarmLinkedFarmEdit"
+                               asp-route-rbse="@Model.Rbse"
+                               asp-route-id="@lf.ID">Edit</a>
+                            <form method="post" asp-page-handler="DeleteLinkedFarm" style="display:inline" novalidate>
                                 <input type="hidden" name="Rbse" value="@Model.Rbse" />
                                 <input type="hidden" name="id" value="@lf.ID" />
                                 <input type="hidden" name="rowStampBase64" value="@(lf.RowStamp is not null ? Convert.ToBase64String(lf.RowStamp) : "")" />
-                                <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0"
+                                <button type="submit" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0"
                                         data-module="govuk-button"
                                         onclick="return confirm('Remove linked farm @lf.RelatedCPHH?')">
                                     Remove
@@ -466,85 +434,15 @@ else
                         @if (User.IsInRole("DataEntry"))
                         {
                         <td class="govuk-table__cell">
-                            @{
-                                bool isHsEditRow = hasHsError && Model.EditHerdSizeId == h.ID;
-                                bool showHsEdit  = Model.EditHerdSizeId == h.ID;
-                                var hsYear  = isHsEditRow ? Model.EditHerdSize.HerdYear         : (int)h.HerdYear;
-                                var hsTotal = isHsEditRow ? Model.EditHerdSize.TotalSize         : (int)h.TotalSize;
-                                var hsL1    = isHsEditRow ? Model.EditHerdSize.Lactation1Size    : (int)h.Lactation1Size;
-                                var hsL2    = isHsEditRow ? Model.EditHerdSize.Lactation2Size    : (int)h.Lactation2Size;
-                                var hsL3    = isHsEditRow ? Model.EditHerdSize.Lactation3Size    : (int)h.Lactation3Size;
-                                var hsL4    = isHsEditRow ? Model.EditHerdSize.Lactation4Size    : (int)h.Lactation4Size;
-                                var hsL5    = isHsEditRow ? Model.EditHerdSize.Lactation5Size    : (int)h.Lactation5Size;
-                                var hsL6    = isHsEditRow ? Model.EditHerdSize.Lactation6Size    : (int)h.Lactation6Size;
-                                var hsL7    = isHsEditRow ? Model.EditHerdSize.Lactation7Size    : (int)h.Lactation7Size;
-                                var hsL8    = isHsEditRow ? Model.EditHerdSize.Lactation8Size    : (int)h.Lactation8Size;
-                                var hsL9    = isHsEditRow ? Model.EditHerdSize.Lactation9Size    : (int)h.Lactation9Size;
-                                var hsL10   = isHsEditRow ? Model.EditHerdSize.Lactation10Size   : (int)h.Lactation10Size;
-                                var hsL10p  = isHsEditRow ? Model.EditHerdSize.Lactation10PlusSize : (int)h.Lactation10PlusSize;
-                            }
-                            <details class="govuk-details" data-module="govuk-details" @(showHsEdit || isHsEditRow ? "open" : null)>
-                                <summary class="govuk-details__summary">
-                                    <span class="govuk-details__summary-text">Edit</span>
-                                </summary>
-                                <div class="govuk-details__text">
-                                    @if (isHsEditRow)
-                                    {
-                                        <div class="govuk-error-summary" data-module="govuk-error-summary">
-                                            <div role="alert"><h2 class="govuk-error-summary__title">There is a problem</h2>
-                                            <div class="govuk-error-summary__body"><ul class="govuk-list govuk-error-summary__list">
-                                                @if (editHsYearError is not null) { <li><a href="#edit-hs-year-@h.ID">@editHsYearError</a></li> }
-                                                @if (editHsSizeError is not null) { <li><a href="#edit-hs-total-@h.ID">@editHsSizeError</a></li> }
-                                            </ul></div></div>
-                                        </div>
-                                    }
-                                    <form method="post" asp-page-handler="EditHerdSize" novalidate>
-                                        <input type="hidden" name="EditHerdSizeId" value="@h.ID" />
-                                        <input type="hidden" name="EditHerdSizeRowStampBase64" value="@(h.RowStamp is not null ? Convert.ToBase64String(h.RowStamp) : "")" />
-                                        <input type="hidden" name="Rbse" value="@Model.Rbse" />
-                                        <div class="govuk-grid-row">
-                                            <div class="govuk-grid-column-one-quarter">
-                                                <div class="govuk-form-group @(editHsYearError is not null && isHsEditRow ? "govuk-form-group--error" : "")">
-                                                    <label class="govuk-label" for="edit-hs-year-@h.ID">Year</label>
-                                                    @if (editHsYearError is not null && isHsEditRow) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @editHsYearError</p> }
-                                                    <input class="govuk-input @(editHsYearError is not null && isHsEditRow ? "govuk-input--error" : "")"
-                                                           id="edit-hs-year-@h.ID" name="EditHerdSize.HerdYear"
-                                                           type="number" min="1980" max="2100" value="@hsYear" />
-                                                </div>
-                                            </div>
-                                            <div class="govuk-grid-column-one-quarter">
-                                                <div class="govuk-form-group @(editHsSizeError is not null && isHsEditRow ? "govuk-form-group--error" : "")">
-                                                    <label class="govuk-label" for="edit-hs-total-@h.ID">Total size</label>
-                                                    @if (editHsSizeError is not null && isHsEditRow) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @editHsSizeError</p> }
-                                                    <input class="govuk-input @(editHsSizeError is not null && isHsEditRow ? "govuk-input--error" : "")"
-                                                           id="edit-hs-total-@h.ID" name="EditHerdSize.TotalSize"
-                                                           type="number" min="0" value="@hsTotal" />
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <p class="govuk-body govuk-!-font-size-16 govuk-!-font-weight-bold govuk-!-margin-bottom-2">Lactation sizes</p>
-                                        <div class="govuk-grid-row">
-                                            <div class="govuk-grid-column-one-quarter govuk-!-margin-bottom-2"><div class="govuk-form-group"><label class="govuk-label govuk-!-font-size-16" for="edit-hs-l1-@h.ID">Lac 1</label><input class="govuk-input" id="edit-hs-l1-@h.ID" name="EditHerdSize.Lactation1Size" type="number" min="0" value="@hsL1" /></div></div>
-                                            <div class="govuk-grid-column-one-quarter govuk-!-margin-bottom-2"><div class="govuk-form-group"><label class="govuk-label govuk-!-font-size-16" for="edit-hs-l2-@h.ID">Lac 2</label><input class="govuk-input" id="edit-hs-l2-@h.ID" name="EditHerdSize.Lactation2Size" type="number" min="0" value="@hsL2" /></div></div>
-                                            <div class="govuk-grid-column-one-quarter govuk-!-margin-bottom-2"><div class="govuk-form-group"><label class="govuk-label govuk-!-font-size-16" for="edit-hs-l3-@h.ID">Lac 3</label><input class="govuk-input" id="edit-hs-l3-@h.ID" name="EditHerdSize.Lactation3Size" type="number" min="0" value="@hsL3" /></div></div>
-                                            <div class="govuk-grid-column-one-quarter govuk-!-margin-bottom-2"><div class="govuk-form-group"><label class="govuk-label govuk-!-font-size-16" for="edit-hs-l4-@h.ID">Lac 4</label><input class="govuk-input" id="edit-hs-l4-@h.ID" name="EditHerdSize.Lactation4Size" type="number" min="0" value="@hsL4" /></div></div>
-                                            <div class="govuk-grid-column-one-quarter govuk-!-margin-bottom-2"><div class="govuk-form-group"><label class="govuk-label govuk-!-font-size-16" for="edit-hs-l5-@h.ID">Lac 5</label><input class="govuk-input" id="edit-hs-l5-@h.ID" name="EditHerdSize.Lactation5Size" type="number" min="0" value="@hsL5" /></div></div>
-                                            <div class="govuk-grid-column-one-quarter govuk-!-margin-bottom-2"><div class="govuk-form-group"><label class="govuk-label govuk-!-font-size-16" for="edit-hs-l6-@h.ID">Lac 6</label><input class="govuk-input" id="edit-hs-l6-@h.ID" name="EditHerdSize.Lactation6Size" type="number" min="0" value="@hsL6" /></div></div>
-                                            <div class="govuk-grid-column-one-quarter govuk-!-margin-bottom-2"><div class="govuk-form-group"><label class="govuk-label govuk-!-font-size-16" for="edit-hs-l7-@h.ID">Lac 7</label><input class="govuk-input" id="edit-hs-l7-@h.ID" name="EditHerdSize.Lactation7Size" type="number" min="0" value="@hsL7" /></div></div>
-                                            <div class="govuk-grid-column-one-quarter govuk-!-margin-bottom-2"><div class="govuk-form-group"><label class="govuk-label govuk-!-font-size-16" for="edit-hs-l8-@h.ID">Lac 8</label><input class="govuk-input" id="edit-hs-l8-@h.ID" name="EditHerdSize.Lactation8Size" type="number" min="0" value="@hsL8" /></div></div>
-                                            <div class="govuk-grid-column-one-quarter govuk-!-margin-bottom-2"><div class="govuk-form-group"><label class="govuk-label govuk-!-font-size-16" for="edit-hs-l9-@h.ID">Lac 9</label><input class="govuk-input" id="edit-hs-l9-@h.ID" name="EditHerdSize.Lactation9Size" type="number" min="0" value="@hsL9" /></div></div>
-                                            <div class="govuk-grid-column-one-quarter govuk-!-margin-bottom-2"><div class="govuk-form-group"><label class="govuk-label govuk-!-font-size-16" for="edit-hs-l10-@h.ID">Lac 10</label><input class="govuk-input" id="edit-hs-l10-@h.ID" name="EditHerdSize.Lactation10Size" type="number" min="0" value="@hsL10" /></div></div>
-                                            <div class="govuk-grid-column-one-quarter govuk-!-margin-bottom-2"><div class="govuk-form-group"><label class="govuk-label govuk-!-font-size-16" for="edit-hs-l10p-@h.ID">Lac 10+</label><input class="govuk-input" id="edit-hs-l10p-@h.ID" name="EditHerdSize.Lactation10PlusSize" type="number" min="0" value="@hsL10p" /></div></div>
-                                        </div>
-                                        <button type="submit" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">Save changes</button>
-                                    </form>
-                                </div>
-                            </details>
-                            <form method="post" asp-page-handler="DeleteHerdSize" novalidate>
+                            <a class="govuk-link govuk-!-margin-right-3"
+                               asp-page="/Case/FarmHerdSizeEdit"
+                               asp-route-rbse="@Model.Rbse"
+                               asp-route-id="@h.ID">Edit</a>
+                            <form method="post" asp-page-handler="DeleteHerdSize" style="display:inline" novalidate>
                                 <input type="hidden" name="Rbse" value="@Model.Rbse" />
                                 <input type="hidden" name="id" value="@h.ID" />
                                 <input type="hidden" name="rowStampBase64" value="@(h.RowStamp is not null ? Convert.ToBase64String(h.RowStamp) : "")" />
-                                <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0"
+                                <button type="submit" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0"
                                         data-module="govuk-button"
                                         onclick="return confirm('Delete herd size record for @h.HerdYear?')">
                                     Delete

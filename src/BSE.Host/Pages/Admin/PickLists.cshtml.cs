@@ -35,7 +35,6 @@ public class PickListsModel(
         bool IsRegionLookup = false);
 
     [BindProperty(SupportsGet = true)] public int TableId { get; set; }
-    [BindProperty(SupportsGet = true)] public string? EditKey { get; set; }
     [BindProperty(SupportsGet = true)] public string SortColumn { get; set; } = string.Empty;
     [BindProperty(SupportsGet = true)] public bool SortDesc { get; set; }
     [BindProperty(SupportsGet = true)] public int PageNumber { get; set; } = 1;
@@ -83,31 +82,6 @@ public class PickListsModel(
         catch (Exception ex)
         {
             TempData["ErrorMessage"] = $"Add failed: {ex.Message}";
-        }
-        return RedirectToTable();
-    }
-
-    public async Task<IActionResult> OnPostEditAsync()
-    {
-        await LoadAsync();
-        if (!CanEdit || Procs is null) return RedirectToTable();
-
-        ValidateRequired();
-        if (HasDuplicateKey(OriginalKey)) ModelState.AddModelError(KeyColumn, DuplicateCodeMessage);
-        if (!ModelState.IsValid)
-        {
-            EditKey = OriginalKey;
-            return Page();
-        }
-
-        try
-        {
-            await EditAsync();
-            TempData["SuccessMessage"] = "Record updated.";
-        }
-        catch (Exception ex)
-        {
-            TempData["ErrorMessage"] = $"Update failed: {ex.Message}";
         }
         return RedirectToTable();
     }
@@ -271,23 +245,6 @@ public class PickListsModel(
         AhroId => lookupAdminService.AddAHROAsync(Field("Name")),
         _ => lookupAdminService.AddCodeDescriptionItemAsync(Procs!.InsertStoredProcedure, Field("Code"), Field("Description"))
     };
-
-    private Task EditAsync()
-    {
-        var original = OriginalKey ?? "";
-        return TableId switch
-        {
-            TestTypeId => lookupAdminService.EditTestTypeAsync(original, Field("Code"), Field("Description"), BoolField("IsActive")),
-            RelationFateId => lookupAdminService.EditRelationFateAsync(original, Field("Code"), Field("Description"), BoolField("IsActive")),
-            BreedId => lookupAdminService.EditBreedAsync(original, Field("Code"), Field("FullName"), Field("AmalgamatedName")),
-            AhoId => lookupAdminService.EditAHOAsync(original, Field("Code"), Field("Name"), IntField("BSERegionID")),
-            SupplierId => lookupAdminService.EditSupplierAsync(ParseKey(original), Field("Name"), Field("Details")),
-            BseCountyId => lookupAdminService.EditBSECountyAsync(Field("IDColumn"), original, Field("Code"), Field("Description"), IntField("BSERegionID")),
-            TseTestingSiteId => lookupAdminService.EditTSETestingSiteAsync(original, Field("Name"), Field("Address"), Field("CPH"), Field("AHO")),
-            AhroId => lookupAdminService.EditAHROAsync(ParseKey(original), Field("Name")),
-            _ => lookupAdminService.EditCodeDescriptionItemAsync(Procs!.UpdateStoredProcedure, original, Field("Code"), Field("Description"))
-        };
-    }
 
     private Task DeleteAsync()
     {
