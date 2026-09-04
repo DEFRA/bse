@@ -31,12 +31,6 @@ public class OtherOwnersModel(
     public int OtherOwnersTotalPages { get; private set; } = 1;
     public int OtherOwnersTotalCount { get; private set; }
 
-    // ── Edit fields ───────────────────────────────────────────────────────────────
-    [BindProperty(SupportsGet = true)] public int EditOwnerId { get; set; }
-    [BindProperty] public string? EditOwnerType           { get; set; }
-    [BindProperty] public string? EditOwnerName           { get; set; }
-    [BindProperty] public string? EditOwnerCphh           { get; set; }
-    [BindProperty] public string? EditOwnerRowStampBase64 { get; set; }
     [BindProperty] public NewOwnerViewModel NewOwner { get; set; } = new();
 
     public async Task<IActionResult> OnGetAsync()
@@ -82,42 +76,6 @@ public class OtherOwnersModel(
         tx.Commit();
 
         TempData["Success"] = "Owner record added.";
-        return RedirectToPage(new { rbse = Rbse });
-    }
-
-    public async Task<IActionResult> OnPostEditOwnerAsync()
-    {
-        if (string.IsNullOrWhiteSpace(EditOwnerType))
-        {
-            ModelState.AddModelError(nameof(EditOwnerType), "Owner type is required.");
-            await LoadAsync();
-            return Page();
-        }
-        if (string.IsNullOrWhiteSpace(EditOwnerName) && string.IsNullOrWhiteSpace(EditOwnerCphh))
-        {
-            ModelState.AddModelError(nameof(EditOwnerName), "You must enter either an owner name or a CPHH.");
-            await LoadAsync();
-            return Page();
-        }
-        // Previous-type uniqueness: exclude current record
-        var allOwners = await ownerRepository.GetByRbseAsync(Rbse);
-        var typeDesc  = OwnerTypes.FirstOrDefault(t => t.Code == EditOwnerType)?.Description ?? "";
-        if (typeDesc.Contains("Previous", StringComparison.OrdinalIgnoreCase) &&
-            allOwners.Any(o => o.Type == EditOwnerType && o.Id != EditOwnerId))
-        {
-            ModelState.AddModelError(nameof(EditOwnerType), "You can only have one owner of type Previous.");
-            await LoadAsync();
-            return Page();
-        }
-        var rowStamp = Convert.FromBase64String(EditOwnerRowStampBase64 ?? string.Empty);
-        using var conn = connectionFactory.CreateConnection();
-        conn.Open();
-        using var tx = conn.BeginTransaction();
-        await ownerRepository.EditAsync(
-            new EditOtherOwnerCommand(EditOwnerId, Rbse, EditOwnerType,
-                EditOwnerName, EditOwnerCphh, rowStamp), conn, tx);
-        tx.Commit();
-        TempData["Success"] = "Owner record updated.";
         return RedirectToPage(new { rbse = Rbse });
     }
 

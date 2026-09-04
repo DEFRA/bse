@@ -1,0 +1,74 @@
+@page
+@model BSE.Host.Pages.Case.OtherOwnerEditModel
+@{
+    ViewData["Title"] = "Edit owner";
+    var ownerTypeError = ViewData.ModelState[nameof(Model.OwnerType)]?.Errors.FirstOrDefault()?.ErrorMessage;
+    var ownerNameError = ViewData.ModelState[nameof(Model.OwnerName)]?.Errors.FirstOrDefault()?.ErrorMessage;
+}
+
+<h1 class="govuk-heading-l">Edit owner</h1>
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/OtherOwners" asp-route-rbse="@Model.Rbse">Other owners</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Edit owner</li>
+    </ol>
+</nav>
+
+@if (!ViewContext.ModelState.IsValid)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@e.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+<form method="post" novalidate>
+    <input type="hidden" asp-for="Rbse" />
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="RowStampBase64" />
+
+    <div class="govuk-form-group @(ownerTypeError is not null ? "govuk-form-group--error" : "")">
+        <label class="govuk-label" for="owner-type">Owner type</label>
+        @if (ownerTypeError is not null)
+        {
+            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ownerTypeError</p>
+        }
+        <select id="owner-type" asp-for="OwnerType" class="govuk-select @(ownerTypeError is not null ? "govuk-select--error" : "")">
+            <option value="">— select —</option>
+            @foreach (var t in Model.OwnerTypes)
+            {
+                <option value="@t.Code">@t.Description</option>
+            }
+        </select>
+    </div>
+
+    <div class="govuk-form-group @(ownerNameError is not null ? "govuk-form-group--error" : "")">
+        <label class="govuk-label" for="owner-name">Name</label>
+        @if (ownerNameError is not null)
+        {
+            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ownerNameError</p>
+        }
+        <input id="owner-name" asp-for="OwnerName" class="govuk-input govuk-!-width-two-thirds @(ownerNameError is not null ? "govuk-input--error" : "")" maxlength="30" />
+    </div>
+
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="owner-cphh">CPHH</label>
+        <input id="owner-cphh" asp-for="OwnerCphh" class="govuk-input govuk-!-width-one-half" maxlength="11" />
+    </div>
+
+    <div class="govuk-button-group">
+        <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+        <a asp-page="/Case/OtherOwners" asp-route-rbse="@Model.Rbse" class="govuk-link">Cancel</a>
+    </div>
+</form>

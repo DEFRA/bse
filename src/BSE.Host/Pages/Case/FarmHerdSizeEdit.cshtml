@@ -1,0 +1,83 @@
+@page
+@model BSE.Host.Pages.Case.FarmHerdSizeEditModel
+@{
+    ViewData["Title"] = "Edit herd size";
+    var yearError = ViewData.ModelState["HerdSize.HerdYear"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    var totalError = ViewData.ModelState["HerdSize.TotalSize"]?.Errors.FirstOrDefault()?.ErrorMessage;
+}
+
+<h1 class="govuk-heading-l">Edit herd size</h1>
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Farm" asp-route-rbse="@Model.Rbse">Farm</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Edit herd size</li>
+    </ol>
+</nav>
+
+@if (!ViewContext.ModelState.IsValid)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@e.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+<form method="post" novalidate>
+    <input type="hidden" asp-for="Rbse" />
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="RowStampBase64" />
+
+    <div class="govuk-grid-row">
+        <div class="govuk-grid-column-one-quarter">
+            <div class="govuk-form-group @(yearError is not null ? "govuk-form-group--error" : "")">
+                <label class="govuk-label" for="herd-year">Year</label>
+                @if (yearError is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @yearError</p> }
+                <input id="herd-year" asp-for="HerdSize.HerdYear" type="number" min="1980" max="2100" class="govuk-input @(yearError is not null ? "govuk-input--error" : "")" />
+            </div>
+        </div>
+        <div class="govuk-grid-column-one-quarter">
+            <div class="govuk-form-group @(totalError is not null ? "govuk-form-group--error" : "")">
+                <label class="govuk-label" for="total-size">Total size</label>
+                @if (totalError is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @totalError</p> }
+                <input id="total-size" asp-for="HerdSize.TotalSize" type="number" min="0" class="govuk-input @(totalError is not null ? "govuk-input--error" : "")" />
+            </div>
+        </div>
+    </div>
+
+    <p class="govuk-body govuk-!-font-size-16 govuk-!-font-weight-bold govuk-!-margin-bottom-2">Lactation sizes</p>
+    <div class="govuk-grid-row">
+        @foreach (var lac in new[] { (1,"1"), (2,"2"), (3,"3"), (4,"4"), (5,"5"), (6,"6"), (7,"7"), (8,"8"), (9,"9"), (10,"10") })
+        {
+            <div class="govuk-grid-column-one-quarter govuk-!-margin-bottom-3">
+                <div class="govuk-form-group">
+                    <label class="govuk-label govuk-!-font-size-16" for="HerdSize_Lactation@(lac.Item1)Size">Lac @lac.Item2</label>
+                    <input class="govuk-input" id="HerdSize_Lactation@(lac.Item1)Size"
+                           name="HerdSize.Lactation@(lac.Item1)Size"
+                           type="number" min="0" value="@Model.HerdSize.GetType().GetProperty($"Lactation{lac.Item1}Size")?.GetValue(Model.HerdSize)" />
+                </div>
+            </div>
+        }
+        <div class="govuk-grid-column-one-quarter govuk-!-margin-bottom-3">
+            <div class="govuk-form-group">
+                <label class="govuk-label govuk-!-font-size-16" for="HerdSize_Lactation10PlusSize">Lac 10+</label>
+                <input class="govuk-input" id="HerdSize_Lactation10PlusSize" asp-for="HerdSize.Lactation10PlusSize" type="number" min="0" />
+            </div>
+        </div>
+    </div>
+
+    <div class="govuk-button-group">
+        <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+        <a asp-page="/Case/Farm" asp-route-rbse="@Model.Rbse" class="govuk-link">Cancel</a>
+    </div>
+</form>

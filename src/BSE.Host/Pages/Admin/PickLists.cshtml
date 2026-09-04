@@ -3,7 +3,6 @@
 @{
     ViewData["Title"] = "Pick List Maintenance";
 
-    var isEditing = !string.IsNullOrEmpty(Model.EditKey);
     var fieldErrors = Model.DisplayFields
         .Select(f => new { f.Column, f.Label, Error = ViewContext.ModelState[f.Column]?.Errors.FirstOrDefault()?.ErrorMessage })
         .Where(x => x.Error is not null)
@@ -116,105 +115,37 @@ else
                 {
                     var rowKey = PickListsModel.RowValue(row, Model.KeyColumn);
                     var rowLabel = PickListsModel.RowValue(row, Model.DisplayFields[0].Column);
-
-                    if (Model.CanEdit && isEditing && string.Equals(rowKey, Model.EditKey, StringComparison.OrdinalIgnoreCase))
-                    {
-                        <tr class="govuk-table__row">
-                            <td class="govuk-table__cell" colspan="@(Model.DisplayFields.Count + 1)">
-                                <form method="post" asp-page-handler="Edit" novalidate>
+                    <tr class="govuk-table__row">
+                        @foreach (var field in Model.DisplayFields)
+                        {
+                            <td class="govuk-table__cell">@Model.DisplayValue(row, field)</td>
+                        }
+                        @if (Model.CanEdit)
+                        {
+                            <td class="govuk-table__cell">
+                                <a class="govuk-link govuk-!-margin-right-3"
+                                   asp-page="/Admin/PickListsEdit"
+                                   asp-route-tableId="@Model.TableId"
+                                   asp-route-key="@rowKey"
+                                   asp-route-sortColumn="@Model.SortColumn"
+                                   asp-route-sortDesc="@Model.SortDesc"
+                                   asp-route-pageNumber="@Model.PageNumber">Change<span class="govuk-visually-hidden"> @rowLabel</span></a>
+                                <form method="post" asp-page-handler="Delete" style="display:inline">
                                     <input type="hidden" name="tableId" value="@Model.TableId" />
                                     <input type="hidden" name="sortColumn" value="@Model.SortColumn" />
                                     <input type="hidden" name="sortDesc" value="@Model.SortDesc.ToString().ToLowerInvariant()" />
                                     <input type="hidden" name="pageNumber" value="@Model.PageNumber" />
-                                    <input type="hidden" name="OriginalKey" value="@rowKey" />
-                                    @foreach (var field in Model.DisplayFields)
-                                    {
-                                        var error = ViewContext.ModelState[field.Column]?.Errors.FirstOrDefault()?.ErrorMessage;
-                                        var current = Model.Fields.TryGetValue(field.Column, out var posted)
-                                            ? posted
-                                            : PickListsModel.RowValue(row, field.Column);
-                                        <div class="govuk-form-group @(error is not null ? "govuk-form-group--error" : "")">
-                                            @if (field.IsBoolean)
-                                            {
-                                                <div class="govuk-checkboxes govuk-checkboxes--small" data-module="govuk-checkboxes">
-                                                    <div class="govuk-checkboxes__item">
-                                                        <input class="govuk-checkboxes__input" id="field-@field.Column"
-                                                               name="Fields[@field.Column]" type="checkbox" value="true"
-                                                               checked="@PickListsModel.RowBool(row, field.Column)" />
-                                                        <label class="govuk-label govuk-checkboxes__label" for="field-@field.Column">@field.Label</label>
-                                                    </div>
-                                                </div>
-                                            }
-                                            else if (field.IsRegionLookup)
-                                            {
-                                                <label class="govuk-label" for="field-@field.Column">@field.Label</label>
-                                                <select class="govuk-select govuk-!-width-two-thirds"
-                                                        id="field-@field.Column" name="Fields[@field.Column]">
-                                                    <option value=""></option>
-                                                    @foreach (var region in Model.BseRegionOptions)
-                                                    {
-                                                        <option value="@region.Id" selected="@(region.Id.ToString() == current)">@region.Name</option>
-                                                    }
-                                                </select>
-                                            }
-                                            else
-                                            {
-                                                <label class="govuk-label" for="field-@field.Column">@field.Label</label>
-                                                @if (error is not null)
-                                                {
-                                                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @error</p>
-                                                }
-                                                <input class="govuk-input govuk-!-width-two-thirds @(error is not null ? "govuk-input--error" : "")"
-                                                       id="field-@field.Column" name="Fields[@field.Column]" value="@current" />
-                                            }
-                                        </div>
-                                    }
-                                    <div class="govuk-button-group">
-                                        <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
-                                        <a class="govuk-link" asp-page="/Admin/PickLists"
-                                           asp-route-tableId="@Model.TableId"
-                                           asp-route-sortColumn="@Model.SortColumn"
-                                           asp-route-sortDesc="@Model.SortDesc"
-                                           asp-route-pageNumber="@Model.PageNumber">Cancel</a>
-                                    </div>
+                                    <input type="hidden" name="Fields[@Model.KeyColumn]" value="@rowKey" />
+                                    <input type="hidden" name="Fields[Name]" value="@PickListsModel.RowValue(row, "Name")" />
+                                    <button type="submit" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0"
+                                            data-module="govuk-button"
+                                            onclick="return confirm('Are you sure you want to delete this record?');">
+                                        Delete<span class="govuk-visually-hidden"> @rowLabel</span>
+                                    </button>
                                 </form>
                             </td>
-                        </tr>
-                    }
-                    else
-                    {
-                        <tr class="govuk-table__row">
-                            @foreach (var field in Model.DisplayFields)
-                            {
-                                <td class="govuk-table__cell">@Model.DisplayValue(row, field)</td>
-                            }
-                            @if (Model.CanEdit)
-                            {
-                                <td class="govuk-table__cell">
-                                    <a class="govuk-link govuk-!-margin-right-3"
-                                       asp-page="/Admin/PickLists"
-                                       asp-route-tableId="@Model.TableId"
-                                       asp-route-sortColumn="@Model.SortColumn"
-                                       asp-route-sortDesc="@Model.SortDesc"
-                                       asp-route-pageNumber="@Model.PageNumber"
-                                       asp-route-editKey="@rowKey">Change<span class="govuk-visually-hidden"> @rowLabel</span></a>
-                                    <form method="post" asp-page-handler="Delete" style="display:inline">
-                                        <input type="hidden" name="tableId" value="@Model.TableId" />
-                                        <input type="hidden" name="sortColumn" value="@Model.SortColumn" />
-                                        <input type="hidden" name="sortDesc" value="@Model.SortDesc.ToString().ToLowerInvariant()" />
-                                        <input type="hidden" name="pageNumber" value="@Model.PageNumber" />
-                                        <input type="hidden" name="Fields[@Model.KeyColumn]" value="@rowKey" />
-                                        <input type="hidden" name="Fields[Name]" value="@PickListsModel.RowValue(row, "Name")" />
-                                        <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0"
-                                                data-module="govuk-button"
-                                                onclick="return confirm('Are you sure you want to delete this record?');">
-                                            Delete<span class="govuk-visually-hidden"> @rowLabel</span>
-                                        </button>
-                                    </form>
-                                </td>
-                            }
-                        </tr>
-                    }
+                        }
+                    </tr>
                 }
             </tbody>
         </table>
@@ -230,7 +161,7 @@ else
         <p class="govuk-body">No records found.</p>
     }
 
-    @if (Model.CanEdit && !isEditing)
+    @if (Model.CanEdit)
     {
         <h2 class="govuk-heading-m">Add a new record</h2>
         <form method="post" asp-page-handler="Add" novalidate>

@@ -65,10 +65,6 @@ public class EditModel(
 
     [BindProperty] public string  NewTestType          { get; set; } = string.Empty;
     [BindProperty] public string? NewTestResult        { get; set; }
-    [BindProperty(SupportsGet = true)] public int EditTestId { get; set; }
-    [BindProperty] public string  EditTestType          { get; set; } = string.Empty;
-    [BindProperty] public string? EditTestResult        { get; set; }
-    [BindProperty] public string? EditTestRowStampBase64 { get; set; }
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -217,27 +213,6 @@ public class EditModel(
         }
         await testRepository.AddAsync(new AddTestCommand(Rbse.Replace("/", ""), NewTestType, NewTestResult));
         TempData["Success"] = "Test record added.";
-        return RedirectToPage(new { rbse = Rbse });
-    }
-
-    public async Task<IActionResult> OnPostEditTestAsync()
-    {
-        if (!User.IsInRole("DataEntry"))
-            return Forbid();
-        if (string.IsNullOrWhiteSpace(EditTestType))
-        {
-            ModelState.AddModelError(nameof(EditTestType), "Select a test type.");
-            var record = await caseService.GetCaseAsync(Rbse);
-            if (record is not null) { Case = CaseEditViewModel.FromRecord(record); var cw = await caseWorkRepository.GetByRbseAsync(Rbse); if (cw is not null) Case.ApplyCaseWork(cw); }
-            SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
-            var batchTask = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
-            await Task.WhenAll(LoadLookupsAsync(), LoadTestsAsync(), batchTask);
-            BatchNumbers = (await batchTask).ToList().AsReadOnly();
-            return Page();
-        }
-        var rowStamp = Convert.FromBase64String(EditTestRowStampBase64 ?? string.Empty);
-        await testRepository.EditAsync(new EditTestCommand(EditTestId, Rbse.Replace("/", ""), EditTestType, EditTestResult, rowStamp));
-        TempData["Success"] = "Test record updated.";
         return RedirectToPage(new { rbse = Rbse });
     }
 

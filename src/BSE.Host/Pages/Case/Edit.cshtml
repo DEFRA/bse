@@ -133,9 +133,7 @@
 
     @* ── Test records — full CRUD with GDS pagination and sorting ── *@
     @{
-        var editTestTypeError = ViewData.ModelState[nameof(Model.EditTestType)]?.Errors.FirstOrDefault()?.ErrorMessage;
         var newTestTypeError  = ViewData.ModelState[nameof(Model.NewTestType)]?.Errors.FirstOrDefault()?.ErrorMessage;
-        bool hasTestEditError = editTestTypeError is not null;
         bool hasTestAddError  = newTestTypeError  is not null;
     }
     <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
@@ -161,54 +159,20 @@
             <tbody class="govuk-table__body">
                 @foreach (var t in Model.Tests)
                 {
-                    bool isEditRow = hasTestEditError && Model.EditTestId == t.Id;
                     <tr class="govuk-table__row">
                         <td class="govuk-table__cell">@(t.TestTypeDescription ?? t.TestType)</td>
                         <td class="govuk-table__cell">@(t.TestResultDescription ?? t.TestResult)</td>
                         @if (User.IsInRole("DataEntry"))
                         {
                         <td class="govuk-table__cell">
-                            <details class="govuk-details" data-module="govuk-details" @(isEditRow ? "open" : null)>
-                                <summary class="govuk-details__summary"><span class="govuk-details__summary-text">Edit</span></summary>
-                                <div class="govuk-details__text">
-                                    @if (isEditRow)
-                                    {
-                                        <div class="govuk-error-summary" data-module="govuk-error-summary"><div role="alert"><h2 class="govuk-error-summary__title">There is a problem</h2><div class="govuk-error-summary__body"><ul class="govuk-list govuk-error-summary__list"><li>@editTestTypeError</li></ul></div></div></div>
-                                    }
-                                    <form method="post" asp-page-handler="EditTest" novalidate>
-                                        <input type="hidden" name="EditTestId" value="@t.Id" />
-                                        <input type="hidden" name="EditTestRowStampBase64" value="@(t.RowStamp is not null ? Convert.ToBase64String(t.RowStamp) : "")" />
-                                        <div class="govuk-form-group @(isEditRow ? "govuk-form-group--error" : "")">
-                                            <label class="govuk-label" for="edit-tt-@t.Id">Test type</label>
-                                            @if (isEditRow) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @editTestTypeError</p> }
-                                            <select class="govuk-select @(isEditRow ? "govuk-select--error" : "")" id="edit-tt-@t.Id" name="EditTestType">
-                                                <option value="">-- Select --</option>
-                                                @foreach (var o in Model.TestTypeOptions)
-                                                {
-                                                    var sel = o.Code == (isEditRow ? Model.EditTestType : t.TestType) ? "selected" : null;
-                                                    <option value="@o.Code" selected="@sel">@o.Description</option>
-                                                }
-                                            </select>
-                                        </div>
-                                        <div class="govuk-form-group">
-                                            <label class="govuk-label" for="edit-tr-@t.Id">Test result</label>
-                                            <select class="govuk-select" id="edit-tr-@t.Id" name="EditTestResult">
-                                                <option value="">-- Select --</option>
-                                                @foreach (var o in Model.TestResultOptions)
-                                                {
-                                                    var sel2 = o.Code == (isEditRow ? Model.EditTestResult : t.TestResult) ? "selected" : null;
-                                                    <option value="@o.Code" selected="@sel2">@o.Description</option>
-                                                }
-                                            </select>
-                                        </div>
-                                        <button type="submit" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">Save changes</button>
-                                    </form>
-                                </div>
-                            </details>
-                            <form method="post" asp-page-handler="DeleteTest" novalidate>
+                            <a class="govuk-link govuk-!-margin-right-3"
+                               asp-page="/Case/CaseTestEdit"
+                               asp-route-rbse="@Model.Rbse"
+                               asp-route-id="@t.Id">Edit</a>
+                            <form method="post" asp-page-handler="DeleteTest" style="display:inline-block;vertical-align:middle" novalidate>
                                 <input type="hidden" name="id" value="@t.Id" />
                                 <input type="hidden" name="rowStampBase64" value="@(t.RowStamp is not null ? Convert.ToBase64String(t.RowStamp) : "")" />
-                                <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0"
+                                <button type="submit" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0" style="display:inline-block"
                                         onclick="return confirm('Delete this test record?')">Delete</button>
                             </form>
                         </td>

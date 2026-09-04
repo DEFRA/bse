@@ -30,9 +30,6 @@ public class ClinicalModel(
     public int VisitsTotalPages { get; private set; } = 1;
     public int VisitsTotalCount { get; private set; }
 
-    [BindProperty(SupportsGet = true)] public int EditVisitId { get; set; }
-    [BindProperty] public DateTime? EditVisitDate { get; set; }
-    [BindProperty] public string EditVisitRowStampBase64 { get; set; } = string.Empty;
 
     public ClinicalSignsViewModel Signs { get; private set; } = new();
     public IReadOnlyList<ClinicalVisitRecord> Visits { get; private set; } = [];
@@ -130,32 +127,6 @@ public class ClinicalModel(
         tx.Commit();
 
         TempData["Success"] = "Clinical visit added.";
-        return RedirectToPage(new { rbse = Rbse });
-    }
-
-    public async Task<IActionResult> OnPostEditVisitAsync()
-    {
-        if (!User.IsInRole("DataEntry"))
-            return Forbid();
-
-        await LoadAsync();
-
-        ValidateVisitDate(EditVisitDate, EditVisitId, nameof(EditVisitDate));
-
-        if (ModelState.IsValid && _allVisits.Any(v => v.Id != EditVisitId && v.VisitDate?.Date == EditVisitDate!.Value.Date))
-            ModelState.AddModelError(nameof(EditVisitDate), "A visit on this date already exists. The visit date must be unique.");
-
-        if (!ModelState.IsValid)
-            return Page();
-
-        var rowStamp = string.IsNullOrEmpty(EditVisitRowStampBase64) ? [] : Convert.FromBase64String(EditVisitRowStampBase64);
-        using var conn = connectionFactory.CreateConnection();
-        conn.Open();
-        using var tx = conn.BeginTransaction();
-        await clinicalRepository.EditVisitAsync(new EditClinicalVisitCommand(EditVisitId, EditVisitDate, rowStamp), conn, tx);
-        tx.Commit();
-
-        TempData["Success"] = "Clinical visit updated.";
         return RedirectToPage(new { rbse = Rbse });
     }
 
