@@ -43,7 +43,7 @@ public class ByUserModel(IAuditLogService auditLogService, IUserManagementServic
         {
             if (UserId == 0)
             {
-                ValidationError = "Select a user.";
+                ValidationError = "Please select a user";
                 return Page();
             }
             HasSearched = true;

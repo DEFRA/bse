@@ -45,18 +45,18 @@ public sealed class SearchRepository : DapperRepository, ISearchRepository
 
     public async Task<IReadOnlyList<FarmSearchResult>> SearchFarmsAsync(FarmSearchQuery q, CancellationToken ct = default)
     {
-        var result = await QueryAsync<FarmSearchResult>("GetSearchFarm", new
-        {
-            CPHH = q.Cphh,
-            OwnerName = q.OwnerName,
-            Address = q.Address,
-            County = q.County,
-            Herdmark = q.Herdmark,
-            NumericHerdmark = q.NumericHerdmark,
-            IsDealer = q.IsDealer,
-            AHO = q.Aho,
-            IncludeNonGBFarms = q.IncludeNonGbFarms
-        }, SearchCommandTimeoutSeconds);
+        var p = new DynamicParameters();
+        p.Add("CPHH",             q.Cphh             ?? string.Empty, DbType.AnsiString, size: 11);
+        p.Add("OwnerName",        q.OwnerName        ?? string.Empty, DbType.AnsiString, size: 100);
+        p.Add("Address",          q.Address          ?? string.Empty, DbType.AnsiString, size: 160);
+        p.Add("County",           q.County           ?? string.Empty, DbType.AnsiString, size: 15);
+        p.Add("Herdmark",         q.Herdmark         ?? string.Empty, DbType.AnsiString, size: 8);
+        p.Add("NumericHerdmark",  q.NumericHerdmark  ?? string.Empty, DbType.AnsiString, size: 6);
+        p.Add("IsDealer",         q.IsDealer,                                DbType.Boolean);
+        p.Add("AHO",              q.Aho              ?? string.Empty, DbType.AnsiString, size: 2);
+        p.Add("IncludeNonGBFarms", q.IncludeNonGbFarms,                      DbType.Boolean);
+
+        var result = await QueryAsync<FarmSearchResult>("GetSearchFarm", p, SearchCommandTimeoutSeconds);
         return result.ToList();
     }
 

@@ -6,6 +6,20 @@
 
 <h1 class="govuk-heading-l">Outstanding Data Search</h1>
 
+@if (Model.NoOptionSelected)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    <li><a href="#search-type-results">@BSE.Host.Pages.Search.OutstandingModel.NoOptionMessage</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
 <form method="get" novalidate>
     <div class="govuk-grid-row">
         <div class="govuk-grid-column-two-thirds">
@@ -94,13 +108,13 @@
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Eartag";       ViewData["Column"] = "Eartag"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Form A date";  ViewData["Column"] = "FormADate"; }
+                    @{ ViewData["Label"] = "Form A Date";  ViewData["Column"] = "FormADate"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Birth date";   ViewData["Column"] = "BirthDate"; }
+                    @{ ViewData["Label"] = "Birth Date";   ViewData["Column"] = "BirthDate"; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Fate";         ViewData["Column"] = "Fate"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Final result"; ViewData["Column"] = "FinalResult"; }
+                    @{ ViewData["Label"] = "Final Result"; ViewData["Column"] = "FinalResult"; }
                     <partial name="_SortableHeader" />
                 </tr>
             </thead>

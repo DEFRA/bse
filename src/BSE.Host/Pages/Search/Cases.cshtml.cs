@@ -31,6 +31,10 @@ public class CasesModel : PageModel
     public IReadOnlyList<LookupItem> FateOptions { get; private set; } = [];
     public IReadOnlyList<LookupItem> FinalResultOptions { get; private set; } = [];
 
+    public const string NoCriteriaMessage = "Please provide one or more search criteria";
+
+    public bool NoCriteria { get; private set; }
+
     public async Task OnGetAsync()
     {
         SexOptions = (await _lookups.GetSexesAsync())
@@ -53,6 +57,10 @@ public class CasesModel : PageModel
             if (Filter.PageNumber < 1) Filter.PageNumber = 1;
             if (Filter.PageNumber > Filter.TotalPages) Filter.PageNumber = Filter.TotalPages;
         }
+        else
+        {
+            NoCriteria = Request.Query.Count > 0;
+        }
     }
 
     public async Task<IActionResult> OnGetExportAsync()
@@ -64,11 +72,12 @@ public class CasesModel : PageModel
         using var workbook = new XLWorkbook();
         var ws = workbook.Worksheets.Add("Case Search Results");
 
+        // Legacy exported the raw result-set column names, not the on-screen captions.
         string[] headers =
         [
-            "RBSE", "CPHH", "Sex", "Survey", "Eartag", "Birth Date", "Birth Date Est",
-            "Form A Date", "Fate", "Final Result", "Final Result Date",
-            "DBSE", "Notes", "BAB Notes", "Origin", "Valuation Age"
+            "RBSE", "CPHH", "Sex", "Survey", "Eartag", "BirthDate", "IsBirthDateEst",
+            "FormADate", "Fate", "FinalResult", "FinalResultDate",
+            "DBSE", "Notes", "BabNotes", "Origin", "ValuationAge"
         ];
 
         for (var col = 1; col <= headers.Length; col++)

@@ -1,0 +1,96 @@
+@page
+@model BSE.Host.Pages.Admin.PickListsEditModel
+@{
+    ViewData["Title"] = "Edit pick list record";
+    var fieldErrors = Model.DisplayFields
+        .Select(f => new { f.Column, f.Label, Error = ViewContext.ModelState[f.Column]?.Errors.FirstOrDefault()?.ErrorMessage })
+        .Where(x => x.Error is not null)
+        .ToList();
+}
+
+<h1 class="govuk-heading-l">Edit pick list record</h1>
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Admin/PickLists" asp-route-tableId="@Model.TableId">Pick List Maintenance</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Edit record</li>
+    </ol>
+</nav>
+
+@if (fieldErrors.Any())
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var error in fieldErrors)
+                    {
+                        <li><a href="#field-@error.Column">@error.Error</a></li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+<form method="post" novalidate>
+    <input type="hidden" asp-for="TableId" />
+    <input type="hidden" asp-for="SortColumn" />
+    <input type="hidden" asp-for="SortDesc" />
+    <input type="hidden" asp-for="PageNumber" />
+    <input type="hidden" asp-for="OriginalKey" />
+
+    @foreach (var field in Model.DisplayFields)
+    {
+        var error = ViewContext.ModelState[field.Column]?.Errors.FirstOrDefault()?.ErrorMessage;
+        var current = Model.Fields.TryGetValue(field.Column, out var posted) ? posted : string.Empty;
+
+        <div class="govuk-form-group @(error is not null ? "govuk-form-group--error" : "")">
+            @if (field.IsBoolean)
+            {
+                <div class="govuk-checkboxes govuk-checkboxes--small" data-module="govuk-checkboxes">
+                    <div class="govuk-checkboxes__item">
+                        <input class="govuk-checkboxes__input" id="field-@field.Column"
+                               name="Fields[@field.Column]" type="checkbox" value="true"
+                               checked="@(current == "true" || current == "True" || current == "Yes")" />
+                        <input type="hidden" name="Fields[@field.Column]" value="false" />
+                        <label class="govuk-label govuk-checkboxes__label" for="field-@field.Column">@field.Label</label>
+                    </div>
+                </div>
+            }
+            else if (field.IsRegionLookup)
+            {
+                <label class="govuk-label" for="field-@field.Column">@field.Label</label>
+                <select class="govuk-select govuk-!-width-two-thirds"
+                        id="field-@field.Column" name="Fields[@field.Column]">
+                    <option value=""></option>
+                    @foreach (var region in Model.BseRegionOptions)
+                    {
+                        <option value="@region.Id" selected="@(region.Id.ToString() == current)">@region.Name</option>
+                    }
+                </select>
+            }
+            else
+            {
+                <label class="govuk-label" for="field-@field.Column">@field.Label</label>
+                @if (error is not null)
+                {
+                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @error</p>
+                }
+                <input class="govuk-input govuk-!-width-two-thirds @(error is not null ? "govuk-input--error" : "")"
+                       id="field-@field.Column" name="Fields[@field.Column]" value="@current" />
+            }
+        </div>
+    }
+
+    <div class="govuk-button-group">
+        <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+        <a class="govuk-link" asp-page="/Admin/PickLists"
+           asp-route-tableId="@Model.TableId"
+           asp-route-sortColumn="@Model.SortColumn"
+           asp-route-sortDesc="@Model.SortDesc"
+           asp-route-pageNumber="@Model.PageNumber">Cancel</a>
+    </div>
+</form>

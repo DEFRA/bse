@@ -34,6 +34,7 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnGetAsync(string cphh, string? rbse = null)
     {
+        cphh = CphhNormalizer.Normalize(cphh);
         Rbse = rbse ?? string.Empty;
         var record = await _farm.GetByCphhAsync(cphh);
         if (record is null) return NotFound();
@@ -46,6 +47,11 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
+        if (Farm is not null)
+        {
+            Farm.CPHH = CphhNormalizer.Normalize(Farm.CPHH);
+        }
+
         await LoadLookupsAsync();
 
         // Validate map reference is within the parish for the CPHH (mirrors legacy MapReference1_MapReferenceChanged)

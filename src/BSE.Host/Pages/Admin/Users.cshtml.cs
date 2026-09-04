@@ -68,6 +68,10 @@ public class UsersModel(IUserManagementService userManagementService, ILookupDat
 
     public async Task<IActionResult> OnPostAddAsync()
     {
+        // Resolve checkbox value from posted form values (handles true/false dual inputs reliably).
+        IsActive = Request.Form[nameof(IsActive)]
+            .Any(v => string.Equals(v, "true", StringComparison.OrdinalIgnoreCase));
+
         if (string.IsNullOrWhiteSpace(NTLogin))
             ModelState.AddModelError(nameof(NTLogin), "Enter NT login");
         if (string.IsNullOrWhiteSpace(UserName))
@@ -110,6 +114,10 @@ public class UsersModel(IUserManagementService userManagementService, ILookupDat
 
     public async Task<IActionResult> OnPostEditAsync()
     {
+        // Resolve checkbox value from posted form values (handles true/false dual inputs reliably).
+        EditIsActive = Request.Form[nameof(EditIsActive)]
+            .Any(v => string.Equals(v, "true", StringComparison.OrdinalIgnoreCase));
+
         if (string.IsNullOrWhiteSpace(EditNTLogin))
             ModelState.AddModelError(nameof(EditNTLogin), "Enter NT login");
         if (string.IsNullOrWhiteSpace(EditUserName))

@@ -1,53 +1,214 @@
 @page
 @model PickListsModel
 @{
-    ViewData["Title"] = "Pick lists";
+    ViewData["Title"] = "Pick List Maintenance";
+
+    var fieldErrors = Model.DisplayFields
+        .Select(f => new { f.Column, f.Label, Error = ViewContext.ModelState[f.Column]?.Errors.FirstOrDefault()?.ErrorMessage })
+        .Where(x => x.Error is not null)
+        .ToList();
+
+    var sortBase = "?" + string.Join("&", HttpContext.Request.Query
+        .Where(k => !string.Equals(k.Key, "sortColumn", StringComparison.OrdinalIgnoreCase)
+                 && !string.Equals(k.Key, "sortDesc", StringComparison.OrdinalIgnoreCase)
+                 && !string.Equals(k.Key, "pageNumber", StringComparison.OrdinalIgnoreCase))
+        .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
 }
 
-<div>
-    <h1 class="govuk-heading-l">Pick lists</h1>
-    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
-        <ol class="govuk-breadcrumbs__list">
-            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-            <li class="govuk-breadcrumbs__list-item" aria-current="page">Pick lists</li>
-        </ol>
-    </nav>
+<h1 class="govuk-heading-l">Pick List Maintenance</h1>
 
-    <h2 class="govuk-heading-m">Editable reference tables</h2>
-    @{
-        var sortBase = "?" + string.Join("&", HttpContext.Request.Query
-            .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
-                     && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase)
-                     && !string.Equals(k.Key, "PageNumber", StringComparison.OrdinalIgnoreCase))
-            .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
-        ViewData["SortColumn"] = Model.SortColumn;
-        ViewData["SortDesc"] = Model.SortDesc;
-        ViewData["BaseUrl"] = sortBase;
-    }
-    <table class="govuk-table">
-        <caption class="govuk-visually-hidden">Editable reference tables</caption>
-        <thead class="govuk-table__head">
-            <tr class="govuk-table__row">
-                @{ ViewData["Label"] = "ID"; ViewData["Column"] = "Id"; }
-                <partial name="_SortableHeader" />
-                @{ ViewData["Label"] = "Table"; ViewData["Column"] = "Table"; }
-                <partial name="_SortableHeader" />
-                @{ ViewData["Label"] = "Description"; ViewData["Column"] = "Description"; }
-                <partial name="_SortableHeader" />
-                <th scope="col" class="govuk-table__header">Action</th>
-            </tr>
-        </thead>
-        <tbody class="govuk-table__body">
-            @foreach (var lookup in Model.PagedLookups)
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Pick List Maintenance</li>
+    </ol>
+</nav>
+
+@if (fieldErrors.Any())
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var error in fieldErrors)
+                    {
+                        <li><a href="#field-@error.Column">@error.Error</a></li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+@* ── Table selector (legacy "Select a Table" auto-postback drop-down) ──────── *@
+<form method="get" class="govuk-!-margin-bottom-4">
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="tableId">Select a Table</label>
+        <select id="tableId" name="tableId" class="govuk-select govuk-!-width-two-thirds"
+                onchange="this.form.submit();">
+            @foreach (var lookup in Model.Lookups)
             {
-                <tr class="govuk-table__row">
-                    <td class="govuk-table__cell">@lookup.Id</td>
-                    <td class="govuk-table__cell">@lookup.TableName</td>
-                    <td class="govuk-table__cell">@lookup.Description</td>
-                    <td class="govuk-table__cell"><a asp-page="/Admin/PickListEdit" asp-route-tableId="@lookup.Id" class="govuk-link">Edit</a></td>
-                </tr>
+                <option value="@lookup.Id" selected="@(lookup.Id == Model.TableId)">@lookup.Description</option>
             }
-        </tbody>
-    </table>
-    @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
+        </select>
+    </div>
+    <noscript>
+        <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Show records</button>
+    </noscript>
+</form>
+
+<div class="govuk-inset-text">
+    <p class="govuk-body">If you enter a string longer than the database allows then it will be truncated. Check the help to see how many characters each field allows.</p>
+    <p class="govuk-body govuk-!-margin-bottom-0">View the help file before adding any new codes to find out whether it will affect the functionality of other parts of the system.</p>
 </div>
+
+@if (Model.Procs is null)
+{
+    <div class="govuk-warning-text">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text">
+            <span class="govuk-warning-text__assistive">Warning</span>No stored procedures are configured for table ID @Model.TableId.
+        </strong>
+    </div>
+}
+else
+{
+    @if (!Model.CanEdit)
+    {
+        <div class="govuk-warning-text">
+            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+            <strong class="govuk-warning-text__text">
+                <span class="govuk-warning-text__assistive">Warning</span>You have read-only access to pick lists.
+            </strong>
+        </div>
+    }
+
+    <h2 class="govuk-heading-m">@(Model.Lookup?.Description ?? "Records")</h2>
+    <p class="govuk-body">@Model.TotalCount record(s).</p>
+
+    @if (Model.TotalCount > 0)
+    {
+        <table class="govuk-table">
+            <caption class="govuk-table__caption govuk-visually-hidden">@(Model.Lookup?.Description ?? "Pick list") records</caption>
+            <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                    @{
+                        ViewData["SortColumn"] = Model.SortColumn;
+                        ViewData["SortDesc"] = Model.SortDesc;
+                        ViewData["BaseUrl"] = sortBase;
+                    }
+                    @foreach (var field in Model.DisplayFields)
+                    {
+                        ViewData["Label"] = field.Label;
+                        ViewData["Column"] = field.Column;
+                        <partial name="_SortableHeader" />
+                    }
+                    @if (Model.CanEdit)
+                    {
+                        <th scope="col" class="govuk-table__header"><span class="govuk-visually-hidden">Actions</span></th>
+                    }
+                </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+                @foreach (var row in Model.PagedRows)
+                {
+                    var rowKey = PickListsModel.RowValue(row, Model.KeyColumn);
+                    var rowLabel = PickListsModel.RowValue(row, Model.DisplayFields[0].Column);
+                    <tr class="govuk-table__row">
+                        @foreach (var field in Model.DisplayFields)
+                        {
+                            <td class="govuk-table__cell">@Model.DisplayValue(row, field)</td>
+                        }
+                        @if (Model.CanEdit)
+                        {
+                            <td class="govuk-table__cell">
+                                <a class="govuk-link govuk-!-margin-right-3"
+                                   asp-page="/Admin/PickListsEdit"
+                                   asp-route-tableId="@Model.TableId"
+                                   asp-route-key="@rowKey"
+                                   asp-route-sortColumn="@Model.SortColumn"
+                                   asp-route-sortDesc="@Model.SortDesc"
+                                   asp-route-pageNumber="@Model.PageNumber">Change<span class="govuk-visually-hidden"> @rowLabel</span></a>
+                                <form method="post" asp-page-handler="Delete" style="display:inline">
+                                    <input type="hidden" name="tableId" value="@Model.TableId" />
+                                    <input type="hidden" name="sortColumn" value="@Model.SortColumn" />
+                                    <input type="hidden" name="sortDesc" value="@Model.SortDesc.ToString().ToLowerInvariant()" />
+                                    <input type="hidden" name="pageNumber" value="@Model.PageNumber" />
+                                    <input type="hidden" name="Fields[@Model.KeyColumn]" value="@rowKey" />
+                                    <input type="hidden" name="Fields[Name]" value="@PickListsModel.RowValue(row, "Name")" />
+                                    <button type="submit" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0"
+                                            data-module="govuk-button"
+                                            onclick="return confirm('Are you sure you want to delete this record?');">
+                                        Delete<span class="govuk-visually-hidden"> @rowLabel</span>
+                                    </button>
+                                </form>
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData)
+        {
+            ["CurrentPage"] = Model.PageNumber,
+            ["TotalPages"] = Model.TotalPages
+        })
+    }
+    else
+    {
+        <p class="govuk-body">No records found.</p>
+    }
+
+    @if (Model.CanEdit)
+    {
+        <h2 class="govuk-heading-m">Add a new record</h2>
+        <form method="post" asp-page-handler="Add" novalidate>
+            <input type="hidden" name="tableId" value="@Model.TableId" />
+            <input type="hidden" name="sortColumn" value="@Model.SortColumn" />
+            <input type="hidden" name="sortDesc" value="@Model.SortDesc.ToString().ToLowerInvariant()" />
+            <input type="hidden" name="pageNumber" value="@Model.PageNumber" />
+            @foreach (var field in Model.DisplayFields)
+            {
+                var error = ViewContext.ModelState[field.Column]?.Errors.FirstOrDefault()?.ErrorMessage;
+                var current = Model.Fields.GetValueOrDefault(field.Column, "");
+                <div class="govuk-form-group @(error is not null ? "govuk-form-group--error" : "")">
+                    @if (field.IsBoolean)
+                    {
+                        <div class="govuk-checkboxes govuk-checkboxes--small" data-module="govuk-checkboxes">
+                            <div class="govuk-checkboxes__item">
+                                <input class="govuk-checkboxes__input" id="field-@field.Column"
+                                       name="Fields[@field.Column]" type="checkbox" value="true" checked />
+                                <label class="govuk-label govuk-checkboxes__label" for="field-@field.Column">@field.Label</label>
+                            </div>
+                        </div>
+                    }
+                    else if (field.IsRegionLookup)
+                    {
+                        <label class="govuk-label" for="field-@field.Column">@field.Label</label>
+                        <select class="govuk-select govuk-!-width-two-thirds"
+                                id="field-@field.Column" name="Fields[@field.Column]">
+                            <option value=""></option>
+                            @foreach (var region in Model.BseRegionOptions)
+                            {
+                                <option value="@region.Id" selected="@(region.Id.ToString() == current)">@region.Name</option>
+                            }
+                        </select>
+                    }
+                    else
+                    {
+                        <label class="govuk-label" for="field-@field.Column">@field.Label</label>
+                        @if (error is not null)
+                        {
+                            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @error</p>
+                        }
+                        <input class="govuk-input govuk-!-width-two-thirds @(error is not null ? "govuk-input--error" : "")"
+                               id="field-@field.Column" name="Fields[@field.Column]" value="@current" />
+                    }
+                </div>
+            }
+            <button type="submit" class="govuk-button" data-module="govuk-button">Add record</button>
+        </form>
+    }
+}

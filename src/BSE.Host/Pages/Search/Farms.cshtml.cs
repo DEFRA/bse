@@ -29,6 +29,10 @@ public class FarmsModel : PageModel
     public IReadOnlyList<LookupItem> CountyOptions { get; private set; } = [];
     public IReadOnlyList<LookupItem> AhoOptions { get; private set; } = [];
 
+    public const string NoCriteriaMessage = "Please provide one or more search criteria";
+
+    public bool NoCriteria { get; private set; }
+
     public async Task OnGetAsync()
     {
         CountyOptions = (await _lookups.GetLookupAsync(LookupTableId.BSECounty)).ToList();
@@ -44,6 +48,10 @@ public class FarmsModel : PageModel
             if (Filter.PageNumber < 1) Filter.PageNumber = 1;
             if (Filter.PageNumber > Filter.TotalPages) Filter.PageNumber = Filter.TotalPages;
         }
+        else
+        {
+            NoCriteria = Request.Query.Count > 0;
+        }
     }
 
     public async Task<IActionResult> OnGetExportAsync()
@@ -57,9 +65,10 @@ public class FarmsModel : PageModel
     {
         using var wb = new XLWorkbook();
         var ws = wb.Worksheets.Add("Results");
-        string[] headers = ["CPHH", "Owner Name", "Address", "Correspondence Address", "County", "Herdmark",
-            "Numeric Herdmark", "Map Reference", "AHO", "Herd Type",
-            "Cases", "Confirmed Cases"];
+        // Legacy exported the raw result-set column names, not the on-screen captions.
+        string[] headers = ["CPHH", "OwnerName", "Address", "CorrespondenceAddress", "County", "Herdmark",
+            "NumericHerdmark", "MapReference", "AHO", "HerdType",
+            "CasesCount", "ConfirmedCasesCount"];
         for (var c = 1; c <= headers.Length; c++) { ws.Cell(1, c).Value = headers[c - 1]; ws.Cell(1, c).Style.Font.Bold = true; }
         var row = 2;
         foreach (var r in rows)
@@ -85,6 +94,7 @@ public class FarmsModel : PageModel
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") { FileDownloadName = filename };
     }
 
+    // Legacy ignored the Include Non-GB Farms checkbox when checking for search criteria.
     private bool HasAnyFilter() =>
         !string.IsNullOrWhiteSpace(Filter.Cphh) ||
         !string.IsNullOrWhiteSpace(Filter.OwnerName) ||
@@ -93,6 +103,5 @@ public class FarmsModel : PageModel
         !string.IsNullOrWhiteSpace(Filter.Herdmark) ||
         !string.IsNullOrWhiteSpace(Filter.NumericHerdmark) ||
         Filter.IsDealer.HasValue ||
-        !string.IsNullOrWhiteSpace(Filter.Aho) ||
-        Filter.IncludeNonGb;
+        !string.IsNullOrWhiteSpace(Filter.Aho);
 }

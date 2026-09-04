@@ -72,12 +72,12 @@
                 @{
                     var feedsBase = Url.Page("/Case/Feeds", new { rbse = Model.Rbse });
                 }
-                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Year from", ["Column"]="YearFrom", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=feedsBase })
-                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Year to", ["Column"]="YearTo", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=feedsBase })
-                <th scope="col" class="govuk-table__header">Ration type</th>
-                <th scope="col" class="govuk-table__header">Ration name</th>
+                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Year From", ["Column"]="YearFrom", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=feedsBase })
+                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Year To", ["Column"]="YearTo", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=feedsBase })
+                <th scope="col" class="govuk-table__header">Ration Type</th>
+                <th scope="col" class="govuk-table__header">Ration Name</th>
                 <th scope="col" class="govuk-table__header">Supplier</th>
-                <th scope="col" class="govuk-table__header">Pre-purchase</th>
+                <th scope="col" class="govuk-table__header">Is Pre-purchase?</th>
                 @if (User.IsInRole("DataEntry"))
                 {
                     <th scope="col" class="govuk-table__header">Action</th>
@@ -100,7 +100,7 @@
                         <form method="post" asp-page-handler="DeleteFeed" style="display:inline" novalidate>
                             <input type="hidden" name="FeedId" value="@f.Id" />
                             <input type="hidden" asp-for="Rbse" />
-                            <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0"
+                            <button type="submit" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0"
                                     onclick="return confirm('Delete this feed record?')">Delete</button>
                         </form>
                     </td>

@@ -167,12 +167,12 @@
     <div class="govuk-grid-column-one-third">
         <h2 class="govuk-heading-m">Search</h2>
         <ul class="govuk-list">
-            <li><a asp-page="/Search/Cases" class="govuk-link">Cases</a></li>
-            <li><a asp-page="/Search/CasesByHerdmark" class="govuk-link">Cases by herdmark</a></li>
-            <li><a asp-page="/Search/CasesByHoldingHerdmark" class="govuk-link">Cases by holding/herdmark</a></li>
             <li><a asp-page="/Search/Farms" class="govuk-link">Farms</a></li>
-            <li><a asp-page="/Search/Outstanding" class="govuk-link">Outstanding data</a></li>
+            <li><a asp-page="/Search/Cases" class="govuk-link">Cases</a></li>
+            <li><a asp-page="/Search/CasesByHerdmark" class="govuk-link">Cases by herdmark(includes animals sold off)</a></li>
+            <li><a asp-page="/Search/CasesByHoldingHerdmark" class="govuk-link">Cases by holding/herdmark(for organic farmer checks)</a></li>
             <li><a asp-page="/Search/RelatedAnimals" class="govuk-link">Related animals</a></li>
+            <li><a asp-page="/Search/Outstanding" class="govuk-link">Outstanding data</a></li>
         </ul>
     </div>
 
@@ -235,11 +235,11 @@
             <ul class="govuk-list">
                 @if (User.IsInRole("VLAMaintenance"))
                 {
-                    <li><a asp-page="/Admin/Users" class="govuk-link">Manage users</a></li>
+                    <li><a asp-page="/Admin/Users" class="govuk-link">User Maintenance</a></li>
                 }
                 @if (User.IsInRole("PickListAccess"))
                 {
-                    <li><a asp-page="/Admin/PickLists" class="govuk-link">Manage pick lists</a></li>
+                    <li><a asp-page="/Admin/PickLists" class="govuk-link">Pick List Maintenance</a></li>
                 }
             </ul>
         }

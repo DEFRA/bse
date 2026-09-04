@@ -52,8 +52,8 @@
         <caption class="govuk-visually-hidden">Test records for @Model.Rbse</caption>
         <thead class="govuk-table__head">
             <tr class="govuk-table__row">
-                <th scope="col" class="govuk-table__header">Test type</th>
-                <th scope="col" class="govuk-table__header">Result</th>
+                <th scope="col" class="govuk-table__header">Test Type</th>
+                <th scope="col" class="govuk-table__header">Test Result</th>
                 <th scope="col" class="govuk-table__header">Action</th>
             </tr>
         </thead>
@@ -68,7 +68,7 @@
                             <input type="hidden" name="TestId" value="@t.Id" />
                             <input type="hidden" name="RowStampBase64" value="@(t.RowStamp is not null ? Convert.ToBase64String(t.RowStamp) : string.Empty)" />
                             <input type="hidden" asp-for="Rbse" />
-                            <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0"
+                            <button type="submit" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0"
                                     onclick="return confirm('Delete this test record?')">Delete</button>
                         </form>
                     </td>

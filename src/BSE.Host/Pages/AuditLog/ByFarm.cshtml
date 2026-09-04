@@ -43,7 +43,8 @@
     <form method="get" novalidate class="govuk-!-margin-bottom-6">
         <div class="govuk-form-group">
             <label asp-for="Cphh" class="govuk-label">CPHH number</label>
-            <input asp-for="Cphh" type="text" class="govuk-input govuk-input--width-20" spellcheck="false" autocomplete="off" />
+            <div id="cphh-hint" class="govuk-hint">CPHH Format: NN[/]NNN[/]NNNN[/NN]</div>
+            <input asp-for="Cphh" type="text" class="govuk-input govuk-input--width-20" aria-describedby="cphh-hint" spellcheck="false" autocomplete="off" />
         </div>
         <div class="govuk-button-group">
             <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>

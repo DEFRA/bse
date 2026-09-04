@@ -27,16 +27,19 @@ public class CphhChangeModel : PageModel
 
     public async Task<IActionResult> OnPostAsync(string? cphh)
     {
-        OldCphh = cphh ?? "";
+        OldCphh = CphhNormalizer.Normalize(cphh);
         if (string.IsNullOrWhiteSpace(OldCphh))
         {
             ErrorMessage = "Enter the current CPHH.";
             return Page();
         }
+
+        NewCphh = CphhNormalizer.Normalize(NewCphh);
+
         if (!ModelState.IsValid) return Page();
 
         var userId = await _currentUser.GetUserIdAsync();
-        var result = await _farm.ChangeCphhAsync(cphh, NewCphh.Trim(), userId);
+        var result = await _farm.ChangeCphhAsync(OldCphh, NewCphh, userId);
 
         if (result != ChangeCphhResult.Success)
         {
@@ -44,7 +47,7 @@ public class CphhChangeModel : PageModel
             return Page();
         }
 
-        TempData["SuccessMessage"] = $"CPHH changed from {cphh} to {NewCphh} successfully.";
-        return RedirectToPage("/Farm/Details", new { cphh = NewCphh.Trim() });
+        TempData["SuccessMessage"] = $"CPHH changed from {OldCphh} to {NewCphh} successfully.";
+        return RedirectToPage("/Farm/Details", new { cphh = NewCphh });
     }
 }

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using BSE.Modules.Search.Models;
+using BSE.SharedKernel;
 
 namespace BSE.Host.Models.ViewModels;
 
@@ -48,7 +49,7 @@ public class FarmSearchViewModel : SearchViewModelBase<FarmSearchResult>
         };
 
     public FarmSearchQuery ToQuery() => new(
-        Cphh: Cphh ?? "",
+        Cphh: CphhNormalizer.Normalize(Cphh),
         OwnerName: OwnerName ?? "",
         Address: Address ?? "",
         County: County ?? "",
