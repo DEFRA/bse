@@ -6,12 +6,27 @@
 
 <h1 class="govuk-heading-l">Farm Search</h1>
 
+@if (Model.NoCriteria)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    <li><a href="#Filter_Cphh">@BSE.Host.Pages.Search.FarmsModel.NoCriteriaMessage</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
 <form method="get" novalidate>
     <div class="govuk-grid-row">
         <div class="govuk-grid-column-two-thirds">
             <div class="govuk-form-group">
                 <label asp-for="Filter.Cphh" class="govuk-label">CPH(H)</label>
-                <input asp-for="Filter.Cphh" class="govuk-input govuk-!-width-two-thirds" />
+                <div id="cphh-hint" class="govuk-hint">CPHH Format: NN[/]NNN[/]NNNN[/NN]</div>
+                <input asp-for="Filter.Cphh" class="govuk-input govuk-!-width-two-thirds" aria-describedby="cphh-hint" />
                 <span asp-validation-for="Filter.Cphh" class="govuk-error-message"></span>
             </div>
 
@@ -106,27 +121,27 @@
                 <tr class="govuk-table__row">
                     @{ ViewData["Label"] = "CPHH";                   ViewData["Column"] = "Cphh";                   ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Prefix"] = "Filter."; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Owner name";              ViewData["Column"] = "OwnerName"; }
+                    @{ ViewData["Label"] = "Owner Name";              ViewData["Column"] = "OwnerName"; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Address";                 ViewData["Column"] = "Address"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Correspondence address";  ViewData["Column"] = "CorrespondenceAddress"; }
+                    @{ ViewData["Label"] = "Correspondence Address";  ViewData["Column"] = "CorrespondenceAddress"; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "County";                  ViewData["Column"] = "County"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Herdmark";                ViewData["Column"] = "Herdmark"; }
+                    @{ ViewData["Label"] = "Herdmark(s)";             ViewData["Column"] = "Herdmark"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Numeric herdmark";        ViewData["Column"] = "NumericHerdmark"; }
+                    @{ ViewData["Label"] = "Numeric Herdmark(s)";     ViewData["Column"] = "NumericHerdmark"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Map reference";           ViewData["Column"] = "MapReference"; }
+                    @{ ViewData["Label"] = "Map Ref";                 ViewData["Column"] = "MapReference"; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "AHO";                     ViewData["Column"] = "Aho"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Herd type";               ViewData["Column"] = "HerdType"; }
+                    @{ ViewData["Label"] = "Herd Type";               ViewData["Column"] = "HerdType"; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Cases";                   ViewData["Column"] = "CasesCount"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Confirmed cases";         ViewData["Column"] = "ConfirmedCasesCount"; }
+                    @{ ViewData["Label"] = "Confirmed Cases";         ViewData["Column"] = "ConfirmedCasesCount"; }
                     <partial name="_SortableHeader" />
                 </tr>
             </thead>

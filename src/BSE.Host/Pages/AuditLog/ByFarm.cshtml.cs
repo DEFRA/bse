@@ -67,7 +67,8 @@ public class ByFarmModel(IAuditLogService auditLogService) : PageModel
         using var workbook = new XLWorkbook();
         var ws = workbook.Worksheets.Add("Farm Audit Log");
 
-        string[] headers = ["Table", "Field", "Date/Time", "User", "Before", "After", "Reason", "Key"];
+        // Legacy exported the raw result-set column names, not the on-screen captions.
+        string[] headers = ["TableName", "FieldName", "DateTime", "UserName", "BeforeValue", "AfterValue", "Reason", "Key"];
         for (var col = 1; col <= headers.Length; col++)
         {
             ws.Cell(1, col).Value = headers[col - 1];

@@ -100,11 +100,11 @@ stages:
               runtimeStack: 'DOTNETCORE|10.0'
               deploymentMethod: 'zipDeploy'
               appSettings: >-
+                -Saml2__SPEntityId "https://dev-bse.azure.defra.cloud"
+                -Saml2__PublicOrigin "https://dev-bse.azure.defra.cloud"
                 -Saml2__IdPEntityId "https://sts.windows.net/$(tenantId)/"
                 -Saml2__IdPMetadataUrl "https://login.microsoftonline.com/$(tenantId)/federationmetadata/2007-06/federationmetadata.xml?appid=$(appId)"
                 -Authentication__BypassEnabled "false"
-                -Authentication__UseWindowsIdentity "false"
-                -Authentication__DevUserNtLogin "DOMAIN\devuser1"
                 -ConnectionStrings__BSE "Server=tcp:$(sqlServer);Database=$(dbName);Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Managed Identity;"
 
 - stage: Deploy_Test

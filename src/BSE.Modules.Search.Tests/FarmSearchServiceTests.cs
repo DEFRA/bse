@@ -131,4 +131,16 @@ public sealed class FarmSearchServiceTests
 
         result.Should().HaveCount(2);
     }
+
+    [Fact]
+    public async Task SearchFarmsAsync_CphhWithSlashes_NormalizesBeforeRepositoryCall()
+    {
+        var query = new FarmSearchQuery(Cphh: "14/351/0119/01");
+        _repo.SearchFarmsAsync(Arg.Any<FarmSearchQuery>(), default).Returns(Array.Empty<FarmSearchResult>());
+
+        await _sut.SearchFarmsAsync(query);
+
+        await _repo.Received(1).SearchFarmsAsync(
+            Arg.Is<FarmSearchQuery>(q => q.Cphh == "14351011901"), default);
+    }
 }

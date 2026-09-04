@@ -26,7 +26,7 @@ public class NewModel(IFarmService farmService, ICurrentUserService currentUserS
 
     public async Task<IActionResult> OnGetAsync(string? cphh = null)
     {
-        Farm.CPHH = ReturnCphh ?? cphh ?? "";
+        Farm.CPHH = CphhNormalizer.Normalize(ReturnCphh ?? cphh);
         await LoadLookupsAsync();
         return Page();
     }
@@ -36,6 +36,8 @@ public class NewModel(IFarmService farmService, ICurrentUserService currentUserS
         await LoadLookupsAsync();
         if (!ModelState.IsValid)
             return Page();
+
+        Farm.CPHH = CphhNormalizer.Normalize(Farm.CPHH);
 
         var userId = await currentUserService.GetUserIdAsync();
         var command = Farm.ToAddCommand();

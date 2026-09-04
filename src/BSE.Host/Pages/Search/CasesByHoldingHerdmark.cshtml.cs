@@ -5,6 +5,7 @@ using ClosedXML.Excel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using BSE.SharedKernel;
 
 namespace BSE.Host.Pages.Search;
 
@@ -34,6 +35,10 @@ public class CasesByHoldingHerdmarkModel : PageModel
 
     public IReadOnlyList<CaseDetailSearchResult> Results { get; private set; } = [];
     public bool HasSearched { get; private set; }
+
+    public const string NoCriteriaMessage = "Please provide one or more search criteria";
+
+    public bool NoCriteria { get; private set; }
     public int TotalCount => Results.Count;
     public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
     public IReadOnlyList<CaseDetailSearchResult> PagedResults =>
@@ -50,7 +55,7 @@ public class CasesByHoldingHerdmarkModel : PageModel
         if (!string.IsNullOrWhiteSpace(Cphh) || !string.IsNullOrWhiteSpace(Herdmark) || !string.IsNullOrWhiteSpace(NumericHerdmark))
         {
             var results = await _search.GetCasesByCphhAsync(
-                (Cphh ?? "").Trim(),
+                CphhNormalizer.Normalize(Cphh),
                 (Herdmark ?? "").Trim(),
                 (NumericHerdmark ?? "").Trim(),
                 IncludeNonGb);
@@ -59,13 +64,17 @@ public class CasesByHoldingHerdmarkModel : PageModel
             if (PageNumber < 1) PageNumber = 1;
             if (PageNumber > TotalPages) PageNumber = TotalPages;
         }
+        else
+        {
+            NoCriteria = Request.Query.Count > 0;
+        }
     }
 
     public async Task<IActionResult> OnGetExportAsync()
     {
         if (!HasAnyFilter()) return RedirectToPage();
         var results = await _search.GetCasesByCphhAsync(
-            (Cphh ?? "").Trim(), (Herdmark ?? "").Trim(), (NumericHerdmark ?? "").Trim(), IncludeNonGb);
+            CphhNormalizer.Normalize(Cphh), (Herdmark ?? "").Trim(), (NumericHerdmark ?? "").Trim(), IncludeNonGb);
         return BuildExcel(results, $"CasesByHoldingHerdmark_{DateTime.Today:yyyyMMdd}.xlsx");
     }
 
@@ -76,10 +85,11 @@ public class CasesByHoldingHerdmarkModel : PageModel
     {
         using var wb = new XLWorkbook();
         var ws = wb.Worksheets.Add("Results");
-        string[] headers = ["RBSE", "CPHH", "Sex", "Eartag", "Birth Date", "Origin",
-            "Date Purchased", "Age at Purchase", "Date Onset", "Form A Date",
-            "Slaughter Date", "Final Result Date", "Age at Onset",
-            "Fate", "Final Result", "Survey", "Case Status", "Time Elapsed"];
+        // Legacy exported the raw result-set column names, not the on-screen captions.
+        string[] headers = ["RBSE", "CPHH", "Sex", "Eartag", "BirthDate", "Origin",
+            "PurchaseDate", "PurchaseAgeInMonths", "OnsetDate", "FormADate",
+            "SlaughterDate", "FinalResultDate", "OnsetAgeInMonths",
+            "Fate", "FinalResult", "Survey", "CaseStatus", "TimeElapsed"];
         for (var c = 1; c <= headers.Length; c++) { ws.Cell(1, c).Value = headers[c - 1]; ws.Cell(1, c).Style.Font.Bold = true; }
         var row = 2;
         foreach (var r in rows)

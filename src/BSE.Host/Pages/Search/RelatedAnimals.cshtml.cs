@@ -42,6 +42,10 @@ public class RelatedAnimalsModel : PageModel
     public IReadOnlyList<LookupItem> RelationTypeOptions { get; private set; } = [];
     public IReadOnlyList<RelatedAnimalResult> Results { get; private set; } = [];
     public bool HasSearched { get; private set; }
+
+    public const string NoCriteriaMessage = "Please provide one or more search criteria";
+
+    public bool NoCriteria { get; private set; }
     public int TotalCount => Results.Count;
     public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
     public IReadOnlyList<RelatedAnimalResult> PagedResults =>
@@ -76,7 +80,7 @@ public class RelatedAnimalsModel : PageModel
 
     public async Task OnGetAsync()
     {
-        RelationTypeOptions = (await _lookups.GetLookupAsync(LookupTableId.RelationType)).ToList();
+        RelationTypeOptions = BuildRelationTypeOptions(await _lookups.GetLookupAsync(LookupTableId.RelationType));
         if (!ModelState.IsValid) return;
 
         if (HasAnyFilter())
@@ -88,6 +92,10 @@ public class RelatedAnimalsModel : PageModel
             if (PageNumber < 1) PageNumber = 1;
             if (PageNumber > TotalPages) PageNumber = TotalPages;
         }
+        else
+        {
+            NoCriteria = Request.Query.Count > 0;
+        }
     }
 
     public async Task<IActionResult> OnGetExportAsync()
@@ -98,8 +106,9 @@ public class RelatedAnimalsModel : PageModel
 
         using var wb = new XLWorkbook();
         var ws = wb.Worksheets.Add("Results");
-        string[] headers = ["RBSE", "CPHH", "Relation Type", "Relation Sex", "Eartag",
-            "Relation Birth Date", "Relation Fate", "Left Date", "Name", "Relation Eartag", "Relation RBSE"];
+        // Legacy exported the raw result-set column names, not the on-screen captions.
+        string[] headers = ["RBSE", "CPHH", "RelationType", "RelSex", "Eartag",
+            "RelBirthDate", "RelFate", "LeftDate", "RelName", "RelEartag", "RelationRBSE"];
         for (var c = 1; c <= headers.Length; c++) { ws.Cell(1, c).Value = headers[c - 1]; ws.Cell(1, c).Style.Font.Bold = true; }
         var row = 2;
         foreach (var r in rows)
@@ -129,4 +138,12 @@ public class RelatedAnimalsModel : PageModel
         !string.IsNullOrWhiteSpace(Rbse) || !string.IsNullOrWhiteSpace(Eartag) ||
         !string.IsNullOrWhiteSpace(Name) || !string.IsNullOrWhiteSpace(RelationRbse) ||
         !string.IsNullOrWhiteSpace(RelationType);
+
+    // Dam and Sire are not lookup rows; the search proc matches them as literal filter values.
+    private static List<LookupItem> BuildRelationTypeOptions(IEnumerable<LookupItem> lookups) =>
+    [
+        new() { Code = "DAM", Description = "Dam" },
+        new() { Code = "SIRE", Description = "Sire" },
+        .. lookups
+    ];
 }

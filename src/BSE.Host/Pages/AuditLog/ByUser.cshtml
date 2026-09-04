@@ -14,6 +14,20 @@
         </ol>
     </nav>
 
+    @if (Model.ValidationError is not null)
+    {
+        <div class="govuk-error-summary" data-module="govuk-error-summary">
+            <div role="alert">
+                <h2 class="govuk-error-summary__title">There is a problem</h2>
+                <div class="govuk-error-summary__body">
+                    <ul class="govuk-list govuk-error-summary__list">
+                        <li><a href="#UserId">@Model.ValidationError</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    }
+
     <form method="get" novalidate class="govuk-!-margin-bottom-6">
         <div class="govuk-form-group @(Model.ValidationError is not null ? "govuk-form-group--error" : "")">
             <label asp-for="UserId" class="govuk-label">User</label>

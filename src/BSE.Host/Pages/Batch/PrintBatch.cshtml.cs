@@ -44,7 +44,7 @@ public class PrintBatchModel(IBatchRepository batchRepository) : PageModel
         if (BatchNumber is null)
             ModelState.AddModelError(nameof(BatchNumber), "Enter a batch number.");
         if (string.IsNullOrWhiteSpace(ReportType))
-            ModelState.AddModelError(nameof(ReportType), "Select a report type.");
+            ModelState.AddModelError(nameof(ReportType), "Select the report type");
 
         if (!ModelState.IsValid)
             return Page();

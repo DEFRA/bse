@@ -8,7 +8,7 @@ public class OutstandingSearchViewModel : SearchViewModelBase<OutstandingCaseRes
     public DateTime? LatestFormADate { get; set; }
     public bool IncludeNonGb { get; set; }
 
-    public string SearchType { get; set; } = "BSE1"; // BSE1 | Fates | Results
+    public string SearchType { get; set; } = ""; // BSE1 | Fates | Results
 
     protected override int PageSize => 10;
 

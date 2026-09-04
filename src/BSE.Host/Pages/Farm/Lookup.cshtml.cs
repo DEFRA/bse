@@ -1,4 +1,5 @@
 using BSE.Modules.FarmManagement.Services;
+using BSE.SharedKernel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -19,13 +20,14 @@ public class LookupModel : PageModel
     {
         if (string.IsNullOrWhiteSpace(Cphh)) return Page();
 
-        var farm = await _farm.GetByCphhAsync(Cphh.Trim());
+        var normalizedCphh = CphhNormalizer.Normalize(Cphh);
+        var farm = await _farm.GetByCphhAsync(normalizedCphh);
         if (farm is null)
         {
             IsNotFound = true;
             return Page();
         }
 
-        return RedirectToPage("/Farm/Details", new { cphh = farm.CPHH });
+        return RedirectToPage("/Farm/Details", new { cphh = normalizedCphh });
     }
 }
