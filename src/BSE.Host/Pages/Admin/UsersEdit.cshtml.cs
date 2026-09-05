@@ -46,8 +46,6 @@ public class UsersEditModel(IUserManagementService userManagementService, ILooku
         EditIsActive = Request.Form[nameof(EditIsActive)]
             .Any(v => string.Equals(v, "true", StringComparison.OrdinalIgnoreCase));
 
-        if (string.IsNullOrWhiteSpace(EditNTLogin))
-            ModelState.AddModelError(nameof(EditNTLogin), "Enter NT login");
         if (string.IsNullOrWhiteSpace(EditUserName))
             ModelState.AddModelError(nameof(EditUserName), "Enter a display name");
         if (EditUserGroupId <= 0)

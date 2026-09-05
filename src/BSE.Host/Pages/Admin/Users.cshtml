@@ -75,7 +75,7 @@
                         }
                     </select>
                 </div>
-                <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input id="is-active" name="IsActive" value="true" type="checkbox" class="govuk-checkboxes__input" checked /><input type="hidden" name="IsActive" value="false" /><label class="govuk-label govuk-checkboxes__label" for="is-active">Active</label></div></div></div>
+                <div class="govuk-form-group"><div class="govuk-checkboxes" data-module="govuk-checkboxes"><div class="govuk-checkboxes__item"><input type="hidden" name="IsActive" value="false" /><input id="is-active" name="IsActive" value="true" type="checkbox" class="govuk-checkboxes__input" checked /><label class="govuk-label govuk-checkboxes__label" for="is-active">Active</label></div></div></div>
                 <button type="submit" class="govuk-button" data-module="govuk-button">Save user</button>
             </form>
         </div>
@@ -97,8 +97,6 @@
             <tr class="govuk-table__row">
                 @{ ViewData["Label"] = "ID";       ViewData["Column"] = "UserId";   ViewData["SortColumn"] = usersSortCol; ViewData["SortDesc"] = usersSortDesc; ViewData["BaseUrl"] = usersSortBase; ViewData["Prefix"] = ""; }
                 <partial name="_SortableHeader" />
-                @{ ViewData["Label"] = "NT login"; ViewData["Column"] = "NTLogin"; }
-                <partial name="_SortableHeader" />
                 @{ ViewData["Label"] = "Name";     ViewData["Column"] = "UserName"; }
                 <partial name="_SortableHeader" />
                 @{ ViewData["Label"] = "Email";    ViewData["Column"] = "Email"; }
@@ -117,7 +115,6 @@
             {
                 <tr class="govuk-table__row">
                     <td class="govuk-table__cell">@u.UserId</td>
-                    <td class="govuk-table__cell">@u.NTLogin</td>
                     <td class="govuk-table__cell">@u.UserName</td>
                     <td class="govuk-table__cell">@u.Email</td>
                     <td class="govuk-table__cell">@(Model.UserGroups.FirstOrDefault(g => g.Id == u.UserGroupId)?.Name)</td>

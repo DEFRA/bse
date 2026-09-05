@@ -2,11 +2,10 @@
 @model BSE.Host.Pages.Admin.UsersEditModel
 @{
     ViewData["Title"] = "Edit user";
-    var ntLoginError = ViewData.ModelState[nameof(Model.EditNTLogin)]?.Errors.FirstOrDefault()?.ErrorMessage;
     var nameError = ViewData.ModelState[nameof(Model.EditUserName)]?.Errors.FirstOrDefault()?.ErrorMessage;
     var groupError = ViewData.ModelState[nameof(Model.EditUserGroupId)]?.Errors.FirstOrDefault()?.ErrorMessage;
     var emailError = ViewData.ModelState[nameof(Model.EditEmail)]?.Errors.FirstOrDefault()?.ErrorMessage;
-    bool hasErrors = ntLoginError is not null || nameError is not null || groupError is not null || emailError is not null;
+    bool hasErrors = nameError is not null || groupError is not null || emailError is not null;
 }
 
 <h1 class="govuk-heading-l">Edit user</h1>
@@ -26,7 +25,6 @@
             <h2 class="govuk-error-summary__title">There is a problem</h2>
             <div class="govuk-error-summary__body">
                 <ul class="govuk-list govuk-error-summary__list">
-                    @if (ntLoginError is not null) { <li><a href="#edit-nt-login">@ntLoginError</a></li> }
                     @if (nameError is not null) { <li><a href="#edit-user-name">@nameError</a></li> }
                     @if (groupError is not null) { <li><a href="#edit-user-group-id">@groupError</a></li> }
                     @if (emailError is not null) { <li><a href="#edit-email">@emailError</a></li> }
@@ -38,12 +36,7 @@
 
 <form method="post" novalidate>
     <input type="hidden" asp-for="Id" />
-
-    <div class="govuk-form-group @(ntLoginError is not null ? "govuk-form-group--error" : "")">
-        <label class="govuk-label" for="edit-nt-login">NT login</label>
-        @if (ntLoginError is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ntLoginError</p> }
-        <input id="edit-nt-login" asp-for="EditNTLogin" class="govuk-input govuk-!-width-one-half @(ntLoginError is not null ? "govuk-input--error" : "")" />
-    </div>
+    <input type="hidden" asp-for="EditNTLogin" />
 
     <div class="govuk-form-group @(nameError is not null ? "govuk-form-group--error" : "")">
         <label class="govuk-label" for="edit-user-name">Display name</label>
@@ -71,8 +64,8 @@
     <div class="govuk-form-group">
         <div class="govuk-checkboxes" data-module="govuk-checkboxes">
             <div class="govuk-checkboxes__item">
-                <input id="edit-is-active" name="EditIsActive" value="true" type="checkbox" class="govuk-checkboxes__input" @(Model.EditIsActive ? "checked" : "") />
                 <input type="hidden" name="EditIsActive" value="false" />
+                <input id="edit-is-active" name="EditIsActive" value="true" type="checkbox" class="govuk-checkboxes__input" @(Model.EditIsActive ? "checked" : "") />
                 <label class="govuk-label govuk-checkboxes__label" for="edit-is-active">Active</label>
             </div>
         </div>
