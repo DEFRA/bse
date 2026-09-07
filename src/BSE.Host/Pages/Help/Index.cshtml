@@ -369,16 +369,193 @@
         @if (isPickListAccess || isVLAMaintenance)
         {
             <h3 class="govuk-heading-m" id="PickListMaintenance">Pick list maintenance</h3>
-            <p class="govuk-body">The Pick List Maintenance page manages the values shown in drop-down lists throughout the system. Use the drop-down at the top of the page to select the list you want to maintain. Add, edit or remove rows using the action links in the table.</p>
-            <p class="govuk-body">You cannot delete a pick list value that is already referenced by a case record. The following pick lists are available:</p>
+            <p class="govuk-body">The Pick List Maintenance page enables you to maintain the values which are displayed in drop-down lists throughout the system.</p>
+            <p class="govuk-body">Use the <strong>Select a Table</strong> drop-down at the top of the page to navigate through the tables. See the section on <a class="govuk-link" href="#General_Grids">Data tables</a> for information on how to add, edit and remove rows. If data for a case has been entered using a value in the table then you will not be allowed to delete that row.</p>
+            @if (isVLAMaintenance)
+            {
+                <p class="govuk-body">If you enter a string longer than the database allows then it will be truncated, so check the field sizes listed below before entering data. Each code must be unique within its table — if you enter a code that already exists you will see the message "The Code you have selected is already used".</p>
+                <p class="govuk-body">Read this section before adding any new codes, as some lists affect the behaviour of other parts of the system.</p>
+            }
+            else
+            {
+                <p class="govuk-body">You have read-only access to pick lists, so you can view and sort the records but cannot add, edit or delete them. Only VLA Maintenance users can change pick list values.</p>
+            }
+
+            <h4 class="govuk-heading-s">Tables and their main function</h4>
+
+            <p class="govuk-body" id="PickListMaintenanceAHO"><strong>AHO</strong> — list of Animal Health Offices.</p>
             <ul class="govuk-list govuk-list--bullet">
-                <li><strong>AHO</strong> — Animal Health Offices (code, name, BSE region ID)</li>
-                <li><strong>Animal Origin List</strong> — possible origins for an animal (code, description)</li>
-                <li><strong>Animal Status</strong> — states for the animal (code, description)</li>
-                <li><strong>Birth Date Source</strong> — source of birth date information (code, description)</li>
-                <li><strong>Breed</strong> — animal breed values</li>
-                <li>Other reference data lists used throughout the system</li>
+                <li>Code — char(2)</li>
+                <li>Name — varchar(50)</li>
+                <li>BSE Region — selected from the list of BSE regions</li>
             </ul>
+
+            <p class="govuk-body"><strong>AHRO</strong> — list of Animal Health Regional Offices.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Name — varchar(50)</li>
+            </ul>
+
+            <p class="govuk-body"><strong>Animal Origin List</strong> — list of possible origins for an animal.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — char(1)</li>
+                <li>Description — varchar(10)</li>
+            </ul>
+
+            <p class="govuk-body"><strong>Animal Status</strong> — list of states for the animal.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(9)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+            <p class="govuk-body">Adding codes to this list could affect the status recorded for the dam on the expRelation table.</p>
+
+            <p class="govuk-body"><strong>Birth Date Source</strong> — source of information that provided the birth date.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(5)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+
+            <p class="govuk-body" id="PickListMaintenanceBreed"><strong>Breed</strong> — list of breeds for the animal.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(20)</li>
+                <li>Full Name — varchar(50)</li>
+                <li>Amalgamated Name — varchar(50)</li>
+            </ul>
+
+            <p class="govuk-body" id="PickListMaintenanceBSECounty"><strong>BSE County</strong> — list of counties for BSE reporting.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>ID — char(2)</li>
+                <li>Code — varchar(15)</li>
+                <li>Description — varchar(50)</li>
+                <li>BSE Region — selected from the list of BSE regions</li>
+            </ul>
+            <p class="govuk-body">Codes added to this list will not be linked to the parish table.</p>
+
+            <p class="govuk-body"><strong>Case Fate</strong> — list of possible fates for an animal that is a case.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(4)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+            <p class="govuk-body">Adding codes to this list may affect the status recorded for the animal and farm on the expCase and expFarm tables.</p>
+
+            <p class="govuk-body"><strong>Document Type</strong> — the type of document, related to batch number.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(5)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+            <p class="govuk-body">Codes added to this list will not be available for producing files for the Optical Storage System (OSS).</p>
+
+            <p class="govuk-body"><strong>Feed Risk</strong> — risk associated with the type of feed.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(10)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+
+            <p class="govuk-body"><strong>Herd Type</strong> — type of herd on the farm.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — char(1)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+
+            <p class="govuk-body"><strong>Horizontal Risk</strong> — risk of horizontal transmission between the case and another animal.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(10)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+
+            <p class="govuk-body"><strong>Maternal Risk</strong> — risk of transmission between the case and its maternal parent.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(10)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+
+            <p class="govuk-body"><strong>Owner Type</strong> — category of the other owners of an animal.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(10)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+
+            <p class="govuk-body"><strong>Pedigree Type</strong> — the pedigree status of the herd.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — char(2)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+
+            <p class="govuk-body"><strong>Ration Type</strong> — the type of ration fed to the animal.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(2)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+
+            <p class="govuk-body" id="PickListMaintenanceRelationFate"><strong>Relation Fate</strong> — the fate of animals related to the case.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(12)</li>
+                <li>Description — varchar(50)</li>
+                <li>Is Active — yes or no</li>
+            </ul>
+            <p class="govuk-body">Adding codes to this list could affect the status recorded for offspring on the expRelation table.</p>
+
+            <p class="govuk-body"><strong>Relation Type</strong> — the relationship between the case and its relation.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(11)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+
+            <p class="govuk-body"><strong>Reported Location</strong> — location of the case when BSE was first reported.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(5)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+
+            <p class="govuk-body"><strong>Sex</strong> — sex of the animal.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — char(1)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+            <p class="govuk-body">If codes are added to this table, animals with the new code will not be considered male or female. This will mean, for example, that they will not be allowed to be dams or sires.</p>
+
+            <p class="govuk-body" id="PickListMaintenanceSupplier"><strong>Supplier</strong> — details of feed suppliers.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Name — varchar(30)</li>
+                <li>Details — varchar(60)</li>
+            </ul>
+            <p class="govuk-body">The supplier ID is allocated automatically by the system.</p>
+
+            <p class="govuk-body"><strong>Survey</strong> — categorisation of cases found as a result of active surveillance.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(4)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+            <p class="govuk-body">Codes added to this list will not be matched up to the testing group recorded on the BSE Surveillance System (BSESS).</p>
+
+            <p class="govuk-body"><strong>Test Result</strong> — list of possible test results.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(5)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+            <p class="govuk-body">Codes added to this list could affect the logic and validation of data based on the result, for example printing confirmation memos, and automatic allocation of DBSE No. for positives.</p>
+
+            <p class="govuk-body" id="PickListMaintenanceTestType"><strong>Test Type</strong> — list of possible tests.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(10)</li>
+                <li>Description — varchar(50)</li>
+                <li>Is Active — yes or no</li>
+            </ul>
+
+            <p class="govuk-body" id="PickListMaintenanceTSETestingSite"><strong>TSE Testing Site</strong> — list of sites where TSE testing is carried out.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>CPH</li>
+                <li>Name</li>
+                <li>Address</li>
+                <li>AHO</li>
+            </ul>
+
+            <p class="govuk-body"><strong>Valuation Age</strong> — age of the animal for valuation purposes.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — char(1)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+
+            <p class="govuk-body">See also: <a class="govuk-link" href="#General_Grids">Data tables</a></p>
         }
 
         @if (isVLAMaintenance)
@@ -389,8 +566,9 @@
             <h3 class="govuk-heading-m" id="DeleteCase">Delete case</h3>
             <p class="govuk-body">The Delete Case page permanently removes a case from the system. Enter the RBSE of the case to look it up, review the case details displayed, then select <strong>Confirm delete</strong>. This action cannot be undone. Cases with linked records (feeds, clinical data, batch assignments) cannot be deleted.</p>
 
-            <h3 class="govuk-heading-m" id="UserMaintenance">User maintenance</h3>
-            <p class="govuk-body">The User Maintenance page manages system users. Use it to view, create, edit and deactivate user accounts and assign users to the correct user group. Each user must be assigned to exactly one group.</p>
+            <h3 class="govuk-heading-m" id="UserMaintenance">User Maintenance</h3>
+            <p class="govuk-body">This page enables you to add and remove users from the system. VLA Maintenance users are the only users with access to this page.</p>
+            <p class="govuk-body">You cannot delete a user from the database as this will affect the Audit Log. However, you can make the user inactive. The e-mail address is used for the ADNS export.</p>
         }
 
         <p class="govuk-body govuk-!-margin-top-4"><a class="govuk-link" href="#">Back to top</a></p>
