@@ -33,4 +33,6 @@ public interface IBatchService
 
     /// <summary>Returns the display-formatted RBSE/CPHH list for a given batch ID.</summary>
     Task<IReadOnlyList<BatchCaseRecord>> GetCaseDetailsByBatchIdAsync(int batchId);
+
+    Task<IReadOnlyList<IDictionary<string, object?>>> GetReportRowsAsync(string storedProcedure, int batchId);
 }

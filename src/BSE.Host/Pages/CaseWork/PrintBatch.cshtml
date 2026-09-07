@@ -13,7 +13,24 @@
     </ol>
 </nav>
 
-<form method="get" novalidate>
+@if (!ViewContext.ModelState.IsValid)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@e.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+<form method="post" asp-page-handler="Download" novalidate>
     <div class="govuk-form-group">
         <fieldset class="govuk-fieldset">
             <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">Enter batch number</legend>
@@ -21,69 +38,29 @@
             <div class="govuk-!-display-flex govuk-!-gap-3 govuk-!-align-items-end">
                 <div>
                     <label class="govuk-label govuk-!-font-weight-bold" for="batch-year">Year</label>
-                    <input id="batch-year" name="BatchYear" type="text" inputmode="numeric"
-                           class="govuk-input govuk-input--width-4"
-                           value="@Model.BatchYear" autocomplete="off" />
+                    <input id="batch-year" asp-for="BatchYear" type="text" inputmode="numeric"
+                           class="govuk-input govuk-input--width-4" autocomplete="off" />
                 </div>
                 <div>
                     <label class="govuk-label govuk-!-font-weight-bold" for="batch-number">Number</label>
-                    <input id="batch-number" name="BatchNumber" type="text" inputmode="numeric"
-                           class="govuk-input govuk-input--width-5"
-                           value="@Model.BatchNumber" autocomplete="off" />
-                </div>
-                <div>
-                    <button type="submit" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0"
-                            data-module="govuk-button">View</button>
+                    <input id="batch-number" asp-for="BatchNumber" type="text" inputmode="numeric"
+                           class="govuk-input govuk-input--width-5" autocomplete="off" />
                 </div>
             </div>
         </fieldset>
     </div>
-</form>
 
-@if (Model.IsNotFound)
-{
-    <div class="govuk-warning-text">
-        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
-        <strong class="govuk-warning-text__text">
-            <span class="govuk-warning-text__assistive">Warning</span>
-            Batch @Model.BatchYear/@Model.BatchNumber was not found.
-        </strong>
+    <div class="govuk-form-group">
+        <label asp-for="SelectedReportType" class="govuk-label">Report type</label>
+        <select asp-for="SelectedReportType" class="govuk-select">
+            <option value="0"></option>
+            <option value="1">Clinical</option>
+            <option value="2">Farm and Case</option>
+            <option value="3">Feeds</option>
+            <option value="4">Offspring</option>
+            <option value="5">Pedigree</option>
+        </select>
     </div>
-}
 
-@if (Model.HasSearched && !Model.IsNotFound)
-{
-    <h2 class="govuk-heading-m">Batch @Model.BatchYear/@Model.BatchNumber — @Model.Cases.Count case(s)</h2>
-
-    @if (Model.Cases.Count == 0)
-    {
-        <p class="govuk-body">No cases are recorded against this batch.</p>
-    }
-    else
-    {
-        <table class="govuk-table">
-            <caption class="govuk-table__caption govuk-table__caption--s govuk-visually-hidden">Cases in batch @Model.BatchYear/@Model.BatchNumber</caption>
-            <thead class="govuk-table__head">
-                <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header">RBSE</th>
-                    <th scope="col" class="govuk-table__header">CPHH</th>
-                </tr>
-            </thead>
-            <tbody class="govuk-table__body">
-                @foreach (var c in Model.Cases)
-                {
-                    <tr class="govuk-table__row">
-                        <td class="govuk-table__cell">
-                            <a asp-page="/Case/Details" asp-route-rbse="@c.Rbse" class="govuk-link">@c.Rbse</a>
-                        </td>
-                        <td class="govuk-table__cell">@(c.Cphh ?? "—")</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-
-        <p class="govuk-body">
-            <a href="javascript:window.print()" class="govuk-link">Print this page</a>
-        </p>
-    }
-}
+    <button type="submit" class="govuk-button" data-module="govuk-button">Download</button>
+</form>

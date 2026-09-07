@@ -117,4 +117,23 @@ public sealed class BatchRepository : DapperRepository, IBatchRepository
         var result = await QueryAsync<BatchCaseRecord>("GetCPHHRBSEForBatchID", new { BatchID = batchId });
         return result.ToList();
     }
+    public async Task<IReadOnlyList<IDictionary<string, object?>>> GetReportRowsAsync(string storedProcedure, int batchId)
+    {
+        var rows = await QueryAsync<dynamic>(storedProcedure, new { BatchID = batchId });
+
+        var result = new List<IDictionary<string, object?>>();
+        foreach (var r in rows)
+        {
+            if (r is IDictionary<string, object> d)
+            {
+                result.Add(d.ToDictionary(k => k.Key, v => v.Value));
+            }
+            else
+            {
+                result.Add(new Dictionary<string, object?>());
+            }
+        }
+
+        return result;
+    }
 }
