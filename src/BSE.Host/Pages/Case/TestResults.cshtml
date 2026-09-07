@@ -82,31 +82,9 @@ else
     <p class="govuk-body govuk-!-colour-secondary">No individual test records.</p>
 }
 
-<h2 class="govuk-heading-m govuk-!-margin-top-6">Add a test record</h2>
-<form method="post" asp-page-handler="AddTest" novalidate>
-    <input type="hidden" asp-for="Rbse" />
-    <div class="govuk-form-group">
-        <label class="govuk-label" for="test-type">Test type</label>
-        <select id="test-type" name="NewTest.TestType" class="govuk-select govuk-!-width-one-half">
-            <option value="">&mdash; select &mdash;</option>
-            @foreach (var tt in Model.TestTypes)
-            {
-                <option value="@tt.Code">@tt.Description</option>
-            }
-        </select>
-    </div>
-    <div class="govuk-form-group">
-        <label class="govuk-label" for="test-result">Test result</label>
-        <select id="test-result" name="NewTest.TestResult" class="govuk-select govuk-!-width-one-half">
-            <option value="">&mdash; select &mdash;</option>
-            @foreach (var tr in Model.TestResults)
-            {
-                <option value="@tr.Code">@tr.Description</option>
-            }
-        </select>
-    </div>
-    <button type="submit" class="govuk-button" data-module="govuk-button">Add test record</button>
-</form>
+<div class="govuk-button-group govuk-!-margin-top-6">
+    <a asp-page="/Case/CaseTestAdd" asp-route-rbse="@Model.Rbse" asp-route-from="tests" class="govuk-button govuk-button--secondary">Add test record</a>
+</div>
 
 <div class="govuk-button-group govuk-!-margin-top-6">
     <a asp-page="/Case/Edit" asp-route-rbse="@Model.Rbse" class="govuk-link">Back to case (DEFRA)</a>

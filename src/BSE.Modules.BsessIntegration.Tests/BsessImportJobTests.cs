@@ -8,6 +8,20 @@ namespace BSE.Modules.BsessIntegration.Tests;
 
 public class BsessImportJobTests
 {
+    private static async Task WaitForAsync(Func<bool> condition, int timeoutMs = 3000, int pollMs = 50)
+    {
+        var started = DateTime.UtcNow;
+        while (!condition())
+        {
+            if ((DateTime.UtcNow - started).TotalMilliseconds >= timeoutMs)
+            {
+                throw new TimeoutException("Condition was not met within the expected timeout.");
+            }
+
+            await Task.Delay(pollMs);
+        }
+    }
+
     private static BsessImportJob CreateJob(
         IBsessEtlService etlService,
         int intervalMinutes = 10_000,
@@ -29,13 +43,15 @@ public class BsessImportJobTests
     public async Task ExecuteAsync_CallsImportAsyncOnStartup()
     {
         var etlService = Substitute.For<IBsessEtlService>();
+        var importCallCount = 0;
         etlService.ImportAsync(Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        etlService.When(x => x.ImportAsync(Arg.Any<CancellationToken>())).Do(_ => importCallCount++);
 
         var job = CreateJob(etlService);
         using var cts = new CancellationTokenSource();
 
         await job.StartAsync(cts.Token);
-        await Task.Delay(200); // allow initial import cycle to complete
+        await WaitForAsync(() => importCallCount > 0);
         await job.StopAsync(CancellationToken.None);
 
         await etlService.Received().ImportAsync(Arg.Any<CancellationToken>());

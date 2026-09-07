@@ -1,11 +1,11 @@
 @page
 @model NewFarmsModel
 @{
-    ViewData["Title"] = "Audit log — new farms";
+    ViewData["Title"] = "New Farms Audit Log Report";
 }
 
 <div>
-    <h1 class="govuk-heading-l">Audit log — new farms</h1>
+    <h1 class="govuk-heading-l">New Farms Audit Log Report</h1>
     <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
         <ol class="govuk-breadcrumbs__list">
             <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
@@ -13,7 +13,7 @@
             <li class="govuk-breadcrumbs__list-item" aria-current="page">New farms</li>
         </ol>
     </nav>
-    <partial name="_AuditDateRangeForm" model="@(new BSE.Host.Models.ViewModels.AuditDateRangeViewModel(Model.StartDate, Model.EndDate))" />
+    <partial name="_AuditDateRangeForm" model="@(new BSE.Host.Models.ViewModels.AuditDateRangeViewModel(Model.StartDate, Model.EndDate, Model.StartDateError, Model.EndDateError))" />
 
     @if (Model.Entries.Any())
     {
@@ -29,17 +29,27 @@
             <caption class="govuk-visually-hidden">New farms audit log entries</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    @{ ViewData["Label"] = "Date/time"; ViewData["Column"] = "DateTime"; ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Prefix"] = ""; }
+                    @{ ViewData["Label"] = "Table";      ViewData["Column"] = "Table"; ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Prefix"] = ""; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "User";    ViewData["Column"] = "User"; }
+                    @{ ViewData["Label"] = "Field";      ViewData["Column"] = "Field"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "CPHH";    ViewData["Column"] = "Key"; }
+                    @{ ViewData["Label"] = "Date Time";  ViewData["Column"] = "DateTime"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Owner";   ViewData["Column"] = "Owner"; }
+                    @{ ViewData["Label"] = "User";       ViewData["Column"] = "User"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Address"; ViewData["Column"] = "Address"; }
+                    @{ ViewData["Label"] = "Before";     ViewData["Column"] = "Before"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "County";  ViewData["Column"] = "County"; }
+                    @{ ViewData["Label"] = "After";      ViewData["Column"] = "After"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Reason";     ViewData["Column"] = "Reason"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Key";        ViewData["Column"] = "Key"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Owner Name"; ViewData["Column"] = "Owner"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Address";    ViewData["Column"] = "Address"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "County";     ViewData["Column"] = "County"; }
                     <partial name="_SortableHeader" />
                 </tr>
             </thead>
@@ -47,8 +57,13 @@
                 @foreach (var e in Model.PagedEntries)
                 {
                     <tr class="govuk-table__row">
+                        <td class="govuk-table__cell">@e.TableName</td>
+                        <td class="govuk-table__cell">@e.FieldName</td>
                         <td class="govuk-table__cell">@e.DateTime.ToString("dd/MM/yyyy HH:mm")</td>
                         <td class="govuk-table__cell">@e.UserName</td>
+                        <td class="govuk-table__cell">@e.BeforeValue</td>
+                        <td class="govuk-table__cell">@e.AfterValue</td>
+                        <td class="govuk-table__cell">@e.Reason</td>
                         <td class="govuk-table__cell">@e.Key</td>
                         <td class="govuk-table__cell">@e.OwnerName</td>
                         <td class="govuk-table__cell">@e.Address</td>
@@ -58,6 +73,7 @@
             </tbody>
         </table>
         @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
+        @await Html.PartialAsync("_ExportLink")
     }
     else if (Model.HasSearched)
     {

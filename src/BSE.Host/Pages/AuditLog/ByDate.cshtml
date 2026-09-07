@@ -1,11 +1,11 @@
 @page
 @model ByDateModel
 @{
-    ViewData["Title"] = "Audit log by date";
+    ViewData["Title"] = "Daily Audit Log Report";
 }
 
 <div>
-    <h1 class="govuk-heading-l">Audit log by date</h1>
+    <h1 class="govuk-heading-l">Daily Audit Log Report</h1>
     <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
         <ol class="govuk-breadcrumbs__list">
             <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
@@ -14,20 +14,38 @@
         </ol>
     </nav>
 
+    @if (Model.LogDateError is not null)
+    {
+        <div class="govuk-error-summary" data-module="govuk-error-summary">
+            <div role="alert">
+                <h2 class="govuk-error-summary__title">There is a problem</h2>
+                <div class="govuk-error-summary__body">
+                    <ul class="govuk-list govuk-error-summary__list">
+                        <li><a href="#LogDate">@Model.LogDateError</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    }
+
     <form method="get" novalidate class="govuk-!-margin-bottom-6">
-        <div class="govuk-form-group">
+        <div class="govuk-form-group @(Model.LogDateError is not null ? "govuk-form-group--error" : "")">
             <label asp-for="LogDate" class="govuk-label">Date</label>
-            <input asp-for="LogDate" type="date" class="govuk-input govuk-input--width-10" />
+            @if (Model.LogDateError is not null)
+            {
+                <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.LogDateError</p>
+            }
+            <input asp-for="LogDate" type="date" class="govuk-input govuk-input--width-10 @(Model.LogDateError is not null ? "govuk-input--error" : "")" />
         </div>
         <div class="govuk-button-group">
             <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
-            <a asp-page="/AuditLog/ByDate" class="govuk-link">Clear search</a>
+            <a asp-page="/AuditLog/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button" role="button" draggable="false">Audit Log Menu</a>
         </div>
     </form>
 
     @if (Model.Entries.Any())
     {
-        <h2 class="govuk-heading-m">@Model.Entries.Count() entries on @Model.LogDate.ToString("dd/MM/yyyy")</h2>
+        <h2 class="govuk-heading-m">@Model.Entries.Count() entries on @Model.LogDate?.ToString("dd/MM/yyyy")</h2>
         var sortBase = "?" + string.Join("&", HttpContext.Request.Query
             .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
                      && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase)
@@ -39,21 +57,21 @@
             <caption class="govuk-visually-hidden">Audit log entries by date</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    @{ ViewData["Label"] = "Time";   ViewData["Column"] = "DateTime"; ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Prefix"] = ""; }
+                    @{ ViewData["Label"] = "Table";     ViewData["Column"] = "Table"; ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Prefix"] = ""; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "User";   ViewData["Column"] = "User"; }
+                    @{ ViewData["Label"] = "Field";     ViewData["Column"] = "Field"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Table";  ViewData["Column"] = "Table"; }
+                    @{ ViewData["Label"] = "Date Time"; ViewData["Column"] = "DateTime"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Field";  ViewData["Column"] = "Field"; }
+                    @{ ViewData["Label"] = "User";      ViewData["Column"] = "User"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Key";    ViewData["Column"] = "Key"; }
+                    @{ ViewData["Label"] = "Before";    ViewData["Column"] = "Before"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Before"; ViewData["Column"] = "Before"; }
+                    @{ ViewData["Label"] = "After";     ViewData["Column"] = "After"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "After";  ViewData["Column"] = "After"; }
+                    @{ ViewData["Label"] = "Reason";    ViewData["Column"] = "Reason"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Reason"; ViewData["Column"] = "Reason"; }
+                    @{ ViewData["Label"] = "Key";       ViewData["Column"] = "Key"; }
                     <partial name="_SortableHeader" />
                 </tr>
             </thead>
@@ -61,19 +79,20 @@
                 @foreach (var e in Model.PagedEntries)
                 {
                     <tr class="govuk-table__row">
-                        <td class="govuk-table__cell">@e.DateTime.ToString("HH:mm")</td>
-                        <td class="govuk-table__cell">@e.UserName</td>
                         <td class="govuk-table__cell">@e.TableName</td>
                         <td class="govuk-table__cell">@e.FieldName</td>
-                        <td class="govuk-table__cell">@e.Key</td>
+                        <td class="govuk-table__cell">@e.DateTime.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td class="govuk-table__cell">@e.UserName</td>
                         <td class="govuk-table__cell">@e.BeforeValue</td>
                         <td class="govuk-table__cell">@e.AfterValue</td>
                         <td class="govuk-table__cell">@e.Reason</td>
+                        <td class="govuk-table__cell">@e.Key</td>
                     </tr>
                 }
             </tbody>
         </table>
         @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
+        @await Html.PartialAsync("_ExportLink")
     }
     else if (Model.HasSearched)
     {
@@ -82,7 +101,7 @@
                 <h2 class="govuk-notification-banner__title" id="audit-info-title">Information</h2>
             </div>
             <div class="govuk-notification-banner__content">
-                <p class="govuk-notification-banner__heading">No audit log entries found for @Model.LogDate.ToString("dd/MM/yyyy").</p>
+                <p class="govuk-notification-banner__heading">No audit log entries found for @Model.LogDate?.ToString("dd/MM/yyyy").</p>
             </div>
         </div>
     }

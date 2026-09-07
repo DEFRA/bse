@@ -163,52 +163,13 @@ else
 
     @if (Model.CanEdit)
     {
-        <h2 class="govuk-heading-m">Add a new record</h2>
-        <form method="post" asp-page-handler="Add" novalidate>
-            <input type="hidden" name="tableId" value="@Model.TableId" />
-            <input type="hidden" name="sortColumn" value="@Model.SortColumn" />
-            <input type="hidden" name="sortDesc" value="@Model.SortDesc.ToString().ToLowerInvariant()" />
-            <input type="hidden" name="pageNumber" value="@Model.PageNumber" />
-            @foreach (var field in Model.DisplayFields)
-            {
-                var error = ViewContext.ModelState[field.Column]?.Errors.FirstOrDefault()?.ErrorMessage;
-                var current = Model.Fields.GetValueOrDefault(field.Column, "");
-                <div class="govuk-form-group @(error is not null ? "govuk-form-group--error" : "")">
-                    @if (field.IsBoolean)
-                    {
-                        <div class="govuk-checkboxes govuk-checkboxes--small" data-module="govuk-checkboxes">
-                            <div class="govuk-checkboxes__item">
-                                <input class="govuk-checkboxes__input" id="field-@field.Column"
-                                       name="Fields[@field.Column]" type="checkbox" value="true" checked />
-                                <label class="govuk-label govuk-checkboxes__label" for="field-@field.Column">@field.Label</label>
-                            </div>
-                        </div>
-                    }
-                    else if (field.IsRegionLookup)
-                    {
-                        <label class="govuk-label" for="field-@field.Column">@field.Label</label>
-                        <select class="govuk-select govuk-!-width-two-thirds"
-                                id="field-@field.Column" name="Fields[@field.Column]">
-                            <option value=""></option>
-                            @foreach (var region in Model.BseRegionOptions)
-                            {
-                                <option value="@region.Id" selected="@(region.Id.ToString() == current)">@region.Name</option>
-                            }
-                        </select>
-                    }
-                    else
-                    {
-                        <label class="govuk-label" for="field-@field.Column">@field.Label</label>
-                        @if (error is not null)
-                        {
-                            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @error</p>
-                        }
-                        <input class="govuk-input govuk-!-width-two-thirds @(error is not null ? "govuk-input--error" : "")"
-                               id="field-@field.Column" name="Fields[@field.Column]" value="@current" />
-                    }
-                </div>
-            }
-            <button type="submit" class="govuk-button" data-module="govuk-button">Add record</button>
-        </form>
+        <div class="govuk-button-group govuk-!-margin-top-4">
+            <a class="govuk-button govuk-button--secondary"
+               asp-page="/Admin/PickListsAdd"
+               asp-route-tableId="@Model.TableId"
+               asp-route-sortColumn="@Model.SortColumn"
+               asp-route-sortDesc="@Model.SortDesc"
+               asp-route-pageNumber="@Model.PageNumber">Add a new record</a>
+        </div>
     }
 }

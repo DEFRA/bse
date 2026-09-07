@@ -31,52 +31,10 @@ public class OtherOwnersModel(
     public int OtherOwnersTotalPages { get; private set; } = 1;
     public int OtherOwnersTotalCount { get; private set; }
 
-    [BindProperty] public NewOwnerViewModel NewOwner { get; set; } = new();
-
     public async Task<IActionResult> OnGetAsync()
     {
         await LoadAsync();
         return Page();
-    }
-
-    public async Task<IActionResult> OnPostAddOwnerAsync()
-    {
-        // Must have either Name or CPHH (mirrors legacy lblOwnerError)
-        if (string.IsNullOrWhiteSpace(NewOwner.Type))
-            ModelState.AddModelError(string.Empty, "Owner type is required.");
-        if (string.IsNullOrWhiteSpace(NewOwner.Name) && string.IsNullOrWhiteSpace(NewOwner.Cphh))
-            ModelState.AddModelError(string.Empty, "You must enter either an owner name or a CPHH.");
-
-        // Only one Previous-type owner allowed (mirrors legacy lblPreviousError)
-        if (!string.IsNullOrWhiteSpace(NewOwner.Type))
-        {
-            var allOwners = await ownerRepository.GetByRbseAsync(Rbse);
-            var typeDesc  = OwnerTypes.FirstOrDefault(t => t.Code == NewOwner.Type)?.Description ?? "";
-            if (typeDesc.Contains("Previous", StringComparison.OrdinalIgnoreCase) &&
-                allOwners.Any(o => o.Type == NewOwner.Type))
-                ModelState.AddModelError(string.Empty, "You can only have one owner of type Previous.");
-        }
-
-        if (!ModelState.IsValid)
-        {
-            await LoadAsync();
-            return Page();
-        }
-
-        var command = new AddOtherOwnerCommand(
-            Rbse: Rbse,
-            Type: NewOwner.Type,
-            Name: string.IsNullOrWhiteSpace(NewOwner.Name) ? null : NewOwner.Name,
-            Cphh: string.IsNullOrWhiteSpace(NewOwner.Cphh) ? null : NewOwner.Cphh);
-
-        using var conn = connectionFactory.CreateConnection();
-        conn.Open();
-        using var tx = conn.BeginTransaction();
-        await ownerRepository.AddAsync(command, conn, tx);
-        tx.Commit();
-
-        TempData["Success"] = "Owner record added.";
-        return RedirectToPage(new { rbse = Rbse });
     }
 
     public async Task<IActionResult> OnPostDeleteOwnerAsync(int ownerId, string rowStampBase64)
@@ -114,10 +72,4 @@ public class OtherOwnersModel(
     public string OtherOwnersPageUrl(int page) =>
         $"?rbse={Uri.EscapeDataString(Rbse)}&OPage={page}&OSort={OSort}&ODir={ODir}";
 
-    public class NewOwnerViewModel
-    {
-        public string? Type { get; set; }
-        public string? Name { get; set; }
-        public string? Cphh { get; set; }
-    }
 }

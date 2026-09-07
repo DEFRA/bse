@@ -25,7 +25,6 @@
         <div class="govuk-grid-column-two-thirds">
             <div class="govuk-form-group">
                 <label asp-for="Rbse" class="govuk-label">RBSE Of Case</label>
-                <div id="rbse-hint" class="govuk-hint">RBSE Format: NN/NN/NNNNN</div>
                 <input asp-for="Rbse" class="govuk-input govuk-!-width-two-thirds" aria-describedby="rbse-hint" maxlength="11" />
                 <span asp-validation-for="Rbse" class="govuk-error-message"></span>
             </div>
@@ -37,7 +36,6 @@
 
             <div class="govuk-form-group">
                 <label asp-for="RelationRbse" class="govuk-label">RBSE of Related Animal</label>
-                <div id="relation-rbse-hint" class="govuk-hint">RBSE Format: NN/NN/NNNNN</div>
                 <input asp-for="RelationRbse" class="govuk-input govuk-!-width-two-thirds" aria-describedby="relation-rbse-hint" maxlength="11" />
                 <span asp-validation-for="RelationRbse" class="govuk-error-message"></span>
             </div>
@@ -60,7 +58,7 @@
 
             <div class="govuk-button-group">
                 <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
-                <a asp-page="/Home" class="govuk-link">Search Menu</a>
+                <a asp-page="/Search/Menu" class="govuk-link">Search Menu</a>
             </div>
         </div>
     </div>

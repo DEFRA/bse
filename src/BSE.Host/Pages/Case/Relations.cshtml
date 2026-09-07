@@ -49,18 +49,39 @@
 @* ── Batch numbers ── *@
 @if (User.IsInRole("DataEntry") && Model.BatchNumbers.Count > 0)
 {
-    <div class="govuk-summary-card govuk-!-margin-bottom-4">
-        <div class="govuk-summary-card__title-wrapper">
-            <h2 class="govuk-summary-card__title">Batch numbers</h2>
-        </div>
-        <div class="govuk-summary-card__content">
-            <ul class="govuk-list">
-                @foreach (var b in Model.BatchNumbers)
+    var batchSortBase = "?" + string.Join("&", HttpContext.Request.Query
+        .Where(k => !string.Equals(k.Key, "BSortColumn", StringComparison.OrdinalIgnoreCase)
+                 && !string.Equals(k.Key, "BSortDesc", StringComparison.OrdinalIgnoreCase)
+                 && !string.Equals(k.Key, "BPageNumber", StringComparison.OrdinalIgnoreCase))
+        .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
+    var batchSortColumn = HttpContext.Request.Query["BSortColumn"].ToString();
+    var batchSortDesc = bool.TryParse(HttpContext.Request.Query["BSortDesc"], out var desc) && desc;
+    var sortedBatchNumbers = batchSortColumn == "Document"
+        ? (batchSortDesc ? Model.BatchNumbers.OrderByDescending(b => b.Document) : Model.BatchNumbers.OrderBy(b => b.Document))
+        : (batchSortDesc ? Model.BatchNumbers.OrderByDescending(b => b.BatchNumber) : Model.BatchNumbers.OrderBy(b => b.BatchNumber));
+
+    <div class="govuk-!-margin-bottom-4">
+        <h2 class="govuk-heading-m">Batch numbers</h2>
+        <table class="govuk-table">
+            <caption class="govuk-visually-hidden">Batch numbers for @Model.Rbse</caption>
+            <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                    @{ ViewData["Label"] = "Batch Number"; ViewData["Column"] = "BatchNumber"; ViewData["SortColumn"] = batchSortColumn; ViewData["SortDesc"] = batchSortDesc; ViewData["BaseUrl"] = batchSortBase; ViewData["Prefix"] = "B"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Document"; ViewData["Column"] = "Document"; }
+                    <partial name="_SortableHeader" />
+                </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+                @foreach (var b in sortedBatchNumbers)
                 {
-                    <li>@b.BatchNumber@(b.Document is not null ? $" — {b.Document}" : "")</li>
+                    <tr class="govuk-table__row">
+                        <td class="govuk-table__cell">@b.BatchNumber</td>
+                        <td class="govuk-table__cell">@(string.IsNullOrWhiteSpace(b.Document) ? "—" : b.Document)</td>
+                    </tr>
                 }
-            </ul>
-        </div>
+            </tbody>
+        </table>
     </div>
 }
 
@@ -175,131 +196,8 @@ else
 @* ── Add relation form ── *@
 @if (User.IsInRole("DataEntry"))
 {
-    <details class="govuk-details" data-module="govuk-details" @(Model.ShowAddRelationPanel ? "open" : "")>
-        <summary class="govuk-details__summary">
-            <span class="govuk-details__summary-text">Add a related animal</span>
-        </summary>
-        <div class="govuk-details__text">
-            <form method="post" asp-page-handler="AddRelation" novalidate>
-                <input type="hidden" asp-for="Rbse" />
-
-                <div class="govuk-form-group @(ViewData.ModelState["NewRelation.RelationType"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
-                    <label class="govuk-label" for="add-relation-type">Relation type <strong class="govuk-tag govuk-tag--red">Required</strong></label>
-                    @if (ViewData.ModelState["NewRelation.RelationType"]?.Errors.Count > 0)
-                    {
-                        <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["NewRelation.RelationType"]!.Errors[0].ErrorMessage</p>
-                    }
-                    <select id="add-relation-type" name="NewRelation.RelationType"
-                            class="govuk-select @(ViewData.ModelState["NewRelation.RelationType"]?.Errors.Count > 0 ? "govuk-select--error" : "")">
-                        <option value="">— select —</option>
-                        @foreach (var rt in Model.RelationTypes)
-                        {
-                            <option value="@rt.Code" selected="@(rt.Code == Model.NewRelation.RelationType ? "selected" : null)">@rt.Description</option>
-                        }
-                    </select>
-                </div>
-
-                <div class="govuk-form-group @(ViewData.ModelState["NewRelation.RelationRbse"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
-                    <label class="govuk-label" for="add-relation-rbse">Relation RBSE</label>
-                    <div class="govuk-hint">Required if no eartag is provided</div>
-                    @if (ViewData.ModelState["NewRelation.RelationRbse"]?.Errors.Count > 0)
-                    {
-                        <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["NewRelation.RelationRbse"]!.Errors[0].ErrorMessage</p>
-                    }
-                    <input id="add-relation-rbse" name="NewRelation.RelationRbse"
-                           class="govuk-input govuk-!-width-one-half @(ViewData.ModelState["NewRelation.RelationRbse"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
-                           value="@Model.NewRelation.RelationRbse" />
-                </div>
-
-                <div class="govuk-form-group">
-                    <label class="govuk-label" for="add-eartag-country">Eartag country</label>
-                    <input id="add-eartag-country" name="NewRelation.EartagCountry" class="govuk-input govuk-input--width-5" value="@Model.NewRelation.EartagCountry" />
-                </div>
-
-                <div class="govuk-form-group">
-                    <label class="govuk-label" for="add-eartag-herdmark">Eartag herdmark</label>
-                    <input id="add-eartag-herdmark" name="NewRelation.EartagHerdmark" class="govuk-input govuk-!-width-one-half" value="@Model.NewRelation.EartagHerdmark" />
-                </div>
-
-                <div class="govuk-form-group">
-                    <label class="govuk-label" for="add-eartag">Eartag</label>
-                    <input id="add-eartag" name="NewRelation.Eartag" class="govuk-input govuk-!-width-two-thirds" value="@Model.NewRelation.Eartag" />
-                </div>
-
-                <div class="govuk-form-group">
-                    <label class="govuk-label" for="add-sex">Sex</label>
-                    <select id="add-sex" name="NewRelation.Sex" class="govuk-select govuk-!-width-one-quarter">
-                        <option value="">— select —</option>
-                        @foreach (var s in Model.Sexes)
-                        {
-                            <option value="@s.Code" selected="@(s.Code == Model.NewRelation.Sex ? "selected" : null)">@s.Description</option>
-                        }
-                    </select>
-                </div>
-
-                <div class="govuk-form-group">
-                    <fieldset class="govuk-fieldset">
-                        <legend class="govuk-fieldset__legend">Birth date (day / month / year)</legend>
-                        @if (ViewData.ModelState["NewRelation.BirthDay"]?.Errors.Count > 0)
-                        {
-                            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["NewRelation.BirthDay"]!.Errors[0].ErrorMessage</p>
-                        }
-                        @if (ViewData.ModelState["NewRelation.BirthMonth"]?.Errors.Count > 0)
-                        {
-                            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["NewRelation.BirthMonth"]!.Errors[0].ErrorMessage</p>
-                        }
-                        @if (ViewData.ModelState["NewRelation.BirthYear"]?.Errors.Count > 0)
-                        {
-                            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["NewRelation.BirthYear"]!.Errors[0].ErrorMessage</p>
-                        }
-                        <div class="govuk-date-input">
-                            <div class="govuk-date-input__item">
-                                <label class="govuk-label govuk-date-input__label" for="add-birth-day">Day</label>
-                                <input class="govuk-input govuk-date-input__input govuk-input--width-2 @(ViewData.ModelState["NewRelation.BirthDay"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
-                                       id="add-birth-day" name="NewRelation.BirthDay" type="text" inputmode="numeric"
-                                       value="@Model.NewRelation.BirthDay" />
-                            </div>
-                            <div class="govuk-date-input__item">
-                                <label class="govuk-label govuk-date-input__label" for="add-birth-month">Month</label>
-                                <input class="govuk-input govuk-date-input__input govuk-input--width-2 @(ViewData.ModelState["NewRelation.BirthMonth"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
-                                       id="add-birth-month" name="NewRelation.BirthMonth" type="text" inputmode="numeric"
-                                       value="@Model.NewRelation.BirthMonth" />
-                            </div>
-                            <div class="govuk-date-input__item">
-                                <label class="govuk-label govuk-date-input__label" for="add-birth-year">Year</label>
-                                <input class="govuk-input govuk-date-input__input govuk-input--width-4 @(ViewData.ModelState["NewRelation.BirthYear"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
-                                       id="add-birth-year" name="NewRelation.BirthYear" type="text" inputmode="numeric"
-                                       value="@Model.NewRelation.BirthYear" />
-                            </div>
-                        </div>
-                    </fieldset>
-                </div>
-
-                <div class="govuk-form-group">
-                    <label class="govuk-label" for="add-left-date">Left date</label>
-                    <input id="add-left-date" name="NewRelation.LeftDate" type="date" class="govuk-input govuk-input--width-10"
-                           value="@Model.NewRelation.LeftDate?.ToString("yyyy-MM-dd")" />
-                </div>
-
-                <div class="govuk-form-group">
-                    <label class="govuk-label" for="add-relation-fate">Relation fate</label>
-                    <select id="add-relation-fate" name="NewRelation.RelationFate" class="govuk-select govuk-!-width-one-half">
-                        <option value="">— select —</option>
-                        @foreach (var f in Model.RelationFates)
-                        {
-                            <option value="@f.Code" selected="@(f.Code == Model.NewRelation.RelationFate ? "selected" : null)">@f.Description</option>
-                        }
-                    </select>
-                </div>
-
-                <div class="govuk-form-group">
-                    <label class="govuk-label" for="add-sire">Sire name</label>
-                    <input id="add-sire" name="NewRelation.Sire" class="govuk-input govuk-!-width-two-thirds" value="@Model.NewRelation.Sire" />
-                </div>
-
-                <button type="submit" class="govuk-button" data-module="govuk-button">Add relation</button>
-            </form>
-        </div>
-    </details>
+    <div class="govuk-button-group govuk-!-margin-top-4">
+        <a asp-page="/Case/RelationAdd" asp-route-rbse="@Model.Rbse" class="govuk-button govuk-button--secondary">Add a related animal</a>
+    </div>
 }
 

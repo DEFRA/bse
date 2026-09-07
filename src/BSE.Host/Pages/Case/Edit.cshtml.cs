@@ -63,8 +63,6 @@ public class EditModel(
     public int TestsTotalPages { get; private set; } = 1;
     public int TestsTotalCount { get; private set; }
 
-    [BindProperty] public string  NewTestType          { get; set; } = string.Empty;
-    [BindProperty] public string? NewTestResult        { get; set; }
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -194,26 +192,6 @@ public class EditModel(
             _        => TDir == "desc" ? all.OrderByDescending(t => t.TestTypeDescription)   : all.OrderBy(t => t.TestTypeDescription),
         };
         Tests = sorted.Skip((TPage - 1) * TestsPageSize).Take(TestsPageSize).ToList().AsReadOnly();
-    }
-
-    public async Task<IActionResult> OnPostAddTestAsync()
-    {
-        if (!User.IsInRole("DataEntry"))
-            return Forbid();
-        if (string.IsNullOrWhiteSpace(NewTestType))
-        {
-            ModelState.AddModelError(nameof(NewTestType), "Select a test type.");
-            var record = await caseService.GetCaseAsync(Rbse);
-            if (record is not null) { Case = CaseEditViewModel.FromRecord(record); var cw = await caseWorkRepository.GetByRbseAsync(Rbse); if (cw is not null) Case.ApplyCaseWork(cw); }
-            SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
-            var batchTask = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
-            await Task.WhenAll(LoadLookupsAsync(), LoadTestsAsync(), batchTask);
-            BatchNumbers = (await batchTask).ToList().AsReadOnly();
-            return Page();
-        }
-        await testRepository.AddAsync(new AddTestCommand(Rbse.Replace("/", ""), NewTestType, NewTestResult));
-        TempData["Success"] = "Test record added.";
-        return RedirectToPage(new { rbse = Rbse });
     }
 
     public async Task<IActionResult> OnPostDeleteTestAsync(int id, string rowStampBase64)

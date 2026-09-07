@@ -1,3 +1,4 @@
+using BSE.Host.Helpers;
 using BSE.Modules.AuditLog.Models;
 using BSE.Modules.AuditLog.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -12,13 +13,14 @@ public class ByDateModel(IAuditLogService auditLogService) : PageModel
     private const int PageSize = 10;
 
     [BindProperty(SupportsGet = true)]
-    public DateTime LogDate { get; set; } = DateTime.Today;
+    public DateTime? LogDate { get; set; }
     [BindProperty(SupportsGet = true)] public string SortColumn { get; set; } = string.Empty;
     [BindProperty(SupportsGet = true)] public bool SortDesc { get; set; }
     [BindProperty(SupportsGet = true)] public int PageNumber { get; set; } = 1;
 
     public IEnumerable<AuditLogEntry> Entries { get; private set; } = [];
     public bool HasSearched { get; private set; }
+    public string? LogDateError { get; private set; }
     public int TotalCount => Entries.Count();
     public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
     public IReadOnlyList<AuditLogEntry> PagedEntries => Entries.Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
@@ -27,10 +29,24 @@ public class ByDateModel(IAuditLogService auditLogService) : PageModel
     {
         if (Request.Query.ContainsKey(nameof(LogDate)))
         {
+            if (LogDate is null)
+            {
+                LogDateError = AuditDateRange.MissingDateMessage;
+                return Page();
+            }
+
             HasSearched = true;
-            Entries = ApplySorting(await auditLogService.GetByDateAsync(LogDate));
+            Entries = ApplySorting(await auditLogService.GetByDateAsync(LogDate.Value));
         }
         return Page();
+    }
+
+    public async Task<IActionResult> OnGetExportAsync()
+    {
+        if (LogDate is null) return RedirectToPage();
+
+        var entries = await auditLogService.GetByDateAsync(LogDate.Value);
+        return AuditLogExcel.Build(entries, "Daily Audit Log", $"DailyAuditLog_{LogDate.Value:yyyyMMdd}.xlsx");
     }
 
     private IEnumerable<AuditLogEntry> ApplySorting(IEnumerable<AuditLogEntry> entries)

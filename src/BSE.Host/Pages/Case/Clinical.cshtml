@@ -64,18 +64,39 @@
 @* -- Batch numbers ------------------------------------------------------------ *@
 @if (User.IsInRole("DataEntry") && Model.BatchNumbers.Count > 0)
 {
-    <div class="govuk-summary-card govuk-!-margin-bottom-4">
-        <div class="govuk-summary-card__title-wrapper">
-            <h2 class="govuk-summary-card__title">Batch numbers</h2>
-        </div>
-        <div class="govuk-summary-card__content">
-            <ul class="govuk-list">
-                @foreach (var b in Model.BatchNumbers)
+    var batchSortBase = "?" + string.Join("&", HttpContext.Request.Query
+        .Where(k => !string.Equals(k.Key, "BSortColumn", StringComparison.OrdinalIgnoreCase)
+                 && !string.Equals(k.Key, "BSortDesc", StringComparison.OrdinalIgnoreCase)
+                 && !string.Equals(k.Key, "BPageNumber", StringComparison.OrdinalIgnoreCase))
+        .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
+    var batchSortColumn = HttpContext.Request.Query["BSortColumn"].ToString();
+    var batchSortDesc = bool.TryParse(HttpContext.Request.Query["BSortDesc"], out var desc) && desc;
+    var sortedBatchNumbers = batchSortColumn == "Document"
+        ? (batchSortDesc ? Model.BatchNumbers.OrderByDescending(b => b.Document) : Model.BatchNumbers.OrderBy(b => b.Document))
+        : (batchSortDesc ? Model.BatchNumbers.OrderByDescending(b => b.BatchNumber) : Model.BatchNumbers.OrderBy(b => b.BatchNumber));
+
+    <div class="govuk-!-margin-bottom-4">
+        <h2 class="govuk-heading-m">Batch numbers</h2>
+        <table class="govuk-table">
+            <caption class="govuk-visually-hidden">Batch numbers for @Model.Rbse</caption>
+            <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                    @{ ViewData["Label"] = "Batch Number"; ViewData["Column"] = "BatchNumber"; ViewData["SortColumn"] = batchSortColumn; ViewData["SortDesc"] = batchSortDesc; ViewData["BaseUrl"] = batchSortBase; ViewData["Prefix"] = "B"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Document"; ViewData["Column"] = "Document"; }
+                    <partial name="_SortableHeader" />
+                </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+                @foreach (var b in sortedBatchNumbers)
                 {
-                    <li>@b.BatchNumber@(b.Document is not null ? $" — {b.Document}" : "")</li>
+                    <tr class="govuk-table__row">
+                        <td class="govuk-table__cell">@b.BatchNumber</td>
+                        <td class="govuk-table__cell">@(string.IsNullOrWhiteSpace(b.Document) ? "—" : b.Document)</td>
+                    </tr>
                 }
-            </ul>
-        </div>
+            </tbody>
+        </table>
     </div>
 }
 
@@ -107,27 +128,6 @@ else
 
 @* -- Clinical visits ---------------------------------------------------------- *@
 <h2 class="govuk-heading-m govuk-!-margin-top-6">Clinical visits</h2>
-
-@{
-    var addDateError  = ViewData.ModelState[nameof(Model.VisitDate)]?.Errors.FirstOrDefault()?.ErrorMessage;
-}
-
-@if (!ViewContext.ModelState.IsValid && addDateError is not null)
-{
-    <div class="govuk-error-summary" data-module="govuk-error-summary">
-        <div role="alert">
-            <h2 class="govuk-error-summary__title">There is a problem</h2>
-            <div class="govuk-error-summary__body">
-                <ul class="govuk-list govuk-error-summary__list">
-                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
-                    {
-                        <li>@e.ErrorMessage</li>
-                    }
-                </ul>
-            </div>
-        </div>
-    </div>
-}
 
 @if (Model.VisitsTotalCount > 0)
 {
@@ -219,26 +219,8 @@ else
 
 @if (User.IsInRole("DataEntry"))
 {
-<details class="govuk-details govuk-!-margin-top-4" data-module="govuk-details">
-    <summary class="govuk-details__summary">
-        <span class="govuk-details__summary-text">Add a clinical visit</span>
-    </summary>
-    <div class="govuk-details__text">
-        <form method="post" asp-page-handler="AddVisit" novalidate>
-            <input type="hidden" asp-for="Rbse" />
-            <div class="govuk-form-group @(addDateError is not null ? "govuk-form-group--error" : "")">
-                <label class="govuk-label" for="visit-date">Visit date</label>
-                @if (addDateError is not null)
-                {
-                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @addDateError</p>
-                }
-                <input id="visit-date" name="VisitDate" type="date"
-                       class="govuk-input govuk-input--width-10 @(addDateError is not null ? "govuk-input--error" : "")"
-                       value="@Model.VisitDate?.ToString("yyyy-MM-dd")" />
-            </div>
-            <button type="submit" class="govuk-button" data-module="govuk-button">Add visit</button>
-        </form>
+    <div class="govuk-button-group govuk-!-margin-top-4">
+        <a asp-page="/Case/ClinicalVisitAdd" asp-route-rbse="@Model.Rbse" class="govuk-button govuk-button--secondary">Add a clinical visit</a>
     </div>
-</details>
 }
 

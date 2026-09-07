@@ -1,0 +1,69 @@
+@page
+@model BSE.Host.Pages.Case.CaseTestAddModel
+@{
+    ViewData["Title"] = "Add test record";
+    var testTypeError = ViewData.ModelState[nameof(Model.TestType)]?.Errors.FirstOrDefault()?.ErrorMessage;
+}
+
+<h1 class="govuk-heading-l">Add test record</h1>
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="@(Model.ReturnToDefra ? "/Case/Edit" : "/Case/TestResults")" asp-route-rbse="@Model.Rbse">@(Model.ReturnToDefra ? "Case (DEFRA)" : "Tests")</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Add test</li>
+    </ol>
+</nav>
+
+@if (!ViewContext.ModelState.IsValid)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@e.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+<form method="post" novalidate>
+    <input type="hidden" asp-for="Rbse" />
+    <input type="hidden" asp-for="From" />
+
+    <div class="govuk-form-group @(testTypeError is not null ? "govuk-form-group--error" : "")">
+        <label class="govuk-label" for="test-type">Test type</label>
+        @if (testTypeError is not null)
+        {
+            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @testTypeError</p>
+        }
+        <select id="test-type" asp-for="TestType" class="govuk-select govuk-!-width-one-half @(testTypeError is not null ? "govuk-select--error" : "")">
+            <option value="">-- Select --</option>
+            @foreach (var t in Model.TestTypeOptions)
+            {
+                <option value="@t.Code">@t.Description</option>
+            }
+        </select>
+    </div>
+
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="test-result">Test result</label>
+        <select id="test-result" asp-for="TestResult" class="govuk-select govuk-!-width-one-half">
+            <option value="">-- Select --</option>
+            @foreach (var t in Model.TestResultOptions)
+            {
+                <option value="@t.Code">@t.Description</option>
+            }
+        </select>
+    </div>
+
+    <div class="govuk-button-group">
+        <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+        <a asp-page="@(Model.ReturnToDefra ? "/Case/Edit" : "/Case/TestResults")" asp-route-rbse="@Model.Rbse" class="govuk-link">Cancel</a>
+    </div>
+</form>

@@ -1,3 +1,4 @@
+using BSE.Host.Helpers;
 using BSE.Modules.AuditLog.Models;
 using BSE.Modules.AuditLog.Services;
 using BSE.Modules.UserManagement.Services;
@@ -14,9 +15,9 @@ public class ByUserModel(IAuditLogService auditLogService, IUserManagementServic
     private const int PageSize = 10;
 
     [BindProperty(SupportsGet = true)]
-    public DateTime StartDate { get; set; } = DateTime.Today.AddMonths(-1);
+    public DateTime? StartDate { get; set; }
     [BindProperty(SupportsGet = true)]
-    public DateTime EndDate { get; set; } = DateTime.Today;
+    public DateTime? EndDate { get; set; }
     [BindProperty(SupportsGet = true)]
     public int UserId { get; set; }
     [BindProperty(SupportsGet = true)] public string SortColumn { get; set; } = string.Empty;
@@ -27,6 +28,8 @@ public class ByUserModel(IAuditLogService auditLogService, IUserManagementServic
     public IEnumerable<AuditLogEntry> Entries { get; private set; } = [];
     public bool HasSearched { get; private set; }
     public string? ValidationError { get; private set; }
+    public string? StartDateError { get; private set; }
+    public string? EndDateError { get; private set; }
     public int TotalCount => Entries.Count();
     public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
     public IReadOnlyList<AuditLogEntry> PagedEntries => Entries.Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
@@ -46,10 +49,27 @@ public class ByUserModel(IAuditLogService auditLogService, IUserManagementServic
                 ValidationError = "Please select a user";
                 return Page();
             }
+
+            if (!AuditDateRange.Validate(StartDate, EndDate, out var startError, out var endError))
+            {
+                StartDateError = startError;
+                EndDateError = endError;
+                return Page();
+            }
+
             HasSearched = true;
-            Entries = ApplySorting(await auditLogService.GetByUserAsync(StartDate, EndDate, UserId));
+            Entries = ApplySorting(await auditLogService.GetByUserAsync(StartDate!.Value, EndDate!.Value, UserId));
         }
         return Page();
+    }
+
+    public async Task<IActionResult> OnGetExportAsync()
+    {
+        if (UserId == 0) return RedirectToPage();
+        if (!AuditDateRange.Validate(StartDate, EndDate, out _, out _)) return RedirectToPage();
+
+        var entries = await auditLogService.GetByUserAsync(StartDate!.Value, EndDate!.Value, UserId);
+        return AuditLogExcel.Build(entries, "Audit Log By User", $"AuditLogByUser_{DateTime.Today:yyyyMMdd}.xlsx");
     }
 
     private IEnumerable<AuditLogEntry> ApplySorting(IEnumerable<AuditLogEntry> entries)

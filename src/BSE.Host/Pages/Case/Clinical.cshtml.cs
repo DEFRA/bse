@@ -38,8 +38,6 @@ public class ClinicalModel(
     public string SpolSiteUrl { get; private set; } = string.Empty;
     public IReadOnlyList<BatchNumberEntry> BatchNumbers { get; private set; } = [];
 
-    [BindProperty]
-    public DateTime? VisitDate { get; set; }
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -101,32 +99,6 @@ public class ClinicalModel(
 
         tx.Commit();
         TempData["Success"] = "Clinical signs saved.";
-        return RedirectToPage(new { rbse = Rbse });
-    }
-
-    public async Task<IActionResult> OnPostAddVisitAsync()
-    {
-        if (!User.IsInRole("DataEntry"))
-            return Forbid();
-
-        await LoadAsync();
-
-        // Mirrors legacy ClinicalVisitPager_RowSave validation
-        ValidateVisitDate(VisitDate, null, nameof(VisitDate));
-
-        if (ModelState.IsValid && _allVisits.Any(v => v.VisitDate?.Date == VisitDate!.Value.Date))
-            ModelState.AddModelError(nameof(VisitDate), "A visit on this date already exists. The visit date must be unique.");
-
-        if (!ModelState.IsValid)
-            return Page();
-
-        using var conn = connectionFactory.CreateConnection();
-        conn.Open();
-        using var tx = conn.BeginTransaction();
-        await clinicalRepository.AddVisitAsync(new AddClinicalVisitCommand(Rbse, VisitDate), conn, tx);
-        tx.Commit();
-
-        TempData["Success"] = "Clinical visit added.";
         return RedirectToPage(new { rbse = Rbse });
     }
 

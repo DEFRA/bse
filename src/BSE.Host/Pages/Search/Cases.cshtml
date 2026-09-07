@@ -46,7 +46,6 @@
         <div class="govuk-grid-column-two-thirds">
             <div class="govuk-form-group">
                 <label asp-for="Filter.Rbse" class="govuk-label">RBSE</label>
-                <div id="rbse-hint" class="govuk-hint">RBSE Format: NN/NN/NNNNN</div>
                 <input asp-for="Filter.Rbse" class="govuk-input govuk-!-width-two-thirds" aria-describedby="rbse-hint" maxlength="11" />
                 <span asp-validation-for="Filter.Rbse" class="govuk-error-message"></span>
             </div>
@@ -58,7 +57,6 @@
 
             <div class="govuk-form-group">
                 <label asp-for="Filter.Dbse" class="govuk-label">DBSE</label>
-                <div id="dbse-hint" class="govuk-hint">Enter DBSE in the format YY/NNNNN or YYNNNNN.</div>
                 <input asp-for="Filter.Dbse" class="govuk-input govuk-!-width-two-thirds" aria-describedby="dbse-hint" maxlength="8" />
                 <span asp-validation-for="Filter.Dbse" class="govuk-error-message"></span>
             </div>
@@ -116,10 +114,6 @@
                 </select>
             </div>
 
-            <div class="govuk-form-group">
-                <label asp-for="Filter.Notes" class="govuk-label">Notes (partial search)</label>
-                <textarea asp-for="Filter.Notes" class="govuk-textarea govuk-!-width-two-thirds" rows="5" maxlength="500"></textarea>
-            </div>
             <div class="govuk-form-group">
                 <fieldset class="govuk-fieldset" role="group" aria-describedby="form-a-date-hint">
                     <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">Form A Date Between</legend>
@@ -196,9 +190,15 @@
                 </div>
             </div>
 
+            <div class="govuk-form-group">
+                <label asp-for="Filter.Notes" class="govuk-label">Notes (partial search)</label>
+                <textarea asp-for="Filter.Notes" class="govuk-textarea govuk-!-width-two-thirds" rows="5" maxlength="500" aria-describedby="notes-wildcard-hint"></textarea>
+                <div id="notes-wildcard-hint" class="govuk-hint">Note: % character can be used as wildcard character in text fields</div>
+            </div>
+
             <div class="govuk-button-group">
                 <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
-                <a asp-page="/Home" class="govuk-link">Search Menu</a>
+                <a asp-page="/Search/Menu" class="govuk-link">Search Menu</a>
             </div>
         </div>
     </div>

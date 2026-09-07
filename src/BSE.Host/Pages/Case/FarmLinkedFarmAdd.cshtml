@@ -1,0 +1,75 @@
+@page
+@model BSE.Host.Pages.Case.FarmLinkedFarmAddModel
+@{
+    ViewData["Title"] = "Add linked farm";
+    var cphhError = ViewData.ModelState[nameof(Model.RelatedCphh)]?.Errors.FirstOrDefault()?.ErrorMessage;
+}
+
+<h1 class="govuk-heading-l">Add linked farm</h1>
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Farm" asp-route-rbse="@Model.Rbse">Farm</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Add linked farm</li>
+    </ol>
+</nav>
+
+@if (!ViewContext.ModelState.IsValid)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@e.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+<form method="post" novalidate>
+    <input type="hidden" asp-for="Rbse" />
+
+    <div class="govuk-form-group @(cphhError is not null ? "govuk-form-group--error" : "")">
+        <label class="govuk-label" for="related-cphh">CPHH to link</label>
+        <div class="govuk-hint">For example, 12/345/6789</div>
+        @if (cphhError is not null)
+        {
+            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @cphhError</p>
+        }
+        <input id="related-cphh" asp-for="RelatedCphh" class="govuk-input govuk-!-width-one-third @(cphhError is not null ? "govuk-input--error" : "")" autocomplete="off" spellcheck="false" data-lf-lookup />
+        <p class="govuk-hint lf-lookup-status" style="display:none"></p>
+    </div>
+
+    <div class="govuk-button-group">
+        <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+        <a asp-page="/Case/Farm" asp-route-rbse="@Model.Rbse" class="govuk-link">Cancel</a>
+    </div>
+</form>
+
+<script>
+(function () {
+    function lookupStatus(input) {
+        var hint = input.closest('.govuk-form-group')?.querySelector('.lf-lookup-status');
+        if (!hint) return;
+        var cphh = input.value.trim();
+        if (!cphh) { hint.style.display = 'none'; return; }
+        fetch('/Case/Farm?handler=LinkedFarmStatus&rbse=' + encodeURIComponent('@Model.Rbse') + '&cphh=' + encodeURIComponent(cphh),
+              { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (d.status) { hint.textContent = d.status; hint.style.display = 'block'; }
+                else { hint.style.display = 'none'; }
+            })
+            .catch(function () { hint.style.display = 'none'; });
+    }
+    document.addEventListener('blur', function (e) {
+        if (e.target && e.target.hasAttribute('data-lf-lookup')) lookupStatus(e.target);
+    }, true);
+}());
+</script>

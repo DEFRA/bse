@@ -34,18 +34,39 @@
 @* -- Batch numbers ---------------------------------------------------------- *@
 @if (User.IsInRole("DataEntry") && Model.BatchNumbers.Count > 0)
 {
-    <div class="govuk-summary-card govuk-!-margin-bottom-4">
-        <div class="govuk-summary-card__title-wrapper">
-            <h2 class="govuk-summary-card__title">Batch numbers</h2>
-        </div>
-        <div class="govuk-summary-card__content">
-            <ul class="govuk-list">
-                @foreach (var b in Model.BatchNumbers)
+    var batchSortBase = "?" + string.Join("&", HttpContext.Request.Query
+        .Where(k => !string.Equals(k.Key, "BSortColumn", StringComparison.OrdinalIgnoreCase)
+                 && !string.Equals(k.Key, "BSortDesc", StringComparison.OrdinalIgnoreCase)
+                 && !string.Equals(k.Key, "BPageNumber", StringComparison.OrdinalIgnoreCase))
+        .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
+    var batchSortColumn = HttpContext.Request.Query["BSortColumn"].ToString();
+    var batchSortDesc = bool.TryParse(HttpContext.Request.Query["BSortDesc"], out var desc) && desc;
+    var sortedBatchNumbers = batchSortColumn == "Document"
+        ? (batchSortDesc ? Model.BatchNumbers.OrderByDescending(b => b.Document) : Model.BatchNumbers.OrderBy(b => b.Document))
+        : (batchSortDesc ? Model.BatchNumbers.OrderByDescending(b => b.BatchNumber) : Model.BatchNumbers.OrderBy(b => b.BatchNumber));
+
+    <div class="govuk-!-margin-bottom-4">
+        <h2 class="govuk-heading-m">Batch numbers</h2>
+        <table class="govuk-table">
+            <caption class="govuk-visually-hidden">Batch numbers for @Model.Rbse</caption>
+            <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                    @{ ViewData["Label"] = "Batch Number"; ViewData["Column"] = "BatchNumber"; ViewData["SortColumn"] = batchSortColumn; ViewData["SortDesc"] = batchSortDesc; ViewData["BaseUrl"] = batchSortBase; ViewData["Prefix"] = "B"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Document"; ViewData["Column"] = "Document"; }
+                    <partial name="_SortableHeader" />
+                </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+                @foreach (var b in sortedBatchNumbers)
                 {
-                    <li>@b.BatchNumber@(b.Document is not null ? $" — {b.Document}" : "")</li>
+                    <tr class="govuk-table__row">
+                        <td class="govuk-table__cell">@b.BatchNumber</td>
+                        <td class="govuk-table__cell">@(string.IsNullOrWhiteSpace(b.Document) ? "-" : b.Document)</td>
+                    </tr>
                 }
-            </ul>
-        </div>
+            </tbody>
+        </table>
     </div>
 }
 

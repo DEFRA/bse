@@ -1,0 +1,23 @@
+@page
+@model BSE.Host.Pages.Search.MenuModel
+@{
+    ViewData["Title"] = "Search menu";
+}
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Search Menu</li>
+    </ol>
+</nav>
+
+<h1 class="govuk-heading-l">Search Menu</h1>
+
+<ul class="govuk-list govuk-list--bullet">
+    <li><a class="govuk-link" asp-page="/Search/Farms">Farm Search</a></li>
+    <li><a class="govuk-link" asp-page="/Search/Cases">Case Search</a></li>
+    <li><a class="govuk-link" asp-page="/Search/CasesByHerdmark">List Of Cases With A Given Herdmark (includes animals sold off)</a></li>
+    <li><a class="govuk-link" asp-page="/Search/CasesByHoldingHerdmark">List Of Cases For A Given Holidng/Herdmar (for organic farmer checks)</a></li>
+    <li><a class="govuk-link" asp-page="/Search/RelatedAnimals">Related Animals Search</a></li>
+    <li><a class="govuk-link" asp-page="/Search/Outstanding">Outstanding Data List</a></li>
+</ul>

@@ -36,18 +36,39 @@
 @* -- Batch numbers ------------------------------------------------------------ *@
 @if (User.IsInRole("DataEntry") && Model.BatchNumbers.Count > 0)
 {
-    <div class="govuk-summary-card govuk-!-margin-bottom-4">
-        <div class="govuk-summary-card__title-wrapper">
-            <h2 class="govuk-summary-card__title">Batch numbers</h2>
-        </div>
-        <div class="govuk-summary-card__content">
-            <ul class="govuk-list">
-                @foreach (var b in Model.BatchNumbers)
+    var batchSortBase = "?" + string.Join("&", HttpContext.Request.Query
+        .Where(k => !string.Equals(k.Key, "BSortColumn", StringComparison.OrdinalIgnoreCase)
+                 && !string.Equals(k.Key, "BSortDesc", StringComparison.OrdinalIgnoreCase)
+                 && !string.Equals(k.Key, "BPageNumber", StringComparison.OrdinalIgnoreCase))
+        .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
+    var batchSortColumn = HttpContext.Request.Query["BSortColumn"].ToString();
+    var batchSortDesc = bool.TryParse(HttpContext.Request.Query["BSortDesc"], out var desc) && desc;
+    var sortedBatchNumbers = batchSortColumn == "Document"
+        ? (batchSortDesc ? Model.BatchNumbers.OrderByDescending(b => b.Document) : Model.BatchNumbers.OrderBy(b => b.Document))
+        : (batchSortDesc ? Model.BatchNumbers.OrderByDescending(b => b.BatchNumber) : Model.BatchNumbers.OrderBy(b => b.BatchNumber));
+
+    <div class="govuk-!-margin-bottom-4">
+        <h2 class="govuk-heading-m">Batch numbers</h2>
+        <table class="govuk-table">
+            <caption class="govuk-visually-hidden">Batch numbers for @Model.Rbse</caption>
+            <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                    @{ ViewData["Label"] = "Batch Number"; ViewData["Column"] = "BatchNumber"; ViewData["SortColumn"] = batchSortColumn; ViewData["SortDesc"] = batchSortDesc; ViewData["BaseUrl"] = batchSortBase; ViewData["Prefix"] = "B"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Document"; ViewData["Column"] = "Document"; }
+                    <partial name="_SortableHeader" />
+                </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+                @foreach (var b in sortedBatchNumbers)
                 {
-                    <li>@b.BatchNumber@(b.Document is not null ? $" — {b.Document}" : "")</li>
+                    <tr class="govuk-table__row">
+                        <td class="govuk-table__cell">@b.BatchNumber</td>
+                        <td class="govuk-table__cell">@(string.IsNullOrWhiteSpace(b.Document) ? "—" : b.Document)</td>
+                    </tr>
                 }
-            </ul>
-        </div>
+            </tbody>
+        </table>
     </div>
 }
 
@@ -132,10 +153,7 @@
     </dl>
 
     @* ── Test records — full CRUD with GDS pagination and sorting ── *@
-    @{
-        var newTestTypeError  = ViewData.ModelState[nameof(Model.NewTestType)]?.Errors.FirstOrDefault()?.ErrorMessage;
-        bool hasTestAddError  = newTestTypeError  is not null;
-    }
+
     <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
     <h2 class="govuk-heading-m">Test records</h2>
     @if (Model.TestsTotalCount > 0)
@@ -223,39 +241,9 @@
 
     @if (User.IsInRole("DataEntry"))
     {
-    <details class="govuk-details" data-module="govuk-details" @(hasTestAddError ? "open" : null)>
-        <summary class="govuk-details__summary"><span class="govuk-details__summary-text">Add test record</span></summary>
-        <div class="govuk-details__text">
-            @if (hasTestAddError)
-            {
-                <div class="govuk-error-summary" data-module="govuk-error-summary"><div role="alert"><h2 class="govuk-error-summary__title">There is a problem</h2><div class="govuk-error-summary__body"><ul class="govuk-list govuk-error-summary__list"><li><a href="#new-tt">@newTestTypeError</a></li></ul></div></div></div>
-            }
-            <form method="post" asp-page-handler="AddTest" novalidate>
-                <div class="govuk-form-group @(hasTestAddError ? "govuk-form-group--error" : "")">
-                    <label class="govuk-label" for="new-tt">Test type</label>
-                    @if (hasTestAddError) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @newTestTypeError</p> }
-                    <select class="govuk-select @(hasTestAddError ? "govuk-select--error" : "")" id="new-tt" name="NewTestType">
-                        <option value="">-- Select --</option>
-                        @foreach (var o in Model.TestTypeOptions)
-                        {
-                            <option value="@o.Code" selected="@(o.Code == Model.NewTestType ? "selected" : null)">@o.Description</option>
-                        }
-                    </select>
-                </div>
-                <div class="govuk-form-group">
-                    <label class="govuk-label" for="new-tr">Test result</label>
-                    <select class="govuk-select" id="new-tr" name="NewTestResult">
-                        <option value="">-- Select --</option>
-                        @foreach (var o in Model.TestResultOptions)
-                        {
-                            <option value="@o.Code" selected="@(o.Code == Model.NewTestResult ? "selected" : null)">@o.Description</option>
-                        }
-                    </select>
-                </div>
-                <button type="submit" class="govuk-button" data-module="govuk-button">Add test record</button>
-            </form>
+        <div class="govuk-button-group">
+            <a asp-page="/Case/CaseTestAdd" asp-route-rbse="@Model.Rbse" asp-route-from="defra" class="govuk-button govuk-button--secondary">Add test record</a>
         </div>
-    </details>
     }
 
     <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />

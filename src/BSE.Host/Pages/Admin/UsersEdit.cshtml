@@ -71,8 +71,7 @@
     <div class="govuk-form-group">
         <div class="govuk-checkboxes" data-module="govuk-checkboxes">
             <div class="govuk-checkboxes__item">
-                <input id="edit-is-active" name="EditIsActive" value="true" type="checkbox" class="govuk-checkboxes__input" @(Model.EditIsActive ? "checked" : "") />
-                <input type="hidden" name="EditIsActive" value="false" />
+                <input asp-for="EditIsActive" id="edit-is-active" class="govuk-checkboxes__input" />
                 <label class="govuk-label govuk-checkboxes__label" for="edit-is-active">Active</label>
             </div>
         </div>
