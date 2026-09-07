@@ -64,13 +64,6 @@ public class FarmModel(
 
     public string SpolSiteUrl { get; private set; } = string.Empty;
 
-    [BindProperty]
-    public string? NewLinkedCphh { get; set; }
-
-    [BindProperty]
-    public HerdSizeFormViewModel NewHerdSize { get; set; } = new();
-
-
     // ── GET ────────────────────────────────────────────────────────────────────
 
     public async Task<IActionResult> OnGetAsync()
@@ -81,43 +74,6 @@ public class FarmModel(
     }
 
     // ── POST: Linked farms ─────────────────────────────────────────────────────
-
-    public async Task<IActionResult> OnPostAddLinkedFarmAsync()
-    {
-        if (!User.IsInRole("DataEntry"))
-            return Forbid();
-        Case = await caseService.GetCaseAsync(Rbse);
-        if (string.IsNullOrWhiteSpace(NewLinkedCphh))
-        {
-            ModelState.AddModelError(nameof(NewLinkedCphh), "Enter a CPHH to link.");
-            await LoadFromCase();
-            return Page();
-        }
-
-        var normalisedCphh = NewLinkedCphh.Trim().ToUpperInvariant();
-
-        if (normalisedCphh.Length > 11)
-        {
-            ModelState.AddModelError(nameof(NewLinkedCphh), "CPHH must be 11 characters or fewer.");
-            await LoadFromCase();
-            return Page();
-        }
-
-        if (Case?.Cphh is { } cphh)
-        {
-            var existing = await farmService.GetRelatedFarmsAsync(cphh);
-            if (existing.Any(f => string.Equals(f.RelatedCPHH, normalisedCphh, StringComparison.OrdinalIgnoreCase)))
-            {
-                ModelState.AddModelError(nameof(NewLinkedCphh), $"CPHH {normalisedCphh} is already in the Linked Farms list.");
-                await LoadFromCase();
-                return Page();
-            }
-            await relationRepo.AddAsync(cphh, normalisedCphh);
-        }
-
-        TempData["Success"] = $"Linked farm {normalisedCphh} added.";
-        return RedirectToPage(new { rbse = Rbse });
-    }
 
     public async Task<IActionResult> OnPostDeleteLinkedFarmAsync(int id, string rowStampBase64)
     {
@@ -131,59 +87,6 @@ public class FarmModel(
 
 
     // ── POST: Herd sizes ───────────────────────────────────────────────────────
-
-    public async Task<IActionResult> OnPostAddHerdSizeAsync()
-    {
-        if (!User.IsInRole("DataEntry"))
-            return Forbid();
-        Case = await caseService.GetCaseAsync(Rbse);
-        if (Case?.Cphh is not { } cphh)
-            return RedirectToPage(new { rbse = Rbse });
-
-        if (NewHerdSize.HerdYear < 1980 || NewHerdSize.HerdYear > 2100)
-        {
-            ModelState.AddModelError("NewHerdSize.HerdYear", "Year is required and must be a valid year (1980–2100).");
-            await LoadFromCase();
-            return Page();
-        }
-
-        if (NewHerdSize.TotalSize <= 0)
-        {
-            ModelState.AddModelError("NewHerdSize.TotalSize", "Total size is required and must be greater than zero.");
-            await LoadFromCase();
-            return Page();
-        }
-
-        var cmd = new AddHerdSizeCommand(
-            cphh,
-            (short)NewHerdSize.HerdYear,
-            (short)NewHerdSize.TotalSize,
-            (short)NewHerdSize.Lactation1Size,
-            (short)NewHerdSize.Lactation2Size,
-            (short)NewHerdSize.Lactation3Size,
-            (short)NewHerdSize.Lactation4Size,
-            (short)NewHerdSize.Lactation5Size,
-            (short)NewHerdSize.Lactation6Size,
-            (short)NewHerdSize.Lactation7Size,
-            (short)NewHerdSize.Lactation8Size,
-            (short)NewHerdSize.Lactation9Size,
-            (short)NewHerdSize.Lactation10Size,
-            (short)NewHerdSize.Lactation10PlusSize);
-
-        await herdSizeRepo.AddAsync(cmd);
-
-        var lacTotal = NewHerdSize.Lactation1Size + NewHerdSize.Lactation2Size + NewHerdSize.Lactation3Size
-                     + NewHerdSize.Lactation4Size + NewHerdSize.Lactation5Size + NewHerdSize.Lactation6Size
-                     + NewHerdSize.Lactation7Size + NewHerdSize.Lactation8Size + NewHerdSize.Lactation9Size
-                     + NewHerdSize.Lactation10Size + NewHerdSize.Lactation10PlusSize;
-
-        if (lacTotal > 0 && lacTotal != NewHerdSize.TotalSize)
-            TempData["Warning"] = $"Herd size for {NewHerdSize.HerdYear} added, but the lactation total ({lacTotal}) does not equal the total herd size ({NewHerdSize.TotalSize}).";
-        else
-            TempData["Success"] = $"Herd size for {NewHerdSize.HerdYear} added.";
-
-        return RedirectToPage(new { rbse = Rbse });
-    }
 
     public async Task<IActionResult> OnPostDeleteHerdSizeAsync(int id, string rowStampBase64)
     {

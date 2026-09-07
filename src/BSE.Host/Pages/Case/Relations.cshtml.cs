@@ -44,14 +44,8 @@ public class RelationsModel(
     public IEnumerable<LuRelationFate> RelationFates { get; private set; } = [];
     public IEnumerable<LuSex> Sexes { get; private set; } = [];
 
-    // Whether to re-open the Add Relation details panel (set true when add validation fails)
-    public bool ShowAddRelationPanel { get; private set; }
-
     [BindProperty]
     public DamSireViewModel DamSire { get; set; } = new();
-
-    [BindProperty]
-    public NewRelationViewModel NewRelation { get; set; } = new();
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -79,74 +73,6 @@ public class RelationsModel(
         tx.Commit();
 
         TempData["Success"] = "Dam and sire details saved.";
-        return RedirectToPage(new { rbse = Rbse });
-    }
-
-    public async Task<IActionResult> OnPostAddRelationAsync()
-    {
-        if (!User.IsInRole("DataEntry"))
-            return Forbid();
-        await LoadAsync();
-
-        // ── Mandatory field validation ────────────────────────────────────
-        if (string.IsNullOrWhiteSpace(NewRelation.RelationType))
-            ModelState.AddModelError("NewRelation.RelationType", "Relation type is required.");
-
-        // At least one animal identifier must be provided
-        bool hasRelationRbse = !string.IsNullOrWhiteSpace(NewRelation.RelationRbse);
-        bool hasEartag = !string.IsNullOrWhiteSpace(NewRelation.EartagCountry)
-                      || !string.IsNullOrWhiteSpace(NewRelation.EartagHerdmark)
-                      || !string.IsNullOrWhiteSpace(NewRelation.Eartag);
-        if (!hasRelationRbse && !hasEartag)
-            ModelState.AddModelError("NewRelation.RelationRbse", "Either a relation RBSE or an eartag must be provided.");
-
-        // ── Birth date component range validation ─────────────────────────
-        if (NewRelation.BirthDay.HasValue && (NewRelation.BirthDay < 1 || NewRelation.BirthDay > 31))
-            ModelState.AddModelError("NewRelation.BirthDay", "Birth day must be between 1 and 31.");
-
-        if (NewRelation.BirthMonth.HasValue && (NewRelation.BirthMonth < 1 || NewRelation.BirthMonth > 12))
-            ModelState.AddModelError("NewRelation.BirthMonth", "Birth month must be between 1 and 12.");
-
-        if (NewRelation.BirthYear.HasValue && (NewRelation.BirthYear < 1980 || NewRelation.BirthYear > DateTime.Today.Year))
-            ModelState.AddModelError("NewRelation.BirthYear", $"Birth year must be between 1980 and {DateTime.Today.Year}.");
-
-        if (!ModelState.IsValid)
-        {
-            ShowAddRelationPanel = true;
-            return Page();
-        }
-
-        var command = new AddCaseRelationCommand(
-            Rbse: Rbse,
-            RelationType: NewRelation.RelationType!,
-            RelationRbse: NullIfBlank(NewRelation.RelationRbse),
-            Sex: NullIfBlank(NewRelation.Sex),
-            BirthDay: ToByte(NewRelation.BirthDay),
-            BirthMonth: ToByte(NewRelation.BirthMonth),
-            BirthYear: ToShort(NewRelation.BirthYear),
-            RelationFate: NullIfBlank(NewRelation.RelationFate),
-            LeftDate: NewRelation.LeftDate,
-            EartagCountry: NullIfBlank(NewRelation.EartagCountry),
-            EartagHerdmark: NullIfBlank(NewRelation.EartagHerdmark),
-            Eartag: NullIfBlank(NewRelation.Eartag),
-            Sire: NullIfBlank(NewRelation.Sire));
-
-        try
-        {
-            using var conn = connectionFactory.CreateConnection();
-            conn.Open();
-            using var tx = conn.BeginTransaction();
-            await relationsRepository.AddRelationAsync(command, conn, tx);
-            tx.Commit();
-        }
-        catch (Exception ex)
-        {
-            ModelState.AddModelError(string.Empty, $"Unable to save relation: {ex.Message}");
-            ShowAddRelationPanel = true;
-            return Page();
-        }
-
-        TempData["Success"] = "Relation added successfully.";
         return RedirectToPage(new { rbse = Rbse });
     }
 
@@ -223,19 +149,4 @@ public class RelationsModel(
         public int? SireBirthYear { get; set; }
     }
 
-    public class NewRelationViewModel
-    {
-        public string? RelationType { get; set; }
-        public string? RelationRbse { get; set; }
-        public string? EartagCountry { get; set; }
-        public string? EartagHerdmark { get; set; }
-        public string? Eartag { get; set; }
-        public string? Sex { get; set; }
-        public int? BirthDay { get; set; }
-        public int? BirthMonth { get; set; }
-        public int? BirthYear { get; set; }
-        public DateTime? LeftDate { get; set; }
-        public string? RelationFate { get; set; }
-        public string? Sire { get; set; }
-    }
 }

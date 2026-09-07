@@ -93,18 +93,39 @@
 @* ── Batch numbers (mirrors legacy BatchNumberDisplay control) ─────────────────────────────── *@
 @if (User.IsInRole("DataEntry") && Model.BatchNumbers.Count > 0)
 {
-    <div class="govuk-summary-card govuk-!-margin-bottom-4">
-        <div class="govuk-summary-card__title-wrapper">
-            <h2 class="govuk-summary-card__title">Batch numbers</h2>
-        </div>
-        <div class="govuk-summary-card__content">
-            <ul class="govuk-list">
-                @foreach (var b in Model.BatchNumbers)
+    var batchSortBase = "?" + string.Join("&", HttpContext.Request.Query
+        .Where(k => !string.Equals(k.Key, "BSortColumn", StringComparison.OrdinalIgnoreCase)
+                 && !string.Equals(k.Key, "BSortDesc", StringComparison.OrdinalIgnoreCase)
+                 && !string.Equals(k.Key, "BPageNumber", StringComparison.OrdinalIgnoreCase))
+        .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
+    var batchSortColumn = HttpContext.Request.Query["BSortColumn"].ToString();
+    var batchSortDesc = bool.TryParse(HttpContext.Request.Query["BSortDesc"], out var desc) && desc;
+    var sortedBatchNumbers = batchSortColumn == "Document"
+        ? (batchSortDesc ? Model.BatchNumbers.OrderByDescending(b => b.Document) : Model.BatchNumbers.OrderBy(b => b.Document))
+        : (batchSortDesc ? Model.BatchNumbers.OrderByDescending(b => b.BatchNumber) : Model.BatchNumbers.OrderBy(b => b.BatchNumber));
+
+    <div class="govuk-!-margin-bottom-4">
+        <h2 class="govuk-heading-m">Batch numbers</h2>
+        <table class="govuk-table">
+            <caption class="govuk-visually-hidden">Batch numbers for @Model.Rbse</caption>
+            <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                    @{ ViewData["Label"] = "Batch Number"; ViewData["Column"] = "BatchNumber"; ViewData["SortColumn"] = batchSortColumn; ViewData["SortDesc"] = batchSortDesc; ViewData["BaseUrl"] = batchSortBase; ViewData["Prefix"] = "B"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Document"; ViewData["Column"] = "Document"; }
+                    <partial name="_SortableHeader" />
+                </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+                @foreach (var b in sortedBatchNumbers)
                 {
-                    <li>@b.BatchNumber@(b.Document is not null ? $" — {b.Document}" : "")</li>
+                    <tr class="govuk-table__row">
+                        <td class="govuk-table__cell">@b.BatchNumber</td>
+                        <td class="govuk-table__cell">@(string.IsNullOrWhiteSpace(b.Document) ? "—" : b.Document)</td>
+                    </tr>
                 }
-            </ul>
-        </div>
+            </tbody>
+        </table>
     </div>
 }
 
@@ -351,25 +372,9 @@ else
 
 @if (User.IsInRole("DataEntry"))
 {
-<details class="govuk-details" data-module="govuk-details">
-    <summary class="govuk-details__summary">
-        <span class="govuk-details__summary-text">Add linked farm</span>
-    </summary>
-    <div class="govuk-details__text">
-        <form method="post" asp-page-handler="AddLinkedFarm" novalidate>
-            <input type="hidden" asp-for="Rbse" />
-            <div class="govuk-form-group @(ViewContext.ModelState[nameof(Model.NewLinkedCphh)]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
-                <label class="govuk-label" for="NewLinkedCphh">CPHH to link</label>
-                <div class="govuk-hint">For example, 12/345/6789</div>
-                <span asp-validation-for="NewLinkedCphh" class="govuk-error-message"></span>
-                <input class="govuk-input govuk-!-width-one-third" id="NewLinkedCphh" asp-for="NewLinkedCphh"
-                       autocomplete="off" spellcheck="false" data-lf-lookup />
-                <p class="govuk-hint lf-lookup-status" style="display:none"></p>
-            </div>
-            <button type="submit" class="govuk-button" data-module="govuk-button">Add linked farm</button>
-        </form>
+    <div class="govuk-button-group">
+        <a asp-page="/Case/FarmLinkedFarmAdd" asp-route-rbse="@Model.Rbse" class="govuk-button govuk-button--secondary">Add linked farm</a>
     </div>
-</details>
 }
 
 <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
@@ -506,58 +511,9 @@ else
 
 @if (User.IsInRole("DataEntry"))
 {
-<details class="govuk-details" data-module="govuk-details">
-    <summary class="govuk-details__summary">
-        <span class="govuk-details__summary-text">Add herd size record</span>
-    </summary>
-    <div class="govuk-details__text">
-        <form method="post" asp-page-handler="AddHerdSize" novalidate>
-            <input type="hidden" asp-for="Rbse" />
-
-            <div class="govuk-grid-row">
-                <div class="govuk-grid-column-one-quarter">
-                    <div class="govuk-form-group">
-                        <label class="govuk-label" for="NewHerdSize_HerdYear">Year</label>
-                        <input class="govuk-input" id="NewHerdSize_HerdYear" asp-for="NewHerdSize.HerdYear"
-                               type="number" min="1980" max="2100" />
-                    </div>
-                </div>
-                <div class="govuk-grid-column-one-quarter">
-                    <div class="govuk-form-group">
-                        <label class="govuk-label" for="NewHerdSize_TotalSize">Total size</label>
-                        <input class="govuk-input" id="NewHerdSize_TotalSize" asp-for="NewHerdSize.TotalSize"
-                               type="number" min="0" />
-                    </div>
-                </div>
-            </div>
-
-            <p class="govuk-body govuk-!-font-size-16 govuk-!-font-weight-bold govuk-!-margin-bottom-2">Lactation sizes</p>
-            <div class="govuk-grid-row">
-                @foreach (var lac in new[] { (1,"1"), (2,"2"), (3,"3"), (4,"4"), (5,"5"), (6,"6"), (7,"7"), (8,"8"), (9,"9"), (10,"10") })
-                {
-                    <div class="govuk-grid-column-one-quarter govuk-!-margin-bottom-3">
-                        <div class="govuk-form-group">
-                            <label class="govuk-label govuk-!-font-size-16" for="NewHerdSize_Lactation@(lac.Item1)Size">Lac @lac.Item2</label>
-                            <input class="govuk-input" id="NewHerdSize_Lactation@(lac.Item1)Size"
-                                   name="NewHerdSize.Lactation@(lac.Item1)Size"
-                                   type="number" min="0" value="0" />
-                        </div>
-                    </div>
-                }
-                <div class="govuk-grid-column-one-quarter govuk-!-margin-bottom-3">
-                    <div class="govuk-form-group">
-                        <label class="govuk-label govuk-!-font-size-16" for="NewHerdSize_Lactation10PlusSize">Lac 10+</label>
-                        <input class="govuk-input" id="NewHerdSize_Lactation10PlusSize"
-                               asp-for="NewHerdSize.Lactation10PlusSize"
-                               type="number" min="0" />
-                    </div>
-                </div>
-            </div>
-
-            <button type="submit" class="govuk-button" data-module="govuk-button">Add herd size</button>
-        </form>
+    <div class="govuk-button-group govuk-!-margin-top-4">
+        <a asp-page="/Case/FarmHerdSizeAdd" asp-route-rbse="@Model.Rbse" class="govuk-button govuk-button--secondary">Add herd size record</a>
     </div>
-</details>
 }
 
 @* CPHH status lookup — fires on blur of any input with data-lf-lookup *@

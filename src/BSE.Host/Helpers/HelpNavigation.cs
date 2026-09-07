@@ -39,7 +39,6 @@ public static class HelpNavigation
         ("/Search/Cases", "SearchCase"),
         ("/Search/CasesByHerdmark", "SearchCaseByHerdMark"),
         ("/Search/CasesByHoldingHerdmark", "SearchCPHH"),
-        ("/Search/Cphh", "SearchCPHH"),
         ("/Search/Farms", "SearchFarm"),
         ("/Search/RelatedAnimals", "SearchRelatedAnimal"),
         ("/Search/Outstanding", "SearchOutstandingData"),

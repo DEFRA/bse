@@ -40,7 +40,6 @@ public class PickListsModel(
     [BindProperty(SupportsGet = true)] public int PageNumber { get; set; } = 1;
 
     [BindProperty] public Dictionary<string, string> Fields { get; set; } = [];
-    [BindProperty] public string? OriginalKey { get; set; }
 
     public IReadOnlyList<EditableLookup> Lookups { get; private set; } = [];
     public EditableLookup? Lookup { get; private set; }
@@ -63,27 +62,6 @@ public class PickListsModel(
     {
         await LoadAsync();
         return Page();
-    }
-
-    public async Task<IActionResult> OnPostAddAsync()
-    {
-        await LoadAsync();
-        if (!CanEdit || Procs is null) return RedirectToTable();
-
-        ValidateRequired();
-        if (HasDuplicateKey(originalKey: null)) ModelState.AddModelError(KeyColumn, DuplicateCodeMessage);
-        if (!ModelState.IsValid) return Page();
-
-        try
-        {
-            await AddAsync();
-            TempData["SuccessMessage"] = "Record added.";
-        }
-        catch (Exception ex)
-        {
-            TempData["ErrorMessage"] = $"Add failed: {ex.Message}";
-        }
-        return RedirectToTable();
     }
 
     public async Task<IActionResult> OnPostDeleteAsync()
@@ -233,19 +211,6 @@ public class PickListsModel(
     private int? IntField(string column) =>
         int.TryParse(Field(column), out var value) ? value : null;
 
-    private Task AddAsync() => TableId switch
-    {
-        TestTypeId => lookupAdminService.AddTestTypeAsync(Field("Code"), Field("Description"), BoolField("IsActive")),
-        RelationFateId => lookupAdminService.AddRelationFateAsync(Field("Code"), Field("Description"), BoolField("IsActive")),
-        BreedId => lookupAdminService.AddBreedAsync(Field("Code"), Field("FullName"), Field("AmalgamatedName")),
-        AhoId => lookupAdminService.AddAHOAsync(Field("Code"), Field("Name"), IntField("BSERegionID")),
-        SupplierId => lookupAdminService.AddSupplierAsync(Field("Name"), Field("Details")),
-        BseCountyId => lookupAdminService.AddBSECountyAsync(Field("IDColumn"), Field("Code"), Field("Description"), IntField("BSERegionID")),
-        TseTestingSiteId => lookupAdminService.AddTSETestingSiteAsync(Field("Name"), Field("Address"), Field("CPH"), Field("AHO")),
-        AhroId => lookupAdminService.AddAHROAsync(Field("Name")),
-        _ => lookupAdminService.AddCodeDescriptionItemAsync(Procs!.InsertStoredProcedure, Field("Code"), Field("Description"))
-    };
-
     private Task DeleteAsync()
     {
         var key = Field(KeyColumn);
@@ -276,19 +241,6 @@ public class PickListsModel(
                 ModelState.AddModelError(field.Column, $"Enter a {field.Label.ToLowerInvariant()}");
             }
         }
-    }
-
-    /// <summary>Legacy blocked saving a Code already used by a different row.</summary>
-    private bool HasDuplicateKey(string? originalKey)
-    {
-        if (KeyColumn == "ID") return false;
-
-        var candidate = Field(KeyColumn);
-        if (string.IsNullOrWhiteSpace(candidate)) return false;
-
-        return Rows.Any(r =>
-            string.Equals(RowValue(r, KeyColumn), candidate, StringComparison.OrdinalIgnoreCase) &&
-            !string.Equals(RowValue(r, KeyColumn), originalKey ?? "", StringComparison.OrdinalIgnoreCase));
     }
 
     public static string RowValue(IDictionary<string, object?> row, string column)

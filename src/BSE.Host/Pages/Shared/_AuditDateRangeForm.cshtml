@@ -1,15 +1,49 @@
 @model BSE.Host.Models.ViewModels.AuditDateRangeViewModel
 
-<form method="get" novalidate class="govuk-!-margin-bottom-6">
-    <div class="govuk-form-group">
-        <label class="govuk-label" for="audit-start-date">From</label>
-        <input id="audit-start-date" name="StartDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.StartDate.ToString("yyyy-MM-dd")" />
+@if (Model.StartDateError is not null || Model.EndDateError is not null)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @if (Model.StartDateError is not null)
+                    {
+                        <li><a href="#audit-start-date">@Model.StartDateError</a></li>
+                    }
+                    @if (Model.EndDateError is not null)
+                    {
+                        <li><a href="#audit-end-date">@Model.EndDateError</a></li>
+                    }
+                </ul>
+            </div>
+        </div>
     </div>
-    <div class="govuk-form-group">
+}
+
+<form method="get" novalidate class="govuk-!-margin-bottom-6">
+    <div class="govuk-form-group @(Model.StartDateError is not null ? "govuk-form-group--error" : "")">
+        <label class="govuk-label" for="audit-start-date">From</label>
+        @if (Model.StartDateError is not null)
+        {
+            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.StartDateError</p>
+        }
+        <input id="audit-start-date" name="StartDate" type="date"
+               class="govuk-input govuk-input--width-10 @(Model.StartDateError is not null ? "govuk-input--error" : "")"
+               value="@(Model.StartDate?.ToString("yyyy-MM-dd"))" />
+    </div>
+    <div class="govuk-form-group @(Model.EndDateError is not null ? "govuk-form-group--error" : "")">
         <label class="govuk-label" for="audit-end-date">To</label>
-        <input id="audit-end-date" name="EndDate" type="date" class="govuk-input govuk-input--width-10" value="@Model.EndDate.ToString("yyyy-MM-dd")" />
+        @if (Model.EndDateError is not null)
+        {
+            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.EndDateError</p>
+        }
+        <input id="audit-end-date" name="EndDate" type="date"
+               class="govuk-input govuk-input--width-10 @(Model.EndDateError is not null ? "govuk-input--error" : "")"
+               value="@(Model.EndDate?.ToString("yyyy-MM-dd"))" />
     </div>
     <div class="govuk-button-group">
         <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
+        <a asp-page="/AuditLog/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button" role="button" draggable="false">Audit Log Menu</a>
     </div>
 </form>

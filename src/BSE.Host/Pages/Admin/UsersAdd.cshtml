@@ -1,0 +1,80 @@
+@page
+@model BSE.Host.Pages.Admin.UsersAddModel
+@{
+    ViewData["Title"] = "Add user";
+
+    var nameError = ViewData.ModelState[nameof(Model.UserName)]?.Errors.FirstOrDefault()?.ErrorMessage;
+    var groupError = ViewData.ModelState[nameof(Model.UserGroupId)]?.Errors.FirstOrDefault()?.ErrorMessage;
+    var emailError = ViewData.ModelState[nameof(Model.Email)]?.Errors.FirstOrDefault()?.ErrorMessage;
+}
+
+<div>
+    <h1 class="govuk-heading-l">Add user</h1>
+
+    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+        <ol class="govuk-breadcrumbs__list">
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Admin/Users">Users</a></li>
+            <li class="govuk-breadcrumbs__list-item" aria-current="page">Add user</li>
+        </ol>
+    </nav>
+
+    @if (!ViewContext.ModelState.IsValid)
+    {
+        <div class="govuk-error-summary" data-module="govuk-error-summary">
+            <div role="alert">
+                <h2 class="govuk-error-summary__title">There is a problem</h2>
+                <div class="govuk-error-summary__body">
+                    <ul class="govuk-list govuk-error-summary__list">
+                        @if (nameError is not null) { <li><a href="#user-name">@nameError</a></li> }
+                        @if (groupError is not null) { <li><a href="#user-group-id">@groupError</a></li> }
+                        @if (emailError is not null) { <li><a href="#email">@emailError</a></li> }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    }
+
+    <form method="post" novalidate>
+        
+
+        <div class="govuk-form-group @(nameError is not null ? "govuk-form-group--error" : "")">
+            <label class="govuk-label" for="user-name">Display name</label>
+            @if (nameError is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @nameError</p> }
+            <input id="user-name" asp-for="UserName" class="govuk-input govuk-!-width-two-thirds @(nameError is not null ? "govuk-input--error" : "")" />
+        </div>
+
+        <div class="govuk-form-group @(emailError is not null ? "govuk-form-group--error" : "")">
+            <label class="govuk-label" for="email">Email</label>
+            @if (emailError is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @emailError</p> }
+            <input id="email" asp-for="Email" type="email" class="govuk-input govuk-!-width-two-thirds @(emailError is not null ? "govuk-input--error" : "")" />
+        </div>
+
+        <div class="govuk-form-group @(groupError is not null ? "govuk-form-group--error" : "")">
+            <label class="govuk-label" for="user-group-id">User group</label>
+            @if (groupError is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @groupError</p> }
+            <select id="user-group-id" asp-for="UserGroupId" class="govuk-select @(groupError is not null ? "govuk-select--error" : "")">
+                <option value="0">— Select —</option>
+                @foreach (var g in Model.UserGroups)
+                {
+                    <option value="@g.Id">@g.Name</option>
+                }
+            </select>
+        </div>
+
+        <div class="govuk-form-group">
+            <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                <div class="govuk-checkboxes__item">
+                    <input id="is-active" name="IsActive" value="true" type="checkbox" class="govuk-checkboxes__input" checked="@Model.IsActive" />
+                    <input type="hidden" name="IsActive" value="false" />
+                    <label class="govuk-label govuk-checkboxes__label" for="is-active">Active</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="govuk-button-group">
+            <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+            <a asp-page="/Admin/Users" class="govuk-link">Cancel</a>
+        </div>
+    </form>
+</div>

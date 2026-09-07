@@ -131,35 +131,9 @@ else
     <p class="govuk-body govuk-!-colour-secondary">No other owner records.</p>
 }
 
-<details class="govuk-details" data-module="govuk-details">
-    <summary class="govuk-details__summary">
-        <span class="govuk-details__summary-text">Add an owner record</span>
-    </summary>
-    <div class="govuk-details__text">
-        <form method="post" asp-page-handler="AddOwner" novalidate>
-            <input type="hidden" asp-for="Rbse" />
-            <div class="govuk-form-group">
-                <label class="govuk-label" for="owner-type">Type</label>
-                <select id="owner-type" name="NewOwner.Type" class="govuk-select govuk-!-width-one-half">
-                    <option value="">— select —</option>
-                    @foreach (var ot in Model.OwnerTypes)
-                    {
-                        <option value="@ot.Code">@ot.Description</option>
-                    }
-                </select>
-            </div>
-            <div class="govuk-form-group">
-                <label class="govuk-label" for="owner-name">Name</label>
-                <input id="owner-name" name="NewOwner.Name" class="govuk-input govuk-!-width-two-thirds" />
-            </div>
-            <div class="govuk-form-group">
-                <label class="govuk-label" for="owner-cphh">CPHH</label>
-                <input id="owner-cphh" name="NewOwner.Cphh" class="govuk-input govuk-!-width-one-half" />
-            </div>
-            <button type="submit" class="govuk-button" data-module="govuk-button">Add owner</button>
-        </form>
-    </div>
-</details>
+<div class="govuk-button-group govuk-!-margin-top-6">
+    <a asp-page="/Case/OtherOwnerAdd" asp-route-rbse="@Model.Rbse" class="govuk-button govuk-button--secondary">Add owner</a>
+</div>
 
 <div class="govuk-button-group govuk-!-margin-top-4">
     <a asp-page="/Case/Vla" asp-route-rbse="@Model.Rbse" class="govuk-link">Back to Case (VLA)</a>

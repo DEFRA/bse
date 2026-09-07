@@ -231,25 +231,38 @@
 <section id="search">
     <h2 class="govuk-heading-l">6. Search</h2>
     <p class="govuk-body">The Search pages enable you to perform searches on farm and case data. Enter criteria in one or more fields — only records matching all entered criteria are shown. Partial values are accepted for Name and Address fields; a CPH (without individual holding identifier) may be entered instead of a full CPHH.</p>
-    <p class="govuk-body">All search results can be exported to a spreadsheet using the <strong>Export to Excel</strong> link at the bottom of the results page.</p>
+    <p class="govuk-body">If you select <strong>Search</strong> without entering any criteria, an error is shown asking you to provide one or more search criteria.</p>
+    <p class="govuk-body">Results are shown in a sortable, paginated table below the search form. Select a column heading to sort by that column; select it again to reverse the order. Use the pagination links below the table to move between pages.</p>
+    <p class="govuk-body">Each search page provides an <strong>Export to Excel</strong> link with the results. Selecting it downloads the complete result set as an Excel spreadsheet — every matching record is included, not just the page currently displayed.</p>
+    <p class="govuk-body">See also: <a class="govuk-link" href="#General_Grids">Data tables</a></p>
 
     <h3 class="govuk-heading-m" id="SearchFarm">Farm search</h3>
-    <p class="govuk-body">The Farm Search page allows searches on information recorded for a farm. Enter criteria in at least one field — results are displayed in the table below the search form.</p>
+    <p class="govuk-body">The Farm Search page allows searches on information recorded for a farm. You can search on CPH(H), owner name, address, herdmark, numeric herdmark, county, dealer status and Animal Health Office, and choose whether to include non-GB farms.</p>
+    <p class="govuk-body">Enter criteria in at least one field — results are displayed in the table below the search form.</p>
+    <p class="govuk-body">See also: <a class="govuk-link" href="#General_Grids">Data tables</a></p>
 
     <h3 class="govuk-heading-m" id="SearchCase">Case search</h3>
-    <p class="govuk-body">The Case Search page allows searches on information recorded for a case. Enter criteria in at least one field — results are displayed in the table below the search form.</p>
+    <p class="govuk-body">The Case Search page allows searches on information recorded for a case, including RBSE, eartag, DBSE, fate, final result, sex, survey, passive or active status, and date ranges for Form A, final result and birth dates.</p>
+    <p class="govuk-body">Enter criteria in at least one field — results are displayed in the table below the search form. In the <strong>Notes</strong> field, and other text fields, the <samp>%</samp> character can be used as a wildcard.</p>
+    <p class="govuk-body">See also: <a class="govuk-link" href="#General_Grids">Data tables</a></p>
 
     <h3 class="govuk-heading-m" id="SearchCaseByHerdMark">Cases by herdmark</h3>
-    <p class="govuk-body">The Cases By Herdmark page searches for all cases — including animals sold off — that match a given herdmark. All results containing the entered herdmark text are returned.</p>
+    <p class="govuk-body">The Cases By Herdmark page searches for all cases — including animals sold off — that match a given herdmark. All results containing the entered herdmark text are returned. You can also choose whether to include non-GB cases.</p>
+    <p class="govuk-body">See also: <a class="govuk-link" href="#General_Grids">Data tables</a></p>
 
     <h3 class="govuk-heading-m" id="SearchRelatedAnimal">Related animals search</h3>
-    <p class="govuk-body">The Related Animals Search finds animals related to a case, or cases related to a given animal. Enter criteria in at least one field — results are displayed in the table below.</p>
+    <p class="govuk-body">The Related Animals Search finds animals related to a case, or cases related to a given animal. You can search on the RBSE of the case, the eartag, name or RBSE of the related animal, and the relation type. The relation type list includes <strong>Dam</strong> and <strong>Sire</strong> in addition to the recorded relation types.</p>
+    <p class="govuk-body">Enter criteria in at least one field — results are displayed in the table below the search form.</p>
+    <p class="govuk-body">See also: <a class="govuk-link" href="#General_Grids">Data tables</a></p>
 
     <h3 class="govuk-heading-m" id="SearchOutstandingData">Outstanding data list</h3>
-    <p class="govuk-body">The Outstanding Data List searches for cases that have incomplete paperwork. Choose to view cases where the final result, fate, or BSE-1 questionnaire date is outstanding. Optionally specify a date range and whether to include non-GB cases.</p>
+    <p class="govuk-body">The Outstanding Data List searches for cases that have incomplete paperwork. You must select one of the three options — outstanding results, fate, or BSE1 questionnaire dates. If no option is selected, an error is shown asking you to select one of these three options.</p>
+    <p class="govuk-body">You can then optionally specify a Form A date range and whether to include non-GB cases. Leave the dates blank to search all dates.</p>
+    <p class="govuk-body">See also: <a class="govuk-link" href="#General_Grids">Data tables</a></p>
 
     <h3 class="govuk-heading-m" id="SearchCPHH">Cases by holding/herdmark</h3>
-    <p class="govuk-body">This search (designed for organic farmer checks) finds all cases that occurred on a specific farm. Enter at least one field — a CPHH or part thereof — and results are shown in the table below.</p>
+    <p class="govuk-body">This search (designed for organic farmer checks) finds all cases that occurred on a specific farm. Enter at least one of CPH(H), herdmark or numeric herdmark, and choose whether to include non-GB cases. Results are shown in the table below the search form.</p>
+    <p class="govuk-body">See also: <a class="govuk-link" href="#General_Grids">Data tables</a></p>
 
     <p class="govuk-body govuk-!-margin-top-4"><a class="govuk-link" href="#">Back to top</a></p>
 </section>
