@@ -42,4 +42,7 @@ public interface IBatchRepository
 
     /// <summary>Calls GetCPHHRBSEForBatchID — full display-formatted RBSE/CPHH list for a batch.</summary>
     Task<IReadOnlyList<BatchCaseRecord>> GetCaseDetailsByBatchIdAsync(int batchId);
+    
+    // Legacy print-batch report support (reuses existing SPs).
+    Task<IReadOnlyList<IDictionary<string, object?>>> GetReportRowsAsync(string storedProcedure, int batchId);
 }

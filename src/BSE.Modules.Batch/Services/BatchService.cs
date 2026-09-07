@@ -38,4 +38,7 @@ public sealed class BatchService : IBatchService
 
     public Task<IReadOnlyList<BatchCaseRecord>> GetCaseDetailsByBatchIdAsync(int batchId)
         => _repository.GetCaseDetailsByBatchIdAsync(batchId);
+
+    public Task<IReadOnlyList<IDictionary<string, object?>>> GetReportRowsAsync(string storedProcedure, int batchId)
+        => _repository.GetReportRowsAsync(storedProcedure, batchId);
 }
