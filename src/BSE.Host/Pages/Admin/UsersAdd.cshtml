@@ -3,7 +3,6 @@
 @{
     ViewData["Title"] = "Add user";
 
-    var ntLoginError = ViewData.ModelState[nameof(Model.NTLogin)]?.Errors.FirstOrDefault()?.ErrorMessage;
     var nameError = ViewData.ModelState[nameof(Model.UserName)]?.Errors.FirstOrDefault()?.ErrorMessage;
     var groupError = ViewData.ModelState[nameof(Model.UserGroupId)]?.Errors.FirstOrDefault()?.ErrorMessage;
     var emailError = ViewData.ModelState[nameof(Model.Email)]?.Errors.FirstOrDefault()?.ErrorMessage;
@@ -27,7 +26,6 @@
                 <h2 class="govuk-error-summary__title">There is a problem</h2>
                 <div class="govuk-error-summary__body">
                     <ul class="govuk-list govuk-error-summary__list">
-                        @if (ntLoginError is not null) { <li><a href="#nt-login">@ntLoginError</a></li> }
                         @if (nameError is not null) { <li><a href="#user-name">@nameError</a></li> }
                         @if (groupError is not null) { <li><a href="#user-group-id">@groupError</a></li> }
                         @if (emailError is not null) { <li><a href="#email">@emailError</a></li> }
@@ -38,11 +36,7 @@
     }
 
     <form method="post" novalidate>
-        <div class="govuk-form-group @(ntLoginError is not null ? "govuk-form-group--error" : "")">
-            <label class="govuk-label" for="nt-login">NT login</label>
-            @if (ntLoginError is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ntLoginError</p> }
-            <input id="nt-login" asp-for="NTLogin" class="govuk-input govuk-!-width-one-half @(ntLoginError is not null ? "govuk-input--error" : "")" />
-        </div>
+        
 
         <div class="govuk-form-group @(nameError is not null ? "govuk-form-group--error" : "")">
             <label class="govuk-label" for="user-name">Display name</label>
