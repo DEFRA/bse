@@ -1,5 +1,6 @@
 using BSE.Modules.BsessIntegration.Models;
 using BSE.Modules.BsessIntegration.Services;
+using BSE.SharedKernel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -20,6 +21,8 @@ public class CheckByRbseModel(IBsessCheckService bsessCheckService) : PageModel
         if (!string.IsNullOrWhiteSpace(Rbse))
         {
             HasSearched = true;
+            var rawRbse = RbseHelper.ParseToRaw(Rbse);
+            Rbse = rawRbse;
             Result = await bsessCheckService.GetCheckByRbseAsync(Rbse);
         }
         return Page();
