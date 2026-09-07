@@ -3,6 +3,12 @@
 @using BSE.SharedKernel
 @{
     ViewData["Title"] = "User Maintenance";
+    var addNtLoginError  = ViewData.ModelState["NTLogin"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    var addNameError     = ViewData.ModelState["UserName"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    var addGroupError    = ViewData.ModelState["UserGroupId"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    var addEmailError    = ViewData.ModelState["Email"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    bool addHasErrors    = addNtLoginError is not null || addNameError is not null || addGroupError is not null || addEmailError is not null;
+
 }
 
 <div>
@@ -22,10 +28,20 @@
         </div>
     }
 
-    @if (User.IsInRole("VLAMaintenance"))
+    @if (addHasErrors)
     {
-        <div class="govuk-button-group">
-            <a asp-page="/Admin/UsersAdd" class="govuk-button govuk-button--secondary">Add user</a>
+        <div class="govuk-error-summary" data-module="govuk-error-summary">
+            <div role="alert">
+                <h2 class="govuk-error-summary__title">There is a problem</h2>
+                <div class="govuk-error-summary__body">
+                    <ul class="govuk-list govuk-error-summary__list">
+                        @if (addNtLoginError is not null) { <li><a href="#nt-login">@addNtLoginError</a></li> }
+                        @if (addNameError   is not null) { <li><a href="#user-name">@addNameError</a></li> }
+                        @if (addGroupError  is not null) { <li><a href="#user-group-id">@addGroupError</a></li> }
+                        @if (addEmailError  is not null) { <li><a href="#email">@addEmailError</a></li> }
+                    </ul>
+                </div>
+            </div>
         </div>
     }
 
@@ -33,7 +49,11 @@
         <summary class="govuk-details__summary"><span class="govuk-details__summary-text">Add user</span></summary>
         <div class="govuk-details__text">
             <form method="post" asp-page-handler="Add" novalidate>
-            
+                <div class="govuk-form-group @(addNtLoginError is not null ? "govuk-form-group--error" : "")">
+                    <label class="govuk-label" for="nt-login">NT login</label>
+                    @if (addNtLoginError is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @addNtLoginError</p> }
+                    <input id="nt-login" name="NTLogin" class="govuk-input govuk-!-width-one-half @(addNtLoginError is not null ? "govuk-input--error" : "")" value="@Model.NTLogin" />
+                </div>
                 <div class="govuk-form-group @(addNameError is not null ? "govuk-form-group--error" : "")">
                     <label class="govuk-label" for="user-name">Display name</label>
                     @if (addNameError is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @addNameError</p> }
