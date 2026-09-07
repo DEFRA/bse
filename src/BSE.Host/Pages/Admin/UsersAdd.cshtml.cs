@@ -14,7 +14,7 @@ public class UsersAddModel(
     IUserManagementService userManagementService,
     ILookupDataService lookupDataService) : PageModel
 {
-    [BindProperty] public string NTLogin { get; set; } = string.Empty;
+    [BindProperty] public string? NTLogin { get; set; } = string.Empty;
     [BindProperty] public string? Upn { get; set; }
     [BindProperty] public string UserName { get; set; } = string.Empty;
     [BindProperty] public string? Email { get; set; }
@@ -34,8 +34,6 @@ public class UsersAddModel(
         IsActive = Request.Form[nameof(IsActive)]
             .Any(v => string.Equals(v, "true", StringComparison.OrdinalIgnoreCase));
 
-        if (string.IsNullOrWhiteSpace(NTLogin))
-            ModelState.AddModelError(nameof(NTLogin), "Enter NT login");
         if (string.IsNullOrWhiteSpace(UserName))
             ModelState.AddModelError(nameof(UserName), "Enter a display name");
         if (UserGroupId <= 0)
@@ -46,8 +44,6 @@ public class UsersAddModel(
 
         if (ModelState.IsValid)
         {
-            if (users.Any(u => u.NTLogin.Equals(NTLogin, StringComparison.OrdinalIgnoreCase)))
-                ModelState.AddModelError(nameof(NTLogin), "Unable to add the selected user");
             if (!string.IsNullOrWhiteSpace(Email) &&
                 users.Any(u => !string.IsNullOrWhiteSpace(u.Email) && u.Email.Equals(Email, StringComparison.OrdinalIgnoreCase)))
                 ModelState.AddModelError(nameof(Email), "Unable to add the selected user");

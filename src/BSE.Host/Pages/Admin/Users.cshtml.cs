@@ -21,14 +21,6 @@ public class UsersModel(IUserManagementService userManagementService, ILookupDat
     public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
     public IReadOnlyList<User> PagedUsers => Users.Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
 
-    // Add form fields
-    [BindProperty] public string NTLogin { get; set; } = string.Empty;
-    [BindProperty] public string? Upn { get; set; }
-    [BindProperty] public string UserName { get; set; } = string.Empty;
-    [BindProperty] public string? Email { get; set; }
-    [BindProperty] public bool IsActive { get; set; } = true;
-    [BindProperty] public int UserGroupId { get; set; } = 0;
-
     // Edit form fields
     [BindProperty] public int EditUserId { get; set; }
     [BindProperty] public string EditNTLogin { get; set; } = string.Empty;
@@ -64,52 +56,6 @@ public class UsersModel(IUserManagementService userManagementService, ILookupDat
         return SortDesc
             ? users.OrderByDescending(keySelector)
             : users.OrderBy(keySelector);
-    }
-
-    public async Task<IActionResult> OnPostAddAsync()
-    {
-        // Resolve checkbox value from posted form values (handles true/false dual inputs reliably).
-        IsActive = Request.Form[nameof(IsActive)]
-            .Any(v => string.Equals(v, "true", StringComparison.OrdinalIgnoreCase));
-
-        if (string.IsNullOrWhiteSpace(NTLogin))
-            ModelState.AddModelError(nameof(NTLogin), "Enter NT login");
-        if (string.IsNullOrWhiteSpace(UserName))
-            ModelState.AddModelError(nameof(UserName), "Enter a display name");
-        if (UserGroupId <= 0)
-            ModelState.AddModelError(nameof(UserGroupId), "Select a user group");
-
-        Users = await userManagementService.GetAllUsersAsync();
-        UserGroups = await lookupDataService.GetUserGroupsAsync();
-
-        if (ModelState.IsValid)
-        {
-            if (Users.Any(u => u.NTLogin.Equals(NTLogin, StringComparison.OrdinalIgnoreCase)))
-                ModelState.AddModelError(nameof(NTLogin), "Unable to add the selected user");
-            if (!string.IsNullOrWhiteSpace(Email) &&
-                Users.Any(u => !string.IsNullOrWhiteSpace(u.Email) && u.Email.Equals(Email, StringComparison.OrdinalIgnoreCase)))
-                ModelState.AddModelError(nameof(Email), "Unable to add the selected user");
-        }
-
-        if (!ModelState.IsValid)
-        {
-            Users = ApplySorting(Users);
-            return Page();
-        }
-
-        var user = new User(
-            UserId: 0,
-            NTLogin: NTLogin,
-            Upn: Upn,
-            UserName: UserName,
-            Email: Email,
-            IsActive: IsActive,
-            UserGroupId: UserGroupId,
-            UserGroup: (UserGroup)UserGroupId);
-
-        await userManagementService.AddUserAsync(user);
-        TempData["Success"] = $"User '{UserName}' added.";
-        return RedirectToPage();
     }
 
     public async Task<IActionResult> OnPostEditAsync()

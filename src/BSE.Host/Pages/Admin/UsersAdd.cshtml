@@ -65,8 +65,8 @@
         <div class="govuk-form-group">
             <div class="govuk-checkboxes" data-module="govuk-checkboxes">
                 <div class="govuk-checkboxes__item">
-                    <input id="is-active" name="IsActive" value="true" type="checkbox" class="govuk-checkboxes__input" checked="@Model.IsActive" />
                     <input type="hidden" name="IsActive" value="false" />
+                    <input id="is-active" name="IsActive" value="true" type="checkbox" class="govuk-checkboxes__input" @(Model.IsActive ? "checked" : "") />
                     <label class="govuk-label govuk-checkboxes__label" for="is-active">Active</label>
                 </div>
             </div>
