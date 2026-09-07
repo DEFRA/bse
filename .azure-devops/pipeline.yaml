@@ -2,7 +2,18 @@ trigger:
   branches:
     include:
       - develop
-      
+
+parameters:
+  - name: deployToDev
+    displayName: Deploy to DEV
+    type: boolean
+    default: true
+
+  - name: deployToTest
+    displayName: Deploy to TST
+    type: boolean
+    default: false
+
 variables:
   - name: buildConfiguration
     value: 'Release'
@@ -16,7 +27,7 @@ variables:
 stages:
 
 - stage: Build
-  displayName: Build and test
+  displayName: Build and Test
   jobs:
   - job: build
     pool:
@@ -62,13 +73,10 @@ stages:
       artifact: drop
       displayName: 'Publish artifact'
 
-- stage: Deploy_Dev
-  displayName: Deploy to Dev
+- stage: DEV
+  displayName: DEV
   dependsOn: Build
-  condition: >-
-    and(succeeded(),
-        eq(variables['Build.SourceBranch'], 'refs/heads/develop'),
-        ne(variables['Build.Reason'], 'PullRequest'))
+  condition: and(succeeded(), eq('${{ parameters.deployToDev }}', true))
   variables:
     - name: appName
       value: 'DEVBSEWEBAW1401'
@@ -82,7 +90,7 @@ stages:
       value: 'BSE'
   jobs:
   - deployment: deploy_dev
-    environment: 'dev'
+    environment: 'DEV'
     pool:
       name: 'DEFRA-COMMON-UBUNTU-SSV3'
     strategy:
@@ -107,13 +115,21 @@ stages:
                 -Authentication__BypassEnabled "false"
                 -ConnectionStrings__BSE "Server=tcp:$(sqlServer);Database=$(dbName);Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Managed Identity;"
 
-- stage: Deploy_Test
-  displayName: Deploy to Test
+- stage: TST
+  displayName: TST
   dependsOn: Build
-  condition: >-
-    and(succeeded(),
-        eq(variables['Build.SourceBranch'], 'refs/heads/test'),
-        ne(variables['Build.Reason'], 'PullRequest'))
+  condition: and(succeeded(), eq('${{ parameters.deployToTest }}', true))
+  variables:
+    - name: appName
+      value: 'TSTBSEWEBAW1401'
+    - name: tenantId
+      value: '770a2450-0227-4c62-90c7-4e38537f1102'
+    - name: appId
+      value: '831094e6-109b-4555-b73f-c49e07d2d5d3'
+    - name: sqlServer
+      value: 'tstbseinfsq1401.database.windows.net,1433'
+    - name: dbName
+      value: 'BSE'
   jobs:
   - deployment: deploy_test
     environment: 'TST'
@@ -129,7 +145,14 @@ stages:
             inputs:
               azureSubscription: 'AZR-BSE-TST1'
               appType: 'webAppLinux'
-              appName: 'TSTBSEWEBAW1401'
+              appName: '$(appName)'
               package: '$(Pipeline.Workspace)/drop/*.zip'
               runtimeStack: 'DOTNETCORE|10.0'
               deploymentMethod: 'zipDeploy'
+              appSettings: >-
+                -Saml2__SPEntityId "https://tst-bse.azure.defra.cloud"
+                -Saml2__PublicOrigin "https://tst-bse.azure.defra.cloud"
+                -Saml2__IdPEntityId "https://sts.windows.net/$(tenantId)/"
+                -Saml2__IdPMetadataUrl "https://login.microsoftonline.com/$(tenantId)/federationmetadata/2007-06/federationmetadata.xml?appid=$(appId)"
+                -Authentication__BypassEnabled "false"
+                -ConnectionStrings__BSE "Server=tcp:$(sqlServer);Database=$(dbName);Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Managed Identity;"
