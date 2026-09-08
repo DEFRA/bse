@@ -1,67 +1,154 @@
-@page "{rbse?}"
+@page
+@using BSE.Host.Helpers
 @model MoveCaseModel
 @{
     ViewData["Title"] = "Move case";
+
+    var errors = new List<(string Anchor, string Message)>();
+    if (Model.RbseError is not null) { errors.Add(("rbse", Model.RbseError)); }
+    if (Model.CphhError is not null) { errors.Add(("new-cphh", Model.CphhError)); }
+    if (Model.ErrorMessage is not null) { errors.Add(("rbse", Model.ErrorMessage)); }
 }
 
-<div>
-    <h1 class="govuk-heading-l">Move case</h1>
+<h1 class="govuk-heading-l">Move Case</h1>
 
-    @* ── Step 1: lookup (navigated from home page without a known RBSE) ── *@
-    @if (string.IsNullOrEmpty(Model.Rbse))
-    {
-        <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
-            <ol class="govuk-breadcrumbs__list">
-                <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-                <li class="govuk-breadcrumbs__list-item" aria-current="page">Move case</li>
-            </ol>
-        </nav>
-        <form method="get" novalidate>
-            <div class="govuk-form-group">
-                <label class="govuk-label" for="rbse-lookup">Enter RBSE of case to move</label>
-                <div class="govuk-hint">Enter 9 digits with no slashes — for example, 002600001.</div>
-                <input id="rbse-lookup" name="Rbse" type="text" class="govuk-input govuk-input--width-10" autocomplete="off" />
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Move case</li>
+    </ol>
+</nav>
+
+@if (errors.Count > 0)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var error in errors)
+                    {
+                        <li><a href="#@error.Anchor">@error.Message</a></li>
+                    }
+                </ul>
             </div>
-            <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Look up</button>
-        </form>
-    }
-    else
-    {
-        <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
-            <ol class="govuk-breadcrumbs__list">
-                <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-                <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Details" asp-route-rbse="@Model.Rbse">Case @Model.Rbse</a></li>
-                <li class="govuk-breadcrumbs__list-item" aria-current="page">Move</li>
-            </ol>
-        </nav>
+        </div>
+    </div>
+}
 
-        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+@* ── Step 1: look up the case to be moved ───────────────────────────────── *@
+<form method="post" asp-page-handler="LookUp" novalidate>
+    <div class="govuk-form-group @(Model.RbseError is not null ? "govuk-form-group--error" : "")">
+        <label class="govuk-label" for="rbse">RBSE</label>
+        <div id="rbse-hint" class="govuk-hint">For example, 00/26/00001. Slashes are optional.</div>
+        @if (Model.RbseError is not null)
         {
-            <div class="govuk-error-summary" data-module="govuk-error-summary">
-                <div role="alert">
-                    <h2 class="govuk-error-summary__title">There is a problem</h2>
-                    <div class="govuk-error-summary__body">
-                        <ul class="govuk-list govuk-error-summary__list">
-                            <li>@Model.ErrorMessage</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
+            <p id="rbse-error" class="govuk-error-message">
+                <span class="govuk-visually-hidden">Error:</span>@Model.RbseError
+            </p>
         }
+        <input id="rbse" name="Rbse" value="@Model.Rbse" type="text" maxlength="11" autocomplete="off"
+               aria-describedby="rbse-hint @(Model.RbseError is not null ? "rbse-error" : "")"
+               class="govuk-input govuk-input--width-10 @(Model.RbseError is not null ? "govuk-input--error" : "")" />
+    </div>
+    <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Look Up</button>
+</form>
 
-        <h2 class="govuk-heading-m">Move case @Model.Rbse to a different farm</h2>
-        <form method="post" novalidate>
-            <input type="hidden" asp-for="Rbse" />
-            <div class="govuk-form-group">
-                <label asp-for="NewCphh" class="govuk-label">New CPHH</label>
-                <div class="govuk-hint">The destination farm must already exist in the system.</div>
-                <input asp-for="NewCphh" class="govuk-input govuk-!-width-one-half" />
-                <span asp-validation-for="NewCphh" class="govuk-error-message"></span>
+@if (Model.CaseFound)
+{
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
+
+    <h2 class="govuk-heading-m">Case @BseFormat.FormatRbse(Model.CaseRecord!.Rbse)</h2>
+    <dl class="govuk-summary-list">
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Owner Name</dt>
+            <dd class="govuk-summary-list__value">@Model.CurrentFarm?.OwnerName</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Address</dt>
+            <dd class="govuk-summary-list__value">
+                @Model.CurrentFarm?.Address1<br>
+                @Model.CurrentFarm?.Address2<br>
+                @Model.CurrentFarm?.Address3<br>
+                @Model.CurrentFarm?.Postcode
+            </dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Eartag</dt>
+            <dd class="govuk-summary-list__value">@Model.EartagDisplay</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">CPHH</dt>
+            <dd class="govuk-summary-list__value">@BseFormat.FormatCphh(Model.CaseRecord.Cphh)</dd>
+        </div>
+    </dl>
+
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
+
+    @* ── Step 2: check the destination farm ─────────────────────────────── *@
+    <form method="post" asp-page-handler="Check" novalidate>
+        <input type="hidden" name="Rbse" value="@Model.Rbse" />
+        <div class="govuk-form-group @(Model.CphhError is not null ? "govuk-form-group--error" : "")">
+            <label class="govuk-label" for="new-cphh">New CPHH</label>
+            <div id="new-cphh-hint" class="govuk-hint">
+                For example, 12/345/6789/01. Slashes are optional. The destination farm must already exist.
             </div>
+            @if (Model.CphhError is not null)
+            {
+                <p id="new-cphh-error" class="govuk-error-message">
+                    <span class="govuk-visually-hidden">Error:</span>@Model.CphhError
+                </p>
+            }
+            <input id="new-cphh" name="NewCphh" value="@Model.NewCphh" type="text" inputmode="numeric" autocomplete="off"
+                   aria-describedby="new-cphh-hint @(Model.CphhError is not null ? "new-cphh-error" : "")"
+                   class="govuk-input govuk-input--width-20 @(Model.CphhError is not null ? "govuk-input--error" : "")" />
+        </div>
+        <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Check</button>
+    </form>
+
+    @if (Model.ShowNewFarmPrompt)
+    {
+        <p class="govuk-body">
+            <a asp-page="/Farm/New" asp-route-cphh="@Model.NewCphh" class="govuk-link">Create New Farm</a>
+        </p>
+    }
+
+    @if (Model.CanMove)
+    {
+        <h2 class="govuk-heading-m">Destination farm @BseFormat.FormatCphh(Model.NewFarm!.CPHH)</h2>
+        <dl class="govuk-summary-list">
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">Name</dt>
+                <dd class="govuk-summary-list__value">@Model.NewFarm.OwnerName</dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">Address</dt>
+                <dd class="govuk-summary-list__value">
+                    @Model.NewFarm.Address1<br>
+                    @Model.NewFarm.Address2<br>
+                    @Model.NewFarm.Address3<br>
+                    @Model.NewFarm.Postcode
+                </dd>
+            </div>
+        </dl>
+
+        <form method="post" asp-page-handler="Move">
+            <input type="hidden" name="Rbse" value="@Model.Rbse" />
+            <input type="hidden" name="NewCphh" value="@Model.NewCphh" />
+
+            <div class="govuk-warning-text">
+                <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+                <strong class="govuk-warning-text__text">
+                    <span class="govuk-warning-text__assistive">Warning</span>
+                    If no other case remains on the original farm, that farm record will be deleted.
+                </strong>
+            </div>
+
             <div class="govuk-button-group">
-                <button type="submit" class="govuk-button" data-module="govuk-button">Move case</button>
-                <a asp-page="/Case/Details" asp-route-rbse="@Model.Rbse" class="govuk-link">Cancel</a>
+                <button type="submit" class="govuk-button govuk-button--warning" data-module="govuk-button"
+                        onclick="return confirm('Click OK to confirm change');">OK</button>
+                <a asp-page="/Home" class="govuk-link">Cancel</a>
             </div>
         </form>
     }
-</div>
+}

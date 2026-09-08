@@ -334,6 +334,7 @@ try
     // ── Host services ──────────────────────────────────────────────────────────
     builder.Services.AddScoped<BSE.Host.Services.ICurrentUserService, BSE.Host.Services.CurrentUserService>();
     builder.Services.AddScoped<BSE.Host.Services.IGeoLookupService, BSE.Host.Services.GeoLookupService>();
+    builder.Services.AddScoped<BSE.Host.Services.ICaseWizardStateService, BSE.Host.Services.CaseWizardStateService>();
 
     // -- Authorisation policies
     // Each policy requires exactly its own name as a role claim.

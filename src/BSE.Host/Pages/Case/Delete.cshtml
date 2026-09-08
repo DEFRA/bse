@@ -1,93 +1,120 @@
-@page "{rbse?}"
+@page
+@using BSE.Host.Helpers
 @model DeleteModel
 @{
     ViewData["Title"] = "Delete case";
+
+    var errors = new List<(string Anchor, string Message)>();
+    if (Model.RbseError is not null) { errors.Add(("rbse", Model.RbseError)); }
+    if (Model.ErrorMessage is not null) { errors.Add(("rbse", Model.ErrorMessage)); }
 }
 
-<div>
-    <h1 class="govuk-heading-l">Delete case</h1>
+<h1 class="govuk-heading-l">Delete Case</h1>
 
-    @* ── Step 1: lookup (navigated from home page without a known RBSE) ── *@
-    @if (string.IsNullOrEmpty(Model.Rbse))
-    {
-        <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
-            <ol class="govuk-breadcrumbs__list">
-                <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-                <li class="govuk-breadcrumbs__list-item" aria-current="page">Delete case</li>
-            </ol>
-        </nav>
-        <form method="get" novalidate>
-            <div class="govuk-form-group">
-                <label class="govuk-label" for="rbse-lookup">Enter RBSE of case to delete</label>
-                <div class="govuk-hint">Enter 9 digits with no slashes — for example, 002600001.</div>
-                <input id="rbse-lookup" name="Rbse" type="text" class="govuk-input govuk-input--width-10" autocomplete="off" />
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Delete case</li>
+    </ol>
+</nav>
+
+@if (errors.Count > 0)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var error in errors)
+                    {
+                        <li><a href="#@error.Anchor">@error.Message</a></li>
+                    }
+                </ul>
             </div>
-            <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Look up</button>
-        </form>
-    }
-    else if (Model.CaseRecord is not null)
-    {
-        <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
-            <ol class="govuk-breadcrumbs__list">
-                <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-                <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Details" asp-route-rbse="@Model.Rbse">Case @Model.Rbse</a></li>
-                <li class="govuk-breadcrumbs__list-item" aria-current="page">Delete</li>
-            </ol>
-        </nav>
+        </div>
+    </div>
+}
 
+@* ── Step 1: look up the case to be deleted ─────────────────────────────── *@
+<form method="post" asp-page-handler="LookUp" novalidate>
+    <div class="govuk-form-group @(Model.RbseError is not null ? "govuk-form-group--error" : "")">
+        <label class="govuk-label" for="rbse">RBSE</label>
+        <div id="rbse-hint" class="govuk-hint">For example, 00/26/00001. Slashes are optional.</div>
+        @if (Model.RbseError is not null)
+        {
+            <p id="rbse-error" class="govuk-error-message">
+                <span class="govuk-visually-hidden">Error:</span>@Model.RbseError
+            </p>
+        }
+        <input id="rbse" name="Rbse" value="@Model.Rbse" type="text" maxlength="11" autocomplete="off"
+               aria-describedby="rbse-hint @(Model.RbseError is not null ? "rbse-error" : "")"
+               class="govuk-input govuk-input--width-10 @(Model.RbseError is not null ? "govuk-input--error" : "")" />
+    </div>
+    <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Look Up</button>
+</form>
+
+@if (Model.CaseFound)
+{
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
+
+    <h2 class="govuk-heading-m">Case @BseFormat.FormatRbse(Model.CaseRecord!.Rbse)</h2>
+    <dl class="govuk-summary-list">
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Owner Name</dt>
+            <dd class="govuk-summary-list__value">@Model.Farm?.OwnerName</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Address</dt>
+            <dd class="govuk-summary-list__value">
+                @Model.Farm?.Address1<br>
+                @Model.Farm?.Address2<br>
+                @Model.Farm?.Address3<br>
+                @Model.Farm?.Postcode
+            </dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">CPHH</dt>
+            <dd class="govuk-summary-list__value">@BseFormat.FormatCphh(Model.CaseRecord.Cphh)</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Number of Cases on Farm</dt>
+            <dd class="govuk-summary-list__value">@Model.NumberOfCasesOnFarm</dd>
+        </div>
+    </dl>
+
+    @if (Model.FarmWillBeDeleted)
+    {
+        <div class="govuk-inset-text">@DeleteModel.FarmDeleteMessage</div>
+    }
+
+    @if (Model.HasVlaData)
+    {
         <div class="govuk-warning-text">
             <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
             <strong class="govuk-warning-text__text">
                 <span class="govuk-warning-text__assistive">Warning</span>
-                This action cannot be undone.
+                @DeleteModel.VlaDataMessage
             </strong>
         </div>
-
-        <h2 class="govuk-heading-m">Case @Model.CaseRecord.Rbse</h2>
-        <dl class="govuk-summary-list">
-            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@RbseHelper.Format(Model.CaseRecord.Rbse)</dd></div>
-            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">CPHH</dt><dd class="govuk-summary-list__value">@Model.CaseRecord.Cphh</dd></div>
-            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Eartag</dt><dd class="govuk-summary-list__value">@Model.CaseRecord.EartagHerdmark / @Model.CaseRecord.Eartag</dd></div>
-            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Fate</dt><dd class="govuk-summary-list__value">@Model.CaseRecord.Fate</dd></div>
-        </dl>
-
-        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-        {
-            <div class="govuk-error-summary" data-module="govuk-error-summary">
-                <div role="alert">
-                    <h2 class="govuk-error-summary__title">There is a problem</h2>
-                    <div class="govuk-error-summary__body">
-                        <ul class="govuk-list govuk-error-summary__list">
-                            <li>@Model.ErrorMessage</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        }
-
-        <form method="post">
-            <input type="hidden" asp-for="Rbse" />
-            <div class="govuk-button-group">
-                <button type="submit" class="govuk-button govuk-button--warning" data-module="govuk-button">Confirm delete</button>
-                <a asp-page="/Case/Details" asp-route-rbse="@Model.Rbse" class="govuk-link">Cancel</a>
-            </div>
-        </form>
+        <p class="govuk-body"><a asp-page="/Home" class="govuk-link">Return to home</a></p>
     }
     else
     {
-        <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
-            <ol class="govuk-breadcrumbs__list">
-                <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-                <li class="govuk-breadcrumbs__list-item" aria-current="page">Delete case</li>
-            </ol>
-        </nav>
         <div class="govuk-warning-text">
             <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
             <strong class="govuk-warning-text__text">
                 <span class="govuk-warning-text__assistive">Warning</span>
-                No case found for RBSE @Model.Rbse.
+                Deleting this case cannot be undone.
             </strong>
         </div>
-        <a asp-page="/Case/Delete" class="govuk-link">Look up another case</a>
+
+        <form method="post" asp-page-handler="Delete">
+            <input type="hidden" name="Rbse" value="@Model.Rbse" />
+            <div class="govuk-button-group">
+                <button type="submit" class="govuk-button govuk-button--warning" data-module="govuk-button"
+                        onclick="return confirm('Click OK to delete case');">OK</button>
+                <a asp-page="/Home" class="govuk-link">Cancel</a>
+            </div>
+        </form>
     }
-</div>
+}

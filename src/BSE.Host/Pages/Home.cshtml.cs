@@ -1,3 +1,4 @@
+using BSE.Host.Services;
 using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Services;
 using BSE.Modules.CaseManagement.Repositories;
@@ -9,7 +10,10 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace BSE.Host.Pages;
 
 [Authorize]
-public class HomeModel(IBatchService batchService, ICaseRepository caseRepository) : PageModel
+public class HomeModel(
+    IBatchService batchService,
+    ICaseRepository caseRepository,
+    ICaseWizardStateService wizardState) : PageModel
 {
     // ── Batch Number panel (VLAAccess role) ──────────────────────────────────
 
@@ -23,7 +27,6 @@ public class HomeModel(IBatchService batchService, ICaseRepository caseRepositor
     /// <summary>Batch number entered in the lookup form (e.g. 1).</summary>
     [BindProperty(SupportsGet = true)]
     public int? BatchNumber { get; set; }
-
     /// <summary>True when a batch lookup was attempted but the batch was not found.</summary>
     public bool BatchNotFound { get; private set; }
 
@@ -120,7 +123,10 @@ public class HomeModel(IBatchService batchService, ICaseRepository caseRepositor
         return RedirectToPage("/Case/New", new { batchYear = BatchYear, batchNumber = BatchNumber });
     }
 
-    /// <summary>Validates, zero-pads (e.g. "9/87" → "000900087"), and redirects to the case lookup page; shows an inline error if the field is empty.</summary>
+    /// <summary>
+    /// Legacy Home.aspx had a single Go button that took the batch number and the RBSE
+    /// together: the batch was validated, held in session, and the case opened in case entry.
+    /// </summary>
     public async Task<IActionResult> OnPostRbseLookupAsync()
     {
         if (string.IsNullOrWhiteSpace(LookupRbse))
@@ -129,7 +135,38 @@ public class HomeModel(IBatchService batchService, ICaseRepository caseRepositor
             await OnGetAsync();
             return Page();
         }
+
         var normalized = RbseHelper.ParseToRaw(LookupRbse);
+
+        // A batch is optional. When one is supplied it must exist before the case is opened.
+        if (BatchYear.HasValue || BatchNumber.HasValue)
+        {
+            if (BatchYear is null || BatchNumber is null)
+            {
+                ModelState.AddModelError(nameof(BatchYear), "Enter both a batch year and a batch number.");
+                await OnGetAsync();
+                return Page();
+            }
+
+            var batchId = await batchService.GetBatchIdAsync(BatchYear.Value, BatchNumber.Value);
+            if (batchId is null)
+            {
+                BatchNotFound = true;
+                ModelState.AddModelError(nameof(BatchYear), $"Batch {BatchYear}/{BatchNumber} was not found.");
+                await OnGetAsync();
+                return Page();
+            }
+
+            await wizardState.SetAsync(new CaseWizardState(
+                RbseNumber: normalized,
+                BatchNumber: $"{BatchYear}/{BatchNumber}",
+                BatchId: batchId.Value));
+        }
+        else
+        {
+            await wizardState.ClearAsync();
+        }
+
         return RedirectToPage("/Case/Farm", new { Rbse = normalized });
     }
 

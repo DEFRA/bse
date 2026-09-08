@@ -72,6 +72,41 @@
     </div>
 }
 
+@* ── Batch assignment (mirrors legacy CaseEntryFarm.aspx Save/Cancel) ─────────── *@
+@if (Model.ShowBatchAssignment)
+{
+    <section aria-labelledby="batch-assignment-heading" class="govuk-!-margin-bottom-6">
+        <h2 class="govuk-heading-m" id="batch-assignment-heading">Batch assignment</h2>
+
+        @if (Model.AlreadyInPendingBatch)
+        {
+            <div class="govuk-warning-text">
+                <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+                <strong class="govuk-warning-text__text">
+                    <span class="govuk-warning-text__assistive">Warning</span>
+                    This case is already assigned to batch @Model.PendingBatch!.BatchNumber.
+                    Saving will not create a second assignment.
+                </strong>
+            </div>
+        }
+        else
+        {
+            <p class="govuk-body">
+                Selecting <strong>Save</strong> assigns this case to batch
+                <strong>@Model.PendingBatch!.BatchNumber</strong>. The case is not assigned until you save.
+            </p>
+        }
+
+        <form method="post">
+            <input type="hidden" name="Rbse" value="@Model.Rbse" />
+            <div class="govuk-button-group">
+                <button type="submit" asp-page-handler="SaveBatch" class="govuk-button" data-module="govuk-button">Save</button>
+                <button type="submit" asp-page-handler="CancelBatch" class="govuk-button govuk-button--secondary" data-module="govuk-button">Cancel</button>
+            </div>
+        </form>
+    </section>
+}
+
 @if (Model.Farm is null)
 {
     <div class="govuk-inset-text">

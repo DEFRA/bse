@@ -71,6 +71,34 @@ public sealed class BatchRepository : DapperRepository, IBatchRepository
             Document = document
         }, connection, transaction);
 
+    public async Task<BatchAssignmentResult> AssignCaseToBatchAsync(
+        int batchId, string rbse, string document)
+    {
+        var param = BuildAssignmentParameters(batchId, rbse, document);
+        await ExecuteWithOutputAsync("AddBatchNumberLink", param);
+        return (BatchAssignmentResult)param.Get<int>("@RETURN_VALUE");
+    }
+
+    public async Task<BatchAssignmentResult> AssignCaseToBatchAsync(
+        int batchId, string rbse, string document,
+        IDbConnection connection, IDbTransaction? transaction)
+    {
+        var param = BuildAssignmentParameters(batchId, rbse, document);
+        await ExecuteWithOutputAsync("AddBatchNumberLink", param, connection, transaction);
+        return (BatchAssignmentResult)param.Get<int>("@RETURN_VALUE");
+    }
+
+    private static DynamicParameters BuildAssignmentParameters(
+        int batchId, string rbse, string document)
+    {
+        var param = new DynamicParameters();
+        param.Add("@BatchID", batchId, dbType: DbType.Int32);
+        param.Add("@RBSE", rbse, dbType: DbType.String, size: 9);
+        param.Add("@Document", document, dbType: DbType.String, size: 5);
+        param.Add("@RETURN_VALUE", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+        return param;
+    }
+
     public async Task<int?> GetBatchIdAsync(short batchYear, int batchNumber)
     {
         var param = new DynamicParameters();

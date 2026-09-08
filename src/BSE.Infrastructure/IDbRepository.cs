@@ -23,6 +23,13 @@ public interface IDbRepository
     Task ExecuteWithOutputAsync(string storedProcedure, DynamicParameters param);
 
     /// <summary>
+    /// As <see cref="ExecuteWithOutputAsync(string, DynamicParameters)"/> but on a caller-supplied
+    /// open connection and optional transaction, so RETURN and OUTPUT values can be read back
+    /// from a stored procedure enlisted in the caller's transaction.
+    /// </summary>
+    Task ExecuteWithOutputAsync(string storedProcedure, DynamicParameters param, IDbConnection connection, IDbTransaction? transaction);
+
+    /// <summary>
     /// Executes a stored procedure on a caller-supplied <paramref name="connection"/> and
     /// optional <paramref name="transaction"/>. Use when the caller manages the transaction
     /// boundary (e.g. Case Management enlisting <c>AddBatchNumberLink</c> in the case-save

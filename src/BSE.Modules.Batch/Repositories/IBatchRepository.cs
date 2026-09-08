@@ -25,6 +25,15 @@ public interface IBatchRepository
     /// </summary>
     Task AddBatchNumberLinkAsync(int batchId, string rbse, string document, IDbConnection connection, IDbTransaction? transaction);
 
+    /// <summary>
+    /// Calls AddBatchNumberLink and returns the SP RETURN code so callers can distinguish
+    /// a duplicate link from a failure.
+    /// </summary>
+    Task<BatchAssignmentResult> AssignCaseToBatchAsync(int batchId, string rbse, string document);
+
+    /// <summary>As above, enlisted in a caller-supplied connection and transaction.</summary>
+    Task<BatchAssignmentResult> AssignCaseToBatchAsync(int batchId, string rbse, string document, IDbConnection connection, IDbTransaction? transaction);
+
     /// <summary>Calls GetBatchIDForBatch — resolves BatchId from year + number. Returns null if not found.</summary>
     Task<int?> GetBatchIdAsync(short batchYear, int batchNumber);
 
