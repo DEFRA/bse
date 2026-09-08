@@ -19,4 +19,7 @@ public sealed class OssExportService : IOssExportService
 
     public Task<BatchNumber1989Result?> CreateBatchNumber1989Async()
         => _repository.CreateBatchNumber1989Async();
+
+    public Task<IReadOnlyList<string>> GetStagedBse1RbseAsync()
+        => _repository.GetStagedBse1RbseAsync();
 }
