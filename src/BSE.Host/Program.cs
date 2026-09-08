@@ -331,6 +331,14 @@ try
         // behaviour — all search filter fields are optional. Suppress to match legacy.
         o.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true) ;
 
+    // ── Session support (for grid state persistence in OSS Export and other pages) ──
+    builder.Services.AddSession(options =>
+    {
+        options.IdleTimeout = TimeSpan.FromHours(1);
+        options.Cookie.HttpOnly = true;
+        options.Cookie.IsEssential = true; // Required for app to function
+    });
+
     // ── Host services ──────────────────────────────────────────────────────────
     builder.Services.AddScoped<BSE.Host.Services.ICurrentUserService, BSE.Host.Services.CurrentUserService>();
     builder.Services.AddScoped<BSE.Host.Services.IGeoLookupService, BSE.Host.Services.GeoLookupService>();
@@ -394,6 +402,7 @@ try
     app.UseExceptionHandler("/Error");
     app.UseSerilogRequestLogging();
     app.UseAuthentication();
+    app.UseSession(); // Session middleware must come after Authentication
     app.UseAuthorization();
 
     // Liveness: always returns 200 — no health checks evaluated.
