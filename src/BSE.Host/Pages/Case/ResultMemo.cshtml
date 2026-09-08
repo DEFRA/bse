@@ -1,0 +1,85 @@
+@page
+@using BSE.Host.Helpers
+@model BSE.Host.Pages.Case.ResultMemoModel
+@{
+    // Standalone document: no service header, footer or navigation.
+    Layout = null;
+    var r = Model.Result!;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Result memo @BseFormat.FormatRbse(r.Rbse)</title>
+    <style>
+        body { font-family: Arial, sans-serif; font-size: 12pt; margin: 2cm; }
+        h1 { font-size: 12pt; text-align: center; }
+        .right { text-align: right; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #000; padding: 4px; text-align: left; }
+        .indent { margin-left: 6em; }
+        @@media print { body { margin: 0; } }
+    </style>
+</head>
+<body>
+    <h1>MEMORANDUM</h1>
+
+    <p>To: @r.AHOName</p>
+
+    <p class="right">Case Ref: @Model.CaseRef</p>
+    @if (Model.IsPositive)
+    {
+        <p class="right">DBSE Ref: @RbseHelper.FormatDbse(r.Dbse)</p>
+    }
+    <p class="right">AHO: @r.AHOCodeName</p>
+    <p class="right">CPHH: @BseFormat.FormatCphh(r.Cphh)</p>
+    <p class="right">Date of report: @r.FinalResultDate?.ToString("dd/MM/yyyy")</p>
+
+    <p><strong>BOVINE SPONGIFORM ENCEPHALOPATHY</strong></p>
+
+    <p>Immunohistochemical and / or Western Blot analysis of brain tissue from</p>
+
+    <p>Animal ID: <span class="indent">@r.Eartag</span></p>
+
+    <p>
+        Belonging to: <span class="indent">@r.OwnerName</span><br>
+        <span class="indent">@r.Address1</span><br>
+        <span class="indent">@r.Address2</span><br>
+        <span class="indent">@r.Address3</span><br>
+        <span class="indent">@r.Postcode</span>
+    </p>
+
+    <p>Disease is @(Model.IsPositive ? "CONFIRMED" : "NOT CONFIRMED") on the premises</p>
+
+    <p>in the parish of: @r.Parish</p>
+    <p>District: @r.District</p>
+    <p>County: @r.County</p>
+
+    @if (Model.HasAlternateDiagnosis)
+    {
+        <p>Histological examination of brain samples from this case revealed alternative pathology</p>
+        <table>
+            <caption>Alternative pathology</caption>
+            <thead>
+                <tr>
+                    <th scope="col">Date of Birth</th>
+                    <th scope="col">Pathology Report</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>@r.BirthDate?.ToString("dd/MM/yyyy")</td>
+                    <td>@r.AlternateDiagnosis</td>
+                </tr>
+            </tbody>
+        </table>
+    }
+
+    <p>Please copy to local SVIO/VS</p>
+
+    @if (Model.Print)
+    {
+        <script>window.print();</script>
+    }
+</body>
+</html>

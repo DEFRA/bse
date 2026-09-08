@@ -57,18 +57,41 @@
                     <nav aria-label="Menu" class="govuk-service-navigation__wrapper">
                         <button type="button" class="govuk-service-navigation__toggle govuk-js-service-navigation-toggle" aria-controls="navigation" hidden>Menu</button>
                         <ul class="govuk-service-navigation__list" id="navigation">
-                            <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Search/Cases">Case search</a></li>
-                            <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Search/CasesByHerdmark">Cases by herdmark</a></li>
-                            <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Search/CasesByHoldingHerdmark">Cases by holding/herdmark</a></li>
-                            <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Search/Farms">Farm search</a></li>
                             <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Search/Menu">Search</a></li>
+
                             @if (User.IsInRole("VLAMaintenance"))
                             {
-                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Admin/Users">Admin</a></li>
+                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/CaseWork/Menu">Casework menu</a></li>
                             }
                             @if (User.IsInRole("VLAAccess"))
                             {
                                 <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/CaseWork/PrintBatch">Print batch</a></li>
+                            }
+                            @if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess"))
+                            {
+                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/AuditLog/Menu">Audit log</a></li>
+                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Bsess/Menu">BSESS check</a></li>
+                            }
+                            @if (User.IsInRole("DEFRAMaintenance"))
+                            {
+                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/AdnsExport/Menu">ADNS export</a></li>
+                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Case/FinalResultEntry">Final result entry</a></li>
+                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Farm/CphhChange">CPHH change</a></li>
+                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Case/RbseChange">RBSE change</a></li>
+                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Case/MoveCase">Move case</a></li>
+                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Case/Delete">Delete case</a></li>
+                            }
+                            @if (User.IsInRole("VLAAccess"))
+                            {
+                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/OssExport/Menu">OSS export</a></li>
+                            }
+                            @if (User.IsInRole("VLAMaintenance"))
+                            {
+                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Admin/Users">User maintenance</a></li>
+                            }
+                            @if (User.IsInRole("PickListAccess"))
+                            {
+                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Admin/PickLists">Pick list maintenance</a></li>
                             }
                             @if (User.Identity?.IsAuthenticated == true)
                             {

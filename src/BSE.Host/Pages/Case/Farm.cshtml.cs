@@ -1,5 +1,7 @@
+using BSE.Host.Services;
 using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Repositories;
+using BSE.Modules.Batch.Services;
 using BSE.Modules.CaseManagement.Models;
 using BSE.Modules.CaseManagement.Services;
 using BSE.Modules.FarmManagement.Models;
@@ -28,6 +30,10 @@ public class FarmModel(
     IHerdSizeRepository herdSizeRepo,
     ILookupDataService lookups,
     IBatchRepository batchRepository,
+    IBatchService batchService,
+    ICaseWizardStateService wizardState,
+    ICurrentUserService currentUser,
+    ILogger<FarmModel> logger,
     IConfiguration configuration) : PageModel
 {
     [BindProperty(SupportsGet = true)]
@@ -46,6 +52,23 @@ public class FarmModel(
     public string? AuthorityCountyName { get; private set; }
     public string? LocalAuthorityName { get; private set; }
     public IReadOnlyList<BatchNumberEntry> BatchNumbers { get; private set; } = [];
+
+    /// <summary>Batch chosen on the home page and not yet saved against this case.</summary>
+    public CaseWizardState? PendingBatch { get; private set; }
+
+    /// <summary>True when the pending batch applies to the case currently open.</summary>
+    public bool ShowBatchAssignment =>
+        PendingBatch is not null
+        && string.Equals(PendingBatch.RbseNumber, Rbse, StringComparison.OrdinalIgnoreCase)
+        && User.IsInRole("DataEntry");
+
+    /// <summary>True when this case is already linked to the pending batch for the BSE1 document.</summary>
+    public bool AlreadyInPendingBatch =>
+        PendingBatch is not null
+        && BatchNumbers.Any(b => b.BatchId == PendingBatch.BatchId
+                              && string.Equals(b.Document, Bse1Document, StringComparison.OrdinalIgnoreCase));
+
+    private const string Bse1Document = "BSE1";
 
     // ── Table pagination / sort state (matches legacy DataGridPager PageLinkCount=10) ──
     public const int PageSize = 10;
@@ -98,6 +121,79 @@ public class FarmModel(
         return RedirectToPage(new { rbse = Rbse });
     }
 
+    // ── POST: Batch assignment (legacy CaseEntryFarm.aspx Save/Cancel) ─────────
+
+    public async Task<IActionResult> OnPostSaveBatchAsync()
+    {
+        if (!User.IsInRole("DataEntry"))
+            return Forbid();
+
+        var pending = await wizardState.GetAsync();
+        if (pending is null || !string.Equals(pending.RbseNumber, Rbse, StringComparison.OrdinalIgnoreCase))
+        {
+            TempData["ErrorMessage"] = "No batch was selected. Return to the home page and choose a batch number.";
+            return RedirectToPage(new { rbse = Rbse });
+        }
+
+        // Legacy uniqueness is on (BatchID, RBSE, Document), so a case may belong to several
+        // batches — only re-adding the same batch is a duplicate.
+        var alreadyInPendingBatch = (await batchRepository.GetBatchNumbersByRbseAsync(Rbse))
+            .Any(b => b.BatchId == pending.BatchId
+                   && string.Equals(b.Document, Bse1Document, StringComparison.OrdinalIgnoreCase));
+
+        if (alreadyInPendingBatch)
+        {
+            await wizardState.ClearAsync();
+            TempData["Warning"] =
+                $"Case {RbseHelper.Format(Rbse)} is already assigned to batch {pending.BatchNumber}. No change was made.";
+            return RedirectToPage(new { rbse = Rbse });
+        }
+
+        var userId = await currentUser.GetUserIdAsync();
+        var result = await batchService.AssignCaseToBatchAsync(pending.BatchId, Rbse, Bse1Document);
+
+        logger.LogInformation(
+            "Batch assignment {Result}: user {UserId} assigned RBSE {Rbse} to batch {BatchId} ({BatchNumber}) for document {Document}",
+            result, userId, Rbse, pending.BatchId, pending.BatchNumber, Bse1Document);
+
+        await wizardState.ClearAsync();
+
+        TempData[result switch
+        {
+            BatchAssignmentResult.Success => "Success",
+            BatchAssignmentResult.AlreadyAssigned => "Warning",
+            _ => "ErrorMessage"
+        }] = result switch
+        {
+            BatchAssignmentResult.Success =>
+                $"Case {RbseHelper.Format(Rbse)} has been assigned to batch {pending.BatchNumber}.",
+            BatchAssignmentResult.AlreadyAssigned =>
+                $"Case {RbseHelper.Format(Rbse)} is already assigned to batch {pending.BatchNumber}. No change was made.",
+            BatchAssignmentResult.BatchNotFound =>
+                $"Batch {pending.BatchNumber} no longer exists. The case was not assigned.",
+            _ => "The case could not be assigned to the batch."
+        };
+
+        return RedirectToPage(new { rbse = Rbse });
+    }
+
+    public async Task<IActionResult> OnPostCancelBatchAsync()
+    {
+        var pending = await wizardState.GetAsync();
+        await wizardState.ClearAsync();
+
+        // Return to the batch assignment screen with the previous selections retained.
+        var parts = (pending?.BatchNumber ?? "").Split('/');
+        if (parts.Length == 2
+            && short.TryParse(parts[0], out var year)
+            && int.TryParse(parts[1], out var number))
+        {
+            return RedirectToPage("/Home", new { batchYear = year, batchNumber = number });
+        }
+
+        return RedirectToPage("/Home");
+    }
+
     // ── AJAX: farm status for a CPHH (mirrors legacy GetRelatedFarmDetails) ────
 
     public async Task<IActionResult> OnGetLinkedFarmStatusAsync(string? cphh)
@@ -125,6 +221,7 @@ public class FarmModel(
         var batchTask = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
         await Task.WhenAll(LoadFromCase(), batchTask);
         BatchNumbers = (await batchTask).ToList().AsReadOnly();
+        PendingBatch = await wizardState.GetAsync();
     }
 
     private async Task LoadFromCase()

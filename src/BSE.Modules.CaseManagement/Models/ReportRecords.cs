@@ -28,6 +28,15 @@ public record FinalResultRecord
     public string? CaseType { get; init; }
     public string? OwnerName { get; init; }
     public string? Address1 { get; init; }
+    public string? Address2 { get; init; }
+    public string? Address3 { get; init; }
+    public string? Postcode { get; init; }
+    public string? Parish { get; init; }
+    public string? District { get; init; }
+    public string? County { get; init; }
+    public string? AHOName { get; init; }
+    public string? AHOCodeName { get; init; }
+    public string? CountyName { get; init; }
     public DateTime? PurchaserBse1ReceivedDate { get; init; }
     public DateTime? BreederBse1ReceivedDate { get; init; }
     public DateTime? Vendor1Bse1ReceivedDate { get; init; }

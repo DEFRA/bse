@@ -31,7 +31,7 @@
     <a asp-page="/Case/Edit" asp-route-rbse="@Model.Case.Rbse" class="govuk-button">Edit</a>
     <a asp-page="/Case/Delete" asp-route-rbse="@Model.Case.Rbse" class="govuk-link govuk-link--no-visited-state">Delete</a>
     <a asp-page="/Case/MoveCase" asp-route-rbse="@Model.Case.Rbse" class="govuk-link">Move case</a>
-    <a asp-page="/Case/RbseChange" asp-route-rbse="@Model.Case.Rbse" class="govuk-link">Change RBSE</a>
+    <a asp-page="/Case/RbseChange" asp-route-oldrbse="@Model.Case.Rbse" class="govuk-link">Change RBSE</a>
 </div>
 
 @* ── Case sub-section navigation (mirrors the legacy 7-tab bar) ────────────── *@
