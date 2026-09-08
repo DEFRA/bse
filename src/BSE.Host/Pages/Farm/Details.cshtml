@@ -21,7 +21,7 @@
 
 <div class="govuk-button-group">
     <a asp-page="/Farm/Edit" asp-route-cphh="@Model.Farm.CPHH" class="govuk-button">Edit</a>
-    <a asp-page="/Farm/CphhChange" asp-route-cphh="@Model.Farm.CPHH" class="govuk-link">Change CPHH</a>
+    <a asp-page="/Farm/CphhChange" asp-route-OldCphh="@Model.Farm.CPHH" class="govuk-link">Change CPHH</a>
     <a asp-page="/Case/New" asp-route-cphh="@Model.Farm.CPHH" class="govuk-link">Create case for this farm</a>
 </div>
 

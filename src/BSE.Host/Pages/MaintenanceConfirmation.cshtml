@@ -1,0 +1,28 @@
+@page
+@model BSE.Host.Pages.MaintenanceConfirmationModel
+@{
+    ViewData["Title"] = Model.ConfirmationTitle;
+}
+
+<div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+
+        <div class="govuk-panel govuk-panel--confirmation govuk-!-margin-bottom-8">
+            <h1 class="govuk-panel__title">@Model.ConfirmationTitle</h1>
+            @if (!string.IsNullOrWhiteSpace(Model.ConfirmationSummary))
+            {
+                <div class="govuk-panel__body">@Model.ConfirmationSummary</div>
+            }
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.ConfirmationMessage))
+        {
+            <h2 class="govuk-heading-m">What happens next</h2>
+            <p class="govuk-body">@Model.ConfirmationMessage</p>
+        }
+
+        <a asp-page="/Home" role="button" draggable="false" class="govuk-button" data-module="govuk-button">
+            Return to home
+        </a>
+    </div>
+</div>

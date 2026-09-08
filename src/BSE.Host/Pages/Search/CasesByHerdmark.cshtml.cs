@@ -16,10 +16,13 @@ public class CasesByHerdmarkModel : PageModel
 
     public CasesByHerdmarkModel(ICaseSearchService search) => _search = search;
 
+    // Legacy applied no format rule to the herdmark box; the search is a substring LIKE match
+    // on EartagCountry + EartagHerdmark. MaxLength mirrors the legacy textbox.
     [BindProperty(SupportsGet = true)]
-    [RegularExpression("^[A-Za-z]{0,4}[0-9]{0,4}$", ErrorMessage = "Enter a valid herdmark.")]
+    [StringLength(35, ErrorMessage = "Herdmark must be 35 characters or fewer.")]
     public string? Herdmark { get; set; }
     [BindProperty(SupportsGet = true)] public bool IncludeNonGb { get; set; }
+    [BindProperty(SupportsGet = true)] public bool Searched { get; set; }
     [BindProperty(SupportsGet = true)] public int PageNumber { get; set; } = 1;
     [BindProperty(SupportsGet = true)] public string SortColumn { get; set; } = "";
     [BindProperty(SupportsGet = true)] public bool SortDesc { get; set; }
@@ -38,20 +41,18 @@ public class CasesByHerdmarkModel : PageModel
     public async Task OnGetAsync()
     {
         if (!ModelState.IsValid) return;
+        if (!Searched) return;
 
-        if (!string.IsNullOrWhiteSpace(Herdmark))
-        {
-            var results = await _search.GetCasesByEartagHerdmarkAsync((Herdmark ?? "").Trim(), IncludeNonGb);
-            Results = results.ToList().AsReadOnly();
-            HasSearched = true;
-            if (PageNumber < 1) PageNumber = 1;
-            if (PageNumber > TotalPages) PageNumber = TotalPages;
-        }
+        // Legacy passed the box through as typed; a blank value makes the SP match every case.
+        var results = await _search.GetCasesByEartagHerdmarkAsync((Herdmark ?? "").Trim(), IncludeNonGb);
+        Results = results.ToList().AsReadOnly();
+        HasSearched = true;
+        if (PageNumber < 1) PageNumber = 1;
+        if (PageNumber > TotalPages) PageNumber = TotalPages;
     }
 
     public async Task<IActionResult> OnGetExportAsync()
     {
-        if (string.IsNullOrWhiteSpace(Herdmark)) return RedirectToPage();
         var results = await _search.GetCasesByEartagHerdmarkAsync((Herdmark ?? "").Trim(), IncludeNonGb);
         return BuildExcel(results, $"CasesByHerdmark_{DateTime.Today:yyyyMMdd}.xlsx");
     }
