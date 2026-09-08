@@ -1,56 +1,115 @@
-@page "{cphh?}"
+@page
+@using BSE.Host.Helpers
 @model BSE.Host.Pages.Farm.CphhChangeModel
 @{
-    ViewData["Title"] = "Change CPHH";
+    ViewData["Title"] = "CPHH Change";
+
+    var errors = new List<(string Anchor, string Message)>();
+    if (Model.OldCphhError is not null) { errors.Add(("old-cphh", Model.OldCphhError)); }
+    if (Model.NewCphhError is not null) { errors.Add(("new-cphh", Model.NewCphhError)); }
+    if (Model.ErrorMessage is not null) { errors.Add(("old-cphh", Model.ErrorMessage)); }
 }
 
-<h1 class="govuk-heading-l">Change CPHH</h1>
+<h1 class="govuk-heading-l">CPHH Change</h1>
 
-@* ── Step 1: lookup (navigated from home page without a known CPHH) ─────── *@
-@if (string.IsNullOrEmpty(Model.OldCphh))
-{
-    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
-        <ol class="govuk-breadcrumbs__list">
-            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-            <li class="govuk-breadcrumbs__list-item" aria-current="page">CPHH change</li>
-        </ol>
-    </nav>
-    <form method="get" novalidate>
-        <div class="govuk-form-group">
-            <label class="govuk-label" for="cphh-lookup">Enter current CPHH to change</label>
-            <div class="govuk-hint">Enter the existing CPHH — for example, 12/345/6789/01.</div>
-            <input id="cphh-lookup" name="cphh" type="text" class="govuk-input govuk-!-width-one-half" autocomplete="off" />
-        </div>
-        <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Look up</button>
-    </form>
-}
-else
-{
-    <p class="govuk-body">Current CPHH: <strong>@Model.OldCphh</strong></p>
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">CPHH change</li>
+    </ol>
+</nav>
 
-    <form method="post" novalidate>
-        <div class="govuk-form-group">
-            <label asp-for="NewCphh" class="govuk-label">New CPHH</label>
-            <div class="govuk-hint">The new CPHH must not already exist in the system.</div>
-            <input asp-for="NewCphh" class="govuk-input govuk-!-width-one-half" />
-            <span asp-validation-for="NewCphh" class="govuk-error-message"></span>
-        </div>
-        @if (Model.ErrorMessage != null)
-        {
-            <div class="govuk-error-summary" data-module="govuk-error-summary">
-                <div role="alert">
-                    <h2 class="govuk-error-summary__title">There is a problem</h2>
-                    <div class="govuk-error-summary__body">
-                        <ul class="govuk-list govuk-error-summary__list">
-                            <li>@Model.ErrorMessage</li>
-                        </ul>
-                    </div>
-                </div>
+@if (errors.Count > 0)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var error in errors)
+                    {
+                        <li><a href="#@error.Anchor">@error.Message</a></li>
+                    }
+                </ul>
             </div>
+        </div>
+    </div>
+}
+
+@* ── Step 1: look up the farm to be changed ─────────────────────────────── *@
+<form method="post" asp-page-handler="LookUp" novalidate>
+    <div class="govuk-form-group @(Model.OldCphhError is not null ? "govuk-form-group--error" : "")">
+        <label class="govuk-label" for="old-cphh">Old CPHH</label>
+        <div id="old-cphh-hint" class="govuk-hint">For example, 12/345/6789/01. Slashes are optional.</div>
+        @if (Model.OldCphhError is not null)
+        {
+            <p id="old-cphh-error" class="govuk-error-message">
+                <span class="govuk-visually-hidden">Error:</span>@Model.OldCphhError
+            </p>
         }
+        <input id="old-cphh" name="OldCphh" value="@Model.OldCphh" type="text" inputmode="numeric" autocomplete="off"
+               aria-describedby="old-cphh-hint @(Model.OldCphhError is not null ? "old-cphh-error" : "")"
+               class="govuk-input govuk-input--width-20 @(Model.OldCphhError is not null ? "govuk-input--error" : "")" />
+    </div>
+    <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Look Up</button>
+</form>
+
+@if (Model.FarmFound)
+{
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
+
+    <h2 class="govuk-heading-m">Farm @BseFormat.FormatCphh(Model.Farm!.CPHH)</h2>
+    <dl class="govuk-summary-list">
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Owner Name</dt>
+            <dd class="govuk-summary-list__value">@Model.Farm.OwnerName</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Address</dt>
+            <dd class="govuk-summary-list__value">
+                @Model.Farm.Address1<br>
+                @Model.Farm.Address2<br>
+                @Model.Farm.Address3<br>
+                @Model.Farm.Postcode
+            </dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Number of Confirmed Cases</dt>
+            <dd class="govuk-summary-list__value">@Model.ConfirmedCases</dd>
+        </div>
+    </dl>
+
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
+
+    @* ── Step 2: enter the replacement CPHH ─────────────────────────────── *@
+    <form method="post" asp-page-handler="Change" novalidate>
+        <input type="hidden" name="OldCphh" value="@Model.OldCphh" />
+        <div class="govuk-form-group @(Model.NewCphhError is not null ? "govuk-form-group--error" : "")">
+            <label class="govuk-label" for="new-cphh">New CPHH</label>
+            <div id="new-cphh-hint" class="govuk-hint">For example, 12/345/6789/01. The new CPHH must not already exist in the system.</div>
+            @if (Model.NewCphhError is not null)
+            {
+                <p id="new-cphh-error" class="govuk-error-message">
+                    <span class="govuk-visually-hidden">Error:</span>@Model.NewCphhError
+                </p>
+            }
+            <input id="new-cphh" name="NewCphh" value="@Model.NewCphh" type="text" inputmode="numeric" autocomplete="off"
+                   aria-describedby="new-cphh-hint @(Model.NewCphhError is not null ? "new-cphh-error" : "")"
+                   class="govuk-input govuk-input--width-20 @(Model.NewCphhError is not null ? "govuk-input--error" : "")" />
+        </div>
+
+        <div class="govuk-warning-text">
+            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+            <strong class="govuk-warning-text__text">
+                <span class="govuk-warning-text__assistive">Warning</span>
+                Location information for the farm, including County, AHO and ADNS Region, will not be changed. Check and amend them afterwards if necessary.
+            </strong>
+        </div>
+
         <div class="govuk-button-group">
-            <button type="submit" class="govuk-button govuk-button--warning" data-module="govuk-button">Change CPHH</button>
-            <a asp-page="/Farm/Details" asp-route-cphh="@Model.OldCphh" class="govuk-link">Cancel</a>
+            <button type="submit" class="govuk-button govuk-button--warning" data-module="govuk-button"
+                    onclick="return confirm('Click OK to confirm change');">OK</button>
+            <a asp-page="/Home" class="govuk-link">Cancel</a>
         </div>
     </form>
 }
