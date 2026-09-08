@@ -19,16 +19,26 @@
 
 @* ── BSE1 ───────────────────────────────────────────────────────────────── *@
 <h2 class="govuk-heading-m" id="oss-bse1">BSE1</h2>
-<p class="govuk-body">Populate the OSS staging tables. A new BSE1 batch number is created automatically.</p>
-<form method="post" asp-page-handler="Populate" novalidate>
-    <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Populate staging tables</button>
+<p class="govuk-body">Enter batch year and batch number, then download the BSE1 export file.</p>
+<form method="post" asp-page-handler="Download" novalidate>
+    <div class="govuk-form-group">
+        <label asp-for="BatchYear" class="govuk-label">Batch year</label>
+        <input asp-for="BatchYear" class="govuk-input govuk-input--width-5" inputmode="numeric" />
+        <span asp-validation-for="BatchYear" class="govuk-error-message"></span>
+    </div>
+    <div class="govuk-form-group">
+        <label asp-for="BatchNumber" class="govuk-label">Batch number</label>
+        <input asp-for="BatchNumber" class="govuk-input govuk-input--width-5" inputmode="numeric" />
+        <span asp-validation-for="BatchNumber" class="govuk-error-message"></span>
+    </div>
+    <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Download</button>
 </form>
 
 @if (Model.BatchResult is not null)
 {
     <div class="govuk-notification-banner govuk-notification-banner--success" role="alert" aria-labelledby="oss-success-title" data-module="govuk-notification-banner">
         <div class="govuk-notification-banner__header"><h2 class="govuk-notification-banner__title" id="oss-success-title">Success</h2></div>
-        <div class="govuk-notification-banner__content"><p class="govuk-notification-banner__heading">Staging tables populated. Batch @Model.BatchResult.BatchYear/@Model.BatchResult.BatchNumber created (ID: @Model.BatchResult.BatchId).</p></div>
+        <div class="govuk-notification-banner__content"><p class="govuk-notification-banner__heading">Batch @Model.BatchResult.BatchYear/@Model.BatchResult.BatchNumber created (ID: @Model.BatchResult.BatchId).</p></div>
     </div>
 }
 

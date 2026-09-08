@@ -5,4 +5,5 @@ public interface IOssExportService
     Task PopulateStagingTablesAsync();
     Task<OssExportRecord?> GetExportDetailsByRbseAsync(string rbse);
     Task<BatchNumber1989Result?> CreateBatchNumber1989Async();
+    Task<IReadOnlyList<string>> GetStagedBse1RbseAsync();
 }

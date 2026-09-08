@@ -101,6 +101,18 @@ public sealed class OssExportServiceTests
         await _repo.Received(1).CreateBatchNumber1989Async();
     }
 
+    [Fact]
+    public async Task GetStagedBse1RbseAsync_DelegatesToRepository()
+    {
+        var staged = new[] { "010000001", "010000002" };
+        _repo.GetStagedBse1RbseAsync().Returns(staged);
+
+        var result = await _sut.GetStagedBse1RbseAsync();
+
+        result.Should().BeEquivalentTo(staged);
+        await _repo.Received(1).GetStagedBse1RbseAsync();
+    }
+
     // ── Service does not call wrong methods ───────────────────────────────────
 
     [Fact]
@@ -122,5 +134,6 @@ public sealed class OssExportServiceTests
 
         await _repo.DidNotReceive().GetExportDetailsByRbseAsync(Arg.Any<string>());
         await _repo.DidNotReceive().CreateBatchNumber1989Async();
+        await _repo.DidNotReceive().GetStagedBse1RbseAsync();
     }
 }

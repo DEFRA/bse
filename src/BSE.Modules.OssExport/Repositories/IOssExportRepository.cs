@@ -23,4 +23,10 @@ public interface IOssExportRepository
     /// Calls <c>AddBatchNumber1989</c>. Returns null if the SP indicates failure.
     /// </summary>
     Task<BatchNumber1989Result?> CreateBatchNumber1989Async();
+
+    /// <summary>
+    /// Returns staged BSE1 RBSE values from <c>expCase</c> after staging population.
+    /// Used to create BSE1 batch links prior to export file generation.
+    /// </summary>
+    Task<IReadOnlyList<string>> GetStagedBse1RbseAsync();
 }
