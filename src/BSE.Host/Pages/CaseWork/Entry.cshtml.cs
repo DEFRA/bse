@@ -138,6 +138,14 @@ public class CaseWorkEntryModel(
         await LoadAsync();
         if (Entry is null) return NotFound();
 
+        // Enforce the same minute rules server-side (legacy parity).
+        var blockedReason = GetMinuteDisabledReason(minuteType);
+        if (blockedReason is not null)
+        {
+            ModelState.AddModelError(string.Empty, blockedReason);
+            return Page();
+        }
+
         Validate();
         if (!ModelState.IsValid) return Page();
 
@@ -148,9 +156,7 @@ public class CaseWorkEntryModel(
         if (!alreadySent)
             await caseWorkService.SetMinuteSentDateAsync(Rbse, minuteType);
 
-        // Fallen Stock and Surveillance Cohort surveys use the FS variant of the active memo.
         var routedType = minuteType == "ActiveMemo" && ShowTseFields ? "AMFS" : minuteType;
-
         return RedirectToPage("/CaseWork/Minute", new { rbse = Rbse, type = routedType });
     }
 
@@ -305,22 +311,10 @@ public class CaseWorkEntryModel(
 
     private void SetMinuteSendRules()
     {
-        if (Entry is null) return;
-
-        if (Entry.RbseDate is not null && Entry.RbseDate >= DateTime.Today)
-        {
-            AnnexADisabledReason = "Annex A cannot be sent until after the RBSE Date";
-            AnnexBDisabledReason = "Annex B cannot be sent until after the RBSE Date";
-            AnnexCDisabledReason = "Annex C cannot be sent until after the RBSE Date";
-            AnnexDDisabledReason = "Annex D cannot be sent until after the RBSE Date";
-            return;
-        }
-
-        if (Entry.AnnexADate is null)
-            AnnexBDisabledReason = "Annex B cannot be sent before Annex A";
-
-        if (Entry.AnnexCDate is null)
-            AnnexDDisabledReason = "Annex D cannot be sent before Annex C";
+        AnnexADisabledReason = GetMinuteDisabledReason("AnnexA");
+        AnnexBDisabledReason = GetMinuteDisabledReason("AnnexB");
+        AnnexCDisabledReason = GetMinuteDisabledReason("AnnexC");
+        AnnexDDisabledReason = GetMinuteDisabledReason("AnnexD");
     }
 
     private async Task SetPost2000WarningAsync()
@@ -331,4 +325,35 @@ public class CaseWorkEntryModel(
         var tests = await testRepository.GetByRbseAsync(Rbse);
         ShowPost2000Warning = tests.Any(t => !string.Equals(t.TestResult?.Trim(), "Neg", StringComparison.OrdinalIgnoreCase));
     }
+
+    // Add these helpers in the same class
+
+    private string? GetMinuteDisabledReason(string minuteType)
+    {
+        if (Entry is null) return "Case work entry was not found.";
+
+        if (Entry.RbseDate is not null && Entry.RbseDate >= DateTime.Today
+            && minuteType is "AnnexA" or "AnnexB" or "AnnexC" or "AnnexD")
+        {
+            return $"{GetMinuteLabel(minuteType)} cannot be sent until after the RBSE Date";
+        }
+
+        if (minuteType == "AnnexB" && Entry.AnnexADate is null)
+            return "Annex B cannot be sent before Annex A";
+
+        if (minuteType == "AnnexD" && Entry.AnnexCDate is null)
+            return "Annex D cannot be sent before Annex C";
+
+        return null;
+    }
+
+    private static string GetMinuteLabel(string minuteType) => minuteType switch
+    {
+        "ActiveMemo" => "Active Memo",
+        "AnnexA" => "Annex A",
+        "AnnexB" => "Annex B",
+        "AnnexC" => "Annex C",
+        "AnnexD" => "Annex D",
+        _ => minuteType
+    };
 }
