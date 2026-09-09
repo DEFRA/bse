@@ -339,13 +339,14 @@
                                asp-page="/Case/FarmLinkedFarmEdit"
                                asp-route-rbse="@Model.Rbse"
                                asp-route-id="@lf.ID">Edit</a>
-                            <form method="post" asp-page-handler="DeleteLinkedFarm" style="display:inline" novalidate>
+                            <form method="post" asp-page-handler="DeleteLinkedFarm" class="govuk-!-display-inline-block" novalidate>
                                 <input type="hidden" name="Rbse" value="@Model.Rbse" />
                                 <input type="hidden" name="id" value="@lf.ID" />
                                 <input type="hidden" name="rowStampBase64" value="@(lf.RowStamp is not null ? Convert.ToBase64String(lf.RowStamp) : "")" />
-                                <button type="submit" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0"
+                                <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0"
                                         data-module="govuk-button"
-                                        onclick="return confirm('Remove linked farm @lf.RelatedCPHH?')">
+                                        aria-label="Remove linked farm @BseFormat.FormatCphh(lf.RelatedCPHH)"
+                                        onclick="return confirm('Remove linked farm @BseFormat.FormatCphh(lf.RelatedCPHH)?')">
                                     Remove
                                 </button>
                             </form>
@@ -478,12 +479,13 @@ else
                                asp-page="/Case/FarmHerdSizeEdit"
                                asp-route-rbse="@Model.Rbse"
                                asp-route-id="@h.ID">Edit</a>
-                            <form method="post" asp-page-handler="DeleteHerdSize" style="display:inline" novalidate>
+                            <form method="post" asp-page-handler="DeleteHerdSize" class="govuk-!-display-inline-block" novalidate>
                                 <input type="hidden" name="Rbse" value="@Model.Rbse" />
                                 <input type="hidden" name="id" value="@h.ID" />
                                 <input type="hidden" name="rowStampBase64" value="@(h.RowStamp is not null ? Convert.ToBase64String(h.RowStamp) : "")" />
-                                <button type="submit" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0"
+                                <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0"
                                         data-module="govuk-button"
+                                        aria-label="Delete herd size record for year @h.HerdYear"
                                         onclick="return confirm('Delete herd size record for @h.HerdYear?')">
                                     Delete
                                 </button>
