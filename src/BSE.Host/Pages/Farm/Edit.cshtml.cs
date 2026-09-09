@@ -168,7 +168,7 @@ public class EditModel : PageModel
         var isValid = await MapReferenceWithinParishAsync(cphh, mapRef);
         return new JsonResult(isValid
             ? new { valid = true, message = (string?)null }
-            : new { valid = false, message = "Map reference does not lie within the parish boundaries for this CPHH." });
+            : new { valid = false, message = (string?)"Map reference does not lie within the parish boundaries for this CPHH." });
     }
 
     // ── Private helpers ────────────────────────────────────────────────────────

@@ -6,7 +6,7 @@ AS
         @ErrorCode int,     
         @RowsUpdated int    
         
-    DELETE FROM luTSETestingSite WHERE [CPH]=@CPH    
+    DELETE FROM [luTseTestingSite] WHERE [CPH]=@CPH    
             
     SELECT @ErrorCode = @@ERROR, @RowsUpdated = @@ROWCOUNT    
         

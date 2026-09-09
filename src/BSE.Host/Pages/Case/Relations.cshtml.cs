@@ -1,4 +1,3 @@
-using BSE.Host.Services;
 using BSE.Infrastructure;
 using BSE.Modules.AnimalRelations.Commands;
 using BSE.Modules.AnimalRelations.Models;
@@ -20,11 +19,9 @@ namespace BSE.Host.Pages.Case;
 public class RelationsModel(
     IAnimalRelationsRepository relationsRepository,
     IPedigreeRepository pedigreeRepository,
-    IFeedRepository feedRepository,
     ILookupDataService lookups,
     IBatchRepository batchRepository,
     IDbConnectionFactory connectionFactory,
-    ICurrentUserService currentUser,
     IConfiguration configuration) : PageModel
 {
     [BindProperty(SupportsGet = true)]
@@ -126,10 +123,6 @@ public class RelationsModel(
         };
         return details with { Relations = q.ToList() };
     }
-
-    private static string? NullIfBlank(string? s) => string.IsNullOrWhiteSpace(s) ? null : s;
-    private static byte? ToByte(int? v) => v is > 0 and <= 255 ? (byte)v.Value : null;
-    private static short? ToShort(int? v) => v.HasValue ? (short?)v.Value : null;
 
     // ── View models ──────────────────────────────────────────────────────────
 

@@ -36,7 +36,7 @@ AS
         [CaseWork].[CaseWorkNotes]
 FROM
 
-[Case] RIGHT JOIN [Casework] ON [Case].[RBSE] = [CaseWork].[RBSE]
+[Case] RIGHT JOIN [CaseWork] ON [Case].[RBSE] = [CaseWork].[RBSE]
 
 WHERE
 

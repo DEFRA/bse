@@ -21,6 +21,9 @@ public sealed class OssExportService : IOssExportService
     public Task<BatchNumber1989Result?> CreateBatchNumber1989Async()
         => _repository.CreateBatchNumber1989Async();
 
+    public Task<IReadOnlyList<string>> GetStagedBse1RbseAsync()
+        => _repository.GetStagedBse1RbseAsync();
+
     public async Task<OssExportRecord?> ValidateAndGetRbseDetailsAsync(string rbseInput)
     {
         // Normalize the RBSE input (accepts "00/26/00001" or "002600001" format)

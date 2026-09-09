@@ -6,8 +6,6 @@ using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Repositories;
 using BSE.Modules.CaseManagement.Commands;
 using BSE.Modules.CaseManagement.Repositories;
-using BSE.Modules.ReferenceData.Models;
-using BSE.Modules.ReferenceData.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -18,7 +16,6 @@ namespace BSE.Host.Pages.Case;
 public class RelationsEditModel(
     IAnimalRelationsRepository relationsRepository,
     IPedigreeRepository pedigreeRepository,
-    ILookupDataService lookups,
     IBatchRepository batchRepository,
     IDbConnectionFactory connectionFactory) : PageModel
 {

@@ -6,7 +6,7 @@ CREATE  PROCEDURE AddluTSETestingSite
     @CPH char(11),
     @AHO char(2)
 AS  
- INSERT INTO luTSETestingSITE  
+ INSERT INTO [luTseTestingSite]  
           ([Name],[Address],[CPH],[AHO])  
  VALUES  
   (@Name,@Address,@CPH,@AHO)            

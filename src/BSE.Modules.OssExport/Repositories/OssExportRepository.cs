@@ -54,6 +54,19 @@ public sealed class OssExportRepository : DapperRepository, IOssExportRepository
             param.Get<int>("BatchNumber"));
     }
 
+    public async Task<IReadOnlyList<string>> GetStagedBse1RbseAsync()
+    {
+        const string sql = """
+                           SELECT [rbse]
+                           FROM [expCase]
+                           """;
+
+        using var connection = _connectionFactory.CreateConnection();
+        connection.Open();
+        var values = await connection.QueryAsync<string>(sql);
+        return values.ToList();
+    }
+
     public async Task<IReadOnlyList<OssExportFileRecord>> GetCasesByBatchIdAsync(int batchId)
     {
         var results = await QueryAsync<OssExportFileRecord>("GetCaseByBatchID", new { BatchID = batchId });
