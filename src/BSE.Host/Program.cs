@@ -280,7 +280,7 @@ try
     // dev-bse.azure.defra.cloud terminates TLS and forwards to the App Service's
     // default hostname. Without this, Request.Scheme/Request.Host reflect the
     // raw azurewebsites.net origin, causing absolute redirects to leak that hostname.
-    // Azure's edge proxy IPs are not fixed, so KnownNetworks/KnownProxies are cleared
+    // Azure's edge proxy IPs are not fixed, so KnownIPNetworks/KnownProxies are cleared
     // to trust forwarded headers regardless of hop address — safe because the
     // azurewebsites.net endpoint is access-restricted to Front Door / App Gateway only.
     builder.Services.Configure<ForwardedHeadersOptions>(options =>
@@ -288,7 +288,7 @@ try
         options.ForwardedHeaders = ForwardedHeaders.XForwardedFor
                                  | ForwardedHeaders.XForwardedProto
                                  | ForwardedHeaders.XForwardedHost;
-        options.KnownNetworks.Clear();
+        options.KnownIPNetworks.Clear();
         options.KnownProxies.Clear();
     });
 

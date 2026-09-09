@@ -31,14 +31,17 @@ public class PrintBatchModel(IBatchService batchService) : PageModel
         if (SelectedReportType == ReportType.None) ModelState.AddModelError(nameof(SelectedReportType), "Select report type.");
         if (!ModelState.IsValid) return Page();
 
-        var batchId = await batchService.GetBatchIdAsync(BatchYear.Value, BatchNumber.Value);
+        var batchYear = BatchYear!.Value;
+        var batchNumber = BatchNumber!.Value;
+
+        var batchId = await batchService.GetBatchIdAsync(batchYear, batchNumber);
         if (batchId is null)
         {
-            ModelState.AddModelError(nameof(BatchNumber), $"Batch {BatchYear}/{BatchNumber} was not found.");
+            ModelState.AddModelError(nameof(BatchNumber), $"Batch {batchYear}/{batchNumber} was not found.");
             return Page();
         }
 
-        var batchLabel = $"{BatchYear}/{BatchNumber}";
+        var batchLabel = $"{batchYear}/{batchNumber}";
         var html = await BuildLegacyStyleHtmlAsync(batchId.Value, batchLabel, SelectedReportType);
         var fileName = SelectedReportType switch
         {

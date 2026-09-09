@@ -25,6 +25,12 @@ public interface IOssExportRepository
     Task<BatchNumber1989Result?> CreateBatchNumber1989Async();
 
     /// <summary>
+    /// Returns staged BSE1 RBSE values from <c>expCase</c> after staging population.
+    /// Used to create BSE1 batch links prior to export file generation.
+    /// </summary>
+    Task<IReadOnlyList<string>> GetStagedBse1RbseAsync();
+
+    /// <summary>
     /// Retrieves all cases linked to a batch via <c>GetCaseByBatchID</c> stored procedure.
     /// Returns a list of RBSE/CPHH pairs, ordered by year (legacy behavior).
     /// </summary>

@@ -3,8 +3,6 @@
 @{
     ViewData["Title"] = $"Edit BAB — {Model.Rbse}";
     string rbseNoSlash = Model.Rbse.Replace("/", "");
-    string Desc(IEnumerable<BSE.SharedKernel.ILookupItem> opts, string? code) =>
-        opts.FirstOrDefault(o => o.Code == code)?.Description ?? code ?? "—";
 }
 
 <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
