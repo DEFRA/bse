@@ -69,6 +69,14 @@ stages:
         arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
         zipAfterPublish: true
 
+    - task: CopyFiles@2
+      displayName: 'Stage SQL scripts'
+      inputs:
+        sourceFolder: 'src'
+        contents: '**/Scripts/*.sql'
+        targetFolder: '$(Build.ArtifactStagingDirectory)/sql'
+        flattenFolders: true    
+
     - publish: '$(Build.ArtifactStagingDirectory)'
       artifact: drop
       displayName: 'Publish artifact'
@@ -86,6 +94,8 @@ stages:
       value: '3eeeb482-eea0-4bb5-85a9-9a6fefb27a23'
     - name: sqlServer
       value: 'devbseinfsq1401.database.windows.net,1433'
+    - name: sqlServerHost
+      value: 'devbseinfsq1401.database.windows.net'  
     - name: dbName
       value: 'BSE'
   jobs:
@@ -99,6 +109,23 @@ stages:
           steps:
           - download: current
             artifact: drop
+
+          - task: AzureCLI@2
+            displayName: 'Apply database scripts'
+            inputs:
+              azureSubscription: 'AZR-BSE-DEV1'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+                sqlcmd --version
+                for f in $(ls -1 "$(Pipeline.Workspace)"/drop/sql/*.sql | sort); do
+                  echo "Applying $(basename "$f")"
+                  sqlcmd -S "$(sqlServerHost)" -d "$(dbName)" \
+                    --authentication-method ActiveDirectoryAzCli \
+                    -i "$f" -b
+                done
+                  
           - task: AzureWebApp@1
             inputs:
               azureSubscription: 'AZR-BSE-DEV1'
