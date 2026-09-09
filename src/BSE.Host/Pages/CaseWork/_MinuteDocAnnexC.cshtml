@@ -1,0 +1,65 @@
+﻿@model BSE.Host.Pages.CaseWork.MinuteDocumentModel
+
+<p align="left">ANNEX C</p>
+<h1 align="left">OUTSTANDING PAPERWORK - <em>FIRST REMINDER</em></h1>
+
+<table class="HeaderLayout">
+    <tr>
+        <td class="HeaderLeft">
+            From:<br />
+            Keith Russell<br />
+            CERA 3 - Area E - Weybourne Building<br />
+            VLA Weybridge, New Haw,<br />
+            Addlestone,<br />
+            KT15 3NB
+            <br /><br />
+            Tel: 01932-359428
+        </td>
+        <td class="HeaderRight">
+            To: DVM<br />
+            At: @Model.Details.AhoName
+        </td>
+    </tr>
+</table>
+
+<p align="left">Date: @Model.MinuteDate?.ToString("dd/MM/yyyy")</p>
+
+<hr />
+
+<p align="left">BSE: FORMS OUTSTANDING</p>
+
+<table class="InformationTable">
+    <tr class="InformationTableHeader">
+        <td rowspan="2" class="InformationTableCell">RBSE No</td>
+        <td rowspan="2" class="InformationTableCell">Outstanding BSE Forms</td>
+        <td colspan="2" class="InformationTableCell">Form will follow by fax or email</td>
+        <td rowspan="2" class="InformationTableCell">Tracing required (Y/N)</td>
+        <td rowspan="2" class="InformationTableCell">Who will be carrying out the tracing</td>
+    </tr>
+    <tr class="InformationTableHeader">
+        <td class="InformationTableCell">YES</td>
+        <td class="InformationTableCell">NO</td>
+    </tr>
+    @foreach (var form in Model.OutstandingForms)
+    {
+        <tr>
+            <td class="InformationTableCell">@BseFormat.FormatRbse(Model.Details.Rbse)</td>
+            <td class="InformationTableCell">@form</td>
+            <td class="InformationTableCell">&nbsp;</td>
+            <td class="InformationTableCell">&nbsp;</td>
+            <td class="InformationTableCell">&nbsp;</td>
+            <td class="InformationTableCell">&nbsp;</td>
+        </tr>
+    }
+</table>
+
+<p>
+    Paper work relating to the BSE cases listed has not been received as
+    indicated in column 1 &amp; 2. Would you please complete the table as necessary
+    and fax by return if possible and please send the requested paperwork by email
+    or post ASAP.
+</p>
+
+<p align="left"><strong><u>Urgent - Please fax information to 01932 359429 by return if possible</u></strong></p>
+<p align="left"><strong>Please fax as soon as possible</strong></p>
+<p align="left">Thank you</p>

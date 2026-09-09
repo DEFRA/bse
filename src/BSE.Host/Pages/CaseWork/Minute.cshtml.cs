@@ -1,5 +1,4 @@
-using System.Text;
-using BSE.Modules.CaseWork.Models;
+﻿using BSE.Modules.CaseWork.Models;
 using BSE.Modules.CaseWork.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -27,13 +26,9 @@ public class MinuteModel(ICaseWorkService caseWorkService) : PageModel
         ["AnnexD"] = "Annex D"
     };
 
-    [BindProperty(SupportsGet = true)]
-    public string Rbse { get; set; } = string.Empty;
+    [BindProperty(SupportsGet = true)] public string Rbse { get; set; } = string.Empty;
+    [BindProperty(SupportsGet = true)] public string Type { get; set; } = string.Empty;
 
-    [BindProperty(SupportsGet = true)]
-    public string Type { get; set; } = string.Empty;
-
-    // Legacy-only requirement for AnnexC/AnnexD:
     [BindProperty] public bool OutstandingHomebred { get; set; }
     [BindProperty] public bool OutstandingBreeder { get; set; }
     [BindProperty] public bool OutstandingPurchaser { get; set; }
@@ -44,22 +39,17 @@ public class MinuteModel(ICaseWorkService caseWorkService) : PageModel
     public string MinuteTypeLabel => Labels.TryGetValue(Type, out var label) ? label : Type;
     public MinuteDetailsRecord? Details { get; private set; }
     public DateTime? MinuteDate { get; private set; }
-    public bool TriggerPrint { get; private set; }
-    public bool ShowOutstandingForms => IsAnnexCorD(EffectiveMinuteType);
 
-    private static bool IsAnnexCorD(string minuteType) =>
-        string.Equals(minuteType, "AnnexC", StringComparison.OrdinalIgnoreCase) ||
-        string.Equals(minuteType, "AnnexD", StringComparison.OrdinalIgnoreCase) ||
-        string.Equals(minuteType, "Annex C", StringComparison.OrdinalIgnoreCase) ||
-        string.Equals(minuteType, "Annex D", StringComparison.OrdinalIgnoreCase);
+    public bool ShowOutstandingForms => IsAnnexCorD(NormalizeMinuteType(EffectiveMinuteType));
+    public bool TriggerPrintPopup { get; private set; }
+    public string? PrintPopupUrl { get; private set; }
 
-    // Update OnGetAsync / post handlers to use effective type
     public async Task<IActionResult> OnGetAsync()
     {
-        var minuteType = EffectiveMinuteType;
+        var minuteType = NormalizeMinuteType(EffectiveMinuteType);
         if (!IsSupportedMinuteType(minuteType)) return BadRequest();
 
-        Type = minuteType; // keep bound value consistent for postback
+        Type = minuteType;
         Details = await caseWorkService.GetMinuteDetailsAsync(Rbse, minuteType);
         MinuteDate = Details is null ? null : GetMinuteDate(Details, minuteType);
 
@@ -71,83 +61,58 @@ public class MinuteModel(ICaseWorkService caseWorkService) : PageModel
 
     public async Task<IActionResult> OnPostDownloadAsync()
     {
-        if (!IsSupportedMinuteType(Type)) return BadRequest();
+        var minuteType = NormalizeMinuteType(EffectiveMinuteType);
+        if (!IsSupportedMinuteType(minuteType)) return BadRequest();
 
-        Details = await caseWorkService.GetMinuteDetailsAsync(Rbse, Type);
+        Type = minuteType;
+        Details = await caseWorkService.GetMinuteDetailsAsync(Rbse, minuteType);
         if (Details is null) return NotFound();
 
-        MinuteDate = GetMinuteDate(Details, Type);
+        MinuteDate = GetMinuteDate(Details, minuteType);
 
-        if (!ValidateOutstandingFormsIfRequired())
+        if (!ValidateOutstandingFormsIfRequired(minuteType))
             return Page();
 
         SaveOutstandingSelectionToSession();
 
-        var date = MinuteDate?.ToString("dd/MM/yyyy") ?? "-";
-        var content = BuildDownloadContent(date);
-
-        var fileName = $"{Type}-{Rbse}-{DateTime.UtcNow:yyyyMMdd}.txt";
-        return File(Encoding.UTF8.GetBytes(content), "text/plain", fileName);
+        // Legacy parity: redirect to minute template endpoint for Word output.
+        return RedirectToPage("/CaseWork/MinuteDocument", new { rbse = Rbse, type = minuteType });
     }
 
     public async Task<IActionResult> OnPostPrintMemoAsync()
     {
-        if (!IsSupportedMinuteType(Type)) return BadRequest();
+        var minuteType = NormalizeMinuteType(EffectiveMinuteType);
+        if (!IsSupportedMinuteType(minuteType)) return BadRequest();
 
-        Details = await caseWorkService.GetMinuteDetailsAsync(Rbse, Type);
+        Type = minuteType;
+        Details = await caseWorkService.GetMinuteDetailsAsync(Rbse, minuteType);
         if (Details is null) return NotFound();
 
-        MinuteDate = GetMinuteDate(Details, Type);
+        MinuteDate = GetMinuteDate(Details, minuteType);
 
-        if (!ValidateOutstandingFormsIfRequired())
+        if (!ValidateOutstandingFormsIfRequired(minuteType))
             return Page();
 
         SaveOutstandingSelectionToSession();
 
-        TriggerPrint = true;
+        // Legacy parity: popup window to document page with print mode.
+        TriggerPrintPopup = true;
+        PrintPopupUrl = Url.Page("/CaseWork/MinuteDocument", new { rbse = Rbse, type = minuteType, print = "Print" });
+
         return Page();
     }
 
-    private string BuildDownloadContent(string date)
+    private bool ValidateOutstandingFormsIfRequired(string minuteType)
     {
-        var sb = new StringBuilder();
-        sb.AppendLine("BSE Database System");
-        sb.AppendLine("Casework Minute Confirmation");
-        sb.AppendLine();
-        sb.AppendLine($"RBSE: {Rbse}");
-        sb.AppendLine($"Minute: {MinuteTypeLabel}");
-        sb.AppendLine($"Date: {date}");
-
-        if (ShowOutstandingForms)
-        {
-            sb.AppendLine();
-            sb.AppendLine("Outstanding Forms:");
-            if (OutstandingHomebred) sb.AppendLine("- Homebred");
-            if (OutstandingBreeder) sb.AppendLine("- Breeder");
-            if (OutstandingPurchaser) sb.AppendLine("- Purchaser");
-            if (OutstandingVendor) sb.AppendLine("- Vendor");
-            if (OutstandingSummarySheet) sb.AppendLine("- Summary Sheet");
-            if (OutstandingAllPaperwork) sb.AppendLine("- All Paperwork");
-        }
-
-        return sb.ToString();
-    }
-
-    private bool ValidateOutstandingFormsIfRequired()
-    {
-        if (!ShowOutstandingForms) return true;
+        if (!IsAnnexCorD(minuteType)) return true;
 
         var anySelected =
-            OutstandingHomebred ||
-            OutstandingBreeder ||
-            OutstandingPurchaser ||
-            OutstandingVendor ||
-            OutstandingSummarySheet ||
-            OutstandingAllPaperwork;
+            OutstandingHomebred || OutstandingBreeder || OutstandingPurchaser ||
+            OutstandingVendor || OutstandingSummarySheet || OutstandingAllPaperwork;
 
         if (anySelected) return true;
 
-        ModelState.AddModelError("OutstandingForms", "For Annex C or Annex D, select at least one outstanding form.");
+        ModelState.AddModelError("OutstandingForms", "Select at least one outstanding form.");
         return false;
     }
 
@@ -171,8 +136,36 @@ public class MinuteModel(ICaseWorkService caseWorkService) : PageModel
         OutstandingAllPaperwork = bool.TryParse(HttpContext.Session.GetString(SessionAllPaperwork), out var ap) && ap;
     }
 
+    private string EffectiveMinuteType
+    {
+        get
+        {
+            var fromRoute = Type?.Trim();
+            if (!string.IsNullOrWhiteSpace(fromRoute))
+                return fromRoute;
+
+            return Request.Query["minute"].ToString().Trim(); // legacy query-string compatibility
+        }
+    }
+
+    private static string NormalizeMinuteType(string minuteType)
+    {
+        var m = (minuteType ?? string.Empty).Trim();
+        return m switch
+        {
+            "ActiveMemoFS" => "AMFS",
+            "Annex C" => "AnnexC",
+            "Annex D" => "AnnexD",
+            _ => m
+        };
+    }
+
     private static bool IsSupportedMinuteType(string minuteType) =>
         minuteType is "ActiveMemo" or "AMFS" or "AnnexA" or "AnnexB" or "AnnexC" or "AnnexD";
+
+    private static bool IsAnnexCorD(string minuteType) =>
+        string.Equals(minuteType, "AnnexC", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(minuteType, "AnnexD", StringComparison.OrdinalIgnoreCase);
 
     private static DateTime? GetMinuteDate(MinuteDetailsRecord d, string type) => type switch
     {
@@ -183,18 +176,4 @@ public class MinuteModel(ICaseWorkService caseWorkService) : PageModel
         "AnnexD" => d.AnnexDDate,
         _ => null
     };
-    // Add inside MinuteModel
-    private string EffectiveMinuteType
-    {
-        get
-        {
-            var fromRoute = Type?.Trim();
-            if (!string.IsNullOrWhiteSpace(fromRoute))
-                return fromRoute;
-
-            // Legacy-style fallback: ?minute=AnnexC
-            return Request.Query["minute"].ToString().Trim();
-        }
-    }
-
 }

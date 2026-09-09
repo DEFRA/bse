@@ -1,7 +1,7 @@
-@page "{rbse}/{type}"
+﻿@page "{rbse}/{type}"
 @model MinuteModel
 @{
-    ViewData["Title"] = $"Casework Minute Confirmation — {Model.MinuteTypeLabel}";
+    ViewData["Title"] = $"Casework Minute Confirmation â€” {Model.MinuteTypeLabel}";
 }
 
 <div>
@@ -41,12 +41,18 @@
                 <dd class="govuk-summary-list__value">@(Model.MinuteDate?.ToString("dd/MM/yyyy") ?? "-")</dd>
             </div>
         </dl>
-        @* move this block outside the `else` that depends on Model.Details *@
+    }
+
+    <form method="post" novalidate>
+        <input type="hidden" asp-for="Rbse" />
+        <input type="hidden" asp-for="Type" />
+
         @if (Model.ShowOutstandingForms)
         {
             <div class="govuk-form-group @(ViewData.ModelState.ContainsKey("OutstandingForms") ? "govuk-form-group--error" : "")">
                 <fieldset class="govuk-fieldset">
                     <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">Outstanding forms</legend>
+
                     @if (ViewData.ModelState.ContainsKey("OutstandingForms"))
                     {
                         <p class="govuk-error-message">
@@ -54,93 +60,69 @@
                             @ViewData.ModelState["OutstandingForms"]?.Errors.FirstOrDefault()?.ErrorMessage
                         </p>
                     }
+
                     <div class="govuk-checkboxes" data-module="govuk-checkboxes">
-                        <!-- existing 6 checkboxes unchanged -->
+                        <div class="govuk-checkboxes__item">
+                            <input class="govuk-checkboxes__input" asp-for="OutstandingHomebred" />
+                            <label class="govuk-label govuk-checkboxes__label" asp-for="OutstandingHomebred">Homebred</label>
+                        </div>
+                        <div class="govuk-checkboxes__item">
+                            <input class="govuk-checkboxes__input" asp-for="OutstandingBreeder" />
+                            <label class="govuk-label govuk-checkboxes__label" asp-for="OutstandingBreeder">Breeder</label>
+                        </div>
+                        <div class="govuk-checkboxes__item">
+                            <input class="govuk-checkboxes__input" asp-for="OutstandingPurchaser" />
+                            <label class="govuk-label govuk-checkboxes__label" asp-for="OutstandingPurchaser">Purchaser</label>
+                        </div>
+                        <div class="govuk-checkboxes__item">
+                            <input class="govuk-checkboxes__input" asp-for="OutstandingVendor" />
+                            <label class="govuk-label govuk-checkboxes__label" asp-for="OutstandingVendor">Vendor</label>
+                        </div>
+                        <div class="govuk-checkboxes__item">
+                            <input class="govuk-checkboxes__input" asp-for="OutstandingSummarySheet" />
+                            <label class="govuk-label govuk-checkboxes__label" asp-for="OutstandingSummarySheet">Summary Sheet</label>
+                        </div>
+                        <div class="govuk-checkboxes__item">
+                            <input class="govuk-checkboxes__input" asp-for="OutstandingAllPaperwork" />
+                            <label class="govuk-label govuk-checkboxes__label" asp-for="OutstandingAllPaperwork">All Paperwork</label>
+                        </div>
                     </div>
                 </fieldset>
             </div>
         }
-        <form method="post" novalidate>
-            <input type="hidden" asp-for="Rbse" />
-            <input type="hidden" asp-for="Type" />
 
-            @if (Model.ShowOutstandingForms)
-            {
-                <div class="govuk-form-group @(ViewData.ModelState.ContainsKey("OutstandingForms") ? "govuk-form-group--error" : "")">
-                    <fieldset class="govuk-fieldset">
-                        <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">Outstanding forms</legend>
+        <div class="govuk-button-group govuk-!-margin-top-6">
+            <button type="submit" asp-page-handler="Download" class="govuk-button govuk-button--secondary" data-module="govuk-button">
+                Download
+            </button>
 
-                        @if (ViewData.ModelState.ContainsKey("OutstandingForms"))
-                        {
-                            <p class="govuk-error-message">
-                                <span class="govuk-visually-hidden">Error:</span>
-                                @ViewData.ModelState["OutstandingForms"]?.Errors.FirstOrDefault()?.ErrorMessage
-                            </p>
-                        }
+            <button type="submit" asp-page-handler="PrintMemo" class="govuk-button govuk-button--secondary" data-module="govuk-button">
+                Print memo
+            </button>
 
-                        <div class="govuk-checkboxes" data-module="govuk-checkboxes">
-                            <div class="govuk-checkboxes__item">
-                                <input class="govuk-checkboxes__input" asp-for="OutstandingHomebred" />
-                                <label class="govuk-label govuk-checkboxes__label" asp-for="OutstandingHomebred">Homebred</label>
-                            </div>
-                            <div class="govuk-checkboxes__item">
-                                <input class="govuk-checkboxes__input" asp-for="OutstandingBreeder" />
-                                <label class="govuk-label govuk-checkboxes__label" asp-for="OutstandingBreeder">Breeder</label>
-                            </div>
-                            <div class="govuk-checkboxes__item">
-                                <input class="govuk-checkboxes__input" asp-for="OutstandingPurchaser" />
-                                <label class="govuk-label govuk-checkboxes__label" asp-for="OutstandingPurchaser">Purchaser</label>
-                            </div>
-                            <div class="govuk-checkboxes__item">
-                                <input class="govuk-checkboxes__input" asp-for="OutstandingVendor" />
-                                <label class="govuk-label govuk-checkboxes__label" asp-for="OutstandingVendor">Vendor</label>
-                            </div>
-                            <div class="govuk-checkboxes__item">
-                                <input class="govuk-checkboxes__input" asp-for="OutstandingSummarySheet" />
-                                <label class="govuk-label govuk-checkboxes__label" asp-for="OutstandingSummarySheet">Summary sheet</label>
-                            </div>
-                            <div class="govuk-checkboxes__item">
-                                <input class="govuk-checkboxes__input" asp-for="OutstandingAllPaperwork" />
-                                <label class="govuk-label govuk-checkboxes__label" asp-for="OutstandingAllPaperwork">All paperwork</label>
-                            </div>
-                        </div>
-                    </fieldset>
-                </div>
-            }
+            <a asp-page="/CaseWork/Entry"
+               asp-route-rbse="@Model.Rbse"
+               class="govuk-button govuk-button--secondary"
+               role="button"
+               draggable="false">
+                Casework Entry
+            </a>
 
-            <div class="govuk-button-group govuk-!-margin-top-6">
-                <button type="submit" asp-page-handler="Download" class="govuk-button govuk-button--secondary" data-module="govuk-button">
-                    Download
-                </button>
-
-                <button type="submit" asp-page-handler="PrintMemo" class="govuk-button govuk-button--secondary" data-module="govuk-button">
-                    Print memo
-                </button>
-
-                <a asp-page="/CaseWork/Entry"
-                   asp-route-rbse="@Model.Rbse"
-                   class="govuk-button govuk-button--secondary"
-                   role="button"
-                   draggable="false">
-                    Casework Entry
-                </a>
-
-                <a asp-page="/Home"
-                   class="govuk-button govuk-button--secondary"
-                   role="button"
-                   draggable="false">
-                    Home
-                </a>
-            </div>
-        </form>
-    }
+            <a asp-page="/Home"
+               class="govuk-button govuk-button--secondary"
+               role="button"
+               draggable="false">
+                Home
+            </a>
+        </div>
+    </form>
 </div>
 
-@if (Model.TriggerPrint)
+@if (Model.TriggerPrintPopup && !string.IsNullOrWhiteSpace(Model.PrintPopupUrl))
 {
     <script>
         window.addEventListener('load', function() {
-            window.print();
+            window.open('@Model.PrintPopupUrl', '_blank', 'noopener');
         });
     </script>
 }
