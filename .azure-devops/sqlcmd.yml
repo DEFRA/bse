@@ -16,5 +16,6 @@ steps:
           https://github.com/microsoft/go-sqlcmd/releases/download/v1.8.2/sqlcmd-linux-amd64.tar.bz2
         tar -xjf sqlcmd.tar.bz2
         ./sqlcmd --authentication-method=ActiveDirectoryDefault \
-          -S "$(sqlServerName)" -d "$(sqlDatabaseName)" \
+          -S "devbsesql1401.database.windows.net" \
+          -d "BSE" \
           -Q "SELECT SUSER_NAME() AS login_name, USER_NAME() AS db_user" -b
