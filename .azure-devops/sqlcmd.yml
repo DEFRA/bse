@@ -1,0 +1,16 @@
+trigger: none
+
+pool:
+  name: DEFRA-COMMON-UBUNTU-SSV3
+
+steps:
+  - script: |
+      echo "--- which ---"
+      which -a sqlcmd || echo "sqlcmd not on PATH"
+      echo "--- version ---"
+      sqlcmd --version 2>/dev/null || sqlcmd -? 2>&1 | head -20
+      echo "--- common install locations ---"
+      ls -l /opt/mssql-tools*/bin/ 2>/dev/null || echo "no mssql-tools dir"
+      echo "--- packages ---"
+      dpkg -l | grep -i -E 'mssql|sqlcmd' || echo "no mssql packages"
+    displayName: 'Probe sqlcmd'
