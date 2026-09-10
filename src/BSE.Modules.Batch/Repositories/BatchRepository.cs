@@ -154,7 +154,7 @@ public sealed class BatchRepository : DapperRepository, IBatchRepository
         {
             if (r is IDictionary<string, object> d)
             {
-                result.Add(d.ToDictionary(k => k.Key, v => v.Value));
+                result.Add(d.ToDictionary(k => k.Key, v => (object?)v.Value));
             }
             else
             {
