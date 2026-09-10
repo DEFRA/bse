@@ -12,14 +12,13 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddAdnsExportModule(
         this IServiceCollection services, IConfiguration configuration)
     {
-        services.Configure<AdnsSmtpOptions>(
-            configuration.GetSection(AdnsSmtpOptions.SectionName));
+        services.Configure<AdnsMsGraphOptions>(
+            configuration.GetSection(AdnsMsGraphOptions.SectionName));
 
         services.AddScoped<IAdnsRepository, AdnsRepository>();
         services.AddScoped<IAdnsExportService, AdnsExportService>();
 
-        // ISmtpClient is a singleton — SmtpClient is thread-safe for concurrent sends.
-        services.AddSingleton<ISmtpClient, SmtpClientWrapper>();
+        services.AddHttpClient<IMSGraphMailClient, MSGraphMailClient>();
 
         return services;
     }
