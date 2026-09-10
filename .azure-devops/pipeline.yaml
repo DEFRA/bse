@@ -118,12 +118,25 @@ stages:
               scriptLocation: inlineScript
               inlineScript: |
                 set -euo pipefail
-                sqlcmd --version
-                for f in $(ls -1 "$(Pipeline.Workspace)"/drop/sql/*.sql | sort); do
-                  echo "Applying $(basename "$f")"
-                  sqlcmd -S "$(sqlServerHost)" -d "$(dbName)" \
+
+                TOOLS="$(Agent.TempDirectory)/sqlcmd"
+                mkdir -p "$TOOLS"
+                curl -sSL --fail --max-time 60 -o "$TOOLS/sqlcmd.tar.bz2" \
+                  https://github.com/microsoft/go-sqlcmd/releases/download/v1.8.2/sqlcmd-linux-amd64.tar.bz2
+                tar -xjf "$TOOLS/sqlcmd.tar.bz2" -C "$TOOLS"
+
+                shopt -s nullglob
+                files=("$(Pipeline.Workspace)"/drop/sql/*.sql)
+                if [ ${#files[@]} -eq 0 ]; then
+                  echo "No SQL scripts found - nothing to apply"
+                  exit 0
+                fi
+
+                for f in $(printf '%s\n' "${files[@]}" | sort); do
+                  echo "Applying ${f##*/}"
+                  "$TOOLS/sqlcmd" -S "$(sqlServerHost)" -d "$(dbName)" \
                     --authentication-method ActiveDirectoryAzCli \
-                    -i "$f" -b
+                    -i "$f" -b -t 0
                 done
                   
           - task: AzureWebApp@1
