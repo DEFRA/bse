@@ -5,17 +5,17 @@ pool:
 
 steps:
   - task: AzureCLI@2
-    displayName: 'Probe SQL identity'
+    displayName: 'Find SQL server'
     inputs:
       azureSubscription: 'AZR-BSE-DEV1'
       scriptType: 'bash'
       scriptLocation: 'inlineScript'
       inlineScript: |
-        set -euo pipefail
-        curl -sSL --fail -o sqlcmd.tar.bz2 \
-          https://github.com/microsoft/go-sqlcmd/releases/download/v1.8.2/sqlcmd-linux-amd64.tar.bz2
-        tar -xjf sqlcmd.tar.bz2
-        ./sqlcmd --authentication-method=ActiveDirectoryDefault \
-          -S "devbsesql1401.database.windows.net" \
-          -d "BSE" \
-          -Q "SELECT SUSER_NAME() AS login_name, USER_NAME() AS db_user" -b
+        echo "--- servers in subscription ---"
+        az sql server list -o table
+        echo "--- databases per server ---"
+        for s in $(az sql server list --query "[].name" -o tsv); do
+          rg=$(az sql server list --query "[?name=='$s'].resourceGroup" -o tsv)
+          echo "== $s ($rg) =="
+          az sql db list --server "$s" -g "$rg" --query "[].name" -o tsv
+        done
