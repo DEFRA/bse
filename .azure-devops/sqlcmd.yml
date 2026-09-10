@@ -5,12 +5,10 @@ pool:
 
 steps:
   - script: |
-      echo "--- which ---"
-      which -a sqlcmd || echo "sqlcmd not on PATH"
-      echo "--- version ---"
-      sqlcmd --version 2>/dev/null || sqlcmd -? 2>&1 | head -20
-      echo "--- common install locations ---"
-      ls -l /opt/mssql-tools*/bin/ 2>/dev/null || echo "no mssql-tools dir"
-      echo "--- packages ---"
-      dpkg -l | grep -i -E 'mssql|sqlcmd' || echo "no mssql packages"
-    displayName: 'Probe sqlcmd'
+      set -x
+      curl -sSL --fail --max-time 30 \
+        -o sqlcmd.tar.bz2 \
+        https://github.com/microsoft/go-sqlcmd/releases/download/v1.8.2/sqlcmd-linux-amd64.tar.bz2 \
+        && tar -xjf sqlcmd.tar.bz2 \
+        && ./sqlcmd --version
+    displayName: 'Fetch and test sqlcmd'
