@@ -4,11 +4,17 @@ pool:
   name: DEFRA-COMMON-UBUNTU-SSV3
 
 steps:
-  - script: |
-      set -x
-      curl -sSL --fail --max-time 30 \
-        -o sqlcmd.tar.bz2 \
-        https://github.com/microsoft/go-sqlcmd/releases/download/v1.8.2/sqlcmd-linux-amd64.tar.bz2 \
-        && tar -xjf sqlcmd.tar.bz2 \
-        && ./sqlcmd --version
-    displayName: 'Fetch and test sqlcmd'
+  - task: AzureCLI@2
+    displayName: 'Probe SQL identity'
+    inputs:
+      azureSubscription: 'AZR-BSE-DEV1'
+      scriptType: 'bash'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        set -euo pipefail
+        curl -sSL --fail -o sqlcmd.tar.bz2 \
+          https://github.com/microsoft/go-sqlcmd/releases/download/v1.8.2/sqlcmd-linux-amd64.tar.bz2
+        tar -xjf sqlcmd.tar.bz2
+        ./sqlcmd --authentication-method=ActiveDirectoryDefault \
+          -S "$(sqlServerName)" -d "$(sqlDatabaseName)" \
+          -Q "SELECT SUSER_NAME() AS login_name, USER_NAME() AS db_user" -b
