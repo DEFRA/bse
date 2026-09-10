@@ -1,0 +1,135 @@
+﻿<?xml version="1.0"?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:refId="Package"
+  DTS:CreationDate="10/6/2016 1:34:57 PM"
+  DTS:CreationName="Microsoft.Package"
+  DTS:CreatorComputerName="MSP01-SHAREREG"
+  DTS:CreatorName="MAIN\sbm"
+  DTS:Description="Generates export tables linked from Access for reporting"
+  DTS:DTSID="{D13FC014-6B7A-4308-A8EA-8A55D46D09C7}"
+  DTS:ExecutableType="Microsoft.Package"
+  DTS:LastModifiedProductVersion="16.0.5270.0"
+  DTS:LocaleID="1033"
+  DTS:ObjectName="BSE Access Export"
+  DTS:VersionBuild="2"
+  DTS:VersionGUID="{5EA437B0-0A8F-4460-AE53-729486FF63A3}">
+  <DTS:Property
+    DTS:Name="PackageFormatVersion">8</DTS:Property>
+  <DTS:ConnectionManagers>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[Connection 1]"
+      DTS:CreationName="OLEDB"
+      DTS:DTSID="{BFF9B97B-AB6C-4E6A-877E-E0856A49B2FA}"
+      DTS:ObjectName="Connection 1">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:ConnectRetryCount="1"
+          DTS:ConnectRetryInterval="5"
+          DTS:ConnectionString="Data Source=DEFACPVWTSQL004;Initial Catalog=BSE;Provider=SQLOLEDB.1;Integrated Security=SSPI;Application Name=SSIS-BSE Access Export-{BFF9B97B-AB6C-4E6A-877E-E0856A49B2FA}Connection 1;" />
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+  </DTS:ConnectionManagers>
+  <DTS:Variables />
+  <DTS:Executables>
+    <DTS:Executable
+      DTS:refId="Package\expAge"
+      DTS:CreationName="Microsoft.ExecuteSQLTask"
+      DTS:Description="expAge"
+      DTS:DTSID="{AB5168E4-318C-4B1E-A4B4-126B3BD20AC9}"
+      DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="expAge"
+      DTS:TaskContact="Execute SQL Task; Microsoft Corporation; Microsoft SQL Server v9; © 2004 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{BFF9B97B-AB6C-4E6A-877E-E0856A49B2FA}"
+          SQLTask:SqlStatementSource="CopyHerdSizeToExportTable" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable
+      DTS:refId="Package\expCase"
+      DTS:CreationName="Microsoft.ExecuteSQLTask"
+      DTS:Description="expCase"
+      DTS:DTSID="{BED41DF9-830D-44A9-8036-5A47F51B52D3}"
+      DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="expCase"
+      DTS:TaskContact="Execute SQL Task; Microsoft Corporation; Microsoft SQL Server v9; © 2004 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="1">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{BFF9B97B-AB6C-4E6A-877E-E0856A49B2FA}"
+          SQLTask:SqlStatementSource="CopyCaseToExportTable" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable
+      DTS:refId="Package\expFarm"
+      DTS:CreationName="Microsoft.ExecuteSQLTask"
+      DTS:Description="expFarm"
+      DTS:DTSID="{97ED55C5-F28C-403F-850C-474485D236B4}"
+      DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="expFarm"
+      DTS:TaskContact="Execute SQL Task; Microsoft Corporation; Microsoft SQL Server v9; © 2004 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="2">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{BFF9B97B-AB6C-4E6A-877E-E0856A49B2FA}"
+          SQLTask:SqlStatementSource="CopyFarmToExportTable" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable
+      DTS:refId="Package\expRelation"
+      DTS:CreationName="Microsoft.ExecuteSQLTask"
+      DTS:Description="expRelation"
+      DTS:DTSID="{E6870288-52B7-4554-8084-CEA1B3B0C075}"
+      DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="expRelation"
+      DTS:TaskContact="Execute SQL Task; Microsoft Corporation; Microsoft SQL Server v9; © 2004 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="3">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{BFF9B97B-AB6C-4E6A-877E-E0856A49B2FA}"
+          SQLTask:SqlStatementSource="CopyRelationToExportTable" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+  </DTS:Executables>
+  <DTS:DesignTimeProperties><![CDATA[<?xml version="1.0"?>
+<!--This CDATA section contains the layout information of the package. The section includes information such as (x,y) coordinates, width, and height.-->
+<!--If you manually edit this section and make a mistake, you can delete it. -->
+<!--The package will still be able to load normally but the previous layout information will be lost and the designer will automatically re-arrange the elements on the design surface.-->
+<Objects
+  Version="8">
+  <!--Each node below will contain properties that do not affect runtime behavior.-->
+  <Package
+    design-time-name="Package">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="4" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph">
+        <NodeLayout
+          Size="114,42"
+          Id="Package\expAge"
+          TopLeft="5.5,5.5" />
+        <NodeLayout
+          Size="118,42"
+          Id="Package\expCase"
+          TopLeft="180.5,5.49999999999989" />
+        <NodeLayout
+          Size="120,42"
+          Id="Package\expFarm"
+          TopLeft="359.5,5.49999999999989" />
+        <NodeLayout
+          Size="134,42"
+          Id="Package\expRelation"
+          TopLeft="540.5,5.49999999999989" />
+      </GraphLayout>
+    </LayoutInfo>
+  </Package>
+</Objects>]]></DTS:DesignTimeProperties>
+</DTS:Executable>

@@ -1,0 +1,928 @@
+﻿<?xml version="1.0"?>
+<DTS:Executable xmlns:DTS="www.microsoft.com/SqlServer/Dts"
+  DTS:refId="Package"
+  DTS:CreationDate="10/7/2016 12:39:42 PM"
+  DTS:CreationName="Microsoft.Package"
+  DTS:CreatorComputerName="MSP01-SHAREREG"
+  DTS:CreatorName="MAIN\sbm"
+  DTS:Description="Imports data from BSESS system to the BSE database"
+  DTS:DTSID="{1E8ED0AE-33ED-4B41-A44B-C728304CDE63}"
+  DTS:ExecutableType="Microsoft.Package"
+  DTS:LastModifiedProductVersion="16.0.5270.0"
+  DTS:LocaleID="1033"
+  DTS:ObjectName="BSESS Import"
+  DTS:VersionBuild="11"
+  DTS:VersionGUID="{D70E1846-570C-4926-A840-EBCCBCF31F82}">
+  <DTS:Property
+    DTS:Name="PackageFormatVersion">8</DTS:Property>
+  <DTS:ConnectionManagers>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[Connection 1]"
+      DTS:CreationName="OLEDB"
+      DTS:DTSID="{108FA145-3868-4399-9CF6-B699B1823754}"
+      DTS:ObjectName="Connection 1">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:ConnectRetryCount="1"
+          DTS:ConnectRetryInterval="5"
+          DTS:ConnectionString="Data Source=tses.data.prd1.prd.cerespfm.cloud;User ID=defra-tses-user;Initial Catalog=tses;Provider=SQLOLEDB.1;Persist Security Info=True;Application Name=SSIS-BSESS Import-{108FA145-3868-4399-9CF6-B699B1823754}Connection 1;">
+          <DTS:Password
+            DTS:Name="Password"
+            Sensitive="1"
+            Encrypted="1">AQAAANCMnd8BFdERjHoAwE/Cl+sBAAAAZDnA6xZAU0adxpIZYZiXJAAAAAAIAAAARABUAFMAAAADZgAAwAAAABAAAAA4va5VKqn23PtH4p3o/lmiAAAAAASAAACgAAAAEAAAAA+PAfS9e2BKtDUwJ0tKrTUwAAAAjUWti7vDt2eeQBjR/vpOhsfQGAKI5vKMVq9dgB6wuGtrtDDkVKrzqG0iFeG0Iz+1FAAAAIgv6j8gLVnMEBGja177qwK6qYUV</DTS:Password>
+        </DTS:ConnectionManager>
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+    <DTS:ConnectionManager
+      DTS:refId="Package.ConnectionManagers[Connection 2]"
+      DTS:CreationName="OLEDB"
+      DTS:DTSID="{6E73CBFB-6FB6-4AA0-9586-AC1F7DEBBE76}"
+      DTS:ObjectName="Connection 2">
+      <DTS:ObjectData>
+        <DTS:ConnectionManager
+          DTS:ConnectRetryCount="1"
+          DTS:ConnectRetryInterval="5"
+          DTS:ConnectionString="Data Source=DEFACPVWTSQL004;Initial Catalog=BSE;Provider=SQLOLEDB.1;Integrated Security=SSPI;Application Name=SSIS-BSESS Import-{6E73CBFB-6FB6-4AA0-9586-AC1F7DEBBE76}Connection 2;" />
+      </DTS:ObjectData>
+    </DTS:ConnectionManager>
+  </DTS:ConnectionManagers>
+  <DTS:Variables />
+  <DTS:Executables>
+    <DTS:Executable
+      DTS:refId="Package\Create Table  BSE   dbo   BSESSImport  Task"
+      DTS:CreationName="Microsoft.ExecuteSQLTask"
+      DTS:Description="Create Table  BSE   dbo   BSESSImport  Task"
+      DTS:DTSID="{3068B132-6472-4BC8-BC9B-63C70E9CEFCE}"
+      DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Create Table  BSE   dbo   BSESSImport  Task"
+      DTS:TaskContact="Execute SQL Task; Microsoft Corporation; Microsoft SQL Server v9; © 2004 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{6E73CBFB-6FB6-4AA0-9586-AC1F7DEBBE76}"
+          SQLTask:SqlStatementSource="CREATE TABLE [dbo].[BSESSImport] (&#xA;&#x9;[RBSE] [char] (9) COLLATE Latin1_General_CI_AS NOT NULL ,&#xA;&#x9;[UnformattedRBSE] [varchar] (10) COLLATE Latin1_General_CI_AS NULL ,&#xA;&#x9;[AnimalIID] [decimal](18, 0) NOT NULL ,&#xA;&#x9;[Eartag] [varchar] (20) COLLATE Latin1_General_CI_AS NULL ,&#xA;&#x9;[BirthDate] [datetime] NULL ,&#xA;&#x9;[TestGroupDerivedSurvey] [varchar] (4) COLLATE Latin1_General_CI_AS NULL ,&#xA;&#x9;[TestGroupName] [varchar] (50) COLLATE Latin1_General_CI_AS NULL ,&#xA;&#x9;[FinalResultID] [tinyint] NULL ,&#xA;&#x9;[FinalResultName] [varchar] (25) COLLATE Latin1_General_CI_AS NULL ,&#xA;&#x9;[NotificationDate] [smalldatetime] NULL ,&#xA;&#x9;[BarCode] [varchar] (20) COLLATE Latin1_General_CI_AS NULL &#xA;) ON [PRIMARY]&#xA;GO&#xA;&#xA;ALTER TABLE [dbo].[BSESSImport] WITH NOCHECK ADD &#xA;&#x9;CONSTRAINT [PK_BSESSImport] PRIMARY KEY  CLUSTERED &#xA;&#x9;(&#xA;&#x9;&#x9;[RBSE]&#xA;&#x9;)  ON [PRIMARY] &#xA;GO&#xA;&#xA; CREATE  INDEX [IX_BSESSImport_NotificationDate] ON [dbo].[BSESSImport]([NotificationDate]) ON [PRIMARY]&#xA;GO&#xA;&#xA; CREATE  INDEX [IX_BSESSImport_Eartag] ON [dbo].[BSESSImport]([Eartag]) ON [PRIMARY]&#xA;GO&#xA;&#xA; CREATE  INDEX [IX_BSESSImport_TestGroupDerivedSurvey] ON [dbo].[BSESSImport]([TestGroupDerivedSurvey]) ON [PRIMARY]&#xA;GO&#xA;&#xA;" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable
+      DTS:refId="Package\Drop table  BSE   dbo   BSESSImport  Task"
+      DTS:CreationName="Microsoft.ExecuteSQLTask"
+      DTS:Description="Drop table  BSE   dbo   BSESSImport  Task"
+      DTS:DTSID="{5FAF0B36-8C62-4A6C-B9DE-6B259839F319}"
+      DTS:ExecutableType="Microsoft.ExecuteSQLTask"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="Drop table  BSE   dbo   BSESSImport  Task"
+      DTS:TaskContact="Execute SQL Task; Microsoft Corporation; Microsoft SQL Server v9; © 2004 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1"
+      DTS:ThreadHint="0">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <SQLTask:SqlTaskData
+          SQLTask:Connection="{6E73CBFB-6FB6-4AA0-9586-AC1F7DEBBE76}"
+          SQLTask:SqlStatementSource="drop table [dbo].[BSESSImport]" xmlns:SQLTask="www.microsoft.com/sqlserver/dts/tasks/sqltask" />
+      </DTS:ObjectData>
+    </DTS:Executable>
+    <DTS:Executable
+      DTS:refId="Package\DTSTask_DTSDataPumpTask_1"
+      DTS:CreationName="Microsoft.Pipeline"
+      DTS:Description="Copy Data to BSESSImport"
+      DTS:DTSID="{F1D55701-ACE7-49D0-8BD0-E65CEC56FD40}"
+      DTS:ExecutableType="Microsoft.Pipeline"
+      DTS:LocaleID="-1"
+      DTS:ObjectName="DTSTask_DTSDataPumpTask_1"
+      DTS:TaskContact="Performs high-performance data extraction, transformation and loading;Microsoft Corporation; Microsoft SQL Server v9; (C) 2004 Microsoft Corporation; All Rights Reserved;http://www.microsoft.com/sql/support/default.asp;1">
+      <DTS:Variables />
+      <DTS:ObjectData>
+        <pipeline
+          BLOBTempStoragePath=""
+          bufferTempStoragePath=""
+          engineThreads="5"
+          version="1">
+          <components>
+            <component
+              refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination"
+              componentClassID="Microsoft.OLEDBDestination"
+              contactInfo="OLE DB Destination;Microsoft Corporation;Microsoft SqlServer v9; (C) 2005 Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;4"
+              description="OLE DB Destination"
+              name="OLE DB Destination"
+              usesDispositions="true"
+              version="4">
+              <properties>
+                <property
+                  dataType="System.Int32"
+                  description="The number of seconds before a command times out.  A value of 0 indicates an infinite time-out."
+                  name="CommandTimeout">0</property>
+                <property
+                  dataType="System.String"
+                  description="Specifies the name of the database object used to open a rowset."
+                  name="OpenRowset">[BSE].[dbo].[BSESSImport]</property>
+                <property
+                  dataType="System.String"
+                  description="Specifies the variable that contains the name of the database object used to open a rowset."
+                  name="OpenRowsetVariable"></property>
+                <property
+                  dataType="System.String"
+                  description="The SQL command to be executed."
+                  name="SqlCommand"
+                  UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor, Microsoft.DataTransformationServices.Controls, Version=16.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91"></property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies the column code page to use when code page information is unavailable from the data source."
+                  name="DefaultCodePage">1252</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Forces the use of the DefaultCodePage property value when describing character data."
+                  name="AlwaysUseDefaultCodePage">false</property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies the mode used to access the database."
+                  name="AccessMode"
+                  typeConverter="AccessMode">3</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Indicates whether the values supplied for identity columns will be copied to the destination. If false, values for identity columns will be auto-generated at the destination. Applies only if fast load is turned on."
+                  name="FastLoadKeepIdentity">false</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Indicates whether the columns containing null will have null inserted in the destination. If false, columns containing null will have their default values inserted at the destinaton. Applies only if fast load is turned on."
+                  name="FastLoadKeepNulls">false</property>
+                <property
+                  dataType="System.String"
+                  description="Specifies options to be used with fast load.  Applies only if fast load is turned on."
+                  name="FastLoadOptions">CHECK_CONSTRAINTS,ROWS_PER_BATCH = 1</property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies when commits are issued during data insertion.  A value of 0 specifies that one commit will be issued at the end of data insertion.  Applies only if fast load is turned on."
+                  name="FastLoadMaxInsertCommitSize">0</property>
+              </properties>
+              <connections>
+                <connection
+                  refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Connections[OleDbConnection]"
+                  connectionManagerID="Package.ConnectionManagers[Connection 2]"
+                  connectionManagerRefId="Package.ConnectionManagers[Connection 2]"
+                  description="The OLE DB runtime connection used to access the database."
+                  name="OleDbConnection" />
+              </connections>
+              <inputs>
+                <input
+                  refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input]"
+                  errorOrTruncationOperation="Insert"
+                  errorRowDisposition="FailComponent"
+                  hasSideEffects="true"
+                  name="OLE DB Destination Input">
+                  <inputColumns>
+                    <inputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[BirthDate]"
+                      cachedDataType="dbTimeStamp"
+                      cachedName="BirthDate"
+                      externalMetadataColumnId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[BirthDate]"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[BirthDate]" />
+                    <inputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[TestGroupDerivedSurvey]"
+                      cachedCodepage="1252"
+                      cachedDataType="str"
+                      cachedLength="4"
+                      cachedName="TestGroupDerivedSurvey"
+                      externalMetadataColumnId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[TestGroupDerivedSurvey]"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[TestGroupDerivedSurvey]" />
+                    <inputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[TestGroupName]"
+                      cachedCodepage="1252"
+                      cachedDataType="str"
+                      cachedLength="50"
+                      cachedName="TestGroupName"
+                      externalMetadataColumnId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[TestGroupName]"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[TestGroupName]" />
+                    <inputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[FinalResultID]"
+                      cachedDataType="ui1"
+                      cachedName="FinalResultID"
+                      externalMetadataColumnId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[FinalResultID]"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[FinalResultID]" />
+                    <inputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[NotificationDate]"
+                      cachedDataType="dbTimeStamp"
+                      cachedName="NotificationDate"
+                      externalMetadataColumnId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[NotificationDate]"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[NotificationDate]" />
+                    <inputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[BarCode]"
+                      cachedCodepage="1252"
+                      cachedDataType="str"
+                      cachedLength="20"
+                      cachedName="BarCode"
+                      externalMetadataColumnId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[BarCode]"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[BarCode]" />
+                    <inputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[FormattedRBSE]"
+                      cachedCodepage="1252"
+                      cachedDataType="str"
+                      cachedLength="9"
+                      cachedName="FormattedRBSE"
+                      externalMetadataColumnId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RBSE]"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[FormattedRBSE]" />
+                    <inputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[RBSENo]"
+                      cachedCodepage="1252"
+                      cachedDataType="str"
+                      cachedLength="10"
+                      cachedName="RBSENo"
+                      externalMetadataColumnId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[UnformattedRBSE]"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[RBSENo]" />
+                    <inputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[AnimalID]"
+                      cachedDataType="numeric"
+                      cachedName="AnimalID"
+                      cachedPrecision="18"
+                      externalMetadataColumnId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[AnimalIID]"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[AnimalID]" />
+                    <inputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[EartagNo]"
+                      cachedCodepage="1252"
+                      cachedDataType="str"
+                      cachedLength="20"
+                      cachedName="EartagNo"
+                      externalMetadataColumnId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[Eartag]"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[EartagNo]" />
+                    <inputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].Columns[ResultName]"
+                      cachedCodepage="1252"
+                      cachedDataType="str"
+                      cachedLength="25"
+                      cachedName="ResultName"
+                      externalMetadataColumnId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[FinalResultName]"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[ResultName]" />
+                  </inputColumns>
+                  <externalMetadataColumns
+                    isUsed="True">
+                    <externalMetadataColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[BirthDate]"
+                      dataType="dbTimeStamp"
+                      name="BirthDate" />
+                    <externalMetadataColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[TestGroupDerivedSurvey]"
+                      codePage="1252"
+                      dataType="str"
+                      length="4"
+                      name="TestGroupDerivedSurvey" />
+                    <externalMetadataColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[TestGroupName]"
+                      codePage="1252"
+                      dataType="str"
+                      length="50"
+                      name="TestGroupName" />
+                    <externalMetadataColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[FinalResultID]"
+                      dataType="ui1"
+                      name="FinalResultID" />
+                    <externalMetadataColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[NotificationDate]"
+                      dataType="dbTimeStamp"
+                      name="NotificationDate" />
+                    <externalMetadataColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[BarCode]"
+                      codePage="1252"
+                      dataType="str"
+                      length="20"
+                      name="BarCode" />
+                    <externalMetadataColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[RBSE]"
+                      codePage="1252"
+                      dataType="str"
+                      length="9"
+                      name="RBSE" />
+                    <externalMetadataColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[UnformattedRBSE]"
+                      codePage="1252"
+                      dataType="str"
+                      length="10"
+                      name="UnformattedRBSE" />
+                    <externalMetadataColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[AnimalIID]"
+                      dataType="numeric"
+                      name="AnimalIID"
+                      precision="18" />
+                    <externalMetadataColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[Eartag]"
+                      codePage="1252"
+                      dataType="str"
+                      length="20"
+                      name="Eartag" />
+                    <externalMetadataColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input].ExternalColumns[FinalResultName]"
+                      codePage="1252"
+                      dataType="str"
+                      length="25"
+                      name="FinalResultName" />
+                  </externalMetadataColumns>
+                </input>
+              </inputs>
+              <outputs>
+                <output
+                  refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Outputs[OLE DB Destination Error Output]"
+                  exclusionGroup="1"
+                  isErrorOut="true"
+                  name="OLE DB Destination Error Output"
+                  synchronousInputId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input]">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[BirthDate]"
+                      dataType="dbTimeStamp"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[BirthDate]"
+                      name="BirthDate" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[TestGroupDerivedSurvey]"
+                      codePage="1252"
+                      dataType="str"
+                      length="4"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[TestGroupDerivedSurvey]"
+                      name="TestGroupDerivedSurvey" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[TestGroupName]"
+                      codePage="1252"
+                      dataType="str"
+                      length="50"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[TestGroupName]"
+                      name="TestGroupName" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[FinalResultID]"
+                      dataType="i1"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[FinalResultID]"
+                      name="FinalResultID" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[NotificationDate]"
+                      dataType="dbTimeStamp"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[NotificationDate]"
+                      name="NotificationDate" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[BarCode]"
+                      codePage="1252"
+                      dataType="str"
+                      length="20"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[BarCode]"
+                      name="BarCode" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[RBSE]"
+                      codePage="1252"
+                      dataType="str"
+                      length="9"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[RBSE]"
+                      name="RBSE" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[UnformattedRBSE]"
+                      codePage="1252"
+                      dataType="str"
+                      length="9"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[UnformattedRBSE]"
+                      name="UnformattedRBSE" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[AnimalIID]"
+                      dataType="numeric"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[AnimalIID]"
+                      name="AnimalIID"
+                      precision="18" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[Eartag]"
+                      codePage="1252"
+                      dataType="str"
+                      length="20"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[Eartag]"
+                      name="Eartag" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[FinalResultName]"
+                      codePage="1252"
+                      dataType="str"
+                      length="25"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[FinalResultName]"
+                      name="FinalResultName" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
+                      dataType="i4"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[ErrorCode]"
+                      name="ErrorCode"
+                      specialFlags="1" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
+                      dataType="i4"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Outputs[OLE DB Destination Error Output].Columns[ErrorColumn]"
+                      name="ErrorColumn"
+                      specialFlags="2" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+            <component
+              refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source"
+              componentClassID="Microsoft.OLEDBSource"
+              contactInfo="OLE DB Source;Microsoft Corporation;Microsoft SqlServer v9; (C) 2005 Microsoft Corporation; All Rights Reserved; http://www.microsoft.com/sql/support;7"
+              description="OLE DB Source"
+              name="OLE DB Source"
+              usesDispositions="true"
+              version="7">
+              <properties>
+                <property
+                  dataType="System.Int32"
+                  description="The number of seconds before a command times out.  A value of 0 indicates an infinite time-out."
+                  name="CommandTimeout">0</property>
+                <property
+                  dataType="System.String"
+                  description="Specifies the name of the database object used to open a rowset."
+                  name="OpenRowset"></property>
+                <property
+                  dataType="System.String"
+                  description="Specifies the variable that contains the name of the database object used to open a rowset."
+                  name="OpenRowsetVariable"></property>
+                <property
+                  dataType="System.String"
+                  description="The SQL command to be executed."
+                  name="SqlCommand"
+                  UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor, Microsoft.DataTransformationServices.Controls, Version=16.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91">SELECT
+	'00' + LEFT(LTRIM(rbseno), 2) + RIGHT('0000' + SUBSTRING(RTRIM(rbseno), 4, LEN(rbseno)), 5) AS FormattedRBSE,
+	Sample.RBSENo,
+	animal.AnimalID,
+	animal.EartagNo,
+	animal.BirthDate,
+	CASE TestingGroup.TestingGroupID WHEN 3 THEN 'FS' WHEN 4 THEN 'CA' WHEN 9 THEN 'OTM3' WHEN 10 THEN 'OTM3' WHEN 11 THEN 'OTM3' WHEN '12' THEN 'OTM3' ELSE NULL END AS TestGroupDerivedSurvey,
+	TestingGroup.TestGroupName,
+	Sample.FinalResultID,
+	Result.ResultName,
+    animal.NotificationDate,
+    Sample.BarCode
+FROM
+	(animal INNER JOIN Sample ON animal.AnimalID = Sample.AnimalID)
+	INNER JOIN TestingGroup ON animal.TestingGroupID = TestingGroup.TestingGroupID
+	LEFT JOIN Result ON Sample.FinalResultID = Result.ResultID
+WHERE
+	Len(RBSENo) &gt; 3 AND
+	animal.SpeciesID = 1</property>
+                <property
+                  dataType="System.String"
+                  description="The variable that contains the SQL command to be executed."
+                  name="SqlCommandVariable"></property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies the column code page to use when code page information is unavailable from the data source."
+                  name="DefaultCodePage">1252</property>
+                <property
+                  dataType="System.Boolean"
+                  description="Forces the use of the DefaultCodePage property value when describing character data."
+                  name="AlwaysUseDefaultCodePage">false</property>
+                <property
+                  dataType="System.Int32"
+                  description="Specifies the mode used to access the database."
+                  name="AccessMode"
+                  typeConverter="AccessMode">2</property>
+                <property
+                  dataType="System.String"
+                  description="The mappings between the parameters in the SQL command and variables."
+                  name="ParameterMapping"></property>
+              </properties>
+              <connections>
+                <connection
+                  refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Connections[OleDbConnection]"
+                  connectionManagerID="Package.ConnectionManagers[Connection 1]"
+                  connectionManagerRefId="Package.ConnectionManagers[Connection 1]"
+                  description="The OLE DB runtime connection used to access the database."
+                  name="OleDbConnection" />
+              </connections>
+              <outputs>
+                <output
+                  refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output]"
+                  name="OLE DB Source Output">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[BirthDate]"
+                      dataType="dbTimeStamp"
+                      errorOrTruncationOperation="ErrorOrTruncationOperationConversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[BirthDate]"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[BirthDate]"
+                      name="BirthDate"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[TestGroupDerivedSurvey]"
+                      codePage="1252"
+                      dataType="str"
+                      errorOrTruncationOperation="ErrorOrTruncationOperationConversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[TestGroupDerivedSurvey]"
+                      length="4"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[TestGroupDerivedSurvey]"
+                      name="TestGroupDerivedSurvey"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[TestGroupName]"
+                      codePage="1252"
+                      dataType="str"
+                      errorOrTruncationOperation="ErrorOrTruncationOperationConversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[TestGroupName]"
+                      length="50"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[TestGroupName]"
+                      name="TestGroupName"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[FinalResultID]"
+                      dataType="ui1"
+                      errorOrTruncationOperation="ErrorOrTruncationOperationConversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[FinalResultID]"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[FinalResultID]"
+                      name="FinalResultID"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[NotificationDate]"
+                      dataType="dbTimeStamp"
+                      errorOrTruncationOperation="ErrorOrTruncationOperationConversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[NotificationDate]"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[NotificationDate]"
+                      name="NotificationDate"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[BarCode]"
+                      codePage="1252"
+                      dataType="str"
+                      errorOrTruncationOperation="ErrorOrTruncationOperationConversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[BarCode]"
+                      length="20"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[BarCode]"
+                      name="BarCode"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[FormattedRBSE]"
+                      codePage="1252"
+                      dataType="str"
+                      errorOrTruncationOperation="ErrorOrTruncationOperationConversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[FormattedRBSE]"
+                      length="9"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[FormattedRBSE]"
+                      name="FormattedRBSE"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[RBSENo]"
+                      codePage="1252"
+                      dataType="str"
+                      errorOrTruncationOperation="ErrorOrTruncationOperationConversion"
+                      errorRowDisposition="IgnoreFailure"
+                      externalMetadataColumnId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[RBSENo]"
+                      length="10"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[RBSENo]"
+                      name="RBSENo"
+                      truncationRowDisposition="IgnoreFailure" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[AnimalID]"
+                      dataType="numeric"
+                      errorOrTruncationOperation="ErrorOrTruncationOperationConversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[AnimalID]"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[AnimalID]"
+                      name="AnimalID"
+                      precision="18"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[EartagNo]"
+                      codePage="1252"
+                      dataType="str"
+                      errorOrTruncationOperation="ErrorOrTruncationOperationConversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[EartagNo]"
+                      length="20"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[EartagNo]"
+                      name="EartagNo"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[ResultName]"
+                      codePage="1252"
+                      dataType="str"
+                      errorOrTruncationOperation="ErrorOrTruncationOperationConversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[ResultName]"
+                      length="25"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].Columns[ResultName]"
+                      name="ResultName"
+                      truncationRowDisposition="FailComponent" />
+                  </outputColumns>
+                  <externalMetadataColumns
+                    isUsed="True">
+                    <externalMetadataColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[BirthDate]"
+                      dataType="dbTimeStamp"
+                      name="BirthDate" />
+                    <externalMetadataColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[TestGroupDerivedSurvey]"
+                      codePage="1252"
+                      dataType="str"
+                      length="4"
+                      name="TestGroupDerivedSurvey" />
+                    <externalMetadataColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[TestGroupName]"
+                      codePage="1252"
+                      dataType="str"
+                      length="50"
+                      name="TestGroupName" />
+                    <externalMetadataColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[FinalResultID]"
+                      dataType="ui1"
+                      name="FinalResultID" />
+                    <externalMetadataColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[NotificationDate]"
+                      dataType="dbTimeStamp"
+                      name="NotificationDate" />
+                    <externalMetadataColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[BarCode]"
+                      codePage="1252"
+                      dataType="str"
+                      length="20"
+                      name="BarCode" />
+                    <externalMetadataColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[FormattedRBSE]"
+                      codePage="1252"
+                      dataType="str"
+                      length="9"
+                      name="FormattedRBSE" />
+                    <externalMetadataColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[RBSENo]"
+                      codePage="1252"
+                      dataType="str"
+                      length="10"
+                      name="RBSENo" />
+                    <externalMetadataColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[AnimalID]"
+                      dataType="numeric"
+                      name="AnimalID"
+                      precision="18" />
+                    <externalMetadataColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[EartagNo]"
+                      codePage="1252"
+                      dataType="str"
+                      length="20"
+                      name="EartagNo" />
+                    <externalMetadataColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output].ExternalColumns[ResultName]"
+                      codePage="1252"
+                      dataType="str"
+                      length="25"
+                      name="ResultName" />
+                  </externalMetadataColumns>
+                </output>
+                <output
+                  refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Error Output]"
+                  isErrorOut="true"
+                  name="OLE DB Source Error Output">
+                  <outputColumns>
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[BirthDate]"
+                      dataType="dbTimeStamp"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[BirthDate]"
+                      name="BirthDate" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[TestGroupDerivedSurvey]"
+                      codePage="1252"
+                      dataType="str"
+                      length="4"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[TestGroupDerivedSurvey]"
+                      name="TestGroupDerivedSurvey" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[TestGroupName]"
+                      codePage="1252"
+                      dataType="str"
+                      length="50"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[TestGroupName]"
+                      name="TestGroupName" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[FinalResultID]"
+                      dataType="ui1"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[FinalResultID]"
+                      name="FinalResultID" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[NotificationDate]"
+                      dataType="dbTimeStamp"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[NotificationDate]"
+                      name="NotificationDate" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[BarCode]"
+                      codePage="1252"
+                      dataType="str"
+                      length="20"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[BarCode]"
+                      name="BarCode" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[FormattedRBSE]"
+                      codePage="1252"
+                      dataType="str"
+                      length="9"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[FormattedRBSE]"
+                      name="FormattedRBSE" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[RBSENo]"
+                      codePage="1252"
+                      dataType="str"
+                      length="10"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[RBSENo]"
+                      name="RBSENo" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[AnimalID]"
+                      dataType="numeric"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[AnimalID]"
+                      name="AnimalID"
+                      precision="18" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[EartagNo]"
+                      codePage="1252"
+                      dataType="str"
+                      length="20"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[EartagNo]"
+                      name="EartagNo" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[ResultName]"
+                      codePage="1252"
+                      dataType="str"
+                      length="25"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[ResultName]"
+                      name="ResultName" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[ErrorCode]"
+                      dataType="i4"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[ErrorCode]"
+                      name="ErrorCode"
+                      specialFlags="1" />
+                    <outputColumn
+                      refId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[ErrorColumn]"
+                      dataType="i4"
+                      lineageId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Error Output].Columns[ErrorColumn]"
+                      name="ErrorColumn"
+                      specialFlags="2" />
+                  </outputColumns>
+                  <externalMetadataColumns />
+                </output>
+              </outputs>
+            </component>
+          </components>
+          <paths>
+            <path
+              refId="Package\DTSTask_DTSDataPumpTask_1.Paths[OLE DB Source Output]"
+              endId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination.Inputs[OLE DB Destination Input]"
+              name="OLE DB Source Output"
+              startId="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source.Outputs[OLE DB Source Output]" />
+          </paths>
+        </pipeline>
+      </DTS:ObjectData>
+    </DTS:Executable>
+  </DTS:Executables>
+  <DTS:PrecedenceConstraints>
+    <DTS:PrecedenceConstraint
+      DTS:refId="Package.PrecedenceConstraints[{B3ECE8A9-FF5C-4B5B-8695-10E4176F5FAD\}]"
+      DTS:CreationName=""
+      DTS:DTSID="{B3ECE8A9-FF5C-4B5B-8695-10E4176F5FAD}"
+      DTS:From="Package\Create Table  BSE   dbo   BSESSImport  Task"
+      DTS:LogicalAnd="True"
+      DTS:ObjectName="{B3ECE8A9-FF5C-4B5B-8695-10E4176F5FAD}"
+      DTS:To="Package\DTSTask_DTSDataPumpTask_1" />
+    <DTS:PrecedenceConstraint
+      DTS:refId="Package.PrecedenceConstraints[{BB8FDB83-12E7-4940-A03C-8C13CF9AB9B5\}]"
+      DTS:CreationName=""
+      DTS:DTSID="{BB8FDB83-12E7-4940-A03C-8C13CF9AB9B5}"
+      DTS:From="Package\Drop table  BSE   dbo   BSESSImport  Task"
+      DTS:LogicalAnd="True"
+      DTS:ObjectName="{BB8FDB83-12E7-4940-A03C-8C13CF9AB9B5}"
+      DTS:To="Package\Create Table  BSE   dbo   BSESSImport  Task"
+      DTS:Value="2" />
+  </DTS:PrecedenceConstraints>
+  <DTS:DesignTimeProperties><![CDATA[<?xml version="1.0"?>
+<!--This CDATA section contains the layout information of the package. The section includes information such as (x,y) coordinates, width, and height.-->
+<!--If you manually edit this section and make a mistake, you can delete it. -->
+<!--The package will still be able to load normally but the previous layout information will be lost and the designer will automatically re-arrange the elements on the design surface.-->
+<Objects
+  Version="8">
+  <!--Each node below will contain properties that do not affect runtime behavior.-->
+  <Package
+    design-time-name="Package">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="8" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:mssgm="clr-namespace:Microsoft.SqlServer.Graph.Model;assembly=Microsoft.SqlServer.Graph">
+        <NodeLayout
+          Size="292,42"
+          Id="Package\Create Table  BSE   dbo   BSESSImport  Task"
+          TopLeft="5.5,107.5" />
+        <NodeLayout
+          Size="281,42"
+          Id="Package\Drop table  BSE   dbo   BSESSImport  Task"
+          TopLeft="11,5.5" />
+        <NodeLayout
+          Size="241,42"
+          Id="Package\DTSTask_DTSDataPumpTask_1"
+          TopLeft="37.5,209.5" />
+        <EdgeLayout
+          Id="Package.PrecedenceConstraints[{B3ECE8A9-FF5C-4B5B-8695-10E4176F5FAD\}]"
+          TopLeft="154.75,149.5">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,60"
+              Start="0,0"
+              End="0,52.5">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,52.5" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+        <EdgeLayout
+          Id="Package.PrecedenceConstraints[{BB8FDB83-12E7-4940-A03C-8C13CF9AB9B5\}]"
+          TopLeft="151.5,47.5">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,60"
+              Start="0,0"
+              End="0,52.5">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,52.5" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <mssgm:EdgeLabel
+              BoundingBox="-25.304453125,20.4453125,50.60890625,11.609375"
+              RelativePosition="Any" />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+      </GraphLayout>
+    </LayoutInfo>
+  </Package>
+  <TaskHost
+    design-time-name="Package\DTSTask_DTSDataPumpTask_1">
+    <LayoutInfo>
+      <GraphLayout
+        Capacity="4" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
+        <NodeLayout
+          Size="150,42"
+          Id="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source"
+          TopLeft="16,5.5" />
+        <NodeLayout
+          Size="171,42"
+          Id="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination"
+          TopLeft="5.50000000000001,107.5" />
+        <EdgeLayout
+          Id="Package\DTSTask_DTSDataPumpTask_1.Paths[OLE DB Source Output]"
+          TopLeft="91,47.5">
+          <EdgeLayout.Curve>
+            <mssgle:Curve
+              StartConnector="{assembly:Null}"
+              EndConnector="0,60"
+              Start="0,0"
+              End="0,52.5">
+              <mssgle:Curve.Segments>
+                <mssgle:SegmentCollection
+                  Capacity="5">
+                  <mssgle:LineSegment
+                    End="0,52.5" />
+                </mssgle:SegmentCollection>
+              </mssgle:Curve.Segments>
+            </mssgle:Curve>
+          </EdgeLayout.Curve>
+          <EdgeLayout.Labels>
+            <EdgeLabelCollection />
+          </EdgeLayout.Labels>
+        </EdgeLayout>
+      </GraphLayout>
+    </LayoutInfo>
+  </TaskHost>
+  <PipelineComponentMetadata
+    design-time-name="Package\DTSTask_DTSDataPumpTask_1\OLE DB Destination">
+    <Properties>
+      <Property>
+        <Name>DataSourceViewID</Name>
+      </Property>
+      <Property>
+        <Name>TableInfoObjectType</Name>
+        <Value
+          type="q2:string">Table</Value>
+      </Property>
+    </Properties>
+  </PipelineComponentMetadata>
+  <PipelineComponentMetadata
+    design-time-name="Package\DTSTask_DTSDataPumpTask_1\OLE DB Source">
+    <Properties>
+      <Property>
+        <Name>DataSourceViewID</Name>
+      </Property>
+    </Properties>
+  </PipelineComponentMetadata>
+</Objects>]]></DTS:DesignTimeProperties>
+</DTS:Executable>
