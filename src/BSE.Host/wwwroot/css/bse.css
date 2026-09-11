@@ -190,3 +190,32 @@
     height: auto;
     display: block;
 }
+/* New Farms audit log table stability */
+.bse-audit-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.bse-audit-table {
+    width: 100%;
+    min-width: 1200px; /* prevent header collisions */
+    table-layout: fixed;
+}
+
+    .bse-audit-table th,
+    .bse-audit-table td {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+        vertical-align: top;
+    }
+
+    /* Prevent sortable header text/icon overlap in narrow columns */
+    .bse-audit-table .govuk-table__header {
+        overflow: hidden;
+    }
+
+    .bse-audit-table .moj-sortable-table__button {
+        white-space: normal;
+        align-items: flex-start;
+        line-height: 1.2;
+    }

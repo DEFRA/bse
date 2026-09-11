@@ -77,7 +77,7 @@
 
     @if (Model.Entries.Any())
     {
-        <h2 class="govuk-heading-m">@Model.Entries.Count() entries</h2>
+        <h2 id="audit-user-results" class="govuk-heading-m">@Model.Entries.Count() entries</h2>
         var sortBase = "?" + string.Join("&", HttpContext.Request.Query
             .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
                      && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase)
@@ -89,7 +89,15 @@
             <caption class="govuk-visually-hidden">Audit log entries by user</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    @{ ViewData["Label"] = "Table";     ViewData["Column"] = "Table"; ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Prefix"] = ""; }
+                    @{
+                        ViewData["Label"] = "Table";
+                        ViewData["Column"] = "Table";
+                        ViewData["SortColumn"] = sortCol;
+                        ViewData["SortDesc"] = sortDesc;
+                        ViewData["BaseUrl"] = sortBase;
+                        ViewData["Prefix"] = "";
+                        ViewData["Fragment"] = "audit-user-results";
+                    }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Field";     ViewData["Column"] = "Field"; }
                     <partial name="_SortableHeader" />
