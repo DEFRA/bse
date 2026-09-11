@@ -22,62 +22,31 @@
 
 <form method="get" novalidate>
     <div class="govuk-grid-row">
-        <div class="govuk-grid-column-two-thirds">
+        @* Legacy Farm Search paired the fields into a left/right column grid; mirrored here row-for-row. *@
+        <div class="govuk-grid-column-one-half">
             <div class="govuk-form-group">
                 <label asp-for="Filter.Cphh" class="govuk-label">CPH(H)</label>
-                <input asp-for="Filter.Cphh" class="govuk-input govuk-!-width-two-thirds" aria-describedby="cphh-hint" />
+                <input asp-for="Filter.Cphh" class="govuk-input" aria-describedby="cphh-hint" />
                 <span asp-validation-for="Filter.Cphh" class="govuk-error-message"></span>
             </div>
 
             <div class="govuk-form-group">
-                <label asp-for="Filter.OwnerName" class="govuk-label">Owner Name (partial search)</label>
-                <input asp-for="Filter.OwnerName" class="govuk-input govuk-!-width-two-thirds" />
-            </div>
-
-            <div class="govuk-form-group">
                 <label asp-for="Filter.Herdmark" class="govuk-label">Herdmark</label>
-                <input asp-for="Filter.Herdmark" class="govuk-input govuk-!-width-two-thirds" />
-            </div>
-
-            <div class="govuk-form-group">
-                <label asp-for="Filter.Address" class="govuk-label">Address (partial search)</label>
-                <input asp-for="Filter.Address" class="govuk-input govuk-!-width-two-thirds" />
+                <input asp-for="Filter.Herdmark" class="govuk-input" />
             </div>
 
             <div class="govuk-form-group">
                 <label asp-for="Filter.NumericHerdmark" class="govuk-label">Numeric Herdmark</label>
-                <input asp-for="Filter.NumericHerdmark" class="govuk-input govuk-!-width-two-thirds" />
+                <input asp-for="Filter.NumericHerdmark" class="govuk-input" />
                 <span asp-validation-for="Filter.NumericHerdmark" class="govuk-error-message"></span>
             </div>
 
             <div class="govuk-form-group">
-                <label asp-for="Filter.County" class="govuk-label">County</label>
-                <select asp-for="Filter.County" class="govuk-select govuk-!-width-two-thirds">
-                    <option value=""></option>
-                    @foreach (var item in Model.CountyOptions)
-                    {
-                        <option value="@item.Code">@item.Description</option>
-                    }
-                </select>
-            </div>
-
-            <div class="govuk-form-group">
                 <label asp-for="Filter.IsDealer" class="govuk-label">Dealer</label>
-                <select asp-for="Filter.IsDealer" class="govuk-select govuk-!-width-two-thirds">
+                <select asp-for="Filter.IsDealer" class="govuk-select">
                     <option value=""></option>
                     <option value="true">Yes</option>
                     <option value="false">No</option>
-                </select>
-            </div>
-
-            <div class="govuk-form-group">
-                <label asp-for="Filter.Aho" class="govuk-label">AHO</label>
-                <select asp-for="Filter.Aho" class="govuk-select govuk-!-width-two-thirds">
-                    <option value=""></option>
-                    @foreach (var item in Model.AhoOptions)
-                    {
-                        <option value="@item.Code">@item.Description</option>
-                    }
                 </select>
             </div>
 
@@ -89,7 +58,43 @@
                     </div>
                 </div>
             </div>
+        </div>
 
+        <div class="govuk-grid-column-one-half">
+            <div class="govuk-form-group">
+                <label asp-for="Filter.OwnerName" class="govuk-label">Owner Name (partial search)</label>
+                <input asp-for="Filter.OwnerName" class="govuk-input" />
+            </div>
+
+            <div class="govuk-form-group">
+                <label asp-for="Filter.Address" class="govuk-label">Address (partial search)</label>
+                <input asp-for="Filter.Address" class="govuk-input" />
+            </div>
+
+            <div class="govuk-form-group">
+                <label asp-for="Filter.County" class="govuk-label">County</label>
+                <select asp-for="Filter.County" class="govuk-select">
+                    <option value=""></option>
+                    @foreach (var item in Model.CountyOptions)
+                    {
+                        <option value="@item.Code">@item.Description</option>
+                    }
+                </select>
+            </div>
+
+            <div class="govuk-form-group">
+                <label asp-for="Filter.Aho" class="govuk-label">AHO</label>
+                <select asp-for="Filter.Aho" class="govuk-select">
+                    <option value=""></option>
+                    @foreach (var item in Model.AhoOptions)
+                    {
+                        <option value="@item.Code">@item.Description</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div class="govuk-grid-column-full">
             <div class="govuk-button-group">
                 <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
                 <a asp-page="/Search/Menu" class="govuk-link">Search Menu</a>
