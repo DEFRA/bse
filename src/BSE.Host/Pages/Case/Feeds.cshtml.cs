@@ -37,44 +37,11 @@ public class FeedsModel(
     public string SpolSiteUrl { get; private set; } = string.Empty;
     public IReadOnlyList<BatchNumberEntry> BatchNumbers { get; private set; } = [];
 
-    [BindProperty]
-    public NewFeedViewModel NewFeed { get; set; } = new();
-
     public async Task<IActionResult> OnGetAsync()
     {
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadAsync();
         return Page();
-    }
-
-    public async Task<IActionResult> OnPostAddFeedAsync()
-    {
-        if (!User.IsInRole("DataEntry"))
-            return Forbid();
-        if (string.IsNullOrWhiteSpace(NewFeed.RationType))
-        {
-            ModelState.AddModelError(string.Empty, "Ration type is required.");
-            await LoadAsync();
-            return Page();
-        }
-
-        var command = new AddFeedCommand(
-            Rbse: Rbse,
-            YearFrom: NewFeed.YearFrom,
-            YearTo: NewFeed.YearTo,
-            RationType: NewFeed.RationType,
-            SupplierId: NewFeed.SupplierId,
-            RationName: string.IsNullOrWhiteSpace(NewFeed.RationName) ? null : NewFeed.RationName,
-            IsPrePurchase: NewFeed.IsPrePurchase);
-
-        using var conn = connectionFactory.CreateConnection();
-        conn.Open();
-        using var tx = conn.BeginTransaction();
-        await feedRepository.AddAsync(command, conn, tx);
-        tx.Commit();
-
-        TempData["Success"] = "Feed record added.";
-        return RedirectToPage(new { rbse = Rbse });
     }
 
     public async Task<IActionResult> OnPostDeleteFeedAsync(int feedId)
@@ -111,20 +78,14 @@ public class FeedsModel(
         IEnumerable<CaseFeedRecord> q = feeds;
         q = SortColumn switch
         {
-            "YearFrom" => SortDesc ? q.OrderByDescending(f => f.YearFrom) : q.OrderBy(f => f.YearFrom),
-            "YearTo"   => SortDesc ? q.OrderByDescending(f => f.YearTo)   : q.OrderBy(f => f.YearTo),
-            _          => q.OrderBy(f => f.YearFrom).ThenBy(f => f.YearTo)
+            "YearFrom"          => SortDesc ? q.OrderByDescending(f => f.YearFrom)          : q.OrderBy(f => f.YearFrom),
+            "YearTo"            => SortDesc ? q.OrderByDescending(f => f.YearTo)            : q.OrderBy(f => f.YearTo),
+            "RationDescription" => SortDesc ? q.OrderByDescending(f => f.RationDescription) : q.OrderBy(f => f.RationDescription),
+            "SupplierName"      => SortDesc ? q.OrderByDescending(f => f.SupplierName)      : q.OrderBy(f => f.SupplierName),
+            "RationName"        => SortDesc ? q.OrderByDescending(f => f.RationName)        : q.OrderBy(f => f.RationName),
+            "IsPrePurchase"     => SortDesc ? q.OrderByDescending(f => f.IsPrePurchase)     : q.OrderBy(f => f.IsPrePurchase),
+            _                   => q.OrderBy(f => f.YearFrom).ThenBy(f => f.YearTo)
         };
         return q.ToList().AsReadOnly();
-    }
-
-    public class NewFeedViewModel
-    {
-        public short? YearFrom { get; set; }
-        public short? YearTo { get; set; }
-        public string? RationType { get; set; }
-        public string? RationName { get; set; }
-        public int? SupplierId { get; set; }
-        public bool IsPrePurchase { get; set; }
     }
 }

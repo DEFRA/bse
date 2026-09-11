@@ -10,6 +10,8 @@ internal static class CaseDetailSort
         bool sortDesc) =>
         (sortColumn?.ToLowerInvariant(), sortDesc) switch
         {
+            ("rbse",                false) => source.OrderBy(r => r.Rbse),
+            ("rbse",                true)  => source.OrderByDescending(r => r.Rbse),
             ("cphh",                false) => source.OrderBy(r => r.Cphh),
             ("cphh",                true)  => source.OrderByDescending(r => r.Cphh),
             ("sex",                 false) => source.OrderBy(r => r.Sex),

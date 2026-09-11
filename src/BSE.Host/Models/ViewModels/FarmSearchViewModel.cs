@@ -23,6 +23,8 @@ public class FarmSearchViewModel : SearchViewModelBase<FarmSearchResult>
     protected override IEnumerable<FarmSearchResult> ApplySorting(IReadOnlyList<FarmSearchResult> source) =>
         (SortColumn?.ToLowerInvariant(), SortDesc) switch
         {
+            ("cphh",                  false) => source.OrderBy(r => r.Cphh),
+            ("cphh",                  true)  => source.OrderByDescending(r => r.Cphh),
             ("ownername",             false) => source.OrderBy(r => r.OwnerName),
             ("ownername",             true)  => source.OrderByDescending(r => r.OwnerName),
             ("address",               false) => source.OrderBy(r => r.Address),

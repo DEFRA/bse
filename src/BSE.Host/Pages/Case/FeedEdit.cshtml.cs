@@ -1,4 +1,4 @@
-﻿using BSE.Host.Helpers;
+using BSE.Host.Helpers;
 using BSE.Infrastructure;
 using BSE.Modules.CaseManagement.Commands;
 using BSE.Modules.CaseManagement.Models;
@@ -10,35 +10,52 @@ using BSE.SharedKernel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Extensions.Configuration;
 
 namespace BSE.Host.Pages.Case;
 
 [Authorize(Policy = "DataEntry")]
-public class FeedAddModel(
+public class FeedEditModel(
     IFeedRepository feedRepository,
     ICaseService caseService,
     ILookupDataService lookups,
-    IDbConnectionFactory connectionFactory,
-    IConfiguration configuration) : PageModel
+    IDbConnectionFactory connectionFactory) : PageModel
 {
     [BindProperty(SupportsGet = true)]
     public string Rbse { get; set; } = string.Empty;
 
-    public IEnumerable<LookupItem> RationTypes { get; private set; } = [];
-    public IEnumerable<LookupItem> Suppliers { get; private set; } = [];
-    public string SpolSiteUrl { get; private set; } = string.Empty;
-
-    /// <summary>Field-keyed validation messages, mirroring the legacy per-field markers.</summary>
-    public IDictionary<string, string> FieldErrors { get; private set; } = new Dictionary<string, string>();
+    [BindProperty(SupportsGet = true)]
+    public int FeedId { get; set; }
 
     [BindProperty]
-    public NewFeedViewModel NewFeed { get; set; } = new();
+    public EditFeedViewModel Feed { get; set; } = new();
+
+    public IEnumerable<LookupItem> RationTypes { get; private set; } = [];
+    public IEnumerable<LookupItem> Suppliers { get; private set; } = [];
+
+    public IDictionary<string, string> FieldErrors { get; private set; } = new Dictionary<string, string>();
 
     public async Task<IActionResult> OnGetAsync()
     {
-        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadLookupsAsync();
+
+        var rbse = RbseHelper.ParseToRaw(Rbse);
+        var existingFeed = (await feedRepository.GetByRbseAsync(rbse)).FirstOrDefault(f => f.Id == FeedId);
+        if (existingFeed is null)
+            return RedirectToPage("/Case/Feeds", new { rbse = Rbse });
+
+        Feed = new EditFeedViewModel
+        {
+            Id = existingFeed.Id,
+            Rbse = existingFeed.Rbse,
+            YearFrom = existingFeed.YearFrom,
+            YearTo = existingFeed.YearTo,
+            RationType = existingFeed.RationType,
+            RationName = existingFeed.RationName,
+            IsPrePurchase = existingFeed.IsPrePurchase,
+            SupplierId = existingFeed.SupplierId,
+            RowStamp = Convert.ToBase64String(existingFeed.RowStamp ?? [])
+        };
+
         return Page();
     }
 
@@ -50,49 +67,56 @@ public class FeedAddModel(
         var caseRecord = await caseService.GetCaseAsync(rbse);
 
         FieldErrors = FeedValidation.Validate(
-            new FeedValidation.Input(NewFeed.YearFrom, NewFeed.YearTo, NewFeed.RationType, NewFeed.SupplierId),
+            new FeedValidation.Input(Feed.YearFrom, Feed.YearTo, Feed.RationType, Feed.SupplierId),
             caseRecord);
 
         if (FieldErrors.Count > 0)
-        {
             return Page();
-        }
 
-        var command = new AddFeedCommand(
+        var rowStamp = string.IsNullOrWhiteSpace(Feed.RowStamp)
+            ? []
+            : Convert.FromBase64String(Feed.RowStamp);
+
+        var command = new EditFeedCommand(
+            Id: FeedId,
             Rbse: rbse,
-            YearFrom: NewFeed.YearFrom,
-            YearTo: NewFeed.YearTo,
-            RationType: NewFeed.RationType!,
-            SupplierId: NewFeed.SupplierId,
-            RationName: string.IsNullOrWhiteSpace(NewFeed.RationName) ? null : NewFeed.RationName,
-            IsPrePurchase: NewFeed.IsPrePurchase);
+            YearFrom: Feed.YearFrom,
+            YearTo: Feed.YearTo,
+            RationType: Feed.RationType!,
+            SupplierId: Feed.SupplierId,
+            RationName: string.IsNullOrWhiteSpace(Feed.RationName) ? null : Feed.RationName,
+            IsPrePurchase: Feed.IsPrePurchase,
+            RowStamp: rowStamp);
 
         using var conn = connectionFactory.CreateConnection();
         conn.Open();
         using var tx = conn.BeginTransaction();
-        await feedRepository.AddAsync(command, conn, tx);
+        await feedRepository.EditAsync(command, conn, tx);
         tx.Commit();
 
-        TempData["Success"] = "Feed record added.";
+        TempData["Success"] = "Feed record updated.";
         return RedirectToPage("/Case/Feeds", new { rbse = Rbse });
     }
 
     private async Task LoadLookupsAsync()
     {
-        var rtTask  = lookups.GetLookupAsync(LookupTableId.RationType);
+        var rtTask = lookups.GetLookupAsync(LookupTableId.RationType);
         var supTask = lookups.GetLookupAsync(LookupTableId.Supplier);
         await Task.WhenAll(rtTask, supTask);
         RationTypes = await rtTask;
-        Suppliers   = await supTask;
+        Suppliers = await supTask;
     }
 
-    public class NewFeedViewModel
+    public sealed class EditFeedViewModel
     {
+        public int Id { get; set; }
+        public string Rbse { get; set; } = string.Empty;
         public short? YearFrom { get; set; }
         public short? YearTo { get; set; }
         public string? RationType { get; set; }
         public string? RationName { get; set; }
         public int? SupplierId { get; set; }
         public bool IsPrePurchase { get; set; }
+        public string RowStamp { get; set; } = string.Empty;
     }
 }

@@ -177,9 +177,31 @@
     <p class="govuk-body">A Year From, Year To, Ration Type and Supplier are all required before a feed record can be saved. Suppliers must be validated before they can be added — enter a supplier name and select <strong>Validate supplier</strong>. If no exact match is found, similar names are displayed for selection. If the supplier is not in the list, you can add them as a new supplier.</p>
 
     <h3 class="govuk-heading-m" id="CaseEntryRelations">Relations</h3>
-    <p class="govuk-body">The Relations section records animals related to the case, covering the Case Herdbook, Sire Details, Dam Details and Other Relations.</p>
-    <p class="govuk-body"><strong>Sire and Dam:</strong> Enter one or more identifying fields (Eartag, Name, RBSE or Herdbook) and select <strong>Look up</strong>. If a unique match is found, that animal is recorded as the sire or dam. Otherwise, a list of possible matches is shown — select the correct animal or select <strong>New</strong> to create a new sire or dam record.</p>
-    <p class="govuk-body"><strong>Other Relations:</strong> Enter relation details and select <strong>Add new</strong> to add to the table. You must select a Relation Type for each entry. If the related animal is also a case, enter the RBSE number — the remaining details are populated from the case record and cannot be edited directly.</p>
+    <p class="govuk-body">The Relations section records animals related to the case, in four parts: Case Herdbook, Dam, Sire, and Related Animals.</p>
+
+    <h4 class="govuk-heading-s">Case Herdbook</h4>
+    <p class="govuk-body">The Case Herdbook field holds the case animal's own herdbook number. Select <strong>Save</strong> to update it.</p>
+
+    <h4 class="govuk-heading-s">Dam and Sire</h4>
+    <p class="govuk-body">If no dam or sire is recorded, enter one or more of Eartag, Name, RBSE or Herdbook and select <strong>Look Up</strong>. If you enter an RBSE, only the RBSE is used in the search.</p>
+    <p class="govuk-body">If a single match is found, that animal is recorded immediately. Otherwise you are taken to a page listing possible matches — select one and choose <strong>Use Selected</strong>, or select <strong>New</strong> to record an unlinked dam or sire using the Eartag, Name and Herdbook you entered.</p>
+    <p class="govuk-body">Once a dam or sire is recorded, their Eartag, Name, Herdbook and offspring count are shown. If the dam or sire is not itself a case, the Eartag, Herdbook and an approximate birth date (year alone, or month and year) can still be entered or corrected. If the dam or sire is a case, only the Name can be changed here — Eartag, Herdbook and birth date come from that case and must be changed on its own Relations tab.</p>
+    <div class="govuk-warning-text">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text">
+            <span class="govuk-warning-text__assistive">Warning</span>
+            Because a dam or sire animal can be shared by more than one case, editing its Eartag, Herdbook or birth date changes it for every case that records the same animal as dam or sire. The offspring count shown alongside its details is how many other cases may be affected.
+        </strong>
+    </div>
+    <p class="govuk-body">Select <strong>Remove Dam</strong> or <strong>Remove Sire</strong> to disassociate the animal from this case without deleting the animal's own record. If the dam or sire is itself a case, select <strong>View Dam's Relations</strong> or <strong>View Sire's Relations</strong> to see the relations recorded against that case — this lets you check that a dam/offspring or sire/offspring pair is recorded consistently on both cases.</p>
+    <p class="govuk-body">Select <strong>Save</strong> to record your changes to the Case Herdbook, Dam and Sire sections.</p>
+
+    <h4 class="govuk-heading-s">Related Animals</h4>
+    <p class="govuk-body">This table records the case's other relations — chiefly offspring, but also twins and full sisters.</p>
+    <p class="govuk-body">To add a relation, select <strong>Add As New</strong>, enter the details and save. You must select a Relation Type. If the related animal is also a case, enter its RBSE — the remaining details are taken from that case and cannot be edited directly. Otherwise, enter the Sex, Fate, Eartag, birth date, date left and sire name yourself.</p>
+    <p class="govuk-body">Select <strong>Change</strong> on a row to edit it, or <strong>Delete</strong> to remove it. If a relation is itself a case, select <strong>View Dam's Relations</strong> or <strong>View Sire's Relations</strong> from that animal's own Relations tab to check both sides of the relationship are recorded consistently.</p>
+
+    <p class="govuk-body">See also: <a class="govuk-link" href="#General_DateControls">Date entry controls</a>, <a class="govuk-link" href="#General_FieldErrors">Field error messages</a>, <a class="govuk-link" href="#General_Grids">Data tables</a></p>
 
     <p class="govuk-body govuk-!-margin-top-4"><a class="govuk-link" href="#">Back to top</a></p>
 </section>

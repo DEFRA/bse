@@ -15,6 +15,8 @@ public class OutstandingSearchViewModel : SearchViewModelBase<OutstandingCaseRes
     protected override IEnumerable<OutstandingCaseResult> ApplySorting(IReadOnlyList<OutstandingCaseResult> source) =>
         (SortColumn?.ToLowerInvariant(), SortDesc) switch
         {
+            ("rbse",        false) => source.OrderBy(r => r.Rbse),
+            ("rbse",        true)  => source.OrderByDescending(r => r.Rbse),
             ("cphh",        false) => source.OrderBy(r => r.Cphh),
             ("cphh",        true)  => source.OrderByDescending(r => r.Cphh),
             ("eartag",      false) => source.OrderBy(r => r.Eartag),

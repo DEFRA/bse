@@ -1,8 +1,40 @@
 /* BSE custom additions on top of GOV.UK Frontend */
 
+/* Keep page background consistent with content area to avoid a split-panel look
+   on wide screens (left white content area and right template gutter colour). */
+.govuk-template,
+.govuk-template__body {
+    background-color: #ffffff;
+}
+
 .bse-rbse {
     font-family: monospace;
     font-weight: bold;
+}
+
+/* Keep RBSE values in table rows regular-weight; only headings/labels should stand out. */
+.govuk-table__cell.bse-rbse {
+    font-weight: 400;
+}
+
+/* Row actions in table cells. GOV.UK buttons are full width below the tablet
+   breakpoint, which pushes a Delete button onto its own line under the Change
+   link. This keeps both on one baseline-aligned row. */
+.bse-row-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: nowrap;
+}
+
+.bse-row-actions form {
+    margin: 0;
+}
+
+.bse-row-actions .govuk-button {
+    width: auto;
+    margin-bottom: 0;
+    white-space: nowrap;
 }
 
 /* Sortable table header links (MOJ sortable-table pattern style) */
@@ -153,6 +185,11 @@
     pointer-events: none;
 }
 
+.bse-footer-apha-logo {
+    width: 72px;
+    height: auto;
+    display: block;
+}
 /* New Farms audit log table stability */
 .bse-audit-table-wrap {
     width: 100%;

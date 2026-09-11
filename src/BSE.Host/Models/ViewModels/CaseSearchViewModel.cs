@@ -37,6 +37,8 @@ public class CaseSearchViewModel : SearchViewModelBase<CaseSearchResult>
     protected override IEnumerable<CaseSearchResult> ApplySorting(IReadOnlyList<CaseSearchResult> source) =>
         (SortColumn?.ToLowerInvariant(), SortDesc) switch
         {
+            ("rbse",            false) => source.OrderBy(r => r.Rbse),
+            ("rbse",            true)  => source.OrderByDescending(r => r.Rbse),
             ("cphh",            false) => source.OrderBy(r => r.Cphh),
             ("cphh",            true)  => source.OrderByDescending(r => r.Cphh),
             ("sex",             false) => source.OrderBy(r => r.Sex),
@@ -73,7 +75,8 @@ public class CaseSearchViewModel : SearchViewModelBase<CaseSearchResult>
     public CaseSearchQuery ToQuery() => new(
         Rbse: (Rbse ?? "").Replace("/", ""),
         Eartag: Eartag ?? "",
-        Dbse: Dbse ?? "",
+        // DBSE is stored without a slash (YYNNNNN); legacy stripped "/" before searching (SearchCase.aspx.vb).
+        Dbse: (Dbse ?? "").Replace("/", ""),
         Fate: Fate ?? "",
         FinalResult: FinalResult ?? "",
         Sex: Sex ?? "",
