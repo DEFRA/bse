@@ -43,38 +43,23 @@
 
 <form method="get" novalidate>
     <div class="govuk-grid-row">
-        <div class="govuk-grid-column-two-thirds">
+        @* Legacy Case Search paired the fields into a left/right column grid; mirrored here row-for-row. *@
+        <div class="govuk-grid-column-one-half">
             <div class="govuk-form-group">
                 <label asp-for="Filter.Rbse" class="govuk-label">RBSE</label>
-                <input asp-for="Filter.Rbse" class="govuk-input govuk-!-width-two-thirds" aria-describedby="rbse-hint" maxlength="11" />
+                <input asp-for="Filter.Rbse" class="govuk-input" aria-describedby="rbse-hint" maxlength="11" />
                 <span asp-validation-for="Filter.Rbse" class="govuk-error-message"></span>
             </div>
 
             <div class="govuk-form-group">
-                <label asp-for="Filter.Eartag" class="govuk-label">Eartag (starting with...)</label>
-                <input asp-for="Filter.Eartag" class="govuk-input govuk-!-width-two-thirds" maxlength="35" />
-            </div>
-
-            <div class="govuk-form-group">
                 <label asp-for="Filter.Dbse" class="govuk-label">DBSE</label>
-                <input asp-for="Filter.Dbse" class="govuk-input govuk-!-width-two-thirds" aria-describedby="dbse-hint" maxlength="8" />
+                <input asp-for="Filter.Dbse" class="govuk-input" aria-describedby="dbse-hint" maxlength="8" />
                 <span asp-validation-for="Filter.Dbse" class="govuk-error-message"></span>
             </div>
 
             <div class="govuk-form-group">
-                <label asp-for="Filter.Fate" class="govuk-label">Fate</label>
-                <select asp-for="Filter.Fate" class="govuk-select govuk-!-width-two-thirds">
-                    <option value=""></option>
-                    @foreach (var item in Model.FateOptions)
-                    {
-                        <option value="@item.Code">@item.Description</option>
-                    }
-                </select>
-            </div>
-
-            <div class="govuk-form-group">
                 <label asp-for="Filter.FinalResult" class="govuk-label">Final Result</label>
-                <select asp-for="Filter.FinalResult" class="govuk-select govuk-!-width-two-thirds">
+                <select asp-for="Filter.FinalResult" class="govuk-select">
                     <option value=""></option>
                     @foreach (var item in Model.FinalResultOptions)
                     {
@@ -84,19 +69,8 @@
             </div>
 
             <div class="govuk-form-group">
-                <label asp-for="Filter.Sex" class="govuk-label">Sex</label>
-                <select asp-for="Filter.Sex" class="govuk-select govuk-!-width-two-thirds">
-                    <option value=""></option>
-                    @foreach (var item in Model.SexOptions)
-                    {
-                        <option value="@item.Code">@item.Description</option>
-                    }
-                </select>
-            </div>
-
-            <div class="govuk-form-group">
                 <label asp-for="Filter.Survey" class="govuk-label">Survey</label>
-                <select asp-for="Filter.Survey" class="govuk-select govuk-!-width-two-thirds">
+                <select asp-for="Filter.Survey" class="govuk-select">
                     <option value=""></option>
                     @foreach (var item in Model.SurveyOptions)
                     {
@@ -106,14 +80,63 @@
             </div>
 
             <div class="govuk-form-group">
+                <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                    <div class="govuk-checkboxes__item">
+                        <input asp-for="Filter.IncludeNonGb" class="govuk-checkboxes__input" />
+                        <label asp-for="Filter.IncludeNonGb" class="govuk-label govuk-checkboxes__label">Include Non-GB Cases?</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="govuk-grid-column-one-half">
+            <div class="govuk-form-group">
+                <label asp-for="Filter.Eartag" class="govuk-label">Eartag (starting with...)</label>
+                <input asp-for="Filter.Eartag" class="govuk-input" maxlength="35" />
+            </div>
+
+            <div class="govuk-form-group">
+                <label asp-for="Filter.Fate" class="govuk-label">Fate</label>
+                <select asp-for="Filter.Fate" class="govuk-select">
+                    <option value=""></option>
+                    @foreach (var item in Model.FateOptions)
+                    {
+                        <option value="@item.Code">@item.Description</option>
+                    }
+                </select>
+            </div>
+
+            <div class="govuk-form-group">
+                <label asp-for="Filter.Sex" class="govuk-label">Sex</label>
+                <select asp-for="Filter.Sex" class="govuk-select">
+                    <option value=""></option>
+                    @foreach (var item in Model.SexOptions)
+                    {
+                        <option value="@item.Code">@item.Description</option>
+                    }
+                </select>
+            </div>
+
+            <div class="govuk-form-group">
                 <label asp-for="Filter.PassiveActive" class="govuk-label">Passive/Active</label>
-                <select asp-for="Filter.PassiveActive" class="govuk-select govuk-!-width-two-thirds">
+                <select asp-for="Filter.PassiveActive" class="govuk-select">
                     <option value=""></option>
                     <option value="P">Passive</option>
                     <option value="A">Active</option>
                 </select>
             </div>
 
+            <div class="govuk-form-group">
+                <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                    <div class="govuk-checkboxes__item">
+                        <input asp-for="Filter.IsImportedCase" class="govuk-checkboxes__input" />
+                        <label asp-for="Filter.IsImportedCase" class="govuk-label govuk-checkboxes__label">Imported Cases</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="govuk-grid-column-full">
             <div class="govuk-form-group">
                 <fieldset class="govuk-fieldset" role="group" aria-describedby="form-a-date-hint">
                     <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">Form A Date Between</legend>
@@ -175,19 +198,6 @@
                         </div>
                     </div>
                 </fieldset>
-            </div>
-
-            <div class="govuk-form-group">
-                <div class="govuk-checkboxes" data-module="govuk-checkboxes">
-                    <div class="govuk-checkboxes__item">
-                        <input asp-for="Filter.IncludeNonGb" class="govuk-checkboxes__input" />
-                        <label asp-for="Filter.IncludeNonGb" class="govuk-label govuk-checkboxes__label">Include Non-GB Cases?</label>
-                    </div>
-                    <div class="govuk-checkboxes__item">
-                        <input asp-for="Filter.IsImportedCase" class="govuk-checkboxes__input" />
-                        <label asp-for="Filter.IsImportedCase" class="govuk-label govuk-checkboxes__label">Imported Cases</label>
-                    </div>
-                </div>
             </div>
 
             <div class="govuk-form-group">
