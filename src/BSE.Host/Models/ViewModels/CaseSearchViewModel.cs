@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
+using BSE.Host.Helpers;
 using BSE.Modules.Search.Models;
 
 namespace BSE.Host.Models.ViewModels;
@@ -31,6 +32,32 @@ public class CaseSearchViewModel : SearchViewModelBase<CaseSearchResult>
     public string? LatestFinalResultDate { get; set; }
     public string? EarliestBirthDate { get; set; }
     public string? LatestBirthDate { get; set; }
+
+    // Populated by ValidateDates(); null when the corresponding field is blank or a valid date.
+    public string? EarliestFormADateError { get; private set; }
+    public string? LatestFormADateError { get; private set; }
+    public string? EarliestFinalResultDateError { get; private set; }
+    public string? LatestFinalResultDateError { get; private set; }
+    public string? EarliestBirthDateError { get; private set; }
+    public string? LatestBirthDateError { get; private set; }
+
+    /// <summary>Business rule: date-range fields are optional, but a non-blank value must be a real date.</summary>
+    public bool ValidateDates()
+    {
+        var ok = SearchDateField.TryParse(EarliestFormADate, out _, out var e1);
+        EarliestFormADateError = e1;
+        ok &= SearchDateField.TryParse(LatestFormADate, out _, out var e2);
+        LatestFormADateError = e2;
+        ok &= SearchDateField.TryParse(EarliestFinalResultDate, out _, out var e3);
+        EarliestFinalResultDateError = e3;
+        ok &= SearchDateField.TryParse(LatestFinalResultDate, out _, out var e4);
+        LatestFinalResultDateError = e4;
+        ok &= SearchDateField.TryParse(EarliestBirthDate, out _, out var e5);
+        EarliestBirthDateError = e5;
+        ok &= SearchDateField.TryParse(LatestBirthDate, out _, out var e6);
+        LatestBirthDateError = e6;
+        return ok;
+    }
 
     protected override int PageSize => 10;
 

@@ -1,14 +1,31 @@
+using BSE.Host.Helpers;
 using BSE.Modules.Search.Models;
 
 namespace BSE.Host.Models.ViewModels;
 
 public class OutstandingSearchViewModel : SearchViewModelBase<OutstandingCaseResult>
 {
-    public DateTime? EarliestFormADate { get; set; }
-    public DateTime? LatestFormADate { get; set; }
+    // Stored as strings to avoid __Invariant GET-form binding issues with DateTime?.
+    // <input type="date"> always submits yyyy-MM-dd (ISO 8601).
+    public string? EarliestFormADate { get; set; }
+    public string? LatestFormADate { get; set; }
     public bool IncludeNonGb { get; set; }
 
     public string SearchType { get; set; } = ""; // BSE1 | Fates | Results
+
+    // Populated by ValidateDates(); null when the corresponding field is blank or a valid date.
+    public string? EarliestFormADateError { get; private set; }
+    public string? LatestFormADateError { get; private set; }
+
+    /// <summary>Business rule: date-range fields are optional, but a non-blank value must be a real date.</summary>
+    public bool ValidateDates()
+    {
+        var ok = SearchDateField.TryParse(EarliestFormADate, out _, out var e1);
+        EarliestFormADateError = e1;
+        ok &= SearchDateField.TryParse(LatestFormADate, out _, out var e2);
+        LatestFormADateError = e2;
+        return ok;
+    }
 
     protected override int PageSize => 10;
 
@@ -32,8 +49,13 @@ public class OutstandingSearchViewModel : SearchViewModelBase<OutstandingCaseRes
             _                      => source.OrderBy(r => r.Rbse),
         };
 
-    public OutstandingSearchQuery ToQuery() => new(
-        EarliestFormADate: EarliestFormADate,
-        LatestFormADate: LatestFormADate,
-        IncludeNonGbCases: IncludeNonGb);
+    public OutstandingSearchQuery ToQuery()
+    {
+        SearchDateField.TryParse(EarliestFormADate, out var earliest, out _);
+        SearchDateField.TryParse(LatestFormADate, out var latest, out _);
+        return new(
+            EarliestFormADate: earliest,
+            LatestFormADate: latest,
+            IncludeNonGbCases: IncludeNonGb);
+    }
 }

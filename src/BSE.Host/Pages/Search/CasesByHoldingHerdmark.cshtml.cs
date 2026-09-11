@@ -92,7 +92,8 @@ public class CasesByHoldingHerdmarkModel : PageModel
             "PurchaseDate", "PurchaseAgeInMonths", "OnsetDate", "FormADate",
             "SlaughterDate", "FinalResultDate", "OnsetAgeInMonths",
             "Fate", "FinalResult", "Survey", "CaseStatus", "TimeElapsed"];
-        for (var c = 1; c <= headers.Length; c++) { ws.Cell(1, c).Value = headers[c - 1]; ws.Cell(1, c).Style.Font.Bold = true; }
+        // Legacy's exported header row was plain text, not bold.
+        for (var c = 1; c <= headers.Length; c++) { ws.Cell(1, c).Value = headers[c - 1]; }
         var row = 2;
         foreach (var r in rows)
         {

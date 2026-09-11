@@ -41,6 +41,34 @@
     </div>
 }
 
+@{
+    var dateErrors = new (string Id, string? Message)[]
+    {
+        ("Filter_EarliestFormADate", Model.Filter.EarliestFormADateError),
+        ("Filter_LatestFormADate", Model.Filter.LatestFormADateError),
+        ("Filter_EarliestFinalResultDate", Model.Filter.EarliestFinalResultDateError),
+        ("Filter_LatestFinalResultDate", Model.Filter.LatestFinalResultDateError),
+        ("Filter_EarliestBirthDate", Model.Filter.EarliestBirthDateError),
+        ("Filter_LatestBirthDate", Model.Filter.LatestBirthDateError),
+    };
+}
+@if (dateErrors.Any(e => e.Message is not null))
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var e in dateErrors.Where(e => e.Message is not null))
+                    {
+                        <li><a href="#@e.Id">@e.Message</a></li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
 <form method="get" novalidate>
     <div class="govuk-grid-row">
         @* Legacy Case Search paired the fields into a left/right column grid; mirrored here row-for-row. *@
@@ -143,15 +171,23 @@
                     <div id="form-a-date-hint" class="govuk-hint">Leave blank to search all dates.</div>
                     <div class="govuk-date-input" id="form-a-dates">
                         <div class="govuk-date-input__item">
-                            <div class="govuk-form-group">
+                            <div class="govuk-form-group @(Model.Filter.EarliestFormADateError is not null ? "govuk-form-group--error" : "")">
                                 <label asp-for="Filter.EarliestFormADate" class="govuk-label govuk-date-input__label">From</label>
-                                <input asp-for="Filter.EarliestFormADate" type="date" class="govuk-input govuk-date-input__input" />
+                                @if (Model.Filter.EarliestFormADateError is not null)
+                                {
+                                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.EarliestFormADateError</p>
+                                }
+                                <input asp-for="Filter.EarliestFormADate" type="date" class="govuk-input govuk-date-input__input @(Model.Filter.EarliestFormADateError is not null ? "govuk-input--error" : "")" />
                             </div>
                         </div>
                         <div class="govuk-date-input__item">
-                            <div class="govuk-form-group">
+                            <div class="govuk-form-group @(Model.Filter.LatestFormADateError is not null ? "govuk-form-group--error" : "")">
                                 <label asp-for="Filter.LatestFormADate" class="govuk-label govuk-date-input__label">To</label>
-                                <input asp-for="Filter.LatestFormADate" type="date" class="govuk-input govuk-date-input__input" />
+                                @if (Model.Filter.LatestFormADateError is not null)
+                                {
+                                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.LatestFormADateError</p>
+                                }
+                                <input asp-for="Filter.LatestFormADate" type="date" class="govuk-input govuk-date-input__input @(Model.Filter.LatestFormADateError is not null ? "govuk-input--error" : "")" />
                             </div>
                         </div>
                     </div>
@@ -164,15 +200,23 @@
                     <div id="final-result-date-hint" class="govuk-hint">Leave blank to search all dates.</div>
                     <div class="govuk-date-input" id="final-result-dates">
                         <div class="govuk-date-input__item">
-                            <div class="govuk-form-group">
+                            <div class="govuk-form-group @(Model.Filter.EarliestFinalResultDateError is not null ? "govuk-form-group--error" : "")">
                                 <label asp-for="Filter.EarliestFinalResultDate" class="govuk-label govuk-date-input__label">From</label>
-                                <input asp-for="Filter.EarliestFinalResultDate" type="date" class="govuk-input govuk-date-input__input" />
+                                @if (Model.Filter.EarliestFinalResultDateError is not null)
+                                {
+                                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.EarliestFinalResultDateError</p>
+                                }
+                                <input asp-for="Filter.EarliestFinalResultDate" type="date" class="govuk-input govuk-date-input__input @(Model.Filter.EarliestFinalResultDateError is not null ? "govuk-input--error" : "")" />
                             </div>
                         </div>
                         <div class="govuk-date-input__item">
-                            <div class="govuk-form-group">
+                            <div class="govuk-form-group @(Model.Filter.LatestFinalResultDateError is not null ? "govuk-form-group--error" : "")">
                                 <label asp-for="Filter.LatestFinalResultDate" class="govuk-label govuk-date-input__label">To</label>
-                                <input asp-for="Filter.LatestFinalResultDate" type="date" class="govuk-input govuk-date-input__input" />
+                                @if (Model.Filter.LatestFinalResultDateError is not null)
+                                {
+                                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.LatestFinalResultDateError</p>
+                                }
+                                <input asp-for="Filter.LatestFinalResultDate" type="date" class="govuk-input govuk-date-input__input @(Model.Filter.LatestFinalResultDateError is not null ? "govuk-input--error" : "")" />
                             </div>
                         </div>
                     </div>
@@ -185,15 +229,23 @@
                     <div id="birth-date-hint" class="govuk-hint">Leave blank to search all dates.</div>
                     <div class="govuk-date-input" id="birth-dates">
                         <div class="govuk-date-input__item">
-                            <div class="govuk-form-group">
+                            <div class="govuk-form-group @(Model.Filter.EarliestBirthDateError is not null ? "govuk-form-group--error" : "")">
                                 <label asp-for="Filter.EarliestBirthDate" class="govuk-label govuk-date-input__label">From</label>
-                                <input asp-for="Filter.EarliestBirthDate" type="date" class="govuk-input govuk-date-input__input" />
+                                @if (Model.Filter.EarliestBirthDateError is not null)
+                                {
+                                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.EarliestBirthDateError</p>
+                                }
+                                <input asp-for="Filter.EarliestBirthDate" type="date" class="govuk-input govuk-date-input__input @(Model.Filter.EarliestBirthDateError is not null ? "govuk-input--error" : "")" />
                             </div>
                         </div>
                         <div class="govuk-date-input__item">
-                            <div class="govuk-form-group">
+                            <div class="govuk-form-group @(Model.Filter.LatestBirthDateError is not null ? "govuk-form-group--error" : "")">
                                 <label asp-for="Filter.LatestBirthDate" class="govuk-label govuk-date-input__label">To</label>
-                                <input asp-for="Filter.LatestBirthDate" type="date" class="govuk-input govuk-date-input__input" />
+                                @if (Model.Filter.LatestBirthDateError is not null)
+                                {
+                                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.LatestBirthDateError</p>
+                                }
+                                <input asp-for="Filter.LatestBirthDate" type="date" class="govuk-input govuk-date-input__input @(Model.Filter.LatestBirthDateError is not null ? "govuk-input--error" : "")" />
                             </div>
                         </div>
                     </div>
