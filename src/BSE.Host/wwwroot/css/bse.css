@@ -112,6 +112,135 @@
     margin-left: 0;
 }
 
+/* GOV.UK website-style header menu */
+.bse-global-header {
+    background: #005ea5;
+}
+
+.bse-global-header .govuk-header__container {
+    border-bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.bse-global-header .govuk-header__homepage-link:focus {
+    box-shadow: none;
+}
+
+.bse-global-header__actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 100%;
+}
+
+.bse-global-header__utility-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #ffffff;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.bse-global-header__utility-nav .govuk-header__link {
+    font-size: 1rem;
+    white-space: nowrap;
+    color: #ffffff;
+}
+
+.bse-global-header__utility-nav .govuk-header__link:visited {
+    color: #ffffff;
+}
+
+.bse-global-header__user-info {
+    color: #ffffff;
+    white-space: normal;
+}
+
+.bse-global-header__user-info span + span {
+    margin-left: 12px;
+}
+
+.bse-global-header__menu-button {
+    border: 0;
+    background: #ffffff;
+    color: #005ea5;
+    font-family: "GDS Transport", arial, sans-serif;
+    font-size: 1.1875rem;
+    font-weight: 700;
+    line-height: 1;
+    padding: 20px 24px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.bse-global-header__menu-button:hover {
+    background: #f3f2f1;
+}
+
+.bse-global-header__menu-button:focus {
+    outline: 3px solid #ffdd00;
+    outline-offset: -3px;
+    z-index: 2;
+}
+
+.bse-global-header__menu-button[aria-expanded="true"] {
+    box-shadow: inset 0 -4px 0 #1d70b8;
+}
+
+.bse-global-header__menu-button-icon {
+    width: 10px;
+    height: 10px;
+    border-left: 3px solid currentColor;
+    border-top: 3px solid currentColor;
+    transform: rotate(45deg) translateY(2px);
+}
+
+.bse-global-header__menu-button[aria-expanded="true"] .bse-global-header__menu-button-icon {
+    transform: rotate(225deg) translateY(-2px);
+}
+
+.bse-global-header-nav {
+    background: #ffffff;
+    border-bottom: 1px solid #b1b4b6;
+}
+
+.bse-global-header-nav__panel {
+    padding: 20px 0;
+}
+
+.bse-global-header-nav__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 12px 30px;
+}
+
+.bse-global-header-nav__item {
+    margin: 0;
+}
+
+.bse-global-header-nav__item .govuk-link {
+    font-weight: 700;
+}
+
+@media (min-width: 40.0625em) {
+    .bse-global-header-nav__list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (min-width: 64.0625em) {
+    .bse-global-header-nav__list {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
 /* Sign-out button rendered as a plain nav link (no button chrome) */
 .bse-signout-btn {
     background: none;

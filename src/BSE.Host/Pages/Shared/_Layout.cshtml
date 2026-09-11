@@ -24,8 +24,8 @@
     <a href="#main-content" class="govuk-skip-link" data-module="govuk-skip-link">Skip to main content</a>
 
     <header class="govuk-template__header">
-        <div class="govuk-header" data-module="govuk-header">
-            <div class="govuk-header__container govuk-width-container">
+        <div class="govuk-header bse-global-header" data-module="govuk-header">
+            <div class="govuk-header__container govuk-width-container bse-global-header__container">
                 <div class="govuk-header__logo">
                     <a asp-page="/Home" class="govuk-header__homepage-link">
                         <svg focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 324 60" height="30" width="162" fill="currentcolor" class="govuk-header__logotype" aria-label="GOV.UK">
@@ -46,67 +46,66 @@
                         </svg>
                     </a>
                 </div>
+                <div class="bse-global-header__actions">
+                    <nav class="bse-global-header__utility-nav" aria-label="Header links">
+                        <a asp-page="/Home" class="govuk-header__link">Home</a>
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <a href="@helpHref" class="govuk-header__link" target="_blank" rel="noopener noreferrer">Help<span class="govuk-visually-hidden"> (opens in new tab)</span></a>
+                            <span class="bse-global-header__user-info govuk-body-s govuk-!-margin-bottom-0">
+                                @await Html.PartialAsync("_UserContextPartial")
+                            </span>
+                        }
+                    </nav>
+                    <button type="button" class="bse-global-header__menu-button" aria-controls="global-header-navigation" aria-expanded="false">
+                        <span class="bse-global-header__menu-button-icon" aria-hidden="true"></span>
+                        Menu
+                    </button>
+                </div>
             </div>
         </div>
-        <section class="govuk-service-navigation" data-module="govuk-service-navigation" aria-label="Service information">
+        <section class="bse-global-header-nav" aria-label="Service navigation">
             <div class="govuk-width-container">
-                <div class="govuk-service-navigation__container">
-                    <span class="govuk-service-navigation__service-name">
-                        <a asp-page="/Home" class="govuk-service-navigation__link">BSE system</a>
-                    </span>
-                    <nav aria-label="Menu" class="govuk-service-navigation__wrapper">
-                        <button type="button" class="govuk-service-navigation__toggle govuk-js-service-navigation-toggle" aria-controls="navigation" hidden>Menu</button>
-                        <ul class="govuk-service-navigation__list" id="navigation">
-                            <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Search/Menu">Search</a></li>
+                <nav aria-label="Menu" id="global-header-navigation" class="bse-global-header-nav__panel" hidden>
+                    <ul class="bse-global-header-nav__list">
+                        <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/Search/Menu">Search</a></li>
 
-                            @if (User.IsInRole("VLAMaintenance"))
-                            {
-                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/CaseWork/Menu">Casework menu</a></li>
-                            }
-                            @if (User.IsInRole("VLAAccess"))
-                            {
-                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/CaseWork/PrintBatch">Print batch</a></li>
-                            }
-                            @if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess"))
-                            {
-                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/AuditLog/Menu">Audit log</a></li>
-                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Bsess/Menu">BSESS check</a></li>
-                            }
-                            @if (User.IsInRole("DEFRAMaintenance"))
-                            {
-                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/AdnsExport/Menu">ADNS export</a></li>
-                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Case/FinalResultEntry">Final result entry</a></li>
-                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Farm/CphhChange">CPHH change</a></li>
-                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Case/RbseChange">RBSE change</a></li>
-                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Case/MoveCase">Move case</a></li>
-                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Case/Delete">Delete case</a></li>
-                            }
-                            @if (User.IsInRole("VLAAccess"))
-                            {
-                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/OssExport/Menu">OSS export</a></li>
-                            }
-                            @if (User.IsInRole("VLAMaintenance"))
-                            {
-                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Admin/Users">User maintenance</a></li>
-                            }
-                            @if (User.IsInRole("PickListAccess"))
-                            {
-                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" asp-page="/Admin/PickLists">Pick list maintenance</a></li>
-                            }
-                            @if (User.Identity?.IsAuthenticated == true)
-                            {
-                                <li class="govuk-service-navigation__item"><a class="govuk-service-navigation__link" href="@helpHref" target="_blank" rel="noopener noreferrer">Help<span class="govuk-visually-hidden"> (opens in new tab)</span></a></li>
-                                
-                            }
-                        </ul>
-                    </nav>
-                    @if (User.Identity?.IsAuthenticated == true)
-                    {
-                        <p class="govuk-body-s app-header-user govuk-!-margin-bottom-0" style="margin-left:auto; white-space:nowrap;">
-                            @await Html.PartialAsync("_UserContextPartial")
-                        </p>
-                    }
-                </div>
+                        @if (User.IsInRole("VLAMaintenance"))
+                        {
+                            <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/CaseWork/Menu">Casework menu</a></li>
+                        }
+                        @if (User.IsInRole("VLAAccess"))
+                        {
+                            <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/CaseWork/PrintBatch">Print batch</a></li>
+                        }
+                        @if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess"))
+                        {
+                            <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/AuditLog/Menu">Audit log</a></li>
+                            <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/Bsess/Menu">BSESS check</a></li>
+                        }
+                        @if (User.IsInRole("DEFRAMaintenance"))
+                        {
+                            <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/AdnsExport/Menu">ADNS export</a></li>
+                            <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/Case/FinalResultEntry">Final result entry</a></li>
+                            <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/Farm/CphhChange">CPHH change</a></li>
+                            <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/Case/RbseChange">RBSE change</a></li>
+                            <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/Case/MoveCase">Move case</a></li>
+                            <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/Case/Delete">Delete case</a></li>
+                        }
+                        @if (User.IsInRole("VLAAccess"))
+                        {
+                            <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/OssExport/Menu">OSS export</a></li>
+                        }
+                        @if (User.IsInRole("VLAMaintenance"))
+                        {
+                            <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/Admin/Users">User maintenance</a></li>
+                        }
+                        @if (User.IsInRole("PickListAccess"))
+                        {
+                            <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/Admin/PickLists">Pick list maintenance</a></li>
+                        }
+                    </ul>
+                </nav>
             </div>
         </section>
     </header>
@@ -183,6 +182,19 @@
     <script type="module">
         import { initAll } from '/govuk/govuk-frontend.min.js';
         initAll();
+
+        const headerMenuButton = document.querySelector('.bse-global-header__menu-button');
+        const headerNavigation = document.getElementById('global-header-navigation');
+
+        if (headerMenuButton && headerNavigation) {
+            headerNavigation.hidden = true;
+
+            headerMenuButton.addEventListener('click', () => {
+                const isExpanded = headerMenuButton.getAttribute('aria-expanded') === 'true';
+                headerMenuButton.setAttribute('aria-expanded', (!isExpanded).toString());
+                headerNavigation.hidden = isExpanded;
+            });
+        }
     </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
