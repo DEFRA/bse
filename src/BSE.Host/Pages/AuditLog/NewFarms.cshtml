@@ -17,7 +17,7 @@
 
     @if (Model.Entries.Any())
     {
-        <h2 class="govuk-heading-m">@Model.Entries.Count() new farms</h2>
+        <h2 id="new-farms-results" class="govuk-heading-m">@Model.Entries.Count() new farms</h2>
         var sortBase = "?" + string.Join("&", HttpContext.Request.Query
             .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
                      && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase)
@@ -25,11 +25,14 @@
             .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
         var sortCol  = Model.SortColumn;
         var sortDesc = Model.SortDesc;
-        <table class="govuk-table">
+        <div class="bse-audit-table-wrap">
+            <table class="govuk-table bse-audit-table">
             <caption class="govuk-visually-hidden">New farms audit log entries</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    @{ ViewData["Label"] = "Table";      ViewData["Column"] = "Table"; ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Prefix"] = ""; }
+                    @{
+                        ViewData["Label"] = "Table"; ViewData["Column"] = "Table"; ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Prefix"] = ""; ViewData["Fragment"] = "new-farms-results";
+                    }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Field";      ViewData["Column"] = "Field"; }
                     <partial name="_SortableHeader" />
@@ -72,6 +75,7 @@
                 }
             </tbody>
         </table>
+        </div>
         @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
         @await Html.PartialAsync("_ExportLink")
     }
