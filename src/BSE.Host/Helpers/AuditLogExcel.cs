@@ -15,15 +15,20 @@ internal static class AuditLogExcel
         IEnumerable<T> entries,
         string sheetName,
         string fileName,
-        IReadOnlyList<(string Header, Func<T, object?> Value)>? extraColumns = null)
+        IReadOnlyList<(string Header, Func<T, object?> Value)>? extraColumns = null,
+        IReadOnlyList<(string Header, Func<T, object?> Value)>? leadingColumns = null)
         where T : AuditLogEntry
     {
         extraColumns ??= [];
+        leadingColumns ??= [];
 
         using var workbook = new XLWorkbook();
         var ws = workbook.Worksheets.Add(sheetName);
 
-        var headers = BaseHeaders.Concat(extraColumns.Select(c => c.Header)).ToArray();
+        var headers = leadingColumns.Select(c => c.Header)
+            .Concat(BaseHeaders)
+            .Concat(extraColumns.Select(c => c.Header))
+            .ToArray();
         for (var col = 1; col <= headers.Length; col++)
         {
             ws.Cell(1, col).Value = headers[col - 1];
@@ -33,16 +38,22 @@ internal static class AuditLogExcel
         var row = 2;
         foreach (var entry in entries)
         {
-            ws.Cell(row, 1).Value = entry.TableName;
-            ws.Cell(row, 2).Value = entry.FieldName;
-            ws.Cell(row, 3).Value = entry.DateTime.ToString("dd/MM/yyyy HH:mm");
-            ws.Cell(row, 4).Value = entry.UserName;
-            ws.Cell(row, 5).Value = entry.BeforeValue;
-            ws.Cell(row, 6).Value = entry.AfterValue;
-            ws.Cell(row, 7).Value = entry.Reason;
-            ws.Cell(row, 8).Value = entry.Key;
+            var col = 1;
+            foreach (var leading in leadingColumns)
+            {
+                ws.Cell(row, col).Value = leading.Value(entry)?.ToString();
+                col++;
+            }
 
-            var col = BaseHeaders.Length + 1;
+            ws.Cell(row, col++).Value = entry.TableName;
+            ws.Cell(row, col++).Value = entry.FieldName;
+            ws.Cell(row, col++).Value = entry.DateTime.ToString("dd/MM/yyyy HH:mm");
+            ws.Cell(row, col++).Value = entry.UserName;
+            ws.Cell(row, col++).Value = entry.BeforeValue;
+            ws.Cell(row, col++).Value = entry.AfterValue;
+            ws.Cell(row, col++).Value = entry.Reason;
+            ws.Cell(row, col++).Value = entry.Key;
+
             foreach (var extra in extraColumns)
             {
                 ws.Cell(row, col).Value = extra.Value(entry)?.ToString();
