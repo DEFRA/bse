@@ -58,13 +58,15 @@ public class FarmsModel : PageModel
     {
         if (!HasAnyFilter()) return RedirectToPage();
         var rows = await _search.SearchFarmsAsync(Filter.ToQuery());
-        return BuildExcel(rows, $"Farms_{DateTime.Today:yyyyMMdd}.xlsx");
+        return BuildExcel(rows, "farmsearchresults.xlsx");
     }
 
     private static FileContentResult BuildExcel(IEnumerable<FarmSearchResult> rows, string filename)
     {
         using var wb = new XLWorkbook();
         var ws = wb.Worksheets.Add("Results");
+        // Legacy's HTML export had no gridlines outside the bordered table; match that here.
+        ws.ShowGridLines = false;
         // Legacy exported the raw result-set column names, not the on-screen captions.
         string[] headers = ["CPHH", "OwnerName", "Address", "CorrespondenceAddress", "County", "Herdmark",
             "NumericHerdmark", "MapReference", "AHO", "HerdType",
@@ -87,6 +89,10 @@ public class FarmsModel : PageModel
             ws.Cell(row, 12).Value = r.ConfirmedCasesCount;
             row++;
         }
+        // Legacy rendered the exported grid with all borders around the record area only.
+        var recordRange = ws.Range(1, 1, row - 1, headers.Length);
+        recordRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        recordRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
         ws.Columns().AdjustToContents();
         using var ms = new MemoryStream();
         wb.SaveAs(ms);
