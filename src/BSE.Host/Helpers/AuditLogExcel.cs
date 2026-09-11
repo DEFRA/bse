@@ -24,6 +24,8 @@ internal static class AuditLogExcel
 
         using var workbook = new XLWorkbook();
         var ws = workbook.Worksheets.Add(sheetName);
+        // Legacy's HTML export had no gridlines outside the bordered table; match that here.
+        ws.ShowGridLines = false;
 
         var headers = leadingColumns.Select(c => c.Header)
             .Concat(BaseHeaders)
@@ -62,6 +64,10 @@ internal static class AuditLogExcel
             row++;
         }
 
+        // Legacy rendered the exported grid with all borders around the record area only.
+        var recordRange = ws.Range(1, 1, row - 1, headers.Length);
+        recordRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        recordRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
         ws.Columns().AdjustToContents();
 
         using var stream = new MemoryStream();

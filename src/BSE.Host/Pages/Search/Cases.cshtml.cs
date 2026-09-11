@@ -72,6 +72,8 @@ public class CasesModel : PageModel
 
         using var workbook = new XLWorkbook();
         var ws = workbook.Worksheets.Add("Case Search Results");
+        // Legacy's HTML export had no gridlines outside the bordered table; match that here.
+        ws.ShowGridLines = false;
 
         // Legacy exported the raw result-set column names, not the on-screen captions.
         string[] headers =
@@ -95,12 +97,12 @@ public class CasesModel : PageModel
             ws.Cell(row, 3).Value = r.Sex;
             ws.Cell(row, 4).Value = r.Survey;
             ws.Cell(row, 5).Value = r.Eartag;
-            ws.Cell(row, 6).Value = r.BirthDate.HasValue ? r.BirthDate.Value.ToString("dd/MM/yyyy") : "";
+            ws.Cell(row, 6).Value = r.BirthDate.HasValue ? r.BirthDate.Value.ToString("dd/MM/yyyy HH:mm:ss") : "";
             ws.Cell(row, 7).Value = r.IsBirthDateEst;
-            ws.Cell(row, 8).Value = r.FormADate.HasValue ? r.FormADate.Value.ToString("dd/MM/yyyy") : "";
+            ws.Cell(row, 8).Value = r.FormADate.HasValue ? r.FormADate.Value.ToString("dd/MM/yyyy HH:mm:ss") : "";
             ws.Cell(row, 9).Value = r.Fate;
             ws.Cell(row, 10).Value = r.FinalResult;
-            ws.Cell(row, 11).Value = r.FinalResultDate.HasValue ? r.FinalResultDate.Value.ToString("dd/MM/yyyy") : "";
+            ws.Cell(row, 11).Value = r.FinalResultDate.HasValue ? r.FinalResultDate.Value.ToString("dd/MM/yyyy HH:mm:ss") : "";
             ws.Cell(row, 12).Value = r.Dbse;
             ws.Cell(row, 13).Value = r.Notes;
             ws.Cell(row, 14).Value = r.BabNotes;
@@ -109,6 +111,10 @@ public class CasesModel : PageModel
             row++;
         }
 
+        // Legacy rendered the exported grid with all borders around the record area only.
+        var recordRange = ws.Range(1, 1, row - 1, headers.Length);
+        recordRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        recordRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
         ws.Columns().AdjustToContents();
 
         using var stream = new MemoryStream();
@@ -118,7 +124,7 @@ public class CasesModel : PageModel
         return File(
             stream.ToArray(),
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            $"CaseSearch_{DateTime.Today:yyyyMMdd}.xlsx");
+            "casesearchresults.xlsx");
     }
     private bool HasAnyFilter() =>
         !string.IsNullOrWhiteSpace(Filter.Rbse) ||
