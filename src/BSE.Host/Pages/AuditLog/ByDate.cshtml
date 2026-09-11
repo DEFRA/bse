@@ -30,7 +30,7 @@
 
     <form method="get" novalidate class="govuk-!-margin-bottom-6">
         <div class="govuk-form-group @(Model.LogDateError is not null ? "govuk-form-group--error" : "")">
-            <label asp-for="LogDate" class="govuk-label">Date</label>
+            <label asp-for="LogDate" class="govuk-label">Log Entries On</label>
             @if (Model.LogDateError is not null)
             {
                 <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.LogDateError</p>
