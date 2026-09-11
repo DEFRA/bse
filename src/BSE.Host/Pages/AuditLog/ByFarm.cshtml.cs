@@ -71,10 +71,10 @@ public class ByFarmModel(IAuditLogService auditLogService) : PageModel
 
         // Legacy exported the raw result-set column names, not the on-screen captions.
         string[] headers = ["TableName", "FieldName", "DateTime", "UserName", "BeforeValue", "AfterValue", "Reason", "Key"];
+        // Legacy's exported header row was plain text, not bold.
         for (var col = 1; col <= headers.Length; col++)
         {
             ws.Cell(1, col).Value = headers[col - 1];
-            ws.Cell(1, col).Style.Font.Bold = true;
         }
 
         var row = 2;

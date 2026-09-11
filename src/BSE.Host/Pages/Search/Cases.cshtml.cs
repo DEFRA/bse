@@ -51,6 +51,8 @@ public class CasesModel : PageModel
 
         if (HasAnyFilter())
         {
+            if (!Filter.ValidateDates()) return;
+
             var query = Filter.ToQuery();
             var results = await _search.SearchCasesAsync(query);
             Filter.Results = results.ToList().AsReadOnly();
@@ -66,7 +68,7 @@ public class CasesModel : PageModel
 
     public async Task<IActionResult> OnGetExportAsync()
     {
-        if (!HasAnyFilter()) return RedirectToPage();
+        if (!HasAnyFilter() || !Filter.ValidateDates()) return RedirectToPage();
 
         var results = await _search.SearchCasesAsync(Filter.ToQuery());
 
@@ -83,10 +85,10 @@ public class CasesModel : PageModel
             "DBSE", "Notes", "BabNotes", "Origin", "ValuationAge"
         ];
 
+        // Legacy's exported header row was plain text, not bold.
         for (var col = 1; col <= headers.Length; col++)
         {
             ws.Cell(1, col).Value = headers[col - 1];
-            ws.Cell(1, col).Style.Font.Bold = true;
         }
 
         var row = 2;

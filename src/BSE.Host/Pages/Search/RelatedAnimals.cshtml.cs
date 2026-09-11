@@ -113,7 +113,8 @@ public class RelatedAnimalsModel : PageModel
         // Legacy exported the raw result-set column names, not the on-screen captions.
         string[] headers = ["RBSE", "CPHH", "RelationType", "RelSex", "Eartag",
             "RelBirthDate", "RelFate", "LeftDate", "RelName", "RelEartag", "RelationRBSE"];
-        for (var c = 1; c <= headers.Length; c++) { ws.Cell(1, c).Value = headers[c - 1]; ws.Cell(1, c).Style.Font.Bold = true; }
+        // Legacy's exported header row was plain text, not bold.
+        for (var c = 1; c <= headers.Length; c++) { ws.Cell(1, c).Value = headers[c - 1]; }
         var row = 2;
         foreach (var r in rows)
         {

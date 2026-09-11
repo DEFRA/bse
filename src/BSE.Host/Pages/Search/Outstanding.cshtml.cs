@@ -31,6 +31,8 @@ public class OutstandingModel : PageModel
             return;
         }
 
+        if (!Filter.ValidateDates()) return;
+
         var query = Filter.ToQuery();
         var results = Filter.SearchType switch
         {
@@ -46,7 +48,7 @@ public class OutstandingModel : PageModel
 
     public async Task<IActionResult> OnGetExportAsync()
     {
-        if (!IsKnownSearchType()) return RedirectToPage();
+        if (!IsKnownSearchType() || !Filter.ValidateDates()) return RedirectToPage();
         var query = Filter.ToQuery();
         var rows = Filter.SearchType switch
         {
@@ -69,7 +71,8 @@ public class OutstandingModel : PageModel
         ws.ShowGridLines = false;
         // Legacy exported the raw result-set column names, not the on-screen captions.
         string[] headers = ["RBSE", "CPHH", "Eartag", "FormADate", "BirthDate", "Fate", "FinalResult"];
-        for (var c = 1; c <= headers.Length; c++) { ws.Cell(1, c).Value = headers[c - 1]; ws.Cell(1, c).Style.Font.Bold = true; }
+        // Legacy's exported header row was plain text, not bold.
+        for (var c = 1; c <= headers.Length; c++) { ws.Cell(1, c).Value = headers[c - 1]; }
         var row = 2;
         foreach (var r in rows)
         {
