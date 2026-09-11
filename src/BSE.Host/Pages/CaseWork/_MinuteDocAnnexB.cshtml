@@ -1,0 +1,64 @@
+﻿@model BSE.Host.Pages.CaseWork.MinuteDocumentModel
+
+<p align="left">ANNEX B</p>
+<h1 align="left">FATE OF CASE - <em>SECOND REMINDER</em></h1>
+
+<table class="HeaderLayout">
+    <tr>
+        <td class="HeaderLeft">
+            From:<br />
+            Brenda Rajanayagam VLA D (Sci)<br />
+            CERA 3, Area E<br />
+            33 Weybourne Building<br />
+            VLA Weybridge<br />
+            New Haw<br />
+            Addlestone<br />
+            KT15 3NB
+        </td>
+        <td class="HeaderRight">
+            To: DVM<br />
+            At: @Model.Details.AhoName<br /><br />
+            Cc: ADVFS<br />
+            At: @Model.Details.AhoName
+        </td>
+    </tr>
+</table>
+
+<p align="left">Date: @Model.MinuteDate?.ToString("dd/MM/yyyy")</p>
+
+<p align="left">
+    <strong>
+        A fax requesting information was sent to you on @Model.Details.AnnexADate?.ToString("dd/MM/yyyy") by Keith Russell.<br />
+        To date no reply has been received.
+    </strong>
+</p>
+
+<hr />
+
+<p align="left">BSE: COULD YOU PLEASE ARRANGE FOR COMPLETION OF THE FOLLOWING INFORMATION.</p>
+
+<table class="InformationTable">
+    <tr>
+        <td class="InformationTableLeft">RBSE No.</td>
+        <td class="InformationTableRight">@BseFormat.FormatRbse(Model.Details.Rbse)</td>
+    </tr>
+    <tr>
+        <td class="InformationTableLeft">Animal Under Restriction</td>
+        <td class="InformationTableRight">Yes/No&nbsp;&nbsp;&nbsp;&nbsp;(Delete one)</td>
+    </tr>
+    <tr>
+        <td class="InformationTableLeft">&nbsp;&nbsp;&nbsp;&nbsp;If NOT Under Restriction</td>
+        <td class="InformationTableRight">Slaughtered/Recovered&nbsp;&nbsp;&nbsp;&nbsp;(Delete one)</td>
+    </tr>
+    <tr>
+        <td class="InformationTableLeft">Date of Slaughter</td>
+        <td class="InformationTableRight">&nbsp;</td>
+    </tr>
+    <tr>
+        <td class="InformationTableLeft">&nbsp;&nbsp;&nbsp;&nbsp;OR Date of Form B</td>
+        <td class="InformationTableRight">&nbsp;</td>
+    </tr>
+</table>
+
+<p align="left"><strong><u>Urgent - Please fax information by return to 01932 359429</u></strong></p>
+<p align="left">Thank you</p>

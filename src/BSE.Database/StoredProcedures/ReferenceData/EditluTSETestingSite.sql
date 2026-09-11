@@ -11,7 +11,7 @@ AS
   @ErrorCode int,     
   @RowsUpdated int    
          
- UPDATE luTSETestingSite SET    
+ UPDATE [luTseTestingSite] SET    
   [Name] = @Name,    
   [Address] = @Address,    
   [CPH]=@CPH,  

@@ -1,0 +1,91 @@
+@page
+@model OssExportBse1bModel
+@{
+    ViewData["Title"] = "OSS export — BSE1b";
+}
+
+<h1 class="govuk-heading-l">BSE1b — OSS export</h1>
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/OssExport/Menu">OSS export</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">BSE1b</li>
+    </ol>
+</nav>
+
+<p class="govuk-body">Add RBSE records to create an OSS export batch and generate the export file.</p>
+
+@* Batch Number Display *@
+@if (Model.BatchResult is not null)
+{
+    <div class="govuk-inset-text">
+        <strong>Current Batch Number: @Model.BatchResult.BatchYear/@Model.BatchResult.BatchNumber</strong>
+    </div>
+}
+
+@* Validation Messages *@
+@if (!string.IsNullOrEmpty(Model.ValidationMessage))
+{
+    <div class="govuk-error-message" role="alert">
+        <span class="govuk-visually-hidden">Error: </span>@Model.ValidationMessage
+    </div>
+}
+
+@* RBSE Input Form *@
+<form method="post" asp-page-handler="AddToGrid" novalidate>
+    <div class="govuk-form-group">
+        <label asp-for="RbseInput" class="govuk-label">
+            <strong>RBSE</strong>
+        </label>
+        <div class="govuk-hint">Enter 9 digits with no slashes — for example, 002600001.</div>
+        <input asp-for="RbseInput" class="govuk-input govuk-input--width-10" autocomplete="off" />
+    </div>
+    <button type="submit" class="govuk-button" data-module="govuk-button">Add to grid</button>
+</form>
+
+@* Grid Display *@
+@if (Model.GridEntries.Count > 0)
+{
+    <h3 class="govuk-heading-s govuk-!-margin-top-6">RBSE records in batch</h3>
+    <table class="govuk-table">
+        <thead class="govuk-table__head">
+            <tr class="govuk-table__row">
+                <th class="govuk-table__header">RBSE</th>
+                <th class="govuk-table__header">CPHH</th>
+                <th class="govuk-table__header">Owner</th>
+                <th class="govuk-table__header">Address</th>
+                <th class="govuk-table__header"><span class="govuk-visually-hidden">Action</span></th>
+            </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+            @foreach (var entry in Model.GridEntries)
+            {
+                <tr class="govuk-table__row">
+                    <td class="govuk-table__cell">@entry.Rbse</td>
+                    <td class="govuk-table__cell">@entry.Cphh</td>
+                    <td class="govuk-table__cell">@entry.OwnerName</td>
+                    <td class="govuk-table__cell">@entry.Address1</td>
+                    <td class="govuk-table__cell" style="text-align: right;">
+                        <form method="post" asp-page-handler="Delete" style="display: inline;">
+                            <input type="hidden" name="id" value="@entry.Id" />
+                            <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0" data-module="govuk-button" onclick="return confirm('Are you sure you want to delete this RBSE record?');">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <div class="govuk-inset-text" style="margin-top: 2rem;">
+        No RBSE records added yet.
+    </div>
+}
+
+@* Export Button - Always shown, disabled when grid is empty *@
+<form method="post" asp-page-handler="Export" novalidate style="margin-top: 2rem;">
+    <button type="submit" class="govuk-button govuk-button--primary" @(Model.GridEntries.Count == 0 ? "disabled" : "") data-module="govuk-button">
+        Export to OSS
+    </button>
+</form>

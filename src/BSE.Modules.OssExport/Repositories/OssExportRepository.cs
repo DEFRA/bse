@@ -53,4 +53,39 @@ public sealed class OssExportRepository : DapperRepository, IOssExportRepository
             param.Get<short>("BatchYear"),
             param.Get<int>("BatchNumber"));
     }
+
+    public async Task<IReadOnlyList<string>> GetStagedBse1RbseAsync()
+    {
+        const string sql = """
+                           SELECT [rbse]
+                           FROM [expCase]
+                           """;
+
+        using var connection = _connectionFactory.CreateConnection();
+        connection.Open();
+        var values = await connection.QueryAsync<string>(sql);
+        return values.ToList();
+    }
+
+    public async Task<IReadOnlyList<OssExportFileRecord>> GetCasesByBatchIdAsync(int batchId)
+    {
+        var results = await QueryAsync<OssExportFileRecord>("GetCaseByBatchID", new { BatchID = batchId });
+        return results.ToList().AsReadOnly();
+    }
+
+    public async Task<bool> AddBatchNumberLinkAsync(int batchId, string rbse, string document)
+    {
+        var param = new DynamicParameters();
+        param.Add("RETURN_VALUE", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+        param.Add("BatchID", dbType: DbType.Int32, value: batchId);
+        param.Add("RBSE", dbType: DbType.String, value: rbse, size: 9);
+        param.Add("Document", dbType: DbType.String, value: document, size: 5);
+
+        using var connection = _connectionFactory.CreateConnection();
+        connection.Open();
+        await connection.ExecuteAsync("AddBatchNumberLink", param, commandType: CommandType.StoredProcedure);
+
+        var returnCode = param.Get<int>("RETURN_VALUE");
+        return returnCode == 0;
+    }
 }

@@ -69,6 +69,14 @@ stages:
         arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
         zipAfterPublish: true
 
+    - task: CopyFiles@2
+      displayName: 'Stage SQL scripts'
+      inputs:
+        sourceFolder: 'src'
+        contents: '**/Scripts/*.sql'
+        targetFolder: '$(Build.ArtifactStagingDirectory)/sql'
+        flattenFolders: true    
+
     - publish: '$(Build.ArtifactStagingDirectory)'
       artifact: drop
       displayName: 'Publish artifact'
@@ -86,6 +94,8 @@ stages:
       value: '3eeeb482-eea0-4bb5-85a9-9a6fefb27a23'
     - name: sqlServer
       value: 'devbseinfsq1401.database.windows.net,1433'
+    - name: sqlServerHost
+      value: 'devbseinfsq1401.database.windows.net'  
     - name: dbName
       value: 'BSE'
   jobs:
@@ -99,6 +109,36 @@ stages:
           steps:
           - download: current
             artifact: drop
+
+          - task: AzureCLI@2
+            displayName: 'Apply database scripts'
+            inputs:
+              azureSubscription: 'AZR-BSE-DEV1'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+
+                TOOLS="$(Agent.TempDirectory)/sqlcmd"
+                mkdir -p "$TOOLS"
+                curl -sSL --fail --max-time 60 -o "$TOOLS/sqlcmd.tar.bz2" \
+                  https://github.com/microsoft/go-sqlcmd/releases/download/v1.8.2/sqlcmd-linux-amd64.tar.bz2
+                tar -xjf "$TOOLS/sqlcmd.tar.bz2" -C "$TOOLS"
+
+                shopt -s nullglob
+                files=("$(Pipeline.Workspace)"/drop/sql/*.sql)
+                if [ ${#files[@]} -eq 0 ]; then
+                  echo "No SQL scripts found - nothing to apply"
+                  exit 0
+                fi
+
+                for f in $(printf '%s\n' "${files[@]}" | sort); do
+                  echo "Applying ${f##*/}"
+                  "$TOOLS/sqlcmd" -S "$(sqlServerHost)" -d "$(dbName)" \
+                    --authentication-method ActiveDirectoryAzCli \
+                    -i "$f" -b -t 0
+                done
+                  
           - task: AzureWebApp@1
             inputs:
               azureSubscription: 'AZR-BSE-DEV1'

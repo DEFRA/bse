@@ -1,16 +1,17 @@
-@page "{rbse}/{type}"
+﻿@page "{rbse}/{type}"
 @model MinuteModel
 @{
-    ViewData["Title"] = $"{Model.MinuteTypeLabel} — {Model.Rbse}";
+    ViewData["Title"] = $"Casework Minute Confirmation â€” {Model.MinuteTypeLabel}";
 }
 
 <div>
-    <h1 class="govuk-heading-l">@Model.MinuteTypeLabel — @BseFormat.FormatRbse(Model.Rbse)</h1>
+    <h1 class="govuk-heading-l">Casework minute confirmation</h1>
+
     <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
         <ol class="govuk-breadcrumbs__list">
             <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
             <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/CaseWork/Menu" asp-route-rbse="@Model.Rbse">Case work</a></li>
-            <li class="govuk-breadcrumbs__list-item" aria-current="page">@Model.MinuteTypeLabel</li>
+            <li class="govuk-breadcrumbs__list-item" aria-current="page">Minute confirmation</li>
         </ol>
     </nav>
 
@@ -20,81 +21,108 @@
             <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
             <strong class="govuk-warning-text__text">
                 <span class="govuk-warning-text__assistive">Warning</span>
-                No details found for @BseFormat.FormatRbse(Model.Rbse) / @Model.Type.
+                No details found for @Model.Rbse / @Model.Type.
             </strong>
         </div>
     }
     else
     {
-        <h2 class="govuk-heading-m">@Model.MinuteTypeLabel details</h2>
-        <dl class="govuk-summary-list">
-            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@BseFormat.FormatRbse(Model.Details.Rbse)</dd></div>
-            @if (Model.Details.Cphh is not null)
-            {
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">CPHH</dt><dd class="govuk-summary-list__value">@BseFormat.FormatCphh(Model.Details.Cphh)</dd></div>
-            }
-            @if (Model.Details.Eartag is not null)
-            {
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Eartag</dt><dd class="govuk-summary-list__value">@Model.Details.EartagCountry @Model.Details.EartagHerdmark / @Model.Details.Eartag</dd></div>
-            }
-            @if (Model.Details.BirthDate is not null)
-            {
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Birth date</dt><dd class="govuk-summary-list__value">@Model.Details.BirthDate?.ToShortDateString()</dd></div>
-            }
-            @if (Model.Details.SlaughterDate is not null)
-            {
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Slaughter date</dt><dd class="govuk-summary-list__value">@Model.Details.SlaughterDate?.ToShortDateString()</dd></div>
-            }
-            @if (Model.Details.SurveyDescription is not null)
-            {
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Survey</dt><dd class="govuk-summary-list__value">@Model.Details.SurveyDescription</dd></div>
-            }
-            @if (Model.Details.AhoName is not null)
-            {
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">AHO</dt><dd class="govuk-summary-list__value">@Model.Details.AhoNumber — @Model.Details.AhoName</dd></div>
-            }
-            @if (Model.Details.OwnerName is not null)
-            {
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Owner</dt><dd class="govuk-summary-list__value">@Model.Details.OwnerName</dd></div>
-            }
-            @if (Model.Details.ActiveMemoDate is not null)
-            {
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Active memo date</dt><dd class="govuk-summary-list__value">@Model.Details.ActiveMemoDate?.ToShortDateString()</dd></div>
-            }
-            @if (Model.Details.AnnexADate is not null)
-            {
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Annex A date</dt><dd class="govuk-summary-list__value">@Model.Details.AnnexADate?.ToShortDateString()</dd></div>
-            }
-            @if (Model.Details.AnnexBDate is not null)
-            {
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Annex B date</dt><dd class="govuk-summary-list__value">@Model.Details.AnnexBDate?.ToShortDateString()</dd></div>
-            }
-            @if (Model.Details.AnnexCDate is not null)
-            {
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Annex C date</dt><dd class="govuk-summary-list__value">@Model.Details.AnnexCDate?.ToShortDateString()</dd></div>
-            }
-            @if (Model.Details.AnnexDDate is not null)
-            {
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Annex D date</dt><dd class="govuk-summary-list__value">@Model.Details.AnnexDDate?.ToShortDateString()</dd></div>
-            }
-            @if (Model.Details.TseTestingSite is not null)
-            {
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">TSE testing site</dt><dd class="govuk-summary-list__value">@Model.Details.TseTestingSite</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Sampling date</dt><dd class="govuk-summary-list__value">@Model.Details.SamplingDate?.ToShortDateString()</dd></div>
-            }
-            @if (Model.Details.TestResult is not null)
-            {
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Test result</dt><dd class="govuk-summary-list__value">@Model.Details.TestResult</dd></div>
-            }
-        </dl>
-
-        <form method="post" novalidate>
-            <input type="hidden" asp-for="Rbse" />
-            <input type="hidden" asp-for="Type" />
-            <div class="govuk-button-group">
-                <button type="submit" class="govuk-button" data-module="govuk-button">Mark as sent today</button>
-                <a asp-page="/CaseWork/Menu" asp-route-rbse="@Model.Rbse" class="govuk-link">Back</a>
+        <dl class="govuk-summary-list govuk-summary-list--no-border">
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">RBSE</dt>
+                <dd class="govuk-summary-list__value">@BseFormat.FormatRbse(Model.Details.Rbse)</dd>
             </div>
-        </form>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">Minute</dt>
+                <dd class="govuk-summary-list__value">@Model.MinuteTypeLabel</dd>
+            </div>
+            <div class="govuk-summary-list__row">
+                <dt class="govuk-summary-list__key">Date</dt>
+                <dd class="govuk-summary-list__value">@(Model.MinuteDate?.ToString("dd/MM/yyyy") ?? "-")</dd>
+            </div>
+        </dl>
     }
+
+    <form method="post" novalidate>
+        <input type="hidden" asp-for="Rbse" />
+        <input type="hidden" asp-for="Type" />
+
+        @if (Model.ShowOutstandingForms)
+        {
+            <div class="govuk-form-group @(ViewData.ModelState.ContainsKey("OutstandingForms") ? "govuk-form-group--error" : "")">
+                <fieldset class="govuk-fieldset">
+                    <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">Outstanding forms</legend>
+
+                    @if (ViewData.ModelState.ContainsKey("OutstandingForms"))
+                    {
+                        <p class="govuk-error-message">
+                            <span class="govuk-visually-hidden">Error:</span>
+                            @ViewData.ModelState["OutstandingForms"]?.Errors.FirstOrDefault()?.ErrorMessage
+                        </p>
+                    }
+
+                    <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                        <div class="govuk-checkboxes__item">
+                            <input class="govuk-checkboxes__input" asp-for="OutstandingHomebred" />
+                            <label class="govuk-label govuk-checkboxes__label" asp-for="OutstandingHomebred">Homebred</label>
+                        </div>
+                        <div class="govuk-checkboxes__item">
+                            <input class="govuk-checkboxes__input" asp-for="OutstandingBreeder" />
+                            <label class="govuk-label govuk-checkboxes__label" asp-for="OutstandingBreeder">Breeder</label>
+                        </div>
+                        <div class="govuk-checkboxes__item">
+                            <input class="govuk-checkboxes__input" asp-for="OutstandingPurchaser" />
+                            <label class="govuk-label govuk-checkboxes__label" asp-for="OutstandingPurchaser">Purchaser</label>
+                        </div>
+                        <div class="govuk-checkboxes__item">
+                            <input class="govuk-checkboxes__input" asp-for="OutstandingVendor" />
+                            <label class="govuk-label govuk-checkboxes__label" asp-for="OutstandingVendor">Vendor</label>
+                        </div>
+                        <div class="govuk-checkboxes__item">
+                            <input class="govuk-checkboxes__input" asp-for="OutstandingSummarySheet" />
+                            <label class="govuk-label govuk-checkboxes__label" asp-for="OutstandingSummarySheet">Summary Sheet</label>
+                        </div>
+                        <div class="govuk-checkboxes__item">
+                            <input class="govuk-checkboxes__input" asp-for="OutstandingAllPaperwork" />
+                            <label class="govuk-label govuk-checkboxes__label" asp-for="OutstandingAllPaperwork">All Paperwork</label>
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
+        }
+
+        <div class="govuk-button-group govuk-!-margin-top-6">
+            <button type="submit" asp-page-handler="Download" class="govuk-button govuk-button--secondary" data-module="govuk-button">
+                Download
+            </button>
+
+            <button type="submit" asp-page-handler="PrintMemo" class="govuk-button govuk-button--secondary" data-module="govuk-button">
+                Print memo
+            </button>
+
+            <a asp-page="/CaseWork/Entry"
+               asp-route-rbse="@Model.Rbse"
+               class="govuk-button govuk-button--secondary"
+               role="button"
+               draggable="false">
+                Casework Entry
+            </a>
+
+            <a asp-page="/Home"
+               class="govuk-button govuk-button--secondary"
+               role="button"
+               draggable="false">
+                Home
+            </a>
+        </div>
+    </form>
 </div>
+
+@if (Model.TriggerPrintPopup && !string.IsNullOrWhiteSpace(Model.PrintPopupUrl))
+{
+    <script>
+        window.addEventListener('load', function() {
+            window.open('@Model.PrintPopupUrl', '_blank', 'noopener');
+        });
+    </script>
+}

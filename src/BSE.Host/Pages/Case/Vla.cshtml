@@ -2,7 +2,6 @@
 @model VlaModel
 @{
     ViewData["Title"] = $"Case (VLA) — {Model.Case.Rbse}";
-    string DateVal(DateTime? d) => d?.ToString("yyyy-MM-dd") ?? "";
     string D(DateTime? d) => d?.ToString("dd/MM/yyyy") ?? "—";
     string rbseNoSlash = Model.Case.Rbse.Replace("/", "");
     string Desc(IEnumerable<BSE.SharedKernel.ILookupItem> opts, string? code) =>

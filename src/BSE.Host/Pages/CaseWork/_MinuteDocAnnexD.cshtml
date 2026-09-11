@@ -1,0 +1,74 @@
+﻿@model BSE.Host.Pages.CaseWork.MinuteDocumentModel
+
+<p align="left">ANNEX D</p>
+<h1 align="left">OUTSTANDING PAPERWORK - <em>SECOND REMINDER</em></h1>
+
+<table class="HeaderLayout">
+    <tr>
+        <td class="HeaderLeft">
+            From:<br />
+            Brenda Rajanayagam [VLA D (Sci)]<br />
+            CERA 3 - Area E - Weybourne Building<br />
+            VLA Weybridge, New Haw,<br />
+            Addlestone,<br />
+            KT15 3NB
+        </td>
+        <td class="HeaderRight">
+            To: DVM<br />
+            At: @Model.Details.AhoName<br /><br />
+            Cc: ADVFS<br />
+            At: @Model.Details.AhoName
+        </td>
+    </tr>
+</table>
+
+<p align="left">Date: @Model.MinuteDate?.ToString("dd/MM/yyyy")</p>
+
+<p align="left">
+    <strong>
+        A fax requesting information was sent to you on @Model.Details.AnnexCDate?.ToString("dd/MM/yyyy") by Keith Russell.<br />
+        To date no reply has been received.
+    </strong>
+</p>
+
+<p align="left">BSE: FORMS OUTSTANDING</p>
+
+<table class="InformationTable">
+    <tr>
+        <td colspan="2">&nbsp;</td>
+        <td colspan="4" style="border-color:black; border-style:solid; border-width:2px 2px 0 2px; text-align:center;">To be completed by AHDO</td>
+    </tr>
+    <tr class="InformationTableHeader">
+        <td rowspan="2" class="InformationTableCell" style="border-left:2px black solid; border-top:2px black solid;">RBSE No</td>
+        <td rowspan="2" class="InformationTableCell" style="border-top:2px black solid;">Outstanding BSE Forms</td>
+        <td colspan="2" class="InformationTableCell">Form will follow by fax or email</td>
+        <td rowspan="2" class="InformationTableCell">Tracing required (Y/N)</td>
+        <td rowspan="2" class="InformationTableCell">Name of AHDO who will be carrying out the tracing</td>
+    </tr>
+    <tr class="InformationTableHeader">
+        <td class="InformationTableCell">YES</td>
+        <td class="InformationTableCell">NO</td>
+    </tr>
+    @foreach (var form in Model.OutstandingForms)
+    {
+        <tr>
+            <td class="InformationTableCell" style="border-left:2px black solid;">@BseFormat.FormatRbse(Model.Details.Rbse)</td>
+            <td class="InformationTableCell">@form</td>
+            <td class="InformationTableCell">&nbsp;</td>
+            <td class="InformationTableCell">&nbsp;</td>
+            <td class="InformationTableCell">&nbsp;</td>
+            <td class="InformationTableCell">&nbsp;</td>
+        </tr>
+    }
+</table>
+
+<p>
+    Paper work relating to the BSE cases listed has not been received as
+    indicated in column 1 &amp; 2. Would you please complete the table as necessary
+    and fax by return if possible and please send the requested paperwork by email
+    or post ASAP.
+</p>
+
+<p align="left"><strong><u>Urgent - Please fax information to 01932 359429 by return if possible</u></strong></p>
+<p align="left"><strong>Please fax as soon as possible</strong></p>
+<p align="left">Thank you</p>

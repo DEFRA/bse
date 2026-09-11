@@ -14,10 +14,110 @@
     </ol>
 </nav>
 
-<div class="govuk-inset-text">
-    This report is not yet available in the migrated application. To access casework for a specific case, look up the case by RBSE and navigate to its casework record.
-</div>
-
 <p class="govuk-body">
-    <a asp-page="/Case/Lookup" class="govuk-link">Look up a case by RBSE</a>
+    <a asp-page="/CaseWork/ClosedCases" class="govuk-link">See closed cases</a>
+</p>
+
+@if (Model.Cases.Any())
+{
+    <p class="govuk-body">Total open cases: <strong>@Model.TotalCount</strong></p>
+
+    <div style="overflow-x: auto;">
+        <table class="govuk-table govuk-table--small-text-until-tablet">
+            <caption class="govuk-visually-hidden">Open cases</caption>
+            <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                    <th scope="col" class="govuk-table__header">RBSE</th>
+                    <th scope="col" class="govuk-table__header">Survey</th>
+                    <th scope="col" class="govuk-table__header">Barcode</th>
+                    <th scope="col" class="govuk-table__header">AHF Reference</th>
+                    <th scope="col" class="govuk-table__header">Form A Date</th>
+                    <th scope="col" class="govuk-table__header">RBSE Date</th>
+                    <th scope="col" class="govuk-table__header">Slaughter Date</th>
+                    <th scope="col" class="govuk-table__header">Fate</th>
+                    <th scope="col" class="govuk-table__header">Active Memo Due</th>
+                    <th scope="col" class="govuk-table__header">Active Memo Date</th>
+                    <th scope="col" class="govuk-table__header">Annex A Due</th>
+                    <th scope="col" class="govuk-table__header">Annex A Date</th>
+                    <th scope="col" class="govuk-table__header">Annex B Due</th>
+                    <th scope="col" class="govuk-table__header">Annex B Date</th>
+                    <th scope="col" class="govuk-table__header">Paperwork Complete Date</th>
+                    <th scope="col" class="govuk-table__header">Annex C Due</th>
+                    <th scope="col" class="govuk-table__header">Annex C Date</th>
+                    <th scope="col" class="govuk-table__header">Annex D Due</th>
+                    <th scope="col" class="govuk-table__header">Annex D Date</th>
+                    <th scope="col" class="govuk-table__header">Regional Lab</th>
+                    <th scope="col" class="govuk-table__header">Regional Lab Received Date</th>
+                    <th scope="col" class="govuk-table__header">Initial Received Date</th>
+                    <th scope="col" class="govuk-table__header">Final Received Date</th>
+                    <th scope="col" class="govuk-table__header">Final Sent Date</th>
+                    <th scope="col" class="govuk-table__header">Lab Chase Due Date</th>
+                    <th scope="col" class="govuk-table__header">Lab Chased Date</th>
+                    <th scope="col" class="govuk-table__header">Final Result</th>
+                    <th scope="col" class="govuk-table__header">Final Result Date</th>
+                    <th scope="col" class="govuk-table__header">Birth Date</th>
+                    <th scope="col" class="govuk-table__header">Post 2000 Sent Date</th>
+                    <th scope="col" class="govuk-table__header">Barb Memo Due</th>
+                    <th scope="col" class="govuk-table__header">Barb Minute Sent Date</th>
+                    <th scope="col" class="govuk-table__header">Data Complete Date</th>
+                    <th scope="col" class="govuk-table__header">CaseWorkNotes</th>
+                </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+                @foreach (var caseRecord in Model.PagedCases)
+                {
+                    <tr class="govuk-table__row">
+                        <th scope="row" class="govuk-table__header">
+                            <a asp-page="/CaseWork/Entry" asp-route-rbse="@caseRecord.Rbse" class="govuk-link">@BseFormat.FormatRbse(caseRecord.Rbse)</a>
+                        </th>
+                        <td class="govuk-table__cell">@(caseRecord.Survey ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.Barcode ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.AhfReference ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.FormADate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.RbseDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.SlaughterDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.Fate ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.ActiveMemoDueDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.ActiveMemoDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.AnnexADueDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.AnnexADate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.AnnexBDueDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.AnnexBDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.PaperworkCompleteDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.AnnexCDueDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.AnnexCDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.AnnexDDueDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.AnnexDDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.RegionalLab ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.ReceivedByRegionalLabDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.InitialReceivedDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.FinalReceivedDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.FinalSentDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.LabChaseDueDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.LabChasedDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.FinalResult ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.FinalResultDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.BirthDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.Post2000SentDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.BarbMemoDue ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.BarbMinuteSentDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.DataCompleteDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.CaseWorkNotes ?? "—")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
+}
+else
+{
+    <div class="govuk-inset-text">
+        <p class="govuk-body">No open cases found.</p>
+    </div>
+}
+
+<p class="govuk-body govuk-!-margin-top-6">
+    <a asp-page="/CaseWork/Menu" class="govuk-link">Back to casework menu</a>
 </p>

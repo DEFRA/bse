@@ -34,6 +34,10 @@ public class UsersAddModel(
         IsActive = Request.Form[nameof(IsActive)]
             .Any(v => string.Equals(v, "true", StringComparison.OrdinalIgnoreCase));
 
+        var ntLogin = NTLogin?.Trim();
+
+        if (string.IsNullOrWhiteSpace(ntLogin))
+            ModelState.AddModelError(nameof(NTLogin), "Enter an NT login");
         if (string.IsNullOrWhiteSpace(UserName))
             ModelState.AddModelError(nameof(UserName), "Enter a display name");
         if (UserGroupId <= 0)
@@ -54,7 +58,7 @@ public class UsersAddModel(
 
         var user = new User(
             UserId: 0,
-            NTLogin: NTLogin,
+            NTLogin: ntLogin!,
             Upn: Upn,
             UserName: UserName,
             Email: Email,
