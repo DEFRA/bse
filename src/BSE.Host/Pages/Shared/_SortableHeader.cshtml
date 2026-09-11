@@ -1,4 +1,4 @@
-@* Renders a server-side sortable <th> aligned to the MOJ/GDS sortable-table pattern.
+@* Renders a server-side sortable <th> aligned to the GDS sortable-table pattern.
    Parameters (passed via ViewData):
      Label        - column display text
      Column       - sort key string (matches SortColumn values in the view model)
@@ -7,15 +7,16 @@
      BaseUrl      - query string base (all params except SortColumn/SortDesc/PageNumber)
 *@
 @{
-    var label      = (string)ViewData["Label"]!;
-    var column     = (string)ViewData["Column"]!;
-    var sortCol    = (string?)ViewData["SortColumn"] ?? "";
-    var sortDesc   = (bool?)ViewData["SortDesc"] ?? false;
-    var baseUrl    = (string?)ViewData["BaseUrl"] ?? "?";
-    var prefix     = (string?)ViewData["Prefix"] ?? "";
+    var label = (string)ViewData["Label"]!;
+    var column = (string)ViewData["Column"]!;
+    var sortCol = (string?)ViewData["SortColumn"] ?? "";
+    var sortDesc = (bool?)ViewData["SortDesc"] ?? false;
+    var baseUrl = (string?)ViewData["BaseUrl"] ?? "?";
+    var prefix = (string?)ViewData["Prefix"] ?? "";
+    var fragment = (string?)ViewData["Fragment"] ?? "";
 
-    bool isActive  = string.Equals(sortCol, column, StringComparison.OrdinalIgnoreCase);
-    bool nextDesc  = isActive && !sortDesc;   // toggle on second click
+    bool isActive = string.Equals(sortCol, column, StringComparison.OrdinalIgnoreCase);
+    bool nextDesc = isActive && !sortDesc;
 
     var joiner = baseUrl.Contains('?') ? "&" : "?";
     if (baseUrl.EndsWith('?') || baseUrl.EndsWith('&')) joiner = "";
@@ -24,6 +25,9 @@
         + joiner + $"{prefix}SortColumn=" + Uri.EscapeDataString(column)
         + $"&{prefix}SortDesc=" + nextDesc.ToString().ToLowerInvariant()
         + $"&{prefix}PageNumber=1";
+
+    if (!string.IsNullOrWhiteSpace(fragment))
+        href += "#" + Uri.EscapeDataString(fragment);
 
     string ariaSort = isActive ? (sortDesc ? "descending" : "ascending") : "none";
     string screenReaderText = isActive
