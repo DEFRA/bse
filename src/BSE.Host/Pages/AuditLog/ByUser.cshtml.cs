@@ -44,22 +44,23 @@ public class ByUserModel(IAuditLogService auditLogService, IUserManagementServic
 
         if (Request.Query.ContainsKey(nameof(UserId)))
         {
+            // Validate all mandatory inputs in one pass.
             if (UserId == 0)
-            {
-                ValidationError = "Please select a user";
-                return Page();
-            }
+                ValidationError = "Select a user.";
 
             if (!AuditDateRange.Validate(StartDate, EndDate, out var startError, out var endError))
             {
                 StartDateError = startError;
                 EndDateError = endError;
-                return Page();
             }
+
+            if (ValidationError is not null || StartDateError is not null || EndDateError is not null)
+                return Page();
 
             HasSearched = true;
             Entries = ApplySorting(await auditLogService.GetByUserAsync(StartDate!.Value, EndDate!.Value, UserId));
         }
+
         return Page();
     }
 
