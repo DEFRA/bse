@@ -11,14 +11,16 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.Case;
 
+/// <summary>Migrated equivalent of the legacy "Update Selected" action on CaseEntryRelations.aspx.</summary>
 [Authorize(Policy = "DataEntry")]
-public class RelationAddModel(
+public class RelationEditModel(
     IAnimalRelationsRepository relationsRepository,
     ILookupDataService lookups,
     IDbConnectionFactory connectionFactory,
-    ILogger<RelationAddModel> logger) : PageModel
+    ILogger<RelationEditModel> logger) : PageModel
 {
     [BindProperty(SupportsGet = true)] public string Rbse { get; set; } = string.Empty;
+    [BindProperty(SupportsGet = true)] public int RelationId { get; set; }
 
     [BindProperty] public string? RelationType { get; set; }
     [BindProperty] public string? RelationRbse { get; set; }
@@ -32,6 +34,7 @@ public class RelationAddModel(
     [BindProperty] public DateTime? LeftDate { get; set; }
     [BindProperty] public string? RelationFate { get; set; }
     [BindProperty] public string? Sire { get; set; }
+    [BindProperty] public string? RowStamp { get; set; }
 
     public IEnumerable<LookupItem> RelationTypes { get; private set; } = [];
     public IEnumerable<LuRelationFate> RelationFates { get; private set; } = [];
@@ -43,6 +46,29 @@ public class RelationAddModel(
     public async Task<IActionResult> OnGetAsync()
     {
         await LoadLookupsAsync();
+
+        var details = await relationsRepository.GetRelationsDetailsByRbseAsync(RbseHelper.ParseToRaw(Rbse));
+        var existing = details?.Relations.FirstOrDefault(r => r.Id == RelationId);
+
+        if (existing is null)
+        {
+            return RedirectToPage("/Case/Relations", new { rbse = Rbse });
+        }
+
+        RelationType   = existing.RelationType;
+        RelationRbse   = existing.RelationRbse;
+        EartagCountry  = existing.EartagCountry;
+        EartagHerdmark = existing.EartagHerdmark;
+        Eartag         = existing.Eartag;
+        Sex            = existing.Sex;
+        BirthDay       = existing.BirthDay;
+        BirthMonth     = existing.BirthMonth;
+        BirthYear      = existing.BirthYear;
+        LeftDate       = existing.LeftDate;
+        RelationFate   = existing.RelationFate;
+        Sire           = existing.Sire;
+        RowStamp       = Convert.ToBase64String(existing.RowStamp ?? []);
+
         return Page();
     }
 
@@ -53,12 +79,17 @@ public class RelationAddModel(
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
         var details = await relationsRepository.GetRelationsDetailsByRbseAsync(caseRbse);
 
+        // Exclude the row being edited so its own RBSE is not reported as a duplicate.
+        var otherRelationRbses = details?.Relations
+            .Where(r => r.Id != RelationId)
+            .Select(r => r.RelationRbse) ?? [];
+
         FieldErrors = RelationValidation.Validate(
             new RelationValidation.Input(
                 caseRbse, RelationRbse, RelationType, Sex,
                 EartagCountry, EartagHerdmark, Eartag,
                 BirthDay, BirthMonth, BirthYear, LeftDate),
-            details?.Relations.Select(r => r.RelationRbse) ?? [],
+            otherRelationRbses,
             details?.Dam?.Rbse,
             details?.Sire?.Rbse);
 
@@ -72,8 +103,8 @@ public class RelationAddModel(
             return Page();
         }
 
-        var command = new AddCaseRelationCommand(
-            caseRbse,
+        var command = new EditCaseRelationCommand(
+            RelationId,
             RelationType!,
             NullIfBlank(RbseHelper.Normalize(RelationRbse)),
             NullIfBlank(Sex),
@@ -85,24 +116,25 @@ public class RelationAddModel(
             NullIfBlank(EartagCountry),
             NullIfBlank(EartagHerdmark),
             NullIfBlank(Eartag),
-            NullIfBlank(Sire));
+            NullIfBlank(Sire),
+            Convert.FromBase64String(RowStamp ?? string.Empty));
 
         try
         {
             using var conn = connectionFactory.CreateConnection();
             conn.Open();
             using var tx = conn.BeginTransaction();
-            await relationsRepository.AddRelationAsync(command, conn, tx);
+            await relationsRepository.EditRelationAsync(command, conn, tx);
             tx.Commit();
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "AddCaseRelation stored procedure threw an exception");
+            logger.LogError(ex, "EditCaseRelation stored procedure threw an exception");
             ErrorMessage = "Unable to save the relation.";
             return Page();
         }
 
-        TempData["Success"] = "Relation added successfully.";
+        TempData["Success"] = "Relation updated.";
         return RedirectToPage("/Case/Relations", new { rbse = Rbse });
     }
 

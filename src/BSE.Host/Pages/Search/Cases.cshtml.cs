@@ -37,15 +37,16 @@ public class CasesModel : PageModel
 
     public async Task OnGetAsync()
     {
+        // GetSearchCase filters on the lookup Code (not the numeric Id), so dropdown values must carry Code.
         SexOptions = (await _lookups.GetSexesAsync())
-            .Select(x => new LookupItem(x.Id, x.Description))
+            .Select(x => new LookupItem(x.Id, x.Code, x.Description))
             .ToList();
         SurveyOptions = (await _lookups.GetLookupAsync(LookupTableId.Survey)).ToList();
         FateOptions = (await _lookups.GetCaseFatesAsync())
-            .Select(x => new LookupItem(x.Id, x.Description))
+            .Select(x => new LookupItem(x.Id, x.Code, x.Description))
             .ToList();
         FinalResultOptions = (await _lookups.GetTestResultsAsync())
-            .Select(x => new LookupItem(x.Id, x.Description))
+            .Select(x => new LookupItem(x.Id, x.Code, x.Description))
             .ToList();
 
         if (HasAnyFilter())

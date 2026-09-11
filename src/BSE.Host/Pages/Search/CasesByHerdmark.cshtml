@@ -12,11 +12,7 @@
         <div class="govuk-grid-column-two-thirds">
             <div class="govuk-form-group">
                 <label asp-for="Herdmark" class="govuk-label">Herdmark</label>
-                <div id="herdmark-hint" class="govuk-hint">
-                    Matches any part of the country code and herdmark, so a partial value such as
-                    <span class="govuk-!-font-weight-bold">1234</span> is accepted. Only the first 8 characters are used.
-                    Leave blank to list all cases.
-                </div>
+  
                 <input asp-for="Herdmark" maxlength="35" aria-describedby="herdmark-hint" class="govuk-input govuk-!-width-two-thirds" />
                 <span asp-validation-for="Herdmark" class="govuk-error-message"></span>
             </div>

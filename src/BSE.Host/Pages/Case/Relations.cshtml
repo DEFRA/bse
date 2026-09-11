@@ -85,60 +85,98 @@
     </div>
 }
 
-@* ── Dam ── *@
-<h2 class="govuk-heading-m">Dam</h2>
-@if (Model.Details?.Dam is { } dam)
-{
-    <dl class="govuk-summary-list govuk-!-margin-bottom-4">
-        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Eartag</dt><dd class="govuk-summary-list__value">@dam.Eartag</dd></div>
-        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Name</dt><dd class="govuk-summary-list__value">@dam.Name</dd></div>
-        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Herdbook</dt><dd class="govuk-summary-list__value">@dam.Herdbook</dd></div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Birth date</dt>
-            <dd class="govuk-summary-list__value">@($"{dam.BirthDay}/{dam.BirthMonth}/{dam.BirthYear}")</dd>
-        </div>
-        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Fate</dt><dd class="govuk-summary-list__value">@dam.Fate</dd></div>
-        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Offspring</dt><dd class="govuk-summary-list__value">@dam.ChildCount</dd></div>
-    </dl>
-}
-else
-{
-    <p class="govuk-body govuk-!-colour-secondary">No dam recorded.</p>
+@{
+    var canEditRelations = User.IsInRole("DataEntry");
+    var d = Model.DamSire;
 }
 
-@* ── Sire ── *@
-<h2 class="govuk-heading-m">Sire</h2>
-@if (Model.Details?.Sire is { } sire)
-{
-    <dl class="govuk-summary-list govuk-!-margin-bottom-4">
-        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Eartag</dt><dd class="govuk-summary-list__value">@sire.Eartag</dd></div>
-        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Name</dt><dd class="govuk-summary-list__value">@sire.Name</dd></div>
-        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Herdbook</dt><dd class="govuk-summary-list__value">@sire.Herdbook</dd></div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Birth date</dt>
-            <dd class="govuk-summary-list__value">@($"{sire.BirthDay}/{sire.BirthMonth}/{sire.BirthYear}")</dd>
-        </div>
-        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Fate</dt><dd class="govuk-summary-list__value">@sire.Fate</dd></div>
-        <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Offspring</dt><dd class="govuk-summary-list__value">@sire.ChildCount</dd></div>
-    </dl>
-}
-else
-{
-    <p class="govuk-body govuk-!-colour-secondary">No sire recorded.</p>
-}
+<h2 class="govuk-heading-m">Case Herdbook</h2>
+<p class="govuk-body">@(string.IsNullOrWhiteSpace(Model.CaseHerdbook) ? "—" : Model.CaseHerdbook)</p>
 
-@if (User.IsInRole("DataEntry"))
-{
-    <div class="govuk-button-group govuk-!-margin-bottom-4">
-        <a asp-page="/Case/RelationsEdit" asp-route-rbse="@Model.Rbse"
-           class="govuk-button govuk-button--secondary">Edit dam and sire details</a>
+<div class="govuk-grid-row">
+    <div class="govuk-grid-column-one-half">
+        <h2 class="govuk-heading-m">Dam</h2>
+        @if (d.HasDam)
+        {
+            <dl class="govuk-summary-list govuk-summary-list--no-border govuk-!-margin-bottom-4">
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Eartag</dt><dd class="govuk-summary-list__value">@d.DamEartag</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Name</dt><dd class="govuk-summary-list__value">@d.DamName</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@(string.IsNullOrWhiteSpace(d.DamRbse) ? "—" : BseFormat.FormatRbse(d.DamRbse))</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Herdbook</dt><dd class="govuk-summary-list__value">@d.DamHerdbook</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Birth date</dt><dd class="govuk-summary-list__value">@(d.DamBirthDay.HasValue ? $"{d.DamBirthDay}/{d.DamBirthMonth}/{d.DamBirthYear}" : "—")</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Fate</dt><dd class="govuk-summary-list__value">@d.DamFate</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Final result</dt><dd class="govuk-summary-list__value">@d.DamFinalResult</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Offspring count</dt><dd class="govuk-summary-list__value">@d.DamChildCount</dd></div>
+            </dl>
+
+            <div class="govuk-button-group">
+                @if (!string.IsNullOrWhiteSpace(d.DamRbse))
+                {
+                    <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationsView" asp-route-rbse="@d.DamRbse">View Dam's Relations</a>
+                }
+                @if (canEditRelations)
+                {
+                    <form method="post" asp-page-handler="RemoveDam" novalidate>
+                        <button type="submit" class="govuk-button govuk-button--warning"
+                                onclick="return confirm('This will disassociate the dam from the case.  Do you wish to continue?');">Remove Dam</button>
+                    </form>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="govuk-body govuk-!-colour-secondary">No dam recorded.</p>
+            @if (canEditRelations)
+            {
+                <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationParentAdd" asp-route-rbse="@Model.Rbse" asp-route-sex="F">Add Dam Details</a>
+            }
+        }
     </div>
-}
+
+    <div class="govuk-grid-column-one-half">
+        <h2 class="govuk-heading-m">Sire</h2>
+        @if (d.HasSire)
+        {
+            <dl class="govuk-summary-list govuk-summary-list--no-border govuk-!-margin-bottom-4">
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Eartag</dt><dd class="govuk-summary-list__value">@d.SireEartag</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Name</dt><dd class="govuk-summary-list__value">@d.SireName</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@(string.IsNullOrWhiteSpace(d.SireRbse) ? "—" : BseFormat.FormatRbse(d.SireRbse))</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Herdbook</dt><dd class="govuk-summary-list__value">@d.SireHerdbook</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Birth date</dt><dd class="govuk-summary-list__value">@(d.SireBirthDay.HasValue ? $"{d.SireBirthDay}/{d.SireBirthMonth}/{d.SireBirthYear}" : "—")</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Fate</dt><dd class="govuk-summary-list__value">@d.SireFate</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Offspring count</dt><dd class="govuk-summary-list__value">@d.SireChildCount</dd></div>
+            </dl>
+
+            <div class="govuk-button-group">
+                @if (!string.IsNullOrWhiteSpace(d.SireRbse))
+                {
+                    <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationsView" asp-route-rbse="@d.SireRbse">View Sire's Relations</a>
+                }
+                @if (canEditRelations)
+                {
+                    <form method="post" asp-page-handler="RemoveSire" novalidate>
+                        <button type="submit" class="govuk-button govuk-button--warning"
+                                onclick="return confirm('This will disassociate the sire from the case.  Do you wish to continue?');">Remove Sire</button>
+                    </form>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="govuk-body govuk-!-colour-secondary">No sire recorded.</p>
+            @if (canEditRelations)
+            {
+                <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationParentAdd" asp-route-rbse="@Model.Rbse" asp-route-sex="M">Add Sire Details</a>
+            }
+        }
+    </div>
+</div>
+
 
 @* ── Related animals ── *@
 <h2 class="govuk-heading-m">Related animals</h2>
 
-@if (Model.Details?.Relations?.Count > 0)
+@if (Model.TotalRelationsCount > 0)
 {
     <table class="govuk-table">
         <caption class="govuk-visually-hidden">Related animals for @Model.Rbse</caption>
@@ -147,57 +185,71 @@ else
                 @{
                     var relBase = Url.Page("/Case/Relations", new { rbse = Model.Rbse });
                 }
-                <th scope="col" class="govuk-table__header">Relation Type</th>
-                <th scope="col" class="govuk-table__header">Eartag</th>
-                <th scope="col" class="govuk-table__header">RBSE</th>
+                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Relation Type", ["Column"]="RelationType", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
+                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="RBSE", ["Column"]="RelationRbse", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
                 @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Sex", ["Column"]="Sex", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
                 @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Birth Date", ["Column"]="BirthDate", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
+                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Fate", ["Column"]="RelationFate", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
                 @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Date Left", ["Column"]="LeftDate", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
-                <th scope="col" class="govuk-table__header">Fate</th>
+                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Eartag", ["Column"]="Eartag", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
+                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Sire", ["Column"]="Sire", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
                 @if (User.IsInRole("DataEntry"))
                 {
-                    <th scope="col" class="govuk-table__header">Action</th>
+                    <th scope="col" class="govuk-table__header"><span class="govuk-visually-hidden">Actions</span></th>
                 }
             </tr>
         </thead>
         <tbody class="govuk-table__body">
-            @foreach (var r in Model.Details.Relations)
+            @foreach (var r in Model.PagedRelations)
             {
                 <tr class="govuk-table__row">
                     <td class="govuk-table__cell">@(r.RelationTypeDesc ?? r.RelationType)</td>
-                    <td class="govuk-table__cell">@r.EartagCountry @r.EartagHerdmark @r.Eartag</td>
                     <td class="govuk-table__cell">@BseFormat.FormatRbse(r.RelationRbse)</td>
                     <td class="govuk-table__cell">@(r.SexDesc ?? r.Sex)</td>
                     <td class="govuk-table__cell">@($"{r.BirthDay}/{r.BirthMonth}/{r.BirthYear}")</td>
-                    <td class="govuk-table__cell">@r.LeftDate?.ToString("dd/MM/yyyy")</td>
                     <td class="govuk-table__cell">@(r.RelationFateDesc ?? r.RelationFate)</td>
+                    <td class="govuk-table__cell">@r.LeftDate?.ToString("dd/MM/yyyy")</td>
+                    <td class="govuk-table__cell">@r.EartagCountry @r.EartagHerdmark @r.Eartag</td>
+                    <td class="govuk-table__cell">@r.Sire</td>
                     @if (User.IsInRole("DataEntry"))
                     {
                         <td class="govuk-table__cell">
-                            <form method="post" asp-page-handler="DeleteRelation" style="display:inline" novalidate>
-                                <input type="hidden" name="RelationId" value="@r.Id" />
-                                <input type="hidden" name="RowStampBase64" value="@Convert.ToBase64String(r.RowStamp ?? [])" />
-                                <input type="hidden" asp-for="Rbse" />
-                                <button type="submit" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0"
-                                        onclick="return confirm('Delete this relation?')">Delete</button>
-                            </form>
+                            <div class="bse-row-actions">
+                                <a class="govuk-link" asp-page="/Case/RelationEdit"
+                                   asp-route-rbse="@Model.Rbse" asp-route-relationId="@r.Id">Change<span class="govuk-visually-hidden"> relation @(r.RelationTypeDesc ?? r.RelationType)</span></a>
+                                <form method="post" asp-page-handler="DeleteRelation" novalidate>
+                                    <input type="hidden" name="RelationId" value="@r.Id" />
+                                    <input type="hidden" name="RowStampBase64" value="@Convert.ToBase64String(r.RowStamp ?? [])" />
+                                    <input type="hidden" asp-for="Rbse" />
+                                    <button type="submit" class="govuk-button govuk-button--secondary"
+                                            onclick="return confirm('Delete this relation?')">Delete<span class="govuk-visually-hidden"> relation @(r.RelationTypeDesc ?? r.RelationType)</span></button>
+                                </form>
+                            </div>
                         </td>
                     }
                 </tr>
             }
         </tbody>
     </table>
+
+    @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
 }
 else
 {
     <p class="govuk-body govuk-!-colour-secondary">No related animals recorded.</p>
 }
 
-@* ── Add relation form ── *@
-@if (User.IsInRole("DataEntry"))
-{
-    <div class="govuk-button-group govuk-!-margin-top-4">
-        <a asp-page="/Case/RelationAdd" asp-route-rbse="@Model.Rbse" class="govuk-button govuk-button--secondary">Add a related animal</a>
-    </div>
-}
+@* -- Actions --------------------------------------------------------------- *@
+<div class="govuk-button-group govuk-!-margin-top-4">
+    @if (User.IsInRole("DataEntry"))
+    {
+        <a asp-page="/Case/RelationAdd" asp-route-rbse="@Model.Rbse" class="govuk-button govuk-button--secondary">Add As New</a>
+    }
+    @if (!string.IsNullOrEmpty(Model.SpolSiteUrl))
+    {
+        <a href="@(Model.SpolSiteUrl)@rbseNoSlash" target="_blank" rel="noopener noreferrer" class="govuk-link">
+            View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
+        </a>
+    }
+</div>
 

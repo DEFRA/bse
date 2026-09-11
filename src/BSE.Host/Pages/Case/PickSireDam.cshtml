@@ -1,0 +1,104 @@
+@page
+@using BSE.Host.Helpers
+@model BSE.Host.Pages.Case.PickSireDamModel
+@{
+    ViewData["Title"] = Model.IsDam ? "Pick A Dam" : "Pick A Sire";
+}
+
+<h1 class="govuk-heading-l">@(Model.IsDam ? "Pick A Dam" : "Pick A Sire")</h1>
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Relations" asp-route-rbse="@Model.Rbse">@BseFormat.FormatRbse(Model.Rbse)</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">@(Model.IsDam ? "Pick a dam" : "Pick a sire")</li>
+    </ol>
+</nav>
+
+<dl class="govuk-summary-list govuk-summary-list--no-border govuk-!-margin-bottom-6">
+    <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Eartag</dt><dd class="govuk-summary-list__value">@Model.Eartag</dd></div>
+    <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Name</dt><dd class="govuk-summary-list__value">@Model.Name</dd></div>
+    <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Herdbook</dt><dd class="govuk-summary-list__value">@Model.Herdbook</dd></div>
+</dl>
+
+@if (Model.TotalMatchCount > 0)
+{
+    var pickBase = Url.Page("/Case/PickSireDam", new
+    {
+        rbse = Model.Rbse, sex = Model.Sex, eartag = Model.Eartag, name = Model.Name, herdbook = Model.Herdbook, returnTo = Model.ReturnTo
+    });
+
+    <table class="govuk-table">
+        <caption class="govuk-visually-hidden">Matching @(Model.IsDam ? "dams" : "sires")</caption>
+        <thead class="govuk-table__head">
+            <tr class="govuk-table__row">
+                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Eartag", ["Column"]="Eartag", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=pickBase })
+                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Name", ["Column"]="Name", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=pickBase })
+                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Herdbook", ["Column"]="Herdbook", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=pickBase })
+                <th scope="col" class="govuk-table__header">RBSE</th>
+                <th scope="col" class="govuk-table__header">Birth Date</th>
+                <th scope="col" class="govuk-table__header">Fate</th>
+                <th scope="col" class="govuk-table__header">Offspring Count</th>
+                <th scope="col" class="govuk-table__header"><span class="govuk-visually-hidden">Actions</span></th>
+            </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+            @foreach (var m in Model.PagedMatches)
+            {
+                <tr class="govuk-table__row">
+                    <td class="govuk-table__cell">@m.Eartag</td>
+                    <td class="govuk-table__cell">@m.Name</td>
+                    <td class="govuk-table__cell">@m.Herdbook</td>
+                    <td class="govuk-table__cell">@(m.Rbse is not null ? BseFormat.FormatRbse(m.Rbse) : "—")</td>
+                    <td class="govuk-table__cell">@($"{m.BirthDay}/{m.BirthMonth}/{m.BirthYear}")</td>
+                    <td class="govuk-table__cell">@m.Fate</td>
+                    <td class="govuk-table__cell">@m.ChildCount</td>
+                    <td class="govuk-table__cell">
+                        <form method="post" asp-page-handler="UseSelected" novalidate>
+                            <input type="hidden" name="Rbse" value="@Model.Rbse" />
+                            <input type="hidden" name="Sex" value="@Model.Sex" />
+                            <input type="hidden" name="ReturnTo" value="@Model.ReturnTo" />
+                            <input type="hidden" name="id" value="@m.Id" />
+                            <input type="hidden" name="rbse" value="@m.Rbse" />
+                            <input type="hidden" name="eartag" value="@m.Eartag" />
+                            <input type="hidden" name="name" value="@m.Name" />
+                            <input type="hidden" name="herdbook" value="@m.Herdbook" />
+                            <input type="hidden" name="birthDay" value="@m.BirthDay" />
+                            <input type="hidden" name="birthMonth" value="@m.BirthMonth" />
+                            <input type="hidden" name="birthYear" value="@m.BirthYear" />
+                            <input type="hidden" name="rowStampBase64" value="@(m.RowStamp is { Length: > 0 } ? Convert.ToBase64String(m.RowStamp) : "")" />
+                            <input type="hidden" name="fate" value="@m.Fate" />
+                            <input type="hidden" name="finalResult" value="@m.FinalResult" />
+                            <input type="hidden" name="childCount" value="@m.ChildCount" />
+                            <button type="submit" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">Use Selected</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
+}
+else
+{
+    <p class="govuk-body">No matches were found.</p>
+}
+
+<div class="govuk-button-group govuk-!-margin-top-4">
+    <form method="post" asp-page-handler="New" novalidate>
+        <input type="hidden" name="Rbse" value="@Model.Rbse" />
+        <input type="hidden" name="Sex" value="@Model.Sex" />
+        <input type="hidden" name="ReturnTo" value="@Model.ReturnTo" />
+        <input type="hidden" name="Eartag" value="@Model.Eartag" />
+        <input type="hidden" name="Name" value="@Model.Name" />
+        <input type="hidden" name="Herdbook" value="@Model.Herdbook" />
+        <button type="submit" class="govuk-button">New</button>
+    </form>
+    <form method="post" asp-page-handler="Exit" novalidate>
+        <input type="hidden" name="Rbse" value="@Model.Rbse" />
+        <input type="hidden" name="Sex" value="@Model.Sex" />
+        <input type="hidden" name="ReturnTo" value="@Model.ReturnTo" />
+        <button type="submit" class="govuk-button govuk-button--secondary">Exit</button>
+    </form>
+</div>

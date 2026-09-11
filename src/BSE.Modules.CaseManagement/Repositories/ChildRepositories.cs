@@ -89,9 +89,14 @@ public sealed class PedigreeRepository : DapperRepository, IPedigreeRepository
         => ExecuteAsync("AddEditDamSireDetails", new
         {
             RBSE = c.Rbse,
+            DamID = c.DamId, DamRBSE = c.DamRbse,
             DamEartag = c.DamEartag, DamName = c.DamName, DamHerdbook = c.DamHerdbook,
             DamBirthDay = c.DamBirthDay, DamBirthMonth = c.DamBirthMonth, DamBirthYear = c.DamBirthYear,
+            DamRowStamp = c.DamRowStamp,
+            SireID = c.SireId, SireRBSE = c.SireRbse,
             SireEartag = c.SireEartag, SireName = c.SireName, SireHerdbook = c.SireHerdbook,
-            SireBirthDay = c.SireBirthDay, SireBirthMonth = c.SireBirthMonth, SireBirthYear = c.SireBirthYear
+            SireBirthDay = c.SireBirthDay, SireBirthMonth = c.SireBirthMonth, SireBirthYear = c.SireBirthYear,
+            SireRowStamp = c.SireRowStamp,
+            CaseHerdbook = c.CaseHerdbook, CaseRowStamp = c.CaseRowStamp
         }, conn, tx);
 }

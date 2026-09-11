@@ -1,14 +1,16 @@
-﻿@page "{rbse}"
-@model BSE.Host.Pages.Case.FeedAddModel
+@page "{rbse}/{feedId:int}"
+@using BSE.Host.Helpers
+@model BSE.Host.Pages.Case.FeedEditModel
 @{
-    ViewData["Title"] = $"Add Feed Record — {Model.Rbse}";
+    ViewData["Title"] = $"Edit feed record — {Model.Rbse}";
+    string? Err(string key) => Model.FieldErrors.TryGetValue(key, out var m) ? m : null;
 }
 
 <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
     <ol class="govuk-breadcrumbs__list">
         <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
         <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Feeds" asp-route-rbse="@Model.Rbse">@BseFormat.FormatRbse(Model.Rbse)</a></li>
-        <li class="govuk-breadcrumbs__list-item" aria-current="page">Add Feed Record</li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Edit Feed Record</li>
     </ol>
 </nav>
 
@@ -33,14 +35,10 @@
     </div>
 }
 
-<h2 class="govuk-heading-m">Add a feed record</h2>
-
-@{
-    string? Err(string key) => Model.FieldErrors.TryGetValue(key, out var m) ? m : null;
-}
+<h2 class="govuk-heading-m">Edit feed record</h2>
 
 <form method="post" novalidate>
-    <input type="hidden" name="Rbse" value="@Model.Rbse" />
+    <input type="hidden" name="Feed.RowStamp" value="@Model.Feed.RowStamp" />
 
     <div class="govuk-form-group @(Err("YearFrom") is not null ? "govuk-form-group--error" : "")">
         <label class="govuk-label" for="feed-yearfrom">Year From</label>
@@ -50,8 +48,8 @@
                 <span class="govuk-visually-hidden">Error:</span>@yearFromError
             </p>
         }
-        <input id="feed-yearfrom" name="NewFeed.YearFrom" type="text" inputmode="numeric" maxlength="4"
-               value="@Model.NewFeed.YearFrom"
+        <input id="feed-yearfrom" name="Feed.YearFrom" type="text" inputmode="numeric" maxlength="4"
+               value="@Model.Feed.YearFrom"
                aria-describedby="@(Err("YearFrom") is not null ? "feed-yearfrom-error" : null)"
                class="govuk-input govuk-input--width-4 @(Err("YearFrom") is not null ? "govuk-input--error" : "")" />
     </div>
@@ -64,8 +62,8 @@
                 <span class="govuk-visually-hidden">Error:</span>@yearToError
             </p>
         }
-        <input id="feed-yearto" name="NewFeed.YearTo" type="text" inputmode="numeric" maxlength="4"
-               value="@Model.NewFeed.YearTo"
+        <input id="feed-yearto" name="Feed.YearTo" type="text" inputmode="numeric" maxlength="4"
+               value="@Model.Feed.YearTo"
                aria-describedby="@(Err("YearTo") is not null ? "feed-yearto-error" : null)"
                class="govuk-input govuk-input--width-4 @(Err("YearTo") is not null ? "govuk-input--error" : "")" />
     </div>
@@ -78,28 +76,28 @@
                 <span class="govuk-visually-hidden">Error:</span>@rationTypeError
             </p>
         }
-        <select id="feed-rationtype" name="NewFeed.RationType"
+        <select id="feed-rationtype" name="Feed.RationType"
                 aria-describedby="@(Err("RationType") is not null ? "feed-rationtype-error" : null)"
                 class="govuk-select govuk-!-width-one-half @(Err("RationType") is not null ? "govuk-select--error" : "")">
             <option value=""></option>
             @foreach (var rt in Model.RationTypes)
             {
-                <option value="@rt.Code" selected="@(rt.Code == Model.NewFeed.RationType)">@rt.Description</option>
+                <option value="@rt.Code" selected="@(rt.Code == Model.Feed.RationType)">@rt.Description</option>
             }
         </select>
     </div>
 
     <div class="govuk-form-group">
         <label class="govuk-label" for="feed-rationname">Ration Name</label>
-        <input id="feed-rationname" name="NewFeed.RationName" maxlength="60" value="@Model.NewFeed.RationName"
+        <input id="feed-rationname" name="Feed.RationName" maxlength="60" value="@Model.Feed.RationName"
                class="govuk-input govuk-!-width-two-thirds" />
     </div>
 
     <div class="govuk-form-group">
         <div class="govuk-checkboxes" data-module="govuk-checkboxes">
             <div class="govuk-checkboxes__item">
-                <input id="feed-prepurchase" name="NewFeed.IsPrePurchase" type="checkbox"
-                       class="govuk-checkboxes__input" value="true" checked="@Model.NewFeed.IsPrePurchase" />
+                <input id="feed-prepurchase" name="Feed.IsPrePurchase" type="checkbox"
+                       class="govuk-checkboxes__input" value="true" checked="@Model.Feed.IsPrePurchase" />
                 <label class="govuk-label govuk-checkboxes__label" for="feed-prepurchase">Is Pre-Purchase?</label>
             </div>
         </div>
@@ -113,19 +111,19 @@
                 <span class="govuk-visually-hidden">Error:</span>@supplierError
             </p>
         }
-        <select id="feed-supplierid" name="NewFeed.SupplierId"
+        <select id="feed-supplierid" name="Feed.SupplierId"
                 aria-describedby="@(Err("SupplierId") is not null ? "feed-supplierid-error" : null)"
                 class="govuk-select govuk-!-width-two-thirds @(Err("SupplierId") is not null ? "govuk-select--error" : "")">
             <option value=""></option>
             @foreach (var s in Model.Suppliers)
             {
-                <option value="@s.Id" selected="@(s.Id == Model.NewFeed.SupplierId)">@s.Description</option>
+                <option value="@s.Id" selected="@(s.Id == Model.Feed.SupplierId)">@s.Description</option>
             }
         </select>
     </div>
 
     <div class="govuk-button-group">
-        <button type="submit" class="govuk-button" data-module="govuk-button">Add As New</button>
+        <button type="submit" class="govuk-button" data-module="govuk-button">Update Selected</button>
         <a asp-page="/Case/Feeds" asp-route-rbse="@Model.Rbse" class="govuk-link">Cancel</a>
     </div>
 </form>

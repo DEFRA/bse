@@ -55,6 +55,8 @@ public class RelatedAnimalsModel : PageModel
     private IEnumerable<RelatedAnimalResult> ApplySorting(IReadOnlyList<RelatedAnimalResult> source) =>
         (SortColumn?.ToLowerInvariant(), SortDesc) switch
         {
+            ("rbse",         false) => source.OrderBy(r => r.Rbse),
+            ("rbse",         true)  => source.OrderByDescending(r => r.Rbse),
             ("cphh",         false) => source.OrderBy(r => r.Cphh),
             ("cphh",         true)  => source.OrderByDescending(r => r.Cphh),
             ("relationtype", false) => source.OrderBy(r => r.RelationType),

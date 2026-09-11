@@ -14,21 +14,42 @@
     </ol>
 </nav>
 
-@if (!ViewContext.ModelState.IsValid)
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Relations", Model.Rbse))
+
+@if (Model.FieldErrors.Count > 0 || Model.ErrorMessage is not null)
 {
     <div class="govuk-error-summary" data-module="govuk-error-summary">
         <div role="alert">
             <h2 class="govuk-error-summary__title">There is a problem</h2>
             <div class="govuk-error-summary__body">
                 <ul class="govuk-list govuk-error-summary__list">
-                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    @foreach (var error in Model.FieldErrors)
                     {
-                        <li>@e.ErrorMessage</li>
+                        <li><a href="#@AnchorFor(error.Key)">@error.Value</a></li>
+                    }
+                    @if (Model.ErrorMessage is not null)
+                    {
+                        <li>@Model.ErrorMessage</li>
                     }
                 </ul>
             </div>
         </div>
     </div>
+}
+
+@functions {
+    // Field keys returned by RelationValidation map to these input ids.
+    static string AnchorFor(string key) => key switch
+    {
+        "RelationType" => "relation-type",
+        "RelationRbse" => "relation-rbse",
+        "Sex"          => "sex",
+        "BirthDay"     => "birth-day",
+        "BirthMonth"   => "birth-month",
+        "BirthYear"    => "birth-year",
+        "LeftDate"     => "left-date",
+        _              => key.ToLowerInvariant()
+    };
 }
 
 <form method="post" novalidate>
@@ -74,9 +95,13 @@
         <input id="eartag" asp-for="Eartag" class="govuk-input govuk-!-width-two-thirds" />
     </div>
 
-    <div class="govuk-form-group">
+    <div class="govuk-form-group @(ViewData.ModelState[nameof(Model.Sex)]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
         <label class="govuk-label" for="sex">Sex</label>
-        <select id="sex" asp-for="Sex" class="govuk-select govuk-!-width-one-quarter">
+        @if (ViewData.ModelState[nameof(Model.Sex)]?.Errors.Count > 0)
+        {
+            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState[nameof(Model.Sex)]!.Errors[0].ErrorMessage</p>
+        }
+        <select id="sex" asp-for="Sex" class="govuk-select govuk-!-width-one-quarter @(ViewData.ModelState[nameof(Model.Sex)]?.Errors.Count > 0 ? "govuk-select--error" : "")">
             <option value="">— select —</option>
             @foreach (var s in Model.Sexes)
             {
@@ -120,9 +145,13 @@
         </fieldset>
     </div>
 
-    <div class="govuk-form-group">
+    <div class="govuk-form-group @(ViewData.ModelState[nameof(Model.LeftDate)]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
         <label class="govuk-label" for="left-date">Date left herd</label>
-        <input id="left-date" asp-for="LeftDate" type="date" class="govuk-input govuk-input--width-10" />
+        @if (ViewData.ModelState[nameof(Model.LeftDate)]?.Errors.Count > 0)
+        {
+            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState[nameof(Model.LeftDate)]!.Errors[0].ErrorMessage</p>
+        }
+        <input id="left-date" asp-for="LeftDate" type="date" class="govuk-input govuk-input--width-10 @(ViewData.ModelState[nameof(Model.LeftDate)]?.Errors.Count > 0 ? "govuk-input--error" : "")" />
     </div>
 
     <div class="govuk-form-group">

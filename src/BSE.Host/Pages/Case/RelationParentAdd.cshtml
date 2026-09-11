@@ -1,0 +1,124 @@
+@page
+@using BSE.Host.Helpers
+@model BSE.Host.Pages.Case.RelationParentAddModel
+@{
+    ViewData["Title"] = Model.IsDam ? "Add Dam Details" : "Add Sire Details";
+}
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Relations" asp-route-rbse="@Model.Rbse">Relations</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">@(Model.IsDam ? "Add dam details" : "Add sire details")</li>
+    </ol>
+</nav>
+
+<h1 class="govuk-heading-l">@(Model.IsDam ? "Add Dam Details" : "Add Sire Details") for <span class="bse-rbse">@BseFormat.FormatRbse(Model.Rbse)</span></h1>
+
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    <li>@Model.ErrorMessage</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+<form method="post" novalidate>
+    <input type="hidden" asp-for="Rbse" />
+    <input type="hidden" asp-for="Sex" />
+    <input type="hidden" asp-for="Input.Id" />
+    <input type="hidden" asp-for="Input.ParentRbse" />
+    <input type="hidden" asp-for="Input.RowStampBase64" />
+
+    <h2 class="govuk-heading-m">Look up @(Model.IsDam ? "dam" : "sire") details</h2>
+
+    <div class="govuk-form-group govuk-!-margin-bottom-2">
+        <label class="govuk-label" asp-for="Input.SearchRbse">RBSE</label>
+        <input asp-for="Input.SearchRbse" maxlength="11" class="govuk-input govuk-input--width-10" />
+    </div>
+    <div class="govuk-form-group govuk-!-margin-bottom-2">
+        <label class="govuk-label" asp-for="Input.SearchEartag">Eartag</label>
+        <input asp-for="Input.SearchEartag" maxlength="15" class="govuk-input govuk-!-width-two-thirds" />
+    </div>
+    <div class="govuk-form-group govuk-!-margin-bottom-2">
+        <label class="govuk-label" asp-for="Input.SearchName">Name</label>
+        <input asp-for="Input.SearchName" maxlength="80" class="govuk-input govuk-!-width-two-thirds" />
+    </div>
+    <div class="govuk-form-group govuk-!-margin-bottom-4">
+        <label class="govuk-label" asp-for="Input.SearchHerdbook">Herdbook</label>
+        <input asp-for="Input.SearchHerdbook" maxlength="15" class="govuk-input govuk-!-width-one-half" />
+    </div>
+
+    <button type="submit" asp-page-handler="LookUp" class="govuk-button govuk-button--secondary">Look Up</button>
+
+    @if (Model.HasSelection)
+    {
+        <h2 class="govuk-heading-m govuk-!-margin-top-6">Selected @(Model.IsDam ? "dam" : "sire") details</h2>
+
+        <div class="govuk-form-group govuk-!-margin-bottom-2">
+            <label class="govuk-label" asp-for="Input.Eartag">Eartag</label>
+            <input asp-for="Input.Eartag" maxlength="15" class="govuk-input govuk-!-width-two-thirds" />
+        </div>
+        <div class="govuk-form-group govuk-!-margin-bottom-2">
+            <label class="govuk-label" asp-for="Input.Name">Name</label>
+            <input asp-for="Input.Name" maxlength="80" class="govuk-input govuk-!-width-two-thirds" />
+        </div>
+        <div class="govuk-form-group govuk-!-margin-bottom-2">
+            <label class="govuk-label" asp-for="Input.Herdbook">Herdbook</label>
+            <input asp-for="Input.Herdbook" maxlength="15" class="govuk-input govuk-!-width-one-half" />
+        </div>
+
+        @if (string.IsNullOrWhiteSpace(Model.Input.ParentRbse))
+        {
+            <div class="govuk-form-group">
+                <fieldset class="govuk-fieldset">
+                    <legend class="govuk-fieldset__legend">Birth date (day / month / year)</legend>
+                    <div class="govuk-date-input">
+                        <div class="govuk-date-input__item">
+                            <label class="govuk-label govuk-date-input__label" asp-for="Input.BirthDay">Day</label>
+                            <input asp-for="Input.BirthDay" class="govuk-input govuk-date-input__input govuk-input--width-2" inputmode="numeric" />
+                        </div>
+                        <div class="govuk-date-input__item">
+                            <label class="govuk-label govuk-date-input__label" asp-for="Input.BirthMonth">Month</label>
+                            <input asp-for="Input.BirthMonth" class="govuk-input govuk-date-input__input govuk-input--width-2" inputmode="numeric" />
+                        </div>
+                        <div class="govuk-date-input__item">
+                            <label class="govuk-label govuk-date-input__label" asp-for="Input.BirthYear">Year</label>
+                            <input asp-for="Input.BirthYear" class="govuk-input govuk-date-input__input govuk-input--width-4" inputmode="numeric" />
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
+        }
+        else
+        {
+            <p class="govuk-body">RBSE: <strong>@BseFormat.FormatRbse(Model.Input.ParentRbse)</strong> — birth date is taken from that case.</p>
+        }
+
+        <dl class="govuk-summary-list govuk-summary-list--no-border govuk-!-margin-bottom-4">
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Fate</dt><dd class="govuk-summary-list__value">@Model.Input.Fate</dd></div>
+            @if (Model.IsDam)
+            {
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Final result</dt><dd class="govuk-summary-list__value">@Model.Input.FinalResult</dd></div>
+            }
+            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Offspring count</dt><dd class="govuk-summary-list__value">@Model.Input.ChildCount</dd></div>
+        </dl>
+
+        <div class="govuk-button-group">
+            <button type="submit" asp-page-handler="Save" class="govuk-button">Save</button>
+            <a class="govuk-link" asp-page="/Case/Relations" asp-route-rbse="@Model.Rbse">Cancel</a>
+        </div>
+    }
+    else
+    {
+        <div class="govuk-button-group govuk-!-margin-top-2">
+            <a class="govuk-link" asp-page="/Case/Relations" asp-route-rbse="@Model.Rbse">Cancel</a>
+        </div>
+    }
+</form>
