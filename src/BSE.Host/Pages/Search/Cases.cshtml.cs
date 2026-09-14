@@ -128,6 +128,9 @@ public class CasesModel : PageModel
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "casesearchresults.xlsx");
     }
+    // Business rule: ticking "Include Non-GB Cases?" alone is not a search criterion —
+    // at least one other field must also be provided (mirrors the Farm Search "Include
+    // Non-GB Farms?" rule).
     private bool HasAnyFilter() =>
         !string.IsNullOrWhiteSpace(Filter.Rbse) ||
         !string.IsNullOrWhiteSpace(Filter.Eartag) ||
@@ -144,6 +147,5 @@ public class CasesModel : PageModel
         !string.IsNullOrWhiteSpace(Filter.EarliestBirthDate) ||
         !string.IsNullOrWhiteSpace(Filter.LatestBirthDate) ||
         !string.IsNullOrWhiteSpace(Filter.PassiveActive) ||
-        Filter.IsImportedCase ||
-        Filter.IncludeNonGb;
+        Filter.IsImportedCase;
 }

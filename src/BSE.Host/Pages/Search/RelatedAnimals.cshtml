@@ -32,6 +32,7 @@
         <div class="govuk-grid-column-two-thirds">
             <div class="govuk-form-group">
                 <label asp-for="Rbse" class="govuk-label">RBSE Of Case</label>
+                <div id="rbse-hint" class="govuk-hint">Format: NN/NN/NNNNN</div>
                 <input asp-for="Rbse" class="govuk-input govuk-!-width-two-thirds" aria-describedby="rbse-hint" maxlength="11" />
                 <span asp-validation-for="Rbse" class="govuk-error-message"></span>
             </div>
@@ -43,6 +44,7 @@
 
             <div class="govuk-form-group">
                 <label asp-for="RelationRbse" class="govuk-label">RBSE of Related Animal</label>
+                <div id="relation-rbse-hint" class="govuk-hint">Format: NN/NN/NNNNN</div>
                 <input asp-for="RelationRbse" class="govuk-input govuk-!-width-two-thirds" aria-describedby="relation-rbse-hint" maxlength="11" />
                 <span asp-validation-for="RelationRbse" class="govuk-error-message"></span>
             </div>
@@ -73,7 +75,7 @@
 
 @if (Model.HasSearched)
 {
-    <p class="govuk-body">@Model.TotalCount result(s) found.</p>
+    <p id="related-animals-search-results" class="govuk-body">@Model.TotalCount result(s) found.</p>
 
     @if (Model.TotalCount > 0)
     {
@@ -86,31 +88,32 @@
         var sortDesc = Model.SortDesc;
 
         @await Html.PartialAsync("_ExportLink")
-        <table class="govuk-table">
+        <div class="bse-related-animals-search-table-wrap">
+        <table class="govuk-table bse-related-animals-search-table">
             <caption class="govuk-visually-hidden">Related animal results</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    @{ ViewData["Label"] = "RBSE";                ViewData["Column"] = "Rbse";         ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; }
+                    @{ ViewData["Label"] = "RBSE";                ViewData["Column"] = "Rbse";         ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "related-animals-search-results"; ViewData["HeaderClass"] = "bse-w-8"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "CPHH";                ViewData["Column"] = "Cphh"; }
+                    @{ ViewData["Label"] = "CPHH";                ViewData["Column"] = "Cphh"; ViewData["HeaderClass"] = "bse-w-8"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Relation";       ViewData["Column"] = "RelationType"; }
+                    @{ ViewData["Label"] = "Relation";       ViewData["Column"] = "RelationType"; ViewData["HeaderClass"] = "bse-w-9"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Sex";            ViewData["Column"] = "RelSex"; }
+                    @{ ViewData["Label"] = "Sex";            ViewData["Column"] = "RelSex"; ViewData["HeaderClass"] = "bse-w-5"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Eartag";         ViewData["Column"] = "Eartag"; }
+                    @{ ViewData["Label"] = "Eartag";         ViewData["Column"] = "Eartag"; ViewData["HeaderClass"] = "bse-w-9"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Rel Birth Date"; ViewData["Column"] = "RelBirthDate"; }
+                    @{ ViewData["Label"] = "Rel Birth Date"; ViewData["Column"] = "RelBirthDate"; ViewData["HeaderClass"] = "bse-w-13"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Rel Fate";       ViewData["Column"] = "RelFate"; }
+                    @{ ViewData["Label"] = "Rel Fate";       ViewData["Column"] = "RelFate"; ViewData["HeaderClass"] = "bse-w-9"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Date Left";      ViewData["Column"] = "LeftDate"; }
+                    @{ ViewData["Label"] = "Date Left";      ViewData["Column"] = "LeftDate"; ViewData["HeaderClass"] = "bse-w-10"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Rel Name";       ViewData["Column"] = "RelName"; }
+                    @{ ViewData["Label"] = "Rel Name";       ViewData["Column"] = "RelName"; ViewData["HeaderClass"] = "bse-w-9"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Rel Eartag";     ViewData["Column"] = "RelEartag"; }
+                    @{ ViewData["Label"] = "Rel Eartag";     ViewData["Column"] = "RelEartag"; ViewData["HeaderClass"] = "bse-w-11"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Rel RBSE";       ViewData["Column"] = "RelationRbse"; }
+                    @{ ViewData["Label"] = "Rel RBSE";       ViewData["Column"] = "RelationRbse"; ViewData["HeaderClass"] = "bse-w-9"; }
                     <partial name="_SortableHeader" />
                 </tr>
             </thead>
@@ -133,6 +136,7 @@
                 }
             </tbody>
         </table>
-        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
+        </div>
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages, ["Fragment"] = "related-animals-search-results" })
     }
 }

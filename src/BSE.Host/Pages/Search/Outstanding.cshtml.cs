@@ -25,13 +25,10 @@ public class OutstandingModel : PageModel
     public async Task OnGetAsync()
     {
         // Legacy required one of the three options; the date range is optional.
-        if (!IsKnownSearchType())
-        {
-            NoOptionSelected = Request.Query.Count > 0;
-            return;
-        }
-
-        if (!Filter.ValidateDates()) return;
+        // Validate dates even when the type is missing so the user can see both issues
+        // in a single submission instead of a generic no-option error hiding the real date problem.
+        NoOptionSelected = Request.Query.Count > 0 && !IsKnownSearchType();
+        if (!Filter.ValidateDates() || !IsKnownSearchType()) return;
 
         var query = Filter.ToQuery();
         var results = Filter.SearchType switch
@@ -48,7 +45,9 @@ public class OutstandingModel : PageModel
 
     public async Task<IActionResult> OnGetExportAsync()
     {
-        if (!IsKnownSearchType() || !Filter.ValidateDates()) return RedirectToPage();
+        var hasValidSearchType = IsKnownSearchType();
+        var datesAreValid = Filter.ValidateDates();
+        if (!hasValidSearchType || !datesAreValid) return RedirectToPage();
         var query = Filter.ToQuery();
         var rows = Filter.SearchType switch
         {

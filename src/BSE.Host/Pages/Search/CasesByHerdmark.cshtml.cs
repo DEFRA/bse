@@ -12,7 +12,7 @@ namespace BSE.Host.Pages.Search;
 public class CasesByHerdmarkModel : PageModel
 {
     private readonly ICaseSearchService _search;
-    private const int PageSize = 50;
+    private const int PageSize = 10;
 
     public CasesByHerdmarkModel(ICaseSearchService search) => _search = search;
 

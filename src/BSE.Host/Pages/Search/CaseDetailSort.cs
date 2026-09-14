@@ -4,14 +4,22 @@ namespace BSE.Host.Pages.Search;
 
 internal static class CaseDetailSort
 {
+    private static long ToRbseSortKey(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return 0;
+
+        var digits = new string(value.Where(char.IsDigit).ToArray());
+        return long.TryParse(digits, out var parsed) ? parsed : 0;
+    }
+
     internal static IEnumerable<CaseDetailSearchResult> Apply(
         IReadOnlyList<CaseDetailSearchResult> source,
         string? sortColumn,
         bool sortDesc) =>
         (sortColumn?.ToLowerInvariant(), sortDesc) switch
         {
-            ("rbse",                false) => source.OrderBy(r => r.Rbse),
-            ("rbse",                true)  => source.OrderByDescending(r => r.Rbse),
+            ("rbse",                false) => source.OrderBy(r => ToRbseSortKey(r.Rbse)),
+            ("rbse",                true)  => source.OrderByDescending(r => ToRbseSortKey(r.Rbse)),
             ("cphh",                false) => source.OrderBy(r => r.Cphh),
             ("cphh",                true)  => source.OrderByDescending(r => r.Cphh),
             ("sex",                 false) => source.OrderBy(r => r.Sex),

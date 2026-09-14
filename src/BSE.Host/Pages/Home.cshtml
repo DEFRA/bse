@@ -71,16 +71,15 @@
                                            form="case-entry-form"
                                            class="govuk-input govuk-input--width-5 @(batchNumberError is not null || Model.BatchNotFound ? "govuk-input--error" : "")"
                                            value="@Model.BatchNumber" autocomplete="off" />
+                                    </div>
                                 </div>
                             </div>
-
-                            
 
                             <p class="govuk-body govuk-!-margin-top-4 govuk-!-margin-bottom-4">Or</p>
 
                             <div class="govuk-form-group govuk-!-margin-bottom-0">
                                 <button type="submit" asp-page-handler="CreateBatch"
-                                        class="govuk-button govuk-button--secondary"
+                                        class="govuk-button"
                                         data-module="govuk-button">Create New</button>
                             </div>
                         </fieldset>
@@ -137,7 +136,7 @@
                        value="@Model.LookupRbse" autocomplete="off"
                        aria-describedby="@(rbseError is not null ? "rbse-error" : "")" />
             </div>
-            <button type="submit" class="govuk-button govuk-button--secondary"
+            <button type="submit" class="govuk-button"
                     data-module="govuk-button">Go</button>
         </form>
 

@@ -17,38 +17,76 @@
     font-weight: 400;
 }
 
-/* Farm Search: table-layout:auto treats column widths as hints only, so equal-width
-   classes on Address/Correspondence Address were still overridden by content length.
-   Force fixed layout with explicit widths on every column so they're strictly honoured. */
-/* 12 columns squeezed into the standard govuk-width-container (~1020px) is too cramped;
-   scroll horizontally instead, matching the audit log tables' pattern. */
-.bse-farm-search-table-wrap {
+/* Cases By Holding/Herdmark: table-layout:auto resizes columns to fit each result set's
+   content, so the table visibly widens/shortens between searches. Fixed layout with
+   explicit per-column widths keeps it stable; scroll horizontally rather than cramming
+   18 columns into the standard govuk-width-container. */
+.bse-holding-herdmark-search-table-wrap {
     width: 100%;
     overflow-x: auto;
 }
 
-.bse-farm-search-table {
-    table-layout: fixed;
-    min-width: 1400px;
+/* Case Search / Farm Search: scroll the table region only, keep table-layout:auto
+   (no forced column widths) so the page itself never gains a horizontal scrollbar. */
+.bse-case-search-table-wrap,
+.bse-farm-search-table-wrap,
+.bse-outstanding-search-table-wrap,
+.bse-holding-herdmark-search-table-wrap,
+.bse-herdmark-search-table-wrap {
+    width: 100%;
+    overflow-x: auto;
 }
 
+.bse-case-search-table,
+.bse-farm-search-table,
+.bse-outstanding-search-table,
+.bse-holding-herdmark-search-table,
+.bse-herdmark-search-table {
+    table-layout: auto;
+    min-width: 1600px;
+}
+
+.bse-case-search-table .govuk-table__cell,
+.bse-case-search-table .govuk-table__header,
 .bse-farm-search-table .govuk-table__cell,
-.bse-farm-search-table .govuk-table__header {
+.bse-farm-search-table .govuk-table__header,
+.bse-outstanding-search-table .govuk-table__cell,
+.bse-outstanding-search-table .govuk-table__header,
+.bse-holding-herdmark-search-table .govuk-table__cell,
+.bse-holding-herdmark-search-table .govuk-table__header,
+.bse-herdmark-search-table .govuk-table__cell,
+.bse-herdmark-search-table .govuk-table__header {
     overflow-wrap: break-word;
 }
 
 /* Prevent sortable header text/icon overlap in the fixed-width narrow columns */
-.bse-farm-search-table .govuk-table__header {
+.bse-case-search-table .govuk-table__header,
+.bse-farm-search-table .govuk-table__header,
+.bse-outstanding-search-table .govuk-table__header,
+.bse-holding-herdmark-search-table .govuk-table__header,
+.bse-herdmark-search-table .govuk-table__header {
     overflow: hidden;
 }
 
-.bse-farm-search-table .moj-sortable-table__button {
+.bse-case-search-table .moj-sortable-table__button,
+.bse-farm-search-table .moj-sortable-table__button,
+.bse-outstanding-search-table .moj-sortable-table__button,
+.bse-holding-herdmark-search-table .moj-sortable-table__button,
+.bse-herdmark-search-table .moj-sortable-table__button {
     white-space: normal;
     align-items: flex-start;
     line-height: 1.2;
 }
 
 /* Column widths sized to fit each header's text (plus the sort icon) without wrapping/clipping. */
+.bse-w-3 {
+    width: 3%;
+}
+
+.bse-w-4 {
+    width: 4%;
+}
+
 .bse-w-5 {
     width: 5%;
 }
@@ -77,8 +115,38 @@
     width: 11%;
 }
 
-.bse-w-14 {
-    width: 14%;
+.bse-w-13 {
+    width: 13%;
+}
+
+/* Related Animal Search: table-layout:auto resizes columns to fit each result set's
+   content, so the table visibly widens/shortens between searches. Fixed layout with
+   explicit per-column widths keeps it stable; scroll horizontally rather than cramming
+   columns into the standard govuk-width-container. */
+.bse-related-animals-search-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.bse-related-animals-search-table {
+    table-layout: fixed;
+    min-width: 1200px;
+}
+
+.bse-related-animals-search-table .govuk-table__cell,
+.bse-related-animals-search-table .govuk-table__header {
+    overflow-wrap: break-word;
+}
+
+/* Prevent sortable header text/icon overlap in the fixed-width narrow columns */
+.bse-related-animals-search-table .govuk-table__header {
+    overflow: hidden;
+}
+
+.bse-related-animals-search-table .moj-sortable-table__button {
+    white-space: normal;
+    align-items: flex-start;
+    line-height: 1.2;
 }
 
 /* Row actions in table cells. GOV.UK buttons are full width below the tablet
