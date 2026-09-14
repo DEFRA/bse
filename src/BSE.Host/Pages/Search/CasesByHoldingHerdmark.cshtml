@@ -32,6 +32,7 @@
         <div class="govuk-grid-column-two-thirds">
             <div class="govuk-form-group">
                 <label asp-for="Cphh" class="govuk-label">CPH(H)</label>
+                <div id="cphh-hint" class="govuk-hint">Format: NN[/]NNN[/]NNNN[/NN]</div>
                 <input asp-for="Cphh" class="govuk-input govuk-!-width-two-thirds" aria-describedby="cphh-hint" />
                 <span asp-validation-for="Cphh" class="govuk-error-message"></span>
             </div>
@@ -67,7 +68,7 @@
 
 @if (Model.HasSearched)
 {
-    <p class="govuk-body">@Model.TotalCount result(s) found.</p>
+    <p id="holding-herdmark-search-results" class="govuk-body">@Model.TotalCount result(s) found.</p>
 
     @if (Model.TotalCount > 0)
     {
@@ -80,45 +81,46 @@
         var sortDesc = Model.SortDesc;
 
         @await Html.PartialAsync("_ExportLink")
-        <table class="govuk-table">
+        <div class="bse-holding-herdmark-search-table-wrap">
+        <table class="govuk-table bse-holding-herdmark-search-table">
             <caption class="govuk-visually-hidden">Cases by holding or herdmark results</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    @{ ViewData["Label"] = "RBSE";             ViewData["Column"] = "Rbse";                 ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; }
+                    @{ ViewData["Label"] = "RBSE";             ViewData["Column"] = "Rbse";                 ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "holding-herdmark-search-results"; ViewData["HeaderClass"] = "bse-w-6"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "CPHH";             ViewData["Column"] = "Cphh"; }
+                    @{ ViewData["Label"] = "CPHH";             ViewData["Column"] = "Cphh"; ViewData["HeaderClass"] = "bse-w-6"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Sex";              ViewData["Column"] = "Sex"; }
+                    @{ ViewData["Label"] = "Sex";              ViewData["Column"] = "Sex"; ViewData["HeaderClass"] = "bse-w-3"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Eartag";           ViewData["Column"] = "Eartag"; }
+                    @{ ViewData["Label"] = "Eartag";           ViewData["Column"] = "Eartag"; ViewData["HeaderClass"] = "bse-w-7"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Birth Date";       ViewData["Column"] = "BirthDate"; }
+                    @{ ViewData["Label"] = "Birth Date";       ViewData["Column"] = "BirthDate"; ViewData["HeaderClass"] = "bse-w-5"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Origin";           ViewData["Column"] = "Origin"; }
+                    @{ ViewData["Label"] = "Origin";           ViewData["Column"] = "Origin"; ViewData["HeaderClass"] = "bse-w-5"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Date Purchased";   ViewData["Column"] = "PurchaseDate"; }
+                    @{ ViewData["Label"] = "Date Purchased";   ViewData["Column"] = "PurchaseDate"; ViewData["HeaderClass"] = "bse-w-7"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Age at Purchase";  ViewData["Column"] = "PurchaseAgeInMonths"; }
+                    @{ ViewData["Label"] = "Age at Purchase";  ViewData["Column"] = "PurchaseAgeInMonths"; ViewData["HeaderClass"] = "bse-w-7"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Date Onset";       ViewData["Column"] = "OnsetDate"; }
+                    @{ ViewData["Label"] = "Date Onset";       ViewData["Column"] = "OnsetDate"; ViewData["HeaderClass"] = "bse-w-5"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Form A Date";      ViewData["Column"] = "FormADate"; }
+                    @{ ViewData["Label"] = "Form A Date";      ViewData["Column"] = "FormADate"; ViewData["HeaderClass"] = "bse-w-5"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Slaughter Date";   ViewData["Column"] = "SlaughterDate"; }
+                    @{ ViewData["Label"] = "Slaughter Date";   ViewData["Column"] = "SlaughterDate"; ViewData["HeaderClass"] = "bse-w-7"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Final Result Date"; ViewData["Column"] = "FinalResultDate"; }
+                    @{ ViewData["Label"] = "Final Result Date"; ViewData["Column"] = "FinalResultDate"; ViewData["HeaderClass"] = "bse-w-7"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Age at Onset";     ViewData["Column"] = "OnsetAgeInMonths"; }
+                    @{ ViewData["Label"] = "Age at Onset";     ViewData["Column"] = "OnsetAgeInMonths"; ViewData["HeaderClass"] = "bse-w-5"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Fate";             ViewData["Column"] = "Fate"; }
+                    @{ ViewData["Label"] = "Fate";             ViewData["Column"] = "Fate"; ViewData["HeaderClass"] = "bse-w-4"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Final Result";     ViewData["Column"] = "FinalResult"; }
+                    @{ ViewData["Label"] = "Final Result";     ViewData["Column"] = "FinalResult"; ViewData["HeaderClass"] = "bse-w-5"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Survey";           ViewData["Column"] = "Survey"; }
+                    @{ ViewData["Label"] = "Survey";           ViewData["Column"] = "Survey"; ViewData["HeaderClass"] = "bse-w-5"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Case Status";      ViewData["Column"] = "CaseStatus"; }
+                    @{ ViewData["Label"] = "Case Status";      ViewData["Column"] = "CaseStatus"; ViewData["HeaderClass"] = "bse-w-6"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Time Elapsed";     ViewData["Column"] = "TimeElapsed"; }
+                    @{ ViewData["Label"] = "Time Elapsed";     ViewData["Column"] = "TimeElapsed"; ViewData["HeaderClass"] = "bse-w-5"; }
                     <partial name="_SortableHeader" />
                 </tr>
             </thead>
@@ -148,6 +150,7 @@
                 }
             </tbody>
         </table>
-        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
+        </div>
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages, ["Fragment"] = "holding-herdmark-search-results" })
     }
 }

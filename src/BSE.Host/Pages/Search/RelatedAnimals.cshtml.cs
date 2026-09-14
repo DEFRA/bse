@@ -15,7 +15,7 @@ public class RelatedAnimalsModel : PageModel
 {
     private readonly ICaseSearchService _search;
     private readonly ILookupDataService _lookups;
-    private const int PageSize = 50;
+    private const int PageSize = 10;
 
     public RelatedAnimalsModel(ICaseSearchService search, ILookupDataService lookups)
     {
@@ -24,14 +24,15 @@ public class RelatedAnimalsModel : PageModel
     }
 
     [BindProperty(SupportsGet = true)]
-    [System.ComponentModel.DataAnnotations.RegularExpression(@"^(\d{9}|\d{2}/\d{2}/\d{5})?$", ErrorMessage = "Enter RBSE as 9 digits or in the format XX/XX/XXXXX.")]
+    // Legacy searched by RBSE prefix (LIKE @RBSE + '%'), so a partial value such as "01" is valid.
+    [System.ComponentModel.DataAnnotations.RegularExpression(@"^(\d{2}(/)?(\d{0,2}(/)?\d{0,5})?)?$", ErrorMessage = "Enter RBSE as digits in the format NN/NN/NNNNN, or a shorter prefix such as the first 2 digits.")]
     public string? Rbse { get; set; }
 
     [BindProperty(SupportsGet = true)] public string? Name { get; set; }
     [BindProperty(SupportsGet = true)] public string? Eartag { get; set; }
 
     [BindProperty(SupportsGet = true)]
-    [System.ComponentModel.DataAnnotations.RegularExpression(@"^(\d{9}|\d{2}/\d{2}/\d{5})?$", ErrorMessage = "Enter RBSE as 9 digits or in the format XX/XX/XXXXX.")]
+    [System.ComponentModel.DataAnnotations.RegularExpression(@"^(\d{2}(/)?(\d{0,2}(/)?\d{0,5})?)?$", ErrorMessage = "Enter RBSE as digits in the format NN/NN/NNNNN, or a shorter prefix such as the first 2 digits.")]
     public string? RelationRbse { get; set; }
 
     [BindProperty(SupportsGet = true)] public string? RelationType { get; set; }

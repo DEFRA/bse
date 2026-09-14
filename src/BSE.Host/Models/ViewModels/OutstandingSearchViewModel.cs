@@ -17,13 +17,22 @@ public class OutstandingSearchViewModel : SearchViewModelBase<OutstandingCaseRes
     public string? EarliestFormADateError { get; private set; }
     public string? LatestFormADateError { get; private set; }
 
-    /// <summary>Business rule: date-range fields are optional, but a non-blank value must be a real date.</summary>
+    /// <summary>Business rule: date-range fields are optional, but a non-blank value must be a real date,
+    /// and when both ends are given the earliest date must not be after the latest date.</summary>
     public bool ValidateDates()
     {
-        var ok = SearchDateField.TryParse(EarliestFormADate, out _, out var e1);
+        var ok = SearchDateField.TryParse(EarliestFormADate, out var from, out var e1);
         EarliestFormADateError = e1;
-        ok &= SearchDateField.TryParse(LatestFormADate, out _, out var e2);
+        ok &= SearchDateField.TryParse(LatestFormADate, out var to, out var e2);
         LatestFormADateError = e2;
+
+        if (ok && from is not null && to is not null && from > to)
+        {
+            EarliestFormADateError = "Must be earlier than the latest date";
+            LatestFormADateError = "Must be later than the earliest date";
+            ok = false;
+        }
+
         return ok;
     }
 

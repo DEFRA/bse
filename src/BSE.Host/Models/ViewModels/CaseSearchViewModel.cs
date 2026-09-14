@@ -8,12 +8,15 @@ namespace BSE.Host.Models.ViewModels;
 public class CaseSearchViewModel : SearchViewModelBase<CaseSearchResult>
 {
     // --- Filter inputs ---
-    [RegularExpression(@"^(\d{9}|\d{2}/\d{2}/\d{5})?$", ErrorMessage = "Enter RBSE as 9 digits or in the format XX/XX/XXXXX.")]
+    // Legacy RBSE.ascx format is NN/NN/NNNNN; the search proc does a prefix match
+    // (LIKE @RBSE + '%'), so business wants a partial prefix such as the first 2 digits to work.
+    [RegularExpression(@"^(\d{2}(/)?(\d{0,2}(/)?\d{0,5})?)?$", ErrorMessage = "Enter RBSE as digits in the format NN/NN/NNNNN, or a shorter prefix such as the first 2 digits.")]
     public string Rbse { get; set; } = "";
 
     public string Eartag { get; set; } = "";
 
-    [RegularExpression("^(?:\\d{2}(/)?\\d{5})?$", ErrorMessage = "Enter DBSE in the form YY/NNNNN or YYNNNNN.")]
+    // Legacy DBSE format is YY/NNNNN; same prefix-search rule as RBSE above.
+    [RegularExpression(@"^(\d{2}(/)?\d{0,5})?$", ErrorMessage = "Enter DBSE as digits in the format YY/NNNNN, or a shorter prefix such as the first 2 digits.")]
     public string Dbse { get; set; } = "";
     public string Fate { get; set; } = "";
     public string FinalResult { get; set; } = "";
@@ -41,22 +44,40 @@ public class CaseSearchViewModel : SearchViewModelBase<CaseSearchResult>
     public string? EarliestBirthDateError { get; private set; }
     public string? LatestBirthDateError { get; private set; }
 
-    /// <summary>Business rule: date-range fields are optional, but a non-blank value must be a real date.</summary>
+    /// <summary>Business rule: date-range fields are optional, but a non-blank value must be a real date,
+    /// and when both ends of a range are given the earliest date must not be after the latest date.</summary>
     public bool ValidateDates()
     {
-        var ok = SearchDateField.TryParse(EarliestFormADate, out _, out var e1);
+        var ok = SearchDateField.TryParse(EarliestFormADate, out var formAFrom, out var e1);
         EarliestFormADateError = e1;
-        ok &= SearchDateField.TryParse(LatestFormADate, out _, out var e2);
+        ok &= SearchDateField.TryParse(LatestFormADate, out var formATo, out var e2);
         LatestFormADateError = e2;
-        ok &= SearchDateField.TryParse(EarliestFinalResultDate, out _, out var e3);
+        ok &= SearchDateField.TryParse(EarliestFinalResultDate, out var finalFrom, out var e3);
         EarliestFinalResultDateError = e3;
-        ok &= SearchDateField.TryParse(LatestFinalResultDate, out _, out var e4);
+        ok &= SearchDateField.TryParse(LatestFinalResultDate, out var finalTo, out var e4);
         LatestFinalResultDateError = e4;
-        ok &= SearchDateField.TryParse(EarliestBirthDate, out _, out var e5);
+        ok &= SearchDateField.TryParse(EarliestBirthDate, out var birthFrom, out var e5);
         EarliestBirthDateError = e5;
-        ok &= SearchDateField.TryParse(LatestBirthDate, out _, out var e6);
+        ok &= SearchDateField.TryParse(LatestBirthDate, out var birthTo, out var e6);
         LatestBirthDateError = e6;
+
+        if (ok)
+        {
+            ok &= CheckOrder(formAFrom, formATo, e => EarliestFormADateError = e, e => LatestFormADateError = e);
+            ok &= CheckOrder(finalFrom, finalTo, e => EarliestFinalResultDateError = e, e => LatestFinalResultDateError = e);
+            ok &= CheckOrder(birthFrom, birthTo, e => EarliestBirthDateError = e, e => LatestBirthDateError = e);
+        }
+
         return ok;
+    }
+
+    private static bool CheckOrder(DateTime? from, DateTime? to, Action<string> setFromError, Action<string> setToError)
+    {
+        if (from is null || to is null || from <= to) return true;
+
+        setFromError("Must be earlier than the latest date");
+        setToError("Must be later than the earliest date");
+        return false;
     }
 
     protected override int PageSize => 10;

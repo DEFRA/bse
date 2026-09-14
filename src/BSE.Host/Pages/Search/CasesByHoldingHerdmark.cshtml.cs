@@ -13,12 +13,13 @@ namespace BSE.Host.Pages.Search;
 public class CasesByHoldingHerdmarkModel : PageModel
 {
     private readonly ICaseSearchService _search;
-    private const int PageSize = 50;
+    private const int PageSize = 10;
 
     public CasesByHoldingHerdmarkModel(ICaseSearchService search) => _search = search;
 
     [BindProperty(SupportsGet = true)]
-    [RegularExpression("^(?:\\d{2}(/)?\\d{3}(/)?\\d{4}(/)?\\d{2})?$", ErrorMessage = "Enter CPHH in the format NN/NNN/NNNN/NN or digits only.")]
+    // Legacy searched by CPHH prefix (LIKE @CPHH + '%'), so a partial value such as "01" is valid.
+    [RegularExpression(@"^(\d{2}(/)?(\d{0,3}(/)?(\d{0,4}(/)?\d{0,2})?)?)?$", ErrorMessage = "Enter CPHH as digits in the format NN[/]NNN[/]NNNN[/NN], or a shorter prefix such as the first 2 digits.")]
     public string? Cphh { get; set; }
 
     [BindProperty(SupportsGet = true)]

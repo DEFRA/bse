@@ -82,13 +82,15 @@
         <div class="govuk-grid-column-one-half">
             <div class="govuk-form-group">
                 <label asp-for="Filter.Rbse" class="govuk-label">RBSE</label>
-                <input asp-for="Filter.Rbse" class="govuk-input" aria-describedby="rbse-hint" maxlength="11" />
+                <div id="rbse-hint" class="govuk-hint">Format: NN/NN/NNNNN</div>
+                <input asp-for="Filter.Rbse" class="govuk-input govuk-input--width-20" aria-describedby="rbse-hint" maxlength="11" />
                 <span asp-validation-for="Filter.Rbse" class="govuk-error-message"></span>
             </div>
 
             <div class="govuk-form-group">
                 <label asp-for="Filter.Dbse" class="govuk-label">DBSE</label>
-                <input asp-for="Filter.Dbse" class="govuk-input" aria-describedby="dbse-hint" maxlength="8" />
+                <div id="dbse-hint" class="govuk-hint">Format: YY/NNNNN</div>
+                <input asp-for="Filter.Dbse" class="govuk-input govuk-input--width-10" aria-describedby="dbse-hint" maxlength="8" />
                 <span asp-validation-for="Filter.Dbse" class="govuk-error-message"></span>
             </div>
 
@@ -127,7 +129,7 @@
         <div class="govuk-grid-column-one-half">
             <div class="govuk-form-group">
                 <label asp-for="Filter.Eartag" class="govuk-label">Eartag (starting with...)</label>
-                <input asp-for="Filter.Eartag" class="govuk-input" maxlength="35" />
+                <input asp-for="Filter.Eartag" class="govuk-input govuk-!-width-two-thirds" maxlength="35" />
             </div>
 
             <div class="govuk-form-group">
@@ -275,7 +277,7 @@
 
 @if (Model.Filter.HasSearched)
 {
-    <p class="govuk-body">@Model.Filter.TotalCount result(s) found.</p>
+    <p id="case-search-results" class="govuk-body">@Model.Filter.TotalCount result(s) found.</p>
 
     @if (Model.Filter.TotalCount > 0)
     {
@@ -289,11 +291,12 @@
         var sortCol  = Model.Filter.SortColumn;
         var sortDesc = Model.Filter.SortDesc;
 
-        <table class="govuk-table">
+        <div class="bse-case-search-table-wrap">
+        <table class="govuk-table bse-case-search-table">
             <caption class="govuk-visually-hidden">Case search results</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    @{ ViewData["Label"] = "RBSE";             ViewData["Column"] = "Rbse";            ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Prefix"] = "Filter."; }
+                    @{ ViewData["Label"] = "RBSE";             ViewData["Column"] = "Rbse";            ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Prefix"] = "Filter."; ViewData["Fragment"] = "case-search-results"; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "CPHH";             ViewData["Column"] = "Cphh"; }
                     <partial name="_SortableHeader" />
@@ -351,6 +354,7 @@
                 }
             </tbody>
         </table>
+        </div>
 
         @if (Model.Filter.TotalPages > 1)
         {
@@ -359,7 +363,7 @@
                 .Where(k => !string.Equals(k.Key, "Filter.PageNumber", StringComparison.OrdinalIgnoreCase)
                          && !string.Equals(k.Key, "pageNumber", StringComparison.OrdinalIgnoreCase))
                 .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}")
-                .ToList();            Func<int, string> PageUrl = p => "?" + string.Join("&", qs) + "&Filter.PageNumber=" + p;
+                .ToList();            Func<int, string> PageUrl = p => "?" + string.Join("&", qs) + "&Filter.PageNumber=" + p + "#case-search-results";
             int currentPage = Model.Filter.PageNumber;
             int totalPages  = Model.Filter.TotalPages;
             <nav class="govuk-pagination" aria-label="Pagination">

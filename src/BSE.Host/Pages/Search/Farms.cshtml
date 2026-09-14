@@ -34,18 +34,18 @@
             <div class="govuk-form-group">
                 <label asp-for="Filter.Cphh" class="govuk-label">CPH(H)</label>
                 <div id="cphh-hint" class="govuk-hint">Format: NN[/]NNN[/]NNNN[/NN]</div>
-                <input asp-for="Filter.Cphh" class="govuk-input" aria-describedby="cphh-hint" />
+                <input asp-for="Filter.Cphh" class="govuk-input govuk-input--width-20" aria-describedby="cphh-hint" />
                 <span asp-validation-for="Filter.Cphh" class="govuk-error-message"></span>
             </div>
 
             <div class="govuk-form-group">
                 <label asp-for="Filter.Herdmark" class="govuk-label">Herdmark</label>
-                <input asp-for="Filter.Herdmark" class="govuk-input" />
+                <input asp-for="Filter.Herdmark" class="govuk-input govuk-input--width-10" />
             </div>
 
             <div class="govuk-form-group">
                 <label asp-for="Filter.NumericHerdmark" class="govuk-label">Numeric Herdmark</label>
-                <input asp-for="Filter.NumericHerdmark" class="govuk-input" />
+                <input asp-for="Filter.NumericHerdmark" class="govuk-input govuk-input--width-10" />
                 <span asp-validation-for="Filter.NumericHerdmark" class="govuk-error-message"></span>
             </div>
 
@@ -71,12 +71,12 @@
         <div class="govuk-grid-column-one-half">
             <div class="govuk-form-group">
                 <label asp-for="Filter.OwnerName" class="govuk-label">Owner Name (partial search)</label>
-                <input asp-for="Filter.OwnerName" class="govuk-input" />
+                <input asp-for="Filter.OwnerName" class="govuk-input govuk-!-width-two-thirds" />
             </div>
 
             <div class="govuk-form-group">
                 <label asp-for="Filter.Address" class="govuk-label">Address (partial search)</label>
-                <input asp-for="Filter.Address" class="govuk-input" />
+                <input asp-for="Filter.Address" class="govuk-input govuk-!-width-two-thirds" />
             </div>
 
             <div class="govuk-form-group">
@@ -132,29 +132,29 @@
             <caption class="govuk-visually-hidden">Farm search results</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    @{ ViewData["Label"] = "CPHH";                   ViewData["Column"] = "Cphh";                   ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Prefix"] = "Filter."; ViewData["Fragment"] = "farm-search-results"; ViewData["HeaderClass"] = "bse-w-5"; }
+                    @{ ViewData["Label"] = "CPHH";                   ViewData["Column"] = "Cphh";                   ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Prefix"] = "Filter."; ViewData["Fragment"] = "farm-search-results"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Owner Name";              ViewData["Column"] = "OwnerName"; ViewData["HeaderClass"] = "bse-w-9"; }
+                    @{ ViewData["Label"] = "Owner Name";              ViewData["Column"] = "OwnerName"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Address";                 ViewData["Column"] = "Address"; ViewData["HeaderClass"] = "bse-w-11"; }
+                    @{ ViewData["Label"] = "Address";                 ViewData["Column"] = "Address"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "County";                  ViewData["Column"] = "County"; ViewData["HeaderClass"] = "bse-w-6"; }
+                    @{ ViewData["Label"] = "County";                  ViewData["Column"] = "County"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Herdmark(s)";             ViewData["Column"] = "Herdmark"; ViewData["HeaderClass"] = "bse-w-10"; }
+                    @{ ViewData["Label"] = "Herdmark(s)";             ViewData["Column"] = "Herdmark"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Numeric Herdmark(s)";     ViewData["Column"] = "NumericHerdmark"; ViewData["HeaderClass"] = "bse-w-14"; }
+                    @{ ViewData["Label"] = "Numeric Herdmark(s)";     ViewData["Column"] = "NumericHerdmark"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Map Ref";                 ViewData["Column"] = "MapReference"; ViewData["HeaderClass"] = "bse-w-7"; }
+                    @{ ViewData["Label"] = "Map Ref";                 ViewData["Column"] = "MapReference"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "AHO";                     ViewData["Column"] = "Aho"; ViewData["HeaderClass"] = "bse-w-5"; }
+                    @{ ViewData["Label"] = "AHO";                     ViewData["Column"] = "Aho"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Herd Type";               ViewData["Column"] = "HerdType"; ViewData["HeaderClass"] = "bse-w-8"; }
+                    @{ ViewData["Label"] = "Herd Type";               ViewData["Column"] = "HerdType"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Correspondence Address";  ViewData["Column"] = "CorrespondenceAddress"; ViewData["HeaderClass"] = "bse-w-11"; }
+                    @{ ViewData["Label"] = "Correspondence Address";  ViewData["Column"] = "CorrespondenceAddress"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Cases";                   ViewData["Column"] = "CasesCount"; ViewData["HeaderClass"] = "bse-w-6"; }
+                    @{ ViewData["Label"] = "Cases";                   ViewData["Column"] = "CasesCount"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Confirmed Cases";         ViewData["Column"] = "ConfirmedCasesCount"; ViewData["HeaderClass"] = "bse-w-8"; }
+                    @{ ViewData["Label"] = "Confirmed Cases";         ViewData["Column"] = "ConfirmedCasesCount"; }
                     <partial name="_SortableHeader" />
                 </tr>
             </thead>
@@ -179,6 +179,6 @@
             </tbody>
         </table>
         </div>
-        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.Filter.PageNumber, ["TotalPages"] = Model.Filter.TotalPages, ["PageNumberKey"] = "Filter.PageNumber" })
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.Filter.PageNumber, ["TotalPages"] = Model.Filter.TotalPages, ["PageNumberKey"] = "Filter.PageNumber", ["Fragment"] = "farm-search-results" })
     }
 }
