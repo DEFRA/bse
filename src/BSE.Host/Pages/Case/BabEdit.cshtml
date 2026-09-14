@@ -13,9 +13,7 @@
     </ol>
 </nav>
 
-<h1 class="govuk-heading-l">RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Rbse)</span></h1>
-
-@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("BAB", Model.Rbse))
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("BAB", Model.Rbse, Model.BatchNumbers))
 
 @if (TempData["Success"] is string successMsg)
 {
