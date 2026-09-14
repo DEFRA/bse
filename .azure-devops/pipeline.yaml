@@ -98,6 +98,10 @@ stages:
       value: 'devbseinfsq1401.database.windows.net'  
     - name: dbName
       value: 'BSE'
+    - name: msGraphClientId
+      value: '3eeeb482-eea0-4bb5-85a9-9a6fefb27a23'
+    - name: msGraphSender
+      value: 'tse.queries@apha.gov.uk'
   jobs:
   - deployment: deploy_dev
     environment: 'DEV'
@@ -154,7 +158,10 @@ stages:
                 -Saml2__IdPMetadataUrl "https://login.microsoftonline.com/$(tenantId)/federationmetadata/2007-06/federationmetadata.xml?appid=$(appId)"
                 -Authentication__BypassEnabled "false"
                 -ConnectionStrings__BSE "Server=tcp:$(sqlServer);Database=$(dbName);Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Managed Identity;"
-
+                -AdnsMsGraph__MsGraphTenantId "$(tenantId)"
+                -AdnsMsGraph__MsGraphClientId "$(msGraphClientId)"
+                -AdnsMsGraph__MsGraphSenderUserId "$(msGraphSender)"
+                -AdnsMsGraph__FromAddress "$(msGraphSender)"
 - stage: TST
   displayName: TST
   dependsOn: Build
