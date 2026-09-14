@@ -1,7 +1,7 @@
 @page
 @model BSE.Host.Pages.HomeModel
 @{
-    ViewData["Title"] = "BSE system";
+    ViewData["Title"] = "BSE Database System";
     var batchYearError   = Model.ModelState[nameof(Model.BatchYear)]?.Errors.FirstOrDefault()?.ErrorMessage;
     var batchNumberError = Model.ModelState[nameof(Model.BatchNumber)]?.Errors.FirstOrDefault()?.ErrorMessage;
     var hasBatchError    = batchYearError is not null || batchNumberError is not null;
@@ -9,7 +9,7 @@
     var hasAnyError      = hasBatchError || rbseError is not null;
 }
 
-<h1 class="govuk-heading-l">BSE system</h1>
+<h1 class="govuk-heading-l">BSE Database System</h1>
 
 @* ── Error summary (batch panel validation) ──────────────────────────────────── *@
 @if (hasBatchError)
