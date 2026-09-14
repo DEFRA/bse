@@ -14,7 +14,9 @@ public class UsersAddModel(
     IUserManagementService userManagementService,
     ILookupDataService lookupDataService) : PageModel
 {
-    [BindProperty] public string? NTLogin { get; set; } = string.Empty;
+    // NT Login is a legacy Windows-auth identifier; the business wants it hidden from the UI
+    // wherever possible now that Entra ID/email is the primary identity. Derived automatically
+    // from Email below rather than collected from the user.
     [BindProperty] public string? Upn { get; set; }
     [BindProperty] public string UserName { get; set; } = string.Empty;
     [BindProperty] public string? Email { get; set; }
@@ -34,10 +36,10 @@ public class UsersAddModel(
         IsActive = Request.Form[nameof(IsActive)]
             .Any(v => string.Equals(v, "true", StringComparison.OrdinalIgnoreCase));
 
-        var ntLogin = NTLogin?.Trim();
+        var email = Email?.Trim();
 
-        if (string.IsNullOrWhiteSpace(ntLogin))
-            ModelState.AddModelError(nameof(NTLogin), "Enter an NT login");
+        if (string.IsNullOrWhiteSpace(email))
+            ModelState.AddModelError(nameof(Email), "Enter an email address");
         if (string.IsNullOrWhiteSpace(UserName))
             ModelState.AddModelError(nameof(UserName), "Enter a display name");
         if (UserGroupId <= 0)
@@ -48,8 +50,7 @@ public class UsersAddModel(
 
         if (ModelState.IsValid)
         {
-            if (!string.IsNullOrWhiteSpace(Email) &&
-                users.Any(u => !string.IsNullOrWhiteSpace(u.Email) && u.Email.Equals(Email, StringComparison.OrdinalIgnoreCase)))
+            if (users.Any(u => !string.IsNullOrWhiteSpace(u.Email) && u.Email.Equals(email, StringComparison.OrdinalIgnoreCase)))
                 ModelState.AddModelError(nameof(Email), "Unable to add the selected user");
         }
 
@@ -58,10 +59,10 @@ public class UsersAddModel(
 
         var user = new User(
             UserId: 0,
-            NTLogin: ntLogin!,
+            NTLogin: DeriveNtLogin(email!, users),
             Upn: Upn,
             UserName: UserName,
-            Email: Email,
+            Email: email,
             IsActive: IsActive,
             UserGroupId: UserGroupId,
             UserGroup: (UserGroup)UserGroupId);
@@ -69,5 +70,29 @@ public class UsersAddModel(
         await userManagementService.AddUserAsync(user);
         TempData["Success"] = $"User '{UserName}' added.";
         return RedirectToPage("/Admin/Users");
+    }
+
+    // NTLogin is VARCHAR(25) NOT NULL with a unique constraint; derive a value from the email
+    // local part so the column stays populated without asking the user for it.
+    private static string DeriveNtLogin(string email, IEnumerable<User> existingUsers)
+    {
+        var localPart = email.Split('@')[0];
+        var sanitised = new string(localPart.Where(c => char.IsLetterOrDigit(c) || c is '.' or '_' or '-').ToArray());
+        if (string.IsNullOrEmpty(sanitised))
+            sanitised = "user";
+
+        var baseValue = sanitised.Length > 21 ? sanitised[..21] : sanitised;
+        var existingLogins = new HashSet<string>(
+            existingUsers.Select(u => u.NTLogin), StringComparer.OrdinalIgnoreCase);
+
+        var candidate = baseValue;
+        var suffix = 1;
+        while (existingLogins.Contains(candidate))
+        {
+            candidate = $"{baseValue}{suffix++}";
+            if (candidate.Length > 25) candidate = candidate[..25];
+        }
+
+        return candidate;
     }
 }

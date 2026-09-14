@@ -17,6 +17,70 @@
     font-weight: 400;
 }
 
+/* Farm Search: table-layout:auto treats column widths as hints only, so equal-width
+   classes on Address/Correspondence Address were still overridden by content length.
+   Force fixed layout with explicit widths on every column so they're strictly honoured. */
+/* 12 columns squeezed into the standard govuk-width-container (~1020px) is too cramped;
+   scroll horizontally instead, matching the audit log tables' pattern. */
+.bse-farm-search-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.bse-farm-search-table {
+    table-layout: fixed;
+    min-width: 1400px;
+}
+
+.bse-farm-search-table .govuk-table__cell,
+.bse-farm-search-table .govuk-table__header {
+    overflow-wrap: break-word;
+}
+
+/* Prevent sortable header text/icon overlap in the fixed-width narrow columns */
+.bse-farm-search-table .govuk-table__header {
+    overflow: hidden;
+}
+
+.bse-farm-search-table .moj-sortable-table__button {
+    white-space: normal;
+    align-items: flex-start;
+    line-height: 1.2;
+}
+
+/* Column widths sized to fit each header's text (plus the sort icon) without wrapping/clipping. */
+.bse-w-5 {
+    width: 5%;
+}
+
+.bse-w-6 {
+    width: 6%;
+}
+
+.bse-w-7 {
+    width: 7%;
+}
+
+.bse-w-8 {
+    width: 8%;
+}
+
+.bse-w-9 {
+    width: 9%;
+}
+
+.bse-w-10 {
+    width: 10%;
+}
+
+.bse-w-11 {
+    width: 11%;
+}
+
+.bse-w-14 {
+    width: 14%;
+}
+
 /* Row actions in table cells. GOV.UK buttons are full width below the tablet
    breakpoint, which pushes a Delete button onto its own line under the Change
    link. This keeps both on one baseline-aligned row. */

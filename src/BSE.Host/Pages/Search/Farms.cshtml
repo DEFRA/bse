@@ -26,6 +26,7 @@
         <div class="govuk-grid-column-one-half">
             <div class="govuk-form-group">
                 <label asp-for="Filter.Cphh" class="govuk-label">CPH(H)</label>
+                <div id="cphh-hint" class="govuk-hint">Format: NN[/]NNN[/]NNNN[/NN]</div>
                 <input asp-for="Filter.Cphh" class="govuk-input" aria-describedby="cphh-hint" />
                 <span asp-validation-for="Filter.Cphh" class="govuk-error-message"></span>
             </div>
@@ -105,7 +106,7 @@
 
 @if (Model.Filter.HasSearched)
 {
-    <p class="govuk-body">@Model.Filter.TotalCount result(s) found.</p>
+    <p id="farm-search-results" class="govuk-body">@Model.Filter.TotalCount result(s) found.</p>
 
     @if (Model.Filter.TotalCount > 0)
     {
@@ -119,33 +120,34 @@
         var sortDesc = Model.Filter.SortDesc;
 
         @await Html.PartialAsync("_ExportLink")
-        <table class="govuk-table">
+        <div class="bse-farm-search-table-wrap">
+        <table class="govuk-table bse-farm-search-table">
             <caption class="govuk-visually-hidden">Farm search results</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    @{ ViewData["Label"] = "CPHH";                   ViewData["Column"] = "Cphh";                   ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Prefix"] = "Filter."; }
+                    @{ ViewData["Label"] = "CPHH";                   ViewData["Column"] = "Cphh";                   ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Prefix"] = "Filter."; ViewData["Fragment"] = "farm-search-results"; ViewData["HeaderClass"] = "bse-w-5"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Owner Name";              ViewData["Column"] = "OwnerName"; }
+                    @{ ViewData["Label"] = "Owner Name";              ViewData["Column"] = "OwnerName"; ViewData["HeaderClass"] = "bse-w-9"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Address";                 ViewData["Column"] = "Address"; }
+                    @{ ViewData["Label"] = "Address";                 ViewData["Column"] = "Address"; ViewData["HeaderClass"] = "bse-w-11"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Correspondence Address";  ViewData["Column"] = "CorrespondenceAddress"; }
+                    @{ ViewData["Label"] = "County";                  ViewData["Column"] = "County"; ViewData["HeaderClass"] = "bse-w-6"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "County";                  ViewData["Column"] = "County"; }
+                    @{ ViewData["Label"] = "Herdmark(s)";             ViewData["Column"] = "Herdmark"; ViewData["HeaderClass"] = "bse-w-10"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Herdmark(s)";             ViewData["Column"] = "Herdmark"; }
+                    @{ ViewData["Label"] = "Numeric Herdmark(s)";     ViewData["Column"] = "NumericHerdmark"; ViewData["HeaderClass"] = "bse-w-14"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Numeric Herdmark(s)";     ViewData["Column"] = "NumericHerdmark"; }
+                    @{ ViewData["Label"] = "Map Ref";                 ViewData["Column"] = "MapReference"; ViewData["HeaderClass"] = "bse-w-7"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Map Ref";                 ViewData["Column"] = "MapReference"; }
+                    @{ ViewData["Label"] = "AHO";                     ViewData["Column"] = "Aho"; ViewData["HeaderClass"] = "bse-w-5"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "AHO";                     ViewData["Column"] = "Aho"; }
+                    @{ ViewData["Label"] = "Herd Type";               ViewData["Column"] = "HerdType"; ViewData["HeaderClass"] = "bse-w-8"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Herd Type";               ViewData["Column"] = "HerdType"; }
+                    @{ ViewData["Label"] = "Correspondence Address";  ViewData["Column"] = "CorrespondenceAddress"; ViewData["HeaderClass"] = "bse-w-11"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Cases";                   ViewData["Column"] = "CasesCount"; }
+                    @{ ViewData["Label"] = "Cases";                   ViewData["Column"] = "CasesCount"; ViewData["HeaderClass"] = "bse-w-6"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Confirmed Cases";         ViewData["Column"] = "ConfirmedCasesCount"; }
+                    @{ ViewData["Label"] = "Confirmed Cases";         ViewData["Column"] = "ConfirmedCasesCount"; ViewData["HeaderClass"] = "bse-w-8"; }
                     <partial name="_SortableHeader" />
                 </tr>
             </thead>
@@ -153,22 +155,23 @@
                 @foreach (var r in Model.Filter.PagedResults)
                 {
                     <tr class="govuk-table__row">
-                        <td class="govuk-table__cell"><a asp-page="/Farm/Details" asp-route-cphh="@r.Cphh" class="govuk-link">@BseFormat.FormatCphh(r.Cphh)</a></td>
+                        <td class="govuk-table__cell">@r.Cphh</td>
                         <td class="govuk-table__cell">@r.OwnerName</td>
                         <td class="govuk-table__cell">@r.Address</td>
-                        <td class="govuk-table__cell">@r.CorrespondenceAddress</td>
                         <td class="govuk-table__cell">@r.County</td>
                         <td class="govuk-table__cell">@r.Herdmark</td>
                         <td class="govuk-table__cell">@r.NumericHerdmark</td>
                         <td class="govuk-table__cell">@r.MapReference</td>
                         <td class="govuk-table__cell">@r.Aho</td>
                         <td class="govuk-table__cell">@r.HerdType</td>
+                        <td class="govuk-table__cell">@r.CorrespondenceAddress</td>
                         <td class="govuk-table__cell">@r.CasesCount</td>
                         <td class="govuk-table__cell">@r.ConfirmedCasesCount</td>
                     </tr>
                 }
             </tbody>
         </table>
+        </div>
         @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.Filter.PageNumber, ["TotalPages"] = Model.Filter.TotalPages, ["PageNumberKey"] = "Filter.PageNumber" })
     }
 }
