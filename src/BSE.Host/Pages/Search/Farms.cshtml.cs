@@ -68,8 +68,8 @@ public class FarmsModel : PageModel
         // Legacy's HTML export had no gridlines outside the bordered table; match that here.
         ws.ShowGridLines = false;
         // Legacy exported the raw result-set column names, not the on-screen captions.
-        string[] headers = ["CPHH", "OwnerName", "Address", "CorrespondenceAddress", "County", "Herdmark",
-            "NumericHerdmark", "MapReference", "AHO", "HerdType",
+        string[] headers = ["CPHH", "OwnerName", "Address", "County", "Herdmark",
+            "NumericHerdmark", "MapReference", "AHO", "HerdType", "CorrespondenceAddress",
             "CasesCount", "ConfirmedCasesCount"];
         // Legacy's exported header row was plain text, not bold.
         for (var c = 1; c <= headers.Length; c++) { ws.Cell(1, c).Value = headers[c - 1]; }
@@ -79,13 +79,13 @@ public class FarmsModel : PageModel
             ws.Cell(row, 1).Value = r.Cphh;
             ws.Cell(row, 2).Value = r.OwnerName;
             ws.Cell(row, 3).Value = r.Address;
-            ws.Cell(row, 4).Value = r.CorrespondenceAddress;
-            ws.Cell(row, 5).Value = r.County;
-            ws.Cell(row, 6).Value = r.Herdmark;
-            ws.Cell(row, 7).Value = r.NumericHerdmark;
-            ws.Cell(row, 8).Value = r.MapReference;
-            ws.Cell(row, 9).Value = r.Aho;
-            ws.Cell(row, 10).Value = r.HerdType;
+            ws.Cell(row, 4).Value = r.County;
+            ws.Cell(row, 5).Value = r.Herdmark;
+            ws.Cell(row, 6).Value = r.NumericHerdmark;
+            ws.Cell(row, 7).Value = r.MapReference;
+            ws.Cell(row, 8).Value = r.Aho;
+            ws.Cell(row, 9).Value = r.HerdType;
+            ws.Cell(row, 10).Value = r.CorrespondenceAddress;
             ws.Cell(row, 11).Value = r.CasesCount;
             ws.Cell(row, 12).Value = r.ConfirmedCasesCount;
             row++;

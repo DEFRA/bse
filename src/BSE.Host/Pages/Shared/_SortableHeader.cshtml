@@ -5,6 +5,7 @@
      SortColumn   - currently active sort column (string)
      SortDesc     - current sort is descending (bool)
      BaseUrl      - query string base (all params except SortColumn/SortDesc/PageNumber)
+     HeaderClass  - optional extra CSS class(es) added to the <th> (e.g. for a shared column width)
 *@
 @{
     var label = (string)ViewData["Label"]!;
@@ -14,6 +15,7 @@
     var baseUrl = (string?)ViewData["BaseUrl"] ?? "?";
     var prefix = (string?)ViewData["Prefix"] ?? "";
     var fragment = (string?)ViewData["Fragment"] ?? "";
+    var headerClass = (string?)ViewData["HeaderClass"] ?? "";
 
     bool isActive = string.Equals(sortCol, column, StringComparison.OrdinalIgnoreCase);
     bool nextDesc = isActive && !sortDesc;
@@ -36,7 +38,7 @@
             : $"Sorted ascending. Activate to sort {label} descending.")
         : $"Not sorted. Activate to sort {label} ascending.";
 }
-<th scope="col" class="govuk-table__header moj-sortable-table__heading" aria-sort="@ariaSort">
+<th scope="col" class="govuk-table__header moj-sortable-table__heading @headerClass" aria-sort="@ariaSort">
     <a class="moj-sortable-table__button" href="@href">
         @label
         <span class="moj-sortable-table__icons" aria-hidden="true">
