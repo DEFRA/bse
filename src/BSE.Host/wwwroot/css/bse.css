@@ -386,6 +386,27 @@
     text-decoration: underline;
 }
 
+/* ── Batch numbers panel — expands as a floating popup, not pushing the tab bar down (legacy parity) ── */
+.bse-batch-panel {
+    position: relative;
+}
+
+.bse-batch-panel .govuk-details__text {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 20;
+    width: max-content;
+    max-width: calc(100vw - 2rem);
+    max-height: 70vh;
+    overflow: auto;
+    box-sizing: border-box;
+    margin-top: 0;
+    background: #ffffff;
+    border: 1px solid #b1b4b6;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
 /* ── Case section tab bar (mirrors legacy 7-tab bar) ─────────────────────────── */
 .bse-case-tabs {
     border-bottom: 4px solid #1d70b8;

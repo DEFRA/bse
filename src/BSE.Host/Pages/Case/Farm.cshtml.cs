@@ -60,7 +60,7 @@ public class FarmModel(
     public bool ShowBatchAssignment =>
         PendingBatch is not null
         && string.Equals(PendingBatch.RbseNumber, Rbse, StringComparison.OrdinalIgnoreCase)
-        && User.IsInRole("DataEntry");
+        && User.IsInRole("VLAAccess");
 
     /// <summary>True when this case is already linked to the pending batch for the BSE1 document.</summary>
     public bool AlreadyInPendingBatch =>
@@ -125,7 +125,7 @@ public class FarmModel(
 
     public async Task<IActionResult> OnPostSaveBatchAsync()
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole("VLAAccess"))
             return Forbid();
 
         var pending = await wizardState.GetAsync();
@@ -179,6 +179,9 @@ public class FarmModel(
 
     public async Task<IActionResult> OnPostCancelBatchAsync()
     {
+        if (!User.IsInRole("VLAAccess"))
+            return Forbid();
+
         var pending = await wizardState.GetAsync();
         await wizardState.ClearAsync();
 
