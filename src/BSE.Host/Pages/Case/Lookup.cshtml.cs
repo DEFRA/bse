@@ -37,7 +37,7 @@ public class LookupModel : PageModel
             return Page();
         }
 
-        return RedirectToPage("/Case/Details", new { rbse = caseRecord.Rbse });
+        return RedirectToPage("/Case/Farm", new { rbse = caseRecord.Rbse });
     }
 
     private static bool IsNonGbRbse(string rbse)

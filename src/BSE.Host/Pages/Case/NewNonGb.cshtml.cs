@@ -110,6 +110,6 @@ public class NewNonGbModel : PageModel
         }
 
         TempData["SuccessMessage"] = $"Non-GB case {Rbse} created successfully.";
-        return RedirectToPage("/Case/Details", new { rbse = Rbse.Trim() });
+        return RedirectToPage("/Case/Farm", new { rbse = Rbse.Trim() });
     }
 }

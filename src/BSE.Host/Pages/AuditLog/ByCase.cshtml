@@ -9,7 +9,7 @@
         <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
         @if (!string.IsNullOrWhiteSpace(Model.Rbse))
         {
-            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Details" asp-route-rbse="@Model.Rbse">@BseFormat.FormatRbse(Model.Rbse)</a></li>
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Farm" asp-route-rbse="@Model.Rbse">@BseFormat.FormatRbse(Model.Rbse)</a></li>
         }
         <li class="govuk-breadcrumbs__list-item" aria-current="page">Audit log by case</li>
     </ol>
