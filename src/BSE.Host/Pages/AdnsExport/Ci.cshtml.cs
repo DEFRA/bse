@@ -141,8 +141,8 @@ public class CiModel(
         {
             await adnsExportService.DispatchAsync(command);
             TempData.Remove(PreviewTempDataKey);
-            TempData["Success"] = "CI ADNS export dispatched successfully.";
-            return RedirectToPage("/AdnsExport/Menu");
+            TempData["SuccessMessage"] = "The message has been successfully sent. You should receive a confirmation e-mail shortly.";
+            return RedirectToPage();
         }
         catch (Exception ex)
         {
