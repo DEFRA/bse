@@ -36,7 +36,7 @@
 @* ── Batch Number panel — VLA Data Entry + VLA Maintenance ────────────────────── *@
 @if (User.IsInRole("VLAAccess"))
 {
-    <section aria-labelledby="batch-panel-heading" class="govuk-!-margin-bottom-1">
+    <section aria-labelledby="batch-panel-heading" class="govuk-!-margin-bottom-6">
         <h2 class="govuk-heading-m" id="batch-panel-heading">Batch number</h2>
         <p class="govuk-body">Only enter a batch number if you are entering a batch of case details. The case you open with <strong>Go</strong> below will be assigned to this batch when you save it.</p>
 
@@ -110,13 +110,13 @@
             }
         </div>
     </section>
-    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-top-1 govuk-!-margin-bottom-1" />
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-bottom-6" />
 }
 
 @* ── RBSE Number panel — all DEFRA groups + VLA Data Entry + VLA Maintenance ─── *@
 @if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess"))
 {
-    <section aria-labelledby="rbse-panel-heading" class="govuk-!-margin-bottom-1">
+    <section aria-labelledby="rbse-panel-heading" class="govuk-!-margin-bottom-6">
         <h2 class="govuk-heading-m" id="rbse-panel-heading">RBSE number</h2>
 
         <form id="case-entry-form" method="post" asp-page-handler="RbseLookup" class="govuk-!-margin-bottom-4">
@@ -161,7 +161,7 @@
             </tbody>
         </table>
     </section>
-    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-top-4 govuk-!-margin-bottom-4" />
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-bottom-6" />
 }
 
 @* Quick-case and quick-farm inputs removed — Home now exposes only Batch and RBSE inputs per migration requirement *@

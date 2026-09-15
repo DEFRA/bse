@@ -501,13 +501,3 @@
         align-items: flex-start;
         line-height: 1.2;
     }
-
-.govuk-table {
-    width: 100%;
-    table-layout: auto;
-}
-
-    .govuk-table th,
-    .govuk-table td {
-        white-space: normal;
-    }
