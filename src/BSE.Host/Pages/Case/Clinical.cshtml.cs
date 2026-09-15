@@ -102,15 +102,17 @@ public class ClinicalModel(
         return RedirectToPage(new { rbse = Rbse });
     }
 
-    public async Task<IActionResult> OnPostDeleteVisitAsync(int visitId)
+    public async Task<IActionResult> OnPostDeleteVisitAsync(int visitId, string? rowStampBase64)
     {
         if (!User.IsInRole("DataEntry"))
             return Forbid();
 
+        var rowStamp = string.IsNullOrEmpty(rowStampBase64) ? null : Convert.FromBase64String(rowStampBase64);
+
         using var conn = connectionFactory.CreateConnection();
         conn.Open();
         using var tx = conn.BeginTransaction();
-        await clinicalRepository.DeleteVisitAsync(visitId, conn, tx);
+        await clinicalRepository.DeleteVisitAsync(visitId, rowStamp, conn, tx);
         tx.Commit();
 
         TempData["Success"] = "Clinical visit deleted.";
