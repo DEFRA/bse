@@ -17,19 +17,21 @@ public sealed class AdnsExportService : IAdnsExportService
 {
     private readonly IAdnsRepository _repository;
     private readonly IDbConnectionFactory _connectionFactory;
-    private readonly ISmtpClient _smtpClient;
-    private readonly AdnsSmtpOptions _smtpOptions;
+    private readonly IMSGraphMailClient _msGraphMailClient;
+    private readonly string _fromAddress;
+    private readonly string _defaultRecipient;
 
     public AdnsExportService(
         IAdnsRepository repository,
         IDbConnectionFactory connectionFactory,
-        ISmtpClient smtpClient,
-        IOptions<AdnsSmtpOptions> smtpOptions)
+        IMSGraphMailClient msGraphMailClient,
+        IOptions<AdnsMsGraphOptions> msGraphOptions)
     {
         _repository = repository;
         _connectionFactory = connectionFactory;
-        _smtpClient = smtpClient;
-        _smtpOptions = smtpOptions.Value;
+        _msGraphMailClient = msGraphMailClient;
+        _fromAddress = msGraphOptions.Value.FromAddress;
+        _defaultRecipient = msGraphOptions.Value.ToAddress;
     }
 
     // ── Preview generation ─────────────────────────────────────────────────────
@@ -120,10 +122,18 @@ public sealed class AdnsExportService : IAdnsExportService
                     connection, transaction);
             }
 
-            // Send emails — outside the transaction so a SMTP failure doesn't prevent commit,
+            // Send emails — outside the transaction so a mail API failure doesn't prevent commit,
             // but before commit so we don't commit without knowing email dispatch succeeded.
-            await _smtpClient.SendAsync(_smtpOptions.FromAddress, command.UserEmailAddress, subject, body);
-            await _smtpClient.SendAsync(_smtpOptions.FromAddress, _smtpOptions.ToAddress, subject, body);
+            // If user recipient equals the configured default recipient, send only once.
+            var userRecipient = command.UserEmailAddress?.Trim() ?? string.Empty;
+            var defaultRecipient = _defaultRecipient?.Trim() ?? string.Empty;
+
+            await _msGraphMailClient.SendAsync(_fromAddress, userRecipient, subject, body);
+
+            if (!string.Equals(userRecipient, defaultRecipient, StringComparison.OrdinalIgnoreCase))
+            {
+                await _msGraphMailClient.SendAsync(_fromAddress, defaultRecipient, subject, body);
+            }
 
             transaction.Commit();
         }

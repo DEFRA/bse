@@ -13,10 +13,10 @@ namespace BSE.Host.Pages.AdnsExport;
 [Authorize(Policy = "DEFRAMaintenance")]
 public class CiModel(
     IAdnsExportService adnsExportService,
-    IOptions<AdnsSmtpOptions> smtpOptions) : PageModel
+    IOptions<AdnsMsGraphOptions> msGraphOptions) : PageModel
 {
     private const string PreviewTempDataKey = "AdnsCiPreview";
-    private readonly AdnsSmtpOptions _smtpOptions = smtpOptions.Value;
+    private readonly AdnsMsGraphOptions _msGraphOptions = msGraphOptions.Value;
 
     [BindProperty]
     [Required(ErrorMessage = "Enter an email reference.")]
@@ -56,8 +56,8 @@ public class CiModel(
     public AdnsExportPreview? Preview { get; private set; }
     public string? ErrorMessage { get; private set; }
 
-    public string FromEmailAddress => _smtpOptions.FromAddress;
-    public string DefaultToEmailAddress => _smtpOptions.ToAddress;
+    public string FromEmailAddress => _msGraphOptions.FromAddress;
+    public string DefaultToEmailAddress => _msGraphOptions.ToAddress;
 
     public IActionResult OnGet()
     {
