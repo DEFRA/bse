@@ -158,8 +158,8 @@ public class GbModel(
             await adnsExportService.DispatchAsync(command);
             TempData.Remove(PreviewTempDataKey);
             TempData.Remove(ContextTempDataKey);
-            TempData["Success"] = "GB ADNS export dispatched successfully.";
-            return RedirectToPage("/AdnsExport/Menu");
+            TempData["SuccessMessage"] = "The message has been successfully sent. You should receive a confirmation e-mail shortly.";
+            return RedirectToPage();
         }
         catch (Exception ex)
         {
