@@ -15,7 +15,7 @@ public class RelatedAnimalsModel : PageModel
 {
     private readonly ICaseSearchService _search;
     private readonly ILookupDataService _lookups;
-    private const int PageSize = 50;
+    private const int PageSize = 10;
 
     public RelatedAnimalsModel(ICaseSearchService search, ILookupDataService lookups)
     {
@@ -24,14 +24,15 @@ public class RelatedAnimalsModel : PageModel
     }
 
     [BindProperty(SupportsGet = true)]
-    [System.ComponentModel.DataAnnotations.RegularExpression(@"^(\d{9}|\d{2}/\d{2}/\d{5})?$", ErrorMessage = "Enter RBSE as 9 digits or in the format XX/XX/XXXXX.")]
+    // Legacy searched by RBSE prefix (LIKE @RBSE + '%'), so a partial value such as "01" is valid.
+    [System.ComponentModel.DataAnnotations.RegularExpression(@"^(\d{2}(/)?(\d{0,2}(/)?\d{0,5})?)?$", ErrorMessage = "Enter RBSE as digits in the format NN/NN/NNNNN, or a shorter prefix such as the first 2 digits.")]
     public string? Rbse { get; set; }
 
     [BindProperty(SupportsGet = true)] public string? Name { get; set; }
     [BindProperty(SupportsGet = true)] public string? Eartag { get; set; }
 
     [BindProperty(SupportsGet = true)]
-    [System.ComponentModel.DataAnnotations.RegularExpression(@"^(\d{9}|\d{2}/\d{2}/\d{5})?$", ErrorMessage = "Enter RBSE as 9 digits or in the format XX/XX/XXXXX.")]
+    [System.ComponentModel.DataAnnotations.RegularExpression(@"^(\d{2}(/)?(\d{0,2}(/)?\d{0,5})?)?$", ErrorMessage = "Enter RBSE as digits in the format NN/NN/NNNNN, or a shorter prefix such as the first 2 digits.")]
     public string? RelationRbse { get; set; }
 
     [BindProperty(SupportsGet = true)] public string? RelationType { get; set; }
@@ -108,10 +109,13 @@ public class RelatedAnimalsModel : PageModel
 
         using var wb = new XLWorkbook();
         var ws = wb.Worksheets.Add("Results");
+        // Legacy's HTML export had no gridlines outside the bordered table; match that here.
+        ws.ShowGridLines = false;
         // Legacy exported the raw result-set column names, not the on-screen captions.
         string[] headers = ["RBSE", "CPHH", "RelationType", "RelSex", "Eartag",
             "RelBirthDate", "RelFate", "LeftDate", "RelName", "RelEartag", "RelationRBSE"];
-        for (var c = 1; c <= headers.Length; c++) { ws.Cell(1, c).Value = headers[c - 1]; ws.Cell(1, c).Style.Font.Bold = true; }
+        // Legacy's exported header row was plain text, not bold.
+        for (var c = 1; c <= headers.Length; c++) { ws.Cell(1, c).Value = headers[c - 1]; }
         var row = 2;
         foreach (var r in rows)
         {
@@ -122,18 +126,22 @@ public class RelatedAnimalsModel : PageModel
             ws.Cell(row, 5).Value = r.Eartag;
             ws.Cell(row, 6).Value = r.RelBirthDate;
             ws.Cell(row, 7).Value = r.RelFate;
-            ws.Cell(row, 8).Value = r.LeftDate?.ToString("dd/MM/yyyy");
+            ws.Cell(row, 8).Value = r.LeftDate?.ToString("dd/MM/yyyy HH:mm:ss");
             ws.Cell(row, 9).Value = r.RelName;
             ws.Cell(row, 10).Value = r.RelEartag;
             ws.Cell(row, 11).Value = r.RelationRbse;
             row++;
         }
+        // Legacy rendered the exported grid with all borders around the record area only.
+        var recordRange = ws.Range(1, 1, row - 1, headers.Length);
+        recordRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        recordRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
         ws.Columns().AdjustToContents();
         using var ms = new MemoryStream();
         wb.SaveAs(ms);
         return new FileContentResult(ms.ToArray(),
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-            { FileDownloadName = $"RelatedAnimals_{DateTime.Today:yyyyMMdd}.xlsx" };
+            { FileDownloadName = "relatedanimalsearchresults.xlsx" };
     }
 
     private bool HasAnyFilter() =>

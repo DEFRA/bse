@@ -12,9 +12,7 @@
     </ol>
 </nav>
 
-<h1 class="govuk-heading-l">RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Rbse)</span></h1>
-
-@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Relations", Model.Rbse))
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Relations", Model.Rbse, Model.BatchNumbers))
 
 @if (TempData["Success"] is string successMsg)
 {
@@ -46,44 +44,6 @@
     </div>
 }
 
-@* ── Batch numbers ── *@
-@if (User.IsInRole("DataEntry") && Model.BatchNumbers.Count > 0)
-{
-    var batchSortBase = "?" + string.Join("&", HttpContext.Request.Query
-        .Where(k => !string.Equals(k.Key, "BSortColumn", StringComparison.OrdinalIgnoreCase)
-                 && !string.Equals(k.Key, "BSortDesc", StringComparison.OrdinalIgnoreCase)
-                 && !string.Equals(k.Key, "BPageNumber", StringComparison.OrdinalIgnoreCase))
-        .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
-    var batchSortColumn = HttpContext.Request.Query["BSortColumn"].ToString();
-    var batchSortDesc = bool.TryParse(HttpContext.Request.Query["BSortDesc"], out var desc) && desc;
-    var sortedBatchNumbers = batchSortColumn == "Document"
-        ? (batchSortDesc ? Model.BatchNumbers.OrderByDescending(b => b.Document) : Model.BatchNumbers.OrderBy(b => b.Document))
-        : (batchSortDesc ? Model.BatchNumbers.OrderByDescending(b => b.BatchNumber) : Model.BatchNumbers.OrderBy(b => b.BatchNumber));
-
-    <div class="govuk-!-margin-bottom-4">
-        <h2 class="govuk-heading-m">Batch numbers</h2>
-        <table class="govuk-table">
-            <caption class="govuk-visually-hidden">Batch numbers for @Model.Rbse</caption>
-            <thead class="govuk-table__head">
-                <tr class="govuk-table__row">
-                    @{ ViewData["Label"] = "Batch Number"; ViewData["Column"] = "BatchNumber"; ViewData["SortColumn"] = batchSortColumn; ViewData["SortDesc"] = batchSortDesc; ViewData["BaseUrl"] = batchSortBase; ViewData["Prefix"] = "B"; }
-                    <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Document"; ViewData["Column"] = "Document"; }
-                    <partial name="_SortableHeader" />
-                </tr>
-            </thead>
-            <tbody class="govuk-table__body">
-                @foreach (var b in sortedBatchNumbers)
-                {
-                    <tr class="govuk-table__row">
-                        <td class="govuk-table__cell">@b.BatchNumber</td>
-                        <td class="govuk-table__cell">@(string.IsNullOrWhiteSpace(b.Document) ? "—" : b.Document)</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-}
 
 @{
     var canEditRelations = User.IsInRole("DataEntry");

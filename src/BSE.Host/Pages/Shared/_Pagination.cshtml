@@ -4,11 +4,14 @@
      ViewData["TotalPages"]    — int
      ViewData["PageNumberKey"] — string (optional, default: "pageNumber")
                                  Pass "Filter.PageNumber" for pages that bind
-                                 PageNumber inside a Filter view-model (Farms, Outstanding). *@
+                                 PageNumber inside a Filter view-model (Farms, Outstanding).
+     ViewData["Fragment"]      — string (optional) anchor id to jump back to the results
+                                 table instead of the top of the page. *@
 @{
     int currentPage = (int)(ViewData["CurrentPage"] ?? 1);
     int totalPages  = (int)(ViewData["TotalPages"]  ?? 1);
     string pageKey  = (string?)ViewData["PageNumberKey"] ?? "pageNumber";
+    string fragment = (string?)ViewData["Fragment"] ?? "";
 
     if (totalPages <= 1) { return; }
 
@@ -19,7 +22,11 @@
         .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}")
         .ToList();
 
-    string PageUrl(int p) => "?" + string.Join("&", qs) + $"&{Uri.EscapeDataString(pageKey)}={p}";
+    string PageUrl(int p)
+    {
+        var url = "?" + string.Join("&", qs) + $"&{Uri.EscapeDataString(pageKey)}={p}";
+        return string.IsNullOrWhiteSpace(fragment) ? url : url + "#" + Uri.EscapeDataString(fragment);
+    }
 }
 
 <nav class="govuk-pagination" aria-label="Pagination">

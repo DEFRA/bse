@@ -15,6 +15,17 @@
     };
 }
 
+@* RBSE heading + batch numbers panel side-by-side (GOV.UK grid — stacks on narrow screens),
+   mirroring legacy's RBSE number / BatchNumberDisplay1 header row. *@
+<div class="govuk-grid-row govuk-!-margin-bottom-2">
+    <div class="govuk-grid-column-two-thirds">
+        <h1 class="govuk-heading-l">RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Rbse)</span></h1>
+    </div>
+    <div class="govuk-grid-column-one-third">
+        @await Html.PartialAsync("_BatchNumbersPanel", new BSE.Host.Models.BatchNumbersPanelViewModel(Model.Rbse, Model.BatchNumbers ?? []))
+    </div>
+</div>
+
 <nav class="bse-case-tabs govuk-!-margin-bottom-6" aria-label="Case sections">
     <ul class="bse-case-tabs__list" role="list">
         @foreach (var tab in tabs)
@@ -36,3 +47,4 @@
         }
     </ul>
 </nav>
+

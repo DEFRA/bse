@@ -5,15 +5,29 @@
 }
 
 <h1 class="govuk-heading-l">Outstanding Data Search</h1>
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Search/Menu">Search Menu</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Outstanding Data Search</li>
+    </ol>
+</nav>
 
-@if (Model.NoOptionSelected)
+@if (Model.Filter.EarliestFormADateError is not null || Model.Filter.LatestFormADateError is not null)
 {
     <div class="govuk-error-summary" data-module="govuk-error-summary">
         <div role="alert">
             <h2 class="govuk-error-summary__title">There is a problem</h2>
             <div class="govuk-error-summary__body">
                 <ul class="govuk-list govuk-error-summary__list">
-                    <li><a href="#search-type-results">@BSE.Host.Pages.Search.OutstandingModel.NoOptionMessage</a></li>
+                    @if (Model.Filter.EarliestFormADateError is not null)
+                    {
+                        <li><a href="#Filter_EarliestFormADate">@Model.Filter.EarliestFormADateError</a></li>
+                    }
+                    @if (Model.Filter.LatestFormADateError is not null)
+                    {
+                        <li><a href="#Filter_LatestFormADate">@Model.Filter.LatestFormADateError</a></li>
+                    }
                 </ul>
             </div>
         </div>
@@ -49,15 +63,23 @@
                     <div id="outstanding-date-hint" class="govuk-hint">Leave blank to search all dates.</div>
                     <div class="govuk-date-input">
                         <div class="govuk-date-input__item">
-                            <div class="govuk-form-group">
+                            <div class="govuk-form-group @(Model.Filter.EarliestFormADateError is not null ? "govuk-form-group--error" : "")">
                                 <label asp-for="Filter.EarliestFormADate" class="govuk-label govuk-date-input__label">From</label>
-                                <input asp-for="Filter.EarliestFormADate" type="date" class="govuk-input govuk-date-input__input" />
+                                @if (Model.Filter.EarliestFormADateError is not null)
+                                {
+                                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.EarliestFormADateError</p>
+                                }
+                                <input asp-for="Filter.EarliestFormADate" type="date" class="govuk-input govuk-date-input__input @(Model.Filter.EarliestFormADateError is not null ? "govuk-input--error" : "")" />
                             </div>
                         </div>
                         <div class="govuk-date-input__item">
-                            <div class="govuk-form-group">
+                            <div class="govuk-form-group @(Model.Filter.LatestFormADateError is not null ? "govuk-form-group--error" : "")">
                                 <label asp-for="Filter.LatestFormADate" class="govuk-label govuk-date-input__label">To</label>
-                                <input asp-for="Filter.LatestFormADate" type="date" class="govuk-input govuk-date-input__input" />
+                                @if (Model.Filter.LatestFormADateError is not null)
+                                {
+                                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.LatestFormADateError</p>
+                                }
+                                <input asp-for="Filter.LatestFormADate" type="date" class="govuk-input govuk-date-input__input @(Model.Filter.LatestFormADateError is not null ? "govuk-input--error" : "")" />
                             </div>
                         </div>
                     </div>
@@ -83,7 +105,7 @@
 
 @if (Model.Filter.HasSearched)
 {
-    <p class="govuk-body">@Model.Filter.TotalCount result(s) found.</p>
+    <p id="outstanding-search-results" class="govuk-body">@Model.Filter.TotalCount result(s) found.</p>
 
     @if (Model.Filter.TotalCount > 0)
     {
@@ -97,11 +119,12 @@
         var sortDesc = Model.Filter.SortDesc;
 
         @await Html.PartialAsync("_ExportLink")
-        <table class="govuk-table">
+        <div class="bse-outstanding-search-table-wrap">
+        <table class="govuk-table bse-outstanding-search-table">
             <caption class="govuk-visually-hidden">Outstanding search results</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    @{ ViewData["Label"] = "RBSE";         ViewData["Column"] = "Rbse";        ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Prefix"] = "Filter."; }
+                    @{ ViewData["Label"] = "RBSE";         ViewData["Column"] = "Rbse";        ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Prefix"] = "Filter."; ViewData["Fragment"] = "outstanding-search-results"; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "CPHH";         ViewData["Column"] = "Cphh"; }
                     <partial name="_SortableHeader" />
@@ -132,6 +155,7 @@
                 }
             </tbody>
         </table>
-        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.Filter.PageNumber, ["TotalPages"] = Model.Filter.TotalPages, ["PageNumberKey"] = "Filter.PageNumber" })
+        </div>
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.Filter.PageNumber, ["TotalPages"] = Model.Filter.TotalPages, ["PageNumberKey"] = "Filter.PageNumber", ["Fragment"] = "outstanding-search-results" })
     }
 }

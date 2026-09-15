@@ -1,7 +1,7 @@
 @page
 @model BSE.Host.Pages.HomeModel
 @{
-    ViewData["Title"] = "BSE system";
+    ViewData["Title"] = "BSE Database System";
     var batchYearError   = Model.ModelState[nameof(Model.BatchYear)]?.Errors.FirstOrDefault()?.ErrorMessage;
     var batchNumberError = Model.ModelState[nameof(Model.BatchNumber)]?.Errors.FirstOrDefault()?.ErrorMessage;
     var hasBatchError    = batchYearError is not null || batchNumberError is not null;
@@ -9,7 +9,7 @@
     var hasAnyError      = hasBatchError || rbseError is not null;
 }
 
-<h1 class="govuk-heading-l">BSE system</h1>
+<h1 class="govuk-heading-l">BSE Database System</h1>
 
 @* ── Error summary (batch panel validation) ──────────────────────────────────── *@
 @if (hasBatchError)
@@ -36,7 +36,7 @@
 @* ── Batch Number panel — VLA Data Entry + VLA Maintenance ────────────────────── *@
 @if (User.IsInRole("VLAAccess"))
 {
-    <section aria-labelledby="batch-panel-heading" class="govuk-!-margin-bottom-6">
+    <section aria-labelledby="batch-panel-heading" class="govuk-!-margin-bottom-1">
         <h2 class="govuk-heading-m" id="batch-panel-heading">Batch number</h2>
         <p class="govuk-body">Only enter a batch number if you are entering a batch of case details. The case you open with <strong>Go</strong> below will be assigned to this batch when you save it.</p>
 
@@ -73,14 +73,11 @@
                                            value="@Model.BatchNumber" autocomplete="off" />
                                 </div>
                             </div>
-
-                            
-
                             <p class="govuk-body govuk-!-margin-top-4 govuk-!-margin-bottom-4">Or</p>
 
                             <div class="govuk-form-group govuk-!-margin-bottom-0">
                                 <button type="submit" asp-page-handler="CreateBatch"
-                                        class="govuk-button govuk-button--secondary"
+                                        class="govuk-button"
                                         data-module="govuk-button">Create New</button>
                             </div>
                         </fieldset>
@@ -113,13 +110,13 @@
             }
         </div>
     </section>
-    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-bottom-6" />
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-top-1 govuk-!-margin-bottom-1" />
 }
 
 @* ── RBSE Number panel — all DEFRA groups + VLA Data Entry + VLA Maintenance ─── *@
 @if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess"))
 {
-    <section aria-labelledby="rbse-panel-heading" class="govuk-!-margin-bottom-6">
+    <section aria-labelledby="rbse-panel-heading" class="govuk-!-margin-bottom-1">
         <h2 class="govuk-heading-m" id="rbse-panel-heading">RBSE number</h2>
 
         <form id="case-entry-form" method="post" asp-page-handler="RbseLookup" class="govuk-!-margin-bottom-4">
@@ -137,7 +134,7 @@
                        value="@Model.LookupRbse" autocomplete="off"
                        aria-describedby="@(rbseError is not null ? "rbse-error" : "")" />
             </div>
-            <button type="submit" class="govuk-button govuk-button--secondary"
+            <button type="submit" class="govuk-button"
                     data-module="govuk-button">Go</button>
         </form>
 
@@ -164,7 +161,7 @@
             </tbody>
         </table>
     </section>
-    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-bottom-6" />
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-top-4 govuk-!-margin-bottom-4" />
 }
 
 @* Quick-case and quick-farm inputs removed — Home now exposes only Batch and RBSE inputs per migration requirement *@

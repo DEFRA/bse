@@ -5,6 +5,13 @@
 }
 
 <h1 class="govuk-heading-l">Farm Search</h1>
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Search/Menu">Search Menu</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Farm Search</li>
+    </ol>
+</nav>
 
 @if (Model.NoCriteria)
 {
@@ -22,62 +29,32 @@
 
 <form method="get" novalidate>
     <div class="govuk-grid-row">
-        <div class="govuk-grid-column-two-thirds">
+        @* Legacy Farm Search paired the fields into a left/right column grid; mirrored here row-for-row. *@
+        <div class="govuk-grid-column-one-half">
             <div class="govuk-form-group">
                 <label asp-for="Filter.Cphh" class="govuk-label">CPH(H)</label>
-                <input asp-for="Filter.Cphh" class="govuk-input govuk-!-width-two-thirds" aria-describedby="cphh-hint" />
+                <div id="cphh-hint" class="govuk-hint">Format: NN[/]NNN[/]NNNN[/NN]</div>
+                <input asp-for="Filter.Cphh" class="govuk-input govuk-input--width-20" aria-describedby="cphh-hint" />
                 <span asp-validation-for="Filter.Cphh" class="govuk-error-message"></span>
             </div>
 
             <div class="govuk-form-group">
-                <label asp-for="Filter.OwnerName" class="govuk-label">Owner Name (partial search)</label>
-                <input asp-for="Filter.OwnerName" class="govuk-input govuk-!-width-two-thirds" />
-            </div>
-
-            <div class="govuk-form-group">
                 <label asp-for="Filter.Herdmark" class="govuk-label">Herdmark</label>
-                <input asp-for="Filter.Herdmark" class="govuk-input govuk-!-width-two-thirds" />
-            </div>
-
-            <div class="govuk-form-group">
-                <label asp-for="Filter.Address" class="govuk-label">Address (partial search)</label>
-                <input asp-for="Filter.Address" class="govuk-input govuk-!-width-two-thirds" />
+                <input asp-for="Filter.Herdmark" class="govuk-input govuk-input--width-10" />
             </div>
 
             <div class="govuk-form-group">
                 <label asp-for="Filter.NumericHerdmark" class="govuk-label">Numeric Herdmark</label>
-                <input asp-for="Filter.NumericHerdmark" class="govuk-input govuk-!-width-two-thirds" />
+                <input asp-for="Filter.NumericHerdmark" class="govuk-input govuk-input--width-10" />
                 <span asp-validation-for="Filter.NumericHerdmark" class="govuk-error-message"></span>
             </div>
 
             <div class="govuk-form-group">
-                <label asp-for="Filter.County" class="govuk-label">County</label>
-                <select asp-for="Filter.County" class="govuk-select govuk-!-width-two-thirds">
-                    <option value=""></option>
-                    @foreach (var item in Model.CountyOptions)
-                    {
-                        <option value="@item.Code">@item.Description</option>
-                    }
-                </select>
-            </div>
-
-            <div class="govuk-form-group">
                 <label asp-for="Filter.IsDealer" class="govuk-label">Dealer</label>
-                <select asp-for="Filter.IsDealer" class="govuk-select govuk-!-width-two-thirds">
+                <select asp-for="Filter.IsDealer" class="govuk-select">
                     <option value=""></option>
                     <option value="true">Yes</option>
                     <option value="false">No</option>
-                </select>
-            </div>
-
-            <div class="govuk-form-group">
-                <label asp-for="Filter.Aho" class="govuk-label">AHO</label>
-                <select asp-for="Filter.Aho" class="govuk-select govuk-!-width-two-thirds">
-                    <option value=""></option>
-                    @foreach (var item in Model.AhoOptions)
-                    {
-                        <option value="@item.Code">@item.Description</option>
-                    }
                 </select>
             </div>
 
@@ -89,7 +66,43 @@
                     </div>
                 </div>
             </div>
+        </div>
 
+        <div class="govuk-grid-column-one-half">
+            <div class="govuk-form-group">
+                <label asp-for="Filter.OwnerName" class="govuk-label">Owner Name (partial search)</label>
+                <input asp-for="Filter.OwnerName" class="govuk-input govuk-!-width-two-thirds" />
+            </div>
+
+            <div class="govuk-form-group">
+                <label asp-for="Filter.Address" class="govuk-label">Address (partial search)</label>
+                <input asp-for="Filter.Address" class="govuk-input govuk-!-width-two-thirds" />
+            </div>
+
+            <div class="govuk-form-group">
+                <label asp-for="Filter.County" class="govuk-label">County</label>
+                <select asp-for="Filter.County" class="govuk-select">
+                    <option value=""></option>
+                    @foreach (var item in Model.CountyOptions)
+                    {
+                        <option value="@item.Code">@item.Description</option>
+                    }
+                </select>
+            </div>
+
+            <div class="govuk-form-group">
+                <label asp-for="Filter.Aho" class="govuk-label">AHO</label>
+                <select asp-for="Filter.Aho" class="govuk-select">
+                    <option value=""></option>
+                    @foreach (var item in Model.AhoOptions)
+                    {
+                        <option value="@item.Code">@item.Description</option>
+                    }
+                </select>
+            </div>
+        </div>
+
+        <div class="govuk-grid-column-full">
             <div class="govuk-button-group">
                 <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
                 <a asp-page="/Search/Menu" class="govuk-link">Search Menu</a>
@@ -100,7 +113,7 @@
 
 @if (Model.Filter.HasSearched)
 {
-    <p class="govuk-body">@Model.Filter.TotalCount result(s) found.</p>
+    <p id="farm-search-results" class="govuk-body">@Model.Filter.TotalCount result(s) found.</p>
 
     @if (Model.Filter.TotalCount > 0)
     {
@@ -114,17 +127,16 @@
         var sortDesc = Model.Filter.SortDesc;
 
         @await Html.PartialAsync("_ExportLink")
-        <table class="govuk-table">
+        <div class="bse-farm-search-table-wrap">
+        <table class="govuk-table bse-farm-search-table">
             <caption class="govuk-visually-hidden">Farm search results</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    @{ ViewData["Label"] = "CPHH";                   ViewData["Column"] = "Cphh";                   ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Prefix"] = "Filter."; }
+                    @{ ViewData["Label"] = "CPHH";                   ViewData["Column"] = "Cphh";                   ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Prefix"] = "Filter."; ViewData["Fragment"] = "farm-search-results"; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Owner Name";              ViewData["Column"] = "OwnerName"; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Address";                 ViewData["Column"] = "Address"; }
-                    <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Correspondence Address";  ViewData["Column"] = "CorrespondenceAddress"; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "County";                  ViewData["Column"] = "County"; }
                     <partial name="_SortableHeader" />
@@ -138,6 +150,8 @@
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Herd Type";               ViewData["Column"] = "HerdType"; }
                     <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Correspondence Address";  ViewData["Column"] = "CorrespondenceAddress"; }
+                    <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Cases";                   ViewData["Column"] = "CasesCount"; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Confirmed Cases";         ViewData["Column"] = "ConfirmedCasesCount"; }
@@ -148,22 +162,23 @@
                 @foreach (var r in Model.Filter.PagedResults)
                 {
                     <tr class="govuk-table__row">
-                        <td class="govuk-table__cell"><a asp-page="/Farm/Details" asp-route-cphh="@r.Cphh" class="govuk-link">@BseFormat.FormatCphh(r.Cphh)</a></td>
+                        <td class="govuk-table__cell">@r.Cphh</td>
                         <td class="govuk-table__cell">@r.OwnerName</td>
                         <td class="govuk-table__cell">@r.Address</td>
-                        <td class="govuk-table__cell">@r.CorrespondenceAddress</td>
                         <td class="govuk-table__cell">@r.County</td>
                         <td class="govuk-table__cell">@r.Herdmark</td>
                         <td class="govuk-table__cell">@r.NumericHerdmark</td>
                         <td class="govuk-table__cell">@r.MapReference</td>
                         <td class="govuk-table__cell">@r.Aho</td>
                         <td class="govuk-table__cell">@r.HerdType</td>
+                        <td class="govuk-table__cell">@r.CorrespondenceAddress</td>
                         <td class="govuk-table__cell">@r.CasesCount</td>
                         <td class="govuk-table__cell">@r.ConfirmedCasesCount</td>
                     </tr>
                 }
             </tbody>
         </table>
-        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.Filter.PageNumber, ["TotalPages"] = Model.Filter.TotalPages, ["PageNumberKey"] = "Filter.PageNumber" })
+        </div>
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.Filter.PageNumber, ["TotalPages"] = Model.Filter.TotalPages, ["PageNumberKey"] = "Filter.PageNumber", ["Fragment"] = "farm-search-results" })
     }
 }

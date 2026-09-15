@@ -5,6 +5,13 @@
 }
 
 <h1 class="govuk-heading-l">List Of Cases With A Given Herdmark</h1>
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Search/Menu">Search Menu</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">List Of Cases With A Given Herdmark</li>
+    </ol>
+</nav>
 
 <form method="get" novalidate>
     <input type="hidden" name="Searched" value="true" />
@@ -12,8 +19,7 @@
         <div class="govuk-grid-column-two-thirds">
             <div class="govuk-form-group">
                 <label asp-for="Herdmark" class="govuk-label">Herdmark</label>
-  
-                <input asp-for="Herdmark" maxlength="35" aria-describedby="herdmark-hint" class="govuk-input govuk-!-width-two-thirds" />
+                <input asp-for="Herdmark" maxlength="35" class="govuk-input govuk-!-width-two-thirds" />
                 <span asp-validation-for="Herdmark" class="govuk-error-message"></span>
             </div>
 
@@ -36,7 +42,7 @@
 
 @if (Model.HasSearched)
 {
-    <p class="govuk-body">@Model.TotalCount result(s) found.</p>
+    <p id="herdmark-search-results" class="govuk-body">@Model.TotalCount result(s) found.</p>
 
     @if (Model.TotalCount > 0)
     {
@@ -49,11 +55,12 @@
         var sortDesc = Model.SortDesc;
 
         @await Html.PartialAsync("_ExportLink")
-        <table class="govuk-table">
+        <div class="bse-herdmark-search-table-wrap">
+        <table class="govuk-table bse-herdmark-search-table">
             <caption class="govuk-visually-hidden">Cases by herdmark results</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    @{ ViewData["Label"] = "RBSE";             ViewData["Column"] = "Rbse";                 ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; }
+                    @{ ViewData["Label"] = "RBSE";             ViewData["Column"] = "Rbse";                 ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "herdmark-search-results"; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "CPHH";             ViewData["Column"] = "Cphh"; }
                     <partial name="_SortableHeader" />
@@ -117,6 +124,7 @@
                 }
             </tbody>
         </table>
-        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
+        </div>
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages, ["Fragment"] = "herdmark-search-results" })
     }
 }

@@ -49,8 +49,10 @@ public class NewFarmsModel(IAuditLogService auditLogService) : PageModel
         if (!AuditDateRange.Validate(StartDate, EndDate, out _, out _)) return RedirectToPage();
 
         var entries = (await auditLogService.GetNewFarmsAsync(StartDate!.Value, EndDate!.Value)).Cast<AuditLogNewFarmEntry>();
+        // Legacy GetAuditLogNewFarms SELECT order: ID, TableName..Key, OwnerName, Address, County.
         return AuditLogExcel.Build(entries, "New Farms", $"NewFarms_{DateTime.Today:yyyyMMdd}.xlsx",
-            [("OwnerName", e => e.OwnerName), ("Address", e => e.Address), ("County", e => e.County)]);
+            extraColumns: [("OwnerName", e => e.OwnerName), ("Address", e => e.Address), ("County", e => e.County)],
+            leadingColumns: [("ID", e => e.Id)]);
     }
 
     private IEnumerable<AuditLogNewFarmEntry> ApplySorting(IEnumerable<AuditLogNewFarmEntry> entries)

@@ -66,13 +66,15 @@ public class ByFarmModel(IAuditLogService auditLogService) : PageModel
 
         using var workbook = new XLWorkbook();
         var ws = workbook.Worksheets.Add("Farm Audit Log");
+        // Legacy's HTML export had no gridlines outside the bordered table; match that here.
+        ws.ShowGridLines = false;
 
         // Legacy exported the raw result-set column names, not the on-screen captions.
         string[] headers = ["TableName", "FieldName", "DateTime", "UserName", "BeforeValue", "AfterValue", "Reason", "Key"];
+        // Legacy's exported header row was plain text, not bold.
         for (var col = 1; col <= headers.Length; col++)
         {
             ws.Cell(1, col).Value = headers[col - 1];
-            ws.Cell(1, col).Style.Font.Bold = true;
         }
 
         var row = 2;
@@ -89,6 +91,10 @@ public class ByFarmModel(IAuditLogService auditLogService) : PageModel
             row++;
         }
 
+        // Legacy rendered the exported grid with all borders around the record area only.
+        var recordRange = ws.Range(1, 1, row - 1, headers.Length);
+        recordRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        recordRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
         ws.Columns().AdjustToContents();
 
         using var stream = new MemoryStream();

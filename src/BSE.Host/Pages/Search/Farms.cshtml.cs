@@ -58,35 +58,42 @@ public class FarmsModel : PageModel
     {
         if (!HasAnyFilter()) return RedirectToPage();
         var rows = await _search.SearchFarmsAsync(Filter.ToQuery());
-        return BuildExcel(rows, $"Farms_{DateTime.Today:yyyyMMdd}.xlsx");
+        return BuildExcel(rows, "farmsearchresults.xlsx");
     }
 
     private static FileContentResult BuildExcel(IEnumerable<FarmSearchResult> rows, string filename)
     {
         using var wb = new XLWorkbook();
         var ws = wb.Worksheets.Add("Results");
+        // Legacy's HTML export had no gridlines outside the bordered table; match that here.
+        ws.ShowGridLines = false;
         // Legacy exported the raw result-set column names, not the on-screen captions.
-        string[] headers = ["CPHH", "OwnerName", "Address", "CorrespondenceAddress", "County", "Herdmark",
-            "NumericHerdmark", "MapReference", "AHO", "HerdType",
+        string[] headers = ["CPHH", "OwnerName", "Address", "County", "Herdmark",
+            "NumericHerdmark", "MapReference", "AHO", "HerdType", "CorrespondenceAddress",
             "CasesCount", "ConfirmedCasesCount"];
-        for (var c = 1; c <= headers.Length; c++) { ws.Cell(1, c).Value = headers[c - 1]; ws.Cell(1, c).Style.Font.Bold = true; }
+        // Legacy's exported header row was plain text, not bold.
+        for (var c = 1; c <= headers.Length; c++) { ws.Cell(1, c).Value = headers[c - 1]; }
         var row = 2;
         foreach (var r in rows)
         {
             ws.Cell(row, 1).Value = r.Cphh;
             ws.Cell(row, 2).Value = r.OwnerName;
             ws.Cell(row, 3).Value = r.Address;
-            ws.Cell(row, 4).Value = r.CorrespondenceAddress;
-            ws.Cell(row, 5).Value = r.County;
-            ws.Cell(row, 6).Value = r.Herdmark;
-            ws.Cell(row, 7).Value = r.NumericHerdmark;
-            ws.Cell(row, 8).Value = r.MapReference;
-            ws.Cell(row, 9).Value = r.Aho;
-            ws.Cell(row, 10).Value = r.HerdType;
+            ws.Cell(row, 4).Value = r.County;
+            ws.Cell(row, 5).Value = r.Herdmark;
+            ws.Cell(row, 6).Value = r.NumericHerdmark;
+            ws.Cell(row, 7).Value = r.MapReference;
+            ws.Cell(row, 8).Value = r.Aho;
+            ws.Cell(row, 9).Value = r.HerdType;
+            ws.Cell(row, 10).Value = r.CorrespondenceAddress;
             ws.Cell(row, 11).Value = r.CasesCount;
             ws.Cell(row, 12).Value = r.ConfirmedCasesCount;
             row++;
         }
+        // Legacy rendered the exported grid with all borders around the record area only.
+        var recordRange = ws.Range(1, 1, row - 1, headers.Length);
+        recordRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        recordRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
         ws.Columns().AdjustToContents();
         using var ms = new MemoryStream();
         wb.SaveAs(ms);
