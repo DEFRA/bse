@@ -361,6 +361,80 @@
     font-weight: 700;
 }
 
+/* Home page legacy-style Batch/RBSE panels */
+.bse-home-panel {
+    max-width: 980px;
+}
+
+.bse-home-batch-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    column-gap: 30px;
+    align-items: start;
+}
+
+.bse-home-batch-entry,
+.bse-home-rbse-entry {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.bse-home-batch-entry .govuk-button,
+.bse-home-rbse-entry .govuk-button {
+    margin-top: 0;
+    margin-bottom: 0;
+    align-self: center;
+}
+
+.bse-home-batch-entry .govuk-label,
+.bse-home-rbse-entry .govuk-label {
+    min-width: 190px;
+}
+
+.bse-home-batch-year {
+    width: 60px;
+    margin-bottom: 0;
+}
+
+.bse-home-batch-number {
+    width: 90px;
+    margin-bottom: 0;
+}
+
+.bse-home-rbse-input {
+    width: 230px;
+    margin-bottom: 0;
+}
+
+.bse-home-batch-table,
+.bse-home-rbse-table {
+    margin-bottom: 0;
+}
+
+.bse-home-batch-table {
+    width: 100%;
+    margin-top: 0;
+}
+
+.bse-home-batch-table .govuk-table__header,
+.bse-home-batch-table .govuk-table__cell {
+    vertical-align: top;
+}
+
+.bse-home-rbse-table .govuk-table__header,
+.bse-home-rbse-table .govuk-table__cell {
+    padding-right: 36px;
+}
+
+@media (max-width: 48.0525em) {
+    .bse-home-batch-layout {
+        grid-template-columns: 1fr;
+        row-gap: 16px;
+    }
+}
+
 @media (min-width: 40.0625em) {
     .bse-global-header-nav__list {
         grid-template-columns: repeat(2, minmax(0, 1fr));

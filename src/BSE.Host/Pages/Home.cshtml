@@ -36,65 +36,53 @@
 @* ── Batch Number panel — VLA Data Entry + VLA Maintenance ────────────────────── *@
 @if (User.IsInRole("VLAAccess"))
 {
-    <section aria-labelledby="batch-panel-heading" class="govuk-!-margin-bottom-6">
-        <h2 class="govuk-heading-m" id="batch-panel-heading">Batch number</h2>
-        <p class="govuk-body">Only enter a batch number if you are entering a batch of case details. The case you open with <strong>Go</strong> below will be assigned to this batch when you save it.</p>
+    <section aria-labelledby="batch-panel-heading" class="bse-home-panel govuk-!-margin-bottom-4">
+        <div class="bse-home-batch-layout">
+            <div class="bse-home-batch-layout__form">
+                <h2 class="govuk-heading-m govuk-!-margin-bottom-3" id="batch-panel-heading">Batch Number</h2>
+                <p class="govuk-body govuk-!-margin-bottom-4">Only enter a batch number if you are entering a batch of case details</p>
 
-        <div class="govuk-grid-row">
-            <div class="govuk-grid-column-two-thirds">
                 <form method="post">
                     <div class="govuk-form-group @(hasBatchError ? "govuk-form-group--error" : "")">
-                        <fieldset class="govuk-fieldset" aria-describedby="@(hasBatchError ? "batch-error" : "batch-hint")">
-                            <legend class="govuk-fieldset__legend">
-                                Enter batch number
-                            </legend>
-                          
-                            @if (hasBatchError)
-                            {
-                                <p id="batch-error" class="govuk-error-message">
-                                    <span class="govuk-visually-hidden">Error:</span>
-                                    @(batchYearError ?? batchNumberError)
-                                </p>
-                            }
-                            <div class="govuk-form-group govuk-!-margin-bottom-4">
-                                <div class="govuk-!-display-flex govuk-!-gap-3 govuk-!-align-items-end">
-                                    <div>
-                                    <label class="govuk-label govuk-!-font-weight-bold" for="batch-year">Year</label>
-                                    <input id="batch-year" name="BatchYear" type="text" inputmode="numeric"
-                                           form="case-entry-form"
-                                           class="govuk-input govuk-input--width-4 @(batchYearError is not null || Model.BatchNotFound ? "govuk-input--error" : "")"
-                                           value="@Model.BatchYear" autocomplete="off" />
-                                    </div>
-                                    <div>
-                                    <label class="govuk-label govuk-!-font-weight-bold" for="batch-number">Number</label>
-                                    <input id="batch-number" name="BatchNumber" type="text" inputmode="numeric"
-                                           form="case-entry-form"
-                                           class="govuk-input govuk-input--width-5 @(batchNumberError is not null || Model.BatchNotFound ? "govuk-input--error" : "")"
-                                           value="@Model.BatchNumber" autocomplete="off" />
-                                    </div>
-                                </div>
-                            </div>
+                        @if (hasBatchError)
+                        {
+                            <p id="batch-error" class="govuk-error-message">
+                                <span class="govuk-visually-hidden">Error:</span>
+                                @(batchYearError ?? batchNumberError)
+                            </p>
+                        }
 
-                            <p class="govuk-body govuk-!-margin-top-4 govuk-!-margin-bottom-4">Or</p>
+                        <div class="bse-home-batch-entry" aria-describedby="@(hasBatchError ? "batch-error" : "")">
+                            <label class="govuk-label govuk-!-margin-bottom-0" for="batch-year">Enter Batch Number</label>
 
-                            <div class="govuk-form-group govuk-!-margin-bottom-0">
-                                <button type="submit" asp-page-handler="CreateBatch"
-                                        class="govuk-button"
-                                        data-module="govuk-button">Create New</button>
-                            </div>
-                        </fieldset>
+                            <input id="batch-year" name="BatchYear" type="text" inputmode="numeric"
+                                   form="case-entry-form" aria-label="Batch year"
+                                   class="govuk-input bse-home-batch-year @(batchYearError is not null || Model.BatchNotFound ? "govuk-input--error" : "")"
+                                   value="@Model.BatchYear" autocomplete="off" />
+
+                            <input id="batch-number" name="BatchNumber" type="text" inputmode="numeric"
+                                   form="case-entry-form" aria-label="Batch number"
+                                   class="govuk-input bse-home-batch-number @(batchNumberError is not null || Model.BatchNotFound ? "govuk-input--error" : "")"
+                                   value="@Model.BatchNumber" autocomplete="off" />
+
+                            <span class="govuk-body govuk-!-margin-bottom-0">Or</span>
+
+                            <button type="submit" asp-page-handler="CreateBatch"
+                                    class="govuk-button"
+                                    data-module="govuk-button">Create New</button>
+                        </div>
                     </div>
                 </form>
             </div>
 
             @if (Model.LatestBatches.Count > 0)
             {
-                <div class="govuk-grid-column-one-third">
-                    <table class="govuk-table govuk-!-font-size-16">
+                <div class="bse-home-batch-layout__table">
+                    <table class="govuk-table govuk-!-font-size-16 bse-home-batch-table">
                         <caption class="govuk-table__caption govuk-table__caption--s govuk-visually-hidden">Recent batches</caption>
                         <thead class="govuk-table__head">
                             <tr class="govuk-table__row">
-                                <th scope="col" class="govuk-table__header">Batch number</th>
+                                <th scope="col" class="govuk-table__header">Batch Number</th>
                                 <th scope="col" class="govuk-table__header govuk-table__header--numeric">Cases</th>
                             </tr>
                         </thead>
@@ -112,18 +100,18 @@
             }
         </div>
     </section>
-    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-bottom-6" />
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-top-4 govuk-!-margin-bottom-4" />
 }
 
 @* ── RBSE Number panel — all DEFRA groups + VLA Data Entry + VLA Maintenance ─── *@
 @if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess"))
 {
-    <section aria-labelledby="rbse-panel-heading" class="govuk-!-margin-bottom-6">
-        <h2 class="govuk-heading-m" id="rbse-panel-heading">RBSE number</h2>
+    <section aria-labelledby="rbse-panel-heading" class="bse-home-panel govuk-!-margin-bottom-4">
+        <h2 class="govuk-heading-m govuk-!-margin-bottom-3" id="rbse-panel-heading">RBSE Number</h2>
 
         <form id="case-entry-form" method="post" asp-page-handler="RbseLookup" class="govuk-!-margin-bottom-4">
-            <div class="govuk-form-group @(rbseError is not null ? "govuk-form-group--error" : "")">
-                <label class="govuk-label" for="rbse-lookup">Enter RBSE to open case</label>
+            <div class="govuk-form-group bse-home-rbse-entry @(rbseError is not null ? "govuk-form-group--error" : "")">
+                <label class="govuk-label govuk-!-margin-bottom-0" for="rbse-lookup">RBSE</label>
                 @if (rbseError is not null)
                 {
                     <p id="rbse-error" class="govuk-error-message">
@@ -132,15 +120,16 @@
                     </p>
                 }
                 <input id="rbse-lookup" name="LookupRbse" type="text"
-                       class="govuk-input govuk-input--width-10 @(rbseError is not null ? "govuk-input--error" : "")"
+                       class="govuk-input bse-home-rbse-input @(rbseError is not null ? "govuk-input--error" : "")"
                        value="@Model.LookupRbse" autocomplete="off"
                        aria-describedby="@(rbseError is not null ? "rbse-error" : "")" />
+
+                <button type="submit" class="govuk-button"
+                        data-module="govuk-button">Go</button>
             </div>
-            <button type="submit" class="govuk-button"
-                    data-module="govuk-button">Go</button>
         </form>
 
-        <table class="govuk-table govuk-!-font-size-16">
+        <table class="govuk-table govuk-!-font-size-16 bse-home-rbse-table">
             <caption class="govuk-table__caption govuk-table__caption--s govuk-visually-hidden">Latest RBSE and DBSE references</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
@@ -163,7 +152,7 @@
             </tbody>
         </table>
     </section>
-    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-bottom-6" />
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-top-4 govuk-!-margin-bottom-4" />
 }
 
 @* Quick-case and quick-farm inputs removed — Home now exposes only Batch and RBSE inputs per migration requirement *@

@@ -36,7 +36,7 @@
                 @foreach (var d in Model.Discrepancies)
                 {
                     <tr class="govuk-table__row">
-                        <td class="govuk-table__cell"><a asp-page="/Case/Details" asp-route-rbse="@d.Rbse" class="govuk-link">@d.Rbse</a></td>
+                        <td class="govuk-table__cell"><a asp-page="/Case/Farm" asp-route-rbse="@d.Rbse" class="govuk-link">@d.Rbse</a></td>
                         <td class="govuk-table__cell">@d.BsessEartag</td>
                         <td class="govuk-table__cell">@d.BseEartag</td>
                         <td class="govuk-table__cell">@d.BsessBirthDate?.ToString("dd/MM/yyyy")</td>

@@ -25,7 +25,6 @@ public static class HelpNavigation
         ("/Case/NewNonGb", "non-gb-case"),
         ("/Case/New", "case-details"),
         ("/Case/Lookup", "case-details"),
-        ("/Case/Details", "case-details"),
         ("/Case/Edit", "case-details"),
         ("/Case/TestResults", "case-details"),
         ("/Case/FinalResultEntry", "final-result-entry"),

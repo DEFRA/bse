@@ -106,6 +106,6 @@ public class NewModel : PageModel
         }
 
         TempData["SuccessMessage"] = $"Case {Rbse} created successfully.";
-        return RedirectToPage("/Case/Details", new { rbse = Rbse.Trim() });
+        return RedirectToPage("/Case/Farm", new { rbse = Rbse.Trim() });
     }
 }

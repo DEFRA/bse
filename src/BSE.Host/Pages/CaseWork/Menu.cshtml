@@ -26,7 +26,7 @@ else
     <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
         <ol class="govuk-breadcrumbs__list">
             <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Details" asp-route-rbse="@Model.Rbse">Case @BseFormat.FormatRbse(Model.Rbse)</a></li>
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Farm" asp-route-rbse="@Model.Rbse">Case @BseFormat.FormatRbse(Model.Rbse)</a></li>
             <li class="govuk-breadcrumbs__list-item" aria-current="page">Case work</li>
         </ol>
     </nav>
@@ -41,7 +41,7 @@ else
             </strong>
         </div>
         <div class="govuk-button-group">
-            <a asp-page="/Case/Details" asp-route-rbse="@Model.Rbse" class="govuk-button govuk-button--secondary">Back to case details</a>
+            <a asp-page="/Case/Farm" asp-route-rbse="@Model.Rbse" class="govuk-button govuk-button--secondary">Back to case</a>
             <a asp-page="/Case/Lookup" class="govuk-link">Back to lookup</a>
         </div>
     }
