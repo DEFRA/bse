@@ -20,7 +20,7 @@ public class ClinicalVisitAddModel(
     {
         var @case = await caseRepository.GetCaseByRbseAsync(Rbse);
         if (@case is null)
-            return RedirectToPage("/Case/Lookup");
+            return RedirectToPage("/Home");
 
         return Page();
     }

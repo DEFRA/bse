@@ -256,18 +256,15 @@
             <label asp-for="Case.Barcode" class="govuk-label">Barcode</label>
             <input asp-for="Case.Barcode" class="govuk-input govuk-!-width-two-thirds" maxlength="20" />
         </div>
-    }
-    <div class="govuk-form-group">
-        <label asp-for="Case.Notes" class="govuk-label">Notes</label>
-        <textarea asp-for="Case.Notes" class="govuk-textarea" rows="4" maxlength="500"></textarea>
-    </div>
-    @if (Model.Case.HasCaseWork)
-    {
         <div class="govuk-form-group">
             <label asp-for="Case.AhfReference" class="govuk-label">AHF reference</label>
             <input asp-for="Case.AhfReference" class="govuk-input govuk-!-width-two-thirds" maxlength="40" />
         </div>
     }
+    <div class="govuk-form-group">
+        <label asp-for="Case.Notes" class="govuk-label">Notes</label>
+        <textarea asp-for="Case.Notes" class="govuk-textarea" rows="4" maxlength="500"></textarea>
+    </div>
 
     <h2 class="govuk-heading-m">BSE-1 receipts</h2>
 

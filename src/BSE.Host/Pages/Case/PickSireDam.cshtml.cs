@@ -66,6 +66,7 @@ public class PickSireDamModel(IAnimalRelationsRepository relationsRepository) : 
             "Eartag"   => SortDesc ? q.OrderByDescending(m => m.Eartag)   : q.OrderBy(m => m.Eartag),
             "Herdbook" => SortDesc ? q.OrderByDescending(m => m.Herdbook) : q.OrderBy(m => m.Herdbook),
             "Name"     => SortDesc ? q.OrderByDescending(m => m.Name)     : q.OrderBy(m => m.Name),
+            "Rbse"     => SortDesc ? q.OrderByDescending(m => m.Rbse)     : q.OrderBy(m => m.Rbse),
             _          => q.OrderBy(m => m.Name)
         };
         return q.ToList();
@@ -88,7 +89,7 @@ public class PickSireDamModel(IAnimalRelationsRepository relationsRepository) : 
     public IActionResult OnPostNew()
     {
         SetPendingParent(new PendingDamSire(0, null, Eartag, Name, Herdbook, null, null, null, null, null, null, null));
-        return RedirectToPage(GetReturnPage(), new { rbse = Rbse, sex = Sex });
+        return RedirectToPage(GetReturnPage(), new { rbse = Rbse, sex = Sex, startNew = true });
     }
 
     public IActionResult OnPostExit() => RedirectToPage(GetReturnPage(), new { rbse = Rbse, sex = Sex });

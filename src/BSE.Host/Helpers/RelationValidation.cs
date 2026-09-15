@@ -17,6 +17,7 @@ public static class RelationValidation
     public const string SameAsSireRbse = "This RBSE is the same as the sire's RBSE";
     public const string AlreadyARelation = "This RBSE is already a relation";
     public const string LeftDateFuture = "Must be today or earlier";
+    public const string RbseNotFound = "RBSE number not found";
 
     /// <summary>Legacy rejected birth dates before this date.</summary>
     public static readonly DateTime EarliestBirthDate = new(1970, 1, 1);
@@ -51,12 +52,15 @@ public static class RelationValidation
             errors["RelationType"] = RelationTypeRequired;
         }
 
-        if (string.IsNullOrWhiteSpace(input.Sex))
+        var relationRbse = RbseHelper.Normalize(input.RelationRbse);
+
+        // Legacy only required Sex when the RBSE box was empty (ddlRelationSex.Enabled);
+        // once an RBSE is supplied, Sex is auto-derived from that case and locked.
+        if (relationRbse.Length == 0 && string.IsNullOrWhiteSpace(input.Sex))
         {
             errors["Sex"] = SexRequired;
         }
 
-        var relationRbse = RbseHelper.Normalize(input.RelationRbse);
         var hasEartag =
             !string.IsNullOrWhiteSpace(input.EartagCountry)
             || !string.IsNullOrWhiteSpace(input.EartagHerdmark)

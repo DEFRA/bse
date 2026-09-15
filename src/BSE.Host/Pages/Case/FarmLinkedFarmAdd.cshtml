@@ -37,7 +37,6 @@
 
     <div class="govuk-form-group @(cphhError is not null ? "govuk-form-group--error" : "")">
         <label class="govuk-label" for="related-cphh">CPHH to link</label>
-        <div class="govuk-hint">For example, 12/345/6789</div>
         @if (cphhError is not null)
         {
             <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @cphhError</p>

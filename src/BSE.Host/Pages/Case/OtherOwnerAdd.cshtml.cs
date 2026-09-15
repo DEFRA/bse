@@ -33,16 +33,21 @@ public class OtherOwnerAddModel(
     public async Task<IActionResult> OnPostAsync()
     {
         await LoadOwnerTypesAsync();
+        var caseRbse = RbseHelper.ParseToRaw(Rbse);
+        var normalizedCphh = string.IsNullOrWhiteSpace(OwnerCphh) ? null : CphhNormalizer.Normalize(OwnerCphh);
 
         if (string.IsNullOrWhiteSpace(OwnerType))
             ModelState.AddModelError(nameof(OwnerType), "Owner type is required.");
 
-        if (string.IsNullOrWhiteSpace(OwnerName) && string.IsNullOrWhiteSpace(OwnerCphh))
+        if (string.IsNullOrWhiteSpace(OwnerName) && string.IsNullOrWhiteSpace(normalizedCphh))
             ModelState.AddModelError(nameof(OwnerName), "You must enter either an owner name or a CPHH.");
+
+        if (!string.IsNullOrWhiteSpace(normalizedCphh) && normalizedCphh.Length != 11)
+            ModelState.AddModelError(nameof(OwnerCphh), "CPHH must be 11 digits.");
 
         if (!string.IsNullOrWhiteSpace(OwnerType))
         {
-            var allOwners = await ownerRepository.GetByRbseAsync(Rbse);
+            var allOwners = await ownerRepository.GetByRbseAsync(caseRbse);
             var typeDesc = OwnerTypes.FirstOrDefault(t => t.Code == OwnerType)?.Description ?? string.Empty;
             if (typeDesc.Contains("Previous", StringComparison.OrdinalIgnoreCase)
                 && allOwners.Any(o => o.Type == OwnerType))
@@ -55,10 +60,10 @@ public class OtherOwnerAddModel(
             return Page();
 
         var command = new AddOtherOwnerCommand(
-            Rbse,
+            caseRbse,
             OwnerType!,
             string.IsNullOrWhiteSpace(OwnerName) ? null : OwnerName,
-            string.IsNullOrWhiteSpace(OwnerCphh) ? null : OwnerCphh);
+            string.IsNullOrWhiteSpace(normalizedCphh) ? null : normalizedCphh);
 
         using var conn = connectionFactory.CreateConnection();
         conn.Open();
@@ -67,7 +72,7 @@ public class OtherOwnerAddModel(
         tx.Commit();
 
         TempData["Success"] = "Owner record added.";
-        return RedirectToPage("/Case/OtherOwners", new { rbse = Rbse });
+        return RedirectToPage("/Case/Vla", new { rbse = Rbse });
     }
 
     private async Task LoadOwnerTypesAsync()

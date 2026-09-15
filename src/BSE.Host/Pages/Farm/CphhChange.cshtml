@@ -40,7 +40,6 @@
 <form method="post" asp-page-handler="LookUp" novalidate>
     <div class="govuk-form-group @(Model.OldCphhError is not null ? "govuk-form-group--error" : "")">
         <label class="govuk-label" for="old-cphh">Old CPHH</label>
-        <div id="old-cphh-hint" class="govuk-hint">For example, 12/345/6789/01. Slashes are optional.</div>
         @if (Model.OldCphhError is not null)
         {
             <p id="old-cphh-error" class="govuk-error-message">
@@ -86,7 +85,6 @@
         <input type="hidden" name="OldCphh" value="@Model.OldCphh" />
         <div class="govuk-form-group @(Model.NewCphhError is not null ? "govuk-form-group--error" : "")">
             <label class="govuk-label" for="new-cphh">New CPHH</label>
-            <div id="new-cphh-hint" class="govuk-hint">For example, 12/345/6789/01. The new CPHH must not already exist in the system.</div>
             @if (Model.NewCphhError is not null)
             {
                 <p id="new-cphh-error" class="govuk-error-message">

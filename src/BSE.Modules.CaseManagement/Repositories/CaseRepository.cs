@@ -24,8 +24,8 @@ public sealed class CaseRepository : DapperRepository, ICaseRepository
 {
     public CaseRepository(IDbConnectionFactory connectionFactory) : base(connectionFactory) { }
 
-    public Task<CaseRecord?> GetCaseByRbseAsync(string rbse)
-        => QuerySingleOrDefaultAsync<CaseRecord>("GetCaseByRBSE", new { RBSE = rbse });
+    public async Task<CaseRecord?> GetCaseByRbseAsync(string rbse)
+        => (await QueryAsync<CaseRecord>("GetCaseByRBSE", new { RBSE = rbse })).LastOrDefault();
 
     public Task<FinalResultRecord?> GetFinalResultByRbseAsync(string rbse)
         => QuerySingleOrDefaultAsync<FinalResultRecord>("GetFinalResultByRBSE", new { RBSE = rbse });

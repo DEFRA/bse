@@ -15,6 +15,8 @@
     </ol>
 </nav>
 
+<p class="govuk-body govuk-!-font-weight-bold">An exact match for this animal was not found</p>
+
 <dl class="govuk-summary-list govuk-summary-list--no-border govuk-!-margin-bottom-6">
     <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Eartag</dt><dd class="govuk-summary-list__value">@Model.Eartag</dd></div>
     <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Name</dt><dd class="govuk-summary-list__value">@Model.Name</dd></div>
@@ -35,10 +37,7 @@
                 @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Eartag", ["Column"]="Eartag", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=pickBase })
                 @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Name", ["Column"]="Name", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=pickBase })
                 @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Herdbook", ["Column"]="Herdbook", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=pickBase })
-                <th scope="col" class="govuk-table__header">RBSE</th>
-                <th scope="col" class="govuk-table__header">Birth Date</th>
-                <th scope="col" class="govuk-table__header">Fate</th>
-                <th scope="col" class="govuk-table__header">Offspring Count</th>
+                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="RBSE", ["Column"]="Rbse", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=pickBase })
                 <th scope="col" class="govuk-table__header"><span class="govuk-visually-hidden">Actions</span></th>
             </tr>
         </thead>
@@ -50,9 +49,6 @@
                     <td class="govuk-table__cell">@m.Name</td>
                     <td class="govuk-table__cell">@m.Herdbook</td>
                     <td class="govuk-table__cell">@(m.Rbse is not null ? BseFormat.FormatRbse(m.Rbse) : "—")</td>
-                    <td class="govuk-table__cell">@($"{m.BirthDay}/{m.BirthMonth}/{m.BirthYear}")</td>
-                    <td class="govuk-table__cell">@m.Fate</td>
-                    <td class="govuk-table__cell">@m.ChildCount</td>
                     <td class="govuk-table__cell">
                         <form method="post" asp-page-handler="UseSelected" novalidate>
                             <input type="hidden" name="Rbse" value="@Model.Rbse" />

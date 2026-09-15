@@ -65,7 +65,6 @@
 
     <div class="govuk-form-group @(Err("RelationRbse") is not null ? "govuk-form-group--error" : "")">
         <label class="govuk-label" for="relation-rbse">Relation RBSE</label>
-        <div id="relation-rbse-hint" class="govuk-hint">Required if no eartag is provided. Slashes are optional.</div>
         @if (Err("RelationRbse") is { } relationRbseError)
         {
             <p id="relation-rbse-error" class="govuk-error-message">
@@ -173,6 +172,10 @@
 
     <div class="govuk-button-group">
         <button type="submit" class="govuk-button" data-module="govuk-button">Update Selected</button>
+        @if (!string.IsNullOrWhiteSpace(Model.RelationRbse))
+        {
+            <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationsView" asp-route-rbse="@Model.RelationRbse">View Relations</a>
+        }
         <a asp-page="/Case/Relations" asp-route-rbse="@Model.Rbse" class="govuk-link">Cancel</a>
     </div>
 </form>

@@ -48,89 +48,147 @@
 @{
     var canEditRelations = User.IsInRole("DataEntry");
     var d = Model.DamSire;
+    var damLinked = !string.IsNullOrWhiteSpace(d.DamRbse);
+    var sireLinked = !string.IsNullOrWhiteSpace(d.SireRbse);
 }
 
-<h2 class="govuk-heading-m">Case Herdbook</h2>
-<p class="govuk-body">@(string.IsNullOrWhiteSpace(Model.CaseHerdbook) ? "—" : Model.CaseHerdbook)</p>
-
-<div class="govuk-grid-row">
-    <div class="govuk-grid-column-one-half">
-        <h2 class="govuk-heading-m">Dam</h2>
-        @if (d.HasDam)
-        {
-            <dl class="govuk-summary-list govuk-summary-list--no-border govuk-!-margin-bottom-4">
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Eartag</dt><dd class="govuk-summary-list__value">@d.DamEartag</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Name</dt><dd class="govuk-summary-list__value">@d.DamName</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@(string.IsNullOrWhiteSpace(d.DamRbse) ? "—" : BseFormat.FormatRbse(d.DamRbse))</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Herdbook</dt><dd class="govuk-summary-list__value">@d.DamHerdbook</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Birth date</dt><dd class="govuk-summary-list__value">@(d.DamBirthDay.HasValue ? $"{d.DamBirthDay}/{d.DamBirthMonth}/{d.DamBirthYear}" : "—")</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Fate</dt><dd class="govuk-summary-list__value">@d.DamFate</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Final result</dt><dd class="govuk-summary-list__value">@d.DamFinalResult</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Offspring count</dt><dd class="govuk-summary-list__value">@d.DamChildCount</dd></div>
-            </dl>
-
-            <div class="govuk-button-group">
-                @if (!string.IsNullOrWhiteSpace(d.DamRbse))
-                {
-                    <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationsView" asp-route-rbse="@d.DamRbse">View Dam's Relations</a>
-                }
-                @if (canEditRelations)
-                {
-                    <form method="post" asp-page-handler="RemoveDam" novalidate>
-                        <button type="submit" class="govuk-button govuk-button--warning"
-                                onclick="return confirm('This will disassociate the dam from the case.  Do you wish to continue?');">Remove Dam</button>
-                    </form>
-                }
-            </div>
-        }
-        else
-        {
-            <p class="govuk-body govuk-!-colour-secondary">No dam recorded.</p>
+<h2 class="govuk-heading-m">Case details</h2>
+@if (canEditRelations && Model.EditCaseHerdbook)
+{
+    <form method="post" asp-page-handler="SaveCaseHerdbook" class="govuk-!-margin-bottom-6" novalidate>
+        <div class="govuk-form-group">
+            <label class="govuk-label" asp-for="CaseHerdbook">Case Herdbook</label>
+            <input asp-for="CaseHerdbook" maxlength="15" class="govuk-input govuk-input--width-20" />
+        </div>
+        <div class="govuk-button-group">
+            <button type="submit" class="govuk-button">Save</button>
+            <a class="govuk-link" asp-page="/Case/Relations" asp-route-rbse="@Model.Rbse">Cancel</a>
+        </div>
+    </form>
+}
+else
+{
+<dl class="govuk-summary-list govuk-!-margin-bottom-6">
+    <div class="govuk-summary-list__row">
+        <dt class="govuk-summary-list__key">Case Herdbook</dt>
+        <dd class="govuk-summary-list__value">
+            @(string.IsNullOrWhiteSpace(Model.CaseHerdbook) ? "—" : Model.CaseHerdbook)
             @if (canEditRelations)
             {
-                <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationParentAdd" asp-route-rbse="@Model.Rbse" asp-route-sex="F">Add Dam Details</a>
+                <span class="govuk-!-margin-left-3">
+                    <a class="govuk-link" asp-page="/Case/Relations" asp-page-handler="EditCaseHerdbook" asp-route-rbse="@Model.Rbse">
+                        Change<span class="govuk-visually-hidden"> case herdbook</span>
+                    </a>
+                </span>
             }
-        }
+        </dd>
     </div>
+</dl>
+}
 
-    <div class="govuk-grid-column-one-half">
-        <h2 class="govuk-heading-m">Sire</h2>
-        @if (d.HasSire)
-        {
+<section class="bse-relations-parent-panel">
+    <h2 class="govuk-heading-m">Sire Details</h2>
+    @if (!string.IsNullOrWhiteSpace(Model.SireError))
+    {
+        <p class="govuk-error-message">@Model.SireError</p>
+    }
+    <div class="govuk-grid-row">
+        <div class="govuk-grid-column-one-half">
             <dl class="govuk-summary-list govuk-summary-list--no-border govuk-!-margin-bottom-4">
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Eartag</dt><dd class="govuk-summary-list__value">@d.SireEartag</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Name</dt><dd class="govuk-summary-list__value">@d.SireName</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@(string.IsNullOrWhiteSpace(d.SireRbse) ? "—" : BseFormat.FormatRbse(d.SireRbse))</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Herdbook</dt><dd class="govuk-summary-list__value">@d.SireHerdbook</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Birth date</dt><dd class="govuk-summary-list__value">@(d.SireBirthDay.HasValue ? $"{d.SireBirthDay}/{d.SireBirthMonth}/{d.SireBirthYear}" : "—")</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Fate</dt><dd class="govuk-summary-list__value">@d.SireFate</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Offspring count</dt><dd class="govuk-summary-list__value">@d.SireChildCount</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Eartag</dt><dd class="govuk-summary-list__value">@(d.HasSire ? d.SireEartag : "—")</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@(d.HasSire && !string.IsNullOrWhiteSpace(d.SireRbse) ? BseFormat.FormatRbse(d.SireRbse) : "—")</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Fate</dt><dd class="govuk-summary-list__value">@(d.HasSire ? d.SireFate : "—")</dd></div>
             </dl>
-
-            <div class="govuk-button-group">
-                @if (!string.IsNullOrWhiteSpace(d.SireRbse))
+        </div>
+        <div class="govuk-grid-column-one-half">
+            <dl class="govuk-summary-list govuk-summary-list--no-border govuk-!-margin-bottom-4">
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Number of offspring</dt><dd class="govuk-summary-list__value">@(d.HasSire ? d.SireChildCount : null)</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Name</dt><dd class="govuk-summary-list__value">@(d.HasSire ? d.SireName : "—")</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Herdbook</dt><dd class="govuk-summary-list__value">@(d.HasSire ? d.SireHerdbook : "—")</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Date of birth</dt><dd class="govuk-summary-list__value">@(d.HasSire && d.SireBirthDay.HasValue ? $"{d.SireBirthDay}/{d.SireBirthMonth}/{d.SireBirthYear}" : "—")</dd></div>
+            </dl>
+        </div>
+    </div>
+    @if (canEditRelations)
+    {
+        <div class="govuk-button-group bse-relations-actions">
+            @if (d.HasSire)
+            {
+                <form method="post" asp-page="/Case/Relations" asp-page-handler="RemoveSire" asp-route-rbse="@Model.Rbse" novalidate>
+                    <input type="hidden" asp-for="Rbse" />
+                    <button type="submit" class="govuk-button govuk-button--warning"
+                            onclick="return confirm('This will disassociate the sire from the case.  Do you wish to continue?');">Remove Sire</button>
+                </form>
+                <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationParentAdd" asp-route-rbse="@Model.Rbse" asp-route-sex="M">Change Sire Details</a>
+                @if (sireLinked)
                 {
                     <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationsView" asp-route-rbse="@d.SireRbse">View Sire's Relations</a>
                 }
-                @if (canEditRelations)
-                {
-                    <form method="post" asp-page-handler="RemoveSire" novalidate>
-                        <button type="submit" class="govuk-button govuk-button--warning"
-                                onclick="return confirm('This will disassociate the sire from the case.  Do you wish to continue?');">Remove Sire</button>
-                    </form>
-                }
-            </div>
-        }
-        else
-        {
-            <p class="govuk-body govuk-!-colour-secondary">No sire recorded.</p>
-            @if (canEditRelations)
-            {
-                <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationParentAdd" asp-route-rbse="@Model.Rbse" asp-route-sex="M">Add Sire Details</a>
             }
-        }
+            else
+            {
+                <a class="govuk-button govuk-button--secondary"
+                   asp-page="/Case/PickSireDam"
+                   asp-route-rbse="@Model.Rbse"
+                   asp-route-sex="M"
+                   asp-route-returnTo="RelationParentAdd">Look Up Sire</a>
+            }
+        </div>
+    }
+</section>
+
+<section class="bse-relations-parent-panel">
+    <h2 class="govuk-heading-m">Dam Details</h2>
+    @if (!string.IsNullOrWhiteSpace(Model.DamError))
+    {
+        <p class="govuk-error-message">@Model.DamError</p>
+    }
+    <div class="govuk-grid-row">
+        <div class="govuk-grid-column-one-half">
+            <dl class="govuk-summary-list govuk-summary-list--no-border govuk-!-margin-bottom-4">
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Eartag</dt><dd class="govuk-summary-list__value">@(d.HasDam ? d.DamEartag : "—")</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@(d.HasDam && !string.IsNullOrWhiteSpace(d.DamRbse) ? BseFormat.FormatRbse(d.DamRbse) : "—")</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Fate</dt><dd class="govuk-summary-list__value">@(d.HasDam ? d.DamFate : "—")</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Final result</dt><dd class="govuk-summary-list__value">@(d.HasDam ? d.DamFinalResult : "—")</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Status</dt><dd class="govuk-summary-list__value">@(Model.DamStatusDescription ?? "—")</dd></div>
+            </dl>
+        </div>
+        <div class="govuk-grid-column-one-half">
+            <dl class="govuk-summary-list govuk-summary-list--no-border govuk-!-margin-bottom-4">
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Number of offspring</dt><dd class="govuk-summary-list__value">@(d.HasDam ? d.DamChildCount : null)</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Name</dt><dd class="govuk-summary-list__value">@(d.HasDam ? d.DamName : "—")</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Herdbook</dt><dd class="govuk-summary-list__value">@(d.HasDam ? d.DamHerdbook : "—")</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Date of birth</dt><dd class="govuk-summary-list__value">@(d.HasDam && d.DamBirthDay.HasValue ? $"{d.DamBirthDay}/{d.DamBirthMonth}/{d.DamBirthYear}" : "—")</dd></div>
+            </dl>
+        </div>
     </div>
-</div>
+    @if (canEditRelations)
+    {
+        <div class="govuk-button-group bse-relations-actions">
+            @if (d.HasDam)
+            {
+                <form method="post" asp-page="/Case/Relations" asp-page-handler="RemoveDam" asp-route-rbse="@Model.Rbse" novalidate>
+                    <input type="hidden" asp-for="Rbse" />
+                    <button type="submit" class="govuk-button govuk-button--warning"
+                            onclick="return confirm('This will disassociate the dam from the case.  Do you wish to continue?');">Remove Dam</button>
+                </form>
+                <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationParentAdd" asp-route-rbse="@Model.Rbse" asp-route-sex="F">Change Dam Details</a>
+                @if (damLinked)
+                {
+                    <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationsView" asp-route-rbse="@d.DamRbse">View Dam's Relations</a>
+                }
+            }
+            else
+            {
+                <a class="govuk-button govuk-button--secondary"
+                   asp-page="/Case/PickSireDam"
+                   asp-route-rbse="@Model.Rbse"
+                   asp-route-sex="F"
+                   asp-route-returnTo="RelationParentAdd">Look Up Dam</a>
+            }
+        </div>
+    }
+</section>
 
 
 @* ── Related animals ── *@
@@ -181,7 +239,7 @@
                                     <input type="hidden" name="RelationId" value="@r.Id" />
                                     <input type="hidden" name="RowStampBase64" value="@Convert.ToBase64String(r.RowStamp ?? [])" />
                                     <input type="hidden" asp-for="Rbse" />
-                                    <button type="submit" class="govuk-button govuk-button--secondary"
+                                    <button type="submit" class="govuk-button govuk-button--warning"
                                             onclick="return confirm('Delete this relation?')">Delete<span class="govuk-visually-hidden"> relation @(r.RelationTypeDesc ?? r.RelationType)</span></button>
                                 </form>
                             </div>

@@ -1,8 +1,13 @@
+using BSE.Host.Models.ViewModels;
+using BSE.Host.Services;
 using BSE.Modules.AnimalRelations.Models;
 using BSE.Modules.AnimalRelations.Repositories;
 using BSE.Modules.CaseManagement.Commands;
+using BSE.Modules.CaseManagement.Enums;
 using BSE.Modules.CaseManagement.Repositories;
 using BSE.Modules.CaseManagement.Services;
+using BSE.Modules.ReferenceData.Models;
+using BSE.Modules.ReferenceData.Services;
 using BSE.Infrastructure;
 using BSE.SharedKernel;
 using Microsoft.AspNetCore.Authorization;
@@ -16,6 +21,8 @@ public class RelationParentAddModel(
     IAnimalRelationsRepository relationsRepository,
     IPedigreeRepository pedigreeRepository,
     ICaseService caseService,
+    ILookupDataService lookups,
+    ICurrentUserService currentUser,
     IDbConnectionFactory connectionFactory,
     ILogger<RelationParentAddModel> logger) : PageModel
 {
@@ -24,6 +31,9 @@ public class RelationParentAddModel(
 
     [BindProperty(SupportsGet = true)]
     public string Sex { get; set; } = string.Empty;
+
+    [BindProperty(SupportsGet = true)]
+    public bool StartNew { get; set; }
 
     [BindProperty]
     public InputModel Input { get; set; } = new();
@@ -34,7 +44,10 @@ public class RelationParentAddModel(
 
     public bool HasSelection => Input.Id > 0 || !string.IsNullOrWhiteSpace(Input.Eartag) || !string.IsNullOrWhiteSpace(Input.Name) || !string.IsNullOrWhiteSpace(Input.Herdbook);
 
-    public IActionResult OnGet()
+    /// <summary>Legacy ddlDamStatus — Case.DamStatus, editable regardless of whether the dam is RBSE-linked.</summary>
+    public IReadOnlyList<LookupItem> DamStatusOptions { get; private set; } = [];
+
+    public async Task<IActionResult> OnGetAsync()
     {
         if (string.IsNullOrWhiteSpace(Rbse) || !IsValidSex(Sex))
         {
@@ -42,58 +55,35 @@ public class RelationParentAddModel(
         }
 
         ApplyPendingParent();
-        return Page();
-    }
 
-    public async Task<IActionResult> OnPostLookUpAsync()
-    {
-        if (string.IsNullOrWhiteSpace(Rbse) || !IsValidSex(Sex))
+        if (IsDam)
         {
-            return RedirectToPage("/Home");
+            DamStatusOptions = (await lookups.GetAnimalStatusesAsync())
+                .Select(x => new LookupItem(x.Id, x.Code, x.Description))
+                .ToList();
+            var caseRecord = await caseService.GetCaseAsync(RbseHelper.ParseToRaw(Rbse));
+            Input.DamStatus = caseRecord?.DamStatus;
         }
 
-        var details = await relationsRepository.GetRelationsDetailsByRbseAsync(RbseHelper.ParseToRaw(Rbse));
-        var searchRbse = RbseHelper.Normalize(Input.SearchRbse);
-
-        if (!string.IsNullOrWhiteSpace(searchRbse) && string.Equals(searchRbse, RbseHelper.Normalize(Rbse), StringComparison.OrdinalIgnoreCase))
+        if (StartNew)
         {
-            ErrorMessage = RelationsModel.SameAsCaseRbse;
-            return Page();
+            Input.ParentRbse = null;
+            Input.RowStampBase64 = null;
+            Input.BirthDay ??= null;
+            Input.BirthMonth ??= null;
+            Input.BirthYear ??= null;
         }
 
-        if (!string.IsNullOrWhiteSpace(searchRbse) && details.Relations.Any(r => string.Equals(r.RelationRbse, searchRbse, StringComparison.OrdinalIgnoreCase)))
+        if (!HasSelection && !StartNew)
         {
-            ErrorMessage = RelationsModel.AlreadyARelation;
-            return Page();
-        }
-
-        var matches = await relationsRepository.GetDamSireDetailsMatchesAsync(
-            NullIfBlank(Input.SearchEartag),
-            NullIfBlank(Input.SearchName),
-            string.IsNullOrWhiteSpace(searchRbse) ? null : searchRbse,
-            NullIfBlank(Input.SearchHerdbook),
-            IsDam ? "F" : "M");
-
-        if (matches.Count == 1)
-        {
-            ApplyMatch(matches[0]);
-            return Page();
-        }
-
-        if (matches.Count > 1 || string.IsNullOrWhiteSpace(searchRbse))
-        {
-            return RedirectToPage("/Case/PickSireDam", new
+            var details = await relationsRepository.GetRelationsDetailsByRbseAsync(RbseHelper.ParseToRaw(Rbse));
+            var parent = IsDam ? details.Dam : details.Sire;
+            if (parent is { Id: > 0 })
             {
-                rbse = Rbse,
-                sex = IsDam ? "F" : "M",
-                eartag = Input.SearchEartag,
-                name = Input.SearchName,
-                herdbook = Input.SearchHerdbook,
-                returnTo = "RelationParentAdd"
-            });
+                ApplyMatch(parent);
+            }
         }
 
-        ErrorMessage = IsDam ? RelationsModel.DamNotFound : RelationsModel.SireNotFound;
         return Page();
     }
 
@@ -105,24 +95,58 @@ public class RelationParentAddModel(
             return Page();
         }
 
-        var details = await relationsRepository.GetRelationsDetailsByRbseAsync(RbseHelper.ParseToRaw(Rbse));
-        var caseRecord = await caseService.GetCaseAsync(RbseHelper.ParseToRaw(Rbse));
+        // Legacy PartialDate rule: a day may only be entered alongside a month (year alone,
+        // or month+year, are valid approximate dates; day without month is not).
+        if (string.IsNullOrWhiteSpace(Input.ParentRbse) && Input.BirthDay.HasValue && !Input.BirthMonth.HasValue)
+        {
+            ErrorMessage = "Please enter a month, or remove the day.";
+            return Page();
+        }
 
-        var dam = details.Dam;
-        var sire = details.Sire;
+        var caseRbse = RbseHelper.ParseToRaw(Rbse);
+        var normalizedParentRbse = NullIfBlank(RbseHelper.Normalize(Input.ParentRbse));
+        DamSireDetailRecord? linkedParent = null;
+
+        // Legacy locked Eartag/Herdbook once matched to an existing case RBSE; re-derive them
+        // here so a tampered post can't override values that belong to the linked case.
+        if (!string.IsNullOrWhiteSpace(normalizedParentRbse))
+        {
+            var linked = await relationsRepository.GetDamSireDetailsMatchesAsync(
+                null, null, normalizedParentRbse, null, IsDam ? "F" : "M");
+            linkedParent = linked.FirstOrDefault();
+            if (linkedParent is not null)
+            {
+                Input.Eartag = linkedParent.Eartag;
+                Input.Herdbook = linkedParent.Herdbook;
+            }
+        }
+
+        var details = await relationsRepository.GetRelationsDetailsByRbseAsync(caseRbse);
+        var caseRecord = await caseService.GetCaseAsync(caseRbse);
+
+        // Id 0 is a placeholder meaning "no real dam/sire recorded" — never forward it as a
+        // real id, or the SP will insert a blank phantom pedigree row for the other side.
+        var dam = details.Dam is { Id: > 0 } d ? d : null;
+        var sire = details.Sire is { Id: > 0 } s ? s : null;
+
+        // When linking to an RBSE, force INSERT semantics (Id=0) for the target parent.
+        // This avoids updating legacy/manual pedigree rows whose shape can violate
+        // CK_Pedigree_RBSEPresent when RBSE is set (e.g. non-null Sex on existing row).
+        var targetId = normalizedParentRbse is null ? Input.Id : 0;
+        var targetRowStamp = normalizedParentRbse is null ? FromBase64(Input.RowStampBase64) : null;
 
         var command = IsDam
             ? new AddEditDamSireCommand(
-                Rbse: Rbse,
-                DamId: Input.Id,
-                DamRbse: NullIfBlank(RbseHelper.Normalize(Input.ParentRbse)),
+                Rbse: caseRbse,
+                DamId: targetId,
+                DamRbse: normalizedParentRbse,
                 DamEartag: Input.Eartag,
                 DamName: Input.Name,
                 DamHerdbook: Input.Herdbook,
                 DamBirthDay: Input.BirthDay,
                 DamBirthMonth: Input.BirthMonth,
                 DamBirthYear: Input.BirthYear,
-                DamRowStamp: FromBase64(Input.RowStampBase64),
+                DamRowStamp: targetRowStamp,
                 SireId: sire?.Id,
                 SireRbse: sire?.Rbse,
                 SireEartag: sire?.Eartag,
@@ -135,7 +159,7 @@ public class RelationParentAddModel(
                 CaseHerdbook: caseRecord?.Herdbook,
                 CaseRowStamp: caseRecord?.PedigreeRowStamp)
             : new AddEditDamSireCommand(
-                Rbse: Rbse,
+                Rbse: caseRbse,
                 DamId: dam?.Id,
                 DamRbse: dam?.Rbse,
                 DamEartag: dam?.Eartag,
@@ -145,15 +169,15 @@ public class RelationParentAddModel(
                 DamBirthMonth: dam?.BirthMonth,
                 DamBirthYear: dam?.BirthYear,
                 DamRowStamp: dam?.RowStamp,
-                SireId: Input.Id,
-                SireRbse: NullIfBlank(RbseHelper.Normalize(Input.ParentRbse)),
+                SireId: targetId,
+                SireRbse: normalizedParentRbse,
                 SireEartag: Input.Eartag,
                 SireName: Input.Name,
                 SireHerdbook: Input.Herdbook,
                 SireBirthDay: Input.BirthDay,
                 SireBirthMonth: Input.BirthMonth,
                 SireBirthYear: Input.BirthYear,
-                SireRowStamp: FromBase64(Input.RowStampBase64),
+                SireRowStamp: targetRowStamp,
                 CaseHerdbook: caseRecord?.Herdbook,
                 CaseRowStamp: caseRecord?.PedigreeRowStamp);
 
@@ -170,6 +194,35 @@ public class RelationParentAddModel(
             logger.LogError(ex, "AddEditDamSireDetails failed while adding parent details");
             ErrorMessage = "Unable to save parent details. The record may have changed — reload and try again.";
             return Page();
+        }
+
+        // Legacy RemoveDam/ddlDamStatus: DamStatus lives on Case, not Pedigree, so it is
+        // saved via EditCase rather than AddEditDamSireDetails.
+        if (IsDam && caseRecord is not null)
+        {
+            try
+            {
+                var editVm = BSE.Host.Models.ViewModels.CaseEditViewModel.FromRecord(caseRecord);
+                editVm.DamStatus = Input.DamStatus;
+                var editCommand = new EditCaseDetailsCommand(
+                    Case: editVm.ToEditCommand(caseRecord.RowStamp ?? []),
+                    Clinical: null,
+                    Bab: null,
+                    DamSire: null);
+                var userId = await currentUser.GetUserIdAsync();
+                var result = await caseService.EditCaseAsync(editCommand, userId);
+                if (result != EditCaseResult.Success)
+                {
+                    TempData["Warning"] = "Dam details were saved, but the status could not be updated — the case may have changed. Please try again.";
+                    return RedirectToPage("/Case/Relations", new { rbse = Rbse });
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "EditCase failed while saving dam status");
+                TempData["Warning"] = "Dam details were saved, but the status could not be updated. Please try again.";
+                return RedirectToPage("/Case/Relations", new { rbse = Rbse });
+            }
         }
 
         TempData["Success"] = IsDam ? "Dam details saved." : "Sire details saved.";
@@ -249,5 +302,6 @@ public class RelationParentAddModel(
         public string? Fate { get; set; }
         public string? FinalResult { get; set; }
         public int? ChildCount { get; set; }
+        public string? DamStatus { get; set; }
     }
 }
