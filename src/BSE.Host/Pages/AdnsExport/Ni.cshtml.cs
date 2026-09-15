@@ -1,15 +1,19 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
+using BSE.Modules.AdnsExport.Configuration;
 using BSE.Modules.AdnsExport.Models;
 using BSE.Modules.AdnsExport.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Options;
 
 namespace BSE.Host.Pages.AdnsExport;
 
 [Authorize(Policy = "DEFRAMaintenance")]
-public class NiModel(IAdnsExportService adnsExportService) : PageModel
+public class NiModel(
+    IAdnsExportService adnsExportService,
+    IOptions<AdnsMsGraphOptions> msGraphOptions) : PageModel
 {
     private const int PageSize = 10;
     private const string DraftTempDataKey = "AdnsNiDraftCases";
@@ -40,7 +44,7 @@ public class NiModel(IAdnsExportService adnsExportService) : PageModel
     public string UserEmailAddress { get; set; } = string.Empty;
 
     [BindProperty]
-    public bool SaveAdnsData { get; set; } = true;
+    public bool SaveAdnsData { get; set; } = false;
 
     [BindProperty(SupportsGet = true)] public string SortColumn { get; set; } = "AdnsReference";
     [BindProperty(SupportsGet = true)] public bool SortDesc { get; set; }
@@ -49,9 +53,10 @@ public class NiModel(IAdnsExportService adnsExportService) : PageModel
     public AdnsExportPreview? Preview { get; private set; }
     public List<NiCaseInput> DraftCases { get; private set; } = [];
     public string? ErrorMessage { get; private set; }
+    private readonly AdnsMsGraphOptions _msGraphOptions = msGraphOptions.Value;
 
-    // No SMTP options dependency for NI page
-    public string FromAddress => "tse.queries@apha.gov.uk";
+    public string FromAddress => _msGraphOptions.FromAddress;
+    public string DefaultToEmailAddress => _msGraphOptions.ToAddress;
 
     public IReadOnlyList<NiGridRow> CurrentRows =>
         Preview is null
@@ -75,6 +80,10 @@ public class NiModel(IAdnsExportService adnsExportService) : PageModel
         RestoreContext();
         LoadDraftCases();
         LoadPreview();
+
+        if (string.IsNullOrWhiteSpace(UserEmailAddress))
+            UserEmailAddress = DefaultToEmailAddress;
+
         return Page();
     }
 
@@ -179,6 +188,9 @@ public class NiModel(IAdnsExportService adnsExportService) : PageModel
         TempData[PreviewTempDataKey] = JsonSerializer.Serialize(Preview);
         PersistContext();
 
+        if (string.IsNullOrWhiteSpace(UserEmailAddress))
+            UserEmailAddress = DefaultToEmailAddress;
+
         return Page();
     }
 
@@ -199,6 +211,13 @@ public class NiModel(IAdnsExportService adnsExportService) : PageModel
             return Page();
         }
 
+        if (!new EmailAddressAttribute().IsValid(UserEmailAddress))
+        {
+            ModelState.AddModelError(nameof(UserEmailAddress), "Enter an email address in the correct format, like name@example.com.");
+            LoadPreview();
+            return Page();
+        }
+
         var previewJson = TempData.Peek(PreviewTempDataKey)?.ToString();
         if (string.IsNullOrEmpty(previewJson))
         {
@@ -209,7 +228,9 @@ public class NiModel(IAdnsExportService adnsExportService) : PageModel
         Preview = JsonSerializer.Deserialize<AdnsExportPreview>(previewJson);
         var cases = Preview?.Cases.ToList() ?? [];
 
-        var command = new DispatchAdnsCommand("NI", EmailReference, cases, UserEmailAddress, SaveAdnsData);
+        // NI export rows are manually entered and are not backed by persisted Case rows,
+        // so ADNS case updates must remain disabled.
+        var command = new DispatchAdnsCommand("NI", EmailReference, cases, UserEmailAddress, SaveAdnsData: false);
 
         try
         {

@@ -34,7 +34,7 @@ public interface IAdnsExportService
     ///   <item>Opens a DB connection and begins a transaction.</item>
     ///   <item>For each case (if <c>SaveAdnsData</c> is true): calls <c>EditCaseADNS</c> — throws <see cref="Exceptions.AdnsCaseUpdateException"/> on any non-zero return.</item>
     ///   <item>Calls <c>EditLastADNSReference</c>.</item>
-    ///   <item>Sends email to Brussels (ToAddress) and to the user's address via <see cref="Email.ISmtpClient"/>.</item>
+    ///   <item>Sends email to Brussels (ToAddress) and to the user's address via <see cref="Email.IMSGraphMailClient"/>.</item>
     ///   <item>Commits on success; rolls back on any failure.</item>
     /// </list>
     /// </summary>

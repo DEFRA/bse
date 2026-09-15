@@ -13,12 +13,12 @@ namespace BSE.Host.Pages.AdnsExport;
 [Authorize(Policy = "DEFRAMaintenance")]
 public class GbModel(
     IAdnsExportService adnsExportService,
-    IOptions<AdnsSmtpOptions> smtpOptions) : PageModel
+    IOptions<AdnsMsGraphOptions> msGraphOptions) : PageModel
 {
     private const int PageSize = 10;
     private const string PreviewTempDataKey = "AdnsGbPreview";
     private const string ContextTempDataKey = "AdnsGbContext";
-    private readonly AdnsSmtpOptions _smtpOptions = smtpOptions.Value;
+    private readonly AdnsMsGraphOptions _msGraphOptions = msGraphOptions.Value;
 
     [BindProperty]
     [Required(ErrorMessage = "Enter an email reference.")]
@@ -46,8 +46,8 @@ public class GbModel(
     public LastAdnsReferenceRecord? LastReference { get; private set; }
     public string? ErrorMessage { get; private set; }
 
-    public string FromEmailAddress => _smtpOptions.FromAddress;
-    public string DefaultToEmailAddress => _smtpOptions.ToAddress;
+    public string FromEmailAddress => _msGraphOptions.FromAddress;
+    public string DefaultToEmailAddress => _msGraphOptions.ToAddress;
 
     public int TotalCount => Preview?.Cases.Count ?? 0;
     public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
