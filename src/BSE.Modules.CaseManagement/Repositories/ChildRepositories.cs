@@ -2,6 +2,7 @@ using System.Data;
 using BSE.Infrastructure;
 using BSE.Modules.CaseManagement.Commands;
 using BSE.Modules.CaseManagement.Models;
+using Dapper;
 
 namespace BSE.Modules.CaseManagement.Repositories;
 
@@ -48,7 +49,7 @@ public interface IOtherOwnerRepository
     Task<IReadOnlyList<OtherOwnerRecord>> GetByRbseAsync(string rbse);
     Task AddAsync(AddOtherOwnerCommand command, IDbConnection connection, IDbTransaction transaction);
     Task EditAsync(EditOtherOwnerCommand command, IDbConnection connection, IDbTransaction transaction);
-    Task DeleteAsync(int id, IDbConnection connection, IDbTransaction transaction);
+    Task DeleteAsync(int id, byte[] rowStamp, IDbConnection connection, IDbTransaction transaction);
 }
 
 public sealed class OtherOwnerRepository : DapperRepository, IOtherOwnerRepository
@@ -64,8 +65,8 @@ public sealed class OtherOwnerRepository : DapperRepository, IOtherOwnerReposito
     public Task EditAsync(EditOtherOwnerCommand c, IDbConnection conn, IDbTransaction tx)
         => ExecuteAsync("EditOtherOwner", new { ID = c.Id, RBSE = c.Rbse, Type = c.Type, Name = c.Name, CPHH = c.Cphh, RowStamp = c.RowStamp }, conn, tx);
 
-    public Task DeleteAsync(int id, IDbConnection conn, IDbTransaction tx)
-        => ExecuteAsync("DeleteOtherOwner", new { ID = id }, conn, tx);
+    public Task DeleteAsync(int id, byte[] rowStamp, IDbConnection conn, IDbTransaction tx)
+        => ExecuteAsync("DeleteOtherOwner", new { ID = id, RowStamp = rowStamp }, conn, tx);
 }
 
 public interface IPedigreeRepository
@@ -85,8 +86,9 @@ public sealed class PedigreeRepository : DapperRepository, IPedigreeRepository
     public Task<DamSireDetailRecord?> GetSireByRbseAsync(string rbse)
         => QuerySingleOrDefaultAsync<DamSireDetailRecord>("GetSireDetailsByRBSE", new { RBSE = rbse });
 
-    public Task AddEditDamSireAsync(AddEditDamSireCommand c, IDbConnection conn, IDbTransaction tx)
-        => ExecuteAsync("AddEditDamSireDetails", new
+    public async Task AddEditDamSireAsync(AddEditDamSireCommand c, IDbConnection conn, IDbTransaction tx)
+    {
+        var p = new DynamicParameters(new
         {
             RBSE = c.Rbse,
             DamID = c.DamId, DamRBSE = c.DamRbse,
@@ -98,5 +100,18 @@ public sealed class PedigreeRepository : DapperRepository, IPedigreeRepository
             SireBirthDay = c.SireBirthDay, SireBirthMonth = c.SireBirthMonth, SireBirthYear = c.SireBirthYear,
             SireRowStamp = c.SireRowStamp,
             CaseHerdbook = c.CaseHerdbook, CaseRowStamp = c.CaseRowStamp
-        }, conn, tx);
+        });
+        p.Add("ReturnValue", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+
+        await ExecuteAsync("AddEditDamSireDetails", p, conn, tx);
+
+        // SP returns 1/2/3 (dam/sire/case pedigree) when the update affected 0 rows — almost
+        // always a stale RowStamp. Dapper's ExecuteAsync never surfaces this on its own.
+        var returnCode = p.Get<int>("ReturnValue");
+        if (returnCode != 0)
+        {
+            throw new InvalidOperationException(
+                $"AddEditDamSireDetails returned code {returnCode} — the dam, sire or case pedigree record was changed by someone else.");
+        }
+    }
 }

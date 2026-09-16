@@ -40,7 +40,6 @@
 <form method="post" asp-page-handler="LookUp" novalidate>
     <div class="govuk-form-group @(Model.RbseError is not null ? "govuk-form-group--error" : "")">
         <label class="govuk-label" for="rbse">RBSE</label>
-        <div id="rbse-hint" class="govuk-hint">For example, 00/26/00001. Slashes are optional.</div>
         @if (Model.RbseError is not null)
         {
             <p id="rbse-error" class="govuk-error-message">
@@ -90,9 +89,6 @@
         <input type="hidden" name="Rbse" value="@Model.Rbse" />
         <div class="govuk-form-group @(Model.CphhError is not null ? "govuk-form-group--error" : "")">
             <label class="govuk-label" for="new-cphh">New CPHH</label>
-            <div id="new-cphh-hint" class="govuk-hint">
-                For example, 12/345/6789/01. Slashes are optional. The destination farm must already exist.
-            </div>
             @if (Model.CphhError is not null)
             {
                 <p id="new-cphh-error" class="govuk-error-message">

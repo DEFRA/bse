@@ -1,33 +1,18 @@
 @page
 @model ByCaseModel
 @{
-    ViewData["Title"] = "Audit log by case";
+    ViewData["Title"] = $"Audit log — {Model.Rbse}";
 }
 
 <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
     <ol class="govuk-breadcrumbs__list">
         <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-        @if (!string.IsNullOrWhiteSpace(Model.Rbse))
-        {
-            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Farm" asp-route-rbse="@Model.Rbse">@BseFormat.FormatRbse(Model.Rbse)</a></li>
-        }
-        <li class="govuk-breadcrumbs__list-item" aria-current="page">Audit log by case</li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="@(string.IsNullOrWhiteSpace(Model.ReturnTo) ? "/Case/Edit" : Model.ReturnTo)" asp-route-rbse="@Model.Rbse">@BseFormat.FormatRbse(Model.Rbse)</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Audit log</li>
     </ol>
 </nav>
 
-<h1 class="govuk-heading-l">Audit log by case</h1>
-
-<form method="get" novalidate class="govuk-!-margin-bottom-6">
-    <div class="govuk-form-group">
-        <label asp-for="Rbse" class="govuk-label">RBSE number</label>
-        <div id="rbse-hint" class="govuk-hint">RBSE Format: NN/NN/NNNNN</div>
-        <input asp-for="Rbse" type="text" class="govuk-input govuk-input--width-20" aria-describedby="rbse-hint" spellcheck="false" autocomplete="off" />
-    </div>
-    <div class="govuk-button-group">
-        <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
-        <a asp-page="/AuditLog/ByCase" class="govuk-link">Clear search</a>
-    </div>
-</form>
+<h1 class="govuk-heading-l">Audit log for case @BseFormat.FormatRbse(Model.Rbse)</h1>
 
 @if (Model.HasSearched)
 {
@@ -39,6 +24,7 @@
     {
         <div class="govuk-button-group govuk-!-margin-bottom-4">
             <a asp-page="/AuditLog/ByCase" asp-page-handler="Export" asp-route-rbse="@Model.Rbse"
+               asp-route-returnTo="@Model.ReturnTo"
                class="govuk-button govuk-button--secondary">Export to CSV</a>
         </div>
 
@@ -121,9 +107,6 @@
     }
 }
 
-@if (!string.IsNullOrWhiteSpace(Model.Rbse))
-{
-    <div class="govuk-!-margin-top-4">
-        <a asp-page="/Case/Edit" asp-route-rbse="@Model.Rbse" class="govuk-link">Back to case @BseFormat.FormatRbse(Model.Rbse)</a>
-    </div>
-}
+<div class="govuk-!-margin-top-4">
+    <a asp-page="@(string.IsNullOrWhiteSpace(Model.ReturnTo) ? "/Case/Edit" : Model.ReturnTo)" asp-route-rbse="@Model.Rbse" class="govuk-link">Back to case @BseFormat.FormatRbse(Model.Rbse)</a>
+</div>

@@ -169,6 +169,42 @@
     white-space: nowrap;
 }
 
+/* Relations page legacy-style parent panels */
+.bse-relations-parent-panel {
+    border-top: 1px solid #b1b4b6;
+    padding-top: 16px;
+    margin-bottom: 24px;
+}
+
+.bse-relations-parent-panel:first-of-type {
+    margin-top: 4px;
+}
+
+.bse-relations-parent-panel .govuk-summary-list__key {
+    width: 42%;
+}
+
+.bse-relations-parent-panel .govuk-summary-list__value {
+    word-break: break-word;
+}
+
+.bse-relations-actions .govuk-button,
+.bse-relations-actions .govuk-button:link,
+.bse-relations-actions .govuk-button:visited {
+    margin-bottom: 0;
+}
+
+.bse-relations-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.bse-relations-actions form {
+    margin: 0;
+}
+
 /* Sortable table header links (MOJ sortable-table pattern style) */
 .moj-sortable-table__heading {
     vertical-align: top;
@@ -408,6 +444,37 @@
     margin-bottom: 0;
 }
 
+.bse-home-rbse-combobox {
+    position: relative;
+}
+
+.bse-home-rbse-suggestions {
+    position: absolute;
+    z-index: 100;
+    top: calc(100% + 2px);
+    left: 0;
+    width: 230px;
+    max-height: 240px;
+    overflow-y: auto;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    background: #ffffff;
+    border: 2px solid #0b0c0c;
+    box-shadow: 0 2px 6px rgba(11, 12, 12, 0.2);
+}
+
+.bse-home-rbse-suggestions__item {
+    padding: 8px 10px;
+    cursor: pointer;
+}
+
+.bse-home-rbse-suggestions__item--active,
+.bse-home-rbse-suggestions__item:hover {
+    background: #1d70b8;
+    color: #ffffff;
+}
+
 .bse-home-batch-table,
 .bse-home-rbse-table {
     margin-bottom: 0;
@@ -482,8 +549,18 @@
 }
 
 /* ── Case section tab bar (mirrors legacy 7-tab bar) ─────────────────────────── */
+.bse-case-tabs-wrap {
+    width: 66.6667%;
+}
+
 .bse-case-tabs {
     border-bottom: 4px solid #1d70b8;
+}
+
+@media (max-width: 40.0525em) {
+    .bse-case-tabs-wrap {
+        width: 100%;
+    }
 }
 
 .bse-case-tabs__list {

@@ -13,7 +13,7 @@
             Case not found.
         </strong>
     </div>
-    <a asp-page="/Case/Lookup" class="govuk-link">Back to case lookup</a>
+    <a asp-page="/Home" class="govuk-link">Back to home</a>
     return;
 }
 
@@ -113,7 +113,7 @@
 
     <p class="govuk-body">
         <a asp-page="/Farm/Details" asp-route-cphh="@Model.Case.Cphh" class="govuk-link">View farm record</a> &mdash;
-        <a asp-page="/Case/Lookup" class="govuk-link">Back to case lookup</a>
+        <a asp-page="/Home" class="govuk-link">Back to home</a>
     </p>
     return;
 }
@@ -127,7 +127,7 @@
 <div class="govuk-button-group govuk-!-margin-bottom-4">
     @if (User.IsInRole("DataEntry"))
     {
-        <a asp-page="/Farm/Edit" asp-route-cphh="@Model.Farm.CPHH" asp-route-rbse="@Model.Rbse" class="govuk-button govuk-button--secondary">Edit farm details</a>
+        <a asp-page="/Farm/Edit" asp-route-cphh="@Model.Farm.CPHH" asp-route-rbse="@Model.Rbse" class="govuk-button govuk-button--secondary">Change farm details</a>
     }
     <a asp-page="/AuditLog/ByFarm" asp-route-cphh="@Model.Farm.CPHH" asp-route-rbse="@Model.Rbse" class="govuk-link">Farm audit log</a>
     @if (!string.IsNullOrEmpty(Model.SpolSiteUrl))
@@ -297,7 +297,7 @@
                             <a class="govuk-link govuk-!-margin-right-3"
                                asp-page="/Case/FarmLinkedFarmEdit"
                                asp-route-rbse="@Model.Rbse"
-                               asp-route-id="@lf.ID">Edit</a>
+                               asp-route-id="@lf.ID">Change</a>
                             <form method="post" asp-page-handler="DeleteLinkedFarm" class="govuk-!-display-inline-block" novalidate>
                                 <input type="hidden" name="Rbse" value="@Model.Rbse" />
                                 <input type="hidden" name="id" value="@lf.ID" />
@@ -437,7 +437,7 @@ else
                             <a class="govuk-link govuk-!-margin-right-3"
                                asp-page="/Case/FarmHerdSizeEdit"
                                asp-route-rbse="@Model.Rbse"
-                               asp-route-id="@h.ID">Edit</a>
+                               asp-route-id="@h.ID">Change</a>
                             <form method="post" asp-page-handler="DeleteHerdSize" class="govuk-!-display-inline-block" novalidate>
                                 <input type="hidden" name="Rbse" value="@Model.Rbse" />
                                 <input type="hidden" name="id" value="@h.ID" />

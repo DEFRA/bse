@@ -111,7 +111,7 @@
 
         <form id="case-entry-form" method="post" asp-page-handler="RbseLookup" class="govuk-!-margin-bottom-4">
             <div class="govuk-form-group bse-home-rbse-entry @(rbseError is not null ? "govuk-form-group--error" : "")">
-                <label class="govuk-label govuk-!-margin-bottom-0" for="rbse-lookup">RBSE</label>
+                <label class="govuk-label govuk-!-margin-bottom-0" for="rbse-lookup-input">RBSE</label>
                 @if (rbseError is not null)
                 {
                     <p id="rbse-error" class="govuk-error-message">
@@ -119,14 +119,209 @@
                         @rbseError
                     </p>
                 }
-                <input id="rbse-lookup" name="LookupRbse" type="text"
-                       class="govuk-input bse-home-rbse-input @(rbseError is not null ? "govuk-input--error" : "")"
-                       value="@Model.LookupRbse" autocomplete="off"
-                       aria-describedby="@(rbseError is not null ? "rbse-error" : "")" />
+                <input id="rbse-lookup" name="LookupRbse" type="hidden" value="@Model.LookupRbse" />
+
+                <div id="rbse-combobox" class="bse-home-rbse-combobox"
+                     data-seed-current="@Model.LatestRbseCurrentYear"
+                     data-seed-previous="@Model.LatestRbsePreviousYear">
+                    <input id="rbse-lookup-input" name="LookupRbseInput" type="text"
+                           class="govuk-input bse-home-rbse-input @(rbseError is not null ? "govuk-input--error" : "")"
+                           value="@Model.LookupRbse" autocomplete="new-password" spellcheck="false" autocapitalize="off"
+                           role="combobox" aria-haspopup="listbox" aria-controls="rbse-recent-listbox"
+                           aria-expanded="false" aria-autocomplete="list" aria-activedescendant=""
+                           aria-describedby="@(rbseError is not null ? "rbse-error" : "")" />
+                    <ul id="rbse-recent-listbox" class="bse-home-rbse-suggestions" role="listbox" hidden></ul>
+                </div>
 
                 <button type="submit" class="govuk-button"
                         data-module="govuk-button">Go</button>
             </div>
+
+<script>
+    (function () {
+        var form = document.getElementById('case-entry-form');
+        var hidden = document.getElementById('rbse-lookup');
+        var combo = document.getElementById('rbse-combobox');
+        var input = document.getElementById('rbse-lookup-input');
+        var listbox = document.getElementById('rbse-recent-listbox');
+        if (!form || !hidden || !combo || !input || !listbox) return;
+
+        var storageKey = 'bse.recent.rbse';
+        var maxItems = 10;
+        var allValues = [];
+        var filteredValues = [];
+        var activeIndex = -1;
+
+        function normalise(value) {
+            return (value || '').replace(/\D/g, '').trim();
+        }
+
+        function formatRbse(raw) {
+            var digits = normalise(raw);
+            if (digits.length !== 9) return (raw || '').trim();
+            return digits.substring(0, 2) + '/' + digits.substring(2, 4) + '/' + digits.substring(4);
+        }
+
+        function readRecent() {
+            try {
+                var parsed = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                return Array.isArray(parsed) ? parsed : [];
+            } catch {
+                return [];
+            }
+        }
+
+        function writeRecent(values) {
+            localStorage.setItem(storageKey, JSON.stringify(values.slice(0, maxItems)));
+        }
+
+        function mergeUnique(values) {
+            var seen = new Set();
+            var merged = [];
+            for (var i = 0; i < values.length; i++) {
+                var v = normalise(values[i]);
+                if (v.length === 9 && !seen.has(v)) {
+                    seen.add(v);
+                    merged.push(v);
+                }
+            }
+            return merged.slice(0, maxItems);
+        }
+
+        function closeList() {
+            listbox.hidden = true;
+            input.setAttribute('aria-expanded', 'false');
+            input.setAttribute('aria-activedescendant', '');
+            activeIndex = -1;
+        }
+
+        function openList() {
+            if (!filteredValues.length) {
+                closeList();
+                return;
+            }
+            listbox.hidden = false;
+            input.setAttribute('aria-expanded', 'true');
+        }
+
+        function selectValue(raw) {
+            var formatted = formatRbse(raw);
+            input.value = formatted;
+            hidden.value = formatted;
+            closeList();
+        }
+
+        function setActive(index) {
+            var options = listbox.querySelectorAll('[role="option"]');
+            if (!options.length) {
+                activeIndex = -1;
+                input.setAttribute('aria-activedescendant', '');
+                return;
+            }
+
+            if (index < 0) index = options.length - 1;
+            if (index >= options.length) index = 0;
+            activeIndex = index;
+
+            for (var i = 0; i < options.length; i++) {
+                var selected = i === activeIndex;
+                options[i].setAttribute('aria-selected', selected ? 'true' : 'false');
+                options[i].classList.toggle('bse-home-rbse-suggestions__item--active', selected);
+            }
+
+            var active = options[activeIndex];
+            input.setAttribute('aria-activedescendant', active.id);
+            active.scrollIntoView({ block: 'nearest' });
+        }
+
+        function renderList() {
+            listbox.innerHTML = '';
+            for (var i = 0; i < filteredValues.length; i++) {
+                var raw = filteredValues[i];
+                var li = document.createElement('li');
+                li.id = 'rbse-option-' + i;
+                li.className = 'bse-home-rbse-suggestions__item';
+                li.setAttribute('role', 'option');
+                li.setAttribute('aria-selected', 'false');
+                li.textContent = formatRbse(raw);
+                li.dataset.rawValue = raw;
+                li.addEventListener('mousedown', function (e) {
+                    e.preventDefault();
+                    selectValue(this.dataset.rawValue || '');
+                });
+                listbox.appendChild(li);
+            }
+
+            activeIndex = -1;
+            input.setAttribute('aria-activedescendant', '');
+            openList();
+        }
+
+        function applyFilter() {
+            var q = normalise(input.value);
+            filteredValues = q
+                ? allValues.filter(function (x) { return x.indexOf(q) === 0; })
+                : allValues.slice();
+            renderList();
+        }
+
+        var seeded = [combo.dataset.seedCurrent || '', combo.dataset.seedPrevious || ''];
+        allValues = mergeUnique(readRecent().concat(seeded));
+        writeRecent(allValues);
+
+        if (!input.value && hidden.value) {
+            input.value = hidden.value;
+        }
+
+        input.addEventListener('focus', function () {
+            applyFilter();
+        });
+
+        input.addEventListener('click', function () {
+            applyFilter();
+        });
+
+        input.addEventListener('input', function () {
+            hidden.value = input.value || '';
+            applyFilter();
+        });
+
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (listbox.hidden) applyFilter();
+                setActive(activeIndex + 1);
+                return;
+            }
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (listbox.hidden) applyFilter();
+                setActive(activeIndex - 1);
+                return;
+            }
+            if (e.key === 'Enter' && !listbox.hidden && activeIndex >= 0) {
+                e.preventDefault();
+                selectValue(filteredValues[activeIndex]);
+                return;
+            }
+            if (e.key === 'Escape') {
+                closeList();
+            }
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!combo.contains(e.target)) closeList();
+        });
+
+        form.addEventListener('submit', function () {
+            hidden.value = input.value || '';
+            var entered = normalise(input.value);
+            if (entered.length !== 9) return;
+            allValues = mergeUnique([entered].concat(readRecent(), seeded));
+            writeRecent(allValues);
+        });
+    })();
+</script>
         </form>
 
         <table class="govuk-table govuk-!-font-size-16 bse-home-rbse-table">

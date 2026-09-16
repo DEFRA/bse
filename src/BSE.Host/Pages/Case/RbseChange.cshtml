@@ -40,7 +40,6 @@
 <form method="post" asp-page-handler="LookUp" novalidate>
     <div class="govuk-form-group @(Model.OldRbseError is not null ? "govuk-form-group--error" : "")">
         <label class="govuk-label" for="old-rbse">Old RBSE</label>
-        <div id="old-rbse-hint" class="govuk-hint">For example, 00/26/00001. Slashes are optional.</div>
         @if (Model.OldRbseError is not null)
         {
             <p id="old-rbse-error" class="govuk-error-message">
@@ -90,9 +89,6 @@
         <input type="hidden" name="OldRbse" value="@Model.OldRbse" />
         <div class="govuk-form-group @(Model.NewRbseError is not null ? "govuk-form-group--error" : "")">
             <label class="govuk-label" for="new-rbse">New RBSE</label>
-            <div id="new-rbse-hint" class="govuk-hint">
-                For example, 00/26/00001. Slashes are optional. The new RBSE must not already exist in the system.
-            </div>
             @if (Model.NewRbseError is not null)
             {
                 <p id="new-rbse-error" class="govuk-error-message">

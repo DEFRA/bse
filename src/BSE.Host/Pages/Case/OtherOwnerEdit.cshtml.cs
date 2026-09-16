@@ -28,11 +28,13 @@ public class OtherOwnerEditModel(
 
     public async Task<IActionResult> OnGetAsync()
     {
+        var caseRbse = RbseHelper.ParseToRaw(Rbse);
+        Rbse = caseRbse;
         await LoadOwnerTypesAsync();
 
-        var owner = (await ownerRepository.GetByRbseAsync(Rbse)).FirstOrDefault(o => o.Id == Id);
+        var owner = (await ownerRepository.GetByRbseAsync(caseRbse)).FirstOrDefault(o => o.Id == Id);
         if (owner is null)
-            return RedirectToPage("/Case/OtherOwners", new { rbse = Rbse });
+            return RedirectToPage("/Case/Vla", new { rbse = caseRbse });
 
         OwnerType = owner.Type;
         OwnerName = owner.Name;
@@ -44,14 +46,20 @@ public class OtherOwnerEditModel(
     public async Task<IActionResult> OnPostAsync()
     {
         await LoadOwnerTypesAsync();
+        var caseRbse = RbseHelper.ParseToRaw(Rbse);
+        Rbse = caseRbse;
+        var normalizedCphh = string.IsNullOrWhiteSpace(OwnerCphh) ? null : CphhNormalizer.Normalize(OwnerCphh);
 
         if (string.IsNullOrWhiteSpace(OwnerType))
             ModelState.AddModelError(nameof(OwnerType), "Owner type is required.");
 
-        if (string.IsNullOrWhiteSpace(OwnerName) && string.IsNullOrWhiteSpace(OwnerCphh))
+        if (string.IsNullOrWhiteSpace(OwnerName) && string.IsNullOrWhiteSpace(normalizedCphh))
             ModelState.AddModelError(nameof(OwnerName), "You must enter either an owner name or a CPHH.");
 
-        var allOwners = await ownerRepository.GetByRbseAsync(Rbse);
+        if (!string.IsNullOrWhiteSpace(normalizedCphh) && normalizedCphh.Length != 11)
+            ModelState.AddModelError(nameof(OwnerCphh), "CPHH must be 11 digits.");
+
+        var allOwners = await ownerRepository.GetByRbseAsync(caseRbse);
         var typeDesc = OwnerTypes.FirstOrDefault(t => t.Code == OwnerType)?.Description ?? string.Empty;
         if (typeDesc.Contains("Previous", StringComparison.OrdinalIgnoreCase)
             && allOwners.Any(o => o.Type == OwnerType && o.Id != Id))
@@ -68,15 +76,15 @@ public class OtherOwnerEditModel(
         using var tx = conn.BeginTransaction();
         await ownerRepository.EditAsync(new EditOtherOwnerCommand(
             Id,
-            Rbse,
+            caseRbse,
             OwnerType!,
             string.IsNullOrWhiteSpace(OwnerName) ? null : OwnerName,
-            string.IsNullOrWhiteSpace(OwnerCphh) ? null : OwnerCphh,
+            string.IsNullOrWhiteSpace(normalizedCphh) ? null : normalizedCphh,
             rowStamp), conn, tx);
         tx.Commit();
 
         TempData["Success"] = "Owner record updated.";
-        return RedirectToPage("/Case/OtherOwners", new { rbse = Rbse });
+        return RedirectToPage("/Case/Vla", new { rbse = caseRbse });
     }
 
     private async Task LoadOwnerTypesAsync()

@@ -37,9 +37,9 @@
     @if (User.IsInRole("DataEntry"))
     {
         <a asp-page="/Case/DefraEdit" asp-route-rbse="@Model.Case.Rbse"
-       class="govuk-button govuk-button--secondary">Edit case (DEFRA) details</a>
+       class="govuk-button govuk-button--secondary">Change case (DEFRA) details</a>
     }
-        <a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse" class="govuk-link">Case audit log</a>
+        <a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse" asp-route-returnTo="/Case/Edit" class="govuk-link">Case audit log</a>
         @if (!string.IsNullOrEmpty(Model.SpolSiteUrl))
         {
             <a href="@(Model.SpolSiteUrl)@rbseNoSlash" target="_blank" rel="noopener noreferrer" class="govuk-link">
@@ -146,11 +146,11 @@
                             <a class="govuk-link govuk-!-margin-right-3"
                                asp-page="/Case/CaseTestEdit"
                                asp-route-rbse="@Model.Rbse"
-                               asp-route-id="@t.Id">Edit</a>
+                               asp-route-id="@t.Id">Change</a>
                             <form method="post" asp-page-handler="DeleteTest" style="display:inline-block;vertical-align:middle" novalidate>
                                 <input type="hidden" name="id" value="@t.Id" />
                                 <input type="hidden" name="rowStampBase64" value="@(t.RowStamp is not null ? Convert.ToBase64String(t.RowStamp) : "")" />
-                                <button type="submit" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0" style="display:inline-block"
+                                <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0" style="display:inline-block"
                                         onclick="return confirm('Delete this test record?')">Delete</button>
                             </form>
                         </td>

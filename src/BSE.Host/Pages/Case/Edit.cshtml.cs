@@ -70,7 +70,7 @@ public class EditModel(
         if (record is null)
         {
             TempData["Warning"] = $"Case '{Rbse}' not found.";
-            return RedirectToPage("/Case/Lookup");
+            return RedirectToPage("/Home");
         }
 
         TempData[string.Format(RowStampKey, Rbse)] = Convert.ToBase64String(record.RowStamp ?? []);

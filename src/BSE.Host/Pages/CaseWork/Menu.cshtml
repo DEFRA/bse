@@ -42,13 +42,13 @@ else
         </div>
         <div class="govuk-button-group">
             <a asp-page="/Case/Farm" asp-route-rbse="@Model.Rbse" class="govuk-button govuk-button--secondary">Back to case</a>
-            <a asp-page="/Case/Lookup" class="govuk-link">Back to lookup</a>
+            <a asp-page="/Home" class="govuk-link">Back to home</a>
         </div>
     }
     else
     {
         <div class="govuk-button-group govuk-!-margin-bottom-4">
-            <a asp-page="/CaseWork/Entry" asp-route-rbse="@Model.Rbse" class="govuk-button">Edit case work entry</a>
+            <a asp-page="/CaseWork/Entry" asp-route-rbse="@Model.Rbse" class="govuk-button">Change case work entry</a>
             <a asp-page="/CaseWork/OpenCases" class="govuk-button govuk-button--secondary">View all open cases</a>
             <a asp-page="/CaseWork/ClosedCases" class="govuk-button govuk-button--secondary">View all closed cases</a>
         </div>

@@ -62,6 +62,35 @@ public class RelationAddModel(
             details?.Dam?.Rbse,
             details?.Sire?.Rbse);
 
+        if (FieldErrors.Count == 0)
+        {
+            // Legacy ctlRelationRBSE_RBSEChanged: once a relation RBSE is supplied, Sex, Fate,
+            // Eartag, birth date, left date and Sire are always taken live from that case —
+            // the corresponding form fields are disabled there and must not be trusted here.
+            var normalizedRbse = RbseHelper.Normalize(RelationRbse);
+            if (normalizedRbse.Length > 0)
+            {
+                var related = await relationsRepository.GetRelationDetailsOfRelatedCaseAsync(normalizedRbse);
+                if (related is null)
+                {
+                    FieldErrors = new Dictionary<string, string> { ["RelationRbse"] = RelationValidation.RbseNotFound };
+                }
+                else
+                {
+                    Sex = related.Sex;
+                    RelationFate = related.Fate;
+                    EartagCountry = related.EartagCountry;
+                    EartagHerdmark = related.EartagHerdmark;
+                    Eartag = related.Eartag;
+                    BirthDay = related.BirthDay;
+                    BirthMonth = related.BirthMonth;
+                    BirthYear = related.BirthYear;
+                    LeftDate = DateTime.TryParse(related.LeftDate, out var leftDate) ? leftDate : null;
+                    Sire = related.Name;
+                }
+            }
+        }
+
         if (FieldErrors.Count > 0)
         {
             foreach (var error in FieldErrors)

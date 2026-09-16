@@ -65,7 +65,7 @@
                     <td class="govuk-table__cell">@(Model.UserGroups.FirstOrDefault(g => g.Id == u.UserGroupId)?.Name)</td>
                     <td class="govuk-table__cell">@(u.IsActive ? "Yes" : "No")</td>
                     <td class="govuk-table__cell">
-                        <a asp-page="/Admin/UsersEdit" asp-route-id="@u.UserId" class="govuk-link">Edit</a>
+                        <a asp-page="/Admin/UsersEdit" asp-route-id="@u.UserId" class="govuk-link">Change</a>
                     </td>
                 </tr>
             }

@@ -82,7 +82,6 @@
 
     <div class="govuk-form-group @(ViewContext.ModelState[nameof(Model.Cphh)]?.Errors.Any() == true ? "govuk-form-group--error" : "")">
         <label asp-for="Cphh" class="govuk-label">CPHH <span class="govuk-visually-hidden">(required)</span></label>
-        <div class="govuk-hint">Non-GB farms must begin with 00999. For example, 00999900001.</div>
         <span asp-validation-for="Cphh" class="govuk-error-message"></span>
         <input asp-for="Cphh" class="govuk-input govuk-!-width-one-third" />
     </div>

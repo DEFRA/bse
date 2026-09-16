@@ -1,5 +1,6 @@
 using BSE.Host.Models.ViewModels;
 using BSE.Host.Services;
+using BSE.Infrastructure;
 using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Repositories;
 using BSE.Modules.CaseManagement.Commands;
@@ -23,6 +24,7 @@ public class VlaModel(
     ILookupDataService lookups,
     IBatchRepository batchRepository,
     IOtherOwnerRepository ownerRepository,
+    IDbConnectionFactory connectionFactory,
     IConfiguration configuration) : PageModel
 {
     private const string RowStampKey    = "VlaEdit_RowStamp_{0}";
@@ -60,7 +62,7 @@ public class VlaModel(
         if (record is null)
         {
             TempData["Warning"] = $"Case '{Rbse}' not found.";
-            return RedirectToPage("/Case/Lookup");
+            return RedirectToPage("/Home");
         }
 
         TempData[string.Format(RowStampKey, Rbse)] = Convert.ToBase64String(record.RowStamp ?? []);
@@ -78,7 +80,9 @@ public class VlaModel(
         OPage = Math.Clamp(OPage, 1, OtherOwnersTotalPages);
         IEnumerable<OtherOwnerRecord> sorted = OSort == "cphh"
             ? (ODir == "desc" ? allOwners.OrderByDescending(o => o.Cphh) : allOwners.OrderBy(o => o.Cphh))
-            : (ODir == "desc" ? allOwners.OrderByDescending(o => o.Type) : allOwners.OrderBy(o => o.Type));
+            : OSort == "name"
+                ? (ODir == "desc" ? allOwners.OrderByDescending(o => o.Name) : allOwners.OrderBy(o => o.Name))
+                : (ODir == "desc" ? allOwners.OrderByDescending(o => o.Type) : allOwners.OrderBy(o => o.Type));
         OtherOwners = sorted.Skip((OPage - 1) * OwnersPageSize).Take(OwnersPageSize).ToList().AsReadOnly();
 
         return Page();
@@ -135,6 +139,33 @@ public class VlaModel(
 
         TempData["Success"] = $"Case {Rbse} has been updated.";
         return RedirectToPage(new { rbse = Rbse });
+    }
+
+    public async Task<IActionResult> OnPostDeleteOwnerAsync(int ownerId, string rowStampBase64)
+    {
+        if (!User.IsInRole("DataEntry"))
+            return Forbid();
+
+        var caseRbse = RbseHelper.ParseToRaw(Rbse);
+        var owner = (await ownerRepository.GetByRbseAsync(caseRbse)).FirstOrDefault(o => o.Id == ownerId);
+        if (owner is null)
+        {
+            TempData["Warning"] = "Owner record not found.";
+            return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
+        }
+
+        var rowStamp = string.IsNullOrWhiteSpace(rowStampBase64)
+            ? owner.RowStamp ?? []
+            : Convert.FromBase64String(rowStampBase64);
+
+        using var conn = connectionFactory.CreateConnection();
+        conn.Open();
+        using var tx = conn.BeginTransaction();
+        await ownerRepository.DeleteAsync(ownerId, rowStamp, conn, tx);
+        tx.Commit();
+
+        TempData["Success"] = "Owner record deleted.";
+        return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
     }
 
     public string OwnersSortUrl(string col)

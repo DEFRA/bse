@@ -300,7 +300,7 @@
 
     <div class="govuk-button-group">
         <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
-        <a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse"
+        <a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse" asp-route-returnTo="/Case/VlaEdit"
            class="govuk-link">Case audit log</a>
         @if (!string.IsNullOrEmpty(Model.SpolSiteUrl))
         {
