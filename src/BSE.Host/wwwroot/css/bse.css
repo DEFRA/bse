@@ -623,32 +623,125 @@
     height: auto;
     display: block;
 }
-/* New Farms audit log table stability */
+/* New Farms audit log table - strict legacy parity */
 .bse-audit-table-wrap {
     width: 100%;
-    overflow-x: auto;
 }
 
 .bse-audit-table {
-    width: 100%;
-    min-width: 1200px; /* prevent header collisions */
-    table-layout: fixed;
+    width: max-content;      /* keep legacy compact width, not stretched full container */
+    table-layout: auto;      /* size columns to content so nowrap text isn't clipped/overlapped */
+    border-collapse: collapse;
 }
 
-    .bse-audit-table th,
-    .bse-audit-table td {
-        overflow-wrap: anywhere;
-        word-break: break-word;
-        vertical-align: top;
-    }
+.bse-audit-table th,
+.bse-audit-table td {
+    vertical-align: top;
+    padding-top: 3px;
+    padding-bottom: 3px;
+    padding-right: 8px;      /* legacy-like tighter inter-column gap */
+    line-height: 1.1;
+    overflow-wrap: normal;
+    word-break: normal;
+}
 
-    /* Prevent sortable header text/icon overlap in narrow columns */
-    .bse-audit-table .govuk-table__header {
-        overflow: hidden;
-    }
+.bse-audit-table th:last-child,
+.bse-audit-table td:last-child {
+    padding-right: 0;
+}
 
-    .bse-audit-table .moj-sortable-table__button {
-        white-space: normal;
+/* Legacy-width profile (columns 1-8 from old daily audit grid) */
+.bse-audit-table th:nth-child(1),
+.bse-audit-table td:nth-child(1) { min-width: 58px; white-space: nowrap; }   /* Table */
+
+.bse-audit-table th:nth-child(2),
+.bse-audit-table td:nth-child(2) { min-width: 90px; white-space: nowrap; }   /* Field */
+
+.bse-audit-table th:nth-child(3),
+.bse-audit-table td:nth-child(3) { max-width: 120px; white-space: normal; word-wrap: break-word; overflow-wrap: break-word; }  /* Date Time - allow wrapping */
+
+.bse-audit-table th:nth-child(4),
+.bse-audit-table td:nth-child(4) { min-width: 120px; max-width: 180px; white-space: normal; word-wrap: break-word; overflow-wrap: break-word; }  /* User - allow wrapping and keep name readable */
+
+.bse-audit-table th:nth-child(5),
+.bse-audit-table td:nth-child(5) { min-width: 62px; white-space: nowrap; }   /* Before */
+
+.bse-audit-table th:nth-child(6),
+.bse-audit-table td:nth-child(6) { min-width: 62px; white-space: nowrap; }   /* After */
+
+.bse-audit-table th:nth-child(7),
+.bse-audit-table td:nth-child(7) { min-width: 128px; max-width: 180px; white-space: normal; word-wrap: break-word; overflow-wrap: break-word; }  /* Reason - wrap like legacy */
+
+.bse-audit-table th:nth-child(8),
+.bse-audit-table td:nth-child(8) { min-width: 84px; white-space: nowrap; }   /* Key */
+
+.bse-audit-table th:nth-child(9),
+.bse-audit-table td:nth-child(9) { min-width: 94px; max-width: 110px; white-space: normal; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.2; }  /* Recorded in batch? - wrap like legacy */
+
+.bse-batch-flag-column,
+.bse-audit-table th.bse-batch-header {
+    min-width: 94px;
+    max-width: 110px;
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    text-align: left;
+    line-height: 1.2;
+}
+
+.bse-audit-table th.bse-batch-header .moj-sortable-table__button {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    white-space: normal;
+    line-height: 1.2;
+    text-align: left;
+    overflow-wrap: break-word;
+}
+
+/* New Farms-only appended columns */
+.bse-audit-table th:nth-child(10),
+.bse-audit-table td:nth-child(10) { max-width: 150px; white-space: normal; word-wrap: break-word; overflow-wrap: break-word; }  /* Owner Name - allow wrapping */
+
+.bse-audit-table th:nth-child(10),
+.bse-audit-table td:nth-child(10) { max-width: 200px; white-space: normal; word-wrap: break-word; overflow-wrap: break-word; } /* Address - allow wrapping */
+
+.bse-audit-table th:nth-child(11),
+.bse-audit-table td:nth-child(11) { max-width: 100px; white-space: normal; word-wrap: break-word; overflow-wrap: break-word; } /* County - allow wrapping */
+
+/* ── Audit date range form — inline layout matching legacy UI ─────────────────── */
+.bse-date-range-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 0;
+}
+
+.bse-date-range-input-wrapper .govuk-input {
+    margin-bottom: 0;
+}
+
+.bse-date-range-separator {
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    line-height: 1;
+    font-size: 1.1875rem;
+    font-weight: 400;
+    color: #0b0c0c;
+}
+
+/* Responsive: stack on mobile */
+@media (max-width: 40.0525em) {
+    .bse-date-range-input-wrapper {
+        flex-direction: column;
+        gap: 12px;
         align-items: flex-start;
-        line-height: 1.2;
     }
+
+    .bse-date-range-separator {
+        display: none;
+    }
+}

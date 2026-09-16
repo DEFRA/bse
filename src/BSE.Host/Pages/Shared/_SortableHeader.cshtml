@@ -9,6 +9,7 @@
 *@
 @{
     var label = (string)ViewData["Label"]!;
+    var labelMarkup = (string?)ViewData["LabelHtml"] ?? "";
     var column = (string)ViewData["Column"]!;
     var sortCol = (string?)ViewData["SortColumn"] ?? "";
     var sortDesc = (bool?)ViewData["SortDesc"] ?? false;
@@ -40,7 +41,14 @@
 }
 <th scope="col" class="govuk-table__header moj-sortable-table__heading @headerClass" aria-sort="@ariaSort">
     <a class="moj-sortable-table__button" href="@href">
-        @label
+        @if (!string.IsNullOrWhiteSpace(labelMarkup))
+        {
+            @Html.Raw(labelMarkup)
+        }
+        else
+        {
+            @label
+        }
         <span class="moj-sortable-table__icons" aria-hidden="true">
             <span class="moj-sortable-table__icon moj-sortable-table__icon--up"></span>
             <span class="moj-sortable-table__icon moj-sortable-table__icon--down"></span>

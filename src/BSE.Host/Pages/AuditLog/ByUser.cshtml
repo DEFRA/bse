@@ -40,6 +40,29 @@
     }
 
     <form method="get" novalidate class="govuk-!-margin-bottom-6">
+        <div class="govuk-form-group @(Model.StartDateError is not null || Model.EndDateError is not null ? "govuk-form-group--error" : "")">
+            <label class="govuk-label">Log Entries Between</label>
+            @if (Model.StartDateError is not null || Model.EndDateError is not null)
+            {
+                @if (Model.StartDateError is not null)
+                {
+                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.StartDateError</p>
+                }
+                @if (Model.EndDateError is not null)
+                {
+                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.EndDateError</p>
+                }
+            }
+            <div class="bse-date-range-input-wrapper">
+                <input asp-for="StartDate" type="date"
+                       class="govuk-input govuk-input--width-10 @(Model.StartDateError is not null ? "govuk-input--error" : "")"
+                       value="@(Model.StartDate?.ToString("yyyy-MM-dd"))" />
+                <span class="bse-date-range-separator govuk-label">and</span>
+                <input asp-for="EndDate" type="date"
+                       class="govuk-input govuk-input--width-10 @(Model.EndDateError is not null ? "govuk-input--error" : "")"
+                       value="@(Model.EndDate?.ToString("yyyy-MM-dd"))" />
+            </div>
+        </div>
         <div class="govuk-form-group @(Model.ValidationError is not null ? "govuk-form-group--error" : "")">
             <label asp-for="UserId" class="govuk-label">User</label>
             @if (Model.ValidationError is not null)
@@ -50,24 +73,6 @@
                     class="govuk-select @(Model.ValidationError is not null ? "govuk-select--error" : "")">
                 <option value="0">Select a user</option>
             </select>
-        </div>
-        <div class="govuk-form-group @(Model.StartDateError is not null ? "govuk-form-group--error" : "")">
-            <label asp-for="StartDate" class="govuk-label">From</label>
-            @if (Model.StartDateError is not null)
-            {
-                <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.StartDateError</p>
-            }
-            <input asp-for="StartDate" type="date" class="govuk-input govuk-input--width-10 @(Model.StartDateError is not null ? "govuk-input--error" : "")"
-                   value="@(Model.StartDate?.ToString("yyyy-MM-dd"))" />
-        </div>
-        <div class="govuk-form-group @(Model.EndDateError is not null ? "govuk-form-group--error" : "")">
-            <label asp-for="EndDate" class="govuk-label">To</label>
-            @if (Model.EndDateError is not null)
-            {
-                <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.EndDateError</p>
-            }
-            <input asp-for="EndDate" type="date" class="govuk-input govuk-input--width-10 @(Model.EndDateError is not null ? "govuk-input--error" : "")"
-                   value="@(Model.EndDate?.ToString("yyyy-MM-dd"))" />
         </div>
         <div class="govuk-button-group">
             <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
@@ -85,52 +90,54 @@
             .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
         var sortCol  = Model.SortColumn;
         var sortDesc = Model.SortDesc;
-        <table class="govuk-table">
-            <caption class="govuk-visually-hidden">Audit log entries by user</caption>
-            <thead class="govuk-table__head">
-                <tr class="govuk-table__row">
-                    @{
-                        ViewData["Label"] = "Table";
-                        ViewData["Column"] = "Table";
-                        ViewData["SortColumn"] = sortCol;
-                        ViewData["SortDesc"] = sortDesc;
-                        ViewData["BaseUrl"] = sortBase;
-                        ViewData["Prefix"] = "";
-                        ViewData["Fragment"] = "audit-user-results";
-                    }
-                    <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Field";     ViewData["Column"] = "Field"; }
-                    <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Date Time"; ViewData["Column"] = "DateTime"; }
-                    <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "User";      ViewData["Column"] = "User"; }
-                    <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Before";    ViewData["Column"] = "Before"; }
-                    <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "After";     ViewData["Column"] = "After"; }
-                    <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Reason";    ViewData["Column"] = "Reason"; }
-                    <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Key";       ViewData["Column"] = "Key"; }
-                    <partial name="_SortableHeader" />
-                </tr>
-            </thead>
-            <tbody class="govuk-table__body">
-                @foreach (var e in Model.PagedEntries)
-                {
+        <div class="bse-audit-table-wrap">
+            <table class="govuk-table bse-audit-table">
+                <caption class="govuk-visually-hidden">Audit log entries by user</caption>
+                <thead class="govuk-table__head">
                     <tr class="govuk-table__row">
-                        <td class="govuk-table__cell">@e.TableName</td>
-                        <td class="govuk-table__cell">@e.FieldName</td>
-                        <td class="govuk-table__cell">@e.DateTime.ToString("dd/MM/yyyy HH:mm")</td>
-                        <td class="govuk-table__cell">@e.UserName</td>
-                        <td class="govuk-table__cell">@e.BeforeValue</td>
-                        <td class="govuk-table__cell">@e.AfterValue</td>
-                        <td class="govuk-table__cell">@e.Reason</td>
-                        <td class="govuk-table__cell">@e.Key</td>
+                        @{
+                            ViewData["Label"] = "Table";
+                            ViewData["Column"] = "Table";
+                            ViewData["SortColumn"] = sortCol;
+                            ViewData["SortDesc"] = sortDesc;
+                            ViewData["BaseUrl"] = sortBase;
+                            ViewData["Prefix"] = "";
+                            ViewData["Fragment"] = "audit-user-results";
+                        }
+                        <partial name="_SortableHeader" />
+                        @{ ViewData["Label"] = "Field";     ViewData["Column"] = "Field"; }
+                        <partial name="_SortableHeader" />
+                        @{ ViewData["Label"] = "Date Time"; ViewData["Column"] = "DateTime"; }
+                        <partial name="_SortableHeader" />
+                        @{ ViewData["Label"] = "User";      ViewData["Column"] = "User"; }
+                        <partial name="_SortableHeader" />
+                        @{ ViewData["Label"] = "Before";    ViewData["Column"] = "Before"; }
+                        <partial name="_SortableHeader" />
+                        @{ ViewData["Label"] = "After";     ViewData["Column"] = "After"; }
+                        <partial name="_SortableHeader" />
+                        @{ ViewData["Label"] = "Reason";    ViewData["Column"] = "Reason"; }
+                        <partial name="_SortableHeader" />
+                        @{ ViewData["Label"] = "Key";       ViewData["Column"] = "Key"; }
+                        <partial name="_SortableHeader" />
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody class="govuk-table__body">
+                    @foreach (var e in Model.PagedEntries)
+                    {
+                        <tr class="govuk-table__row">
+                            <td class="govuk-table__cell">@e.TableName</td>
+                            <td class="govuk-table__cell">@e.FieldName</td>
+                            <td class="govuk-table__cell">@e.DateTime.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                            <td class="govuk-table__cell">@e.UserName</td>
+                            <td class="govuk-table__cell">@e.BeforeValue</td>
+                            <td class="govuk-table__cell">@e.AfterValue</td>
+                            <td class="govuk-table__cell">@e.Reason</td>
+                            <td class="govuk-table__cell">@e.Key</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
         @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
         @await Html.PartialAsync("_ExportLink")
     }
