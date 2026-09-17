@@ -12,7 +12,7 @@ public class OssExportBse1Model(IBatchService batchService) : PageModel
 {
     [BindProperty]
     [Range(1900, 9999, ErrorMessage = "Enter a valid batch year.")]
-    public short? BatchYear { get; set; } = (short)DateTime.Today.Year;
+    public short? BatchYear { get; set; }
 
     [BindProperty]
     [Range(1, int.MaxValue, ErrorMessage = "Enter a valid batch number.")]
@@ -27,6 +27,9 @@ public class OssExportBse1Model(IBatchService batchService) : PageModel
 
     public async Task<IActionResult> OnPostDownloadAsync()
     {
+        if (BatchYear is null)
+            ModelState.AddModelError(nameof(BatchYear), "Enter a batch year.");
+
         if (BatchNumber is null)
             ModelState.AddModelError(nameof(BatchNumber), "Enter a batch number.");
 

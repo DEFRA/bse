@@ -398,11 +398,11 @@
             <ul class="govuk-list">
                 @if (User.IsInRole("DEFRAMaintenance"))
                 {
-                    <li><a asp-page="/AdnsExport/Menu" class="govuk-link">ADNS export</a></li>
+                    <li><a asp-page="/AdnsExport/Menu" class="govuk-link">Export to ADNS</a></li>
                 }
                 @if (User.IsInRole("VLAAccess"))
                 {
-                    <li><a asp-page="/OssExport/Menu" class="govuk-link">OSS export</a></li>
+                    <li><a asp-page="/OssExport/Menu" class="govuk-link">Export to OSS</a></li>
                 }
             </ul>
         }

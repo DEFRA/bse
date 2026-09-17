@@ -85,7 +85,7 @@
                         }
                         @if (User.IsInRole("DEFRAMaintenance"))
                         {
-                            <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/AdnsExport/Menu">ADNS export</a></li>
+                            <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/AdnsExport/Menu">Export to ADNS</a></li>
                             <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/Case/FinalResultEntry">Final result entry</a></li>
                             <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/Farm/CphhChange">CPHH change</a></li>
                             <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/Case/RbseChange">RBSE change</a></li>
@@ -94,7 +94,7 @@
                         }
                         @if (User.IsInRole("VLAAccess"))
                         {
-                            <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/OssExport/Menu">OSS export</a></li>
+                            <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/OssExport/Menu">Export to OSS</a></li>
                         }
                         @if (User.IsInRole("VLAMaintenance"))
                         {
