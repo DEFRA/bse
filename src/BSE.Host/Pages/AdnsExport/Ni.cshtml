@@ -14,7 +14,12 @@
         </ol>
     </nav>
 
-        <p class="govuk-body"><a asp-page="/AdnsExport/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button">ADNS Export Menu</a></p>
+    @if (!ViewContext.ModelState.IsValid || !string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <div class="govuk-error-summary" data-module="govuk-error-summary">
+            <div role="alert">
+                <h2 class="govuk-error-summary__title">There is a problem</h2>
+                <div class="govuk-error-summary__body">
                     <ul class="govuk-list govuk-error-summary__list">
                         @foreach (var entry in ViewContext.ModelState.Where(x => x.Value?.Errors.Count > 0))
                         {
@@ -35,28 +40,30 @@
 
     @if (Model.Preview is null)
     {
-        <h2 class="govuk-heading-m">NI export — add case to grid</h2>
-
         <form method="post" novalidate>
-            <div class="govuk-form-group">
+            <div class="govuk-form-group @(ViewContext.ModelState["EmailReference"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
                 <label asp-for="EmailReference" class="govuk-label">Email reference</label>
                 <input asp-for="EmailReference" class="govuk-input govuk-!-width-one-half" />
                 <span asp-validation-for="EmailReference" class="govuk-error-message"></span>
             </div>
 
-            <div class="govuk-form-group">
-                <label asp-for="InputAdnsYear" class="govuk-label">ADNS year</label>
-                <input asp-for="InputAdnsYear" type="number" class="govuk-input govuk-input--width-5" />
-                <span asp-validation-for="InputAdnsYear" class="govuk-error-message"></span>
-            </div>
+            <fieldset class="govuk-fieldset">
+                <legend class="govuk-fieldset__legend">ADNS Reference</legend>
+                <div class="bse-inline-fields">
+                    <div class="govuk-form-group @(ViewContext.ModelState["InputAdnsYear"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+                        <label asp-for="InputAdnsYear" class="govuk-label">Year</label>
+                        <input asp-for="InputAdnsYear" type="number" class="govuk-input govuk-input--width-5" />
+                        <span asp-validation-for="InputAdnsYear" class="govuk-error-message"></span>
+                    </div>
+                    <div class="govuk-form-group @(ViewContext.ModelState["InputAdnsNumber"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+                        <label asp-for="InputAdnsNumber" class="govuk-label">Number</label>
+                        <input asp-for="InputAdnsNumber" type="number" class="govuk-input govuk-input--width-5" />
+                        <span asp-validation-for="InputAdnsNumber" class="govuk-error-message"></span>
+                    </div>
+                </div>
+            </fieldset>
 
-            <div class="govuk-form-group">
-                <label asp-for="InputAdnsNumber" class="govuk-label">ADNS reference number</label>
-                <input asp-for="InputAdnsNumber" type="number" class="govuk-input govuk-input--width-5" />
-                <span asp-validation-for="InputAdnsNumber" class="govuk-error-message"></span>
-            </div>
-
-            <div class="govuk-form-group">
+            <div class="govuk-form-group @(ViewContext.ModelState["InputAdnsRegionId"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
                 <label asp-for="InputAdnsRegionId" class="govuk-label">Region</label>
                 <div id="ni-region-hint" class="govuk-hint">
                     Enter a five digit number, with two zeroes at the end and one at the front eg. 073 = 07300
@@ -65,18 +72,18 @@
                 <span asp-validation-for="InputAdnsRegionId" class="govuk-error-message"></span>
             </div>
 
-            <div class="govuk-form-group">
+            <div class="govuk-form-group @(ViewContext.ModelState["InputConfirmationDate"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
                 <label asp-for="InputConfirmationDate" class="govuk-label">Confirmation date</label>
                 <input asp-for="InputConfirmationDate" type="date" class="govuk-input govuk-input--width-10" />
                 <span asp-validation-for="InputConfirmationDate" class="govuk-error-message"></span>
             </div>
 
             <div class="govuk-button-group">
-                <button type="submit" asp-page-handler="AddToGrid" class="govuk-button govuk-button--secondary" data-module="govuk-button">Add to grid</button>
+                <button type="submit" asp-page-handler="AddToGrid" class="govuk-button" data-module="govuk-button">Add to grid</button>
+                <a asp-page="/AdnsExport/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button">ADNS Export Menu</a>
             </div>
         </form>
 
-        @if (Model.CurrentRows.Any())
         {
             var sortBase = "?" + string.Join("&", HttpContext.Request.Query
                 .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
