@@ -745,3 +745,23 @@
         display: none;
     }
 }
+
+/* ── Inline field groups — e.g. ADNS Reference (year/number), case counts by region ── */
+.bse-inline-fields {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.bse-inline-fields .govuk-form-group {
+    margin-bottom: 0;
+}
+
+@media (max-width: 40.0525em) {
+    .bse-inline-fields {
+        flex-direction: column;
+        gap: 12px;
+    }
+}
+
