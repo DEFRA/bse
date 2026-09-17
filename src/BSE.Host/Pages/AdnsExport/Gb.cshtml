@@ -1,11 +1,11 @@
 @page
 @model GbModel
 @{
-    ViewData["Title"] = "ADNS export — Great Britain";
+    ViewData["Title"] = "ADNS Export : GB Cases";
 }
 
 <div>
-    <h1 class="govuk-heading-l">ADNS export — Great Britain</h1>
+    <h1 class="govuk-heading-l">ADNS Export : GB Cases</h1>
     <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
         <ol class="govuk-breadcrumbs__list">
             <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
@@ -57,7 +57,10 @@
                 <input asp-for="StartAdnsNumber" type="number" class="govuk-input govuk-input--width-5" />
                 <span asp-validation-for="StartAdnsNumber" class="govuk-error-message"></span>
             </div>
-            <button type="submit" class="govuk-button" data-module="govuk-button">Generate Report</button>
+            <div class="govuk-button-group">
+                <button type="submit" class="govuk-button" data-module="govuk-button">Generate Report</button>
+                <a asp-page="/AdnsExport/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button">ADNS Export Menu</a>
+            </div>
         </form>
     }
     else

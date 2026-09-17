@@ -1,10 +1,10 @@
 @page
 @model OssExportBse1Model
 @{
-    ViewData["Title"] = "OSS export — BSE1";
+    ViewData["Title"] = "OSS Export : BSE1";
 }
 
-<h1 class="govuk-heading-l">BSE1 — OSS export</h1>
+<h1 class="govuk-heading-l">OSS Export : BSE1</h1>
 <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
     <ol class="govuk-breadcrumbs__list">
         <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
@@ -13,32 +13,96 @@
     </ol>
 </nav>
 
-@if (!string.IsNullOrEmpty(Model.ErrorMessage))
+@if (!ViewData.ModelState.IsValid || !string.IsNullOrEmpty(Model.ErrorMessage))
 {
-    <div class="govuk-error-summary" data-module="govuk-error-summary">
+    <div class="govuk-error-summary" id="bse1-error-summary" data-module="govuk-error-summary">
         <div role="alert">
             <h2 class="govuk-error-summary__title">There is a problem</h2>
             <div class="govuk-error-summary__body">
                 <ul class="govuk-list govuk-error-summary__list">
-                    <li>@Model.ErrorMessage</li>
+                    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                    {
+                        <li>@Model.ErrorMessage</li>
+                    }
+                    @foreach (var key in ViewData.ModelState.Keys)
+                    {
+                        foreach (var error in ViewData.ModelState[key]!.Errors)
+                        {
+                            <li><a href="#@key">@error.ErrorMessage</a></li>
+                        }
+                    }
                 </ul>
             </div>
         </div>
     </div>
 }
 
-<h2 class="govuk-heading-m">Download by batch</h2>
-<p class="govuk-body">Enter batch year and batch number, then download the BSE1 export file.</p>
 <form method="post" asp-page-handler="Download" novalidate>
-    <div class="govuk-form-group">
-        <label asp-for="BatchYear" class="govuk-label">Batch year</label>
-        <input asp-for="BatchYear" class="govuk-input govuk-input--width-5" inputmode="numeric" />
-        <span asp-validation-for="BatchYear" class="govuk-error-message"></span>
+    <fieldset class="govuk-fieldset">
+        <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">Batch Number</legend>
+        <div class="govuk-date-input">
+            <div class="govuk-date-input__item">
+                <div class="govuk-form-group @(ViewData.ModelState["BatchYear"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+                    <label asp-for="BatchYear" class="govuk-label govuk-date-input__label">Year</label>
+                    <span asp-validation-for="BatchYear" class="govuk-error-message"></span>
+                    <input asp-for="BatchYear" class="govuk-input govuk-date-input__input govuk-input--width-5 @(ViewData.ModelState["BatchYear"]?.Errors.Count > 0 ? "govuk-input--error" : "")" inputmode="numeric" />
+                </div>
+            </div>
+            <div class="govuk-date-input__item">
+                <div class="govuk-form-group @(ViewData.ModelState["BatchNumber"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+                    <label asp-for="BatchNumber" class="govuk-label govuk-date-input__label">Number</label>
+                    <span asp-validation-for="BatchNumber" class="govuk-error-message"></span>
+                    <input asp-for="BatchNumber" class="govuk-input govuk-date-input__input govuk-input--width-5 @(ViewData.ModelState["BatchNumber"]?.Errors.Count > 0 ? "govuk-input--error" : "")" inputmode="numeric" />
+                </div>
+            </div>
+        </div>
+    </fieldset>
+    <div class="govuk-button-group">
+        <button type="submit" class="govuk-button" data-module="govuk-button">Download</button>
+        <a asp-page="/OssExport/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button">OSS Menu</a>
     </div>
-    <div class="govuk-form-group">
-        <label asp-for="BatchNumber" class="govuk-label">Batch number</label>
-        <input asp-for="BatchNumber" class="govuk-input govuk-input--width-5" inputmode="numeric" />
-        <span asp-validation-for="BatchNumber" class="govuk-error-message"></span>
-    </div>
-    <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Download</button>
 </form>
+
+<script>
+    // Intercept the download form so we fully control the outcome instead of relying on
+    // browser-specific behaviour for whether a file-download response navigates the page.
+    document.querySelector('form[method="post"]')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        try {
+            const response = await fetch(form.action || window.location.href, {
+                method: 'POST',
+                body: new FormData(form)
+            });
+
+            const disposition = response.headers.get('Content-Disposition');
+            if (response.ok && disposition && disposition.includes('attachment')) {
+                const blob = await response.blob();
+                const match = /filename="?([^";]+)"?/.exec(disposition);
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = match ? match[1] : 'export.txt';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+                document.getElementById('bse1-error-summary')?.remove();
+                form.querySelectorAll('.govuk-error-message').forEach(el => el.textContent = '');
+                form.querySelectorAll('.govuk-form-group--error').forEach(el => el.classList.remove('govuk-form-group--error'));
+                form.querySelectorAll('.govuk-input--error').forEach(el => el.classList.remove('govuk-input--error'));
+            }
+            else {
+                // Validation failed or the batch was not found — replace the page with the
+                // freshly server-rendered error state.
+                document.open();
+                document.write(await response.text());
+                document.close();
+            }
+        }
+        catch {
+            form.submit();
+        }
+    });
+</script>
+

@@ -14,20 +14,40 @@ public class OssExportBse1bModel(IOssExportService ossExportService) : PageModel
     private const string GridEntriesSessionKey = "OssExportBSE1bGridEntries";
     private const string BatchResultSessionKey = "OssExportBSE1bBatchResult";
     private const string NextGridIdSessionKey = "OssExportBSE1bNextGridId";
+    private const int PageSize = 10;
 
     [BindProperty]
     public string RbseInput { get; set; } = string.Empty;
+
+    [BindProperty]
+    public int PageNumber { get; set; } = 1;
 
     public List<OssExportBatchEntryRecord> GridEntries { get; private set; } = new();
     public string? ValidationMessage { get; private set; }
     public BatchNumber1989Result? BatchResult { get; private set; }
     public bool IsGridEmpty => GridEntries.Count == 0;
+    public int TotalPages => (int)Math.Ceiling(GridEntries.Count / (double)PageSize);
+    public IEnumerable<OssExportBatchEntryRecord> PagedGridEntries
+        => GridEntries.Skip((PageNumber - 1) * PageSize).Take(PageSize);
 
-    public async Task<IActionResult> OnGetAsync()
+    public Task<IActionResult> OnGetAsync()
     {
-        // Load grid from session if it exists
+        // A fresh GET (e.g. navigating away to the menu and back) starts a new blank grid,
+        // matching legacy PrepareGrid() which resets state whenever the page is not a postback.
+        HttpContext.Session.Remove(GridEntriesSessionKey);
+        HttpContext.Session.Remove(BatchResultSessionKey);
+        HttpContext.Session.Remove(NextGridIdSessionKey);
+        GridEntries = new();
+        BatchResult = null;
+        return Task.FromResult<IActionResult>(Page());
+    }
+
+    public Task<IActionResult> OnPostPageAsync()
+    {
         LoadGridState();
-        return Page();
+        if (PageNumber < 1) PageNumber = 1;
+        if (PageNumber > TotalPages && TotalPages > 0) PageNumber = TotalPages;
+        return Task.FromResult<IActionResult>(Page());
     }
 
     public async Task<IActionResult> OnPostAddToGridAsync()
@@ -88,11 +108,16 @@ public class OssExportBse1bModel(IOssExportService ossExportService) : PageModel
             BatchId = BatchResult.BatchId
         });
 
-        // Clear input
-        RbseInput = string.Empty;
+        // Legacy keeps the RBSE textbox populated (reformatted with slashes) rather than clearing it.
+        RbseInput = RbseHelper.Format(normalized) ?? string.Empty;
         ValidationMessage = null;
 
+        // The asp-for tag helper prefers ModelState's originally-posted value over the
+        // property above unless we clear it, so the textbox would otherwise still show the raw input.
+        ModelState.Remove(nameof(RbseInput));
+
         SaveGridState();
+        PageNumber = TotalPages;
         return Page();
     }
 
@@ -114,7 +139,8 @@ public class OssExportBse1bModel(IOssExportService ossExportService) : PageModel
         }
 
         SaveGridState();
-        return RedirectToPage();
+        if (PageNumber > TotalPages) PageNumber = Math.Max(1, TotalPages);
+        return Page();
     }
 
     public async Task<IActionResult> OnPostExportAsync()
