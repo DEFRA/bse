@@ -23,7 +23,7 @@ public interface IBatchService
     Task<BatchAssignmentResult> AssignCaseToBatchAsync(int batchId, string rbse, string document);
 
     /// <summary>Resolves BatchId from batch year and number. Returns null if not found.</summary>
-    Task<int?> GetBatchIdAsync(short batchYear, int batchNumber);
+    Task<int?> GetBatchIdAsync(short? batchYear, int batchNumber);
 
     /// <summary>Returns all batch links for a given RBSE number.</summary>
     Task<IReadOnlyList<BatchNumberEntry>> GetBatchNumbersByRbseAsync(string rbse);

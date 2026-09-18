@@ -99,10 +99,10 @@ public sealed class BatchRepository : DapperRepository, IBatchRepository
         return param;
     }
 
-    public async Task<int?> GetBatchIdAsync(short batchYear, int batchNumber)
+    public async Task<int?> GetBatchIdAsync(short? batchYear, int batchNumber)
     {
         var param = new DynamicParameters();
-        param.Add("@BatchYear", batchYear, dbType: DbType.Int16);
+        param.Add("@BatchYear", (object?)batchYear ?? DBNull.Value, dbType: DbType.Int16);
         param.Add("@BatchNumber", batchNumber, dbType: DbType.Int32);
         param.Add("@BatchID", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
