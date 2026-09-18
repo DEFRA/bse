@@ -1,5 +1,269 @@
 /* BSE custom additions on top of GOV.UK Frontend */
 
+/* Legacy Final Result Entry alignment */
+.bse-final-result-legacy {
+    margin-top: 1.5rem;
+}
+
+.bse-legacy-lookup-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.bse-legacy-lookup-row .govuk-form-group {
+    margin-bottom: 0;
+}
+
+.bse-final-result-lookup-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: nowrap;
+}
+
+.bse-final-result-lookup-row .govuk-form-group {
+    margin-bottom: 0;
+    flex: 0 0 auto;
+    max-width: none;
+}
+
+.bse-final-result-lookup-row .govuk-button {
+    margin-bottom: 0;
+    align-self: flex-end;
+    margin-left: 0;
+}
+
+.bse-legacy-case-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-top: 1px solid #b1b4b6;
+    border-bottom: 1px solid #b1b4b6;
+    margin-top: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.bse-legacy-case-grid .bse-legacy-row {
+    display: grid;
+    grid-template-columns: 180px minmax(0, 1fr);
+    gap: 1rem;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid #d8dadd;
+    min-height: 2.8rem;
+}
+
+.bse-legacy-case-grid .bse-legacy-row:nth-child(odd) {
+    padding-right: 2rem;
+}
+
+.bse-legacy-case-grid .bse-legacy-row:nth-child(even) {
+    padding-left: 2rem;
+}
+
+.bse-legacy-case-grid .bse-legacy-row:not(:last-child) {
+    border-bottom: 1px solid #d8dadd;
+}
+
+.bse-legacy-case-grid .bse-legacy-row > span {
+    color: #0b0c0c;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+.bse-legacy-case-grid .bse-legacy-row > strong,
+.bse-legacy-case-grid .bse-legacy-row > div {
+    color: #0b0c0c;
+    font-weight: 400;
+    line-height: 1.4;
+    word-break: break-word;
+}
+
+.bse-legacy-checklist {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(240px, 1fr));
+    column-gap: 2rem;
+    row-gap: 0.65rem;
+    margin: 0.5rem 0 1rem;
+    max-width: 820px;
+}
+
+.bse-legacy-checklist .bse-check-row {
+    display: grid;
+    grid-template-columns: minmax(190px, 1fr) auto;
+    gap: 0.5rem 1rem;
+    align-items: center;
+    min-height: 2rem;
+    color: #0b0c0c;
+}
+
+.bse-legacy-checklist .bse-check-row > span {
+    font-weight: 700;
+}
+
+.bse-legacy-checklist .bse-check-row > div {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    justify-self: end;
+}
+
+.bse-legacy-checklist .govuk-checkboxes__item,
+.bse-legacy-checklist .govuk-checkboxes__input,
+.bse-legacy-checklist .govuk-checkboxes__label {
+    margin: 0;
+}
+
+.bse-legacy-test-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0.5rem;
+    border: 1px solid #b1b4b6;
+}
+
+.bse-legacy-test-table th {
+    background: #ffffff;
+    color: #0b0c0c;
+    text-align: left;
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 0.75rem 1rem;
+    border: 1px solid #b1b4b6;
+}
+
+.bse-legacy-test-table td {
+    border: 1px solid #b1b4b6;
+    padding: 0.7rem 1rem;
+    background: #ffffff;
+    color: #0b0c0c;
+    font-size: 1rem;
+}
+
+.bse-final-result-form {
+    margin-top: 1.5rem;
+}
+
+.bse-final-result-panel {
+    margin-top: 1rem;
+    max-width: 980px;
+}
+
+.bse-legacy-form-row {
+    display: grid;
+    grid-template-columns: minmax(260px, 1fr) minmax(260px, 1fr);
+    gap: 2rem;
+    align-items: end;
+    margin-bottom: 1.25rem;
+}
+
+.bse-legacy-form-row .govuk-form-group {
+    margin-bottom: 0;
+}
+
+.bse-legacy-note {
+    margin: 0;
+    padding: 0;
+    border-left: 0;
+    background: transparent;
+    min-height: 0;
+    display: none;
+}
+
+.bse-legacy-textarea {
+    min-height: 4.2rem;
+}
+
+.bse-legacy-dna-warning {
+    color: #d4351c;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    min-height: 1.5rem;
+}
+
+.bse-legacy-field-row {
+    display: grid;
+    grid-template-columns: 160px minmax(180px, 1fr);
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 0.8rem;
+}
+
+.bse-legacy-field-row > label,
+.bse-legacy-field-row .bse-legacy-field-label {
+    font-weight: 700;
+    color: #0b0c0c;
+}
+
+.bse-legacy-inline-output {
+    display: inline-block;
+    min-height: 2.2rem;
+    padding-top: 0.4rem;
+    color: #0b0c0c;
+}
+
+.bse-legacy-form-row .govuk-form-group label,
+.bse-legacy-form-row .govuk-label {
+    font-size: 1.1875rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: #0b0c0c;
+}
+
+.bse-legacy-form-row .govuk-form-group .govuk-body,
+.bse-legacy-form-row .govuk-form-group .govuk-hint,
+.bse-legacy-form-row .govuk-form-group .govuk-error-message {
+    margin: 0;
+}
+
+.bse-legacy-form-row .bse-final-result-selector {
+    display: inline-block;
+    min-width: 220px;
+}
+
+.bse-legacy-form-row .bse-inline-value {
+    display: inline-block;
+    min-height: 2.5rem;
+    padding-top: 0.5rem;
+    font-size: 1.125rem;
+    font-weight: 400;
+    line-height: 1.4;
+    color: #0b0c0c;
+}
+
+.bse-legacy-form-row .govuk-textarea {
+    min-height: 3rem;
+}
+
+.bse-legacy-form-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
+.bse-legacy-form-actions .govuk-button-group {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.bse-legacy-form-actions .bse-inline-value {
+    min-width: 150px;
+    text-align: left;
+}
+
+.bse-legacy-pin { color: #d4351c; font-weight: 700; }
+
+.bse-legacy-warning {
+    color: #d4351c;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+}
+
 /* Keep page background consistent with content area to avoid a split-panel look
    on wide screens (left white content area and right template gutter colour). */
 .govuk-template,

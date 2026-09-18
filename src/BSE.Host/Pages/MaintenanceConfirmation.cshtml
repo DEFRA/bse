@@ -21,8 +21,16 @@
             <p class="govuk-body">@Model.ConfirmationMessage</p>
         }
 
-        <a asp-page="/Home" role="button" draggable="false" class="govuk-button" data-module="govuk-button">
-            Return to home
-        </a>
+        <div class="govuk-button-group">
+            @if (!string.IsNullOrWhiteSpace(Model.AddAnotherResultPage))
+            {
+                <a asp-page="@Model.AddAnotherResultPage" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">
+                    Add another result
+                </a>
+            }
+            <a asp-page="/Home" role="button" draggable="false" class="govuk-button" data-module="govuk-button">
+                Return to home
+            </a>
+        </div>
     </div>
 </div>

@@ -30,8 +30,10 @@ public class FinalResultEntryModel(
 
     private const string PositiveCode = "Pos";
     private const string NegativeCode = "Neg";
+    private const int TestsPageSize = 10;
 
     [BindProperty(SupportsGet = true)] public string Rbse { get; set; } = string.Empty;
+    [BindProperty(SupportsGet = true)] public int TestPage { get; set; } = 1;
 
     [BindProperty] public string? FinalResult { get; set; }
     [BindProperty] public string? RetrospectiveTestType { get; set; }
@@ -50,6 +52,8 @@ public class FinalResultEntryModel(
     public string? ErrorMessage { get; private set; }
 
     public bool CaseFound => Result is not null;
+    public int TestsTotalPages { get; private set; } = 1;
+    public int TestsTotalCount { get; private set; }
 
     /// <summary>Legacy allocated the final result date automatically; it is never keyed in.</summary>
     public DateTime? DisplayFinalResultDate =>
@@ -65,6 +69,9 @@ public class FinalResultEntryModel(
         Tests.Any(t => string.Equals(t.TestResult, PositiveCode, StringComparison.OrdinalIgnoreCase));
 
     // ── Legacy ddlFinalResult_SelectedIndexChanged warnings ──────────────────
+
+    public bool ShowDnaMismatch =>
+        ShowPositiveWithoutPositiveTest || ShowNegativeWithPositiveTest;
 
     public bool ShowPositiveWithoutPositiveTest =>
         string.Equals(FinalResult, PositiveCode, StringComparison.OrdinalIgnoreCase) && !TestsContainPositive;
@@ -165,6 +172,7 @@ public class FinalResultEntryModel(
             string.Equals(FinalResult, PositiveCode, StringComparison.OrdinalIgnoreCase)
                 ? $"DBSE {RbseHelper.FormatDbse(saved?.Dbse)} has been allocated to this case."
                 : "No DBSE is allocated because the final result is not positive.";
+        TempData[MaintenanceConfirmationModel.AddAnotherResultKey] = "/Case/FinalResultEntry";
 
         return RedirectToPage("/MaintenanceConfirmation");
     }
@@ -190,7 +198,8 @@ public class FinalResultEntryModel(
                 return;
             }
 
-            Tests = await testRepository.GetByRbseAsync(rbse);
+            var allTests = (await testRepository.GetByRbseAsync(rbse)).ToList();
+            ApplyTestsPaging(allTests);
 
             if (!preserveInput)
             {
@@ -223,4 +232,25 @@ public class FinalResultEntryModel(
 
     public string DescribeTestResult(string? code) =>
         TestResults.FirstOrDefault(t => t.Code == code)?.Description ?? code ?? string.Empty;
+
+    public string TestsPageUrl(int page) =>
+        $"?rbse={Uri.EscapeDataString(Rbse)}&TestPage={page}";
+
+    private void ApplyTestsPaging(IReadOnlyList<CaseTestRecord> allTests)
+    {
+        var ordered = allTests
+            .OrderBy(t => t.TestType)
+            .ThenBy(t => t.TestResult)
+            .ToList();
+
+        TestsTotalCount = ordered.Count;
+        TestsTotalPages = Math.Max(1, (int)Math.Ceiling(ordered.Count / (double)TestsPageSize));
+        TestPage = Math.Clamp(TestPage, 1, TestsTotalPages);
+
+        Tests = ordered
+            .Skip((TestPage - 1) * TestsPageSize)
+            .Take(TestsPageSize)
+            .ToList()
+            .AsReadOnly();
+    }
 }
