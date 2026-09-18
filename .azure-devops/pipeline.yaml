@@ -14,6 +14,11 @@ parameters:
     type: boolean
     default: false
 
+  - name: deployToPreProd
+    displayName: Deploy to PRE
+    type: boolean
+    default: false
+
 variables:
   - name: buildConfiguration
     value: 'Release'
@@ -203,3 +208,87 @@ stages:
                 -Saml2__IdPMetadataUrl "https://login.microsoftonline.com/$(tenantId)/federationmetadata/2007-06/federationmetadata.xml?appid=$(appId)"
                 -Authentication__BypassEnabled "false"
                 -ConnectionStrings__BSE "Server=tcp:$(sqlServer);Database=$(dbName);Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Managed Identity;"
+
+- stage: PRE
+  displayName: PRE
+  dependsOn: Build
+  condition: and(succeeded(), eq('${{ parameters.deployToPreProd }}', true))
+  variables:
+    - name: appName
+      value: 'PREBSEWEBAW1401'
+    - name: tenantId
+      value: 'TBD'
+    - name: appId
+      value: 'TBD'
+    - name: sqlServer
+      value: 'TBD'
+    - name: dbName
+      value: 'BSE'
+  jobs:
+  - deployment: deploy_preprod
+    environment: 'PRE'
+    pool:
+      name: 'DEFRA-COMMON-UBUNTU-SSV5'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: drop
+          - task: AzureWebApp@1
+            inputs:
+              azureSubscription: 'AZR-BSE-PRE1'
+              appType: 'webAppLinux'
+              appName: '$(appName)'
+              package: '$(Pipeline.Workspace)/drop/*.zip'
+              runtimeStack: 'DOTNETCORE|10.0'
+              deploymentMethod: 'zipDeploy'
+              appSettings: >-
+                -Saml2__SPEntityId "https://pre-bse.azure.defra.cloud"
+                -Saml2__PublicOrigin "https://pre-bse.azure.defra.cloud"
+                -Saml2__IdPEntityId "https://sts.windows.net/$(tenantId)/"
+                -Saml2__IdPMetadataUrl "https://login.microsoftonline.com/$(tenantId)/federationmetadata/2007-06/federationmetadata.xml?appid=$(appId)"
+                -Authentication__BypassEnabled "false"
+                -ConnectionStrings__BSE "Server=tcp:$(sqlServer);Database=$(dbName);Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Managed Identity;"
+
+# - stage: PROD
+#   displayName: PROD
+#   dependsOn: Build
+#   condition: and(succeeded(), eq('${{ parameters.deployToProd }}', true))
+#   variables:
+#     - name: appName
+#       value: 'PRDBSEWEBAW1401'
+#     - name: tenantId
+#       value: 'TBD'
+#     - name: appId
+#       value: 'TBD'
+#     - name: sqlServer
+#       value: 'TBD'
+#     - name: dbName
+#       value: 'BSE'
+#   jobs:
+#   - deployment: deploy_prod
+#     environment: 'PROD'
+#     pool:
+#       name: 'DEFRA-COMMON-UBUNTU-SSV5'
+#     strategy:
+#       runOnce:
+#         deploy:
+#           steps:
+#           - download: current
+#             artifact: drop
+#           - task: AzureWebApp@1
+#             inputs:
+#               azureSubscription: 'AZR-BSE-PRD1'
+#               appType: 'webAppLinux'
+#               appName: '$(appName)'
+#               package: '$(Pipeline.Workspace)/drop/*.zip'
+#               runtimeStack: 'DOTNETCORE|10.0'
+#               deploymentMethod: 'zipDeploy'
+#               appSettings: >-
+#                 -Saml2__SPEntityId "https://bse.azure.defra.cloud"
+#                 -Saml2__PublicOrigin "https://bse.azure.defra.cloud"
+#                 -Saml2__IdPEntityId "https://sts.windows.net/$(tenantId)/"
+#                 -Saml2__IdPMetadataUrl "https://login.microsoftonline.com/$(tenantId)/federationmetadata/2007-06/federationmetadata.xml?appid=$(appId)"
+#                 -Authentication__BypassEnabled "false"
+#                 -ConnectionStrings__BSE "Server=tcp:$(sqlServer);Database=$(dbName);Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Managed Identity;"
