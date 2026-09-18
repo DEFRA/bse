@@ -40,7 +40,7 @@ stages:
     steps:
 
     - checkout: self
-      fetchDepth: 1
+      fetchDepth: 2
       persistCredentials: false
 
     - task: UseDotNet@2
@@ -48,6 +48,30 @@ stages:
       inputs:
         packageType: sdk
         version: '10.0.x'
+
+    - task: Bash@3
+      displayName: 'Detect Database script changes'
+      name: detectDbChanges
+      inputs:
+        targetType: inline
+        script: |
+          set -euo pipefail
+
+          if git rev-parse HEAD~1 >/dev/null 2>&1; then
+            CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD -- src/BSE.Database || true)
+          else
+            echo "No previous commit found - treating as changed"
+            CHANGED_FILES="initial-commit"
+          fi
+
+          if [ -n "$CHANGED_FILES" ]; then
+            echo "Database script changes detected:"
+            echo "$CHANGED_FILES"
+            echo "##vso[task.setvariable variable=dbScriptsChanged;isOutput=true]true"
+          else
+            echo "No Database script changes detected."
+            echo "##vso[task.setvariable variable=dbScriptsChanged;isOutput=true]false"
+          fi
 
     - script: dotnet restore $(solution)
       displayName: 'Restore dependencies'
@@ -78,7 +102,7 @@ stages:
       displayName: 'Stage SQL scripts'
       inputs:
         sourceFolder: 'src'
-        contents: '**/Scripts/*.sql'
+        contents: 'BSE.Database/**/*.sql'
         targetFolder: '$(Build.ArtifactStagingDirectory)/sql'
         flattenFolders: true    
 
@@ -107,6 +131,8 @@ stages:
       value: '3eeeb482-eea0-4bb5-85a9-9a6fefb27a23'
     - name: msGraphSender
       value: 'tse.queries@apha.gov.uk'
+    - name: dbScriptsChanged
+      value: $[ stageDependencies.Build.build.outputs['detectDbChanges.dbScriptsChanged'] ]
   jobs:
   - deployment: deploy_dev
     environment: 'DEV'
@@ -119,8 +145,13 @@ stages:
           - download: current
             artifact: drop
 
+          - script: |
+              echo "Database script changes detected: $(dbScriptsChanged)"
+            displayName: 'Log DB script change status'
+
           - task: AzureCLI@2
             displayName: 'Apply database scripts'
+            condition: and(succeeded(), eq(variables['dbScriptsChanged'], 'true'))
             inputs:
               azureSubscription: 'AZR-BSE-DEV1'
               scriptType: bash
@@ -180,8 +211,12 @@ stages:
       value: '831094e6-109b-4555-b73f-c49e07d2d5d3'
     - name: sqlServer
       value: 'tstbseinfsq1401.database.windows.net,1433'
+    - name: sqlServerHost
+      value: 'tstbseinfsq1401.database.windows.net'
     - name: dbName
       value: 'BSE'
+    - name: dbScriptsChanged
+      value: $[ stageDependencies.Build.build.outputs['detectDbChanges.dbScriptsChanged'] ]
   jobs:
   - deployment: deploy_test
     environment: 'TST'
@@ -193,6 +228,41 @@ stages:
           steps:
           - download: current
             artifact: drop
+
+          - script: |
+              echo "Database script changes detected: $(dbScriptsChanged)"
+            displayName: 'Log DB script change status'
+
+          - task: AzureCLI@2
+            displayName: 'Apply database scripts'
+            condition: and(succeeded(), eq(variables['dbScriptsChanged'], 'true'))
+            inputs:
+              azureSubscription: 'AZR-BSE-TST1'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+
+                TOOLS="$(Agent.TempDirectory)/sqlcmd"
+                mkdir -p "$TOOLS"
+                curl -sSL --fail --max-time 60 -o "$TOOLS/sqlcmd.tar.bz2" \
+                  https://github.com/microsoft/go-sqlcmd/releases/download/v1.8.2/sqlcmd-linux-amd64.tar.bz2
+                tar -xjf "$TOOLS/sqlcmd.tar.bz2" -C "$TOOLS"
+
+                shopt -s nullglob
+                files=("$(Pipeline.Workspace)"/drop/sql/*.sql)
+                if [ ${#files[@]} -eq 0 ]; then
+                  echo "No SQL scripts found - nothing to apply"
+                  exit 0
+                fi
+
+                for f in $(printf '%s\n' "${files[@]}" | sort); do
+                  echo "Applying ${f##*/}"
+                  "$TOOLS/sqlcmd" -S "$(sqlServerHost)" -d "$(dbName)" \
+                    --authentication-method ActiveDirectoryAzCli \
+                    -i "$f" -b -t 0
+                done
+
           - task: AzureWebApp@1
             inputs:
               azureSubscription: 'AZR-BSE-TST1'
@@ -222,8 +292,12 @@ stages:
       value: 'TBD'
     - name: sqlServer
       value: 'TBD'
+    - name: sqlServerHost
+      value: 'TBD'
     - name: dbName
       value: 'BSE'
+    - name: dbScriptsChanged
+      value: $[ stageDependencies.Build.build.outputs['detectDbChanges.dbScriptsChanged'] ]
   jobs:
   - deployment: deploy_preprod
     environment: 'PRE'
@@ -235,6 +309,41 @@ stages:
           steps:
           - download: current
             artifact: drop
+
+          - script: |
+              echo "Database script changes detected: $(dbScriptsChanged)"
+            displayName: 'Log DB script change status'
+
+          - task: AzureCLI@2
+            displayName: 'Apply database scripts'
+            condition: and(succeeded(), eq(variables['dbScriptsChanged'], 'true'))
+            inputs:
+              azureSubscription: 'AZR-BSE-PRE1'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+
+                TOOLS="$(Agent.TempDirectory)/sqlcmd"
+                mkdir -p "$TOOLS"
+                curl -sSL --fail --max-time 60 -o "$TOOLS/sqlcmd.tar.bz2" \
+                  https://github.com/microsoft/go-sqlcmd/releases/download/v1.8.2/sqlcmd-linux-amd64.tar.bz2
+                tar -xjf "$TOOLS/sqlcmd.tar.bz2" -C "$TOOLS"
+
+                shopt -s nullglob
+                files=("$(Pipeline.Workspace)"/drop/sql/*.sql)
+                if [ ${#files[@]} -eq 0 ]; then
+                  echo "No SQL scripts found - nothing to apply"
+                  exit 0
+                fi
+
+                for f in $(printf '%s\n' "${files[@]}" | sort); do
+                  echo "Applying ${f##*/}"
+                  "$TOOLS/sqlcmd" -S "$(sqlServerHost)" -d "$(dbName)" \
+                    --authentication-method ActiveDirectoryAzCli \
+                    -i "$f" -b -t 0
+                done
+
           - task: AzureWebApp@1
             inputs:
               azureSubscription: 'AZR-BSE-PRE1'
