@@ -221,7 +221,7 @@
                 @if (isEditing)
                 {
                     <button type="submit" asp-page-handler="UpdateFeedRow" class="govuk-button govuk-button--secondary" data-module="govuk-button">Update Selected</button>
-                    <button type="submit" asp-page-handler="DeleteFeedRow" asp-route-clientKey="@Model.EditingClientKey" class="govuk-button govuk-button--warning" data-module="govuk-button">Delete Selected</button>
+                    <button type="submit" asp-page-handler="DeleteFeedRow" class="govuk-button govuk-button--warning" data-module="govuk-button">Delete Selected</button>
                 }
             </div>
         </div>
@@ -398,4 +398,3 @@
         });
     })();
 </script>
-
