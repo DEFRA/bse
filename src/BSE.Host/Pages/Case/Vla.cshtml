@@ -2,7 +2,7 @@
 @model VlaModel
 @{
     ViewData["Title"] = $"Case (APHA) — {Model.Case.Rbse}";
-    string DateVal(DateTime? d) => d?.ToString("yyyy-MM-dd") ?? "";
+    string D(DateTime? d) => d?.ToString("dd/MM/yyyy") ?? "—";
     string rbseNoSlash = Model.Case.Rbse.Replace("/", "");
     var viewDocsUrl = string.IsNullOrWhiteSpace(Model.SpolSiteUrl)
         ? null
