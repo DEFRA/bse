@@ -283,21 +283,25 @@
 
 /* Cases By Holding/Herdmark: table-layout:auto resizes columns to fit each result set's
    content, so the table visibly widens/shortens between searches. Fixed layout with
-   explicit per-column widths keeps it stable; scroll horizontally rather than cramming
-   18 columns into the standard govuk-width-container. */
-.bse-holding-herdmark-search-table-wrap {
-    width: 100%;
-    overflow-x: auto;
-}
-
-/* Case Search / Farm Search: scroll the table region only, keep table-layout:auto
-   (no forced column widths) so the page itself never gains a horizontal scrollbar. */
+   explicit per-column widths keeps it stable.
+   Case Search / Farm Search: break out of the 960px govuk-width-container to use
+   the full viewport width (matching legacy), without widening the rest of the page
+   (form, headings, etc. stay within the normal GDS width). Scroll the table region
+   only as a fallback on viewports narrower than the table's own min-width. */
 .bse-case-search-table-wrap,
 .bse-farm-search-table-wrap,
 .bse-outstanding-search-table-wrap,
 .bse-holding-herdmark-search-table-wrap,
 .bse-herdmark-search-table-wrap {
-    width: 100%;
+    width: 100vw;
+    position: relative;
+    left: 50%;
+    right: 50%;
+    margin-left: -50vw;
+    margin-right: -50vw;
+    padding-left: 15px;
+    padding-right: 15px;
+    box-sizing: border-box;
     overflow-x: auto;
 }
 
@@ -385,10 +389,18 @@
 
 /* Related Animal Search: table-layout:auto resizes columns to fit each result set's
    content, so the table visibly widens/shortens between searches. Fixed layout with
-   explicit per-column widths keeps it stable; scroll horizontally rather than cramming
-   columns into the standard govuk-width-container. */
+   explicit per-column widths keeps it stable; break out of the govuk-width-container
+   to use the full viewport width, scrolling only as a fallback on narrow viewports. */
 .bse-related-animals-search-table-wrap {
-    width: 100%;
+    width: 100vw;
+    position: relative;
+    left: 50%;
+    right: 50%;
+    margin-left: -50vw;
+    margin-right: -50vw;
+    padding-left: 15px;
+    padding-right: 15px;
+    box-sizing: border-box;
     overflow-x: auto;
 }
 
