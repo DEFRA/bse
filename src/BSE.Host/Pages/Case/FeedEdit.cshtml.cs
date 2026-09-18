@@ -79,7 +79,6 @@ public class FeedEditModel(
 
         var command = new EditFeedCommand(
             Id: FeedId,
-            Rbse: rbse,
             YearFrom: Feed.YearFrom,
             YearTo: Feed.YearTo,
             RationType: Feed.RationType!,

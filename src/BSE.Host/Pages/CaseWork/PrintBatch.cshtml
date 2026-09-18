@@ -31,36 +31,76 @@
 }
 
 <form method="post" asp-page-handler="Download" novalidate>
-    <div class="govuk-form-group">
-        <fieldset class="govuk-fieldset">
-            <legend class="govuk-fieldset__legend govuk-fieldset__legend--s">Enter batch number</legend>
-            <div class="govuk-hint">Year and number — for example, 2026 and 1.</div>
-            <div class="govuk-!-display-flex govuk-!-gap-3 govuk-!-align-items-end">
-                <div>
-                    <label class="govuk-label govuk-!-font-weight-bold" for="batch-year">Year</label>
-                    <input id="batch-year" asp-for="BatchYear" type="text" inputmode="numeric"
-                           class="govuk-input govuk-input--width-4" autocomplete="off" />
-                </div>
-                <div>
-                    <label class="govuk-label govuk-!-font-weight-bold" for="batch-number">Number</label>
-                    <input id="batch-number" asp-for="BatchNumber" type="text" inputmode="numeric"
-                           class="govuk-input govuk-input--width-5" autocomplete="off" />
-                </div>
-            </div>
-        </fieldset>
-    </div>
+    <div class="bse-printbatch-panel govuk-form-group">
+        <div class="bse-printbatch-row">
+            <label class="govuk-label bse-printbatch-label bse-printbatch-label--batch" for="batch-year">Enter Batch Number</label>
+            <label class="govuk-visually-hidden" for="batch-year">Batch year</label>
+            <input id="batch-year" asp-for="BatchYear" type="text" inputmode="numeric" maxlength="4"
+                   class="govuk-input bse-printbatch-year" autocomplete="off" />
 
-    <div class="govuk-form-group">
-        <label asp-for="SelectedReportType" class="govuk-label">Report type</label>
-        <select asp-for="SelectedReportType" class="govuk-select">
-            <option value="0"></option>
-            <option value="1">Clinical</option>
-            <option value="2">Farm and Case</option>
-            <option value="3">Feeds</option>
-            <option value="4">Offspring</option>
-            <option value="5">Pedigree</option>
-        </select>
+            <label class="govuk-visually-hidden" for="batch-number">Batch number</label>
+            <input id="batch-number" asp-for="BatchNumber" type="text" inputmode="numeric" maxlength="6"
+                   class="govuk-input bse-printbatch-serial" autocomplete="off" />
+
+            <label asp-for="SelectedReportType" class="govuk-label bse-printbatch-label bse-printbatch-label--report">Report type:</label>
+            <select asp-for="SelectedReportType" class="govuk-select bse-printbatch-select">
+                <option value="0"></option>
+                <option value="1">Clinical</option>
+                <option value="2">Farm and Case</option>
+                <option value="3">Feeds</option>
+                <option value="4">Offspring</option>
+                <option value="5">Pedigree</option>
+            </select>
+        </div>
     </div>
 
     <button type="submit" class="govuk-button" data-module="govuk-button">Download</button>
 </form>
+
+<style>
+    .bse-printbatch-panel {
+        border-top: 1px solid #b1b4b6;
+        border-bottom: 1px solid #b1b4b6;
+        padding: 14px 10px;
+        margin-bottom: 14px;
+    }
+
+    .bse-printbatch-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .bse-printbatch-label {
+        margin-bottom: 0;
+    }
+
+    .bse-printbatch-label--batch {
+        min-width: 215px;
+    }
+
+    .bse-printbatch-label--report {
+        min-width: 110px;
+    }
+
+    .bse-printbatch-year {
+        box-sizing: border-box;
+        width: 62px;
+        min-width: 62px;
+        max-width: 62px;
+        flex: 0 0 62px;
+    }
+
+    .bse-printbatch-serial {
+        box-sizing: border-box;
+        width: 72px;
+        min-width: 72px;
+        max-width: 72px;
+        flex: 0 0 72px;
+    }
+
+    .bse-printbatch-select {
+        width: 250px;
+    }
+</style>

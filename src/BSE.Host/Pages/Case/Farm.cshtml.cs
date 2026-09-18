@@ -1,4 +1,6 @@
 using BSE.Host.Services;
+using BSE.Host.Models.ViewModels;
+using BSE.Host.Models;
 using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Repositories;
 using BSE.Modules.Batch.Services;
@@ -14,13 +16,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Configuration;
+using IGeoLookupService = BSE.Host.Services.IGeoLookupService;
 
 namespace BSE.Host.Pages.Case;
 
 /// <summary>
 /// Farm tab for a case — mirrors the legacy CaseEntryFarm.aspx Farm tab.
 /// Shows: confirmed case count, full farm details, linked farms (add/delete),
-/// herd size history (add/delete). Farm field editing is delegated to /Farm/Edit.
+/// herd size history (add/delete), and supports inline staged Save/Cancel.
 /// </summary>
 [Authorize]
 public class FarmModel(
@@ -32,10 +35,14 @@ public class FarmModel(
     IBatchRepository batchRepository,
     IBatchService batchService,
     ICaseWizardStateService wizardState,
+    ICaseFarmDraftStateService farmDraftState,
     ICurrentUserService currentUser,
     ILogger<FarmModel> logger,
-    IConfiguration configuration) : PageModel
+    IConfiguration configuration,
+    IGeoLookupService geoLookup) : PageModel
 {
+    private const int LinkedFarmCphhLength = 11;
+
     [BindProperty(SupportsGet = true)]
     public string Rbse { get; set; } = string.Empty;
 
@@ -52,6 +59,8 @@ public class FarmModel(
     public string? AuthorityCountyName { get; private set; }
     public string? LocalAuthorityName { get; private set; }
     public IReadOnlyList<BatchNumberEntry> BatchNumbers { get; private set; } = [];
+    private List<FarmRelationRecord> PersistedLinkedFarms { get; set; } = [];
+    private List<HerdSizeRecord> PersistedHerdSizes { get; set; } = [];
 
     /// <summary>Batch chosen on the home page and not yet saved against this case.</summary>
     public CaseWizardState? PendingBatch { get; private set; }
@@ -87,38 +96,492 @@ public class FarmModel(
 
     public string SpolSiteUrl { get; private set; } = string.Empty;
 
+    [BindProperty] public FarmEditViewModel? EditableFarm { get; set; }
+    [BindProperty] public List<StagedLinkedFarmItem> StagedLinkedFarms { get; set; } = [];
+    [BindProperty] public List<StagedHerdSizeItem> StagedHerdSizes { get; set; } = [];
+
+    // ── Inline "add/edit herd size row" state (GDS editable-grid pattern) ──────
+    [BindProperty] public HerdSizeRowInput NewHerdRow { get; set; } = new();
+    [BindProperty] public HerdSizeRowInput EditHerdRow { get; set; } = new();
+    [BindProperty] public string? EditingClientKey { get; set; }
+    [BindProperty] public string? EditingLinkedClientKey { get; set; }
+    [BindProperty] public string? EditLinkedCphh { get; set; }
+    [BindProperty] public string? NewLinkedCphh { get; set; }
+
+    /// <summary>True to re-open the "add row" UI after a failed validation postback.</summary>
+    public bool ShowAddHerdRow { get; private set; }
+    public bool ShowAddLinkedRow { get; private set; }
+
+    /// <summary>Set to the row being edited when its validation fails, so it re-opens.</summary>
+    public string? ReopenEditClientKey { get; private set; }
+    public string? ReopenLinkedEditClientKey { get; private set; }
+
+    /// <summary>True when the draft has staged changes not yet committed by Save.</summary>
+    public bool HasUnsavedChanges { get; private set; }
+
     // ── GET ────────────────────────────────────────────────────────────────────
 
     public async Task<IActionResult> OnGetAsync()
     {
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadAsync();
+        await LoadOrInitializeDraftStateAsync();
         return Page();
+    }
+
+    public async Task<IActionResult> OnPostAddLinkedFarmRowAsync()
+    {
+        if (!User.IsInRole("DataEntry"))
+            return Forbid();
+
+        var postedCphh = NewLinkedCphh;
+
+        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+        await LoadAsync();
+        var draft = await LoadOrInitializeDraftStateAsync();
+
+        var normalisedCphh = CphhNormalizer.Normalize(postedCphh);
+
+        if (string.IsNullOrWhiteSpace(normalisedCphh))
+            ModelState.AddModelError(nameof(NewLinkedCphh), "Enter a CPHH.");
+
+        if (!string.IsNullOrWhiteSpace(normalisedCphh) && normalisedCphh.Length != LinkedFarmCphhLength)
+            ModelState.AddModelError(nameof(NewLinkedCphh), "Enter CPHH as 11 digits in the format NN/NNN/NNNN/NN.");
+
+        if (!string.IsNullOrWhiteSpace(normalisedCphh)
+            && string.Equals(CphhNormalizer.Normalize(Farm?.CPHH), normalisedCphh, StringComparison.OrdinalIgnoreCase))
+            ModelState.AddModelError(nameof(NewLinkedCphh), "Cannot link a farm to itself.");
+
+        if (!string.IsNullOrWhiteSpace(normalisedCphh)
+            && draft.LinkedFarms.Any(x => string.Equals(CphhNormalizer.Normalize(x.RelatedCphh), normalisedCphh, StringComparison.OrdinalIgnoreCase)))
+            ModelState.AddModelError(nameof(NewLinkedCphh), $"CPHH {normalisedCphh} is already in the Linked Farms list.");
+
+        if (!ModelState.IsValid)
+        {
+            ShowAddLinkedRow = true;
+            NewLinkedCphh = postedCphh;
+            return Page();
+        }
+
+        draft.LinkedFarms.Add(new CaseFarmDraftLinkedFarmItem
+        {
+            Id = 0,
+            RelatedCphh = normalisedCphh,
+            RowStampBase64 = string.Empty,
+            Status = string.Empty
+        });
+
+        draft.HasPendingChanges = true;
+        await farmDraftState.SetAsync(draft);
+
+        return RedirectToPage(new { rbse = Rbse });
+    }
+
+    public async Task<IActionResult> OnPostSaveFarmAsync()
+    {
+        if (!User.IsInRole("DataEntry"))
+            return Forbid();
+
+        var postedEditableFarm = EditableFarm;
+        var postedFarmRowStamp = EditableFarmRowStampBase64;
+
+        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+        await LoadAsync();
+        await LoadOrInitializeDraftStateAsync();
+        EditableFarm = postedEditableFarm;
+        EditableFarmRowStampBase64 = postedFarmRowStamp;
+
+        if (!TryValidateStagedCollections())
+        {
+            await LoadLookupsForEditAsync();
+            return Page();
+        }
+
+        if (EditableFarm is not null)
+        {
+            EditableFarm.CPHH = CphhNormalizer.Normalize(EditableFarm.CPHH);
+        }
+
+        await LoadLookupsForEditAsync();
+
+        if (EditableFarm is not null
+            && EditableFarm.MapReference is { Length: >= 8 } mapRef
+            && EditableFarm.CPHH.Length >= 5)
+        {
+            if (!await MapReferenceWithinParishAsync(EditableFarm.CPHH, mapRef))
+                ModelState.AddModelError("EditableFarm.MapRef1",
+                    "Map reference does not lie within the parish boundaries for this CPHH.");
+        }
+
+        if (!ModelState.IsValid || EditableFarm is null)
+        {
+            await LoadLookupsForEditAsync();
+            return Page();
+        }
+
+        if (!IsAdnsCompatibleWithAuthoritySelection(EditableFarm))
+        {
+            ModelState.AddModelError("EditableFarm.ADNSRegionID",
+                "ADNS region does not match the selected local authority. Please select ADNS region again.");
+            await LoadLookupsForEditAsync();
+            return Page();
+        }
+
+        byte[]? rowStamp = null;
+        if (!string.IsNullOrWhiteSpace(EditableFarmRowStampBase64))
+        {
+            rowStamp = Convert.FromBase64String(EditableFarmRowStampBase64);
+        }
+
+        var userId = await currentUser.GetUserIdAsync();
+        await farmService.UpdateAsync(EditableFarm.ToUpdateCommand(rowStamp), userId);
+
+        await PersistStagedCollectionsAsync();
+        await farmDraftState.ClearAsync(Rbse);
+
+        TempData["Success"] = "Farm updated successfully.";
+        return RedirectToPage(new { rbse = Rbse });
+    }
+
+    public async Task<IActionResult> OnPostCancelFarmEditAsync()
+    {
+        await farmDraftState.ClearAsync(Rbse);
+        return RedirectToPage("/Home");
+    }
+
+    public async Task<IActionResult> OnGetCancelFarmEditAsync()
+    {
+        await farmDraftState.ClearAsync(Rbse);
+        return RedirectToPage("/Home");
     }
 
     // ── POST: Linked farms ─────────────────────────────────────────────────────
 
-    public async Task<IActionResult> OnPostDeleteLinkedFarmAsync(int id, string rowStampBase64)
+    public async Task<IActionResult> OnPostBeginEditLinkedFarmRowAsync()
     {
         if (!User.IsInRole("DataEntry"))
             return Forbid();
-        var rowStamp = Convert.FromBase64String(rowStampBase64);
-        await relationRepo.DeleteAsync(id, rowStamp);
-        TempData["Success"] = "Linked farm removed.";
+
+        var clientKey = EditingLinkedClientKey;
+
+        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+        await LoadAsync();
+        var draft = await LoadOrInitializeDraftStateAsync();
+
+        var item = draft.LinkedFarms.FirstOrDefault(x => x.ClientKey == clientKey);
+        if (item is not null)
+        {
+            ReopenLinkedEditClientKey = clientKey;
+            EditLinkedCphh = item.RelatedCphh;
+        }
+
+        return Page();
+    }
+
+    public async Task<IActionResult> OnPostUpdateLinkedFarmRowAsync()
+    {
+        if (!User.IsInRole("DataEntry"))
+            return Forbid();
+
+        var clientKey = EditingLinkedClientKey;
+        var postedCphh = EditLinkedCphh;
+
+        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+        await LoadAsync();
+        var draft = await LoadOrInitializeDraftStateAsync();
+
+        var item = draft.LinkedFarms.FirstOrDefault(x => x.ClientKey == clientKey);
+        if (item is null)
+        {
+            TempData["ErrorMessage"] = "The linked farm row being edited no longer exists.";
+            return RedirectToPage(new { rbse = Rbse });
+        }
+
+        var normalisedCphh = CphhNormalizer.Normalize(postedCphh);
+        if (string.IsNullOrWhiteSpace(normalisedCphh))
+            ModelState.AddModelError(nameof(EditLinkedCphh), "Enter a CPHH.");
+
+        if (!string.IsNullOrWhiteSpace(normalisedCphh) && normalisedCphh.Length != LinkedFarmCphhLength)
+            ModelState.AddModelError(nameof(EditLinkedCphh), "Enter CPHH as 11 digits in the format NN/NNN/NNNN/NN.");
+
+        if (!string.IsNullOrWhiteSpace(normalisedCphh) && Farm is not null &&
+            string.Equals(CphhNormalizer.Normalize(Farm.CPHH), normalisedCphh, StringComparison.OrdinalIgnoreCase))
+            ModelState.AddModelError(nameof(EditLinkedCphh), "Cannot link a farm to itself.");
+
+        if (!string.IsNullOrWhiteSpace(normalisedCphh) &&
+            draft.LinkedFarms.Any(x => x.ClientKey != clientKey && string.Equals(CphhNormalizer.Normalize(x.RelatedCphh), normalisedCphh, StringComparison.OrdinalIgnoreCase)))
+            ModelState.AddModelError(nameof(EditLinkedCphh), "CPHH already exists in the Linked Farms list.");
+
+        if (!ModelState.IsValid)
+        {
+            ReopenLinkedEditClientKey = clientKey;
+            EditLinkedCphh = postedCphh;
+            return Page();
+        }
+
+        item.RelatedCphh = normalisedCphh;
+        draft.HasPendingChanges = true;
+        await farmDraftState.SetAsync(draft);
+
+        return RedirectToPage(new { rbse = Rbse });
+    }
+
+    public async Task<IActionResult> OnPostDeleteLinkedFarmAsync(string clientKey)
+    {
+        if (!User.IsInRole("DataEntry"))
+            return Forbid();
+
+        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+        await LoadAsync();
+        var draft = await LoadOrInitializeDraftStateAsync();
+        var item = draft.LinkedFarms.FirstOrDefault(x => x.ClientKey == clientKey);
+        if (item is not null)
+        {
+            draft.LinkedFarms.Remove(item);
+            draft.HasPendingChanges = true;
+            await farmDraftState.SetAsync(draft);
+        }
+
         return RedirectToPage(new { rbse = Rbse });
     }
 
 
-    // ── POST: Herd sizes ───────────────────────────────────────────────────────
+    // ── POST: Herd sizes (inline editable grid — GDS pattern) ─────────────────
 
-    public async Task<IActionResult> OnPostDeleteHerdSizeAsync(int id, string rowStampBase64)
+    /// <summary>Opens the inline edit view for one staged herd size row (no changes saved yet).</summary>
+    public async Task<IActionResult> OnPostBeginEditHerdRowAsync()
     {
         if (!User.IsInRole("DataEntry"))
             return Forbid();
-        var rowStamp = Convert.FromBase64String(rowStampBase64);
-        await herdSizeRepo.DeleteAsync(id, rowStamp);
-        TempData["Success"] = "Herd size record deleted.";
+
+        var clientKey = EditingClientKey;
+
+        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+        await LoadAsync();
+        var draft = await LoadOrInitializeDraftStateAsync();
+
+        var item = draft.HerdSizes.FirstOrDefault(x => x.ClientKey == clientKey);
+        if (item is not null)
+        {
+            ReopenEditClientKey = clientKey;
+            EditHerdRow = new HerdSizeRowInput
+            {
+                HerdYear = item.HerdYear,
+                TotalSize = item.TotalSize,
+                Lactation1Size = item.Lactation1Size,
+                Lactation2Size = item.Lactation2Size,
+                Lactation3Size = item.Lactation3Size,
+                Lactation4Size = item.Lactation4Size,
+                Lactation5Size = item.Lactation5Size,
+                Lactation6Size = item.Lactation6Size,
+                Lactation7Size = item.Lactation7Size,
+                Lactation8Size = item.Lactation8Size,
+                Lactation9Size = item.Lactation9Size,
+                Lactation10Size = item.Lactation10Size,
+                Lactation10PlusSize = item.Lactation10PlusSize
+            };
+        }
+
+        return Page();
+    }
+
+    /// <summary>Adds a new herd size row to the draft only. Not persisted until Save.</summary>
+    public async Task<IActionResult> OnPostAddHerdSizeRowAsync()
+    {
+        if (!User.IsInRole("DataEntry"))
+            return Forbid();
+
+        var postedRow = NewHerdRow;
+
+        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+        await LoadAsync();
+        var draft = await LoadOrInitializeDraftStateAsync();
+
+        ValidateHerdRow(postedRow, draft.HerdSizes, excludeClientKey: null, prefix: nameof(NewHerdRow));
+
+        if (!ModelState.IsValid)
+        {
+            NewHerdRow = postedRow;
+            ShowAddHerdRow = true;
+            return Page();
+        }
+
+        draft.HerdSizes.Add(new CaseFarmDraftHerdSizeItem
+        {
+            ClientKey = Guid.NewGuid().ToString("N"),
+            Id = null,
+            HerdYear = postedRow.HerdYear!.Value,
+            TotalSize = postedRow.TotalSize!.Value,
+            Lactation1Size = postedRow.Lactation1Size ?? 0,
+            Lactation2Size = postedRow.Lactation2Size ?? 0,
+            Lactation3Size = postedRow.Lactation3Size ?? 0,
+            Lactation4Size = postedRow.Lactation4Size ?? 0,
+            Lactation5Size = postedRow.Lactation5Size ?? 0,
+            Lactation6Size = postedRow.Lactation6Size ?? 0,
+            Lactation7Size = postedRow.Lactation7Size ?? 0,
+            Lactation8Size = postedRow.Lactation8Size ?? 0,
+            Lactation9Size = postedRow.Lactation9Size ?? 0,
+            Lactation10Size = postedRow.Lactation10Size ?? 0,
+            Lactation10PlusSize = postedRow.Lactation10PlusSize ?? 0
+        });
+        draft.HasPendingChanges = true;
+        await farmDraftState.SetAsync(draft);
+
         return RedirectToPage(new { rbse = Rbse });
+    }
+
+    /// <summary>Updates a staged herd size row in the draft only. Not persisted until Save.</summary>
+    public async Task<IActionResult> OnPostUpdateHerdSizeRowAsync()
+    {
+        if (!User.IsInRole("DataEntry"))
+            return Forbid();
+
+        var clientKey = EditingClientKey;
+        var postedRow = EditHerdRow;
+
+        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+        await LoadAsync();
+        var draft = await LoadOrInitializeDraftStateAsync();
+
+        var item = draft.HerdSizes.FirstOrDefault(x => x.ClientKey == clientKey);
+        if (item is null)
+        {
+            TempData["ErrorMessage"] = "The herd size row being edited no longer exists.";
+            return RedirectToPage(new { rbse = Rbse });
+        }
+
+        ValidateHerdRow(postedRow, draft.HerdSizes, excludeClientKey: clientKey, prefix: nameof(EditHerdRow));
+
+        if (!ModelState.IsValid)
+        {
+            EditHerdRow = postedRow;
+            ReopenEditClientKey = clientKey;
+            return Page();
+        }
+
+        item.HerdYear = postedRow.HerdYear!.Value;
+        item.TotalSize = postedRow.TotalSize!.Value;
+        item.Lactation1Size = postedRow.Lactation1Size ?? 0;
+        item.Lactation2Size = postedRow.Lactation2Size ?? 0;
+        item.Lactation3Size = postedRow.Lactation3Size ?? 0;
+        item.Lactation4Size = postedRow.Lactation4Size ?? 0;
+        item.Lactation5Size = postedRow.Lactation5Size ?? 0;
+        item.Lactation6Size = postedRow.Lactation6Size ?? 0;
+        item.Lactation7Size = postedRow.Lactation7Size ?? 0;
+        item.Lactation8Size = postedRow.Lactation8Size ?? 0;
+        item.Lactation9Size = postedRow.Lactation9Size ?? 0;
+        item.Lactation10Size = postedRow.Lactation10Size ?? 0;
+        item.Lactation10PlusSize = postedRow.Lactation10PlusSize ?? 0;
+        draft.HasPendingChanges = true;
+        await farmDraftState.SetAsync(draft);
+
+        return RedirectToPage(new { rbse = Rbse });
+    }
+
+    public async Task<IActionResult> OnPostDeleteHerdSizeAsync(string clientKey)
+    {
+        if (!User.IsInRole("DataEntry"))
+            return Forbid();
+
+        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+        await LoadAsync();
+        var draft = await LoadOrInitializeDraftStateAsync();
+        var item = draft.HerdSizes.FirstOrDefault(x => x.ClientKey == clientKey);
+        if (item is not null)
+        {
+            draft.HerdSizes.Remove(item);
+            draft.HasPendingChanges = true;
+            await farmDraftState.SetAsync(draft);
+        }
+
+        return RedirectToPage(new { rbse = Rbse });
+    }
+
+    // DB CHECK constraints on [dbo].[HerdSize]: HerdYear between 1975 and the current year;
+    // TotalSize between 1 and 2000; each Lactation value fits legacy's 3-digit textbox (0–999).
+    private const int MinHerdYear = 1975;
+    private const int MinTotalSize = 1;
+    private const int MaxTotalSize = 2000;
+    private const int MinLactationSize = 0;
+    private const int MaxLactationSize = 999;
+
+    /// <summary>Shared validation for the add/edit herd size row inline forms.</summary>
+    private void ValidateHerdRow(
+        HerdSizeRowInput row,
+        List<CaseFarmDraftHerdSizeItem> existingRows,
+        string? excludeClientKey,
+        string prefix)
+    {
+        var maxHerdYear = DateTime.UtcNow.Year;
+
+        if (row.HerdYear is null)
+            ModelState.AddModelError($"{prefix}.HerdYear", "Enter a year");
+        else if (row.HerdYear < MinHerdYear || row.HerdYear > maxHerdYear)
+            ModelState.AddModelError($"{prefix}.HerdYear", $"Enter a year between {MinHerdYear} and {maxHerdYear}");
+        else if (existingRows.Any(x => x.HerdYear == row.HerdYear && x.ClientKey != excludeClientKey))
+            ModelState.AddModelError($"{prefix}.HerdYear", $"A herd size row for {row.HerdYear} already exists");
+
+        if (row.TotalSize is null)
+            ModelState.AddModelError($"{prefix}.TotalSize", "Enter a total herd size");
+        else if (row.TotalSize < MinTotalSize || row.TotalSize > MaxTotalSize)
+            ModelState.AddModelError($"{prefix}.TotalSize", $"Enter a total herd size between {MinTotalSize} and {MaxTotalSize}");
+
+        foreach (var (label, value) in LactationValues(row))
+        {
+            if (value is not null && (value < MinLactationSize || value > MaxLactationSize))
+                ModelState.AddModelError($"{prefix}.{label}", $"Lactation {label switch { "Lactation10PlusSize" => "10+", _ => label.Replace("Lactation", "").Replace("Size", "") }} must be between {MinLactationSize} and {MaxLactationSize}");
+        }
+
+        if (row.TotalSize is not null)
+        {
+            var lactationTotal = LactationValues(row).Sum(x => x.Value ?? 0);
+            if (lactationTotal != row.TotalSize)
+            {
+                ModelState.AddModelError($"{prefix}.TotalSize",
+                    $"Lactation total ({lactationTotal}) must equal herd size ({row.TotalSize}).");
+            }
+        }
+    }
+
+    private static IEnumerable<(string PropertyName, int? Value)> LactationValues(HerdSizeRowInput row)
+    {
+        yield return (nameof(row.Lactation1Size), row.Lactation1Size);
+        yield return (nameof(row.Lactation2Size), row.Lactation2Size);
+        yield return (nameof(row.Lactation3Size), row.Lactation3Size);
+        yield return (nameof(row.Lactation4Size), row.Lactation4Size);
+        yield return (nameof(row.Lactation5Size), row.Lactation5Size);
+        yield return (nameof(row.Lactation6Size), row.Lactation6Size);
+        yield return (nameof(row.Lactation7Size), row.Lactation7Size);
+        yield return (nameof(row.Lactation8Size), row.Lactation8Size);
+        yield return (nameof(row.Lactation9Size), row.Lactation9Size);
+        yield return (nameof(row.Lactation10Size), row.Lactation10Size);
+        yield return (nameof(row.Lactation10PlusSize), row.Lactation10PlusSize);
+    }
+
+    private static IEnumerable<(string PropertyName, int Value)> LactationValues(HerdSizeFormViewModel row)
+    {
+        yield return (nameof(row.Lactation1Size), row.Lactation1Size);
+        yield return (nameof(row.Lactation2Size), row.Lactation2Size);
+        yield return (nameof(row.Lactation3Size), row.Lactation3Size);
+        yield return (nameof(row.Lactation4Size), row.Lactation4Size);
+        yield return (nameof(row.Lactation5Size), row.Lactation5Size);
+        yield return (nameof(row.Lactation6Size), row.Lactation6Size);
+        yield return (nameof(row.Lactation7Size), row.Lactation7Size);
+        yield return (nameof(row.Lactation8Size), row.Lactation8Size);
+        yield return (nameof(row.Lactation9Size), row.Lactation9Size);
+        yield return (nameof(row.Lactation10Size), row.Lactation10Size);
+        yield return (nameof(row.Lactation10PlusSize), row.Lactation10PlusSize);
+    }
+
+    /// <summary>Retained for existing view warnings; mismatches are now blocking at validation time.</summary>
+    private static string? LactationSumMismatchWarning(HerdSizeRowInput row)
+    {
+        var sum = LactationValues(row).Sum(x => x.Value ?? 0);
+        var total = row.TotalSize ?? 0;
+        if (sum != 0 && sum != total)
+            return $"the lactation values sum to {sum}, not the herd size of {total}.";
+
+        return null;
     }
 
     // ── POST: Batch assignment (legacy CaseEntryFarm.aspx Save/Cancel) ─────────
@@ -216,6 +679,73 @@ public class FarmModel(
         return new JsonResult(new { status });
     }
 
+    public async Task<IActionResult> OnGetAuthoritiesAsync(int? authorityCountyId)
+    {
+        if (authorityCountyId is null or 0) return new JsonResult(Array.Empty<object>());
+        var items = await lookups.GetAuthoritiesByCountyAsync(authorityCountyId.Value);
+        return new JsonResult(items.Select(a => new { id = a.Id, name = a.Name }));
+    }
+
+    public async Task<IActionResult> OnGetAdnsRegionsAsync(int? authorityId)
+    {
+        if (authorityId is null or 0) return new JsonResult(Array.Empty<object>());
+        var items = await lookups.GetADNSRegionsByAuthorityAsync(authorityId.Value);
+        return new JsonResult(items.Select(r => new { id = r.Id, name = r.Name }));
+    }
+
+    public async Task<IActionResult> OnGetEstimateMapReferenceAsync(string? cphh)
+    {
+        if (string.IsNullOrEmpty(cphh) || cphh.Length < 5)
+            return new JsonResult(new { error = "CPHH must be at least 5 characters to estimate a map reference." });
+
+        var county = cphh[..2];
+        var parish = cphh[2..5];
+
+        var rows = await geoLookup.GetAllParishMapReferencesAsync(county, parish);
+        if (rows.Count == 0)
+            return new JsonResult(new { error = "No map reference data found for the parish associated with this CPHH." });
+
+        double rowCount = rows.Count;
+        double middleIdx = rowCount % 2 != 0 ? rowCount / 2 + 0.5 : rowCount / 2;
+        middleIdx -= 1;
+        var row = rows[(int)middleIdx];
+
+        var xCoord = row.XReference1;
+        var centreY = CentreCoordinate(row.YReference1, row.YReference2);
+
+        var xPrefixCoord = xCoord[1].ToString();
+        var yPrefixRaw = centreY[..2];
+        var yPrefixCoord = yPrefixRaw[0] == '0' ? yPrefixRaw[1].ToString() : yPrefixRaw;
+
+        var code = await geoLookup.GetPrefixCodeAsync(xPrefixCoord, yPrefixCoord);
+        if (code is null)
+            return new JsonResult(new { error = "Could not determine OS grid square for this parish." });
+
+        return new JsonResult(new
+        {
+            mapRef1 = code,
+            mapRef2 = xCoord[2..4] + "5",
+            mapRef3 = centreY[2..4] + "5"
+        });
+    }
+
+    public async Task<IActionResult> OnGetValidateMapReferenceAsync(string? cphh, string? mapRef)
+    {
+        if (string.IsNullOrWhiteSpace(cphh) || string.IsNullOrWhiteSpace(mapRef))
+            return new JsonResult(new { valid = true });
+
+        cphh = CphhNormalizer.Normalize(cphh);
+        mapRef = mapRef.Trim().ToUpperInvariant();
+
+        if (cphh.Length < 5 || mapRef.Length < 8)
+            return new JsonResult(new { valid = true });
+
+        var valid = await MapReferenceWithinParishAsync(cphh, mapRef);
+        return valid
+            ? new JsonResult(new { valid = true })
+            : new JsonResult(new { valid = false, message = "Map reference is outside the parish boundaries." });
+    }
+
     // ── Helpers ────────────────────────────────────────────────────────────────
 
     private async Task LoadAsync()
@@ -225,6 +755,13 @@ public class FarmModel(
         await Task.WhenAll(LoadFromCase(), batchTask);
         BatchNumbers = (await batchTask).ToList().AsReadOnly();
         PendingBatch = await wizardState.GetAsync();
+
+        if (Farm is not null)
+        {
+            EditableFarm = FarmEditViewModel.FromRecord(Farm);
+            EditableFarmRowStampBase64 = Farm.RowStamp is null ? string.Empty : Convert.ToBase64String(Farm.RowStamp);
+            await LoadLookupsForEditAsync();
+        }
     }
 
     private async Task LoadFromCase()
@@ -248,6 +785,7 @@ public class FarmModel(
         Farm              = await farmTask;
         ConfirmedCaseCount = await confirmedTask;
         var allLinked = (await linkedTask).ToList();
+        PersistedLinkedFarms = allLinked;
         LinkedFarmsTotalCount = allLinked.Count;
         LinkedFarmsTotalPages = Math.Max(1, (int)Math.Ceiling(allLinked.Count / (double)PageSize));
         IEnumerable<FarmRelationRecord> sortedLinked = LSort == "status"
@@ -257,6 +795,7 @@ public class FarmModel(
         LinkedFarms = sortedLinked.Skip((LPage - 1) * PageSize).Take(PageSize).ToList().AsReadOnly();
 
         var allHerd = (await herdTask).ToList();
+        PersistedHerdSizes = allHerd;
         HerdSizesTotalCount = allHerd.Count;
         HerdSizesTotalPages = Math.Max(1, (int)Math.Ceiling(allHerd.Count / (double)PageSize));
         IEnumerable<HerdSizeRecord> sortedHerd = HSort switch
@@ -312,6 +851,447 @@ public class FarmModel(
         }
     }
 
+    [BindProperty]
+    public string EditableFarmRowStampBase64 { get; set; } = string.Empty;
+
+    private bool IsAdnsCompatibleWithAuthoritySelection(FarmEditViewModel model)
+    {
+        if (model.AuthorityID is not > 0)
+            return true;
+
+        if (model.ADNSRegionID is not > 0)
+            return true;
+
+        if (ViewData["AdnsOptions"] is IEnumerable<LuADNSRegion> options)
+            return options.Any(x => x.Id == model.ADNSRegionID.Value);
+
+        return true;
+    }
+
+    private async Task LoadLookupsForEditAsync()
+    {
+        var countyTask = lookups.GetLookupAsync(LookupTableId.BSECounty);
+        var ahoTask = lookups.GetLookupAsync(LookupTableId.AHO);
+        var herdTypeTask = lookups.GetHerdTypesAsync();
+        var pedigreeTask = lookups.GetLookupAsync(LookupTableId.PedigreeType);
+        var authCountyTask = lookups.GetLookupAsync(LookupTableId.AuthorityCounty);
+
+        await Task.WhenAll(countyTask, ahoTask, herdTypeTask, pedigreeTask, authCountyTask);
+
+        ViewData["CountyOptions"] = await countyTask;
+        ViewData["AhoOptions"] = await ahoTask;
+        ViewData["HerdTypeOptions"] = await herdTypeTask;
+        ViewData["PedigreeOptions"] = await pedigreeTask;
+        ViewData["AuthorityCountyOptions"] = await authCountyTask;
+
+        ViewData["AuthorityOptions"] = EditableFarm?.AuthorityCountyID is > 0
+            ? await lookups.GetAuthoritiesByCountyAsync(EditableFarm.AuthorityCountyID.Value)
+            : (IEnumerable<LuAuthority>)[];
+
+        ViewData["AdnsOptions"] = EditableFarm?.AuthorityID is > 0
+            ? await lookups.GetADNSRegionsByAuthorityAsync(EditableFarm.AuthorityID.Value)
+            : (IEnumerable<LuADNSRegion>)[];
+    }
+
+    private async Task<bool> MapReferenceWithinParishAsync(string cphh, string mapRef)
+    {
+        if (cphh.Length < 5 || mapRef.Length < 8) return true;
+
+        var county = cphh[..2];
+        var parish = cphh[2..5];
+
+        var prefixData = await geoLookup.GetXYCoordsByPrefixCodeAsync(mapRef[..2].ToUpperInvariant());
+        if (prefixData is null) return false;
+
+        var rows = await geoLookup.GetAllParishMapReferencesAsync(county, parish);
+        if (rows.Count == 0) return true;
+
+        var sXCoord = prefixData.XCoordPrefix + mapRef[2..4];
+        var sYCoord = prefixData.YCoordPrefix + mapRef[5..7];
+
+        return rows.Any(r =>
+            sXCoord == r.XReference1
+            && string.Compare(sYCoord, r.YReference1, StringComparison.Ordinal) >= 0
+            && string.Compare(sYCoord, r.YReference2, StringComparison.Ordinal) <= 0);
+    }
+
+    private bool TryValidateStagedCollections()
+    {
+
+        var hasLinkedErrors = false;
+        var seenLinked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var currentFarmCphh = CphhNormalizer.Normalize(Farm?.CPHH);
+
+        for (var i = 0; i < StagedLinkedFarms.Count; i++)
+        {
+            var item = StagedLinkedFarms[i];
+            item.RelatedCphh = CphhNormalizer.Normalize(item.RelatedCphh);
+
+            if (string.IsNullOrWhiteSpace(item.RelatedCphh))
+            {
+                ModelState.AddModelError("", "Enter a CPHH for each linked farm row.");
+                hasLinkedErrors = true;
+                continue;
+            }
+
+            if (item.RelatedCphh.Length != LinkedFarmCphhLength)
+            {
+                ModelState.AddModelError("", $"Linked farm CPHH {item.RelatedCphh} must be 11 digits.");
+                hasLinkedErrors = true;
+                continue;
+            }
+
+            if (string.Equals(item.RelatedCphh, currentFarmCphh, StringComparison.OrdinalIgnoreCase))
+            {
+                ModelState.AddModelError("", "Cannot link a farm to itself.");
+                hasLinkedErrors = true;
+            }
+
+            if (!seenLinked.Add(item.RelatedCphh))
+            {
+                ModelState.AddModelError("", $"Linked farm CPHH {item.RelatedCphh} is duplicated.");
+                hasLinkedErrors = true;
+            }
+        }
+
+        var hasHerdErrors = false;
+        var seenYears = new HashSet<int>();
+        var maxHerdYear = DateTime.UtcNow.Year;
+        for (var i = 0; i < StagedHerdSizes.Count; i++)
+        {
+            var item = StagedHerdSizes[i];
+            if (item.HerdYear < MinHerdYear || item.HerdYear > maxHerdYear)
+            {
+                ModelState.AddModelError("", $"Herd size row {i + 1}: year must be {MinHerdYear}\u2013{maxHerdYear}.");
+                hasHerdErrors = true;
+            }
+
+            if (item.TotalSize < MinTotalSize || item.TotalSize > MaxTotalSize)
+            {
+                ModelState.AddModelError("", $"Herd size row {i + 1}: total size must be between {MinTotalSize} and {MaxTotalSize}.");
+                hasHerdErrors = true;
+            }
+
+            if (!seenYears.Add(item.HerdYear))
+            {
+                ModelState.AddModelError("", $"Herd size year {item.HerdYear} is duplicated.");
+                hasHerdErrors = true;
+            }
+
+            if (LactationValues(item).Any(x => x.Value < MinLactationSize || x.Value > MaxLactationSize))
+            {
+                ModelState.AddModelError("", $"Herd size row {i + 1}: lactation values must be between {MinLactationSize} and {MaxLactationSize}.");
+                hasHerdErrors = true;
+            }
+        }
+
+        return !hasLinkedErrors && !hasHerdErrors;
+    }
+
+    private async Task<CaseFarmDraftState> LoadOrInitializeDraftStateAsync()
+    {
+        if (Farm is null)
+            return new CaseFarmDraftState { Rbse = Rbse };
+
+        var draft = await farmDraftState.GetAsync(Rbse);
+        if (draft is null)
+        {
+            draft = new CaseFarmDraftState
+            {
+                Rbse = Rbse,
+                Cphh = Farm.CPHH,
+                LinkedFarms = PersistedLinkedFarms.Select(x => new CaseFarmDraftLinkedFarmItem
+                {
+                    Id = x.ID,
+                    RelatedCphh = x.RelatedCPHH,
+                    RowStampBase64 = x.RowStamp is null ? string.Empty : Convert.ToBase64String(x.RowStamp),
+                    Status = x.Status ?? string.Empty
+                }).ToList(),
+                HerdSizes = PersistedHerdSizes.Select(x => new CaseFarmDraftHerdSizeItem
+                {
+                    ClientKey = Guid.NewGuid().ToString("N"),
+                    Id = x.ID,
+                    HerdYear = x.HerdYear,
+                    TotalSize = x.TotalSize,
+                    Lactation1Size = x.Lactation1Size,
+                    Lactation2Size = x.Lactation2Size,
+                    Lactation3Size = x.Lactation3Size,
+                    Lactation4Size = x.Lactation4Size,
+                    Lactation5Size = x.Lactation5Size,
+                    Lactation6Size = x.Lactation6Size,
+                    Lactation7Size = x.Lactation7Size,
+                    Lactation8Size = x.Lactation8Size,
+                    Lactation9Size = x.Lactation9Size,
+                    Lactation10Size = x.Lactation10Size,
+                    Lactation10PlusSize = x.Lactation10PlusSize,
+                    RowStampBase64 = x.RowStamp is null ? string.Empty : Convert.ToBase64String(x.RowStamp)
+                }).ToList()
+            };
+            await farmDraftState.SetAsync(draft);
+        }
+
+        StagedLinkedFarms = draft.LinkedFarms.Select(x => new StagedLinkedFarmItem
+        {
+            ClientKey = x.ClientKey,
+            Id = x.Id,
+            RelatedCphh = x.RelatedCphh,
+            RowStampBase64 = x.RowStampBase64,
+            Status = x.Status
+        }).ToList();
+
+        StagedHerdSizes = draft.HerdSizes.Select(x => new StagedHerdSizeItem
+        {
+            Id = x.Id,
+            ClientKey = x.ClientKey,
+            HerdYear = x.HerdYear,
+            TotalSize = x.TotalSize,
+            Lactation1Size = x.Lactation1Size,
+            Lactation2Size = x.Lactation2Size,
+            Lactation3Size = x.Lactation3Size,
+            Lactation4Size = x.Lactation4Size,
+            Lactation5Size = x.Lactation5Size,
+            Lactation6Size = x.Lactation6Size,
+            Lactation7Size = x.Lactation7Size,
+            Lactation8Size = x.Lactation8Size,
+            Lactation9Size = x.Lactation9Size,
+            Lactation10Size = x.Lactation10Size,
+            Lactation10PlusSize = x.Lactation10PlusSize,
+            RowStampBase64 = x.RowStampBase64
+        }).ToList();
+
+        HasUnsavedChanges = draft.HasPendingChanges;
+
+        return draft;
+    }
+
+    private async Task SaveDraftStateAsync()
+    {
+        var draft = new CaseFarmDraftState
+        {
+            Rbse = Rbse,
+            Cphh = Farm?.CPHH ?? string.Empty,
+            LinkedFarms = StagedLinkedFarms.Select(x => new CaseFarmDraftLinkedFarmItem
+            {
+                ClientKey = string.IsNullOrWhiteSpace(x.ClientKey) ? Guid.NewGuid().ToString("N") : x.ClientKey,
+                Id = x.Id,
+                RelatedCphh = x.RelatedCphh,
+                RowStampBase64 = x.RowStampBase64,
+                Status = x.Status ?? string.Empty
+            }).ToList(),
+            HerdSizes = StagedHerdSizes.Select(x => new CaseFarmDraftHerdSizeItem
+            {
+                Id = x.Id,
+                HerdYear = x.HerdYear,
+                TotalSize = x.TotalSize,
+                Lactation1Size = x.Lactation1Size,
+                Lactation2Size = x.Lactation2Size,
+                Lactation3Size = x.Lactation3Size,
+                Lactation4Size = x.Lactation4Size,
+                Lactation5Size = x.Lactation5Size,
+                Lactation6Size = x.Lactation6Size,
+                Lactation7Size = x.Lactation7Size,
+                Lactation8Size = x.Lactation8Size,
+                Lactation9Size = x.Lactation9Size,
+                Lactation10Size = x.Lactation10Size,
+                Lactation10PlusSize = x.Lactation10PlusSize,
+                RowStampBase64 = x.RowStampBase64
+            }).ToList()
+        };
+
+        await farmDraftState.SetAsync(draft);
+    }
+
+    private async Task PersistStagedCollectionsAsync()
+    {
+        if (Farm is null)
+            return;
+
+        var persistedLinkedById = PersistedLinkedFarms.ToDictionary(x => x.ID);
+        var stagedLinkedByExistingId = StagedLinkedFarms.Where(x => x.Id is > 0).ToDictionary(x => x.Id!.Value);
+
+        foreach (var removed in PersistedLinkedFarms.Where(x => !stagedLinkedByExistingId.ContainsKey(x.ID)))
+        {
+            if (removed.RowStamp is null)
+                continue;
+
+            await relationRepo.DeleteAsync(removed.ID, removed.RowStamp);
+        }
+
+        foreach (var staged in StagedLinkedFarms)
+        {
+            if (staged.Id is null || staged.Id <= 0)
+            {
+                await relationRepo.AddAsync(Farm.CPHH, staged.RelatedCphh);
+                continue;
+            }
+
+            if (!persistedLinkedById.TryGetValue(staged.Id.Value, out var persisted))
+                continue;
+
+            var persistedCphh = CphhNormalizer.Normalize(persisted.RelatedCPHH);
+            var stagedCphh = CphhNormalizer.Normalize(staged.RelatedCphh);
+
+            if (string.Equals(persistedCphh, stagedCphh, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var rowStamp = string.IsNullOrWhiteSpace(staged.RowStampBase64)
+                ? persisted.RowStamp
+                : Convert.FromBase64String(staged.RowStampBase64);
+
+            if (rowStamp is null)
+                continue;
+
+            await relationRepo.UpdateAsync(staged.Id.Value, stagedCphh, rowStamp);
+        }
+
+        var persistedHerdById = PersistedHerdSizes.ToDictionary(x => x.ID);
+        var stagedHerdByExistingId = StagedHerdSizes.Where(x => x.Id is > 0).ToDictionary(x => x.Id!.Value);
+
+        foreach (var removed in PersistedHerdSizes.Where(x => !stagedHerdByExistingId.ContainsKey(x.ID)))
+        {
+            if (removed.RowStamp is null)
+                continue;
+
+            await herdSizeRepo.DeleteAsync(removed.ID, removed.RowStamp);
+        }
+
+        foreach (var staged in StagedHerdSizes)
+        {
+            if (staged.Id is null || staged.Id <= 0)
+            {
+                await herdSizeRepo.AddAsync(new AddHerdSizeCommand(
+                    Farm.CPHH,
+                    (short)staged.HerdYear,
+                    (short)staged.TotalSize,
+                    (short)staged.Lactation1Size,
+                    (short)staged.Lactation2Size,
+                    (short)staged.Lactation3Size,
+                    (short)staged.Lactation4Size,
+                    (short)staged.Lactation5Size,
+                    (short)staged.Lactation6Size,
+                    (short)staged.Lactation7Size,
+                    (short)staged.Lactation8Size,
+                    (short)staged.Lactation9Size,
+                    (short)staged.Lactation10Size,
+                    (short)staged.Lactation10PlusSize));
+                continue;
+            }
+
+            if (!persistedHerdById.TryGetValue(staged.Id.Value, out var persisted))
+                continue;
+
+            var changed = persisted.HerdYear != staged.HerdYear
+                          || persisted.TotalSize != staged.TotalSize
+                          || persisted.Lactation1Size != staged.Lactation1Size
+                          || persisted.Lactation2Size != staged.Lactation2Size
+                          || persisted.Lactation3Size != staged.Lactation3Size
+                          || persisted.Lactation4Size != staged.Lactation4Size
+                          || persisted.Lactation5Size != staged.Lactation5Size
+                          || persisted.Lactation6Size != staged.Lactation6Size
+                          || persisted.Lactation7Size != staged.Lactation7Size
+                          || persisted.Lactation8Size != staged.Lactation8Size
+                          || persisted.Lactation9Size != staged.Lactation9Size
+                          || persisted.Lactation10Size != staged.Lactation10Size
+                          || persisted.Lactation10PlusSize != staged.Lactation10PlusSize;
+
+            if (!changed)
+                continue;
+
+            var rowStamp = string.IsNullOrWhiteSpace(staged.RowStampBase64)
+                ? persisted.RowStamp
+                : Convert.FromBase64String(staged.RowStampBase64);
+
+            await herdSizeRepo.UpdateAsync(new UpdateHerdSizeCommand(
+                staged.Id.Value,
+                (short)staged.HerdYear,
+                (short)staged.TotalSize,
+                (short)staged.Lactation1Size,
+                (short)staged.Lactation2Size,
+                (short)staged.Lactation3Size,
+                (short)staged.Lactation4Size,
+                (short)staged.Lactation5Size,
+                (short)staged.Lactation6Size,
+                (short)staged.Lactation7Size,
+                (short)staged.Lactation8Size,
+                (short)staged.Lactation9Size,
+                (short)staged.Lactation10Size,
+                (short)staged.Lactation10PlusSize,
+                rowStamp));
+        }
+    }
+
+    private static string CentreCoordinate(string start, string end)
+    {
+        if (!int.TryParse(start, out var s) || !int.TryParse(end, out var e)) return start;
+        var middle = (int)Math.Round((s + e) / 2.0, MidpointRounding.AwayFromZero);
+        return middle.ToString("0000");
+    }
+
+    private static string ConvertToMapReference(string xPrefixCoord, string yPrefixCoord)
+    {
+        var key = xPrefixCoord + yPrefixCoord;
+        return key switch
+        {
+            "09" => "SV", "19" => "SW", "29" => "SX", "39" => "SY", "49" => "SZ", "59" => "TV",
+            "08" => "SQ", "18" => "SR", "28" => "SS", "38" => "ST", "48" => "SU", "58" => "TQ",
+            "07" => "SL", "17" => "SM", "27" => "SN", "37" => "SO", "47" => "SP", "57" => "TL",
+            "06" => "SF", "16" => "SG", "26" => "SH", "36" => "SJ", "46" => "SK", "56" => "TF",
+            "05" => "SA", "15" => "SB", "25" => "SC", "35" => "SD", "45" => "SE", "55" => "TA",
+            "04" => "NV", "14" => "NW", "24" => "NX", "34" => "NY", "44" => "NZ", "54" => "OV",
+            "03" => "NQ", "13" => "NR", "23" => "NS", "33" => "NT", "43" => "NU", "53" => "OQ",
+            "02" => "NL", "12" => "NM", "22" => "NN", "32" => "NO", "42" => "NP", "52" => "OL",
+            "01" => "NF", "11" => "NG", "21" => "NH", "31" => "NJ", "41" => "NK", "51" => "OF",
+            "00" => "NA", "10" => "NB", "20" => "NC", "30" => "ND", "40" => "NE", "50" => "OA",
+            _ => string.Empty
+        };
+    }
+
+    private static string? ExpandXCoordinate(string mapRef)
+    {
+        if (mapRef.Length < 8) return null;
+        var letters = mapRef[..2];
+        var easting = mapRef[2..5];
+        var xPrefix = letters switch
+        {
+            "SV" => "0", "SW" => "1", "SX" => "2", "SY" => "3", "SZ" => "4", "TV" => "5",
+            "SQ" => "0", "SR" => "1", "SS" => "2", "ST" => "3", "SU" => "4", "TQ" => "5",
+            "SL" => "0", "SM" => "1", "SN" => "2", "SO" => "3", "SP" => "4", "TL" => "5",
+            "SF" => "0", "SG" => "1", "SH" => "2", "SJ" => "3", "SK" => "4", "TF" => "5",
+            "SA" => "0", "SB" => "1", "SC" => "2", "SD" => "3", "SE" => "4", "TA" => "5",
+            "NV" => "0", "NW" => "1", "NX" => "2", "NY" => "3", "NZ" => "4", "OV" => "5",
+            "NQ" => "0", "NR" => "1", "NS" => "2", "NT" => "3", "NU" => "4", "OQ" => "5",
+            "NL" => "0", "NM" => "1", "NN" => "2", "NO" => "3", "NP" => "4", "OL" => "5",
+            "NF" => "0", "NG" => "1", "NH" => "2", "NJ" => "3", "NK" => "4", "OF" => "5",
+            "NA" => "0", "NB" => "1", "NC" => "2", "ND" => "3", "NE" => "4", "OA" => "5",
+            _ => null
+        };
+
+        return xPrefix is null ? null : xPrefix + easting;
+    }
+
+    private static string? ExpandYCoordinate(string mapRef)
+    {
+        if (mapRef.Length < 8) return null;
+        var letters = mapRef[..2];
+        var northing = mapRef[5..8];
+        var yPrefix = letters switch
+        {
+            "SV" or "SW" or "SX" or "SY" or "SZ" or "TV" => "9",
+            "SQ" or "SR" or "SS" or "ST" or "SU" or "TQ" => "8",
+            "SL" or "SM" or "SN" or "SO" or "SP" or "TL" => "7",
+            "SF" or "SG" or "SH" or "SJ" or "SK" or "TF" => "6",
+            "SA" or "SB" or "SC" or "SD" or "SE" or "TA" => "5",
+            "NV" or "NW" or "NX" or "NY" or "NZ" or "OV" => "4",
+            "NQ" or "NR" or "NS" or "NT" or "NU" or "OQ" => "3",
+            "NL" or "NM" or "NN" or "NO" or "NP" or "OL" => "2",
+            "NF" or "NG" or "NH" or "NJ" or "NK" or "OF" => "1",
+            "NA" or "NB" or "NC" or "ND" or "NE" or "OA" => "0",
+            _ => null
+        };
+
+        return yPrefix is null ? null : yPrefix + northing;
+    }
+
     // ── Sort / pagination URL builders ─────────────────────────────────────────
 
     public string LinkedFarmsSortUrl(string col)
@@ -332,7 +1312,71 @@ public class FarmModel(
     public string HerdSizesPageUrl(int page) =>
         $"?HPage={page}&HSort={HSort}&HDir={HDir}&LPage={LPage}&LSort={LSort}&LDir={LDir}";
 
+    public IReadOnlyList<StagedHerdSizeItem> SortedStagedHerdSizes =>
+        (HSort, HDir) switch
+        {
+            ("total", "asc") => StagedHerdSizes.OrderBy(h => h.TotalSize).ToList(),
+            ("total", _) => StagedHerdSizes.OrderByDescending(h => h.TotalSize).ToList(),
+            ("lac1", "asc") => StagedHerdSizes.OrderBy(h => h.Lactation1Size).ToList(),
+            ("lac1", _) => StagedHerdSizes.OrderByDescending(h => h.Lactation1Size).ToList(),
+            ("lac2", "asc") => StagedHerdSizes.OrderBy(h => h.Lactation2Size).ToList(),
+            ("lac2", _) => StagedHerdSizes.OrderByDescending(h => h.Lactation2Size).ToList(),
+            ("lac3", "asc") => StagedHerdSizes.OrderBy(h => h.Lactation3Size).ToList(),
+            ("lac3", _) => StagedHerdSizes.OrderByDescending(h => h.Lactation3Size).ToList(),
+            ("lac4", "asc") => StagedHerdSizes.OrderBy(h => h.Lactation4Size).ToList(),
+            ("lac4", _) => StagedHerdSizes.OrderByDescending(h => h.Lactation4Size).ToList(),
+            ("lac5", "asc") => StagedHerdSizes.OrderBy(h => h.Lactation5Size).ToList(),
+            ("lac5", _) => StagedHerdSizes.OrderByDescending(h => h.Lactation5Size).ToList(),
+            ("lac6", "asc") => StagedHerdSizes.OrderBy(h => h.Lactation6Size).ToList(),
+            ("lac6", _) => StagedHerdSizes.OrderByDescending(h => h.Lactation6Size).ToList(),
+            ("lac7", "asc") => StagedHerdSizes.OrderBy(h => h.Lactation7Size).ToList(),
+            ("lac7", _) => StagedHerdSizes.OrderByDescending(h => h.Lactation7Size).ToList(),
+            ("lac8", "asc") => StagedHerdSizes.OrderBy(h => h.Lactation8Size).ToList(),
+            ("lac8", _) => StagedHerdSizes.OrderByDescending(h => h.Lactation8Size).ToList(),
+            ("lac9", "asc") => StagedHerdSizes.OrderBy(h => h.Lactation9Size).ToList(),
+            ("lac9", _) => StagedHerdSizes.OrderByDescending(h => h.Lactation9Size).ToList(),
+            ("lac10", "asc") => StagedHerdSizes.OrderBy(h => h.Lactation10Size).ToList(),
+            ("lac10", _) => StagedHerdSizes.OrderByDescending(h => h.Lactation10Size).ToList(),
+            ("lac10p", "asc") => StagedHerdSizes.OrderBy(h => h.Lactation10PlusSize).ToList(),
+            ("lac10p", _) => StagedHerdSizes.OrderByDescending(h => h.Lactation10PlusSize).ToList(),
+            ("year", "asc") => StagedHerdSizes.OrderBy(h => h.HerdYear).ToList(),
+            _ => StagedHerdSizes.OrderByDescending(h => h.HerdYear).ToList()
+        };
+
     // ── View models ────────────────────────────────────────────────────────────
+
+    public class StagedLinkedFarmItem
+    {
+        public string ClientKey { get; set; } = Guid.NewGuid().ToString("N");
+        public int? Id { get; set; }
+        public string RelatedCphh { get; set; } = string.Empty;
+        public string RowStampBase64 { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+    }
+
+    public class StagedHerdSizeItem : HerdSizeFormViewModel
+    {
+        public int? Id { get; set; }
+        public string ClientKey { get; set; } = string.Empty;
+        public string RowStampBase64 { get; set; } = string.Empty;
+
+        public string? LactationMismatchWarning
+        {
+            get
+            {
+                var lactationTotal = Lactation1Size + Lactation2Size + Lactation3Size + Lactation4Size + Lactation5Size
+                                  + Lactation6Size + Lactation7Size + Lactation8Size + Lactation9Size + Lactation10Size
+                                  + Lactation10PlusSize;
+
+                return lactationTotal > 0 && lactationTotal != TotalSize
+                    ? $"the lactation total ({lactationTotal}) does not equal the total herd size ({TotalSize})."
+                    : null;
+            }
+        }
+
+        /// <summary>True for rows staged locally that do not yet exist in the database.</summary>
+        public bool IsUnsaved => Id is null or <= 0;
+    }
 
     public class HerdSizeFormViewModel
     {
@@ -349,5 +1393,27 @@ public class FarmModel(
         public int Lactation9Size { get; set; }
         public int Lactation10Size { get; set; }
         public int Lactation10PlusSize { get; set; }
+    }
+
+    /// <summary>
+    /// Binding target for the inline add/edit herd size row. Fields are nullable so that
+    /// blank optional lactation inputs bind to null instead of tripping ASP.NET Core's
+    /// implicit "value must not be null" error for non-nullable value types.
+    /// </summary>
+    public class HerdSizeRowInput
+    {
+        public int? HerdYear { get; set; }
+        public int? TotalSize { get; set; }
+        public int? Lactation1Size { get; set; }
+        public int? Lactation2Size { get; set; }
+        public int? Lactation3Size { get; set; }
+        public int? Lactation4Size { get; set; }
+        public int? Lactation5Size { get; set; }
+        public int? Lactation6Size { get; set; }
+        public int? Lactation7Size { get; set; }
+        public int? Lactation8Size { get; set; }
+        public int? Lactation9Size { get; set; }
+        public int? Lactation10Size { get; set; }
+        public int? Lactation10PlusSize { get; set; }
     }
 }

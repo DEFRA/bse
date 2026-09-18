@@ -3,6 +3,17 @@
 @{
     ViewData["Title"] = $"BAB — {Model.Rbse}";
     string rbseNoSlash = Model.Rbse.Replace("/", "");
+    var viewDocsUrl = string.IsNullOrWhiteSpace(Model.SpolSiteUrl)
+        ? null
+        : $"{Model.SpolSiteUrl}{rbseNoSlash}";
+    bool IsPurchasedOrigin(string? o) => string.Equals(o, "P", StringComparison.OrdinalIgnoreCase)
+                                      || string.Equals(o, "Purchased", StringComparison.OrdinalIgnoreCase);
+    bool hasTracedData = !string.IsNullOrWhiteSpace(Model.Bab?.NatalCphh)
+                      || !string.IsNullOrWhiteSpace(Model.Bab?.TracedName)
+                      || !string.IsNullOrWhiteSpace(Model.Bab?.TracedAddress1)
+                      || !string.IsNullOrWhiteSpace(Model.Bab?.TracedAddress2)
+                      || !string.IsNullOrWhiteSpace(Model.Bab?.TracedAddress3)
+                      || !string.IsNullOrWhiteSpace(Model.Bab?.TracedPostcode);
     string Desc(IEnumerable<BSE.SharedKernel.ILookupItem> opts, string? code) =>
         opts.FirstOrDefault(o => o.Code == code)?.Description ?? code ?? "—";
 }
@@ -14,7 +25,7 @@
     </ol>
 </nav>
 
-@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("BAB", Model.Rbse, Model.BatchNumbers))
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("BAB", Model.Rbse, Model.BatchNumbers, viewDocsUrl))
 
 @if (TempData["Success"] is string successMsg)
 {
@@ -30,26 +41,184 @@
 }
 
 
-@* -- READ-ONLY VIEW ----------------------------------------------------- *@
-<div class="govuk-button-group govuk-!-margin-bottom-4">
-    @if (User.IsInRole("DataEntry"))
-    {
-        <a asp-page="/Case/BabEdit" asp-route-rbse="@Model.Rbse"
-       class="govuk-button govuk-button--secondary">Change BAB details</a>
-    }
-        @if (!string.IsNullOrEmpty(Model.SpolSiteUrl))
-        {
-            <a href="@(Model.SpolSiteUrl)@rbseNoSlash" target="_blank" rel="noopener noreferrer" class="govuk-link">
-                View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
-            </a>
-        }
+@if (!ViewContext.ModelState.IsValid)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@e.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        </div>
     </div>
+}
 
+@if (User.IsInRole("DataEntry"))
+{
+    <form method="post" asp-page-handler="SaveBab" novalidate id="case-bab-inline-form">
+        <input type="hidden" asp-for="Rbse" />
+        @if (Model.RowStampBase64 is not null)
+        {
+            <input type="hidden" name="RowStampBase64" value="@Model.RowStampBase64" />
+        }
+
+        <div class="govuk-button-group govuk-!-margin-bottom-4">
+            <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+            <a asp-page="/Case/Bab" asp-page-handler="CancelBabEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
+        </div>
+
+        <div class="bab-legacy-notes">
+            <label class="govuk-label" for="bab-notes">Notes</label>
+            <textarea id="bab-notes" name="Bab.Notes" class="govuk-textarea" rows="3" maxlength="500">@Model.Bab?.Notes</textarea>
+        </div>
+
+        <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+
+        <div id="bab-traced-section" @( !IsPurchasedOrigin(Model.Origin) && !hasTracedData ? "style=\"display:none\"" : "")>
+            <div class="bab-legacy-grid">
+                <div class="bab-legacy-field">
+                    <label class="govuk-label" for="bab-origin">Origin</label>
+                    <select id="bab-origin" name="Origin" class="govuk-select bab-legacy-input">
+                        <option value="">— select —</option>
+                        @foreach (var o in Model.AnimalOrigins)
+                        {
+                            if (o.Code == Model.Origin)
+                            {
+                                <option value="@o.Code" selected="selected">@o.Description</option>
+                            }
+                            else
+                            {
+                                <option value="@o.Code">@o.Description</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="bab-legacy-field">
+                    <label class="govuk-label" for="bab-addr1">Traced Address</label>
+                    <input id="bab-addr1" name="Bab.TracedAddress1" class="govuk-input bab-legacy-input"
+                           value="@Model.Bab?.TracedAddress1" maxlength="30" aria-label="Address line 1" />
+                </div>
+
+                <div class="bab-legacy-field">
+                    <label class="govuk-label" for="bab-natal-cphh">Traced CPHH</label>
+                    <input id="bab-natal-cphh" name="Bab.NatalCphh" class="govuk-input bab-legacy-input"
+                           value="@Model.Bab?.NatalCphh" maxlength="11" inputmode="numeric" />
+                </div>
+                <div class="bab-legacy-field">
+                    <span class="govuk-label bab-legacy-label-spacer" aria-hidden="true">&nbsp;</span>
+                    <input id="bab-addr2" name="Bab.TracedAddress2" class="govuk-input bab-legacy-input"
+                           value="@Model.Bab?.TracedAddress2" maxlength="30" aria-label="Address line 2" />
+                </div>
+
+                <div class="bab-legacy-field">
+                    <label class="govuk-label" for="bab-traced-name">Traced Name</label>
+                    <input id="bab-traced-name" name="Bab.TracedName" class="govuk-input bab-legacy-input"
+                           value="@Model.Bab?.TracedName" maxlength="30" />
+                </div>
+                <div class="bab-legacy-field">
+                    <span class="govuk-label bab-legacy-label-spacer" aria-hidden="true">&nbsp;</span>
+                    <input id="bab-addr3" name="Bab.TracedAddress3" class="govuk-input bab-legacy-input"
+                           value="@Model.Bab?.TracedAddress3" maxlength="30" aria-label="Address line 3" />
+                </div>
+
+                <div class="bab-legacy-field"></div>
+                <div class="bab-legacy-field">
+                    <label class="govuk-label" for="bab-postcode">Traced Postcode</label>
+                    <input id="bab-postcode" name="Bab.TracedPostcode" class="govuk-input bab-legacy-input"
+                           value="@Model.Bab?.TracedPostcode" maxlength="10" />
+                </div>
+            </div>
+        </div>
+
+        <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+
+        <div class="bab-legacy-grid">
+            <div class="bab-legacy-field">
+                <label class="govuk-label" for="bab-feed-risk">Feed Risk</label>
+                <select id="bab-feed-risk" name="Bab.FeedRisk" class="govuk-select bab-legacy-input">
+                    <option value="">— select —</option>
+                    @foreach (var r in Model.FeedRisks)
+                    {
+                        if (r.Code == Model.Bab?.FeedRisk)
+                        {
+                            <option value="@r.Code" selected="selected">@r.Description</option>
+                        }
+                        else
+                        {
+                            <option value="@r.Code">@r.Description</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="bab-legacy-field">
+                <label class="govuk-label" for="bab-horiz-risk">Horizontal Risk</label>
+                <select id="bab-horiz-risk" name="Bab.HorizontalRisk" class="govuk-select bab-legacy-input">
+                    <option value="">— select —</option>
+                    @foreach (var r in Model.HorizontalRisks)
+                    {
+                        if (r.Code == Model.Bab?.HorizontalRisk)
+                        {
+                            <option value="@r.Code" selected="selected">@r.Description</option>
+                        }
+                        else
+                        {
+                            <option value="@r.Code">@r.Description</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <div class="bab-legacy-field">
+                <label class="govuk-label" for="bab-maternal-risk">Maternal Risk</label>
+                <select id="bab-maternal-risk" name="Bab.MaternalRisk" class="govuk-select bab-legacy-input">
+                    <option value="">— select —</option>
+                    @foreach (var r in Model.MaternalRisks)
+                    {
+                        if (r.Code == Model.Bab?.MaternalRisk)
+                        {
+                            <option value="@r.Code" selected="selected">@r.Description</option>
+                        }
+                        else
+                        {
+                            <option value="@r.Code">@r.Description</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="bab-legacy-field"></div>
+        </div>
+
+        <div class="govuk-button-group govuk-!-margin-top-4">
+            <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+            <a asp-page="/Case/Bab" asp-page-handler="CancelBabEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
+        </div>
+
+        <div class="govuk-!-margin-top-6">
+            <ul class="govuk-list">
+                @if (!string.IsNullOrWhiteSpace(viewDocsUrl))
+                {
+                    <li>
+                        <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" class="govuk-link">
+                            View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
+                        </a>
+                    </li>
+                }
+            </ul>
+        </div>
+    </form>
+}
+else
+{
     <h2 class="govuk-heading-m">Born-After-Ban details</h2>
     <dl class="govuk-summary-list">
         <div class="govuk-summary-list__row">
             <dt class="govuk-summary-list__key">Notes</dt>
-        <dd class="govuk-summary-list__value">@(Model.Bab?.Notes ?? "—")</dd>
+            <dd class="govuk-summary-list__value">@(Model.Bab?.Notes ?? "—")</dd>
         </div>
         <div class="govuk-summary-list__row">
             <dt class="govuk-summary-list__key">Origin</dt>
@@ -83,13 +252,13 @@
                 }
                 else
                 {
-                <span>—</span>
+                    <span>—</span>
                 }
             </dd>
         </div>
         <div class="govuk-summary-list__row">
             <dt class="govuk-summary-list__key">Traced Postcode</dt>
-        <dd class="govuk-summary-list__value">@(Model.Bab?.TracedPostcode ?? "—")</dd>
+            <dd class="govuk-summary-list__value">@(Model.Bab?.TracedPostcode ?? "—")</dd>
         </div>
     </dl>
 
@@ -108,4 +277,144 @@
             <dd class="govuk-summary-list__value">@Desc(Model.MaternalRisks, Model.Bab?.MaternalRisk)</dd>
         </div>
     </dl>
+
+    <div class="govuk-!-margin-top-6">
+        <ul class="govuk-list">
+            @if (!string.IsNullOrWhiteSpace(viewDocsUrl))
+            {
+                <li>
+                    <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" class="govuk-link">
+                        View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
+                    </a>
+                </li>
+            }
+        </ul>
+    </div>
+}
+
+<style>
+    .bab-legacy-notes {
+        margin-bottom: 1rem;
+    }
+
+    .bab-legacy-notes .govuk-textarea {
+        width: 100%;
+        min-height: 5.2rem;
+    }
+
+    .bab-legacy-grid {
+        display: grid;
+        grid-template-columns: 500px 500px;
+        column-gap: 72px;
+        row-gap: 12px;
+        align-items: start;
+    }
+
+    .bab-legacy-field {
+        display: grid;
+        grid-template-columns: 235px 252px;
+        column-gap: 10px;
+        align-items: center;
+    }
+
+    .bab-legacy-field .govuk-label {
+        margin-bottom: 0;
+        font-weight: 400;
+        font-size: 19px;
+        line-height: 1.25;
+        white-space: nowrap;
+    }
+
+    .bab-legacy-input {
+        width: 252px;
+        max-width: 252px;
+        margin-bottom: 0;
+    }
+
+    .bab-legacy-label-spacer {
+        visibility: hidden;
+        display: block;
+        margin-bottom: 0;
+        white-space: nowrap;
+    }
+
+    @@media (max-width: 768px) {
+        .bab-legacy-grid {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+
+        .bab-legacy-field {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<script>
+    (function () {
+        var origin = document.getElementById('bab-origin');
+        var traced = document.getElementById('bab-traced-section');
+
+        function isPurchased() {
+            if (!origin) return false;
+            var selected = origin.options && origin.selectedIndex >= 0 ? origin.options[origin.selectedIndex] : null;
+            var value = (origin.value || '').trim().toUpperCase();
+            var text = selected ? (selected.text || '').trim().toUpperCase() : '';
+            return value === 'P' || value === 'PURCHASED' || text === 'PURCHASED';
+        }
+
+        function hasTracedData() {
+            return ['bab-natal-cphh', 'bab-traced-name', 'bab-addr1', 'bab-addr2', 'bab-addr3', 'bab-postcode']
+                .some(function (id) { var el = document.getElementById(id); return el && el.value.trim() !== ''; });
+        }
+
+        function clearTracedFields() {
+            ['bab-natal-cphh', 'bab-traced-name', 'bab-addr1', 'bab-addr2', 'bab-addr3', 'bab-postcode']
+                .forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ''; });
+        }
+
+        function refreshTracedVisibility() {
+            if (!origin || !traced) return;
+            traced.style.display = (isPurchased() || hasTracedData()) ? '' : 'none';
+        }
+
+        if (origin && traced) {
+            origin.addEventListener('change', function () {
+                if (!isPurchased() && hasTracedData()) {
+                    alert('Trace data has been entered on this case. If you click Save then this data will be lost.');
+                    clearTracedFields();
+                }
+                refreshTracedVisibility();
+            });
+            refreshTracedVisibility();
+        }
+
+        var form = document.getElementById('case-bab-inline-form');
+        var cancelLinks = document.querySelectorAll('.bse-cancel-link');
+        if (!form || cancelLinks.length === 0) return;
+
+        var dirty = false;
+        var submitting = false;
+
+        form.addEventListener('change', function () { dirty = true; });
+        form.addEventListener('input', function () { dirty = true; });
+        form.addEventListener('submit', function () { submitting = true; });
+
+        cancelLinks.forEach(function (cancel) {
+            cancel.addEventListener('click', function (e) {
+                if (!dirty) return;
+                if (!window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+                    e.preventDefault();
+                }
+            });
+        });
+
+        window.addEventListener('beforeunload', function (e) {
+            if (dirty && !submitting) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+    })();
+</script>
 

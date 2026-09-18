@@ -12,6 +12,7 @@ using BSE.SharedKernel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Configuration;
 using System.Text.RegularExpressions;
 
 namespace BSE.Host.Pages.Case;
@@ -22,18 +23,23 @@ public class DefraEditModel(
     ICurrentUserService currentUserService,
     ILookupDataService lookups,
     ICaseWorkRepository caseWorkRepository,
-    IBatchRepository batchRepository) : PageModel
+    IBatchRepository batchRepository,
+    IConfiguration configuration) : PageModel
 {
     private const string RowStampKey = "DefraEdit_RowStamp_{0}";
 
     [BindProperty(SupportsGet = true)]
     public string Rbse { get; set; } = string.Empty;
 
+    [BindProperty(SupportsGet = true)]
+    public bool Embed { get; set; }
+
     [BindProperty]
     public CaseEditViewModel Case { get; set; } = new();
 
     public string? ConcurrencyError { get; private set; }
     public IReadOnlyList<BatchNumberEntry> BatchNumbers { get; private set; } = [];
+    public string SpolSiteUrl { get; private set; } = string.Empty;
 
     public IEnumerable<ILookupItem> FateOptions { get; private set; } = [];
     public IEnumerable<ILookupItem> SurveyOptions { get; private set; } = [];
@@ -44,6 +50,8 @@ public class DefraEditModel(
 
     public async Task<IActionResult> OnGetAsync()
     {
+        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+
         var record = await caseService.GetCaseAsync(Rbse);
         if (record is null)
         {
@@ -66,6 +74,7 @@ public class DefraEditModel(
 
     public async Task<IActionResult> OnPostAsync()
     {
+        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadLookupsAsync();
 
         // Mirrors legacy CaseEntryDEFRA: clear dependent dates when anchor date is removed

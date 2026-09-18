@@ -14,6 +14,10 @@ public class UsersAddModel(
     IUserManagementService userManagementService,
     ILookupDataService lookupDataService) : PageModel
 {
+    // Column limits from [dbo].[User]: Name VARCHAR(35), Email VARCHAR(60).
+    private const int UserNameMaxLength = 35;
+    private const int EmailMaxLength = 60;
+
     // NT Login is a legacy Windows-auth identifier; the business wants it hidden from the UI
     // wherever possible now that Entra ID/email is the primary identity. Derived automatically
     // from Email below rather than collected from the user.
@@ -37,11 +41,21 @@ public class UsersAddModel(
             .Any(v => string.Equals(v, "true", StringComparison.OrdinalIgnoreCase));
 
         var email = Email?.Trim();
+        var userName = UserName?.Trim() ?? string.Empty;
+        UserName = userName;
 
         if (string.IsNullOrWhiteSpace(email))
             ModelState.AddModelError(nameof(Email), "Enter an email address");
-        if (string.IsNullOrWhiteSpace(UserName))
+        else if (email.Length > EmailMaxLength)
+            ModelState.AddModelError(nameof(Email), $"Email must be {EmailMaxLength} characters or fewer");
+        else if (!ValidationHelpers.IsValidEmail(email))
+            ModelState.AddModelError(nameof(Email), "Enter an email address in the correct format, like name@example.com");
+
+        if (string.IsNullOrWhiteSpace(userName))
             ModelState.AddModelError(nameof(UserName), "Enter a display name");
+        else if (userName.Length > UserNameMaxLength)
+            ModelState.AddModelError(nameof(UserName), $"Display name must be {UserNameMaxLength} characters or fewer");
+
         if (UserGroupId <= 0)
             ModelState.AddModelError(nameof(UserGroupId), "Select a user group");
 

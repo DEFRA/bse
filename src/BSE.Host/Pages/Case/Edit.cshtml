@@ -3,10 +3,25 @@
 @using BSE.Modules.CaseManagement.Models
 @{
     ViewData["Title"] = $"Case {Model.Case.Rbse} — DEFRA tab";
-    string D(DateTime? d) => d?.ToString("dd/MM/yyyy") ?? "—";
-    string Desc(IEnumerable<BSE.SharedKernel.ILookupItem> opts, string? code) =>
-        opts.FirstOrDefault(o => o.Code == code)?.Description ?? code ?? "—";
+    string DateVal(DateTime? d) => d?.ToString("yyyy-MM-dd") ?? "";
     string rbseNoSlash = Model.Case.Rbse.Replace("/", "");
+    var viewDocsUrl = string.IsNullOrWhiteSpace(Model.SpolSiteUrl)
+        ? null
+        : $"{Model.SpolSiteUrl}{rbseNoSlash}";
+
+    string? eEartag       = ViewData.ModelState["Case.EartagCountry"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string? eFormA         = ViewData.ModelState["Case.FormADate"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string? eFormAResub    = ViewData.ModelState["Case.FormAResubmittedDate"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string? eFormB         = ViewData.ModelState["Case.FormBDate"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string? eFate          = ViewData.ModelState["Case.Fate"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string? eFormC         = ViewData.ModelState["Case.FormCDate"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string? eBirth         = ViewData.ModelState["Case.BirthDate"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string? ePurchaserBse1 = ViewData.ModelState["Case.PurchaserBse1ReceivedDate"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string? eBreederBse1   = ViewData.ModelState["Case.BreederBse1ReceivedDate"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string? eVendor1Bse1   = ViewData.ModelState["Case.Vendor1Bse1ReceivedDate"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string? eHomebredBse1  = ViewData.ModelState["Case.HomebredBse1ReceivedDate"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string? eSummarySheet  = ViewData.ModelState["Case.SummarySheetReceivedDate"]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string? ePaperwork     = ViewData.ModelState["Case.PaperworkCompleteDate"]?.Errors.FirstOrDefault()?.ErrorMessage;
 }
 
 <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
@@ -16,12 +31,11 @@
     </ol>
 </nav>
 
-@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Case (DEFRA)", Model.Case.Rbse, Model.BatchNumbers))
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Case (DEFRA)", Model.Case.Rbse, Model.BatchNumbers, viewDocsUrl))
 
 @if (TempData["Success"] is string successMsg)
 {
-    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert"
-         aria-labelledby="defra-success-title" data-module="govuk-notification-banner">
+    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert" aria-labelledby="defra-success-title" data-module="govuk-notification-banner">
         <div class="govuk-notification-banner__header">
             <h2 class="govuk-notification-banner__title" id="defra-success-title">Success</h2>
         </div>
@@ -31,255 +45,744 @@
     </div>
 }
 
-
-@* -- READ-ONLY VIEW --------------------------------------------------------- *@
-<div class="govuk-button-group govuk-!-margin-bottom-4">
-    @if (User.IsInRole("DataEntry"))
-    {
-        <a asp-page="/Case/DefraEdit" asp-route-rbse="@Model.Case.Rbse"
-       class="govuk-button govuk-button--secondary">Change case (DEFRA) details</a>
-    }
-        <a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse" asp-route-returnTo="/Case/Edit" class="govuk-link">Case audit log</a>
-        @if (!string.IsNullOrEmpty(Model.SpolSiteUrl))
-        {
-            <a href="@(Model.SpolSiteUrl)@rbseNoSlash" target="_blank" rel="noopener noreferrer" class="govuk-link">
-                View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
-            </a>
-        }
-    </div>
-
-    <h2 class="govuk-heading-m">Animal identification</h2>
-    <dl class="govuk-summary-list">
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Eartag</dt>
-            <dd class="govuk-summary-list__value">@Model.Case.EartagCountry @Model.Case.EartagHerdmark @Model.Case.Eartag</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Previous eartag</dt>
-            <dd class="govuk-summary-list__value">@(Model.Case.PreviousEartag ?? "—")</dd>
-        </div>
-    </dl>
-
-    <h2 class="govuk-heading-m">Key dates and fate</h2>
-    <dl class="govuk-summary-list">
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">BSE-1 date received</dt>
-            <dd class="govuk-summary-list__value">@D(Model.Case.Bse1ReceivedDate)</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Form A date</dt>
-            <dd class="govuk-summary-list__value">@D(Model.Case.FormADate)</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Form A resubmitted date</dt>
-            <dd class="govuk-summary-list__value">@D(Model.Case.FormAResubmittedDate)</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Form B date</dt>
-            <dd class="govuk-summary-list__value">@D(Model.Case.FormBDate)</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Fate (Form B reason)</dt>
-            <dd class="govuk-summary-list__value">@Desc(Model.FateOptions, Model.Case.Fate)</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Form C date</dt>
-            <dd class="govuk-summary-list__value">@D(Model.Case.FormCDate)</dd>
-        </div>
-    </dl>
-
-    <h2 class="govuk-heading-m">Results</h2>
-    <dl class="govuk-summary-list">
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Final result date</dt>
-            <dd class="govuk-summary-list__value">@(Model.Case.FinalResultDate?.ToString("dd/MM/yyyy") ?? "—")</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Final result</dt>
-            <dd class="govuk-summary-list__value">@(Model.Case.FinalResult ?? "—")</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">DBSE</dt>
-            <dd class="govuk-summary-list__value">@(Model.Case.Dbse ?? "—")</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Case type</dt>
-            <dd class="govuk-summary-list__value">@Desc(Model.CaseTypeOptions, Model.Case.CaseType)</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Lab comment</dt>
-            <dd class="govuk-summary-list__value">@(Model.Case.LabComment ?? "—")</dd>
-        </div>
-    </dl>
-
-    @* ── Test records — full CRUD with GDS pagination and sorting ── *@
-
-    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
-    <h2 class="govuk-heading-m">Test records</h2>
-    @if (Model.TestsTotalCount > 0)
-    {
-        <table class="govuk-table">
-            <caption class="govuk-visually-hidden">Test records for @BseFormat.FormatRbse(Model.Case.Rbse)</caption>
-            <thead class="govuk-table__head">
-                <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.TSort=="type" ? (Model.TDir=="asc" ? "ascending" : "descending") : "none")">
-                        <a class="govuk-link govuk-link--no-visited-state" href="@Model.TestsSortUrl("type")">Test type</a>
-                    </th>
-                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.TSort=="result" ? (Model.TDir=="asc" ? "ascending" : "descending") : "none")">
-                        <a class="govuk-link govuk-link--no-visited-state" href="@Model.TestsSortUrl("result")">Test result</a>
-                    </th>
-                    @if (User.IsInRole("DataEntry"))
+@if (!ViewContext.ModelState.IsValid)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
                     {
-                        <th scope="col" class="govuk-table__header">Action</th>
-                    }
-                </tr>
-            </thead>
-            <tbody class="govuk-table__body">
-                @foreach (var t in Model.Tests)
-                {
-                    <tr class="govuk-table__row">
-                        <td class="govuk-table__cell">@(t.TestTypeDescription ?? t.TestType)</td>
-                        <td class="govuk-table__cell">@(t.TestResultDescription ?? t.TestResult)</td>
-                        @if (User.IsInRole("DataEntry"))
-                        {
-                        <td class="govuk-table__cell">
-                            <a class="govuk-link govuk-!-margin-right-3"
-                               asp-page="/Case/CaseTestEdit"
-                               asp-route-rbse="@Model.Rbse"
-                               asp-route-id="@t.Id">Change</a>
-                            <form method="post" asp-page-handler="DeleteTest" style="display:inline-block;vertical-align:middle" novalidate>
-                                <input type="hidden" name="id" value="@t.Id" />
-                                <input type="hidden" name="rowStampBase64" value="@(t.RowStamp is not null ? Convert.ToBase64String(t.RowStamp) : "")" />
-                                <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0" style="display:inline-block"
-                                        onclick="return confirm('Delete this test record?')">Delete</button>
-                            </form>
-                        </td>
-                        }
-                    </tr>
-                }
-            </tbody>
-        </table>
-        @if (Model.TestsTotalPages > 1)
-        {
-            <nav class="govuk-pagination" role="navigation" aria-label="Test records pagination">
-                @if (Model.TPage > 1)
-                {
-                    <div class="govuk-pagination__prev">
-                        <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(Model.TPage - 1)" rel="prev">
-                            <svg class="govuk-pagination__icon govuk-pagination__icon--prev" xmlns="http://www.w3.org/2000/svg" height="13" width="15" focusable="false" aria-hidden="true" viewBox="0 0 15 13"><path d="m6.5938-0.0078125-6.7266 6.7266 6.7441 6.4062 1.377-1.449-4.1856-3.9768h12.896v-2h-12.984l4.2931-4.293-1.414-1.414z"/></svg>
-                            <span class="govuk-pagination__link-title">Previous<span class="govuk-visually-hidden"> page</span></span>
-                        </a>
-                    </div>
-                }
-                <ul class="govuk-pagination__list">
-                    @{ int tStart = Math.Max(1, Model.TPage - 4); int tEnd = Math.Min(Model.TestsTotalPages, tStart + 9); if (tEnd - tStart < 9) tStart = Math.Max(1, tEnd - 9); }
-                    @for (int p = tStart; p <= tEnd; p++)
-                    {
-                        bool tCur = p == Model.TPage;
-                        <li class="govuk-pagination__item @(tCur ? "govuk-pagination__item--current" : "")">
-                            @if (tCur) { <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(p)" aria-label="Page @p" aria-current="page">@p</a> }
-                            else       { <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(p)" aria-label="Page @p">@p</a> }
-                        </li>
+                        <li>@e.ErrorMessage</li>
                     }
                 </ul>
-                @if (Model.TPage < Model.TestsTotalPages)
-                {
-                    <div class="govuk-pagination__next">
-                        <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(Model.TPage + 1)" rel="next">
-                            <span class="govuk-pagination__link-title">Next<span class="govuk-visually-hidden"> page</span></span>
-                            <svg class="govuk-pagination__icon govuk-pagination__icon--next" xmlns="http://www.w3.org/2000/svg" height="13" width="15" focusable="false" aria-hidden="true" viewBox="0 0 15 13"><path d="m8.107-0.0078125-1.4136 1.414 4.2926 4.293h-12.986v2h12.896l-4.1855 3.9766 1.377 1.4492 6.7441-6.4062-6.7246-6.7246z"/></svg>
-                        </a>
+            </div>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.ConcurrencyError))
+{
+    <div class="govuk-warning-text">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text">
+            <span class="govuk-warning-text__assistive">Warning</span>
+            @Model.ConcurrencyError
+        </strong>
+    </div>
+}
+
+@if (Model.HasUnsavedChanges)
+{
+    <div id="case-edit-unsaved-banner" class="govuk-notification-banner bse-unsaved-banner" role="region" aria-labelledby="case-edit-unsaved-title" data-module="govuk-notification-banner">
+        <div class="govuk-notification-banner__header">
+            <h2 class="govuk-notification-banner__title" id="case-edit-unsaved-title">Unsaved changes</h2>
+        </div>
+        <div class="govuk-notification-banner__content">
+            <p class="govuk-body">You have unsaved changes. Select Save to persist them or Cancel to discard.</p>
+        </div>
+    </div>
+}
+
+@if (!User.IsInRole("DataEntry"))
+{
+    <p class="govuk-body">You can view case details but cannot edit this page.</p>
+}
+else
+{
+    <form method="post" novalidate id="case-edit-inline-form">
+        <input type="hidden" name="Rbse" value="@Model.Rbse" />
+
+        <div class="govuk-button-group govuk-!-margin-bottom-4">
+            <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+            <a asp-page="/Case/Edit" asp-page-handler="CancelEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
+        </div>
+
+        <input type="hidden" asp-for="Case.Rbse" />
+        <input type="hidden" asp-for="Case.HasCaseWork" />
+        <input type="hidden" asp-for="Case.RbseDate" />
+        <input type="hidden" asp-for="Case.Sex" />
+        <input type="hidden" asp-for="Case.Breed" />
+        <input type="hidden" asp-for="Case.Origin" />
+        <input type="hidden" asp-for="Case.DamStatus" />
+        <input type="hidden" asp-for="Case.SlaughterDate" />
+        <input type="hidden" asp-for="Case.OnsetDate" />
+        <input type="hidden" asp-for="Case.IsOnsetDateEst" />
+        <input type="hidden" asp-for="Case.PurchaseDate" />
+        <input type="hidden" asp-for="Case.PurchaseAgeInMonths" />
+        <input type="hidden" asp-for="Case.PurchasedCounty" />
+        <input type="hidden" asp-for="Case.HerdEntryDate" />
+        <input type="hidden" asp-for="Case.MonthsPregnant" />
+        <input type="hidden" asp-for="Case.MonthsPostCalving" />
+        <input type="hidden" asp-for="Case.OnsetAgeInMonths" />
+        <input type="hidden" asp-for="Case.AlternateDiagnosis" />
+        <input type="hidden" asp-for="Case.FinalResultDate" />
+        <input type="hidden" asp-for="Case.FinalResult" />
+        <input type="hidden" asp-for="Case.Dbse" />
+
+        <section class="defra-legacy-panel govuk-!-margin-bottom-6" aria-labelledby="defra-identification-heading">
+            <h2 id="defra-identification-heading" class="govuk-visually-hidden">Animal identification</h2>
+            <div class="defra-legacy-grid defra-legacy-grid--tight defra-legacy-grid--id">
+                <div class="defra-legacy-field @(eEartag is not null ? "govuk-form-group--error" : "")">
+                    <label class="govuk-label" for="Case_EartagCountry">Eartag</label>
+                    <div>
+                        @if (eEartag is not null)
+                        {
+                            <p id="eartag-error" class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eEartag</p>
+                        }
+                        <div class="defra-legacy-eartag-group" aria-describedby="@(eEartag is not null ? "eartag-error" : null)">
+                            <label class="govuk-visually-hidden" for="Case_EartagCountry">Country</label>
+                            <input asp-for="Case.EartagCountry" id="Case_EartagCountry" class="govuk-input defra-legacy-eartag-country" maxlength="4" spellcheck="false" autocomplete="off" style="text-transform:uppercase" />
+                            <label class="govuk-visually-hidden" for="Case_EartagHerdmark">Herdmark</label>
+                            <input asp-for="Case.EartagHerdmark" id="Case_EartagHerdmark" class="govuk-input defra-legacy-eartag-herdmark" maxlength="8" spellcheck="false" autocomplete="off" />
+                            <label class="govuk-visually-hidden" for="Case_Eartag">Animal number</label>
+                            <input asp-for="Case.Eartag" id="Case_Eartag" class="govuk-input defra-legacy-eartag-animal" maxlength="25" spellcheck="false" autocomplete="off" />
+                        </div>
                     </div>
+                </div>
+                <div class="defra-legacy-field">
+                    <label asp-for="Case.PreviousEartag" class="govuk-label">Previous Eartag</label>
+                    <input asp-for="Case.PreviousEartag" class="govuk-input defra-legacy-input--md" maxlength="25" />
+                </div>
+            </div>
+
+            <div class="defra-legacy-grid defra-legacy-grid--tight defra-legacy-grid--id">
+                <div class="defra-legacy-field">
+                    <label asp-for="Case.Bse1ReceivedDate" class="govuk-label">BSE1 Date Received</label>
+                    <input asp-for="Case.Bse1ReceivedDate" type="date" class="govuk-input defra-legacy-date" value="@DateVal(Model.Case.Bse1ReceivedDate)" />
+                </div>
+                <div class="defra-legacy-field"></div>
+            </div>
+
+            <div class="defra-legacy-grid">
+                <div class="defra-legacy-field @(eFormA is not null ? "govuk-form-group--error" : "")">
+                    <label asp-for="Case.FormADate" class="govuk-label">Form A Date</label>
+                    @if (eFormA is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eFormA</p> }
+                    <input asp-for="Case.FormADate" type="date" class="govuk-input defra-legacy-date @(eFormA is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.FormADate)" />
+                </div>
+                <div class="defra-legacy-field @(eFormAResub is not null ? "govuk-form-group--error" : "")">
+                    <label asp-for="Case.FormAResubmittedDate" class="govuk-label">Form A Resubmitted Date</label>
+                    @if (eFormAResub is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eFormAResub</p> }
+                    <input asp-for="Case.FormAResubmittedDate" type="date" class="govuk-input defra-legacy-date @(eFormAResub is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.FormAResubmittedDate)" />
+                </div>
+            </div>
+
+            <div class="defra-legacy-grid">
+                <div class="defra-legacy-field @(eFormB is not null ? "govuk-form-group--error" : "")">
+                    <label asp-for="Case.FormBDate" class="govuk-label">Form B Date</label>
+                    @if (eFormB is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eFormB</p> }
+                    <input asp-for="Case.FormBDate" type="date" class="govuk-input defra-legacy-date @(eFormB is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.FormBDate)" />
+                </div>
+                <div class="defra-legacy-field @(eFate is not null ? "govuk-form-group--error" : "")">
+                    <label asp-for="Case.Fate" class="govuk-label">Fate (Form B reason)</label>
+                    @if (eFate is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eFate</p> }
+                    <select asp-for="Case.Fate" class="govuk-select defra-legacy-input--sm @(eFate is not null ? "govuk-select--error" : "")">
+                        <option value="">-- Select --</option>
+                        @foreach (var o in Model.FateOptions)
+                        {
+                            <option value="@o.Code" selected="@(o.Code == Model.Case.Fate ? "selected" : null)">@o.Description</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="defra-legacy-grid">
+                <div class="defra-legacy-field @(eFormC is not null ? "govuk-form-group--error" : "")">
+                    <label asp-for="Case.FormCDate" class="govuk-label">Form C Date</label>
+                    @if (eFormC is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eFormC</p> }
+                    @if (eFormC is null && Model.Case.FormCDate.HasValue && Model.Case.FormBDate.HasValue && Model.Case.FormCDate != Model.Case.FormBDate)
+                    {
+                        <p class="govuk-warning-text govuk-!-margin-bottom-0 govuk-!-font-size-16">
+                            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+                            <strong class="govuk-warning-text__text"><span class="govuk-warning-text__assistive">Warning</span> Form C date differs from Form B date — please check.</strong>
+                        </p>
+                    }
+                    <input asp-for="Case.FormCDate" type="date" class="govuk-input defra-legacy-date @(eFormC is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.FormCDate)" />
+                </div>
+                <div class="defra-legacy-field"></div>
+            </div>
+
+            <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+
+            <h2 class="govuk-visually-hidden">Test records</h2>
+            <table class="govuk-table">
+                <caption class="govuk-visually-hidden">Test records for @BseFormat.FormatRbse(Model.Case.Rbse)</caption>
+                <thead class="govuk-table__head">
+                    <tr class="govuk-table__row">
+                        <th scope="col" class="govuk-table__header" aria-sort="@(Model.TSort=="type" ? (Model.TDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.TestsSortUrl("type")">Test type</a>
+                        </th>
+                        <th scope="col" class="govuk-table__header" aria-sort="@(Model.TSort=="result" ? (Model.TDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.TestsSortUrl("result")">Test result</a>
+                        </th>
+                        <th scope="col" class="govuk-table__header">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="govuk-table__body">
+                    @if (!Model.Tests.Any())
+                    {
+                        <tr class="govuk-table__row">
+                            <td class="govuk-table__cell" colspan="3">No test records for this case.</td>
+                        </tr>
+                    }
+
+                    @foreach (var t in Model.Tests)
+                    {
+                        var isEditingTest = Model.ReopenEditTestId == t.Id;
+                        <tr class="govuk-table__row">
+                            @if (isEditingTest)
+                            {
+                                <td class="govuk-table__cell">
+                                    <label class="govuk-visually-hidden" for="edit-test-type-@t.Id">Test type</label>
+                                    <select id="edit-test-type-@t.Id" name="EditTestType" class="govuk-select govuk-!-width-one-half">
+                                        <option value="">-- Select --</option>
+                                        @foreach (var o in Model.TestTypeOptions)
+                                        {
+                                            <option value="@o.Code" selected="@(string.Equals(Model.EditTestType, o.Code, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@o.Description</option>
+                                        }
+                                    </select>
+                                </td>
+                                <td class="govuk-table__cell">
+                                    <label class="govuk-visually-hidden" for="edit-test-result-@t.Id">Test result</label>
+                                    <select id="edit-test-result-@t.Id" name="EditTestResult" class="govuk-select govuk-!-width-one-half">
+                                        <option value="">-- Select --</option>
+                                        @foreach (var o in Model.TestResultOptions)
+                                        {
+                                            <option value="@o.Code" selected="@(string.Equals(Model.EditTestResult, o.Code, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@o.Description</option>
+                                        }
+                                    </select>
+                                </td>
+                            }
+                            else
+                            {
+                                <td class="govuk-table__cell">@(t.TestTypeDescription ?? t.TestType)</td>
+                                <td class="govuk-table__cell">@(t.TestResultDescription ?? t.TestResult)</td>
+                            }
+                            <td class="govuk-table__cell">
+                                @if (isEditingTest)
+                                {
+                                    <input type="hidden" name="EditingTestId" value="@t.Id" />
+                                    <input type="hidden" name="EditTestRowStampBase64" value="@(t.RowStamp is not null ? Convert.ToBase64String(t.RowStamp) : "")" />
+                                    <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
+                                        <button type="submit" asp-page-handler="UpdateTestRow" class="bse-inline-row-button bse-inline-row-button--confirm" data-module="govuk-button">Confirm</button>
+                                        <button type="button" class="bse-inline-row-button bse-inline-row-button--secondary js-cancel-edit-test-row" data-id="@t.Id">Cancel</button>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
+                                        <button type="submit" asp-page-handler="BeginEditTestRow" asp-route-id="@t.Id" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">Change</button>
+                                        <button type="submit" asp-page-handler="DeleteTest" asp-route-id="@t.Id" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0" onclick="return confirm('Delete this test record?')">Delete</button>
+                                    </div>
+                                }
+                            </td>
+                        </tr>
+                    }
+
+                    <tr id="add-test-row-inline" class="govuk-table__row bse-herd-row--unsaved" hidden="@(!Model.ShowAddTestRow)">
+                        <td class="govuk-table__cell">
+                            <label class="govuk-visually-hidden" for="new-test-type">Test type</label>
+                            <select id="new-test-type" name="NewTestType" class="govuk-select govuk-!-width-one-half">
+                                <option value="">-- Select --</option>
+                                @foreach (var o in Model.TestTypeOptions)
+                                {
+                                    <option value="@o.Code" selected="@(string.Equals(Model.NewTestType, o.Code, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@o.Description</option>
+                                }
+                            </select>
+                        </td>
+                        <td class="govuk-table__cell">
+                            <label class="govuk-visually-hidden" for="new-test-result">Test result</label>
+                            <select id="new-test-result" name="NewTestResult" class="govuk-select govuk-!-width-one-half">
+                                <option value="">-- Select --</option>
+                                @foreach (var o in Model.TestResultOptions)
+                                {
+                                    <option value="@o.Code" selected="@(string.Equals(Model.NewTestResult, o.Code, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@o.Description</option>
+                                }
+                            </select>
+                        </td>
+                        <td class="govuk-table__cell">
+                            <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
+                                <button type="submit" asp-page-handler="AddTestRow" class="bse-inline-row-button bse-inline-row-button--confirm" data-module="govuk-button">Confirm</button>
+                                <button type="button" id="cancel-add-test-row" class="bse-inline-row-button bse-inline-row-button--secondary">Cancel</button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            @if (Model.TestsTotalPages > 1)
+            {
+                <nav class="govuk-pagination" role="navigation" aria-label="Test records pagination">
+                    @if (Model.TPage > 1)
+                    {
+                        <div class="govuk-pagination__prev">
+                            <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(Model.TPage - 1)" rel="prev">
+                                <span class="govuk-pagination__link-title">Previous<span class="govuk-visually-hidden"> page</span></span>
+                            </a>
+                        </div>
+                    }
+                    <ul class="govuk-pagination__list">
+                        @{ int tStart = Math.Max(1, Model.TPage - 4); int tEnd = Math.Min(Model.TestsTotalPages, tStart + 9); if (tEnd - tStart < 9) tStart = Math.Max(1, tEnd - 9); }
+                        @for (int p = tStart; p <= tEnd; p++)
+                        {
+                            bool tCur = p == Model.TPage;
+                            <li class="govuk-pagination__item @(tCur ? "govuk-pagination__item--current" : "")">
+                                @if (tCur) { <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(p)" aria-label="Page @p" aria-current="page">@p</a> }
+                                else       { <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(p)" aria-label="Page @p">@p</a> }
+                            </li>
+                        }
+                    </ul>
+                    @if (Model.TPage < Model.TestsTotalPages)
+                    {
+                        <div class="govuk-pagination__next">
+                            <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(Model.TPage + 1)" rel="next">
+                                <span class="govuk-pagination__link-title">Next<span class="govuk-visually-hidden"> page</span></span>
+                            </a>
+                        </div>
+                    }
+                </nav>
+            }
+
+            <div class="govuk-button-group govuk-!-margin-bottom-4">
+                <button type="button" id="show-add-test-row" class="govuk-button govuk-button--secondary" data-module="govuk-button">Add test record</button>
+            </div>
+
+            <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
+
+            <h2 class="govuk-visually-hidden">Case status</h2>
+            <div class="defra-legacy-grid defra-legacy-grid--toprow">
+                <div class="defra-legacy-field defra-legacy-field--inline">
+                    <label class="govuk-label">Final result date</label>
+                    <input type="text" class="govuk-input defra-legacy-status-input" value="@(Model.Case.FinalResultDate?.ToString("dd/MM/yyyy") ?? "")" readonly />
+                </div>
+                <div class="defra-legacy-field defra-legacy-field--inline">
+                    <label class="govuk-label">Final result</label>
+                    <input type="text" class="govuk-input defra-legacy-status-input" value="@(Model.Case.FinalResult ?? "")" readonly />
+                </div>
+            </div>
+
+            <div class="defra-legacy-grid">
+                <div class="defra-legacy-field">
+                    <label asp-for="Case.CaseType" class="govuk-label">Case type</label>
+                    <select asp-for="Case.CaseType" class="govuk-select defra-legacy-input--sm">
+                        <option value="">-- Select --</option>
+                        @foreach (var o in Model.CaseTypeOptions)
+                        {
+                            <option value="@o.Code" selected="@(o.Code == Model.Case.CaseType ? "selected" : null)">@o.Description</option>
+                        }
+                    </select>
+                </div>
+                <div class="defra-legacy-field">
+                    <label asp-for="Case.LabComment" class="govuk-label">Lab comment</label>
+                    <textarea asp-for="Case.LabComment" class="govuk-textarea defra-legacy-input--sm" rows="2" maxlength="255"></textarea>
+                </div>
+            </div>
+
+            <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
+
+            <div class="defra-legacy-grid">
+                <div class="defra-legacy-field @(eBirth is not null ? "govuk-form-group--error" : "")">
+                    <label asp-for="Case.BirthDate" class="govuk-label">Date of Birth</label>
+                    @if (eBirth is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eBirth</p> }
+                    <input asp-for="Case.BirthDate" type="date" class="govuk-input defra-legacy-date @(eBirth is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.BirthDate)" />
+                </div>
+                <div class="defra-legacy-field">
+                    <label asp-for="Case.ReportedLocation" class="govuk-label">Reported Location</label>
+                    <select asp-for="Case.ReportedLocation" class="govuk-select defra-legacy-input--sm">
+                        <option value="">-- Select --</option>
+                        @foreach (var o in Model.ReportedLocationOptions)
+                        {
+                            <option value="@o.Code" selected="@(o.Code == Model.Case.ReportedLocation ? "selected" : null)">@o.Description</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="defra-legacy-grid">
+                <div class="defra-legacy-field">
+                    <label asp-for="Case.BirthDateSource" class="govuk-label">Date Of Birth Source</label>
+                    <select asp-for="Case.BirthDateSource" class="govuk-select defra-legacy-input--sm">
+                        <option value="">-- Select --</option>
+                        @foreach (var o in Model.BirthDateSourceOptions)
+                        {
+                            <option value="@o.Code" selected="@(o.Code == Model.Case.BirthDateSource ? "selected" : null)">@o.Description</option>
+                        }
+                    </select>
+                </div>
+                <div class="defra-legacy-field defra-legacy-field--inline">
+                    <label class="govuk-label">DBSE</label>
+                    <input type="text" class="govuk-input defra-legacy-status-input" value="@(Model.Case.Dbse ?? "")" disabled />
+                </div>
+            </div>
+
+            <div class="defra-legacy-grid">
+                <div class="defra-legacy-field defra-legacy-field--checkbox-inline">
+                    <label asp-for="Case.IsBirthDateEst" class="govuk-label">Is Date Of Birth Estimated?</label>
+                    <input asp-for="Case.IsBirthDateEst" type="checkbox" class="defra-legacy-receipt-check defra-legacy-inline-checkbox" />
+                </div>
+                <div class="defra-legacy-field">
+                    <label asp-for="Case.Survey" class="govuk-label">Survey</label>
+                    <select asp-for="Case.Survey" class="govuk-select defra-legacy-input--sm">
+                        <option value="">-- Select --</option>
+                        @foreach (var o in Model.SurveyOptions)
+                        {
+                            <option value="@o.Code" selected="@(o.Code == Model.Case.Survey ? "selected" : null)">@o.Description</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="defra-legacy-grid">
+                <div class="defra-legacy-field">
+                    <label asp-for="Case.ValuationAge" class="govuk-label">Valuation age</label>
+                    <select asp-for="Case.ValuationAge" class="govuk-select defra-legacy-input--sm">
+                        <option value="">-- Select --</option>
+                        @foreach (var o in Model.ValuationAgeOptions)
+                        {
+                            <option value="@o.Code" selected="@(o.Code == Model.Case.ValuationAge ? "selected" : null)">@o.Description</option>
+                        }
+                    </select>
+                </div>
+                <div class="defra-legacy-field">
+                    @if (Model.Case.HasCaseWork)
+                    {
+                        <label asp-for="Case.Barcode" class="govuk-label">Barcode</label>
+                        <input asp-for="Case.Barcode" class="govuk-input defra-legacy-input--sm" maxlength="20" />
+                    }
+                </div>
+            </div>
+
+            <div class="defra-legacy-grid">
+                <div class="defra-legacy-field"></div>
+                <div class="defra-legacy-field">
+                    @if (Model.Case.HasCaseWork)
+                    {
+                        <label asp-for="Case.AhfReference" class="govuk-label">AHF reference</label>
+                        <input asp-for="Case.AhfReference" class="govuk-input defra-legacy-input--sm" maxlength="40" />
+                    }
+                </div>
+            </div>
+
+            <div class="govuk-form-group">
+                <label asp-for="Case.Notes" class="govuk-label">Notes</label>
+                <textarea asp-for="Case.Notes" class="govuk-textarea defra-legacy-notes" rows="3" maxlength="500"></textarea>
+            </div>
+
+            <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
+
+            <h2 class="govuk-visually-hidden">BSE-1 receipts</h2>
+
+            <div class="defra-legacy-receipts-grid">
+                <div class="defra-legacy-receipt-row">
+                    <label for="Case_IsPurchaserBse1Received" class="govuk-label defra-legacy-receipt-label">Is Purchaser BSE1 Received?</label>
+                    <input asp-for="Case.IsPurchaserBse1Received" id="Case_IsPurchaserBse1Received" type="checkbox" class="defra-legacy-receipt-check" />
+                    @if (Model.Case.HasCaseWork)
+                    {
+                        <input asp-for="Case.PurchaserBse1ReceivedDate" type="date" class="govuk-input defra-legacy-date @(ePurchaserBse1 is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.PurchaserBse1ReceivedDate)" aria-label="Purchaser BSE1 received date" />
+                    }
+                </div>
+                <div class="defra-legacy-receipt-row">
+                    <label for="Case_IsBreederBse1Received" class="govuk-label defra-legacy-receipt-label">Is Breeder BSE1 Received?</label>
+                    <input asp-for="Case.IsBreederBse1Received" id="Case_IsBreederBse1Received" type="checkbox" class="defra-legacy-receipt-check" />
+                    @if (Model.Case.HasCaseWork)
+                    {
+                        <input asp-for="Case.BreederBse1ReceivedDate" type="date" class="govuk-input defra-legacy-date @(eBreederBse1 is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.BreederBse1ReceivedDate)" aria-label="Breeder BSE1 received date" />
+                    }
+                </div>
+                <div class="defra-legacy-receipt-row">
+                    <label for="Case_IsVendor1Bse1Received" class="govuk-label defra-legacy-receipt-label">Is Vendor 1 BSE1 Received?</label>
+                    <input asp-for="Case.IsVendor1Bse1Received" id="Case_IsVendor1Bse1Received" type="checkbox" class="defra-legacy-receipt-check" />
+                    @if (Model.Case.HasCaseWork)
+                    {
+                        <input asp-for="Case.Vendor1Bse1ReceivedDate" type="date" class="govuk-input defra-legacy-date @(eVendor1Bse1 is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.Vendor1Bse1ReceivedDate)" aria-label="Vendor 1 BSE1 received date" />
+                    }
+                </div>
+                <div class="defra-legacy-receipt-row">
+                    <label for="Case_IsHomebredBse1Received" class="govuk-label defra-legacy-receipt-label">Is Homebred BSE1 Received?</label>
+                    <input asp-for="Case.IsHomebredBse1Received" id="Case_IsHomebredBse1Received" type="checkbox" class="defra-legacy-receipt-check" />
+                    @if (Model.Case.HasCaseWork)
+                    {
+                        <input asp-for="Case.HomebredBse1ReceivedDate" type="date" class="govuk-input defra-legacy-date @(eHomebredBse1 is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.HomebredBse1ReceivedDate)" aria-label="Homebred BSE1 received date" />
+                    }
+                </div>
+                <div class="defra-legacy-receipt-row">
+                    <label for="Case_IsSummarySheetReceived" class="govuk-label defra-legacy-receipt-label">Is Summary Sheet Received?</label>
+                    <input asp-for="Case.IsSummarySheetReceived" id="Case_IsSummarySheetReceived" type="checkbox" class="defra-legacy-receipt-check" />
+                    @if (Model.Case.HasCaseWork)
+                    {
+                        <input asp-for="Case.SummarySheetReceivedDate" type="date" class="govuk-input defra-legacy-date @(eSummarySheet is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.SummarySheetReceivedDate)" aria-label="Summary sheet received date" />
+                    }
+                </div>
+                <div class="defra-legacy-receipt-row">
+                    <label for="Case_IsPaperworkComplete" class="govuk-label defra-legacy-receipt-label">Is Paperwork Complete?</label>
+                    <input asp-for="Case.IsPaperworkComplete" id="Case_IsPaperworkComplete" type="checkbox" class="defra-legacy-receipt-check" />
+                    @if (Model.Case.HasCaseWork)
+                    {
+                        <input asp-for="Case.PaperworkCompleteDate" type="date" class="govuk-input defra-legacy-date @(ePaperwork is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.PaperworkCompleteDate)" aria-label="Paperwork complete date" />
+                    }
+                </div>
+            </div>
+        </section>
+
+        <div class="govuk-button-group govuk-!-margin-top-4">
+            <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+            <a asp-page="/Case/Edit" asp-page-handler="CancelEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
+        </div>
+
+        <div class="govuk-!-margin-top-6">
+            <ul class="govuk-list">
+                <li>
+                    <a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse" asp-route-returnTo="/Case/Edit" class="govuk-link">Case audit log</a>
+                </li>
+                @if (!string.IsNullOrWhiteSpace(viewDocsUrl))
+                {
+                    <li>
+                        <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" class="govuk-link">
+                            View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
+                        </a>
+                    </li>
                 }
-            </nav>
+            </ul>
+        </div>
+    </form>
+}
+
+<style>
+    .defra-legacy-panel {
+        max-width: 1160px;
+    }
+
+    .defra-legacy-grid {
+        display: grid;
+        grid-template-columns: 500px 500px;
+        column-gap: 72px;
+        align-items: start;
+        margin-bottom: 12px;
+    }
+
+    .defra-legacy-grid--id,
+    .defra-legacy-grid--tight {
+        margin-bottom: 12px;
+    }
+
+    .defra-legacy-grid--toprow {
+        margin-bottom: 1rem;
+    }
+
+    .defra-legacy-field {
+        display: grid;
+        grid-template-columns: 235px 252px;
+        column-gap: 10px;
+        align-items: start;
+        margin-bottom: 0;
+    }
+
+    .defra-legacy-field .govuk-label {
+        margin-bottom: 0;
+        font-weight: 400;
+        font-size: 19px;
+        line-height: 1.25;
+        white-space: nowrap;
+    }
+
+    .defra-legacy-field .govuk-input,
+    .defra-legacy-field .govuk-select,
+    .defra-legacy-field .govuk-textarea {
+        margin-bottom: 0;
+        font-size: 19px;
+        line-height: 1.25;
+    }
+
+    .defra-legacy-field--inline .govuk-label {
+        display: inline-block;
+        min-width: 13rem;
+        margin-bottom: 0;
+    }
+
+    .defra-legacy-value {
+        display: inline-block;
+        font-size: 19px;
+        line-height: 1.25;
+        min-height: 2.5rem;
+        padding-top: 4px;
+    }
+
+    .defra-legacy-input--md {
+        width: 252px;
+        max-width: 252px;
+    }
+
+    .defra-legacy-status-input {
+        width: 252px;
+        max-width: 252px;
+        opacity: 1;
+        color: #0b0c0c;
+        background: #f3f2f1;
+    }
+
+    .defra-legacy-input--sm,
+    .defra-legacy-date {
+        width: 252px;
+        max-width: 252px;
+    }
+
+    .defra-legacy-eartag-group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+    }
+
+    .defra-legacy-eartag-country { width: 58px; }
+    .defra-legacy-eartag-herdmark { width: 86px; }
+    .defra-legacy-eartag-animal { width: 96px; }
+
+    .defra-legacy-notes {
+        width: 100%;
+        min-height: 5.2rem;
+    }
+
+    .defra-legacy-field--checkbox .govuk-checkboxes {
+        margin-bottom: 0;
+    }
+
+    .defra-legacy-field--checkbox-inline {
+        align-items: center;
+    }
+
+    .defra-legacy-inline-checkbox {
+        justify-self: start;
+    }
+
+    .defra-legacy-receipts-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem 1.75rem;
+    }
+
+    .defra-legacy-receipt-row {
+        display: grid;
+        grid-template-columns: 17.5rem 2rem 16.8rem;
+        align-items: center;
+        column-gap: 0.85rem;
+        min-height: 2.9rem;
+    }
+
+    .defra-legacy-receipt-check {
+        width: 1.2rem;
+        height: 1.2rem;
+        margin: 0;
+    }
+
+    .bse-unsaved-banner {
+        border-left-color: #1d70b8;
+    }
+
+    .bse-herd-row--unsaved {
+        background: #fffbf2;
+    }
+
+    .bse-row-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: nowrap;
+        gap: 8px;
+    }
+
+    .bse-inline-row-button {
+        border: 1px solid #0b0c0c;
+        background: #fff;
+        color: #0b0c0c;
+        padding: 4px 8px;
+        min-height: 36px;
+        font-size: 1rem;
+        line-height: 1.1;
+        cursor: pointer;
+    }
+
+    .bse-inline-row-button:hover {
+        background: #f3f2f1;
+    }
+
+    .bse-inline-row-button:focus {
+        outline: 3px solid #ffdd00;
+        outline-offset: 0;
+    }
+
+    .bse-inline-row-button--secondary {
+        border-color: #505a5f;
+    }
+
+    .bse-inline-row-button--confirm {
+        background: #00703c;
+        border-color: #00703c;
+        color: #fff;
+    }
+
+    .bse-inline-row-button--confirm:hover {
+        background: #005a30;
+        border-color: #005a30;
+    }
+
+    @@media (max-width: 768px) {
+        .defra-legacy-grid {
+            grid-template-columns: 1fr;
+            gap: 0;
+        }
+
+        .defra-legacy-field {
+            grid-template-columns: 1fr;
+        }
+
+        .defra-legacy-receipts-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .defra-legacy-receipt-row {
+            grid-template-columns: 1fr;
+            row-gap: 0.3rem;
         }
     }
-    else
-    {
-        <p class="govuk-body">No test records for this case.</p>
-    }
+</style>
 
-    @if (User.IsInRole("DataEntry"))
-    {
-        <div class="govuk-button-group">
-            <a asp-page="/Case/CaseTestAdd" asp-route-rbse="@Model.Rbse" asp-route-from="defra" class="govuk-button govuk-button--secondary">Add test record</a>
-        </div>
-    }
+<script>
+    (function () {
+        var showAddTestBtn = document.getElementById('show-add-test-row');
+        var addTestRow = document.getElementById('add-test-row-inline');
+        var cancelAddTestBtn = document.getElementById('cancel-add-test-row');
 
-    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+        if (showAddTestBtn && addTestRow) {
+            showAddTestBtn.addEventListener('click', function () {
+                addTestRow.hidden = false;
+                showAddTestBtn.hidden = true;
+                var firstInput = addTestRow.querySelector('select');
+                if (firstInput) { firstInput.focus(); }
+            });
+        }
 
-    <h2 class="govuk-heading-m">Animal details</h2>
-    <dl class="govuk-summary-list">
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Date of birth</dt>
-            <dd class="govuk-summary-list__value">@D(Model.Case.BirthDate)</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Is DOB estimated?</dt>
-            <dd class="govuk-summary-list__value">@(Model.Case.IsBirthDateEst ? "Yes" : "No")</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Date of birth source</dt>
-            <dd class="govuk-summary-list__value">@Desc(Model.BirthDateSourceOptions, Model.Case.BirthDateSource)</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Reported location</dt>
-            <dd class="govuk-summary-list__value">@Desc(Model.ReportedLocationOptions, Model.Case.ReportedLocation)</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Survey</dt>
-            <dd class="govuk-summary-list__value">@Desc(Model.SurveyOptions, Model.Case.Survey)</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Valuation age</dt>
-            <dd class="govuk-summary-list__value">@Desc(Model.ValuationAgeOptions, Model.Case.ValuationAge)</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Notes</dt>
-            <dd class="govuk-summary-list__value">@(Model.Case.Notes ?? "—")</dd>
-        </div>
-    </dl>
+        if (cancelAddTestBtn && addTestRow && showAddTestBtn) {
+            cancelAddTestBtn.addEventListener('click', function () {
+                addTestRow.hidden = true;
+                showAddTestBtn.hidden = false;
+                cancelAddTestBtn.blur();
+            });
+        }
 
-    <h2 class="govuk-heading-m">BSE-1 receipts</h2>
-    <dl class="govuk-summary-list">
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Purchaser BSE-1 received?</dt>
-            <dd class="govuk-summary-list__value">@(Model.Case.IsPurchaserBse1Received ? "Yes" : "No")@(Model.Case.HasCaseWork && Model.Case.PurchaserBse1ReceivedDate.HasValue ? $" ({D(Model.Case.PurchaserBse1ReceivedDate)})" : "")</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Breeder BSE-1 received?</dt>
-            <dd class="govuk-summary-list__value">@(Model.Case.IsBreederBse1Received ? "Yes" : "No")@(Model.Case.HasCaseWork && Model.Case.BreederBse1ReceivedDate.HasValue ? $" ({D(Model.Case.BreederBse1ReceivedDate)})" : "")</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Vendor 1 BSE-1 received?</dt>
-            <dd class="govuk-summary-list__value">@(Model.Case.IsVendor1Bse1Received ? "Yes" : "No")@(Model.Case.HasCaseWork && Model.Case.Vendor1Bse1ReceivedDate.HasValue ? $" ({D(Model.Case.Vendor1Bse1ReceivedDate)})" : "")</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Homebred BSE-1 received?</dt>
-            <dd class="govuk-summary-list__value">@(Model.Case.IsHomebredBse1Received ? "Yes" : "No")@(Model.Case.HasCaseWork && Model.Case.HomebredBse1ReceivedDate.HasValue ? $" ({D(Model.Case.HomebredBse1ReceivedDate)})" : "")</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Summary sheet received?</dt>
-            <dd class="govuk-summary-list__value">@(Model.Case.IsSummarySheetReceived ? "Yes" : "No")@(Model.Case.HasCaseWork && Model.Case.SummarySheetReceivedDate.HasValue ? $" ({D(Model.Case.SummarySheetReceivedDate)})" : "")</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Paperwork complete?</dt>
-            <dd class="govuk-summary-list__value">@(Model.Case.IsPaperworkComplete ? "Yes" : "No")@(Model.Case.HasCaseWork && Model.Case.PaperworkCompleteDate.HasValue ? $" ({D(Model.Case.PaperworkCompleteDate)})" : "")</dd>
-        </div>
-    </dl>
+        document.querySelectorAll('.js-cancel-edit-test-row').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                window.location.href = window.location.pathname + window.location.search;
+            });
+        });
 
-    @if (Model.Case.HasCaseWork)
-    {
-        <h2 class="govuk-heading-m">Casework</h2>
-        <dl class="govuk-summary-list">
-            <div class="govuk-summary-list__row">
-                <dt class="govuk-summary-list__key">Barcode</dt>
-                <dd class="govuk-summary-list__value">@(Model.Case.Barcode ?? "—")</dd>
-            </div>
-            <div class="govuk-summary-list__row">
-                <dt class="govuk-summary-list__key">AHF reference</dt>
-                <dd class="govuk-summary-list__value">@(Model.Case.AhfReference ?? "—")</dd>
-            </div>
-        </dl>
-    }
+        document.querySelectorAll('.bse-cancel-link').forEach(function (lnk) {
+            lnk.addEventListener('click', function (e) {
+                var hasUnsaved = document.getElementById('case-edit-unsaved-banner') && !document.getElementById('case-edit-unsaved-banner').hidden;
+                if (hasUnsaved && !window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+                    e.preventDefault();
+                }
+            });
+        });
+    })();
+</script>
 

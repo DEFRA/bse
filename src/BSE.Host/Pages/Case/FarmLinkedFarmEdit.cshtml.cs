@@ -46,8 +46,8 @@ public class FarmLinkedFarmEditModel(
 
         var normalisedCphh = CphhNormalizer.Normalize(RelatedCphh);
 
-        if (!string.IsNullOrWhiteSpace(normalisedCphh) && normalisedCphh.Length > 11)
-            ModelState.AddModelError(nameof(RelatedCphh), "CPHH must be 11 characters or fewer.");
+        if (!string.IsNullOrWhiteSpace(normalisedCphh) && normalisedCphh.Length != 11)
+            ModelState.AddModelError(nameof(RelatedCphh), "Enter a valid CPHH with 11 digits.");
 
         if (!string.IsNullOrWhiteSpace(normalisedCphh) &&
             string.Equals(CphhNormalizer.Normalize(cphh), normalisedCphh, StringComparison.OrdinalIgnoreCase))

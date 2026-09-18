@@ -41,13 +41,13 @@
     <div class="govuk-form-group @(nameError is not null ? "govuk-form-group--error" : "")">
         <label class="govuk-label" for="edit-user-name">Display name</label>
         @if (nameError is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @nameError</p> }
-        <input id="edit-user-name" asp-for="EditUserName" class="govuk-input govuk-!-width-two-thirds @(nameError is not null ? "govuk-input--error" : "")" />
+        <input id="edit-user-name" asp-for="EditUserName" maxlength="35" class="govuk-input govuk-!-width-two-thirds @(nameError is not null ? "govuk-input--error" : "")" />
     </div>
 
     <div class="govuk-form-group @(emailError is not null ? "govuk-form-group--error" : "")">
         <label class="govuk-label" for="edit-email">Email</label>
         @if (emailError is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @emailError</p> }
-        <input id="edit-email" asp-for="EditEmail" type="email" class="govuk-input govuk-!-width-two-thirds @(emailError is not null ? "govuk-input--error" : "")" />
+        <input id="edit-email" asp-for="EditEmail" type="email" maxlength="60" class="govuk-input govuk-!-width-two-thirds @(emailError is not null ? "govuk-input--error" : "")" />
     </div>
 
     <div class="govuk-form-group @(groupError is not null ? "govuk-form-group--error" : "")">

@@ -3,38 +3,39 @@
 @{
     ViewData["Title"] = $"Clinical signs and visits — {Model.Rbse}";
     string rbseNoSlash = Model.Rbse.Replace("/", "");
-    var c = Model.Signs;
-    var checkedSigns = new System.Collections.Generic.List<string>();
-    if (c.Apprehension) checkedSigns.Add("Apprehension");
-    if (c.HypersensitiveTouch) checkedSigns.Add("Hypersensitive to touch");
-    if (c.HypersensitiveSound) checkedSigns.Add("Hypersensitive to sound");
-    if (c.Maniacal) checkedSigns.Add("Maniacal");
-    if (c.PanicStricken) checkedSigns.Add("Panic stricken");
-    if (c.TemperamentChange) checkedSigns.Add("Temperament change");
-    if (c.AbnormalHeadCarriage) checkedSigns.Add("Abnormal head carriage");
-    if (c.EarTwitching) checkedSigns.Add("Ear twitching");
-    if (c.EarsOddAngle) checkedSigns.Add("Ears at odd angle");
-    if (c.AbnormalBehaviour) checkedSigns.Add("Abnormal behaviour");
-    if (c.HeadShyness) checkedSigns.Add("Head shyness");
-    if (c.LickingFlank) checkedSigns.Add("Licking flank");
-    if (c.LickingNose) checkedSigns.Add("Licking nose");
-    if (c.Kicking) checkedSigns.Add("Kicking");
-    if (c.ReluctantDoorways) checkedSigns.Add("Reluctant to enter doorways");
-    if (c.HeadPressing) checkedSigns.Add("Head pressing");
-    if (c.HeadRubbing) checkedSigns.Add("Head rubbing");
-    if (c.TeethGrinding) checkedSigns.Add("Teeth grinding");
-    if (c.Blindness) checkedSigns.Add("Blindness");
-    if (c.Circling) checkedSigns.Add("Circling");
-    if (c.HindAtaxia) checkedSigns.Add("Hind ataxia");
-    if (c.Falling) checkedSigns.Add("Falling");
-    if (c.Paresis) checkedSigns.Add("Paresis");
-    if (c.ForeAtaxia) checkedSigns.Add("Fore ataxia");
-    if (c.Recumbent) checkedSigns.Add("Recumbent");
-    if (c.Tremor) checkedSigns.Add("Tremor");
-    if (c.KnucklingFetlock) checkedSigns.Add("Knuckling fetlock");
-    if (c.WeightLoss) checkedSigns.Add("Weight loss");
-    if (c.ConditionLoss) checkedSigns.Add("Condition loss");
-    if (c.MilkYield) checkedSigns.Add("Milk yield loss");
+    var viewDocsUrl = string.IsNullOrWhiteSpace(Model.SpolSiteUrl) ? null : $"{Model.SpolSiteUrl}{rbseNoSlash}";
+    var s = Model.Signs;
+    var checkedSigns = new List<string>();
+    if (s.Apprehension) checkedSigns.Add("Apprehension");
+    if (s.HypersensitiveTouch) checkedSigns.Add("Hypersensitive to touch");
+    if (s.HypersensitiveSound) checkedSigns.Add("Hypersensitive to sound");
+    if (s.Maniacal) checkedSigns.Add("Maniacal");
+    if (s.PanicStricken) checkedSigns.Add("Panic stricken");
+    if (s.TemperamentChange) checkedSigns.Add("Temperament change");
+    if (s.AbnormalHeadCarriage) checkedSigns.Add("Abnormal head carriage");
+    if (s.EarTwitching) checkedSigns.Add("Ear twitching");
+    if (s.EarsOddAngle) checkedSigns.Add("Ears at odd angle");
+    if (s.AbnormalBehaviour) checkedSigns.Add("Abnormal behaviour");
+    if (s.HeadShyness) checkedSigns.Add("Head shyness");
+    if (s.LickingFlank) checkedSigns.Add("Licking flank");
+    if (s.LickingNose) checkedSigns.Add("Licking nose");
+    if (s.Kicking) checkedSigns.Add("Kicking");
+    if (s.ReluctantDoorways) checkedSigns.Add("Reluctant to enter doorways");
+    if (s.HeadPressing) checkedSigns.Add("Head pressing");
+    if (s.HeadRubbing) checkedSigns.Add("Head rubbing");
+    if (s.TeethGrinding) checkedSigns.Add("Teeth grinding");
+    if (s.Blindness) checkedSigns.Add("Blindness");
+    if (s.Circling) checkedSigns.Add("Circling");
+    if (s.HindAtaxia) checkedSigns.Add("Hind ataxia");
+    if (s.Falling) checkedSigns.Add("Falling");
+    if (s.Paresis) checkedSigns.Add("Paresis");
+    if (s.ForeAtaxia) checkedSigns.Add("Fore ataxia");
+    if (s.Recumbent) checkedSigns.Add("Recumbent");
+    if (s.Tremor) checkedSigns.Add("Tremor");
+    if (s.KnucklingFetlock) checkedSigns.Add("Knuckling fetlock");
+    if (s.WeightLoss) checkedSigns.Add("Weight loss");
+    if (s.ConditionLoss) checkedSigns.Add("Condition loss");
+    if (s.MilkYield) checkedSigns.Add("Milk yield loss");
 }
 
 <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
@@ -44,7 +45,7 @@
     </ol>
 </nav>
 
-@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Clinical", Model.Rbse, Model.BatchNumbers))
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Clinical", Model.Rbse, Model.BatchNumbers, viewDocsUrl))
 
 @if (TempData["Success"] is string successMsg)
 {
@@ -59,128 +60,416 @@
     </div>
 }
 
-
-@* -- Clinical signs ----------------------------------------------------------- *@
-<h2 class="govuk-heading-m">Clinical signs</h2>
-
-@* -- READ-ONLY SIGNS VIEW --------------------------------------------------- *@
-<div class="govuk-button-group govuk-!-margin-bottom-4">
-    @if (User.IsInRole("DataEntry"))
-    {
-        <a asp-page="/Case/ClinicalEdit" asp-route-rbse="@Model.Rbse"
-       class="govuk-button govuk-button--secondary">Change clinical signs</a>
-    }
+@if (!ViewContext.ModelState.IsValid)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@e.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        </div>
     </div>
-
-@if (checkedSigns.Count > 0)
-{
-    <ul class="govuk-list govuk-list--bullet">
-        @foreach (var sign in checkedSigns)
-        {
-            <li>@sign</li>
-        }
-    </ul>
-}
-else
-{
-    <p class="govuk-body govuk-!-colour-secondary">No clinical signs recorded.</p>
 }
 
-@* -- Clinical visits ---------------------------------------------------------- *@
-<h2 class="govuk-heading-m govuk-!-margin-top-6">Clinical visits</h2>
-
-@if (Model.VisitsTotalCount > 0)
+@if (!User.IsInRole("DataEntry"))
 {
+   
+    @if (checkedSigns.Count > 0)
+    {
+        <ul class="govuk-list govuk-list--bullet">
+            @foreach (var sign in checkedSigns)
+            {
+                <li>@sign</li>
+            }
+        </ul>
+    }
+    else
+    {
+        <p class="govuk-body">No clinical signs recorded.</p>
+    }
+
+    <h2 class="govuk-heading-m govuk-!-margin-top-6">Clinical visit dates</h2>
     <table class="govuk-table">
         <caption class="govuk-visually-hidden">Clinical visits for @BseFormat.FormatRbse(Model.Rbse)</caption>
+        <thead class="govuk-table__head">
+            <tr class="govuk-table__row"><th scope="col" class="govuk-table__header">Visit date</th></tr>
+        </thead>
+        <tbody class="govuk-table__body">
+            @if (Model.VisitsTotalCount > 0)
+            {
+                @foreach (var v in Model.Visits)
+                {
+                    <tr class="govuk-table__row"><td class="govuk-table__cell">@v.VisitDate?.ToString("dd/MM/yyyy")</td></tr>
+                }
+            }
+            else
+            {
+                <tr class="govuk-table__row"><td class="govuk-table__cell">No clinical visits recorded.</td></tr>
+            }
+        </tbody>
+    </table>
+
+    <p class="govuk-body">You can view clinical details but cannot edit this page.</p>
+    return;
+}
+
+<form method="post" novalidate id="case-clinical-inline-form">
+    <input type="hidden" asp-for="Rbse" />
+    <input type="hidden" asp-for="ClinicalRowStampBase64" />
+
+    <div id="case-clinical-unsaved-banner"
+         class="govuk-notification-banner bse-unsaved-banner"
+         role="region"
+         aria-labelledby="case-clinical-unsaved-title"
+         data-module="govuk-notification-banner"
+         hidden="@(!Model.HasUnsavedChanges)">
+        <div class="govuk-notification-banner__header">
+            <h2 class="govuk-notification-banner__title" id="case-clinical-unsaved-title">Unsaved changes</h2>
+        </div>
+        <div class="govuk-notification-banner__content">
+            <p class="govuk-body">You have changes in clinical visits that are not saved yet. Select Save to persist them.</p>
+        </div>
+    </div>
+
+    <div class="govuk-button-group govuk-!-margin-bottom-4">
+        <button type="submit" asp-page-handler="SaveSigns" class="govuk-button" data-module="govuk-button">Save</button>
+        <a asp-page="/Case/Clinical" asp-page-handler="CancelClinicalEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
+    </div>
+
+
+    <div class="bse-clinical-grid bse-clinical-grid--18">
+        <div class="govuk-checkboxes govuk-checkboxes--small">
+            <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_Apprehension" name="Signs.Apprehension" value="true" checked="@s.Apprehension" /><label class="govuk-label govuk-checkboxes__label" for="Signs_Apprehension">Apprehension</label></div>
+            <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_HypersensitiveTouch" name="Signs.HypersensitiveTouch" value="true" checked="@s.HypersensitiveTouch" /><label class="govuk-label govuk-checkboxes__label" for="Signs_HypersensitiveTouch">Hypersensitive touch</label></div>
+            <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_HypersensitiveSound" name="Signs.HypersensitiveSound" value="true" checked="@s.HypersensitiveSound" /><label class="govuk-label govuk-checkboxes__label" for="Signs_HypersensitiveSound">Hypersensitive sound</label></div>
+            <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_Maniacal" name="Signs.Maniacal" value="true" checked="@s.Maniacal" /><label class="govuk-label govuk-checkboxes__label" for="Signs_Maniacal">Maniacal</label></div>
+            <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_PanicStricken" name="Signs.PanicStricken" value="true" checked="@s.PanicStricken" /><label class="govuk-label govuk-checkboxes__label" for="Signs_PanicStricken">Panic stricken</label></div>
+            <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_TemperamentChange" name="Signs.TemperamentChange" value="true" checked="@s.TemperamentChange" /><label class="govuk-label govuk-checkboxes__label" for="Signs_TemperamentChange">Temperament change</label></div>
+            <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_AbnormalHeadCarriage" name="Signs.AbnormalHeadCarriage" value="true" checked="@s.AbnormalHeadCarriage" /><label class="govuk-label govuk-checkboxes__label" for="Signs_AbnormalHeadCarriage">Abnormal head carriage</label></div>
+            <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_EarTwitching" name="Signs.EarTwitching" value="true" checked="@s.EarTwitching" /><label class="govuk-label govuk-checkboxes__label" for="Signs_EarTwitching">Ear twitching</label></div>
+            <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_EarsOddAngle" name="Signs.EarsOddAngle" value="true" checked="@s.EarsOddAngle" /><label class="govuk-label govuk-checkboxes__label" for="Signs_EarsOddAngle">Ears odd angle</label></div>
+        </div>
+        <div class="govuk-checkboxes govuk-checkboxes--small">
+            <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_AbnormalBehaviour" name="Signs.AbnormalBehaviour" value="true" checked="@s.AbnormalBehaviour" /><label class="govuk-label govuk-checkboxes__label" for="Signs_AbnormalBehaviour">Abnormal behaviour</label></div>
+            <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_HeadShyness" name="Signs.HeadShyness" value="true" checked="@s.HeadShyness" /><label class="govuk-label govuk-checkboxes__label" for="Signs_HeadShyness">Head shyness</label></div>
+            <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_LickingFlank" name="Signs.LickingFlank" value="true" checked="@s.LickingFlank" /><label class="govuk-label govuk-checkboxes__label" for="Signs_LickingFlank">Licking flank</label></div>
+            <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_LickingNose" name="Signs.LickingNose" value="true" checked="@s.LickingNose" /><label class="govuk-label govuk-checkboxes__label" for="Signs_LickingNose">Licking nose</label></div>
+            <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_Kicking" name="Signs.Kicking" value="true" checked="@s.Kicking" /><label class="govuk-label govuk-checkboxes__label" for="Signs_Kicking">Kicking</label></div>
+            <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_ReluctantDoorways" name="Signs.ReluctantDoorways" value="true" checked="@s.ReluctantDoorways" /><label class="govuk-label govuk-checkboxes__label" for="Signs_ReluctantDoorways">Reluctant to enter doorways</label></div>
+            <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_HeadPressing" name="Signs.HeadPressing" value="true" checked="@s.HeadPressing" /><label class="govuk-label govuk-checkboxes__label" for="Signs_HeadPressing">Head pressing</label></div>
+            <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_HeadRubbing" name="Signs.HeadRubbing" value="true" checked="@s.HeadRubbing" /><label class="govuk-label govuk-checkboxes__label" for="Signs_HeadRubbing">Head rubbing</label></div>
+            <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_TeethGrinding" name="Signs.TeethGrinding" value="true" checked="@s.TeethGrinding" /><label class="govuk-label govuk-checkboxes__label" for="Signs_TeethGrinding">Teeth grinding</label></div>
+        </div>
+    </div>
+
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+
+    <div class="bse-clinical-grid bse-clinical-grid--9">
+        <div class="govuk-checkboxes govuk-checkboxes--small">
+            <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_Blindness" name="Signs.Blindness" value="true" checked="@s.Blindness" /><label class="govuk-label govuk-checkboxes__label" for="Signs_Blindness">Blindness</label></div>
+            <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_Circling" name="Signs.Circling" value="true" checked="@s.Circling" /><label class="govuk-label govuk-checkboxes__label" for="Signs_Circling">Circling</label></div>
+            <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_HindAtaxia" name="Signs.HindAtaxia" value="true" checked="@s.HindAtaxia" /><label class="govuk-label govuk-checkboxes__label" for="Signs_HindAtaxia">Hind ataxia</label></div>
+        </div>
+        <div class="govuk-checkboxes govuk-checkboxes--small">
+            <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_Falling" name="Signs.Falling" value="true" checked="@s.Falling" /><label class="govuk-label govuk-checkboxes__label" for="Signs_Falling">Falling</label></div>
+            <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_Paresis" name="Signs.Paresis" value="true" checked="@s.Paresis" /><label class="govuk-label govuk-checkboxes__label" for="Signs_Paresis">Paresis</label></div>
+            <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_ForeAtaxia" name="Signs.ForeAtaxia" value="true" checked="@s.ForeAtaxia" /><label class="govuk-label govuk-checkboxes__label" for="Signs_ForeAtaxia">Fore ataxia</label></div>
+        </div>
+        <div class="govuk-checkboxes govuk-checkboxes--small">
+            <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_Recumbent" name="Signs.Recumbent" value="true" checked="@s.Recumbent" /><label class="govuk-label govuk-checkboxes__label" for="Signs_Recumbent">Recumbent</label></div>
+            <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_Tremor" name="Signs.Tremor" value="true" checked="@s.Tremor" /><label class="govuk-label govuk-checkboxes__label" for="Signs_Tremor">Tremor</label></div>
+            <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_KnucklingFetlock" name="Signs.KnucklingFetlock" value="true" checked="@s.KnucklingFetlock" /><label class="govuk-label govuk-checkboxes__label" for="Signs_KnucklingFetlock">Knuckling fetlock</label></div>
+        </div>
+    </div>
+
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+
+    <div class="govuk-checkboxes govuk-checkboxes--small govuk-!-margin-bottom-6">
+        <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_WeightLoss" name="Signs.WeightLoss" value="true" checked="@s.WeightLoss" /><label class="govuk-label govuk-checkboxes__label" for="Signs_WeightLoss">Weight loss</label></div>
+        <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_ConditionLoss" name="Signs.ConditionLoss" value="true" checked="@s.ConditionLoss" /><label class="govuk-label govuk-checkboxes__label" for="Signs_ConditionLoss">Condition loss</label></div>
+        <div class="govuk-checkboxes__item"><input class="govuk-checkboxes__input" type="checkbox" id="Signs_MilkYield" name="Signs.MilkYield" value="true" checked="@s.MilkYield" /><label class="govuk-label govuk-checkboxes__label" for="Signs_MilkYield">Milk yield loss</label></div>
+    </div>
+
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+
+    @* -- Clinical visits: inline editable grid, mirrors /Case/Farm herd size table -- *@
+    <h2 class="govuk-heading-m">Clinical visit dates</h2>
+
+    <table class="govuk-table bse-clinical-visits-table">
+        <caption class="govuk-visually-hidden">Clinical visits for @BseFormat.FormatRbse(Model.Rbse)</caption>
+        <colgroup>
+            <col class="bse-clinical-visits-table__col-date" />
+            <col />
+        </colgroup>
         <thead class="govuk-table__head">
             <tr class="govuk-table__row">
                 <th scope="col" class="govuk-table__header"
                     aria-sort="@(Model.VDir == "asc" ? "ascending" : "descending")">
                     <a class="govuk-link govuk-link--no-visited-state" href="@Model.VisitsSortUrl()">Visit date</a>
                 </th>
-                @if (User.IsInRole("DataEntry"))
-                {
-                    <th scope="col" class="govuk-table__header">Action</th>
-                }
+                <th scope="col" class="govuk-table__header">Action</th>
             </tr>
         </thead>
         <tbody class="govuk-table__body">
-            @foreach (var v in Model.Visits)
+            @if (!Model.Visits.Any() && !Model.ShowAddVisitRow)
             {
                 <tr class="govuk-table__row">
-                    <td class="govuk-table__cell">@v.VisitDate?.ToString("dd/MM/yyyy")</td>
-                    @if (User.IsInRole("DataEntry"))
+                    <td class="govuk-table__cell" colspan="2">No clinical visits recorded.</td>
+                </tr>
+            }
+
+            @foreach (var v in Model.Visits)
+            {
+                var isEditing = Model.ReopenEditClientKey == v.ClientKey;
+                <tr class="govuk-table__row bse-clinical-visit-row @(v.IsUnsaved ? "bse-clinical-visit-row--unsaved" : "")" data-client-key="@v.ClientKey">
+                    @if (isEditing)
                     {
                         <td class="govuk-table__cell">
-                            <a class="govuk-link govuk-!-margin-right-3"
-                               asp-page="/Case/ClinicalVisitEdit"
-                               asp-route-rbse="@Model.Rbse"
-                               asp-route-id="@v.Id">Change</a>
-                            <form method="post" asp-page-handler="DeleteVisit" style="display:inline" novalidate>
-                                <input type="hidden" name="VisitId" value="@v.Id" />
-                                <input type="hidden" asp-for="Rbse" />
-                                <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0"
-                                        onclick="return confirm('Delete this visit date?')">Delete</button>
-                            </form>
+                            <label class="govuk-visually-hidden" for="edit-visit-date-@v.ClientKey">Visit date</label>
+                            <input id="edit-visit-date-@v.ClientKey" name="EditVisitDate" type="date" value="@(Model.EditVisitDate?.ToString("yyyy-MM-dd"))"
+                                   class="govuk-input govuk-input--width-10" />
+                        </td>
+                        <td class="govuk-table__cell">
+                            <input type="hidden" name="EditingClientKey" value="@v.ClientKey" />
+                            <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
+                                <button type="submit" asp-page-handler="UpdateVisitRow" class="bse-inline-row-button bse-inline-row-button--confirm" data-module="govuk-button">Confirm</button>
+                                <button type="button" class="bse-inline-row-button bse-inline-row-button--secondary js-cancel-edit-visit-row">Cancel</button>
+                            </div>
+                        </td>
+                    }
+                    else
+                    {
+                        <td class="govuk-table__cell">
+                            @v.VisitDate?.ToString("dd/MM/yyyy")
+                            @if (v.IsUnsaved)
+                            {
+                                <strong class="govuk-tag govuk-tag--yellow govuk-!-margin-left-2">Unsaved</strong>
+                            }
+                        </td>
+                        <td class="govuk-table__cell">
+                            <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
+                                <button type="submit" asp-page-handler="BeginEditVisitRow" asp-route-clientKey="@v.ClientKey"
+                                        class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">
+                                    Change<span class="govuk-visually-hidden"> visit dated @v.VisitDate?.ToString("dd/MM/yyyy")</span>
+                                </button>
+                                <button type="submit" asp-page-handler="DeleteVisit" asp-route-clientKey="@v.ClientKey"
+                                        class="govuk-button govuk-button--warning govuk-!-margin-bottom-0" data-module="govuk-button">
+                                    Remove<span class="govuk-visually-hidden"> visit dated @v.VisitDate?.ToString("dd/MM/yyyy")</span>
+                                </button>
+                            </div>
                         </td>
                     }
                 </tr>
             }
+
+            <tr id="add-visit-row-inline" class="govuk-table__row bse-clinical-visit-row--unsaved" hidden="@(!Model.ShowAddVisitRow)">
+                <td class="govuk-table__cell">
+                    <div class="govuk-form-group govuk-!-margin-bottom-0">
+                        <label class="govuk-visually-hidden" for="new-visit-date">Visit date</label>
+                        <input id="new-visit-date" name="NewVisitDate" type="date" value="@(Model.NewVisitDate?.ToString("yyyy-MM-dd"))"
+                               class="govuk-input govuk-input--width-10" />
+                    </div>
+                </td>
+                <td class="govuk-table__cell">
+                    <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
+                        <button type="submit" asp-page-handler="AddVisitRow" class="bse-inline-row-button bse-inline-row-button--confirm" data-module="govuk-button">Confirm</button>
+                        <button type="button" id="cancel-add-visit-row" class="bse-inline-row-button bse-inline-row-button--secondary">Cancel</button>
+                    </div>
+                </td>
+            </tr>
         </tbody>
     </table>
 
-    @if (Model.VisitsTotalPages > 1)
-    {
-        <nav class="govuk-pagination" role="navigation" aria-label="Clinical visits pagination">
-            @if (Model.VPage > 1)
-            {
-                <div class="govuk-pagination__prev">
-                    <a class="govuk-link govuk-pagination__link" href="@Model.VisitsPageUrl(Model.VPage - 1)" rel="prev">
-                        <svg class="govuk-pagination__icon govuk-pagination__icon--prev" xmlns="http://www.w3.org/2000/svg" height="13" width="15" focusable="false" aria-hidden="true" viewBox="0 0 15 13"><path d="m6.5938-0.0078125-6.7266 6.7266 6.7441 6.4062 1.377-1.449-4.1856-3.9768h12.896v-2h-12.984l4.2931-4.293-1.414-1.414z"/></svg>
-                        <span class="govuk-pagination__link-title">Previous<span class="govuk-visually-hidden"> page</span></span>
-                    </a>
-                </div>
-            }
-            <ul class="govuk-pagination__list">
-                @{ int startPage = Math.Max(1, Model.VPage - 4); int endPage = Math.Min(Model.VisitsTotalPages, startPage + 9); }
-                @for (int p = startPage; p <= endPage; p++)
+        @if (Model.VisitsTotalPages > 1)
+        {
+            <nav class="govuk-pagination" role="navigation" aria-label="Clinical visits pagination">
+                @if (Model.VPage > 1)
                 {
-                    if (p == Model.VPage)
-                    {
-                        <li class="govuk-pagination__item govuk-pagination__item--current">
-                            <a class="govuk-link govuk-pagination__link" href="@Model.VisitsPageUrl(p)" aria-label="Page @p" aria-current="page">@p</a>
-                        </li>
-                    }
-                    else
-                    {
-                        <li class="govuk-pagination__item">
-                            <a class="govuk-link govuk-pagination__link" href="@Model.VisitsPageUrl(p)" aria-label="Page @p">@p</a>
-                        </li>
-                    }
+                    <div class="govuk-pagination__prev">
+                        <a class="govuk-link govuk-pagination__link" href="@Model.VisitsPageUrl(Model.VPage - 1)" rel="prev">
+                            <span class="govuk-pagination__link-title">Previous<span class="govuk-visually-hidden"> page</span></span>
+                        </a>
+                    </div>
                 }
-            </ul>
-            @if (Model.VPage < Model.VisitsTotalPages)
-            {
-                <div class="govuk-pagination__next">
-                    <a class="govuk-link govuk-pagination__link" href="@Model.VisitsPageUrl(Model.VPage + 1)" rel="next">
-                        <span class="govuk-pagination__link-title">Next<span class="govuk-visually-hidden"> page</span></span>
-                        <svg class="govuk-pagination__icon govuk-pagination__icon--next" xmlns="http://www.w3.org/2000/svg" height="13" width="15" focusable="false" aria-hidden="true" viewBox="0 0 15 13"><path d="m8.107-0.0078125-1.4136 1.414 4.2926 4.293h-12.986v2h12.896l-4.1855 3.9766 1.377 1.4492 6.7441-6.4062-6.7246-6.7246z"/></svg>
-                    </a>
-                </div>
-            }
-        </nav>
-    }
-}
-else
-{
-    <p class="govuk-body govuk-hint">No clinical visits recorded.</p>
-}
-
-@if (User.IsInRole("DataEntry"))
-{
-    <div class="govuk-button-group govuk-!-margin-top-4">
-        <a asp-page="/Case/ClinicalVisitAdd" asp-route-rbse="@Model.Rbse" class="govuk-button govuk-button--secondary">Add a clinical visit</a>
+                <ul class="govuk-pagination__list">
+                    @{ int startPage = Math.Max(1, Model.VPage - 4); int endPage = Math.Min(Model.VisitsTotalPages, startPage + 9); }
+                    @for (int p = startPage; p <= endPage; p++)
+                    {
+                        if (p == Model.VPage)
+                        {
+                            <li class="govuk-pagination__item govuk-pagination__item--current">
+                                <a class="govuk-link govuk-pagination__link" href="@Model.VisitsPageUrl(p)" aria-label="Page @p" aria-current="page">@p</a>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="govuk-pagination__item">
+                                <a class="govuk-link govuk-pagination__link" href="@Model.VisitsPageUrl(p)" aria-label="Page @p">@p</a>
+                            </li>
+                        }
+                    }
+                </ul>
+                @if (Model.VPage < Model.VisitsTotalPages)
+                {
+                    <div class="govuk-pagination__next">
+                        <a class="govuk-link govuk-pagination__link" href="@Model.VisitsPageUrl(Model.VPage + 1)" rel="next">
+                            <span class="govuk-pagination__link-title">Next<span class="govuk-visually-hidden"> page</span></span>
+                        </a>
+                    </div>
+                }
+            </nav>
+        }
+    <div class="govuk-button-group govuk-!-margin-bottom-6">
+        <button type="button" id="show-add-visit-row" class="govuk-button govuk-button--secondary" data-module="govuk-button">Add a clinical visit</button>
     </div>
-}
+
+    <div aria-live="polite" role="status" class="govuk-visually-hidden" id="visit-live-region"></div>
+
+    <div class="govuk-button-group govuk-!-margin-top-4">
+        <button type="submit" asp-page-handler="SaveSigns" class="govuk-button" data-module="govuk-button">Save</button>
+        <button type="submit" asp-page-handler="CancelClinicalEdit" class="govuk-button govuk-button--secondary bse-cancel-button" data-module="govuk-button">Cancel</button>
+    </div>
+
+    <div class="govuk-!-margin-top-6">
+        <ul class="govuk-list">
+            @if (!string.IsNullOrWhiteSpace(viewDocsUrl))
+            {
+                <li>
+                    <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" class="govuk-link">
+                        View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
+                    </a>
+                </li>
+            }
+        </ul>
+    </div>
+</form>
+
+<style>
+    .bse-clinical-grid {
+        display: grid;
+        gap: 4px 32px;
+        margin-bottom: 8px;
+    }
+
+    .bse-clinical-grid--18 {
+        grid-template-columns: repeat(2, minmax(220px, 1fr));
+    }
+
+    .bse-clinical-grid--9 {
+        grid-template-columns: repeat(3, minmax(180px, 1fr));
+    }
+
+    .bse-clinical-visits-table__col-date {
+        width: 160px;
+    }
+
+    .bse-unsaved-banner {
+        border-left-color: #1d70b8;
+    }
+
+    .bse-clinical-visit-row--unsaved {
+        background: #fffbf2;
+    }
+
+    .bse-row-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .bse-inline-row-button {
+        border: 1px solid #0b0c0c;
+        background: #fff;
+        color: #0b0c0c;
+        padding: 4px 8px;
+        min-height: 36px;
+        font-size: 1rem;
+        line-height: 1.1;
+        cursor: pointer;
+    }
+
+    .bse-inline-row-button:hover { background: #f3f2f1; }
+
+    .bse-inline-row-button:focus {
+        outline: 3px solid #ffdd00;
+        outline-offset: 0;
+    }
+
+    .bse-inline-row-button--secondary { border-color: #505a5f; }
+
+    .bse-inline-row-button--confirm {
+        background: #00703c;
+        border-color: #00703c;
+        color: #fff;
+    }
+
+    .bse-inline-row-button--confirm:hover {
+        background: #005a30;
+        border-color: #005a30;
+    }
+</style>
+
+<script>
+    (function () {
+        var liveRegion = document.getElementById('visit-live-region');
+        var announce = function (message) { if (liveRegion) { liveRegion.textContent = message; } };
+
+        var showAddBtn = document.getElementById('show-add-visit-row');
+        var addRow = document.getElementById('add-visit-row-inline');
+        var cancelAddBtn = document.getElementById('cancel-add-visit-row');
+
+        if (showAddBtn && addRow) {
+            showAddBtn.addEventListener('click', function () {
+                addRow.hidden = false;
+                showAddBtn.hidden = true;
+                var firstInput = addRow.querySelector('input');
+                if (firstInput) { firstInput.focus(); }
+                announce('Add clinical visit row opened.');
+            });
+        }
+
+        if (cancelAddBtn && addRow && showAddBtn) {
+            cancelAddBtn.addEventListener('click', function () {
+                addRow.hidden = true;
+                showAddBtn.hidden = false;
+                var input = addRow.querySelector('input[type="date"]');
+                if (input) { input.value = ''; }
+                showAddBtn.focus();
+                announce('Add clinical visit row cancelled.');
+            });
+        }
+
+        document.querySelectorAll('.js-cancel-edit-visit-row').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                window.location.href = window.location.pathname + window.location.search;
+            });
+        });
+
+        document.querySelectorAll('.bse-cancel-link').forEach(function (lnk) {
+            lnk.addEventListener('click', function (e) {
+                var hasUnsaved = document.getElementById('case-clinical-unsaved-banner') &&
+                    !document.getElementById('case-clinical-unsaved-banner').hidden;
+                if (hasUnsaved && !window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+                    e.preventDefault();
+                }
+            });
+        });
+
+        var reopenVisitClientKey = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ReopenEditClientKey));
+        if (reopenVisitClientKey) {
+            var visitRow = document.querySelector('.bse-clinical-visit-row[data-client-key="' + reopenVisitClientKey + '"]');
+            if (visitRow) {
+                visitRow.scrollIntoView({ behavior: 'auto', block: 'center' });
+                var visitInput = visitRow.querySelector('input[type="date"]');
+                if (visitInput) { visitInput.focus(); }
+            }
+        }
+    })();
+</script>
 
