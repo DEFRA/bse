@@ -2,10 +2,13 @@
 @model VlaModel
 @{
     ViewData["Title"] = $"Case (APHA) — {Model.Case.Rbse}";
-    string D(DateTime? d) => d?.ToString("dd/MM/yyyy") ?? "—";
+    string DateVal(DateTime? d) => d?.ToString("yyyy-MM-dd") ?? "";
     string rbseNoSlash = Model.Case.Rbse.Replace("/", "");
-    string Desc(IEnumerable<BSE.SharedKernel.ILookupItem> opts, string? code) =>
-        opts.FirstOrDefault(o => o.Code == code)?.Description ?? code ?? "—";
+    var viewDocsUrl = string.IsNullOrWhiteSpace(Model.SpolSiteUrl)
+        ? null
+        : $"{Model.SpolSiteUrl}{rbseNoSlash}";
+
+    string? E(string key) => ViewData.ModelState[key]?.Errors.FirstOrDefault()?.ErrorMessage;
 }
 
 <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
@@ -15,7 +18,7 @@
     </ol>
 </nav>
 
-@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Case (VLA)", Model.Case.Rbse, Model.BatchNumbers))
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Case (VLA)", Model.Case.Rbse, Model.BatchNumbers, viewDocsUrl))
 
 @if (TempData["Success"] is string successMsg)
 {
@@ -30,158 +33,368 @@
     </div>
 }
 
-
-@* -- READ-ONLY VIEW --------------------------------------------------------- *@
-<div class="govuk-button-group govuk-!-margin-bottom-4">
-    @if (User.IsInRole("DataEntry"))
-    {
-        <a asp-page="/Case/VlaEdit" asp-route-rbse="@Model.Case.Rbse"
-       class="govuk-button govuk-button--secondary">Change case (VLA) details</a>
-    }
-        <a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse" asp-route-returnTo="/Case/Vla" class="govuk-link">Case audit log</a>
-        @if (!string.IsNullOrEmpty(Model.SpolSiteUrl))
-        {
-            <a href="@(Model.SpolSiteUrl)@rbseNoSlash" target="_blank" rel="noopener noreferrer" class="govuk-link">
-                View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
-            </a>
-        }
+@if (!ViewContext.ModelState.IsValid)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@e.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        </div>
     </div>
+}
 
-    <h2 class="govuk-heading-m">Animal details</h2>
-    <dl class="govuk-summary-list">
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Date of birth</dt>
-            <dd class="govuk-summary-list__value">@D(Model.Case.BirthDate)</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Is DOB estimated?</dt>
-            <dd class="govuk-summary-list__value">@(Model.Case.IsBirthDateEst == true ? "Yes" : "No")</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Date of birth source</dt>
-            <dd class="govuk-summary-list__value">@Desc(Model.BirthDateSourceOptions, Model.Case.BirthDateSource)</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Sex</dt>
-            <dd class="govuk-summary-list__value">@Desc(Model.SexOptions, Model.Case.Sex)</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Breed</dt>
-            <dd class="govuk-summary-list__value">@Desc(Model.BreedOptions, Model.Case.Breed)</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Origin</dt>
-            <dd class="govuk-summary-list__value">@Desc(Model.OriginOptions, Model.Case.Origin)</dd>
-        </div>
-    </dl>
+@if (!string.IsNullOrEmpty(Model.ConcurrencyError))
+{
+    <div class="govuk-warning-text">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text">
+            <span class="govuk-warning-text__assistive">Warning</span>
+            @Model.ConcurrencyError
+        </strong>
+    </div>
+}
 
-    <h2 class="govuk-heading-m">Purchase details</h2>
-    <dl class="govuk-summary-list">
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Date purchased</dt>
-            <dd class="govuk-summary-list__value">@D(Model.Case.PurchaseDate)</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Age purchased (months)</dt>
-            <dd class="govuk-summary-list__value">@(Model.Case.PurchaseAgeInMonths?.ToString() ?? "—")</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Purchased county</dt>
-            <dd class="govuk-summary-list__value">@Desc(Model.PurchasedCountyOptions, Model.Case.PurchasedCounty)</dd>
-        </div>
-    </dl>
+@if (!User.IsInRole("DataEntry"))
+{
+    <p class="govuk-body">You can view case details but cannot edit this page.</p>
+}
+else
+{
+    <form id="edit-vla-form" method="post" novalidate>
+        <input type="hidden" name="Rbse" value="@Model.Rbse" />
+        <input type="hidden" asp-for="OSort" />
+        <input type="hidden" asp-for="ODir" />
+        <input type="hidden" asp-for="OPage" />
 
-    <h2 class="govuk-heading-m">Health dates</h2>
-    <dl class="govuk-summary-list">
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Herd entry date</dt>
-            <dd class="govuk-summary-list__value">@D(Model.Case.HerdEntryDate)</dd>
+        <div id="case-vla-unsaved-banner"
+             class="govuk-notification-banner bse-unsaved-banner"
+             role="region"
+             aria-labelledby="case-vla-unsaved-title"
+             data-module="govuk-notification-banner"
+             hidden="@(!Model.HasUnsavedOwnerChanges)">
+            <div class="govuk-notification-banner__header">
+                <h2 class="govuk-notification-banner__title" id="case-vla-unsaved-title">Unsaved changes</h2>
+            </div>
+            <div class="govuk-notification-banner__content">
+                <p class="govuk-body">You have changes in previous owners that are not saved yet. Select Save to persist them.</p>
+            </div>
         </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Onset date</dt>
-            <dd class="govuk-summary-list__value">@D(Model.Case.OnsetDate)</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Is onset date estimated?</dt>
-            <dd class="govuk-summary-list__value">@(Model.Case.IsOnsetDateEst == true ? "Yes" : "No")</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Months pregnant</dt>
-            <dd class="govuk-summary-list__value">@(Model.Case.MonthsPregnant?.ToString() ?? "—")</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Months post calving</dt>
-            <dd class="govuk-summary-list__value">@(Model.Case.MonthsPostCalving?.ToString() ?? "—")</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Onset age (months)</dt>
-            <dd class="govuk-summary-list__value">@(Model.Case.OnsetAgeInMonths?.ToString() ?? "—")</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Slaughter date</dt>
-            <dd class="govuk-summary-list__value">@D(Model.Case.SlaughterDate)</dd>
-        </div>
-    </dl>
 
-    <h2 class="govuk-heading-m">Previous owners</h2>
-    @{
-        string OwnerTypeDesc(string? code) =>
-            Model.OwnerTypeOptions.FirstOrDefault(o => o.Code == code)?.Description ?? code ?? "—";
-    }
-    @if (Model.OtherOwnersTotalCount > 0)
-    {
+        <div class="govuk-button-group govuk-!-margin-bottom-4">
+            <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+            <a asp-page="/Case/Vla" asp-page-handler="CancelVlaEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
+        </div>
+
+        <input type="hidden" asp-for="Case.Rbse" />
+        <input type="hidden" asp-for="Case.EartagCountry" />
+        <input type="hidden" asp-for="Case.EartagHerdmark" />
+        <input type="hidden" asp-for="Case.Eartag" />
+        <input type="hidden" asp-for="Case.PreviousEartag" />
+        <input type="hidden" asp-for="Case.Bse1ReceivedDate" />
+        <input type="hidden" asp-for="Case.FormADate" />
+        <input type="hidden" asp-for="Case.FormAResubmittedDate" />
+        <input type="hidden" asp-for="Case.FormBDate" />
+        <input type="hidden" asp-for="Case.Fate" />
+        <input type="hidden" asp-for="Case.FormCDate" />
+        <input type="hidden" asp-for="Case.IsPurchaserBse1Received" />
+        <input type="hidden" asp-for="Case.IsBreederBse1Received" />
+        <input type="hidden" asp-for="Case.IsVendor1Bse1Received" />
+        <input type="hidden" asp-for="Case.IsHomebredBse1Received" />
+        <input type="hidden" asp-for="Case.IsSummarySheetReceived" />
+        <input type="hidden" asp-for="Case.IsPaperworkComplete" />
+        <input type="hidden" asp-for="Case.ReportedLocation" />
+        <input type="hidden" asp-for="Case.Survey" />
+        <input type="hidden" asp-for="Case.Notes" />
+        <input type="hidden" asp-for="Case.DamStatus" />
+        <input type="hidden" asp-for="Case.ValuationAge" />
+        <input type="hidden" asp-for="Case.AlternateDiagnosis" />
+        <input type="hidden" asp-for="Case.LabComment" />
+        <input type="hidden" asp-for="Case.CaseType" />
+
+        <div class="vla-legacy-grid">
+            <div class="vla-legacy-field @(E("Case.BirthDate") is not null ? "govuk-form-group--error" : "")">
+                <label asp-for="Case.BirthDate" class="govuk-label">Date Of Birth</label>
+                <div>
+                    @if (E("Case.BirthDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.BirthDate")</p> }
+                    <input asp-for="Case.BirthDate" type="date" class="govuk-input vla-legacy-input @(E("Case.BirthDate") is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.BirthDate)" />
+                </div>
+            </div>
+            <div class="vla-legacy-field @(E("Case.Sex") is not null ? "govuk-form-group--error" : "")">
+                <label asp-for="Case.Sex" class="govuk-label">Sex</label>
+                <div>
+                    @if (E("Case.Sex") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.Sex")</p> }
+                    <select asp-for="Case.Sex" class="govuk-select vla-legacy-input @(E("Case.Sex") is not null ? "govuk-select--error" : "")">
+                        <option value="">-- Select --</option>
+                        @foreach (var o in Model.SexOptions)
+                        {
+                            <option value="@o.Code" selected="@(o.Code == Model.Case.Sex ? "selected" : null)">@o.Description</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="vla-legacy-field @(E("Case.BirthDateSource") is not null ? "govuk-form-group--error" : "")">
+                <label asp-for="Case.BirthDateSource" class="govuk-label">Date Of Birth Source</label>
+                <div>
+                    @if (E("Case.BirthDateSource") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.BirthDateSource")</p> }
+                    <select asp-for="Case.BirthDateSource" class="govuk-select vla-legacy-input @(E("Case.BirthDateSource") is not null ? "govuk-select--error" : "")">
+                        <option value="">-- Select --</option>
+                        @foreach (var o in Model.BirthDateSourceOptions)
+                        {
+                            <option value="@o.Code" selected="@(o.Code == Model.Case.BirthDateSource ? "selected" : null)">@o.Description</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="vla-legacy-field @(E("Case.Breed") is not null ? "govuk-form-group--error" : "")">
+                <label asp-for="Case.Breed" class="govuk-label">Breed</label>
+                <div>
+                    @if (E("Case.Breed") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.Breed")</p> }
+                    <select asp-for="Case.Breed" class="govuk-select vla-legacy-input @(E("Case.Breed") is not null ? "govuk-select--error" : "")">
+                        <option value="">-- Select --</option>
+                        @foreach (var o in Model.BreedOptions)
+                        {
+                            <option value="@o.Code" selected="@(o.Code == Model.Case.Breed ? "selected" : null)">@o.Description</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="vla-legacy-field">
+                <label asp-for="Case.IsBirthDateEst" class="govuk-label">Date Of Birth Estimated?</label>
+                <div><input asp-for="Case.IsBirthDateEst" type="checkbox" class="vla-legacy-checkbox" /></div>
+            </div>
+            <div class="vla-legacy-field @(E("Case.Origin") is not null ? "govuk-form-group--error" : "")">
+                <label asp-for="Case.Origin" class="govuk-label">Origin</label>
+                <div>
+                    @if (E("Case.Origin") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.Origin")</p> }
+                    <select asp-for="Case.Origin" id="Case_Origin" class="govuk-select vla-legacy-input @(E("Case.Origin") is not null ? "govuk-select--error" : "")">
+                        <option value="">-- Select --</option>
+                        @foreach (var o in Model.OriginOptions)
+                        {
+                            <option value="@o.Code" selected="@(o.Code == Model.Case.Origin ? "selected" : null)">@o.Description</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+
+        <div id="purchase-section" @(Model.Case.Origin != "P" ? "style=\"display:none\"" : "")>
+            <div class="vla-legacy-grid">
+                <div class="vla-legacy-field @(E("Case.PurchaseDate") is not null ? "govuk-form-group--error" : "")">
+                    <label asp-for="Case.PurchaseDate" class="govuk-label">Date Purchased</label>
+                    <div>
+                        @if (E("Case.PurchaseDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.PurchaseDate")</p> }
+                        <input asp-for="Case.PurchaseDate" type="date" class="govuk-input vla-legacy-input @(E("Case.PurchaseDate") is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.PurchaseDate)" />
+                    </div>
+                </div>
+                <div class="vla-legacy-field">
+                    <label class="govuk-label">Age Purchased</label>
+                    <div class="vla-legacy-age-group vla-legacy-age-group--header">
+                        <button type="button" id="btn-calc-age-purchased" class="govuk-button govuk-button--secondary vla-legacy-calc-button">Calculate</button>
+                    </div>
+                </div>
+
+                <div class="vla-legacy-field @(E("Case.PurchasedCounty") is not null ? "govuk-form-group--error" : "")">
+                    <label asp-for="Case.PurchasedCounty" class="govuk-label">Purchased County</label>
+                    <div>
+                        @if (E("Case.PurchasedCounty") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.PurchasedCounty")</p> }
+                        <select asp-for="Case.PurchasedCounty" class="govuk-select vla-legacy-input @(E("Case.PurchasedCounty") is not null ? "govuk-select--error" : "")">
+                            <option value="">-- Select --</option>
+                            @foreach (var o in Model.PurchasedCountyOptions)
+                            {
+                                <option value="@o.Code" selected="@(o.Code == Model.Case.PurchasedCounty ? "selected" : null)">@o.Description</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="vla-legacy-field @(E("Case.PurchaseAgeInMonths") is not null ? "govuk-form-group--error" : "")">
+                    <label class="govuk-label" for="age-purchased-years">Years:</label>
+                    <div class="vla-legacy-age-group">
+                        @if (E("Case.PurchaseAgeInMonths") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.PurchaseAgeInMonths")</p> }
+                        <div class="vla-legacy-inline-parts">
+                            <input class="govuk-input vla-legacy-mini-input" id="age-purchased-years" type="number" min="0" max="99" />
+                            <label class="govuk-label" for="Case_PurchaseAgeInMonths">Months:</label>
+                            <input asp-for="Case.PurchaseAgeInMonths" class="govuk-input vla-legacy-mini-input @(E("Case.PurchaseAgeInMonths") is not null ? "govuk-input--error" : "")" type="number" min="0" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+
+        <div class="vla-legacy-grid">
+            <div class="vla-legacy-field @(E("Case.HerdEntryDate") is not null ? "govuk-form-group--error" : "")">
+                <label asp-for="Case.HerdEntryDate" class="govuk-label">Herd Entry Date</label>
+                <div>
+                    @if (E("Case.HerdEntryDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.HerdEntryDate")</p> }
+                    <input asp-for="Case.HerdEntryDate" type="date" class="govuk-input vla-legacy-input @(E("Case.HerdEntryDate") is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.HerdEntryDate)" />
+                </div>
+            </div>
+            <div class="vla-legacy-field @(E("Case.OnsetDate") is not null ? "govuk-form-group--error" : "")">
+                <label asp-for="Case.OnsetDate" class="govuk-label">Onset Date</label>
+                <div>
+                    @if (E("Case.OnsetDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.OnsetDate")</p> }
+                    <input asp-for="Case.OnsetDate" type="date" class="govuk-input vla-legacy-input @(E("Case.OnsetDate") is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.OnsetDate)" />
+                </div>
+            </div>
+
+            <div class="vla-legacy-field">
+                <label asp-for="Case.IsOnsetDateEst" class="govuk-label">Onset Date Estimated?</label>
+                <div><input asp-for="Case.IsOnsetDateEst" type="checkbox" class="vla-legacy-checkbox" /></div>
+            </div>
+            <div class="vla-legacy-field @(E("Case.MonthsPregnant") is not null ? "govuk-form-group--error" : "")">
+                <label asp-for="Case.MonthsPregnant" class="govuk-label">Months Pregnant</label>
+                <div>
+                    @if (E("Case.MonthsPregnant") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.MonthsPregnant")</p> }
+                    <input asp-for="Case.MonthsPregnant" type="number" class="govuk-input vla-legacy-input @(E("Case.MonthsPregnant") is not null ? "govuk-input--error" : "")" min="1" max="9" />
+                </div>
+            </div>
+
+            <div class="vla-legacy-field @(E("Case.MonthsPostCalving") is not null ? "govuk-form-group--error" : "")">
+                <label asp-for="Case.MonthsPostCalving" class="govuk-label">Months Post Calving</label>
+                <div>
+                    @if (E("Case.MonthsPostCalving") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.MonthsPostCalving")</p> }
+                    <input asp-for="Case.MonthsPostCalving" type="number" class="govuk-input vla-legacy-input @(E("Case.MonthsPostCalving") is not null ? "govuk-input--error" : "")" min="1" max="3" />
+                </div>
+            </div>
+            <div class="vla-legacy-field">
+                <label class="govuk-label">Onset Age</label>
+                <div class="vla-legacy-age-group vla-legacy-age-group--header">
+                    <button type="button" id="btn-calc-onset-age" class="govuk-button govuk-button--secondary vla-legacy-calc-button">Calculate</button>
+                </div>
+            </div>
+
+            <div class="vla-legacy-field @(E("Case.SlaughterDate") is not null ? "govuk-form-group--error" : "")">
+                <label asp-for="Case.SlaughterDate" class="govuk-label">Slaughter Date</label>
+                <div>
+                    @if (E("Case.SlaughterDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.SlaughterDate")</p> }
+                    <input asp-for="Case.SlaughterDate" type="date" class="govuk-input vla-legacy-input @(E("Case.SlaughterDate") is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.SlaughterDate)" />
+                </div>
+            </div>
+            <div class="vla-legacy-field @(E("Case.OnsetAgeInMonths") is not null ? "govuk-form-group--error" : "")">
+                <label class="govuk-label" for="onset-age-years">Years:</label>
+                <div class="vla-legacy-age-group">
+                    @if (E("Case.OnsetAgeInMonths") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.OnsetAgeInMonths")</p> }
+                    <div class="vla-legacy-inline-parts">
+                        <input class="govuk-input vla-legacy-mini-input" id="onset-age-years" type="number" min="0" max="99" />
+                        <label class="govuk-label" for="Case_OnsetAgeInMonths">Months:</label>
+                        <input asp-for="Case.OnsetAgeInMonths" class="govuk-input vla-legacy-mini-input @(E("Case.OnsetAgeInMonths") is not null ? "govuk-input--error" : "")" type="number" min="0" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="onset-age-warning" class="govuk-warning-text govuk-!-margin-top-2 govuk-!-margin-bottom-2" style="@(Model.Case.OnsetAgeInMonths.HasValue && Model.Case.OnsetAgeInMonths.Value < 18 ? "" : "display:none")">
+            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+            <strong class="govuk-warning-text__text"><span class="govuk-warning-text__assistive">Warning</span> Onset age appears to be less than 18 months — please check.</strong>
+        </div>
+
+        <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+
+        <h2 class="govuk-heading-m">Previous owners</h2>
         <table class="govuk-table">
             <caption class="govuk-visually-hidden">Previous owners for @BseFormat.FormatRbse(Model.Case.Rbse)</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header"
-                        aria-sort="@(Model.OSort=="type" ? (Model.ODir=="asc" ? "ascending" : "descending") : "none")">
+                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.OSort=="type" ? (Model.ODir=="asc" ? "ascending" : "descending") : "none")">
                         <a class="govuk-link govuk-link--no-visited-state" href="@Model.OwnersSortUrl("type")">Owner type</a>
                     </th>
-                    <th scope="col" class="govuk-table__header"
-                        aria-sort="@(Model.OSort=="name" ? (Model.ODir=="asc" ? "ascending" : "descending") : "none")">
+                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.OSort=="name" ? (Model.ODir=="asc" ? "ascending" : "descending") : "none")">
                         <a class="govuk-link govuk-link--no-visited-state" href="@Model.OwnersSortUrl("name")">Name</a>
                     </th>
-                    <th scope="col" class="govuk-table__header"
-                        aria-sort="@(Model.OSort=="cphh" ? (Model.ODir=="asc" ? "ascending" : "descending") : "none")">
+                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.OSort=="cphh" ? (Model.ODir=="asc" ? "ascending" : "descending") : "none")">
                         <a class="govuk-link govuk-link--no-visited-state" href="@Model.OwnersSortUrl("cphh")">CPHH</a>
                     </th>
-                    @if (User.IsInRole("DataEntry"))
-                    {
-                        <th scope="col" class="govuk-table__header"><span class="govuk-visually-hidden">Actions</span></th>
-                    }
+                    <th scope="col" class="govuk-table__header">Action</th>
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
-                @foreach (var o in Model.OtherOwners)
+                @if (!Model.OtherOwners.Any())
                 {
                     <tr class="govuk-table__row">
-                        <td class="govuk-table__cell">@OwnerTypeDesc(o.Type)</td>
-                        <td class="govuk-table__cell">@(o.Name ?? "—")</td>
-                        <td class="govuk-table__cell">@BseFormat.FormatCphh(o.Cphh)</td>
-                        @if (User.IsInRole("DataEntry"))
+                        <td class="govuk-table__cell" colspan="4">No owner records.</td>
+                    </tr>
+                }
+
+                @foreach (var o in Model.OtherOwners)
+                {
+                    var editing = Model.ReopenEditOwnerId == o.Id;
+                    <tr class="govuk-table__row">
+                        @if (editing)
                         {
                             <td class="govuk-table__cell">
-                                <div class="bse-row-actions">
-                                    <a class="govuk-link" asp-page="/Case/OtherOwnerEdit" asp-route-rbse="@Model.Case.Rbse" asp-route-id="@o.Id">
-                                        Change<span class="govuk-visually-hidden"> owner @OwnerTypeDesc(o.Type)</span>
-                                    </a>
-                                    <form method="post" asp-page-handler="DeleteOwner" novalidate>
-                                        <input type="hidden" name="OwnerId" value="@o.Id" />
-                                        <input type="hidden" name="RowStampBase64" value="@Convert.ToBase64String(o.RowStamp ?? [])" />
-                                        <input type="hidden" asp-for="Rbse" />
-                                        <input type="hidden" asp-for="OSort" />
-                                        <input type="hidden" asp-for="ODir" />
-                                        <input type="hidden" asp-for="OPage" />
-                                        <button type="submit" class="govuk-button govuk-button--warning" onclick="return confirm('Delete this owner record?')">
-                                            Remove<span class="govuk-visually-hidden"> owner @OwnerTypeDesc(o.Type)</span>
-                                        </button>
-                                    </form>
+                                <select name="EditOwnerType" class="govuk-select govuk-!-width-one-half">
+                                    <option value="">-- Select --</option>
+                                    @foreach (var t in Model.OwnerTypeOptions)
+                                    {
+                                        <option value="@t.Code" selected="@(string.Equals(Model.EditOwnerType, t.Code, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@t.Description</option>
+                                    }
+                                </select>
+                            </td>
+                            <td class="govuk-table__cell">
+                                <input name="EditOwnerName" class="govuk-input govuk-!-width-two-thirds" maxlength="255" value="@Model.EditOwnerName" />
+                            </td>
+                            <td class="govuk-table__cell">
+                                <input name="EditOwnerCphh" class="govuk-input govuk-!-width-one-half" maxlength="11" value="@Model.EditOwnerCphh" />
+                            </td>
+                            <td class="govuk-table__cell">
+                                <input type="hidden" name="EditingOwnerId" value="@o.Id" />
+                                <input type="hidden" name="EditOwnerRowStampBase64" value="@(o.RowStamp is not null ? Convert.ToBase64String(o.RowStamp) : "")" />
+                                <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
+                                    <button type="submit" asp-page-handler="UpdateOwnerRow" formnovalidate class="bse-inline-row-button bse-inline-row-button--confirm">Confirm</button>
+                                    <button type="button" class="bse-inline-row-button bse-inline-row-button--secondary js-cancel-edit-owner-row">Cancel</button>
+                                </div>
+                            </td>
+                        }
+                        else
+                        {
+                            <td class="govuk-table__cell">@(Model.OwnerTypeOptions.FirstOrDefault(t => t.Code == o.Type)?.Description ?? o.Type)</td>
+                            <td class="govuk-table__cell">@(o.Name ?? "—")</td>
+                            <td class="govuk-table__cell">@BseFormat.FormatCphh(o.Cphh)</td>
+                            <td class="govuk-table__cell">
+                                <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
+                                    <button type="submit" asp-page-handler="BeginEditOwnerRow" asp-route-ownerId="@o.Id" formnovalidate class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">Change</button>
+                                    <button type="submit" asp-page-handler="DeleteOwner" asp-route-ownerId="@o.Id" asp-route-rowStampBase64="@(Convert.ToBase64String(o.RowStamp ?? []))" formnovalidate class="govuk-button govuk-button--warning govuk-!-margin-bottom-0" onclick="return confirm('Delete this owner record?')">Delete</button>
                                 </div>
                             </td>
                         }
                     </tr>
                 }
+
+                <tr id="add-owner-row-inline" class="govuk-table__row bse-herd-row--unsaved" hidden="@(!Model.ShowAddOwnerRow)">
+                    <td class="govuk-table__cell">
+                        <select name="NewOwnerType" class="govuk-select govuk-!-width-one-half">
+                            <option value="">-- Select --</option>
+                            @foreach (var t in Model.OwnerTypeOptions)
+                            {
+                                <option value="@t.Code" selected="@(string.Equals(Model.NewOwnerType, t.Code, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@t.Description</option>
+                            }
+                        </select>
+                    </td>
+                    <td class="govuk-table__cell">
+                        <input name="NewOwnerName" class="govuk-input govuk-!-width-two-thirds" maxlength="255" value="@Model.NewOwnerName" />
+                    </td>
+                    <td class="govuk-table__cell">
+                        <input name="NewOwnerCphh" class="govuk-input govuk-!-width-one-half" maxlength="11" value="@Model.NewOwnerCphh" />
+                    </td>
+                    <td class="govuk-table__cell">
+                        <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
+                            <button type="submit" asp-page-handler="AddOwnerRow" formnovalidate class="bse-inline-row-button bse-inline-row-button--confirm">Confirm</button>
+                            <button type="button" id="cancel-add-owner-row" class="bse-inline-row-button bse-inline-row-button--secondary">Cancel</button>
+                        </div>
+                    </td>
+                </tr>
             </tbody>
         </table>
 
@@ -192,7 +405,6 @@
                 {
                     <div class="govuk-pagination__prev">
                         <a class="govuk-link govuk-pagination__link" href="@Model.OwnersPageUrl(Model.OPage - 1)" rel="prev">
-                            <svg class="govuk-pagination__icon govuk-pagination__icon--prev" xmlns="http://www.w3.org/2000/svg" height="13" width="15" focusable="false" aria-hidden="true" viewBox="0 0 15 13"><path d="m6.5938-0.0078125-6.7266 6.7266 6.7441 6.4062 1.377-1.449-4.1856-3.9768h12.896v-2h-12.984l4.2931-4.293-1.414-1.414z"/></svg>
                             <span class="govuk-pagination__link-title">Previous<span class="govuk-visually-hidden"> page</span></span>
                         </a>
                     </div>
@@ -220,22 +432,293 @@
                     <div class="govuk-pagination__next">
                         <a class="govuk-link govuk-pagination__link" href="@Model.OwnersPageUrl(Model.OPage + 1)" rel="next">
                             <span class="govuk-pagination__link-title">Next<span class="govuk-visually-hidden"> page</span></span>
-                            <svg class="govuk-pagination__icon govuk-pagination__icon--next" xmlns="http://www.w3.org/2000/svg" height="13" width="15" focusable="false" aria-hidden="true" viewBox="0 0 15 13"><path d="m8.107-0.0078125-1.4136 1.414 4.2926 4.293h-12.986v2h12.896l-4.1855 3.9766 1.377 1.4492 6.7441-6.4062-6.7246-6.7246z"/></svg>
                         </a>
                     </div>
                 }
             </nav>
         }
-    }
-    else
-    {
-        <p class="govuk-body">No owner records.</p>
-    }
-    @if (User.IsInRole("DataEntry"))
-    {
-        <div class="govuk-button-group govuk-!-margin-top-2">
-            <a asp-page="/Case/OtherOwnerAdd" asp-route-rbse="@Model.Case.Rbse" class="govuk-button govuk-button--secondary">Add Previous Owners</a>
+
+        <div class="govuk-button-group govuk-!-margin-bottom-4">
+            <button type="button" id="show-add-owner-row" class="govuk-button govuk-button--secondary" data-module="govuk-button">Add previous owner</button>
         </div>
+
+        <div class="govuk-button-group govuk-!-margin-top-4">
+            <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+            <a asp-page="/Case/Vla" asp-page-handler="CancelVlaEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
+        </div>
+
+        <div class="govuk-!-margin-top-6">
+            <ul class="govuk-list">
+                <li>
+                    <a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse" asp-route-returnTo="/Case/Vla" class="govuk-link">Case audit log</a>
+                </li>
+                @if (!string.IsNullOrWhiteSpace(viewDocsUrl))
+                {
+                    <li>
+                        <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" class="govuk-link">
+                            View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
+                        </a>
+                    </li>
+                }
+            </ul>
+        </div>
+    </form>
+}
+
+<style>
+    .vla-legacy-grid {
+        display: grid;
+        grid-template-columns: 500px 500px;
+        column-gap: 72px;
+        row-gap: 12px;
+        align-items: start;
+        margin-bottom: 12px;
     }
 
+    .vla-legacy-field {
+        display: grid;
+        grid-template-columns: 235px 252px;
+        column-gap: 10px;
+        align-items: center;
+    }
+
+    .vla-legacy-field .govuk-label {
+        margin-bottom: 0;
+        font-weight: 400;
+        font-size: 19px;
+        line-height: 1.25;
+        white-space: nowrap;
+    }
+
+    .vla-legacy-input {
+        width: 252px;
+        max-width: 252px;
+        margin-bottom: 0;
+    }
+
+    .vla-legacy-checkbox {
+        width: 1.2rem;
+        height: 1.2rem;
+        margin: 0;
+    }
+
+    .vla-legacy-age-group {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        width: 252px;
+    }
+
+    .vla-legacy-inline-parts {
+        display: grid;
+        grid-template-columns: auto 64px auto 64px;
+        align-items: center;
+        column-gap: 10px;
+        flex-wrap: nowrap;
+    }
+
+    .vla-legacy-calc-button {
+        margin-bottom: 8px;
+        min-height: 36px;
+        padding: 4px 12px;
+    }
+
+    .vla-legacy-inline-parts .govuk-label {
+        min-width: auto;
+    }
+
+    .vla-legacy-mini-input {
+        width: 64px;
+        max-width: 64px;
+        margin-bottom: 0;
+    }
+
+    .bse-herd-row--unsaved { background: #fffbf2; }
+
+    .bse-row-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: nowrap;
+        gap: 8px;
+    }
+
+    .bse-inline-row-button {
+        border: 1px solid #0b0c0c;
+        background: #fff;
+        color: #0b0c0c;
+        padding: 4px 8px;
+        min-height: 36px;
+        font-size: 1rem;
+        line-height: 1.1;
+        cursor: pointer;
+    }
+
+    .bse-inline-row-button:hover { background: #f3f2f1; }
+    .bse-inline-row-button:focus {
+        outline: 3px solid #ffdd00;
+        outline-offset: 0;
+    }
+    .bse-inline-row-button--secondary { border-color: #505a5f; }
+    .bse-inline-row-button--confirm {
+        background: #00703c;
+        border-color: #00703c;
+        color: #fff;
+    }
+    .bse-inline-row-button--confirm:hover {
+        background: #005a30;
+        border-color: #005a30;
+    }
+
+    @@media (max-width: 768px) {
+        .vla-legacy-grid {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+
+        .vla-legacy-field {
+            grid-template-columns: 1fr;
+            align-items: start;
+        }
+
+        .vla-legacy-inline-parts {
+            flex-wrap: wrap;
+        }
+    }
+</style>
+
+<script>
+    (function () {
+        var originSel = document.getElementById('Case_Origin');
+        var purchaseSection = document.getElementById('purchase-section');
+
+        function hasPurchaseData() {
+            var d = document.getElementById('Case_PurchaseDate');
+            var m = document.getElementById('Case_PurchaseAgeInMonths');
+            var y = document.getElementById('age-purchased-years');
+            var c = document.getElementById('Case_PurchasedCounty');
+            return (d && d.value) || (m && m.value) || (y && y.value) || (c && c.value);
+        }
+
+        function clearPurchaseData() {
+            ['Case_PurchaseDate', 'Case_PurchaseAgeInMonths', 'age-purchased-years'].forEach(function (id) {
+                var el = document.getElementById(id); if (el) el.value = '';
+            });
+            var c = document.getElementById('Case_PurchasedCounty');
+            if (c) c.value = '';
+        }
+
+        function applyPurchaseVisibility() {
+            if (!purchaseSection || !originSel) return;
+            purchaseSection.style.display = (originSel.value === 'P') ? '' : 'none';
+        }
+
+        if (originSel) {
+            originSel.addEventListener('change', function () {
+                if (originSel.value !== 'P') {
+                    var msgs = [];
+                    if (hasPurchaseData()) msgs.push('Purchase data has been entered on this Case. If you click Save then this data will be lost.');
+                    msgs.push('Changing the origin away from Purchased may also affect the Traced data entered on the BAB tab.');
+                    alert(msgs.join('\n\n'));
+                    clearPurchaseData();
+                }
+                applyPurchaseVisibility();
+            });
+        }
+        applyPurchaseVisibility();
+
+        function monthsBetween(dateStr1, dateStr2) {
+            var d1 = new Date(dateStr1), d2 = new Date(dateStr2);
+            return (d2.getFullYear() - d1.getFullYear()) * 12 + (d2.getMonth() - d1.getMonth());
+        }
+
+        function updateOnsetWarning() {
+            var total = parseInt(document.getElementById('Case_OnsetAgeInMonths')?.value || '');
+            var warn = document.getElementById('onset-age-warning');
+            if (warn) warn.style.display = (!isNaN(total) && total < 18) ? '' : 'none';
+        }
+
+        function calculate(birthId, refDateId, yearsId, totalId) {
+            var birth = document.getElementById(birthId)?.value;
+            var ref = document.getElementById(refDateId)?.value;
+            var yrs = document.getElementById(yearsId);
+            var tot = document.getElementById(totalId);
+            if (birth && ref) {
+                var m = monthsBetween(birth, ref);
+                if (tot) tot.value = Math.max(0, m);
+            } else {
+                var years = parseInt(yrs?.value || '0') || 0;
+                var months = parseInt(tot?.value || '0') || 0;
+                if (years > 0 && tot) {
+                    tot.value = years * 12 + months;
+                }
+            }
+            if (yrs) yrs.value = '';
+            updateOnsetWarning();
+        }
+
+        document.getElementById('btn-calc-age-purchased')?.addEventListener('click', function () {
+            calculate('Case_BirthDate', 'Case_PurchaseDate', 'age-purchased-years', 'Case_PurchaseAgeInMonths');
+        });
+        document.getElementById('btn-calc-onset-age')?.addEventListener('click', function () {
+            calculate('Case_BirthDate', 'Case_OnsetDate', 'onset-age-years', 'Case_OnsetAgeInMonths');
+        });
+        document.getElementById('Case_OnsetAgeInMonths')?.addEventListener('change', updateOnsetWarning);
+        updateOnsetWarning();
+
+        var showAddOwnerBtn = document.getElementById('show-add-owner-row');
+        var addOwnerRow = document.getElementById('add-owner-row-inline');
+        var cancelAddOwnerBtn = document.getElementById('cancel-add-owner-row');
+
+        if (showAddOwnerBtn && addOwnerRow) {
+            showAddOwnerBtn.addEventListener('click', function () {
+                addOwnerRow.hidden = false;
+                showAddOwnerBtn.hidden = true;
+                var firstInput = addOwnerRow.querySelector('select,input');
+                if (firstInput) firstInput.focus();
+            });
+        }
+
+        if (cancelAddOwnerBtn && addOwnerRow && showAddOwnerBtn) {
+            cancelAddOwnerBtn.addEventListener('click', function () {
+                addOwnerRow.hidden = true;
+                showAddOwnerBtn.hidden = false;
+                cancelAddOwnerBtn.blur();
+            });
+        }
+
+        document.querySelectorAll('.js-cancel-edit-owner-row').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                window.location.href = window.location.pathname + window.location.search;
+            });
+        });
+
+        var form = document.getElementById('edit-vla-form');
+        var dirty = false;
+        var submitting = false;
+        if (form) {
+            form.addEventListener('change', function () { dirty = true; });
+            form.addEventListener('input', function () { dirty = true; });
+            form.addEventListener('submit', function () { submitting = true; });
+        }
+
+        document.querySelectorAll('.bse-cancel-link').forEach(function (lnk) {
+            lnk.addEventListener('click', function (e) {
+                var hasUnsaved = document.getElementById('case-vla-unsaved-banner') &&
+                    !document.getElementById('case-vla-unsaved-banner').hidden;
+                if ((dirty || hasUnsaved) && !window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+                    e.preventDefault();
+                }
+            });
+        });
+
+        window.addEventListener('beforeunload', function (e) {
+            var hasUnsaved = document.getElementById('case-vla-unsaved-banner') &&
+                !document.getElementById('case-vla-unsaved-banner').hidden;
+            if ((dirty || hasUnsaved) && !submitting) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+    })();
+</script>
 

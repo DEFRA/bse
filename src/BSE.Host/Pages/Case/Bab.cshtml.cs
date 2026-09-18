@@ -52,6 +52,13 @@ public class BabModel(
     {
         if (!User.IsInRole("DataEntry"))
             return Forbid();
+
+        if (Origin != "P")
+        {
+            Bab.NatalCphh = Bab.TracedName = Bab.TracedAddress1 =
+                Bab.TracedAddress2 = Bab.TracedAddress3 = Bab.TracedPostcode = null;
+        }
+
         using var conn = connectionFactory.CreateConnection();
         conn.Open();
         using var tx = conn.BeginTransaction();
@@ -78,6 +85,11 @@ public class BabModel(
         tx.Commit();
         TempData["Success"] = "BAB details saved.";
         return RedirectToPage(new { rbse = Rbse });
+    }
+
+    public IActionResult OnGetCancelBabEdit()
+    {
+        return RedirectToPage("/Home");
     }
 
     private async Task LoadAsync()

@@ -14,7 +14,7 @@ public interface IClinicalRepository
     Task EditAsync(EditCaseClinicalCommand command, IDbConnection connection, IDbTransaction transaction);
     Task AddVisitAsync(AddClinicalVisitCommand command, IDbConnection connection, IDbTransaction transaction);
     Task EditVisitAsync(EditClinicalVisitCommand command, IDbConnection connection, IDbTransaction transaction);
-    Task DeleteVisitAsync(int id, byte[]? rowStamp, IDbConnection connection, IDbTransaction transaction);
+    Task DeleteVisitAsync(int id, byte[] rowStamp, IDbConnection connection, IDbTransaction transaction);
 }
 
 public sealed class ClinicalRepository : DapperRepository, IClinicalRepository
@@ -43,7 +43,7 @@ public sealed class ClinicalRepository : DapperRepository, IClinicalRepository
     public Task EditVisitAsync(EditClinicalVisitCommand c, IDbConnection conn, IDbTransaction tx)
         => ExecuteAsync("EditClinicalVisit", new { ID = c.Id, VisitDate = c.VisitDate, RowStamp = c.RowStamp }, conn, tx);
 
-    public Task DeleteVisitAsync(int id, byte[]? rowStamp, IDbConnection conn, IDbTransaction tx)
+    public Task DeleteVisitAsync(int id, byte[] rowStamp, IDbConnection conn, IDbTransaction tx)
         => ExecuteAsync("DeleteClinicalVisit", new { ID = id, RowStamp = rowStamp }, conn, tx);
 
     private static object BuildClinicalParams(string rbse, dynamic c) => new

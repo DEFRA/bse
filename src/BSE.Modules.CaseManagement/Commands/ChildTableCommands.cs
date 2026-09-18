@@ -48,7 +48,7 @@ public record AddFeedCommand(
     int? SupplierId, string? RationName, bool IsPrePurchase);
 
 public record EditFeedCommand(
-    int Id, string Rbse, short? YearFrom, short? YearTo, string RationType,
+    int Id, short? YearFrom, short? YearTo, string RationType,
     int? SupplierId, string? RationName, bool IsPrePurchase, byte[] RowStamp);
 
 // ── Test ─────────────────────────────────────────────────────────────────────
@@ -59,7 +59,7 @@ public record EditTestCommand(int Id, string Rbse, string TestType, string? Test
 // ── Other Owner ───────────────────────────────────────────────────────────────
 
 public record AddOtherOwnerCommand(string Rbse, string Type, string? Name, string? Cphh);
-public record EditOtherOwnerCommand(int Id, string Rbse, string Type, string? Name, string? Cphh, byte[] RowStamp);
+public record EditOtherOwnerCommand(int Id, string Type, string? Name, string? Cphh, byte[] RowStamp);
 
 // ── Pedigree/Dam-Sire ─────────────────────────────────────────────────────────
 

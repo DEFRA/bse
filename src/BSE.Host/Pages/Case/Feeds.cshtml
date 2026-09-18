@@ -3,6 +3,8 @@
 @{
     ViewData["Title"] = $"Feed history — {Model.Rbse}";
     string rbseNoSlash = Model.Rbse.Replace("/", "");
+    var viewDocsUrl = string.IsNullOrWhiteSpace(Model.SpolSiteUrl) ? null : $"{Model.SpolSiteUrl}{rbseNoSlash}";
+    bool isEditing = !string.IsNullOrEmpty(Model.EditingClientKey);
 }
 
 <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
@@ -12,7 +14,7 @@
     </ol>
 </nav>
 
-@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Feeds", Model.Rbse, Model.BatchNumbers))
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Feeds", Model.Rbse, Model.BatchNumbers, viewDocsUrl))
 
 @if (TempData["Success"] is string successMsg)
 {
@@ -27,7 +29,7 @@
     </div>
 }
 
-@if (!ViewContext.ModelState.IsValid)
+@if (!ViewContext.ModelState.IsValid || Model.FieldErrors.Count > 0)
 {
     <div class="govuk-error-summary" data-module="govuk-error-summary">
         <div role="alert">
@@ -38,14 +40,84 @@
                     {
                         <li>@e.ErrorMessage</li>
                     }
+                    @foreach (var e in Model.FieldErrors.Values)
+                    {
+                        <li>@e</li>
+                    }
                 </ul>
             </div>
         </div>
     </div>
 }
-@* -- Existing feed records -------------------------------------------------- *@
-@if (Model.Feeds.Count > 0)
+
+@if (!User.IsInRole("DataEntry"))
 {
+    @* -- Read-only feed records -------------------------------------------------- *@
+    <table class="govuk-table">
+        <caption class="govuk-visually-hidden">Feed history for @Model.Rbse</caption>
+        <thead class="govuk-table__head">
+            <tr class="govuk-table__row">
+                <th scope="col" class="govuk-table__header">Year From</th>
+                <th scope="col" class="govuk-table__header">Year To</th>
+                <th scope="col" class="govuk-table__header">Ration Type</th>
+                <th scope="col" class="govuk-table__header">Supplier</th>
+                <th scope="col" class="govuk-table__header">Ration Name</th>
+                <th scope="col" class="govuk-table__header">Is Pre-purchase?</th>
+            </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+            @if (Model.Feeds.Count > 0)
+            {
+                @foreach (var f in Model.Feeds)
+                {
+                    <tr class="govuk-table__row">
+                        <td class="govuk-table__cell">@f.YearFrom</td>
+                        <td class="govuk-table__cell">@f.YearTo</td>
+                        <td class="govuk-table__cell">@(f.RationDescription ?? f.RationType)</td>
+                        <td class="govuk-table__cell">@f.SupplierName</td>
+                        <td class="govuk-table__cell">@f.RationName</td>
+                        <td class="govuk-table__cell">@(f.IsPrePurchase ? "Yes" : "No")</td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr class="govuk-table__row">
+                    <td class="govuk-table__cell" colspan="6">No feed records.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <p class="govuk-body">You can view feed details but cannot edit this page.</p>
+    return;
+}
+
+<form method="post" novalidate id="case-feeds-inline-form">
+    <input type="hidden" asp-for="Rbse" />
+    <input type="hidden" asp-for="EditingClientKey" />
+    <input type="hidden" asp-for="EditingFeedId" />
+
+    <div id="case-feeds-unsaved-banner"
+         class="govuk-notification-banner bse-unsaved-banner"
+         role="region"
+         aria-labelledby="case-feeds-unsaved-title"
+         data-module="govuk-notification-banner"
+         hidden="@(!Model.HasUnsavedChanges)">
+        <div class="govuk-notification-banner__header">
+            <h2 class="govuk-notification-banner__title" id="case-feeds-unsaved-title">Unsaved changes</h2>
+        </div>
+        <div class="govuk-notification-banner__content">
+            <p class="govuk-body">You have changes in feed records that are not saved yet. Select Save to persist them.</p>
+        </div>
+    </div>
+
+    <div class="govuk-button-group govuk-!-margin-bottom-4">
+        <button type="submit" asp-page-handler="SaveFeeds" class="govuk-button" data-module="govuk-button">Save</button>
+        <a asp-page="/Case/Feeds" asp-page-handler="CancelFeedsEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
+    </div>
+
+    @* -- Existing feed records -------------------------------------------------- *@
     <table class="govuk-table">
         <caption class="govuk-visually-hidden">Feed history for @Model.Rbse</caption>
         <thead class="govuk-table__head">
@@ -59,59 +131,271 @@
                 @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Supplier", ["Column"]="SupplierName", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=feedsBase })
                 @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Ration Name", ["Column"]="RationName", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=feedsBase })
                 @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Is Pre-purchase?", ["Column"]="IsPrePurchase", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=feedsBase })
-                @if (User.IsInRole("DataEntry"))
-                {
-                    <th scope="col" class="govuk-table__header"><span class="govuk-visually-hidden">Actions</span></th>
-                }
+                <th scope="col" class="govuk-table__header"><span class="govuk-visually-hidden">Actions</span></th>
             </tr>
         </thead>
         <tbody class="govuk-table__body">
-            @foreach (var f in Model.Feeds)
+            @if (Model.Feeds.Count == 0)
             {
                 <tr class="govuk-table__row">
+                    <td class="govuk-table__cell" colspan="7">No feed records.</td>
+                </tr>
+            }
+
+            @foreach (var f in Model.Feeds)
+            {
+                <tr class="govuk-table__row bse-feeds-row @(f.IsUnsaved ? "bse-feeds-row--unsaved" : "") @(Model.EditingClientKey == f.ClientKey ? "bse-feeds-row--selected" : "")">
                     <td class="govuk-table__cell">@f.YearFrom</td>
                     <td class="govuk-table__cell">@f.YearTo</td>
                     <td class="govuk-table__cell">@(f.RationDescription ?? f.RationType)</td>
                     <td class="govuk-table__cell">@f.SupplierName</td>
                     <td class="govuk-table__cell">@f.RationName</td>
-                    <td class="govuk-table__cell">@(f.IsPrePurchase ? "Yes" : "No")</td>
-                    @if (User.IsInRole("DataEntry"))
-                    {
+                    <td class="govuk-table__cell">
+                        @(f.IsPrePurchase ? "Yes" : "No")
+                        @if (f.IsUnsaved)
+                        {
+                            <strong class="govuk-tag govuk-tag--yellow govuk-!-margin-left-2">Unsaved</strong>
+                        }
+                    </td>
                     <td class="govuk-table__cell">
                         <div class="bse-row-actions">
-                            <a class="govuk-link" asp-page="/Case/FeedEdit"
-                               asp-route-rbse="@Model.Rbse" asp-route-feedId="@f.Id">Change<span class="govuk-visually-hidden"> feed record @f.YearFrom to @f.YearTo</span></a>
-                            <form method="post" asp-page-handler="DeleteFeed" novalidate>
-                                <input type="hidden" name="FeedId" value="@f.Id" />
-                                <input type="hidden" asp-for="Rbse" />
-                                <button type="submit" class="govuk-button govuk-button--warning"
-                                        onclick="return confirm('Delete this feed record?')">Delete<span class="govuk-visually-hidden"> feed record @f.YearFrom to @f.YearTo</span></button>
-                            </form>
+                            <button type="submit" asp-page-handler="BeginEditFeedRow" asp-route-clientKey="@f.ClientKey"
+                                    class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">
+                                Change<span class="govuk-visually-hidden"> feed record @f.YearFrom to @f.YearTo</span>
+                            </button>
+                            <button type="submit" asp-page-handler="DeleteFeedRow" asp-route-clientKey="@f.ClientKey"
+                                    class="govuk-button govuk-button--warning govuk-!-margin-bottom-0" data-module="govuk-button">
+                                Remove<span class="govuk-visually-hidden"> feed record @f.YearFrom to @f.YearTo</span>
+                            </button>
                         </div>
                     </td>
-                    }
                 </tr>
             }
         </tbody>
     </table>
-}
-else
-{
-    <p class="govuk-body govuk-!-colour-secondary">No feed records.</p>
-}
 
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
 
-@* -- Actions --------------------------------------------------------------- *@
-<div class="govuk-button-group govuk-!-margin-top-2">
-    @if (User.IsInRole("DataEntry"))
+    @* -- Shared add/edit field panel: mirrors legacy CaseEntryFeeds.aspx's single panel
+         used for both "Add As New" and "Update Selected" -- *@
+    <h2 class="govuk-heading-m">@(isEditing ? "Change feed record" : "Add feed record")</h2>
+
+    <div class="bse-feeds-grid">
+        <div class="bse-feeds-left-column">
+            <div class="govuk-form-group bse-feeds-field-row govuk-!-margin-bottom-3 @(Model.FieldErrors.ContainsKey("YearFrom") ? "govuk-form-group--error" : "")">
+                <label class="govuk-label" for="year-from">Year From</label>
+                @if (Model.FieldErrors.TryGetValue("YearFrom", out var yearFromError)) { <p class="govuk-error-message bse-feeds-field-error"><span class="govuk-visually-hidden">Error:</span> @yearFromError</p> }
+                <input id="year-from" name="YearFrom" type="text" inputmode="numeric" maxlength="4"
+                       value="@Model.YearFrom" class="govuk-input bse-feeds-field-input @(Model.FieldErrors.ContainsKey("YearFrom") ? "govuk-input--error" : "")" />
+            </div>
+            <div class="govuk-form-group bse-feeds-field-row govuk-!-margin-bottom-3 @(Model.FieldErrors.ContainsKey("YearTo") ? "govuk-form-group--error" : "")">
+                <label class="govuk-label" for="year-to">Year To</label>
+                @if (Model.FieldErrors.TryGetValue("YearTo", out var yearToError)) { <p class="govuk-error-message bse-feeds-field-error"><span class="govuk-visually-hidden">Error:</span> @yearToError</p> }
+                <input id="year-to" name="YearTo" type="text" inputmode="numeric" maxlength="4"
+                       value="@Model.YearTo" class="govuk-input bse-feeds-field-input @(Model.FieldErrors.ContainsKey("YearTo") ? "govuk-input--error" : "")" />
+            </div>
+            <div class="govuk-form-group bse-feeds-field-row govuk-!-margin-bottom-3 @(Model.FieldErrors.ContainsKey("RationType") ? "govuk-form-group--error" : "")">
+                <label class="govuk-label" for="ration-type">Ration Type</label>
+                @if (Model.FieldErrors.TryGetValue("RationType", out var rationTypeError)) { <p class="govuk-error-message bse-feeds-field-error"><span class="govuk-visually-hidden">Error:</span> @rationTypeError</p> }
+                <select id="ration-type" name="RationType" class="govuk-select bse-feeds-field-input @(Model.FieldErrors.ContainsKey("RationType") ? "govuk-select--error" : "")">
+                    <option value=""></option>
+                    @foreach (var rt in Model.RationTypes)
+                    {
+                        <option value="@rt.Code" selected="@(Model.RationType == rt.Code)">@rt.Description</option>
+                    }
+                </select>
+            </div>
+            <div class="govuk-form-group bse-feeds-field-row govuk-!-margin-bottom-3">
+                <label class="govuk-label" for="ration-name">Ration Name</label>
+                <input id="ration-name" name="RationName" type="text" maxlength="60" value="@Model.RationName" class="govuk-input bse-feeds-field-input" />
+            </div>
+            <div class="govuk-form-group bse-feeds-field-row govuk-!-margin-bottom-3">
+                <label class="govuk-label" for="is-pre-purchase">Is Pre-Purchase?</label>
+                <div class="bse-feeds-checkbox-cell">
+                    <input class="bse-feeds-checkbox-input" type="checkbox" id="is-pre-purchase" name="IsPrePurchase" value="true" checked="@Model.IsPrePurchase" />
+                </div>
+            </div>
+
+            <div class="govuk-button-group govuk-!-margin-top-2 govuk-!-margin-bottom-0">
+                <button type="submit" asp-page-handler="AddFeedRow" class="govuk-button govuk-button--secondary" data-module="govuk-button">Add As New</button>
+                @if (isEditing)
+                {
+                    <button type="submit" asp-page-handler="UpdateFeedRow" class="govuk-button govuk-button--secondary" data-module="govuk-button">Update Selected</button>
+                    <button type="submit" asp-page-handler="DeleteFeedRow" asp-route-clientKey="@Model.EditingClientKey" class="govuk-button govuk-button--warning" data-module="govuk-button">Delete Selected</button>
+                }
+            </div>
+        </div>
+        <div class="bse-feeds-right-column">
+            <div class="govuk-form-group govuk-!-margin-bottom-2">
+                <label class="govuk-label" for="supplier-input">Supplier</label>
+                <div class="bse-feeds-supplier-row">
+                    <input id="supplier-input" type="text" maxlength="30" value="@Model.SupplierName" class="govuk-input bse-feeds-supplier-input" autocomplete="off" />
+                    <button type="button" id="validate-supplier-btn" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0" data-module="govuk-button">Validate Supplier</button>
+                </div>
+            </div>
+            <p id="supplier-validated-name" class="govuk-body govuk-!-margin-bottom-2">@Model.SupplierName</p>
+            <p id="supplier-lookup-error" class="govuk-error-message @(Model.FieldErrors.ContainsKey("SupplierId") ? "" : "govuk-visually-hidden")">
+                <span class="govuk-visually-hidden">Error:</span> @BSE.Host.Helpers.FeedValidation.SupplierEmpty
+            </p>
+            <ul id="supplier-matches-list" class="govuk-list" hidden></ul>
+            <input type="hidden" id="supplier-id" name="SupplierId" value="@Model.SupplierId" />
+            <input type="hidden" id="supplier-name" name="SupplierName" value="@Model.SupplierName" />
+        </div>
+    </div>
+
+    <div class="govuk-button-group govuk-!-margin-top-4">
+        <button type="submit" asp-page-handler="SaveFeeds" class="govuk-button" data-module="govuk-button">Save</button>
+        <a asp-page="/Case/Feeds" asp-page-handler="CancelFeedsEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
+    </div>
+
+    @if (viewDocsUrl is not null)
     {
-        <a asp-page="/Case/FeedAdd" asp-route-rbse="@Model.Rbse" class="govuk-button govuk-button--secondary">Add As New</a>
+        <div class="govuk-button-group govuk-!-margin-top-4">
+            <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" class="govuk-link">
+                View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
+            </a>
+        </div>
     }
-    @if (!string.IsNullOrEmpty(Model.SpolSiteUrl))
-    {
-        <a href="@(Model.SpolSiteUrl)@rbseNoSlash" target="_blank" rel="noopener noreferrer" class="govuk-link">
-            View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
-        </a>
+</form>
+
+<style>
+    .bse-unsaved-banner {
+        border-left-color: #1d70b8;
     }
-</div>
+
+    .bse-feeds-row--unsaved {
+        background: #fffbf2;
+    }
+
+    .bse-feeds-row--selected {
+        background: #f3f2f1;
+    }
+
+    .bse-feeds-grid {
+        display: grid;
+        grid-template-columns: 540px 420px;
+        gap: 0 36px;
+    }
+
+    .bse-feeds-left-column,
+    .bse-feeds-right-column {
+        align-self: start;
+    }
+
+    .bse-feeds-field-row {
+        display: grid;
+        grid-template-columns: 220px 252px;
+        column-gap: 12px;
+        align-items: center;
+    }
+
+    .bse-feeds-field-row .govuk-label {
+        margin-bottom: 0;
+        font-weight: 400;
+        white-space: nowrap;
+    }
+
+    .bse-feeds-field-error {
+        grid-column: 2;
+        margin-bottom: 4px;
+    }
+
+    .bse-feeds-field-input {
+        width: 252px;
+        max-width: 252px;
+        margin-bottom: 0;
+    }
+
+    .bse-feeds-checkbox-input {
+        width: 1.2rem;
+        height: 1.2rem;
+        margin: 0;
+    }
+
+    .bse-feeds-supplier-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .bse-feeds-supplier-input {
+        width: 252px;
+        max-width: 252px;
+        margin-bottom: 0;
+    }
+
+    .bse-row-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+</style>
+
+<script>
+    (function () {
+        var btn = document.getElementById('validate-supplier-btn');
+        var input = document.getElementById('supplier-input');
+        var idField = document.getElementById('supplier-id');
+        var nameField = document.getElementById('supplier-name');
+        var validatedName = document.getElementById('supplier-validated-name');
+        var errorMsg = document.getElementById('supplier-lookup-error');
+        var matchesList = document.getElementById('supplier-matches-list');
+
+        function selectSupplier(id, name) {
+            idField.value = id;
+            nameField.value = name;
+            validatedName.textContent = name;
+            errorMsg.classList.add('govuk-visually-hidden');
+            matchesList.hidden = true;
+            matchesList.innerHTML = '';
+        }
+
+        if (btn) {
+            btn.addEventListener('click', function () {
+                idField.value = '';
+                nameField.value = '';
+                validatedName.textContent = '';
+                matchesList.hidden = true;
+                matchesList.innerHTML = '';
+
+                var name = encodeURIComponent(input.value || '');
+                fetch('?handler=ValidateSupplier&name=' + name)
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        if (data.found) {
+                            selectSupplier(data.id, data.name);
+                        } else if (data.matches && data.matches.length > 0) {
+                            errorMsg.classList.add('govuk-visually-hidden');
+                            data.matches.forEach(function (m) {
+                                var li = document.createElement('li');
+                                var a = document.createElement('a');
+                                a.href = '#';
+                                a.className = 'govuk-link';
+                                a.textContent = m.name;
+                                a.addEventListener('click', function (e) {
+                                    e.preventDefault();
+                                    selectSupplier(m.id, m.name);
+                                });
+                                li.appendChild(a);
+                                matchesList.appendChild(li);
+                            });
+                            matchesList.hidden = false;
+                        } else {
+                            errorMsg.classList.remove('govuk-visually-hidden');
+                        }
+                    });
+            });
+        }
+
+        document.querySelectorAll('.bse-cancel-link').forEach(function (b) {
+            b.addEventListener('click', function (e) {
+                var banner = document.getElementById('case-feeds-unsaved-banner');
+                var hasUnsaved = banner && !banner.hidden;
+                if (hasUnsaved && !window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+                    e.preventDefault();
+                }
+            });
+        });
+    })();
+</script>
 

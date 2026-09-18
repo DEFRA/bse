@@ -22,9 +22,59 @@
         <h1 class="govuk-heading-l">RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Rbse)</span></h1>
     </div>
     <div class="govuk-grid-column-one-third">
-        @await Html.PartialAsync("_BatchNumbersPanel", new BSE.Host.Models.BatchNumbersPanelViewModel(Model.Rbse, Model.BatchNumbers ?? []))
+        <div class="bse-batch-docs-row">
+            <div class="bse-batch-docs-row__batch">
+                @await Html.PartialAsync("_BatchNumbersPanel", new BSE.Host.Models.BatchNumbersPanelViewModel(Model.Rbse, Model.BatchNumbers ?? []))
+            </div>
+            @if (!string.IsNullOrWhiteSpace(Model.ViewDocsUrl))
+            {
+                <div class="bse-batch-docs-row__docs">
+                    <a href="@Model.ViewDocsUrl" target="_blank" rel="noopener noreferrer" class="govuk-link govuk-details__summary-text bse-batch-docs-row__docs-link">
+                        View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
+                    </a>
+                </div>
+            }
+        </div>
     </div>
 </div>
+
+<style>
+    .bse-batch-docs-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 20px;
+        flex-wrap: nowrap;
+    }
+
+    .bse-batch-docs-row__batch .bse-batch-panel {
+        margin-bottom: 0;
+    }
+
+    .bse-batch-docs-row__batch .govuk-details {
+        margin-bottom: 0;
+    }
+
+    .bse-batch-docs-row__docs {
+        white-space: nowrap;
+        padding-top: 2px;
+    }
+
+    .bse-batch-docs-row__docs-link {
+        font-family: "GDS Transport", arial, sans-serif;
+        font-size: 1.1875rem;
+        line-height: 1.3157894737;
+        font-weight: 400;
+        margin-bottom: 0;
+    }
+
+    @@media (max-width: 40.0525em) {
+        .bse-batch-docs-row {
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: flex-start;
+        }
+    }
+</style>
 
 <div class="bse-case-tabs-wrap">
     <nav class="bse-case-tabs govuk-!-margin-bottom-6" aria-label="Case sections">

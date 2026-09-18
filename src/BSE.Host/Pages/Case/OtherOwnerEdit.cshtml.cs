@@ -76,7 +76,6 @@ public class OtherOwnerEditModel(
         using var tx = conn.BeginTransaction();
         await ownerRepository.EditAsync(new EditOtherOwnerCommand(
             Id,
-            caseRbse,
             OwnerType!,
             string.IsNullOrWhiteSpace(OwnerName) ? null : OwnerName,
             string.IsNullOrWhiteSpace(normalizedCphh) ? null : normalizedCphh,

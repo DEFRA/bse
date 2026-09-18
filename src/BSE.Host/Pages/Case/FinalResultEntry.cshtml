@@ -37,7 +37,7 @@
 }
 
 @* ── Step 1: look up the case ───────────────────────────────────────────── *@
-<form method="post" asp-page-handler="LookUp" novalidate>
+<form method="post" asp-page-handler="LookUp" novalidate class="bse-final-result-lookup-row">
     <div class="govuk-form-group @(Model.RbseError is not null ? "govuk-form-group--error" : "")">
         <label class="govuk-label" for="rbse">RBSE</label>
         @if (Model.RbseError is not null)
@@ -46,83 +46,67 @@
                 <span class="govuk-visually-hidden">Error:</span>@Model.RbseError
             </p>
         }
-        <input id="rbse" name="Rbse" value="@Model.Rbse" type="text" maxlength="11" autocomplete="off"
+        <input id="rbse" name="Rbse" value="@BseFormat.FormatRbse(Model.Rbse)" type="text" maxlength="11" autocomplete="off"
                aria-describedby="rbse-hint @(Model.RbseError is not null ? "rbse-error" : "")"
                class="govuk-input govuk-input--width-10 @(Model.RbseError is not null ? "govuk-input--error" : "")" />
+        <button type="submit" class="govuk-button govuk-!-margin-top-2" data-module="govuk-button">Look Up</button>
     </div>
-    <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Look Up</button>
 </form>
 
 @if (Model.CaseFound)
 {
     var r = Model.Result!;
 
-    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
+    <div class="bse-legacy-case-grid">
+        <div class="bse-legacy-row">
+            <span>Eartag</span>
+            <span>@r.Eartag</span>
+        </div>
+        <div class="bse-legacy-row">
+            <span>Name</span>
+            <span>@r.OwnerName</span>
+        </div>
+        <div class="bse-legacy-row">
+            <span>Date of Birth</span>
+            <span>@r.BirthDate?.ToString("dd/MM/yyyy")</span>
+        </div>
+        <div class="bse-legacy-row">
+            <span>Address</span>
+            <span>@r.Address1</span>
+        </div>
+        <div class="bse-legacy-row">
+            <span>CPHH</span>
+            <span>@BseFormat.FormatCphh(r.Cphh)</span>
+        </div>
+    </div>
 
-    <h2 class="govuk-heading-m">Case @BseFormat.FormatRbse(r.Rbse)</h2>
-    <dl class="govuk-summary-list">
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Eartag</dt>
-            <dd class="govuk-summary-list__value">@r.Eartag</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Date of Birth</dt>
-            <dd class="govuk-summary-list__value">@r.BirthDate?.ToString("dd/MM/yyyy")</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">CPHH</dt>
-            <dd class="govuk-summary-list__value">@BseFormat.FormatCphh(r.Cphh)</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Case Type</dt>
-            <dd class="govuk-summary-list__value">@r.CaseType</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Name</dt>
-            <dd class="govuk-summary-list__value">@r.OwnerName</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Address</dt>
-            <dd class="govuk-summary-list__value">@r.Address1</dd>
-        </div>
-    </dl>
-
-    @* ── Paperwork received, with the dates legacy displayed alongside ──── *@
-    <h2 class="govuk-heading-m">Paperwork</h2>
-    <table class="govuk-table">
-        <caption class="govuk-visually-hidden">Paperwork received for this case</caption>
-        <thead class="govuk-table__head">
-            <tr class="govuk-table__row">
-                <th scope="col" class="govuk-table__header">Document</th>
-                <th scope="col" class="govuk-table__header">Received</th>
-                <th scope="col" class="govuk-table__header">Date</th>
-            </tr>
-        </thead>
-        <tbody class="govuk-table__body">
-            @{
-                var paperwork = new (string Label, bool Received, DateTime? Date)[]
-                {
-                    ("Purchaser BSE1 Received",  r.IsPurchaserBse1Received,  r.PurchaserBse1ReceivedDate),
-                    ("Breeder BSE1 Received",    r.IsBreederBse1Received,    r.BreederBse1ReceivedDate),
-                    ("Vendor 1 BSE1 Received",   r.IsVendor1Bse1Received,    r.Vendor1Bse1ReceivedDate),
-                    ("Homebred BSE1 Received",   r.IsHomebredBse1Received,   r.HomebredBse1ReceivedDate),
-                    ("Summary Sheet Received",   r.IsSummarySheetReceived,   r.SummarySheetReceivedDate),
-                    ("Paperwork Complete",       r.IsPaperworkComplete,      r.PaperworkCompleteDate),
-                };
-            }
-            @foreach (var (label, received, date) in paperwork)
+    <div class="bse-legacy-checklist">
+        @{
+            var paperwork = new (string Label, bool Received, DateTime? Date)[]
             {
-                <tr class="govuk-table__row">
-                    <td class="govuk-table__cell">@label</td>
-                    <td class="govuk-table__cell">@(received ? "Yes" : "No")</td>
-                    <td class="govuk-table__cell">@date?.ToString("dd/MM/yyyy")</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+                ("Purchaser BSE1 Received?",  r.IsPurchaserBse1Received,  r.PurchaserBse1ReceivedDate),
+                ("Breeder BSE1 Received?",    r.IsBreederBse1Received,    r.BreederBse1ReceivedDate),
+                ("Vendor1 BSE1 Received?",    r.IsVendor1Bse1Received,    r.Vendor1Bse1ReceivedDate),
+                ("Homebred BSE1 Received?",   r.IsHomebredBse1Received,   r.HomebredBse1ReceivedDate),
+                ("Summary Sheet Received?",   r.IsSummarySheetReceived,   r.SummarySheetReceivedDate),
+                ("Paperwork Complete?",       r.IsPaperworkComplete,      r.PaperworkCompleteDate),
+            };
+        }
+        @foreach (var (label, received, date) in paperwork)
+        {
+            <div class="bse-check-row">
+                <span>@label</span>
+                <div>
+                    <input type="checkbox" checked="@(received ? "checked" : null)" disabled />
+                    @if (date is not null)
+                    {
+                        <span class="govuk-body-s">@date.Value.ToString("dd/MM/yyyy")</span>
+                    }
+                </div>
+            </div>
+        }
+    </div>
 
-    @* ── Recorded tests ─────────────────────────────────────────────────── *@
-    <h2 class="govuk-heading-m">Tests</h2>
     @if (Model.Tests.Count == 0)
     {
         <p class="govuk-body">No tests have been recorded for this case.</p>
@@ -147,15 +131,53 @@
                 }
             </tbody>
         </table>
+
+        @if (Model.TestsTotalPages > 1)
+        {
+            <nav class="govuk-pagination" role="navigation" aria-label="Test records pagination">
+                @if (Model.TestPage > 1)
+                {
+                    <div class="govuk-pagination__prev">
+                        <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(Model.TestPage - 1)" rel="prev">
+                            <svg class="govuk-pagination__icon govuk-pagination__icon--prev" xmlns="http://www.w3.org/2000/svg" height="13" width="15" focusable="false" aria-hidden="true" viewBox="0 0 15 13"><path d="m6.5938-0.0078125-6.7266 6.7266 6.7441 6.4062 1.377-1.449-4.1856-3.9768h12.896v-2h-12.984l4.2931-4.293-1.414-1.414z"/></svg>
+                            <span class="govuk-pagination__link-title">Previous<span class="govuk-visually-hidden"> page</span></span>
+                        </a>
+                    </div>
+                }
+
+                <ul class="govuk-pagination__list">
+                    @{ int startPage = Math.Max(1, Model.TestPage - 4); int endPage = Math.Min(Model.TestsTotalPages, startPage + 9); if (endPage - startPage < 9) startPage = Math.Max(1, endPage - 9); }
+                    @for (int p = startPage; p <= endPage; p++)
+                    {
+                        var isCurrent = p == Model.TestPage;
+                        <li class="govuk-pagination__item @(isCurrent ? "govuk-pagination__item--current" : "")">
+                            @if (isCurrent)
+                            {
+                                <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(p)" aria-label="Page @p" aria-current="page">@p</a>
+                            }
+                            else
+                            {
+                                <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(p)" aria-label="Page @p">@p</a>
+                            }
+                        </li>
+                    }
+                </ul>
+
+                @if (Model.TestPage < Model.TestsTotalPages)
+                {
+                    <div class="govuk-pagination__next">
+                        <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(Model.TestPage + 1)" rel="next">
+                            <span class="govuk-pagination__link-title">Next<span class="govuk-visually-hidden"> page</span></span>
+                            <svg class="govuk-pagination__icon govuk-pagination__icon--next" xmlns="http://www.w3.org/2000/svg" height="13" width="15" focusable="false" aria-hidden="true" viewBox="0 0 15 13"><path d="m8.107-0.0078125-1.4136 1.414 4.2926 4.293h-12.986v2h12.896l-4.1855 3.9766 1.377 1.4492 6.7441-6.4062-6.7246-6.7246z"/></svg>
+                        </a>
+                    </div>
+                }
+            </nav>
+        }
     }
 
-    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
-
-    @* ── Final result ───────────────────────────────────────────────────── *@
     <form method="post" asp-page-handler="Save" novalidate>
         <input type="hidden" name="Rbse" value="@Model.Rbse" />
-
-        <h2 class="govuk-heading-m">Final result</h2>
 
         @if (Model.ShowPositiveWithoutPositiveTest)
         {
@@ -163,7 +185,7 @@
                 <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
                 <strong class="govuk-warning-text__text">
                     <span class="govuk-warning-text__assistive">Warning</span>
-                    You have chosen a Positive result but none of the Test results have returned Positive.
+                    You have a Positive result but none of the Test Results have returned Positive.
                 </strong>
             </div>
         }
@@ -183,109 +205,147 @@
                 <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
                 <strong class="govuk-warning-text__text">
                     <span class="govuk-warning-text__assistive">Warning</span>
-                    You have selected positive but the paperwork is not complete.
+                    You have selected positive but no paperwork is complete.
                 </strong>
             </div>
         }
 
-        <div class="govuk-form-group @(Model.FinalResultError is not null ? "govuk-form-group--error" : "")">
-            <label class="govuk-label" for="final-result">Final Result</label>
-            @if (Model.FinalResultError is not null)
+        <div class="bse-final-result-panel">
+            <div class="bse-legacy-form-row">
+                <div class="govuk-form-group @(Model.FinalResultError is not null ? "govuk-form-group--error" : "")">
+                    <label class="govuk-label" for="final-result">Final Result</label>
+                    @if (Model.FinalResultError is not null)
+                    {
+                        <p id="final-result-error" class="govuk-error-message">
+                            <span class="govuk-visually-hidden">Error:</span>@Model.FinalResultError
+                        </p>
+                    }
+                    @if (Model.ShowDnaMismatch)
+                    {
+                        <div class="bse-legacy-dna-warning">Check DNA match</div>
+                    }
+                    <select id="final-result" name="FinalResult"
+                            aria-describedby="@(Model.FinalResultError is not null ? "final-result-error" : null)"
+                            class="govuk-select bse-final-result-selector @(Model.FinalResultError is not null ? "govuk-select--error" : "")">
+                        <option value=""></option>
+                        @foreach (var option in Model.TestResults)
+                        {
+                            <option value="@option.Code" selected="@(option.Code == Model.FinalResult)">@option.Description</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="govuk-form-group">
+                    <label class="govuk-label" for="final-result-date">Final Result Date</label>
+                    <div id="final-result-date" class="bse-inline-value">@Model.DisplayFinalResultDate?.ToString("dd/MM/yyyy")</div>
+                </div>
+            </div>
+
+            <div class="bse-legacy-form-row">
+                <div class="govuk-form-group">
+                    <label class="govuk-label" for="case-type">Case Type</label>
+                    <div id="case-type" class="bse-inline-value">@r.CaseType</div>
+                </div>
+
+                <div class="govuk-form-group">
+                    <label class="govuk-label" for="lab-comment">Lab Comment</label>
+                    <textarea id="lab-comment" name="LabComment" rows="3" maxlength="255"
+                              class="govuk-textarea bse-legacy-textarea">@Model.LabComment</textarea>
+                </div>
+            </div>
+
+            <div class="bse-legacy-form-row">
+                <div class="govuk-form-group">
+                    <label class="govuk-label" for="dbse">DBSE</label>
+                    <div id="dbse" class="bse-inline-value">@Model.DisplayDbse</div>
+                </div>
+
+                <div class="govuk-form-group">
+                    <label class="govuk-label govuk-visually-hidden" for="legacy-note">Note</label>
+                    <div id="legacy-note" class="bse-legacy-note" aria-hidden="true"></div>
+                </div>
+            </div>
+
+            @if (Model.HasFinalResult)
             {
-                <p id="final-result-error" class="govuk-error-message">
-                    <span class="govuk-visually-hidden">Error:</span>@Model.FinalResultError
-                </p>
+                <div class="govuk-button-group govuk-!-margin-top-2">
+                    <a class="govuk-button govuk-button--secondary" data-module="govuk-button"
+                       asp-page="/Case/ResultMemo" asp-route-rbse="@r.Rbse" asp-route-print="true"
+                       target="_blank" rel="noopener">Print Memo</a>
+                    <a class="govuk-button govuk-button--secondary" data-module="govuk-button"
+                       asp-page="/Case/ResultMemo" asp-route-rbse="@r.Rbse">Download</a>
+                </div>
             }
-            <select id="final-result" name="FinalResult"
-                    aria-describedby="@(Model.FinalResultError is not null ? "final-result-error" : null)"
-                    class="govuk-select @(Model.FinalResultError is not null ? "govuk-select--error" : "")">
-                <option value=""></option>
-                @foreach (var option in Model.TestResults)
-                {
-                    <option value="@option.Code" selected="@(option.Code == Model.FinalResult)">@option.Description</option>
-                }
-            </select>
+            else
+            {
+                <p class="govuk-body">The result memo is available once a final result has been saved for this case.</p>
+            }
         </div>
 
-        <dl class="govuk-summary-list">
-            <div class="govuk-summary-list__row">
-                <dt class="govuk-summary-list__key">Final Result Date</dt>
-                <dd class="govuk-summary-list__value">@Model.DisplayFinalResultDate?.ToString("dd/MM/yyyy")</dd>
+        <div class="govuk-grid-row">
+            <div class="govuk-grid-column-one-half">
+                <div class="govuk-form-group">
+                    <label class="govuk-label" for="retro-test-type">Retrospective Test Type</label>
+                    <select id="retro-test-type" name="RetrospectiveTestType" class="govuk-select">
+                        <option value=""></option>
+                        @foreach (var option in Model.TestTypes)
+                        {
+                            <option value="@option.Code" selected="@(option.Code == Model.RetrospectiveTestType)">@option.Description</option>
+                        }
+                    </select>
+                </div>
             </div>
-            <div class="govuk-summary-list__row">
-                <dt class="govuk-summary-list__key">DBSE</dt>
-                <dd class="govuk-summary-list__value">@Model.DisplayDbse</dd>
+
+            <div class="govuk-grid-column-one-half">
+                <div class="govuk-form-group">
+                    <label class="govuk-label" for="retro-result">Retrospective Result</label>
+                    <select id="retro-result" name="RetrospectiveResult" class="govuk-select">
+                        <option value=""></option>
+                        @foreach (var option in Model.TestResults)
+                        {
+                            <option value="@option.Code" selected="@(option.Code == Model.RetrospectiveResult)">@option.Description</option>
+                        }
+                    </select>
+                </div>
             </div>
-        </dl>
-
-        <div class="govuk-inset-text">
-            The final result date is set automatically, and a DBSE number is allocated by the system
-            when the result is positive.
         </div>
 
         <div class="govuk-form-group">
-            <label class="govuk-label" for="lab-comment">Lab Comment</label>
-            <textarea id="lab-comment" name="LabComment" rows="3" maxlength="255"
-                      class="govuk-textarea">@Model.LabComment</textarea>
-        </div>
-
-        @* ── Retrospective test ─────────────────────────────────────────── *@
-        <h2 class="govuk-heading-m">Retrospective test</h2>
-
-        <div class="govuk-form-group">
-            <label class="govuk-label" for="retro-test-type">Test Type</label>
-            <select id="retro-test-type" name="RetrospectiveTestType" class="govuk-select">
-                <option value=""></option>
-                @foreach (var option in Model.TestTypes)
-                {
-                    <option value="@option.Code" selected="@(option.Code == Model.RetrospectiveTestType)">@option.Description</option>
-                }
-            </select>
-        </div>
-
-        <div class="govuk-form-group">
-            <label class="govuk-label" for="retro-result">Result</label>
-            <select id="retro-result" name="RetrospectiveResult" class="govuk-select">
-                <option value=""></option>
-                @foreach (var option in Model.TestResults)
-                {
-                    <option value="@option.Code" selected="@(option.Code == Model.RetrospectiveResult)">@option.Description</option>
-                }
-            </select>
-        </div>
-
-        <div class="govuk-form-group">
-            <label class="govuk-label" for="retro-date">Date</label>
+            <label class="govuk-label" for="retro-date">Retrospective Date</label>
             <input id="retro-date" name="RetrospectiveResultDate" type="date" class="govuk-input govuk-input--width-10"
                    value="@Model.RetrospectiveResultDate?.ToString("yyyy-MM-dd")" />
         </div>
 
         <div class="govuk-form-group">
-            <label class="govuk-label" for="retro-comment">Comments</label>
+            <label class="govuk-label" for="retro-comment">Retrospective Comments</label>
             <textarea id="retro-comment" name="RetrospectiveComment" rows="3" maxlength="500"
                       class="govuk-textarea">@Model.RetrospectiveComment</textarea>
         </div>
 
-        <div class="govuk-button-group">
-            <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
-            <a asp-page="/Home" class="govuk-link">Cancel</a>
+        <div class="bse-legacy-form-actions">
+            <div class="govuk-button-group">
+                <button type="submit" class="govuk-button" data-module="govuk-button" data-save-button="final-result-save" disabled="disabled">Save</button>
+                <a asp-page="/Home" class="govuk-link">Cancel</a>
+            </div>
         </div>
     </form>
 
-    @* ── Result memo (legacy Download / Print Memo buttons) ─────────────── *@
-    <h2 class="govuk-heading-m">Result memo</h2>
-    @if (Model.HasFinalResult)
-    {
-        <div class="govuk-button-group">
-            <a class="govuk-button govuk-button--secondary" data-module="govuk-button"
-               asp-page="/Case/ResultMemo" asp-route-rbse="@r.Rbse" asp-route-print="true"
-               target="_blank" rel="noopener">Print Memo (opens in a new tab)</a>
-            <a class="govuk-button govuk-button--secondary" data-module="govuk-button"
-               asp-page="/Case/ResultMemo" asp-route-rbse="@r.Rbse">Download</a>
-        </div>
-    }
-    else
-    {
-        <p class="govuk-body">The result memo is available once a final result has been saved for this case.</p>
-    }
 }
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.querySelector('form[asp-page-handler="Save"]');
+        const finalResultSelect = document.getElementById('final-result');
+        const saveButton = document.querySelector('[data-save-button="final-result-save"]');
+
+        if (!form || !finalResultSelect || !saveButton) return;
+
+        const syncSaveButton = function () {
+            saveButton.disabled = !finalResultSelect.value;
+        };
+
+        form.addEventListener('input', syncSaveButton);
+        form.addEventListener('change', syncSaveButton);
+        syncSaveButton();
+    });
+</script>

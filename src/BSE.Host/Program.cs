@@ -343,6 +343,10 @@ try
     builder.Services.AddScoped<BSE.Host.Services.ICurrentUserService, BSE.Host.Services.CurrentUserService>();
     builder.Services.AddScoped<BSE.Host.Services.IGeoLookupService, BSE.Host.Services.GeoLookupService>();
     builder.Services.AddScoped<BSE.Host.Services.ICaseWizardStateService, BSE.Host.Services.CaseWizardStateService>();
+    builder.Services.AddScoped<BSE.Host.Services.ICaseEditDraftStateService, BSE.Host.Services.CaseEditDraftStateService>();
+    builder.Services.AddScoped<BSE.Host.Services.ICaseFarmDraftStateService, BSE.Host.Services.CaseFarmDraftStateService>();
+    builder.Services.AddScoped<BSE.Host.Services.ICaseClinicalDraftStateService, BSE.Host.Services.CaseClinicalDraftStateService>();
+    builder.Services.AddScoped<BSE.Host.Services.ICaseFeedsDraftStateService, BSE.Host.Services.CaseFeedsDraftStateService>();
 
     // -- Authorisation policies
     // Each policy requires exactly its own name as a role claim.
