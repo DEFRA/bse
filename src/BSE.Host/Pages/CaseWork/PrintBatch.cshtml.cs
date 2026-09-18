@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Encodings.Web;
+using System.Text.RegularExpressions;
 using BSE.Modules.Batch.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,6 +11,10 @@ namespace BSE.Host.Pages.CaseWork;
 [Authorize(Policy = "VLAAccess")]
 public class PrintBatchModel(IBatchService batchService) : PageModel
 {
+    // Matches legacy BatchNumber.ascx: 4-digit year, up to 6-digit numeric serial.
+    private static readonly Regex YearPattern = new(@"^\d{4}$", RegexOptions.Compiled);
+    private static readonly Regex NumberPattern = new(@"^\d{1,6}$", RegexOptions.Compiled);
+
     public enum ReportType
     {
         None = 0,
@@ -20,19 +25,32 @@ public class PrintBatchModel(IBatchService batchService) : PageModel
         Pedigree = 5
     }
 
-    [BindProperty] public short? BatchYear { get; set; }
-    [BindProperty] public int? BatchNumber { get; set; }
+    [BindProperty] public string? BatchYear { get; set; }
+    [BindProperty] public string? BatchNumber { get; set; }
     [BindProperty] public ReportType SelectedReportType { get; set; } = ReportType.None;
 
     public async Task<IActionResult> OnPostDownloadAsync()
     {
-        if (BatchYear is null) ModelState.AddModelError(nameof(BatchYear), "Enter batch year.");
-        if (BatchNumber is null) ModelState.AddModelError(nameof(BatchNumber), "Enter batch number.");
+        var yearText = BatchYear?.Trim();
+        var numberText = BatchNumber?.Trim();
+
+        if (string.IsNullOrEmpty(yearText) && string.IsNullOrEmpty(numberText))
+        {
+            ModelState.AddModelError(nameof(BatchYear), "Enter batch number.");
+        }
+        else
+        {
+            if (!YearPattern.IsMatch(yearText ?? string.Empty))
+                ModelState.AddModelError(nameof(BatchYear), "Enter a four digit year");
+            if (!NumberPattern.IsMatch(numberText ?? string.Empty))
+                ModelState.AddModelError(nameof(BatchNumber), "Enter a valid batch number");
+        }
+
         if (SelectedReportType == ReportType.None) ModelState.AddModelError(nameof(SelectedReportType), "Select report type.");
         if (!ModelState.IsValid) return Page();
 
-        var batchYear = BatchYear!.Value;
-        var batchNumber = BatchNumber!.Value;
+        var batchYear = short.Parse(yearText!);
+        var batchNumber = int.Parse(numberText!);
 
         var batchId = await batchService.GetBatchIdAsync(batchYear, batchNumber);
         if (batchId is null)

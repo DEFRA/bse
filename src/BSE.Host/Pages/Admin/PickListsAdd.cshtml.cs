@@ -51,6 +51,7 @@ public class PickListsAddModel(
     public async Task<IActionResult> OnPostAsync()
     {
         await LoadAsync();
+        Fields ??= [];
         if (!CanEdit || Procs is null) return RedirectToTable();
 
         ValidateRequired();
@@ -84,7 +85,7 @@ public class PickListsAddModel(
     private IActionResult RedirectToTable() =>
         RedirectToPage("/Admin/PickLists", new { tableId = TableId, sortColumn = SortColumn, sortDesc = SortDesc, pageNumber = PageNumber });
 
-    private string Field(string column) => Fields.GetValueOrDefault(column, "").Trim();
+    private string Field(string column) => Fields?.GetValueOrDefault(column, "")?.Trim() ?? string.Empty;
 
     private bool BoolField(string column) =>
         Fields.TryGetValue(column, out var v) && (v == "true" || v == "on" || v == "1" || v == "True");

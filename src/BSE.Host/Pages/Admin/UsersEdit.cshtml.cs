@@ -12,6 +12,10 @@ namespace BSE.Host.Pages.Admin;
 [Authorize(Policy = "VLAMaintenance")]
 public class UsersEditModel(IUserManagementService userManagementService, ILookupDataService lookupDataService) : PageModel
 {
+    // Column limits from [dbo].[User]: Name VARCHAR(35), Email VARCHAR(60).
+    private const int UserNameMaxLength = 35;
+    private const int EmailMaxLength = 60;
+
     [BindProperty(SupportsGet = true)]
     public int Id { get; set; }
 
@@ -46,8 +50,22 @@ public class UsersEditModel(IUserManagementService userManagementService, ILooku
         EditIsActive = Request.Form[nameof(EditIsActive)]
             .Any(v => string.Equals(v, "true", StringComparison.OrdinalIgnoreCase));
 
+        EditUserName = EditUserName?.Trim() ?? string.Empty;
+        EditEmail = EditEmail?.Trim();
+
         if (string.IsNullOrWhiteSpace(EditUserName))
             ModelState.AddModelError(nameof(EditUserName), "Enter a display name");
+        else if (EditUserName.Length > UserNameMaxLength)
+            ModelState.AddModelError(nameof(EditUserName), $"Display name must be {UserNameMaxLength} characters or fewer");
+
+        if (!string.IsNullOrWhiteSpace(EditEmail))
+        {
+            if (EditEmail.Length > EmailMaxLength)
+                ModelState.AddModelError(nameof(EditEmail), $"Email must be {EmailMaxLength} characters or fewer");
+            else if (!ValidationHelpers.IsValidEmail(EditEmail))
+                ModelState.AddModelError(nameof(EditEmail), "Enter an email address in the correct format, like name@example.com");
+        }
+
         if (EditUserGroupId <= 0)
             ModelState.AddModelError(nameof(EditUserGroupId), "Select a user group");
 

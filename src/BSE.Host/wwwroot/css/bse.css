@@ -205,6 +205,278 @@
     margin: 0;
 }
 
+/* Farm edit legacy alignment: preserve familiar two-column form rhythm from CaseEntryFarm.aspx,
+   while keeping GOV.UK labels and focus styles for accessibility. */
+.bse-farm-legacy {
+    margin-top: 12px;
+}
+
+.bse-farm-confirmed-cases {
+    margin-top: 6px;
+    margin-bottom: 10px;
+}
+
+.bse-farm-legacy-top {
+    border-top: 1px solid #b1b4b6;
+    border-bottom: 1px solid #b1b4b6;
+    padding: 10px 0;
+    margin-bottom: 8px;
+}
+
+.bse-farm-legacy-top__row {
+    display: grid;
+    grid-template-columns: 230px 1fr;
+    column-gap: 10px;
+    align-items: center;
+}
+
+.bse-farm-legacy-top__row .govuk-label {
+    margin-bottom: 0;
+    font-weight: 400;
+}
+
+.bse-farm-legacy-top__input {
+    margin-bottom: 0;
+    width: 230px;
+    max-width: 230px;
+    background: #f3f2f1;
+}
+
+.bse-farm-legacy__section {
+    border-top: 1px solid #b1b4b6;
+    padding-top: 12px;
+    margin-top: 12px;
+}
+
+.bse-farm-legacy__row {
+    display: grid;
+    grid-template-columns: 500px 500px;
+    column-gap: 72px;
+    align-items: start;
+    margin-bottom: 12px;
+}
+
+.bse-farm-legacy__field {
+    display: grid;
+    grid-template-columns: 235px 252px;
+    column-gap: 10px;
+    align-items: start;
+}
+
+.bse-farm-legacy__field .govuk-label {
+    margin-bottom: 0;
+    font-weight: 400;
+    white-space: nowrap;
+}
+
+.bse-farm-legacy__field .govuk-visually-hidden {
+    margin-bottom: 0;
+}
+
+.bse-farm-legacy__field .govuk-input,
+.bse-farm-legacy__field .govuk-select {
+    margin-bottom: 0;
+}
+
+.bse-farm-legacy__input {
+    width: 252px !important;
+    max-width: 252px !important;
+}
+
+.bse-farm-legacy__field fieldset {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.bse-farm-legacy__field fieldset .govuk-label {
+    display: inline-block;
+    width: 235px;
+    vertical-align: middle;
+}
+
+.bse-farm-legacy__field .govuk-fieldset__legend {
+    margin-bottom: 0;
+}
+
+.bse-farm-mapref-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+    min-height: 34px;
+}
+
+.bse-farm-mapref-input {
+    width: 68px;
+}
+
+.bse-farm-mapref-input--prefix {
+    width: 52px;
+}
+
+.bse-farm-mapref-row .govuk-button {
+    width: auto;
+    margin-top: 0;
+    min-height: 34px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    margin-left: 10px;
+}
+
+.bse-farm-legacy__row--button {
+    margin-bottom: 10px;
+}
+
+.bse-farm-legacy__row--button .govuk-button {
+    width: auto;
+}
+
+.bse-farm-legacy__field--button {
+    display: block;
+}
+
+.bse-farm-legacy__field--button .bse-farm-legacy-btn {
+    margin-left: 0;
+}
+
+.bse-farm-legacy__field--map {
+    align-items: center;
+}
+
+.bse-farm-legacy__field--map fieldset {
+    display: grid;
+    grid-template-columns: 235px 252px;
+    column-gap: 10px;
+    align-items: center;
+}
+
+.bse-farm-legacy__field--map fieldset .govuk-label {
+    width: auto;
+}
+
+.bse-farm-legacy__field--map fieldset .bse-farm-mapref-row {
+    justify-self: start;
+}
+
+.bse-farm-legacy__field--map #estimate-map-ref-msg {
+    margin-top: 4px;
+    margin-left: 245px;
+    margin-bottom: 0;
+}
+
+.bse-farm-legacy-btn {
+    min-height: 34px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    margin-right: 0;
+}
+
+.bse-farm-legacy-btn--use {
+    width: 148px;
+    min-width: 148px;
+}
+
+.bse-farm-legacy-btn--estimate {
+    width: 86px;
+    min-width: 86px;
+}
+
+.bse-farm-legacy__field--continuation .govuk-label {
+    visibility: hidden;
+}
+
+.bse-farm-legacy__field--dealer {
+    grid-template-columns: 1fr;
+}
+
+.bse-farm-legacy__field--dealer .govuk-checkboxes {
+    margin-bottom: 0;
+    padding-top: 6px;
+}
+
+.bse-farm-legacy__field--dealer-left {
+    grid-template-columns: 235px 252px;
+    align-items: center;
+}
+
+.bse-farm-legacy__dealer-checkbox {
+    justify-self: start;
+    width: 24px;
+    height: 24px;
+    margin: 0;
+}
+
+.bse-farm-legacy__field--continuation .govuk-label {
+    line-height: 40px;
+}
+
+@media (max-width: 900px) {
+    .bse-farm-legacy-top__row {
+        grid-template-columns: 1fr;
+        row-gap: 4px;
+    }
+
+    .bse-farm-legacy-top__input {
+        max-width: 100%;
+        width: 100%;
+    }
+
+    .bse-farm-legacy__row {
+        grid-template-columns: 1fr;
+        row-gap: 8px;
+        column-gap: 0;
+    }
+
+    .bse-farm-legacy__field {
+        grid-template-columns: 1fr;
+        row-gap: 4px;
+    }
+
+    .bse-farm-legacy__field--button {
+        grid-template-columns: 1fr;
+    }
+
+    .bse-farm-legacy__field--dealer-left {
+        grid-template-columns: 1fr;
+        row-gap: 4px;
+    }
+
+    .bse-farm-legacy__field--button .bse-farm-legacy-btn {
+        grid-column: auto;
+    }
+
+    .bse-farm-legacy__field--map fieldset {
+        grid-template-columns: 1fr;
+        row-gap: 4px;
+    }
+
+    .bse-farm-mapref-row {
+        flex-wrap: wrap;
+    }
+
+    .bse-farm-mapref-row .govuk-button {
+        margin-left: 0;
+    }
+
+    .bse-farm-legacy__field--map #estimate-map-ref-msg {
+        margin-left: 0;
+    }
+
+    .bse-farm-legacy__field fieldset .govuk-label {
+        width: auto;
+    }
+
+    .bse-farm-legacy__input {
+        max-width: 100%;
+        width: 100%;
+    }
+
+    .bse-farm-legacy__field--continuation .govuk-label {
+        visibility: visible;
+    }
+}
+
 /* Sortable table header links (MOJ sortable-table pattern style) */
 .moj-sortable-table__heading {
     vertical-align: top;

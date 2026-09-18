@@ -53,11 +53,15 @@ public class FarmHerdSizeEditModel(
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (HerdSize.HerdYear < 1980 || HerdSize.HerdYear > 2100)
-            ModelState.AddModelError("HerdSize.HerdYear", "Year must be a valid year (1980–2100).");
+        var @case = await caseService.GetCaseAsync(Rbse);
+        if (@case?.Cphh is not { } cphh)
+            return RedirectToPage("/Case/Farm", new { rbse = Rbse });
 
-        if (HerdSize.TotalSize <= 0)
-            ModelState.AddModelError("HerdSize.TotalSize", "Total size must be greater than zero.");
+        if (HerdSize.HerdYear < 1975 || HerdSize.HerdYear > DateTime.UtcNow.Year)
+            ModelState.AddModelError("HerdSize.HerdYear", $"Year must be between 1975 and {DateTime.UtcNow.Year}.");
+
+        if (HerdSize.TotalSize < 1 || HerdSize.TotalSize > 2000)
+            ModelState.AddModelError("HerdSize.TotalSize", "Total size must be between 1 and 2000.");
 
         if (!ModelState.IsValid)
             return Page();

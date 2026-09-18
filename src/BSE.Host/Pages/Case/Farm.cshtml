@@ -13,6 +13,7 @@
             Case not found.
         </strong>
     </div>
+
     <a asp-page="/Home" class="govuk-link">Back to home</a>
     return;
 }
@@ -24,9 +25,13 @@
     </ol>
 </nav>
 
-@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Farm", Model.Rbse, Model.BatchNumbers))
+@{
+    var viewDocsUrl = string.IsNullOrWhiteSpace(Model.SpolSiteUrl)
+        ? null
+        : $"{Model.SpolSiteUrl}{Model.Rbse.Replace("/", "")}";
+}
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Farm", Model.Rbse, Model.BatchNumbers, viewDocsUrl))
 
-@* ── Notifications ────────────────────────────────────────────────────────────── *@
 @if (TempData["Success"] is string successMsg)
 {
     <div class="govuk-notification-banner govuk-notification-banner--success" role="alert"
@@ -70,7 +75,6 @@
     </div>
 }
 
-@* ── Batch assignment (mirrors legacy CaseEntryFarm.aspx Save/Cancel) ─────────── *@
 @if (Model.ShowBatchAssignment)
 {
     <section aria-labelledby="batch-assignment-heading" class="govuk-!-margin-bottom-6">
@@ -118,419 +122,570 @@
     return;
 }
 
-@* ── Confirmed cases banner ───────────────────────────────────────────────────── *@
 <div class="govuk-inset-text">
     <strong>Number of confirmed cases for this farm: @Model.ConfirmedCaseCount</strong>
 </div>
 
-@* ── Action buttons ───────────────────────────────────────────────────────────── *@
-<div class="govuk-button-group govuk-!-margin-bottom-4">
-    @if (User.IsInRole("DataEntry"))
-    {
-        <a asp-page="/Farm/Edit" asp-route-cphh="@Model.Farm.CPHH" asp-route-rbse="@Model.Rbse" class="govuk-button govuk-button--secondary">Change farm details</a>
-    }
-    <a asp-page="/AuditLog/ByFarm" asp-route-cphh="@Model.Farm.CPHH" asp-route-rbse="@Model.Rbse" class="govuk-link">Farm audit log</a>
-    @if (!string.IsNullOrEmpty(Model.SpolSiteUrl))
-    {
-        string farmRbseNoSlash = Model.Rbse.Replace("/", "");
-        <a href="@(Model.SpolSiteUrl)@farmRbseNoSlash" target="_blank" rel="noopener noreferrer" class="govuk-link">
-            View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
-        </a>
-    }
-</div>
-
-@* ── Farm summary — two columns ───────────────────────────────────────────────── *@
-<h2 class="govuk-heading-m">CPHH: @BseFormat.FormatCphh(Model.Farm.CPHH)</h2>
-
-<div class="govuk-grid-row">
-    <div class="govuk-grid-column-one-half">
-
-        <h3 class="govuk-heading-s">Address</h3>
-        <dl class="govuk-summary-list">
-            <div class="govuk-summary-list__row">
-                <dt class="govuk-summary-list__key">Owner name</dt>
-                <dd class="govuk-summary-list__value">@Model.Farm.OwnerName</dd>
-            </div>
-            <div class="govuk-summary-list__row">
-                <dt class="govuk-summary-list__key">Address</dt>
-                <dd class="govuk-summary-list__value">
-                    @Model.Farm.Address1<br />
-                    @if (!string.IsNullOrWhiteSpace(Model.Farm.Address2)) { @Model.Farm.Address2 <br /> }
-                    @if (!string.IsNullOrWhiteSpace(Model.Farm.Address3)) { @Model.Farm.Address3 <br /> }
-                    @Model.Farm.Postcode
-                </dd>
-            </div>
-            <div class="govuk-summary-list__row">
-                <dt class="govuk-summary-list__key">Parish</dt>
-                <dd class="govuk-summary-list__value">@Model.Farm.Parish</dd>
-            </div>
-            <div class="govuk-summary-list__row">
-                <dt class="govuk-summary-list__key">District</dt>
-                <dd class="govuk-summary-list__value">@Model.Farm.District</dd>
-            </div>
-            <div class="govuk-summary-list__row">
-                <dt class="govuk-summary-list__key">County</dt>
-                <dd class="govuk-summary-list__value">@(Model.CountyName ?? Model.Farm.County)</dd>
-            </div>
-            <div class="govuk-summary-list__row">
-                <dt class="govuk-summary-list__key">Map reference</dt>
-                <dd class="govuk-summary-list__value">@Model.Farm.MapReference</dd>
-            </div>
-        </dl>
-
-        <h3 class="govuk-heading-s">Correspondence address</h3>
-        <dl class="govuk-summary-list">
-            <div class="govuk-summary-list__row">
-                <dt class="govuk-summary-list__key">Correspondence address</dt>
-                <dd class="govuk-summary-list__value">
-                    @if (string.IsNullOrWhiteSpace(Model.Farm.CorrespondenceAddress1))
-                    {
-                        <span class="govuk-hint">Same as main address</span>
-                    }
-                    else
-                    {
-                        @Model.Farm.CorrespondenceAddress1<br />
-                        @if (!string.IsNullOrWhiteSpace(Model.Farm.CorrespondenceAddress2)) { @Model.Farm.CorrespondenceAddress2 <br /> }
-                        @if (!string.IsNullOrWhiteSpace(Model.Farm.CorrespondenceAddress3)) { @Model.Farm.CorrespondenceAddress3 <br /> }
-                        @Model.Farm.CorrespondencePostcode
-                    }
-                </dd>
-            </div>
-        </dl>
-
-    </div>
-    <div class="govuk-grid-column-one-half">
-
-        <h3 class="govuk-heading-s">Herd details</h3>
-        <dl class="govuk-summary-list">
-            <div class="govuk-summary-list__row">
-                <dt class="govuk-summary-list__key">Herdmark 1</dt>
-                <dd class="govuk-summary-list__value">@Model.Farm.Herdmark1</dd>
-            </div>
-            <div class="govuk-summary-list__row">
-                <dt class="govuk-summary-list__key">Numeric herdmark 1</dt>
-                <dd class="govuk-summary-list__value">@Model.Farm.NumericHerdmark1</dd>
-            </div>
-            <div class="govuk-summary-list__row">
-                <dt class="govuk-summary-list__key">Herdmark 2</dt>
-                <dd class="govuk-summary-list__value">@Model.Farm.Herdmark2</dd>
-            </div>
-            <div class="govuk-summary-list__row">
-                <dt class="govuk-summary-list__key">Numeric herdmark 2</dt>
-                <dd class="govuk-summary-list__value">@Model.Farm.NumericHerdmark2</dd>
-            </div>
-            <div class="govuk-summary-list__row">
-                <dt class="govuk-summary-list__key">Herdmark 3</dt>
-                <dd class="govuk-summary-list__value">@Model.Farm.Herdmark3</dd>
-            </div>
-            <div class="govuk-summary-list__row">
-                <dt class="govuk-summary-list__key">Herd type</dt>
-                <dd class="govuk-summary-list__value">@(Model.HerdTypeName ?? Model.Farm.HerdType)</dd>
-            </div>
-            <div class="govuk-summary-list__row">
-                <dt class="govuk-summary-list__key">Pedigree</dt>
-                <dd class="govuk-summary-list__value">@(Model.PedigreeTypeName ?? Model.Farm.PedigreeType)</dd>
-            </div>
-            <div class="govuk-summary-list__row">
-                <dt class="govuk-summary-list__key">AHO</dt>
-                <dd class="govuk-summary-list__value">@(Model.AHOName ?? Model.Farm.AHO)</dd>
-            </div>
-            @if (!string.IsNullOrWhiteSpace(Model.AuthorityCountyName))
-            {
-                <div class="govuk-summary-list__row">
-                    <dt class="govuk-summary-list__key">Authority county</dt>
-                    <dd class="govuk-summary-list__value">@Model.AuthorityCountyName</dd>
-                </div>
-            }
-            @if (!string.IsNullOrWhiteSpace(Model.LocalAuthorityName))
-            {
-                <div class="govuk-summary-list__row">
-                    <dt class="govuk-summary-list__key">Local authority</dt>
-                    <dd class="govuk-summary-list__value">@Model.LocalAuthorityName</dd>
-                </div>
-            }
-            <div class="govuk-summary-list__row">
-                <dt class="govuk-summary-list__key">ADNS region</dt>
-                <dd class="govuk-summary-list__value">@Model.ADNSRegionName</dd>
-            </div>
-            <div class="govuk-summary-list__row">
-                <dt class="govuk-summary-list__key">Is a dealer?</dt>
-                <dd class="govuk-summary-list__value">@(Model.Farm.IsDealer ? "Yes" : "No")</dd>
-            </div>
-        </dl>
-
-    </div>
-</div>
-
-<hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
-
-@* ── Linked farms ─────────────────────────────────────────────────────────────── *@
-<h2 class="govuk-heading-m">Linked farms</h2>
-
-@if (Model.LinkedFarmsTotalCount > 0)
-{
-    <table class="govuk-table">
-        <caption class="govuk-visually-hidden">Linked farms for @Model.Farm.CPHH</caption>
-        <thead class="govuk-table__head">
-            <tr class="govuk-table__row">
-                <th scope="col" class="govuk-table__header" aria-sort="@(Model.LSort=="cphh" ? (Model.LDir=="asc" ? "ascending" : "descending") : "none")">
-                    <a class="govuk-link govuk-link--no-visited-state" href="@Model.LinkedFarmsSortUrl("cphh")">CPHH</a>
-                </th>
-                <th scope="col" class="govuk-table__header" aria-sort="@(Model.LSort=="status" ? (Model.LDir=="asc" ? "ascending" : "descending") : "none")">
-                    <a class="govuk-link govuk-link--no-visited-state" href="@Model.LinkedFarmsSortUrl("status")">Status</a>
-                </th>
-                @if (User.IsInRole("DataEntry"))
-                {
-                    <th scope="col" class="govuk-table__header">Action</th>
-                }
-            </tr>
-        </thead>
-        <tbody class="govuk-table__body">
-            @foreach (var lf in Model.LinkedFarms)
-            {
-                <tr class="govuk-table__row">
-                    <td class="govuk-table__cell">@BseFormat.FormatCphh(lf.RelatedCPHH)</td>
-                    <td class="govuk-table__cell">@lf.Status</td>
-                    <td class="govuk-table__cell">
-                        @if (User.IsInRole("DataEntry"))
-                        {
-                            <a class="govuk-link govuk-!-margin-right-3"
-                               asp-page="/Case/FarmLinkedFarmEdit"
-                               asp-route-rbse="@Model.Rbse"
-                               asp-route-id="@lf.ID">Change</a>
-                            <form method="post" asp-page-handler="DeleteLinkedFarm" class="govuk-!-display-inline-block" novalidate>
-                                <input type="hidden" name="Rbse" value="@Model.Rbse" />
-                                <input type="hidden" name="id" value="@lf.ID" />
-                                <input type="hidden" name="rowStampBase64" value="@(lf.RowStamp is not null ? Convert.ToBase64String(lf.RowStamp) : "")" />
-                                <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0"
-                                        data-module="govuk-button"
-                                        aria-label="Remove linked farm @BseFormat.FormatCphh(lf.RelatedCPHH)"
-                                        onclick="return confirm('Remove linked farm @BseFormat.FormatCphh(lf.RelatedCPHH)?')">
-                                    Remove
-                                </button>
-                            </form>
-                        }
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-    @if (Model.LinkedFarmsTotalPages > 1)
-    {
-        <nav class="govuk-pagination" role="navigation" aria-label="Linked farms pagination">
-            @if (Model.LPage > 1)
-            {
-                <div class="govuk-pagination__prev">
-                    <a class="govuk-link govuk-pagination__link" href="@Model.LinkedFarmsPageUrl(Model.LPage - 1)" rel="prev">
-                        <svg class="govuk-pagination__icon govuk-pagination__icon--prev" xmlns="http://www.w3.org/2000/svg" height="13" width="15" focusable="false" aria-hidden="true" viewBox="0 0 15 13"><path d="m6.5938-0.0078125-6.7266 6.7266 6.7441 6.4062 1.377-1.449-4.1856-3.9768h12.896v-2h-12.984l4.2931-4.293-1.414-1.414z"/></svg>
-                        <span class="govuk-pagination__link-title">Previous<span class="govuk-visually-hidden"> page</span></span>
-                    </a>
-                </div>
-            }
-            <ul class="govuk-pagination__list">
-                @{
-                    int lfStart = Math.Max(1, Model.LPage - 4);
-                    int lfEnd   = Math.Min(Model.LinkedFarmsTotalPages, lfStart + 9);
-                    if (lfEnd - lfStart < 9) lfStart = Math.Max(1, lfEnd - 9);
-                }
-                @for (int p = lfStart; p <= lfEnd; p++)
-                {
-                    bool lfCur = p == Model.LPage;
-                    <li class="govuk-pagination__item @(lfCur ? "govuk-pagination__item--current" : "")">
-                        @if (lfCur)
-                        {
-                            <a class="govuk-link govuk-pagination__link" href="@Model.LinkedFarmsPageUrl(p)" aria-label="Page @p" aria-current="page">@p</a>
-                        }
-                        else
-                        {
-                            <a class="govuk-link govuk-pagination__link" href="@Model.LinkedFarmsPageUrl(p)" aria-label="Page @p">@p</a>
-                        }
-                    </li>
-                }
-            </ul>
-            @if (Model.LPage < Model.LinkedFarmsTotalPages)
-            {
-                <div class="govuk-pagination__next">
-                    <a class="govuk-link govuk-pagination__link" href="@Model.LinkedFarmsPageUrl(Model.LPage + 1)" rel="next">
-                        <span class="govuk-pagination__link-title">Next<span class="govuk-visually-hidden"> page</span></span>
-                        <svg class="govuk-pagination__icon govuk-pagination__icon--next" xmlns="http://www.w3.org/2000/svg" height="13" width="15" focusable="false" aria-hidden="true" viewBox="0 0 15 13"><path d="m8.107-0.0078125-1.4136 1.414 4.2926 4.293h-12.986v2h12.896l-4.1855 3.9766 1.377 1.4492 6.7441-6.4062-6.7246-6.7246z"/></svg>
-                    </a>
-                </div>
-            }
-        </nav>
-    }
-}
-else
-{
-    <p class="govuk-body">No linked farms recorded.</p>
-}
-
 @if (User.IsInRole("DataEntry"))
 {
-    <div class="govuk-button-group">
-        <a asp-page="/Case/FarmLinkedFarmAdd" asp-route-rbse="@Model.Rbse" class="govuk-button govuk-button--secondary">Add linked farm</a>
-    </div>
-}
+    <form method="post" novalidate id="case-farm-inline-form">
+        <input type="hidden" name="Rbse" value="@Model.Rbse" />
+        <input type="hidden" asp-for="EditableFarm.CPHH" />
+        <input type="hidden" asp-for="EditableFarmRowStampBase64" />
 
-<hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+        <div class="govuk-button-group govuk-!-margin-bottom-4">
+            <button type="submit" asp-page-handler="SaveFarm" class="govuk-button" data-module="govuk-button">Save</button>
+            <a asp-page="/Case/Farm" asp-page-handler="CancelFarmEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
+        </div>
 
-@* ── Herd size ────────────────────────────────────────────────────────────────── *@
-<h2 class="govuk-heading-m">Herd size</h2>
-@{
-    var editHsYearError = ViewData.ModelState["EditHerdSize.HerdYear"]?.Errors.FirstOrDefault()?.ErrorMessage;
-    var editHsSizeError = ViewData.ModelState["EditHerdSize.TotalSize"]?.Errors.FirstOrDefault()?.ErrorMessage;
-    bool hasHsError     = editHsYearError is not null || editHsSizeError is not null;
-}
+        <div id="case-farm-unsaved-banner"
+             class="govuk-notification-banner bse-unsaved-banner"
+             role="region"
+             aria-labelledby="case-farm-unsaved-title"
+             data-module="govuk-notification-banner"
+             hidden="@(!Model.HasUnsavedChanges)">
+            <div class="govuk-notification-banner__header">
+                <h2 class="govuk-notification-banner__title" id="case-farm-unsaved-title">Unsaved changes</h2>
+            </div>
+            <div class="govuk-notification-banner__content">
+                <p class="govuk-body">You have changes in linked farms or herd size that are not saved yet. Select Save to persist them.</p>
+            </div>
+        </div>
 
-@if (Model.HerdSizesTotalCount > 0)
-{
-    <table class="govuk-table govuk-!-font-size-16">
-            <caption class="govuk-visually-hidden">Annual herd size for @Model.Farm.CPHH</caption>
+        <div class="bse-farm-legacy-top">
+            <div class="bse-farm-legacy-top__row">
+                <label class="govuk-label" for="farm-cphh-display">CPHH</label>
+                <input id="farm-cphh-display" class="govuk-input bse-farm-legacy-top__input" value="@BseFormat.FormatCphh(Model.Farm.CPHH)" readonly />
+            </div>
+        </div>
+
+        @await Html.PartialAsync("~/Pages/Farm/_FarmFormFields.cshtml", Model.EditableFarm, new ViewDataDictionary(ViewData) { TemplateInfo = { HtmlFieldPrefix = "EditableFarm" } })
+
+        <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+
+        <h2 id="linked-farms-section" class="govuk-heading-m">Linked farms</h2>
+        <table class="govuk-table">
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    <th scope="col" rowspan="2" class="govuk-table__header" aria-sort="@(Model.HSort=="year" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
-                        <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("year")">Year</a>
-                    </th>
-                    <th scope="col" rowspan="2" class="govuk-table__header govuk-table__header--numeric" aria-sort="@(Model.HSort=="total" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
-                        <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("total")">Total</a>
-                    </th>
-                    <th scope="colgroup" colspan="11" class="govuk-table__header" style="text-align: center">Lactation</th>
-                    @if (User.IsInRole("DataEntry"))
-                    {
-                        <th scope="col" rowspan="2" class="govuk-table__header">Action</th>
-                    }
-                </tr>
-                <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header govuk-table__header--numeric" aria-sort="@(Model.HSort=="lac1"   ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac1")">1</a></th>
-                    <th scope="col" class="govuk-table__header govuk-table__header--numeric" aria-sort="@(Model.HSort=="lac2"   ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac2")">2</a></th>
-                    <th scope="col" class="govuk-table__header govuk-table__header--numeric" aria-sort="@(Model.HSort=="lac3"   ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac3")">3</a></th>
-                    <th scope="col" class="govuk-table__header govuk-table__header--numeric" aria-sort="@(Model.HSort=="lac4"   ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac4")">4</a></th>
-                    <th scope="col" class="govuk-table__header govuk-table__header--numeric" aria-sort="@(Model.HSort=="lac5"   ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac5")">5</a></th>
-                    <th scope="col" class="govuk-table__header govuk-table__header--numeric" aria-sort="@(Model.HSort=="lac6"   ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac6")">6</a></th>
-                    <th scope="col" class="govuk-table__header govuk-table__header--numeric" aria-sort="@(Model.HSort=="lac7"   ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac7")">7</a></th>
-                    <th scope="col" class="govuk-table__header govuk-table__header--numeric" aria-sort="@(Model.HSort=="lac8"   ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac8")">8</a></th>
-                    <th scope="col" class="govuk-table__header govuk-table__header--numeric" aria-sort="@(Model.HSort=="lac9"   ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac9")">9</a></th>
-                    <th scope="col" class="govuk-table__header govuk-table__header--numeric" aria-sort="@(Model.HSort=="lac10"  ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac10")">10</a></th>
-                    <th scope="col" class="govuk-table__header govuk-table__header--numeric" aria-sort="@(Model.HSort=="lac10p" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac10p")">10+</a></th>
+                    <th scope="col" class="govuk-table__header">CPHH</th>
+                    <th scope="col" class="govuk-table__header">Status</th>
+                    <th scope="col" class="govuk-table__header">Action</th>
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
-                @foreach (var h in Model.HerdSizes)
+                @if (!Model.StagedLinkedFarms.Any())
                 {
                     <tr class="govuk-table__row">
-                        <td class="govuk-table__cell">@h.HerdYear</td>
-                        <td class="govuk-table__cell govuk-table__cell--numeric">@h.TotalSize</td>
-                        <td class="govuk-table__cell govuk-table__cell--numeric">@h.Lactation1Size</td>
-                        <td class="govuk-table__cell govuk-table__cell--numeric">@h.Lactation2Size</td>
-                        <td class="govuk-table__cell govuk-table__cell--numeric">@h.Lactation3Size</td>
-                        <td class="govuk-table__cell govuk-table__cell--numeric">@h.Lactation4Size</td>
-                        <td class="govuk-table__cell govuk-table__cell--numeric">@h.Lactation5Size</td>
-                        <td class="govuk-table__cell govuk-table__cell--numeric">@h.Lactation6Size</td>
-                        <td class="govuk-table__cell govuk-table__cell--numeric">@h.Lactation7Size</td>
-                        <td class="govuk-table__cell govuk-table__cell--numeric">@h.Lactation8Size</td>
-                        <td class="govuk-table__cell govuk-table__cell--numeric">@h.Lactation9Size</td>
-                        <td class="govuk-table__cell govuk-table__cell--numeric">@h.Lactation10Size</td>
-                        <td class="govuk-table__cell govuk-table__cell--numeric">@h.Lactation10PlusSize</td>
-                        @if (User.IsInRole("DataEntry"))
+                        <td class="govuk-table__cell" colspan="3">No linked farms recorded.</td>
+                    </tr>
+                }
+
+                <tr id="add-linked-row-inline" class="govuk-table__row bse-herd-row--unsaved" hidden="@(!Model.ShowAddLinkedRow)">
+                    <td class="govuk-table__cell">
+                        <label class="govuk-visually-hidden" for="new-linked-cphh">Linked farm CPHH</label>
+                        <input id="new-linked-cphh"
+                               name="NewLinkedCphh"
+                               value="@Model.NewLinkedCphh"
+                               class="govuk-input govuk-input--width-10" />
+                    </td>
+                    <td class="govuk-table__cell"></td>
+                    <td class="govuk-table__cell">
+                        <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
+                            <button type="submit" asp-page-handler="AddLinkedFarmRow" class="bse-inline-row-button bse-inline-row-button--confirm" data-module="govuk-button">Confirm</button>
+                            <button type="button" id="cancel-add-linked-row" class="bse-inline-row-button bse-inline-row-button--secondary">Cancel</button>
+                        </div>
+                    </td>
+                </tr>
+
+                @foreach (var lf in Model.StagedLinkedFarms)
+                {
+                    var isEditingLinked = Model.ReopenLinkedEditClientKey == lf.ClientKey;
+                    var linkedError = isEditingLinked
+                        ? ViewContext.ModelState[nameof(Model.EditLinkedCphh)]?.Errors.FirstOrDefault()?.ErrorMessage
+                        : null;
+
+                    <tr class="govuk-table__row bse-linked-row" data-client-key="@lf.ClientKey">
+                        @if (isEditingLinked)
                         {
-                        <td class="govuk-table__cell">
-                            <a class="govuk-link govuk-!-margin-right-3"
-                               asp-page="/Case/FarmHerdSizeEdit"
-                               asp-route-rbse="@Model.Rbse"
-                               asp-route-id="@h.ID">Change</a>
-                            <form method="post" asp-page-handler="DeleteHerdSize" class="govuk-!-display-inline-block" novalidate>
-                                <input type="hidden" name="Rbse" value="@Model.Rbse" />
-                                <input type="hidden" name="id" value="@h.ID" />
-                                <input type="hidden" name="rowStampBase64" value="@(h.RowStamp is not null ? Convert.ToBase64String(h.RowStamp) : "")" />
-                                <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0"
-                                        data-module="govuk-button"
-                                        aria-label="Delete herd size record for year @h.HerdYear"
-                                        onclick="return confirm('Delete herd size record for @h.HerdYear?')">
-                                    Delete
-                                </button>
-                            </form>
-                        </td>
+                            <td class="govuk-table__cell">
+                                <label class="govuk-visually-hidden" for="edit-linked-cphh-@lf.ClientKey">Linked farm CPHH</label>
+                                <input id="edit-linked-cphh-@lf.ClientKey"
+                                       name="EditLinkedCphh"
+                                       value="@Model.EditLinkedCphh"
+                                       class="govuk-input govuk-input--width-10" />
+                                @if (linkedError is not null)
+                                {
+                                    <span class="govuk-visually-hidden">Error: @linkedError</span>
+                                }
+                            </td>
+                            <td class="govuk-table__cell">@lf.Status</td>
+                            <td class="govuk-table__cell">
+                                <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
+                                    <input type="hidden" name="EditingLinkedClientKey" value="@lf.ClientKey" />
+                                    <button type="submit" asp-page-handler="UpdateLinkedFarmRow" class="bse-inline-row-button bse-inline-row-button--confirm" data-module="govuk-button">Confirm</button>
+                                    <button type="button" class="bse-inline-row-button bse-inline-row-button--secondary js-cancel-edit-linked-row" data-client-key="@lf.ClientKey">Cancel</button>
+                                </div>
+                            </td>
+                        }
+                        else
+                        {
+                            <td class="govuk-table__cell">@BseFormat.FormatCphh(lf.RelatedCphh)</td>
+                            <td class="govuk-table__cell">@lf.Status</td>
+                            <td class="govuk-table__cell">
+                                <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
+                                    <button type="submit"
+                                            asp-page-handler="BeginEditLinkedFarmRow"
+                                            name="EditingLinkedClientKey"
+                                            value="@lf.ClientKey"
+                                            class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">
+                                        Change
+                                    </button>
+                                    <button type="submit"
+                                            asp-page-handler="DeleteLinkedFarm"
+                                            asp-route-clientKey="@lf.ClientKey"
+                                            class="govuk-button govuk-button--warning govuk-!-margin-bottom-0"
+                                            data-module="govuk-button">
+                                        Remove
+                                    </button>
+                                </div>
+                            </td>
                         }
                     </tr>
                 }
             </tbody>
-</table>
-    @if (Model.HerdSizesTotalPages > 1)
-    {
-        <nav class="govuk-pagination" role="navigation" aria-label="Herd size pagination">
-            @if (Model.HPage > 1)
-            {
-                <div class="govuk-pagination__prev">
-                    <a class="govuk-link govuk-pagination__link" href="@Model.HerdSizesPageUrl(Model.HPage - 1)" rel="prev">
-                        <svg class="govuk-pagination__icon govuk-pagination__icon--prev" xmlns="http://www.w3.org/2000/svg" height="13" width="15" focusable="false" aria-hidden="true" viewBox="0 0 15 13"><path d="m6.5938-0.0078125-6.7266 6.7266 6.7441 6.4062 1.377-1.449-4.1856-3.9768h12.896v-2h-12.984l4.2931-4.293-1.414-1.414z"/></svg>
-                        <span class="govuk-pagination__link-title">Previous<span class="govuk-visually-hidden"> page</span></span>
-                    </a>
-                </div>
-            }
-            <ul class="govuk-pagination__list">
-                @{
-                    int hsStart = Math.Max(1, Model.HPage - 4);
-                    int hsEnd   = Math.Min(Model.HerdSizesTotalPages, hsStart + 9);
-                    if (hsEnd - hsStart < 9) hsStart = Math.Max(1, hsEnd - 9);
-                }
-                @for (int p = hsStart; p <= hsEnd; p++)
+        </table>
+
+        <div class="govuk-button-group govuk-!-margin-bottom-6">
+            <button type="button" id="show-add-linked-row" class="govuk-button govuk-button--secondary" data-module="govuk-button">Add linked farm</button>
+        </div>
+
+        <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+
+        <table id="herd-size-section" class="govuk-table govuk-!-font-size-16 case-farm-herd-table">
+                <colgroup>
+                    <col class="case-farm-herd-table__col-year" />
+                    <col class="case-farm-herd-table__col-size" />
+                    <col class="case-farm-herd-table__col-lac" span="11" />
+                    <col />
+                </colgroup>
+                <thead class="govuk-table__head">
+                    <tr class="govuk-table__row">
+                        <th colspan="2" class="govuk-table__header case-farm-herd-table__group-left">Herd size</th>
+                        <th colspan="11" class="govuk-table__header case-farm-herd-table__group-mid">Lactation</th>
+                        <th class="govuk-table__header case-farm-herd-table__group-right">Action</th>
+                    </tr>
+                    <tr class="govuk-table__row">
+                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="year" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("year")">Year</a>
+                        </th>
+                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="total" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("total")">Size</a>
+                        </th>
+                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac1" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac1")">1</a>
+                        </th>
+                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac2" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac2")">2</a>
+                        </th>
+                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac3" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac3")">3</a>
+                        </th>
+                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac4" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac4")">4</a>
+                        </th>
+                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac5" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac5")">5</a>
+                        </th>
+                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac6" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac6")">6</a>
+                        </th>
+                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac7" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac7")">7</a>
+                        </th>
+                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac8" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac8")">8</a>
+                        </th>
+                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac9" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac9")">9</a>
+                        </th>
+                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac10" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac10")">10</a>
+                        </th>
+                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac10p" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac10p")">10+</a>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="govuk-table__body" id="herd-size-tbody">
+                    @if (!Model.SortedStagedHerdSizes.Any())
+                    {
+                        <tr class="govuk-table__row">
+                            <td class="govuk-table__cell" colspan="14">No herd size records for this farm.</td>
+                        </tr>
+                    }
+
+                    @foreach (var h in Model.SortedStagedHerdSizes)
+                    {
+                        var isEditing = Model.ReopenEditClientKey == h.ClientKey;
+                        var editRow = isEditing ? Model.EditHerdRow : null;
+
+                        <tr class="govuk-table__row bse-herd-row @(h.IsUnsaved ? "bse-herd-row--unsaved" : "")" data-client-key="@h.ClientKey">
+                            @if (isEditing)
+                            {
+                                <td class="govuk-table__cell">
+                                    <label class="govuk-visually-hidden" for="edit-herd-year-@h.ClientKey">Year</label>
+                                    <input id="edit-herd-year-@h.ClientKey" name="EditHerdRow.HerdYear" type="number" min="1975" max="@DateTime.UtcNow.Year" value="@editRow!.HerdYear" class="govuk-input govuk-input--width-4" />
+                                </td>
+                                <td class="govuk-table__cell">
+                                    <label class="govuk-visually-hidden" for="edit-herd-total-@h.ClientKey">Size</label>
+                                    <input id="edit-herd-total-@h.ClientKey" name="EditHerdRow.TotalSize" type="number" min="1" max="2000" value="@editRow.TotalSize" class="govuk-input govuk-input--width-4" />
+                                </td>
+                                @for (var lac = 1; lac <= 10; lac++)
+                                {
+                                    var lacValue = (int)(typeof(BSE.Host.Pages.Case.FarmModel.HerdSizeRowInput).GetProperty($"Lactation{lac}Size")!.GetValue(editRow) ?? 0);
+                                    <td class="govuk-table__cell">
+                                        <label class="govuk-visually-hidden" for="edit-herd-lac@(lac)-@h.ClientKey">Lactation @lac</label>
+                                        <input id="edit-herd-lac@(lac)-@h.ClientKey" name="EditHerdRow.Lactation@(lac)Size" type="number" min="0" max="999" value="@lacValue" class="govuk-input govuk-input--width-3" />
+                                    </td>
+                                }
+                                <td class="govuk-table__cell">
+                                    <label class="govuk-visually-hidden" for="edit-herd-lac10p-@h.ClientKey">Lactation 10+</label>
+                                    <input id="edit-herd-lac10p-@h.ClientKey" name="EditHerdRow.Lactation10PlusSize" type="number" min="0" max="999" value="@editRow.Lactation10PlusSize" class="govuk-input govuk-input--width-3" />
+                                </td>
+                                <td class="govuk-table__cell">
+                                    <input type="hidden" name="EditingClientKey" value="@h.ClientKey" />
+                                    <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
+                                        <button type="submit" asp-page-handler="UpdateHerdSizeRow" class="bse-inline-row-button bse-inline-row-button--confirm" data-module="govuk-button">
+                                            Confirm
+                                        </button>
+                                        <button type="button" class="bse-inline-row-button bse-inline-row-button--secondary js-cancel-edit-row" data-client-key="@h.ClientKey">
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </td>
+                            }
+                            else
+                            {
+                                <td class="govuk-table__cell">
+                                    @h.HerdYear
+                                    @if (h.IsUnsaved)
+                                    {
+                                        <strong class="govuk-tag govuk-tag--yellow govuk-!-margin-left-2">Unsaved</strong>
+                                    }
+                                </td>
+                                <td class="govuk-table__cell">
+                                    @h.TotalSize
+                                    @if (h.LactationMismatchWarning is not null)
+                                    {
+                                        <span class="bse-mismatch-warning" title="@h.LactationMismatchWarning">
+                                            <span aria-hidden="true">&#9888;</span>
+                                            <span class="govuk-visually-hidden">Warning: @h.LactationMismatchWarning</span>
+                                        </span>
+                                    }
+                                </td>
+                                <td class="govuk-table__cell">@h.Lactation1Size</td>
+                                <td class="govuk-table__cell">@h.Lactation2Size</td>
+                                <td class="govuk-table__cell">@h.Lactation3Size</td>
+                                <td class="govuk-table__cell">@h.Lactation4Size</td>
+                                <td class="govuk-table__cell">@h.Lactation5Size</td>
+                                <td class="govuk-table__cell">@h.Lactation6Size</td>
+                                <td class="govuk-table__cell">@h.Lactation7Size</td>
+                                <td class="govuk-table__cell">@h.Lactation8Size</td>
+                                <td class="govuk-table__cell">@h.Lactation9Size</td>
+                                <td class="govuk-table__cell">@h.Lactation10Size</td>
+                                <td class="govuk-table__cell">@h.Lactation10PlusSize</td>
+                                <td class="govuk-table__cell">
+                                    <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
+                                        <button type="submit"
+                                                asp-page-handler="BeginEditHerdRow"
+                                                name="EditingClientKey"
+                                                value="@h.ClientKey"
+                                                class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">
+                                            Change<span class="govuk-visually-hidden"> herd size row for @h.HerdYear</span>
+                                        </button>
+                                        <button type="submit"
+                                                asp-page-handler="DeleteHerdSize"
+                                                asp-route-clientKey="@h.ClientKey"
+                                                class="govuk-button govuk-button--warning govuk-!-margin-bottom-0">
+                                            Delete<span class="govuk-visually-hidden"> herd size row for @h.HerdYear</span>
+                                        </button>
+                                    </div>
+                                </td>
+                            }
+                        </tr>
+                    }
+
+                    <tr id="add-herd-row-inline" class="govuk-table__row bse-herd-row--unsaved" hidden="@(!Model.ShowAddHerdRow)">
+                        <td class="govuk-table__cell">
+                            <label class="govuk-visually-hidden" for="new-herd-year">Year</label>
+                            <input id="new-herd-year" name="NewHerdRow.HerdYear" type="number" min="1975" max="@DateTime.UtcNow.Year" value="@(Model.NewHerdRow.HerdYear == 0 ? "" : Model.NewHerdRow.HerdYear)" class="govuk-input govuk-input--width-4" />
+                        </td>
+                        <td class="govuk-table__cell">
+                            <label class="govuk-visually-hidden" for="new-herd-total">Size</label>
+                            <input id="new-herd-total" name="NewHerdRow.TotalSize" type="number" min="1" max="2000" value="@(Model.NewHerdRow.TotalSize == 0 ? "" : Model.NewHerdRow.TotalSize)" class="govuk-input govuk-input--width-4" />
+                        </td>
+                        @for (var lac = 1; lac <= 10; lac++)
+                        {
+                            var lacValue = (int)(typeof(BSE.Host.Pages.Case.FarmModel.HerdSizeRowInput).GetProperty($"Lactation{lac}Size")!.GetValue(Model.NewHerdRow) ?? 0);
+                            <td class="govuk-table__cell">
+                                <label class="govuk-visually-hidden" for="new-herd-lac@(lac)">Lactation @lac</label>
+                                <input id="new-herd-lac@(lac)" name="NewHerdRow.Lactation@(lac)Size" type="number" min="0" max="999" value="@(lacValue == 0 ? "" : lacValue)" class="govuk-input govuk-input--width-3" />
+                            </td>
+                        }
+                        <td class="govuk-table__cell">
+                            <label class="govuk-visually-hidden" for="new-herd-lac10p">Lactation 10+</label>
+                            <input id="new-herd-lac10p" name="NewHerdRow.Lactation10PlusSize" type="number" min="0" max="999" value="@(Model.NewHerdRow.Lactation10PlusSize == 0 ? "" : Model.NewHerdRow.Lactation10PlusSize)" class="govuk-input govuk-input--width-3" />
+                        </td>
+                        <td class="govuk-table__cell">
+                            <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
+                                <button type="submit" asp-page-handler="AddHerdSizeRow" class="bse-inline-row-button bse-inline-row-button--confirm" data-module="govuk-button">
+                                    Confirm
+                                </button>
+                                <button type="button" id="cancel-add-herd-row" class="bse-inline-row-button bse-inline-row-button--secondary">
+                                    Cancel
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+        </table>
+
+        <div class="govuk-button-group govuk-!-margin-bottom-6">
+            <button type="button" id="show-add-herd-row" class="govuk-button govuk-button--secondary" data-module="govuk-button">Add herd size record</button>
+        </div>
+
+        <div aria-live="polite" role="status" class="govuk-visually-hidden" id="herd-live-region"></div>
+
+        <div class="govuk-button-group govuk-!-margin-top-4">
+            <button type="submit" asp-page-handler="SaveFarm" class="govuk-button" data-module="govuk-button">Save</button>
+            <a asp-page="/Case/Farm" asp-page-handler="CancelFarmEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
+        </div>
+
+        <div class="govuk-!-margin-top-6">
+            <h2 class="govuk-heading-s">Related links</h2>
+            <ul class="govuk-list">
+                <li>
+                    <a asp-page="/AuditLog/ByFarm" asp-route-cphh="@Model.Farm.CPHH" asp-route-rbse="@Model.Rbse" class="govuk-link">Farm audit log</a>
+                </li>
+                @if (!string.IsNullOrWhiteSpace(viewDocsUrl))
                 {
-                    bool hsCur = p == Model.HPage;
-                    <li class="govuk-pagination__item @(hsCur ? "govuk-pagination__item--current" : "")">
-                        @if (hsCur)
-                        {
-                            <a class="govuk-link govuk-pagination__link" href="@Model.HerdSizesPageUrl(p)" aria-label="Page @p" aria-current="page">@p</a>
-                        }
-                        else
-                        {
-                            <a class="govuk-link govuk-pagination__link" href="@Model.HerdSizesPageUrl(p)" aria-label="Page @p">@p</a>
-                        }
+                    <li>
+                        <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" class="govuk-link">
+                            View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
+                        </a>
                     </li>
                 }
             </ul>
-            @if (Model.HPage < Model.HerdSizesTotalPages)
-            {
-                <div class="govuk-pagination__next">
-                    <a class="govuk-link govuk-pagination__link" href="@Model.HerdSizesPageUrl(Model.HPage + 1)" rel="next">
-                        <span class="govuk-pagination__link-title">Next<span class="govuk-visually-hidden"> page</span></span>
-                        <svg class="govuk-pagination__icon govuk-pagination__icon--next" xmlns="http://www.w3.org/2000/svg" height="13" width="15" focusable="false" aria-hidden="true" viewBox="0 0 15 13"><path d="m8.107-0.0078125-1.4136 1.414 4.2926 4.293h-12.986v2h12.896l-4.1855 3.9766 1.377 1.4492 6.7441-6.4062-6.7246-6.7246z"/></svg>
-                    </a>
-                </div>
-            }
-        </nav>
-    }
+        </div>
+    </form>
 }
 else
 {
-    <p class="govuk-body">No herd size records for this farm.</p>
+    <p class="govuk-body">You can view farm details but cannot edit this page.</p>
 }
 
-@if (User.IsInRole("DataEntry"))
-{
-    <div class="govuk-button-group govuk-!-margin-top-4">
-        <a asp-page="/Case/FarmHerdSizeAdd" asp-route-rbse="@Model.Rbse" class="govuk-button govuk-button--secondary">Add herd size record</a>
-    </div>
-}
-
-@* CPHH status lookup — fires on blur of any input with data-lf-lookup *@
-<script>
-(function () {
-    function lookupStatus(input) {
-        var hint = input.closest('.govuk-form-group')?.nextElementSibling;
-        if (!hint || !hint.classList.contains('lf-lookup-status')) return;
-        var cphh = input.value.trim();
-        if (!cphh) { hint.style.display = 'none'; return; }
-        fetch('?handler=LinkedFarmStatus&cphh=' + encodeURIComponent(cphh),
-              { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-            .then(function (r) { return r.json(); })
-            .then(function (d) {
-                if (d.status) { hint.textContent = d.status; hint.style.display = 'block'; }
-                else { hint.style.display = 'none'; }
-            })
-            .catch(function () { hint.style.display = 'none'; });
+<style>
+    .case-farm-herd-table__group-left {
+        background: #fff;
+        color: #0b0c0c;
+        border-bottom: 1px solid #b1b4b6;
+        font-size: 1.5rem;
+        font-weight: 700;
     }
-    document.addEventListener('blur', function (e) {
-        if (e.target && e.target.hasAttribute('data-lf-lookup')) lookupStatus(e.target);
-    }, true);
-}());
+
+    .case-farm-herd-table__group-mid {
+        background: #fff;
+        color: #0b0c0c;
+        text-align: center;
+        border-bottom: 1px solid #b1b4b6;
+    }
+
+    .case-farm-herd-table__group-right {
+        background: #fff;
+        color: #0b0c0c;
+        border-bottom: 1px solid #b1b4b6;
+    }
+
+    /* Legacy CaseEntryFarm.aspx grdHerdSize used 81px/50px columns with plain 64px/35px
+       textboxes. GOV.UK inputs (govuk-input--width-4/3) need more room to comfortably fit
+       the acceptable ranges without clipping: Year (4 digits, up to current year),
+       Total size (up to 2000, 4 digits) and each Lactation value (up to 999, 3 digits). */
+    .case-farm-herd-table {
+        table-layout: fixed;
+    }
+
+    .case-farm-herd-table__col-year,
+    .case-farm-herd-table__col-size {
+        width: 110px;
+    }
+
+    .case-farm-herd-table__col-lac {
+        width: 68px;
+    }
+
+    .case-farm-herd-table .govuk-input {
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .bse-unsaved-banner {
+        border-left-color: #1d70b8;
+    }
+
+    .bse-herd-row--unsaved {
+        background: #fffbf2;
+    }
+
+    .bse-mismatch-warning {
+        display: inline-block;
+        margin-left: 6px;
+        color: #d4351c;
+        cursor: help;
+    }
+
+    .bse-row-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: nowrap;
+        gap: 8px;
+    }
+
+    .case-farm-herd-table td .govuk-input {
+        margin-bottom: 0;
+    }
+
+    .bse-inline-row-button {
+        border: 1px solid #0b0c0c;
+        background: #fff;
+        color: #0b0c0c;
+        padding: 4px 8px;
+        min-height: 36px;
+        font-size: 1rem;
+        line-height: 1.1;
+        cursor: pointer;
+    }
+
+    .bse-inline-row-button:hover {
+        background: #f3f2f1;
+    }
+
+    .bse-inline-row-button:focus {
+        outline: 3px solid #ffdd00;
+        outline-offset: 0;
+    }
+
+    .bse-inline-row-button--secondary {
+        border-color: #505a5f;
+    }
+
+    .bse-inline-row-button--confirm {
+        background: #00703c;
+        border-color: #00703c;
+        color: #fff;
+    }
+
+    .bse-inline-row-button--confirm:hover {
+        background: #005a30;
+        border-color: #005a30;
+    }
+</style>
+
+<script>
+    (function () {
+        var liveRegion = document.getElementById('herd-live-region');
+        var announce = function (message) {
+            if (liveRegion) { liveRegion.textContent = message; }
+        };
+
+        // ── Add herd size row toggle ──────────────────────────────────────
+        var showAddBtn = document.getElementById('show-add-herd-row');
+        var addRow = document.getElementById('add-herd-row-inline');
+        var cancelAddBtn = document.getElementById('cancel-add-herd-row');
+        var showAddLinkedBtn = document.getElementById('show-add-linked-row');
+        var addLinkedRow = document.getElementById('add-linked-row-inline');
+        var cancelAddLinkedBtn = document.getElementById('cancel-add-linked-row');
+
+        if (showAddBtn && addRow) {
+            showAddBtn.addEventListener('click', function () {
+                addRow.hidden = false;
+                showAddBtn.hidden = true;
+                var firstInput = addRow.querySelector('input');
+                if (firstInput) { firstInput.focus(); }
+                announce('Add herd size row opened.');
+            });
+
+        document.querySelectorAll('.js-cancel-edit-linked-row').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                window.location.href = window.location.pathname + window.location.search;
+            });
+        });
+        }
+
+        if (cancelAddBtn && addRow && showAddBtn) {
+            cancelAddBtn.addEventListener('click', function () {
+                addRow.hidden = true;
+                showAddBtn.hidden = false;
+                addRow.querySelectorAll('input[type="number"]').forEach(function (input) { input.value = ''; });
+                cancelAddBtn.blur();
+                announce('Add herd size row cancelled.');
+            });
+        }
+
+        if (showAddLinkedBtn && addLinkedRow) {
+            showAddLinkedBtn.addEventListener('click', function () {
+                addLinkedRow.hidden = false;
+                showAddLinkedBtn.hidden = true;
+                var linkedInput = addLinkedRow.querySelector('input');
+                if (linkedInput) { linkedInput.focus(); }
+            });
+        }
+
+        if (cancelAddLinkedBtn && addLinkedRow && showAddLinkedBtn) {
+            cancelAddLinkedBtn.addEventListener('click', function () {
+                addLinkedRow.hidden = true;
+                showAddLinkedBtn.hidden = false;
+                addLinkedRow.querySelectorAll('input').forEach(function (input) { input.value = ''; });
+                cancelAddLinkedBtn.blur();
+            });
+        }
+
+        // "Cancel row" while editing discards the transient edit view (nothing was
+        // saved yet) by reloading the page without the edit marker.
+        document.querySelectorAll('.js-cancel-edit-row').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                window.location.href = window.location.pathname + window.location.search;
+            });
+        });
+
+        // ── Cancel page edits — confirmation before discarding changes ──
+        document.querySelectorAll('.bse-cancel-link').forEach(function (lnk) {
+            lnk.addEventListener('click', function (e) {
+                var hasUnsaved = document.getElementById('case-farm-unsaved-banner') &&
+                    !document.getElementById('case-farm-unsaved-banner').hidden;
+                if (hasUnsaved && !window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+                    e.preventDefault();
+                }
+            });
+        });
+
+        var reopenHerdClientKey = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ReopenEditClientKey));
+        if (reopenHerdClientKey) {
+            var herdRow = document.querySelector('.bse-herd-row[data-client-key="' + reopenHerdClientKey + '"]');
+            if (herdRow) {
+                herdRow.scrollIntoView({ behavior: 'auto', block: 'center' });
+                var herdInput = herdRow.querySelector('input');
+                if (herdInput) { herdInput.focus(); }
+            }
+        }
+
+        var reopenLinkedClientKey = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ReopenLinkedEditClientKey));
+        if (reopenLinkedClientKey) {
+            var linkedRow = document.querySelector('.bse-linked-row[data-client-key="' + reopenLinkedClientKey + '"]');
+            if (linkedRow) {
+                linkedRow.scrollIntoView({ behavior: 'auto', block: 'center' });
+                var linkedInput = linkedRow.querySelector('input');
+                if (linkedInput) { linkedInput.focus(); }
+            }
+        }
+    })();
 </script>

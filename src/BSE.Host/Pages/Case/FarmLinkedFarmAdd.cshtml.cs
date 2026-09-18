@@ -1,6 +1,8 @@
 using BSE.Modules.CaseManagement.Services;
+using BSE.Host.Services;
 using BSE.Modules.FarmManagement.Services;
 using BSE.Modules.FarmManagement.Repositories;
+using BSE.SharedKernel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -11,7 +13,7 @@ namespace BSE.Host.Pages.Case;
 public class FarmLinkedFarmAddModel(
     ICaseService caseService,
     IFarmService farmService,
-    IFarmRelationRepository relationRepo) : PageModel
+    ICaseFarmDraftStateService farmDraftState) : PageModel
 {
     [BindProperty(SupportsGet = true)] public string Rbse { get; set; } = string.Empty;
     [BindProperty] public string? RelatedCphh { get; set; }
@@ -31,25 +33,31 @@ public class FarmLinkedFarmAddModel(
         if (@case?.Cphh is not { } cphh)
             return RedirectToPage("/Case/Farm", new { rbse = Rbse });
 
-        if (string.IsNullOrWhiteSpace(RelatedCphh))
-            ModelState.AddModelError(nameof(RelatedCphh), "Enter a CPHH to link.");
+        var normalisedCphh = CphhNormalizer.Normalize(RelatedCphh);
 
-        var normalisedCphh = (RelatedCphh ?? string.Empty).Trim().ToUpperInvariant();
-        if (normalisedCphh.Length > 11)
-            ModelState.AddModelError(nameof(RelatedCphh), "CPHH must be 11 characters or fewer.");
+        if (string.Equals(CphhNormalizer.Normalize(cphh), normalisedCphh, StringComparison.OrdinalIgnoreCase))
+            ModelState.AddModelError(nameof(RelatedCphh), "Cannot link a farm to itself.");
 
-        if (ModelState.IsValid)
-        {
-            var existing = await farmService.GetRelatedFarmsAsync(cphh);
-            if (existing.Any(f => string.Equals(f.RelatedCPHH, normalisedCphh, StringComparison.OrdinalIgnoreCase)))
-                ModelState.AddModelError(nameof(RelatedCphh), $"CPHH {normalisedCphh} is already in the Linked Farms list.");
-        }
+        var draft = await farmDraftState.GetAsync(Rbse);
+        var existing = draft?.LinkedFarms.Select(f => f.RelatedCphh).ToList() ??
+                       (await farmService.GetRelatedFarmsAsync(cphh)).Select(x => x.RelatedCPHH).ToList();
+        if (existing.Any(f => string.Equals(CphhNormalizer.Normalize(f), normalisedCphh, StringComparison.OrdinalIgnoreCase)))
+            ModelState.AddModelError(nameof(RelatedCphh), $"CPHH {normalisedCphh} is already in the Linked Farms list.");
 
         if (!ModelState.IsValid)
             return Page();
 
-        await relationRepo.AddAsync(cphh, normalisedCphh);
-        TempData["Success"] = $"Linked farm {normalisedCphh} added.";
+        draft ??= new CaseFarmDraftState { Rbse = Rbse, Cphh = cphh };
+        draft.LinkedFarms.Add(new CaseFarmDraftLinkedFarmItem
+        {
+            Id = 0,
+            RelatedCphh = normalisedCphh,
+            RowStampBase64 = string.Empty,
+            Status = string.Empty
+        });
+
+        await farmDraftState.SetAsync(draft);
+        TempData["Success"] = $"Linked farm {normalisedCphh} added to pending changes.";
         return RedirectToPage("/Case/Farm", new { rbse = Rbse });
     }
 }

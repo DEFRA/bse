@@ -63,7 +63,7 @@ public sealed class OtherOwnerRepository : DapperRepository, IOtherOwnerReposito
         => ExecuteAsync("AddOtherOwner", new { RBSE = c.Rbse, Type = c.Type, Name = c.Name, CPHH = c.Cphh }, conn, tx);
 
     public Task EditAsync(EditOtherOwnerCommand c, IDbConnection conn, IDbTransaction tx)
-        => ExecuteAsync("EditOtherOwner", new { ID = c.Id, RBSE = c.Rbse, Type = c.Type, Name = c.Name, CPHH = c.Cphh, RowStamp = c.RowStamp }, conn, tx);
+        => ExecuteAsync("EditOtherOwner", new { ID = c.Id, Type = c.Type, Name = c.Name, CPHH = c.Cphh, RowStamp = c.RowStamp }, conn, tx);
 
     public Task DeleteAsync(int id, byte[] rowStamp, IDbConnection conn, IDbTransaction tx)
         => ExecuteAsync("DeleteOtherOwner", new { ID = id, RowStamp = rowStamp }, conn, tx);

@@ -30,14 +30,21 @@ public class FarmHerdSizeAddModel(
         if (@case?.Cphh is not { } cphh)
             return RedirectToPage("/Case/Farm", new { rbse = Rbse });
 
-        if (HerdSize.HerdYear < 1980 || HerdSize.HerdYear > 2100)
-            ModelState.AddModelError("HerdSize.HerdYear", "Year is required and must be a valid year (1980–2100).");
+        if (HerdSize.HerdYear < 1975 || HerdSize.HerdYear > DateTime.UtcNow.Year)
+            ModelState.AddModelError("HerdSize.HerdYear", $"Year is required and must be between 1975 and {DateTime.UtcNow.Year}.");
 
-        if (HerdSize.TotalSize <= 0)
-            ModelState.AddModelError("HerdSize.TotalSize", "Total size is required and must be greater than zero.");
+        if (HerdSize.TotalSize < 1 || HerdSize.TotalSize > 2000)
+            ModelState.AddModelError("HerdSize.TotalSize", "Total size is required and must be between 1 and 2000.");
 
         if (!ModelState.IsValid)
             return Page();
+
+        var persisted = await herdSizeRepo.GetByCphhAsync(cphh);
+        if (persisted.Any(x => x.HerdYear == HerdSize.HerdYear))
+        {
+            ModelState.AddModelError("HerdSize.HerdYear", $"A herd size record for {HerdSize.HerdYear} already exists.");
+            return Page();
+        }
 
         var cmd = new AddHerdSizeCommand(
             cphh,
