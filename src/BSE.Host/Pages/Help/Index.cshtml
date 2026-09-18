@@ -86,7 +86,7 @@
     @if (isVLAAccess)
     {
         <h3 class="govuk-heading-m" id="BatchNumber">Batch number</h3>
-        <p class="govuk-body">If you are a VLA user working with a batch of case details, the batch number panel is where you specify the batch you wish to work with. Any cases you enter while the batch number is displayed will be added to that batch.</p>
+        <p class="govuk-body">If you are a APHA user working with a batch of case details, the batch number panel is where you specify the batch you wish to work with. Any cases you enter while the batch number is displayed will be added to that batch.</p>
         <p class="govuk-body">The batch number is in the format <samp>yyyy/nnnnnn</samp> — where <samp>yyyy</samp> is a four-digit year and <samp>nnnnnn</samp> is an integer up to six digits in length (for example, <samp>2026/000001</samp>). Note that only the last 3 digits of the batch number are used in the OSS export.</p>
         <h4 class="govuk-heading-s">Looking up an existing batch</h4>
         <p class="govuk-body">Enter the batch year in the <strong>Year</strong> field and the batch number in the <strong>Number</strong> field, then select <strong>Go</strong>. If the batch is found, you are taken to the new case page with that batch pre-selected. If the batch is not found, an error is shown — check the year and number and try again.</p>
@@ -115,12 +115,12 @@
     <ul class="govuk-list govuk-list--bullet">
         <li><strong>Search</strong> — links to all case and farm search pages, available to all users.</li>
         <li><strong>Casework and reports</strong> — links to the audit log and BSESS check, available to all users.
-            @if (isVLAMaintenance) { <text>VLA Maintenance users also see a link to the casework menu.</text> }
-            @if (isVLAAccess) { <text>VLA users also see a link to print batch.</text> }
+            @if (isVLAMaintenance) { <text>APHA Maintenance users also see a link to the casework menu.</text> }
+            @if (isVLAAccess) { <text>APHA users also see a link to print batch.</text> }
         </li>
         @if (isDEFRAMaintenance)
         {
-            <li><strong>Exports</strong> — links to the ADNS export (DEFRA Maintenance) and OSS export (VLA users).</li>
+            <li><strong>Exports</strong> — links to the ADNS export (DEFRA Maintenance) and OSS export (APHA users).</li>
         }
         else if (isVLAAccess)
         {
@@ -128,7 +128,7 @@
         }
         @if (isVLAMaintenance)
         {
-            <li><strong>Administration</strong> — links to manage users (VLA Maintenance) and manage pick lists (Pick List Access).</li>
+            <li><strong>Administration</strong> — links to manage users (APHA Maintenance) and manage pick lists (Pick List Access).</li>
         }
         else if (isPickListAccess)
         {
@@ -400,7 +400,7 @@
             }
             else
             {
-                <p class="govuk-body">You have read-only access to pick lists, so you can view and sort the records but cannot add, edit or delete them. Only VLA Maintenance users can change pick list values.</p>
+                <p class="govuk-body">You have read-only access to pick lists, so you can view and sort the records but cannot add, edit or delete them. Only APHA Maintenance users can change pick list values.</p>
             }
 
             <h4 class="govuk-heading-s">Tables and their main function</h4>
@@ -589,7 +589,7 @@
             <p class="govuk-body">The Delete Case page permanently removes a case from the system. Enter the RBSE of the case to look it up, review the case details displayed, then select <strong>Confirm delete</strong>. This action cannot be undone. Cases with linked records (feeds, clinical data, batch assignments) cannot be deleted.</p>
 
             <h3 class="govuk-heading-m" id="UserMaintenance">User Maintenance</h3>
-            <p class="govuk-body">This page enables you to add and remove users from the system. VLA Maintenance users are the only users with access to this page.</p>
+            <p class="govuk-body">This page enables you to add and remove users from the system. APHA Maintenance users are the only users with access to this page.</p>
             <p class="govuk-body">You cannot delete a user from the database as this will affect the Audit Log. However, you can make the user inactive. The e-mail address is used for the ADNS export.</p>
         }
 

@@ -1,8 +1,8 @@
 ﻿@page "{rbse}"
 @model VlaModel
 @{
-    ViewData["Title"] = $"Case (VLA) — {Model.Case.Rbse}";
-    string DateVal(DateTime? d) => d?.ToString("yyyy-MM-dd") ?? "";
+    ViewData["Title"] = $"Case (APHA) — {Model.Case.Rbse}";
+    string D(DateTime? d) => d?.ToString("dd/MM/yyyy") ?? "—";
     string rbseNoSlash = Model.Case.Rbse.Replace("/", "");
     var viewDocsUrl = string.IsNullOrWhiteSpace(Model.SpolSiteUrl)
         ? null
@@ -14,7 +14,7 @@
 <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
     <ol class="govuk-breadcrumbs__list">
         <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-        <li class="govuk-breadcrumbs__list-item" aria-current="page">Case (VLA)</li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Case (APHA)</li>
     </ol>
 </nav>
 
@@ -721,5 +721,3 @@ else
         });
     })();
 </script>
-
-

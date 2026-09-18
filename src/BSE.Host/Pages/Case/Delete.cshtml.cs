@@ -21,7 +21,7 @@ public class DeleteModel(
     ILogger<DeleteModel> logger) : PageModel
 {
     public const string CaseNotFoundMessage = "Cannot find a case with this RBSE";
-    public const string VlaDataMessage = "Cannot delete — VLA have entered data on this case";
+    public const string VlaDataMessage = "Cannot delete — APHA have entered data on this case";
     public const string FarmDeleteMessage = "Farm will be deleted along with case";
     public const string DeleteFailedMessage = "Error deleting Case";
     public const string LoadFailedMessage = "Failed to load case details.";
