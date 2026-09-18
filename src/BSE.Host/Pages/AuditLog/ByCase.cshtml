@@ -29,36 +29,38 @@
         </div>
 
         <h2 class="govuk-heading-m">@Model.TotalCount entries for @BseFormat.FormatRbse(Model.Rbse)</h2>
-        <table class="govuk-table">
-            <caption class="govuk-visually-hidden">Audit log entries for case @BseFormat.FormatRbse(Model.Rbse)</caption>
-            <thead class="govuk-table__head">
-                <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.SortBy=="table" ? (Model.SortDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("table")">Table</a></th>
-                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.SortBy=="field" ? (Model.SortDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("field")">Field</a></th>
-                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.SortBy=="datetime" ? (Model.SortDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("datetime")">Date/time</a></th>
-                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.SortBy=="user" ? (Model.SortDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("user")">User</a></th>
-                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.SortBy=="before" ? (Model.SortDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("before")">Before</a></th>
-                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.SortBy=="after" ? (Model.SortDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("after")">After</a></th>
-                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.SortBy=="reason" ? (Model.SortDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("reason")">Reason</a></th>
-                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.SortBy=="key" ? (Model.SortDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("key")">Key</a></th>
-                </tr>
-            </thead>
-            <tbody class="govuk-table__body">
-                @foreach (var e in Model.Entries)
-                {
+        <div class="bse-audit-table-wrap">
+            <table class="govuk-table bse-audit-table">
+                <caption class="govuk-visually-hidden">Audit log entries for case @BseFormat.FormatRbse(Model.Rbse)</caption>
+                <thead class="govuk-table__head">
                     <tr class="govuk-table__row">
-                        <td class="govuk-table__cell">@e.TableName</td>
-                        <td class="govuk-table__cell">@e.FieldName</td>
-                        <td class="govuk-table__cell">@e.DateTime.ToString("dd/MM/yyyy HH:mm")</td>
-                        <td class="govuk-table__cell">@e.UserName</td>
-                        <td class="govuk-table__cell">@e.BeforeValue</td>
-                        <td class="govuk-table__cell">@e.AfterValue</td>
-                        <td class="govuk-table__cell">@e.Reason</td>
-                        <td class="govuk-table__cell">@e.Key</td>
+                        <th scope="col" class="govuk-table__header" aria-sort="@(Model.SortBy=="table" ? (Model.SortDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("table")">Table</a></th>
+                        <th scope="col" class="govuk-table__header" aria-sort="@(Model.SortBy=="field" ? (Model.SortDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("field")">Field</a></th>
+                        <th scope="col" class="govuk-table__header" aria-sort="@(Model.SortBy=="datetime" ? (Model.SortDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("datetime")">Date/time</a></th>
+                        <th scope="col" class="govuk-table__header" aria-sort="@(Model.SortBy=="user" ? (Model.SortDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("user")">User</a></th>
+                        <th scope="col" class="govuk-table__header" aria-sort="@(Model.SortBy=="before" ? (Model.SortDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("before")">Before</a></th>
+                        <th scope="col" class="govuk-table__header" aria-sort="@(Model.SortBy=="after" ? (Model.SortDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("after")">After</a></th>
+                        <th scope="col" class="govuk-table__header" aria-sort="@(Model.SortBy=="reason" ? (Model.SortDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("reason")">Reason</a></th>
+                        <th scope="col" class="govuk-table__header" aria-sort="@(Model.SortBy=="key" ? (Model.SortDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("key")">Key</a></th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody class="govuk-table__body">
+                    @foreach (var e in Model.Entries)
+                    {
+                        <tr class="govuk-table__row">
+                            <td class="govuk-table__cell">@e.TableName</td>
+                            <td class="govuk-table__cell">@e.FieldName</td>
+                            <td class="govuk-table__cell">@e.DateTime.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                            <td class="govuk-table__cell">@e.UserName</td>
+                            <td class="govuk-table__cell">@e.BeforeValue</td>
+                            <td class="govuk-table__cell">@e.AfterValue</td>
+                            <td class="govuk-table__cell">@e.Reason</td>
+                            <td class="govuk-table__cell">@e.Key</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
 
         @if (Model.TotalPages > 1)
         {

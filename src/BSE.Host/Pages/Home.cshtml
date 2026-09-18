@@ -385,7 +385,7 @@
             @if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess"))
             {
                 <li><a asp-page="/AuditLog/Menu" class="govuk-link">Audit log</a></li>
-                <li><a asp-page="/Bsess/Menu" class="govuk-link">BSESS check</a></li>
+                <li><a asp-page="/Bsess/Menu" class="govuk-link">TSES check</a></li>
             }
         </ul>
     </div>
@@ -398,11 +398,11 @@
             <ul class="govuk-list">
                 @if (User.IsInRole("DEFRAMaintenance"))
                 {
-                    <li><a asp-page="/AdnsExport/Menu" class="govuk-link">ADNS export</a></li>
+                    <li><a asp-page="/AdnsExport/Menu" class="govuk-link">Export to ADNS</a></li>
                 }
                 @if (User.IsInRole("VLAAccess"))
                 {
-                    <li><a asp-page="/OssExport/Menu" class="govuk-link">OSS export</a></li>
+                    <li><a asp-page="/OssExport/Menu" class="govuk-link">Export to OSS</a></li>
                 }
             </ul>
         }

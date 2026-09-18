@@ -16,7 +16,6 @@ public sealed class MSGraphMailClient : IMSGraphMailClient
     private static readonly string[] GraphScopes = ["https://graph.microsoft.com/.default"];
 
     private readonly AdnsMsGraphOptions _options;
-    private readonly TokenCredential _credential;
     private readonly TokenRequestContext _tokenRequestContext = new(GraphScopes);
     private readonly HttpClient _httpClient;
     private readonly AsyncRetryPolicy _retryPolicy;
@@ -25,13 +24,6 @@ public sealed class MSGraphMailClient : IMSGraphMailClient
     {
         _options = options.Value;
         _httpClient = httpClient;
-
-        ValidateRequiredConfiguration(_options);
-
-        _credential = new ClientSecretCredential(
-            _options.MsGraphTenantId,
-            _options.MsGraphClientId,
-            _options.MsGraphClientSecret);
 
         _retryPolicy = Policy
             .Handle<HttpRequestException>()
@@ -43,11 +35,27 @@ public sealed class MSGraphMailClient : IMSGraphMailClient
 
     public async Task SendAsync(string from, string to, string subject, string body)
     {
+        ValidateRequiredConfiguration(_options);
+
+        var fromAddress = from?.Trim() ?? string.Empty;
+        var toAddress = to?.Trim() ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(fromAddress))
+            throw new InvalidOperationException("ADNS MSGraph configuration is missing required value(s): AdnsMsGraph:FromAddress");
+
+        if (string.IsNullOrWhiteSpace(toAddress))
+            throw new InvalidOperationException("ADNS email recipient cannot be empty.");
+
         var senderUser = string.IsNullOrWhiteSpace(_options.MsGraphSenderUserId)
-            ? from
+            ? fromAddress
             : _options.MsGraphSenderUserId;
 
-        var accessToken = await _credential.GetTokenAsync(_tokenRequestContext, CancellationToken.None);
+        var credential = new ClientSecretCredential(
+            _options.MsGraphTenantId,
+            _options.MsGraphClientId,
+            _options.MsGraphClientSecret);
+
+        var accessToken = await credential.GetTokenAsync(_tokenRequestContext, CancellationToken.None);
 
         await _retryPolicy.ExecuteAsync(async () =>
         {
@@ -64,7 +72,7 @@ public sealed class MSGraphMailClient : IMSGraphMailClient
                     body = new { contentType = "Text", content = body },
                     toRecipients = new[]
                     {
-                        new { emailAddress = new { address = to } }
+                        new { emailAddress = new { address = toAddress } }
                     }
                 },
                 saveToSentItems = false
@@ -95,16 +103,13 @@ public sealed class MSGraphMailClient : IMSGraphMailClient
         var missing = new List<string>();
 
         if (string.IsNullOrWhiteSpace(options.MsGraphTenantId))
-            missing.Add("AdnsMsGraph:MsGraphTenantId");
+            missing.Add("MsGraphTenantId (AdnsMsGraph:MsGraphTenantId | AdnsMsGraph__MsGraphTenantId | AdnsMsGraph_MsGraphTenantId)");
         if (string.IsNullOrWhiteSpace(options.MsGraphClientId))
-            missing.Add("AdnsMsGraph:MsGraphClientId");
+            missing.Add("MsGraphClientId (AdnsMsGraph:MsGraphClientId | AdnsMsGraph__MsGraphClientId | AdnsMsGraph_MsGraphClientId)");
         if (string.IsNullOrWhiteSpace(options.MsGraphClientSecret))
-            missing.Add("AdnsMsGraph:MsGraphClientSecret");
+            missing.Add("MsGraphClientSecret (AdnsMsGraph:MsGraphClientSecret | AdnsMsGraph__MsGraphClientSecret | AdnsMsGraph_MsGraphClientSecret | MsGraphClientSecret)");
         if (string.IsNullOrWhiteSpace(options.FromAddress))
-            missing.Add("AdnsMsGraph:FromAddress");
-        if (string.IsNullOrWhiteSpace(options.ToAddress))
-            missing.Add("AdnsMsGraph:ToAddress");
-
+            missing.Add("FromAddress (AdnsMsGraph:FromAddress | AdnsMsGraph__FromAddress | AdnsMsGraph_FromAddress)");
         if (missing.Count > 0)
         {
             throw new InvalidOperationException(

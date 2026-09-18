@@ -130,7 +130,8 @@ public sealed class AdnsExportService : IAdnsExportService
 
             await _msGraphMailClient.SendAsync(_fromAddress, userRecipient, subject, body);
 
-            if (!string.Equals(userRecipient, defaultRecipient, StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrWhiteSpace(defaultRecipient)
+                && !string.Equals(userRecipient, defaultRecipient, StringComparison.OrdinalIgnoreCase))
             {
                 await _msGraphMailClient.SendAsync(_fromAddress, defaultRecipient, subject, body);
             }

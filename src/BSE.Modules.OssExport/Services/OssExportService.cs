@@ -21,9 +21,6 @@ public sealed class OssExportService : IOssExportService
     public Task<BatchNumber1989Result?> CreateBatchNumber1989Async()
         => _repository.CreateBatchNumber1989Async();
 
-    public Task<IReadOnlyList<string>> GetStagedBse1RbseAsync()
-        => _repository.GetStagedBse1RbseAsync();
-
     public async Task<OssExportRecord?> ValidateAndGetRbseDetailsAsync(string rbseInput)
     {
         // Normalize the RBSE input (accepts "00/26/00001" or "002600001" format)
@@ -40,14 +37,13 @@ public sealed class OssExportService : IOssExportService
 
     public async Task<string> GenerateOssExportFileAsync(int batchId, short batchYear, int batchNumber, IEnumerable<OssExportBatchEntryRecord> entries)
     {
-        // Link all RBSEs to the batch
-        foreach (var entry in entries)
+        var entryList = entries.ToList();
+
+        // Link all RBSEs currently in the grid to the batch
+        foreach (var entry in entryList)
         {
             await _repository.AddBatchNumberLinkAsync(batchId, entry.Rbse, "BSE1");
         }
-
-        // Get all cases linked to the batch (includes those just added)
-        var caseRecords = await _repository.GetCasesByBatchIdAsync(batchId);
 
         // Generate the batch key: last 2 digits of year + 3-digit batch number
         // Example: year=1989, number=123 → "89123"
@@ -55,14 +51,15 @@ public sealed class OssExportService : IOssExportService
         var batchNumberPadded = batchNumber.ToString("000");
         var batchKey = yearSuffix + batchNumberPadded;
 
-        // Build the file content: pipe-delimited rows
-        // Format: |BatchKey|RBSE|CPHH|CRLF
+        // Build the file content from the entries currently in the grid only — a case
+        // that was added then removed before export must not reappear here, even though
+        // its BatchNumberLink row from an earlier export of this same batch still exists in the database.
         var sb = new StringBuilder();
-        foreach (var caseRecord in caseRecords)
+        foreach (var entry in entryList)
         {
             sb.Append('|').Append(batchKey).Append('|');
-            sb.Append(caseRecord.Rbse).Append('|');
-            sb.Append(caseRecord.Cphh).Append('|');
+            sb.Append(entry.Rbse).Append('|');
+            sb.Append(entry.Cphh).Append('|');
             sb.Append("\r\n");
         }
 

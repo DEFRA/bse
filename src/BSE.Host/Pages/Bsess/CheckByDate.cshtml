@@ -1,52 +1,120 @@
 @page
 @model CheckByDateModel
 @{
-    ViewData["Title"] = "BSESS check by date";
+    ViewData["Title"] = "TSES Check : Cases Within A Date Range";
 }
 
 <div>
-    <h1 class="govuk-heading-l">BSESS check by date</h1>
+    <h1 class="govuk-heading-l">TSES Check : Cases Within A Date Range</h1>
     <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
         <ol class="govuk-breadcrumbs__list">
             <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Bsess/Menu">BSESS check</a></li>
-            <li class="govuk-breadcrumbs__list-item" aria-current="page">BSESS check by date</li>
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Bsess/Menu">TSES Check Menu</a></li>
+            <li class="govuk-breadcrumbs__list-item" aria-current="page">By Date Range</li>
         </ol>
     </nav>
 
-    <partial name="_AuditDateRangeForm" model="@(new BSE.Host.Models.ViewModels.AuditDateRangeViewModel(Model.StartDate, Model.EndDate))" />
+    @if (!ViewContext.ModelState.IsValid)
+    {
+        <div class="govuk-error-summary" data-module="govuk-error-summary">
+            <div role="alert">
+                <h2 class="govuk-error-summary__title">There is a problem</h2>
+                <div class="govuk-error-summary__body">
+                    <ul class="govuk-list govuk-error-summary__list">
+                        @if (ViewContext.ModelState["StartDate"]?.Errors.Count > 0)
+                        {
+                            <li><a href="#audit-start-date">@ViewContext.ModelState["StartDate"]!.Errors[0].ErrorMessage</a></li>
+                        }
+                        @if (ViewContext.ModelState["EndDate"]?.Errors.Count > 0)
+                        {
+                            <li><a href="#audit-end-date">@ViewContext.ModelState["EndDate"]!.Errors[0].ErrorMessage</a></li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    }
+
+    <form method="get" novalidate class="govuk-!-margin-bottom-6">
+        <div class="govuk-form-group @(!ViewContext.ModelState.IsValid ? "govuk-form-group--error" : "")">
+            <label class="govuk-label">Log Entries Between</label>
+            @if (ViewContext.ModelState["StartDate"]?.Errors.Count > 0)
+            {
+                <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewContext.ModelState["StartDate"]!.Errors[0].ErrorMessage</p>
+            }
+            @if (ViewContext.ModelState["EndDate"]?.Errors.Count > 0)
+            {
+                <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewContext.ModelState["EndDate"]!.Errors[0].ErrorMessage</p>
+            }
+            <div class="bse-date-range-input-wrapper">
+                <input id="audit-start-date" name="StartDate" type="date"
+                       class="govuk-input govuk-input--width-10"
+                       value="@Model.StartDate?.ToString("yyyy-MM-dd")" />
+                <span class="bse-date-range-separator govuk-label">and</span>
+                <input id="audit-end-date" name="EndDate" type="date"
+                       class="govuk-input govuk-input--width-10"
+                       value="@Model.EndDate?.ToString("yyyy-MM-dd")" />
+            </div>
+        </div>
+        <div class="govuk-button-group">
+            <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
+            <a asp-page="/Bsess/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button" role="button" draggable="false">TSES Menu</a>
+        </div>
+    </form>
 
     @if (Model.Discrepancies.Any())
     {
-        <h2 class="govuk-heading-m">@Model.Discrepancies.Count discrepancies found</h2>
+        var sortBase = $"?StartDate={Uri.EscapeDataString(Model.StartDate?.ToString("yyyy-MM-dd") ?? string.Empty)}&EndDate={Uri.EscapeDataString(Model.EndDate?.ToString("yyyy-MM-dd") ?? string.Empty)}";
+        <h2 id="bsess-date-results" class="govuk-heading-m">@Model.Discrepancies.Count discrepancies found</h2>
+
+        <p class="govuk-body">
+            <a href="@($"?StartDate={Uri.EscapeDataString(Model.StartDate?.ToString("yyyy-MM-dd") ?? string.Empty)}&EndDate={Uri.EscapeDataString(Model.EndDate?.ToString("yyyy-MM-dd") ?? string.Empty)}&handler=Export")" class="govuk-link">Export to Excel</a>
+        </p>
+
         <table class="govuk-table">
-            <caption class="govuk-visually-hidden">BSESS discrepancies by date</caption>
+            <caption class="govuk-visually-hidden">TSES discrepancies by date</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header">RBSE</th>
-                    <th scope="col" class="govuk-table__header">BSESS Eartag</th>
-                    <th scope="col" class="govuk-table__header">BSE Eartag</th>
-                    <th scope="col" class="govuk-table__header">BSESS Birth Date</th>
-                    <th scope="col" class="govuk-table__header">BSE Birth Date</th>
-                    <th scope="col" class="govuk-table__header">BSESS Test Group</th>
-                    <th scope="col" class="govuk-table__header">BSE Test Group</th>
+                    @{ ViewData["Label"] = "RBSE"; ViewData["Column"] = "Rbse"; ViewData["SortColumn"] = Model.SortColumn; ViewData["SortDesc"] = Model.SortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "bsess-date-results"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "TSES Birth Date"; ViewData["Column"] = "BsessBirthDate"; ViewData["SortColumn"] = Model.SortColumn; ViewData["SortDesc"] = Model.SortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "bsess-date-results"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "BSE Birth Date"; ViewData["Column"] = "BseBirthDate"; ViewData["SortColumn"] = Model.SortColumn; ViewData["SortDesc"] = Model.SortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "bsess-date-results"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "TSES Eartag"; ViewData["Column"] = "BsessEartag"; ViewData["SortColumn"] = Model.SortColumn; ViewData["SortDesc"] = Model.SortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "bsess-date-results"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "BSE Eartag"; ViewData["Column"] = "BseEartag"; ViewData["SortColumn"] = Model.SortColumn; ViewData["SortDesc"] = Model.SortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "bsess-date-results"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "TSES Test Group"; ViewData["Column"] = "BsessTestGroup"; ViewData["SortColumn"] = Model.SortColumn; ViewData["SortDesc"] = Model.SortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "bsess-date-results"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "BSE Test Group"; ViewData["Column"] = "BseTestGroup"; ViewData["SortColumn"] = Model.SortColumn; ViewData["SortDesc"] = Model.SortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "bsess-date-results"; }
+                    <partial name="_SortableHeader" />
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
-                @foreach (var d in Model.Discrepancies)
+                @foreach (var d in Model.PagedDiscrepancies)
                 {
                     <tr class="govuk-table__row">
-                        <td class="govuk-table__cell"><a asp-page="/Case/Farm" asp-route-rbse="@d.Rbse" class="govuk-link">@d.Rbse</a></td>
-                        <td class="govuk-table__cell">@d.BsessEartag</td>
-                        <td class="govuk-table__cell">@d.BseEartag</td>
+                        <td class="govuk-table__cell">@BseFormat.FormatRbse(d.Rbse)</td>
                         <td class="govuk-table__cell">@d.BsessBirthDate?.ToString("dd/MM/yyyy")</td>
                         <td class="govuk-table__cell">@d.BseBirthDate?.ToString("dd/MM/yyyy")</td>
+                        <td class="govuk-table__cell">@d.BsessEartag</td>
+                        <td class="govuk-table__cell">@d.BseEartag</td>
                         <td class="govuk-table__cell">@d.BsessTestGroup</td>
                         <td class="govuk-table__cell">@d.BseTestGroup</td>
                     </tr>
                 }
             </tbody>
         </table>
+
+        @if (Model.TotalPages > 1)
+        {
+            ViewData["CurrentPage"] = Model.PageNumber;
+            ViewData["TotalPages"] = Model.TotalPages;
+            ViewData["PageNumberKey"] = "PageNumber";
+            ViewData["Fragment"] = "bsess-date-results";
+            await Html.RenderPartialAsync("_Pagination");
+        }
     }
     else if (Model.HasSearched)
     {
