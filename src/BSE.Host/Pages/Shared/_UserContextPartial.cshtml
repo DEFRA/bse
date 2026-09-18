@@ -1,5 +1,9 @@
 @* Renders authenticated user identity — mirrors Histo _UserContextPartial pattern. *@
 @inject BSE.SharedKernel.IUserContext UserContext
+@{
+    // Display only: legacy AD group names still say "VLA"; business has asked the front-end to show "APHA" instead.
+    var displayGroupName = UserContext.GroupName.Replace("VLA", "APHA");
+}
 
 <span>User: @UserContext.DisplayName</span>
-<span>Group: @UserContext.GroupName</span>
+<span>Group: @displayGroupName</span>

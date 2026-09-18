@@ -368,7 +368,7 @@
 
     @* Column 2: Casework and reports *@
     <div class="govuk-grid-column-one-third">
-        @if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess") || User.IsInRole("VLAMaintenance"))
+        @if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess") || User.IsInRole("VLAMaintenance") || User.IsInRole("DEFRAMaintenance"))
         {
             <h2 class="govuk-heading-m">Casework and reports</h2>
         }
@@ -384,13 +384,20 @@
             }
             @if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess"))
             {
-                <li><a asp-page="/AuditLog/Menu" class="govuk-link">Audit log</a></li>
                 <li><a asp-page="/Bsess/Menu" class="govuk-link">TSES check</a></li>
+            }
+            @if (User.IsInRole("DEFRAMaintenance"))
+            {
+                <li><a asp-page="/Case/FinalResultEntry" class="govuk-link">Final result entry</a></li>
+                <li><a asp-page="/Farm/CphhChange" class="govuk-link">CPHH change</a></li>
+                <li><a asp-page="/Case/RbseChange" class="govuk-link">RBSE change</a></li>
+                <li><a asp-page="/Case/MoveCase" class="govuk-link">Move case</a></li>
+                <li><a asp-page="/Case/Delete" class="govuk-link">Delete case</a></li>
             }
         </ul>
     </div>
 
-    @* Column 3: Exports + Case maintenance + Administration *@
+    @* Column 3: Exports + Administration *@
     <div class="govuk-grid-column-one-third">
         @if (User.IsInRole("DEFRAMaintenance") || User.IsInRole("VLAAccess"))
         {
@@ -407,21 +414,9 @@
             </ul>
         }
 
-        @if (User.IsInRole("DEFRAMaintenance"))
+        @if (User.IsInRole("VLAMaintenance") || User.IsInRole("PickListAccess") || User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess"))
         {
             <h2 class="govuk-heading-m">Maintenance</h2>
-            <ul class="govuk-list">
-                <li><a asp-page="/Case/FinalResultEntry" class="govuk-link">Final result entry</a></li>
-                <li><a asp-page="/Farm/CphhChange" class="govuk-link">CPHH change</a></li>
-                <li><a asp-page="/Case/RbseChange" class="govuk-link">RBSE change</a></li>
-                <li><a asp-page="/Case/MoveCase" class="govuk-link">Move case</a></li>
-                <li><a asp-page="/Case/Delete" class="govuk-link">Delete case</a></li>
-            </ul>
-        }
-
-        @if (User.IsInRole("VLAMaintenance") || User.IsInRole("PickListAccess"))
-        {
-            <h2 class="govuk-heading-m">Administration</h2>
             <ul class="govuk-list">
                 @if (User.IsInRole("VLAMaintenance"))
                 {
@@ -430,6 +425,10 @@
                 @if (User.IsInRole("PickListAccess"))
                 {
                     <li><a asp-page="/Admin/PickLists" class="govuk-link">Pick List Maintenance</a></li>
+                }
+                @if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess"))
+                {
+                    <li><a asp-page="/AuditLog/Menu" class="govuk-link">Audit log</a></li>
                 }
             </ul>
         }

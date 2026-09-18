@@ -1,7 +1,7 @@
 ﻿@page "{rbse}"
 @model BSE.Host.Pages.Case.VlaEditModel
 @{
-    ViewData["Title"] = $"Edit Case (VLA) — {Model.Case.Rbse}";
+    ViewData["Title"] = $"Edit Case (APHA) — {Model.Case.Rbse}";
     string DateVal(DateTime? d) => d?.ToString("yyyy-MM-dd") ?? "";
     string rbseNoSlash = Model.Case.Rbse.Replace("/", "");
 }
@@ -10,7 +10,7 @@
     <ol class="govuk-breadcrumbs__list">
         <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
         <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Vla" asp-route-rbse="@Model.Case.Rbse">@BseFormat.FormatRbse(Model.Case.Rbse)</a></li>
-        <li class="govuk-breadcrumbs__list-item" aria-current="page">Edit Case (VLA)</li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Edit Case (APHA)</li>
     </ol>
 </nav>
 
