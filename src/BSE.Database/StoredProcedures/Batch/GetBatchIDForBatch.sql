@@ -9,6 +9,6 @@ CREATE PROCEDURE GetBatchIDForBatch
 	FROM
 		[Batch]
 	WHERE
-		[BatchYear] = @BatchYear AND
+		([BatchYear] = @BatchYear OR ([BatchYear] IS NULL AND @BatchYear IS NULL)) AND
 		[BatchNumber] = @BatchNumber
 

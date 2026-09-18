@@ -24,7 +24,7 @@ public sealed class BatchService : IBatchService
     public Task<BatchAssignmentResult> AssignCaseToBatchAsync(int batchId, string rbse, string document)
         => _repository.AssignCaseToBatchAsync(batchId, rbse, document);
 
-    public Task<int?> GetBatchIdAsync(short batchYear, int batchNumber)
+    public Task<int?> GetBatchIdAsync(short? batchYear, int batchNumber)
         => _repository.GetBatchIdAsync(batchYear, batchNumber);
 
     public Task<IReadOnlyList<BatchNumberEntry>> GetBatchNumbersByRbseAsync(string rbse)

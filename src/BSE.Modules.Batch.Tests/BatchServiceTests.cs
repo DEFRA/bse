@@ -67,6 +67,17 @@ public sealed class BatchServiceTests
     }
 
     [Fact]
+    public async Task GetBatchIdAsync_NullYear_DelegatesToRepository()
+    {
+        // Batches recorded before the year field existed are stored with a NULL BatchYear.
+        _repo.GetBatchIdAsync((short?)null, 3001).Returns(2);
+
+        var result = await _sut.GetBatchIdAsync(null, 3001);
+
+        result.Should().Be(2);
+    }
+
+    [Fact]
     public async Task GetBatchNumbersByRbseAsync_DelegatesToRepository()
     {
         var expected = new List<BatchNumberEntry>
