@@ -221,7 +221,7 @@ public class FeedsModel(
     }
 
     /// <summary>Removes a staged feed row (mirrors legacy "Delete Selected"). Not persisted until Save.</summary>
-    public async Task<IActionResult> OnPostDeleteFeedRowAsync()
+    public async Task<IActionResult> OnPostDeleteFeedRowAsync(string clientKey)
     {
         if (!User.IsInRole("DataEntry"))
             return Forbid();
@@ -231,7 +231,7 @@ public class FeedsModel(
         await LoadAsync();
         var draft = await LoadOrInitializeDraftStateAsync();
 
-        var item = draft.Feeds.FirstOrDefault(f => f.ClientKey == EditingClientKey);
+        var item = draft.Feeds.FirstOrDefault(f => f.ClientKey == clientKey);
         if (item is not null)
         {
             draft.Feeds.Remove(item);
@@ -425,3 +425,4 @@ public class FeedsModel(
         public bool IsUnsaved => Id is null or <= 0;
     }
 }
+
