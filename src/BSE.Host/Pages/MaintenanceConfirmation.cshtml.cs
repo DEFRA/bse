@@ -15,6 +15,7 @@ public class MaintenanceConfirmationModel : PageModel
     public const string TitleKey = "ConfirmationTitle";
     public const string SummaryKey = "ConfirmationSummary";
     public const string MessageKey = "ConfirmationMessage";
+    public const string AddAnotherResultKey = "ConfirmationAddAnotherResult";
 
     public string ConfirmationTitle { get; private set; } = string.Empty;
 
@@ -23,11 +24,14 @@ public class MaintenanceConfirmationModel : PageModel
 
     public string ConfirmationMessage { get; private set; } = string.Empty;
 
+    public string? AddAnotherResultPage { get; private set; }
+
     public IActionResult OnGet()
     {
         ConfirmationTitle = TempData[TitleKey] as string ?? string.Empty;
         ConfirmationSummary = TempData[SummaryKey] as string ?? string.Empty;
         ConfirmationMessage = TempData[MessageKey] as string ?? string.Empty;
+        AddAnotherResultPage = TempData[AddAnotherResultKey] as string;
 
         // Legacy redirected to SessionError.aspx when the page was reached without either value.
         if (ConfirmationTitle.Length == 0 && ConfirmationMessage.Length == 0)
