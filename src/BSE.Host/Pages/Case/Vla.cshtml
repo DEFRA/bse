@@ -2,13 +2,13 @@
 @model VlaModel
 @{
     ViewData["Title"] = $"Case (APHA) — {Model.Case.Rbse}";
-    string D(DateTime? d) => d?.ToString("dd/MM/yyyy") ?? "—";
     string rbseNoSlash = Model.Case.Rbse.Replace("/", "");
     var viewDocsUrl = string.IsNullOrWhiteSpace(Model.SpolSiteUrl)
         ? null
         : $"{Model.SpolSiteUrl}{rbseNoSlash}";
 
     string? E(string key) => ViewData.ModelState[key]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string DateVal(DateTime? d) => d?.ToString("yyyy-MM-dd") ?? string.Empty;
 }
 
 <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">

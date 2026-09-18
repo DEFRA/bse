@@ -1,6 +1,8 @@
+using System.Data;
 using BSE.Infrastructure;
 using BSE.Modules.ReferenceData.Models;
 using BSE.Modules.ReferenceData.Repositories;
+using Dapper;
 
 namespace BSE.Modules.ReferenceData.Services;
 
@@ -106,7 +108,12 @@ public sealed class EditableLookupAdminService : IEditableLookupAdminService
     // ── AHRO ──────────────────────────────────────────────────────────────────
 
     public Task AddAHROAsync(string name)
-        => _db.ExecuteAsync("AddluAHRO", new { Name = name });
+    {
+        var p = new DynamicParameters();
+        p.Add("Name", name);
+        p.Add("ID", dbType: DbType.Int32, direction: ParameterDirection.Output);
+        return _db.ExecuteWithOutputAsync("AddluAHRO", p);
+    }
 
     public Task EditAHROAsync(int id, string name)
         => _db.ExecuteAsync("EditluAHRO", new { ID = id, Name = name });
@@ -117,7 +124,13 @@ public sealed class EditableLookupAdminService : IEditableLookupAdminService
     // ── Supplier ──────────────────────────────────────────────────────────────
 
     public Task AddSupplierAsync(string name, string? details)
-        => _db.ExecuteAsync("AddluSupplier", new { Name = name, Details = details });
+    {
+        var p = new DynamicParameters();
+        p.Add("Name", name);
+        p.Add("Details", details);
+        p.Add("ID", dbType: DbType.Int32, direction: ParameterDirection.Output);
+        return _db.ExecuteWithOutputAsync("AddluSupplier", p);
+    }
 
     public Task EditSupplierAsync(int id, string name, string? details)
         => _db.ExecuteAsync("EditluSupplier", new { ID = id, Name = name, Details = details });

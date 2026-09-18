@@ -6,14 +6,19 @@
                                  Pass "Filter.PageNumber" for pages that bind
                                  PageNumber inside a Filter view-model (Farms, Outstanding).
      ViewData["Fragment"]      — string (optional) anchor id to jump back to the results
-                                 table instead of the top of the page. *@
+                                 table instead of the top of the page.
+     ViewData["AlwaysShow"]    — bool (optional, default: false) legacy's DataGridPager
+                                 always displayed its page bar, even with a single page
+                                 (e.g. Pick List Maintenance). Set true to keep that parity;
+                                 other callers keep the default of hiding a single-page control. *@
 @{
     int currentPage = (int)(ViewData["CurrentPage"] ?? 1);
     int totalPages  = (int)(ViewData["TotalPages"]  ?? 1);
     string pageKey  = (string?)ViewData["PageNumberKey"] ?? "pageNumber";
     string fragment = (string?)ViewData["Fragment"] ?? "";
+    bool alwaysShow = (bool?)ViewData["AlwaysShow"] ?? false;
 
-    if (totalPages <= 1) { return; }
+    if (totalPages <= 1 && !alwaysShow) { return; }
 
     // Strip BOTH possible page-number keys so neither leaks into generated links.
     var qs = ViewContext.HttpContext.Request.Query

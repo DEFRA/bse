@@ -73,12 +73,12 @@ public class PickListsEditModel(
         await LoadAsync();
         if (!CanEdit || Procs is null) return RedirectToTable();
 
-        ValidateRequired();
-        if (await HasDuplicateKeyAsync(OriginalKey)) ModelState.AddModelError(KeyColumn, PickListsModel.DuplicateCodeMessage);
-        if (!ModelState.IsValid) return Page();
-
         try
         {
+            ValidateRequired();
+            if (await HasDuplicateKeyAsync(OriginalKey)) ModelState.AddModelError(KeyColumn, PickListsModel.DuplicateCodeMessage);
+            if (!ModelState.IsValid) return Page();
+
             await EditAsync();
             TempData["SuccessMessage"] = "Record updated.";
         }
@@ -135,6 +135,12 @@ public class PickListsEditModel(
         {
             if (string.IsNullOrWhiteSpace(Field(field.Column)))
                 ModelState.AddModelError(field.Column, $"Enter a {field.Label.ToLowerInvariant()}");
+        }
+
+        foreach (var field in DisplayFields.Where(f => f.IsRegionLookup))
+        {
+            if (string.IsNullOrWhiteSpace(Field(field.Column)))
+                ModelState.AddModelError(field.Column, $"Select a {field.Label.ToLowerInvariant()}");
         }
     }
 

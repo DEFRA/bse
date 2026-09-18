@@ -63,9 +63,13 @@
             else if (field.IsRegionLookup)
             {
                 <label class="govuk-label" for="field-@field.Column">@field.Label</label>
-                <select class="govuk-select govuk-!-width-two-thirds"
+                @if (error is not null)
+                {
+                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @error</p>
+                }
+                <select class="govuk-select govuk-!-width-two-thirds @(error is not null ? "govuk-select--error" : "")"
                         id="field-@field.Column" name="Fields[@field.Column]">
-                    <option value=""></option>
+                    <option value="">Select a region</option>
                     @foreach (var region in Model.BseRegionOptions)
                     {
                         <option value="@region.Id" selected="@(region.Id.ToString() == current)">@region.Name</option>

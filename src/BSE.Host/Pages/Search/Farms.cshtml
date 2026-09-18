@@ -141,7 +141,7 @@
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Herdmark(s)";             ViewData["Column"] = "Herdmark"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Numeric Herdmark(s)";     ViewData["Column"] = "NumericHerdmark"; }
+                    @{ ViewData["Label"] = "Numeric Herdmark(s)";     ViewData["Column"] = "NumericHerdmark"; ViewData["HeaderClass"] = "govuk-table__header--numeric"; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Map Ref";                 ViewData["Column"] = "MapReference"; }
                     <partial name="_SortableHeader" />
@@ -151,9 +151,9 @@
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Correspondence Address";  ViewData["Column"] = "CorrespondenceAddress"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Cases";                   ViewData["Column"] = "CasesCount"; }
+                    @{ ViewData["Label"] = "Cases";                   ViewData["Column"] = "CasesCount"; ViewData["HeaderClass"] = "govuk-table__header--numeric"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Confirmed Cases";         ViewData["Column"] = "ConfirmedCasesCount"; }
+                    @{ ViewData["Label"] = "Confirmed Cases";         ViewData["Column"] = "ConfirmedCasesCount"; ViewData["HeaderClass"] = "govuk-table__header--numeric"; }
                     <partial name="_SortableHeader" />
                 </tr>
             </thead>
@@ -166,13 +166,13 @@
                         <td class="govuk-table__cell">@r.Address</td>
                         <td class="govuk-table__cell">@r.County</td>
                         <td class="govuk-table__cell">@r.Herdmark</td>
-                        <td class="govuk-table__cell">@r.NumericHerdmark</td>
+                        <td class="govuk-table__cell govuk-table__cell--numeric">@r.NumericHerdmark</td>
                         <td class="govuk-table__cell">@r.MapReference</td>
                         <td class="govuk-table__cell">@r.Aho</td>
                         <td class="govuk-table__cell">@r.HerdType</td>
                         <td class="govuk-table__cell">@r.CorrespondenceAddress</td>
-                        <td class="govuk-table__cell">@r.CasesCount</td>
-                        <td class="govuk-table__cell">@r.ConfirmedCasesCount</td>
+                        <td class="govuk-table__cell govuk-table__cell--numeric">@r.CasesCount</td>
+                        <td class="govuk-table__cell govuk-table__cell--numeric">@r.ConfirmedCasesCount</td>
                     </tr>
                 }
             </tbody>
