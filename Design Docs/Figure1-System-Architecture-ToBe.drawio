@@ -1,0 +1,312 @@
+<mxfile host="app.diagrams.net" modified="2026-09-14T00:00:00.000Z" agent="Copilot" version="24.0.0" type="device">
+  <diagram name="Figure 1 - System Architecture (To-Be, SHIR revised)" id="fig1-toBe-v3">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1080" pageHeight="820" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Outer boundary -->
+        <mxCell id="outer" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#0000FF;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="8" y="8" width="1040" height="785" as="geometry" />
+        </mxCell>
+        <mxCell id="outerLabel" value="DEFRA CCoE managed Azure Cloud" style="text;html=1;align=right;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="700" y="10" width="270" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="azCloudIcon" value="Azure" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#1BA1E2;strokeColor=#0072C6;fontColor=#FFFFFF;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="985" y="10" width="55" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Hub box -->
+        <mxCell id="hubBox" value="Hub" style="rounded=0;dashed=1;whiteSpace=wrap;html=1;verticalAlign=top;fontStyle=1;strokeColor=#5050C8;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="525" y="45" width="145" height="125" as="geometry" />
+        </mxCell>
+        <mxCell id="hubSubnet" value="Subnet" style="rounded=0;dashed=1;whiteSpace=wrap;html=1;verticalAlign=top;fontSize=9;strokeColor=#888888;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="545" y="68" width="105" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="fwHub" value="Azure&#10;Firewall" style="ellipse;whiteSpace=wrap;html=1;fillColor=#1BA1E2;strokeColor=#0072C6;fontColor=#FFFFFF;fontSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="575" y="85" width="42" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="vnetHub" value="VNET&#10;Peering" style="ellipse;whiteSpace=wrap;html=1;fillColor=#50E6FF;strokeColor=#0072C6;fontSize=7;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="600" y="132" width="30" height="28" as="geometry" />
+        </mxCell>
+
+        <mxCell id="circle2" value="2" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="592" y="180" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="label2" value="HUB Connected to BSE Spoke via VNET Peering" style="text;html=1;align=center;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="510" y="204" width="200" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="connectedViaHub" value="Connected Via Hub" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=none;fontSize=9;exitX=1;exitY=0.2;entryX=1;entryY=0;" edge="1" parent="1" source="hubBox" target="subBox">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="adfConnectedViaHub" value="ADF Connected Via Hub" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=none;fontSize=9;" edge="1" parent="1" source="entraIcon" target="hubBox">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="378" y="160" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Green subscription boundary -->
+        <mxCell id="subBox" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#00A651;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="415" y="260" width="610" height="430" as="geometry" />
+        </mxCell>
+        <mxCell id="subBoxLabel" value="BSE Azure Subscription- CCoE (DEFRA)" style="text;html=1;align=right;fontStyle=1;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="680" y="245" width="300" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="subBoxPerson" value="Owner" style="shape=actor;whiteSpace=wrap;html=1;fillColor=#1BA1E2;strokeColor=#0072C6;fontColor=#FFFFFF;fontSize=7;verticalLabelPosition=bottom;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="990" y="245" width="26" height="35" as="geometry" />
+        </mxCell>
+
+        <!-- App tier -->
+        <mxCell id="nsgApp" value="NSG" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2E5C9A;strokeColor=#1B3A66;fontColor=#FFFFFF;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="480" y="305" width="34" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="appSubnetBox" value="" style="rounded=0;dashed=1;whiteSpace=wrap;html=1;strokeColor=#00A651;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="460" y="335" width="210" height="155" as="geometry" />
+        </mxCell>
+        <mxCell id="appService" value="App&#10;Service" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#1BA1E2;strokeColor=#0072C6;fontColor=#FFFFFF;fontSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="530" y="330" width="45" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="appServiceLabel" value="BSE App Service Plan" style="text;html=1;align=left;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="578" y="335" width="90" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="vnetIntegration" value="VNET&#10;Integ." style="ellipse;whiteSpace=wrap;html=1;fillColor=#50E6FF;strokeColor=#0072C6;fontSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="575" y="375" width="45" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="appInsight" value="App&#10;Insight" style="hexagon;whiteSpace=wrap;html=1;fillColor=#7A45D1;strokeColor=#5C2D91;fontColor=#FFFFFF;fontSize=8;fontStyle=1;perimeter=hexagonPerimeter2;" vertex="1" parent="1">
+          <mxGeometry x="505" y="410" width="45" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="appInsightLabel" value="BSE Web App Insight" style="text;html=1;align=center;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="485" y="446" width="90" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="keyVault" value="Key&#10;Vault" style="hexagon;whiteSpace=wrap;html=1;fillColor=#7A45D1;strokeColor=#5C2D91;fontColor=#FFFFFF;fontSize=8;fontStyle=1;perimeter=hexagonPerimeter2;" vertex="1" parent="1">
+          <mxGeometry x="605" y="410" width="45" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="keyVaultLabel" value="Key Vault" style="text;html=1;align=center;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="590" y="446" width="65" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="appSubnetTag" value="Subnet (peered)" style="text;html=1;align=right;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="585" y="465" width="80" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="circle3" value="3" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="838" y="322" width="26" height="26" as="geometry" />
+        </mxCell>
+
+        <!-- Data tier -->
+        <mxCell id="nsgData" value="NSG" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2E5C9A;strokeColor=#1B3A66;fontColor=#FFFFFF;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="755" y="305" width="34" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="dataSubnetBox" value="" style="rounded=0;dashed=1;whiteSpace=wrap;html=1;strokeColor=#00A651;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="750" y="335" width="175" height="155" as="geometry" />
+        </mxCell>
+        <mxCell id="sqlDbLabel" value="BSE DB Private IP" style="text;html=1;align=center;fontSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="760" y="338" width="130" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="sqlDb" value="SQL" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#1BA1E2;strokeColor=#0072C6;fontColor=#FFFFFF;fontSize=10;fontStyle=1;boundedLbl=1;" vertex="1" parent="1">
+          <mxGeometry x="790" y="365" width="55" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="sqlDbSubLabel" value="BSE" style="text;html=1;align=center;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="790" y="420" width="55" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="dataSubnetTag" value="Subnet (peered)" style="text;html=1;align=right;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="845" y="450" width="75" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="spokeVnetLabel" value="Spoke VNET" style="text;html=1;align=right;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="860" y="500" width="90" height="18" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edgeAppToDb" value="Connected to DB" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=9;exitX=1;exitY=0.5;entryX=0;entryY=0.3;" edge="1" parent="1" source="appService" target="sqlDb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ADF box -->
+        <mxCell id="circle4" value="4" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="778" y="542" width="26" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="adfTitle" value="Additional Data Preparation &amp; Sync" style="text;html=1;align=center;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="660" y="545" width="230" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="adfContainer" value="" style="rounded=0;dashed=1;whiteSpace=wrap;html=1;strokeColor=#888888;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="705" y="562" width="215" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="adfIcon" value="ADF" style="shape=process;whiteSpace=wrap;html=1;fillColor=#1BA1E2;strokeColor=#0072C6;fontColor=#FFFFFF;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="720" y="575" width="55" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="adfLabel" value="ADF- Time Scheduled Data Sync" style="text;html=1;align=left;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="625" width="160" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="adfNote" value="Attached with BSE DB Private IP" style="text;html=1;align=left;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="845" y="578" width="140" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="edgeDestination" value="Destination" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=9;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="adfContainer" target="dataSubnetBox">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Left side: users, identity, gateway -->
+        <mxCell id="usersIcon" value="APHA&#10;Internal Users" style="shape=actor;whiteSpace=wrap;html=1;fillColor=#1BA1E2;strokeColor=#0072C6;fontColor=#FFFFFF;fontSize=8;fontStyle=1;verticalLabelPosition=bottom;verticalAlign=top;labelBackgroundColor=none;" vertex="1" parent="1">
+          <mxGeometry x="35" y="360" width="35" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="usersLabel" value="APHA Internal Users" style="text;html=1;align=center;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="10" y="410" width="85" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="circle1" value="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="93" y="350" width="26" height="26" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dnsIcon" value="Private&#10;DNS" style="ellipse;whiteSpace=wrap;html=1;fillColor=#1BA1E2;strokeColor=#0072C6;fontColor=#FFFFFF;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="190" y="385" width="42" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="dnsLabel" value="Azure Private DNS ( DTZ Local)" style="text;html=1;align=center;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="155" y="428" width="110" height="26" as="geometry" />
+        </mxCell>
+
+        <mxCell id="entraIcon" value="Entra&#10;ID" style="rhombus;whiteSpace=wrap;html=1;fillColor=#1BA1E2;strokeColor=#0072C6;fontColor=#FFFFFF;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="245" y="212" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="entraLabel" value="DEFRA SAML 2.0&#10;SSO Entra ID" style="text;html=1;align=center;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="210" y="253" width="115" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="userAuthEdge" value="User Authentication" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;endArrow=block;fontSize=8;" edge="1" parent="1" source="entraIcon" target="agwIcon">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="wafIcon" value="Azure&#10;WAF" style="ellipse;whiteSpace=wrap;html=1;fillColor=#C00000;strokeColor=#800000;fontColor=#FFFFFF;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="250" y="360" width="42" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="wafLabel" value="Azure WAF" style="text;html=1;align=center;fontSize=9;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="240" y="404" width="65" height="18" as="geometry" />
+        </mxCell>
+
+        <mxCell id="agwIcon" value="App&#10;Gateway" style="rhombus;whiteSpace=wrap;html=1;fillColor=#00A651;strokeColor=#006B34;fontColor=#FFFFFF;fontSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="310" y="358" width="55" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="agwLabel" value="CCoE Managed Private&#10;Application Gateway" style="text;html=1;align=center;fontSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="288" y="415" width="100" height="26" as="geometry" />
+        </mxCell>
+
+        <mxCell id="edgeUsersToWaf" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="usersIcon" target="wafIcon">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edgeWafToAgw" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="wafIcon" target="agwIcon">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edgeAgwToApp" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="agwIcon" target="appService">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Bottom-left external users box -->
+        <mxCell id="extUsersBox" value="" style="rounded=0;dashed=1;whiteSpace=wrap;html=1;strokeColor=#666666;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="15" y="470" width="180" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="spoIcon" value="SharePoint" style="ellipse;whiteSpace=wrap;html=1;fillColor=#03787C;strokeColor=#025457;fontColor=#FFFFFF;fontSize=7;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="95" y="478" width="45" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="spoLabel" value="DEFRA Sharepoint" style="text;html=1;align=center;fontSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="462" width="110" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="ssmsIcon" value="SSMS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F2C811;strokeColor=#B38F00;fontSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="35" y="505" width="45" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="analyticsUsersIcon" value="" style="shape=actor;whiteSpace=wrap;html=1;fillColor=#404040;strokeColor=#202020;fontColor=#FFFFFF;fontSize=8;" vertex="1" parent="1">
+          <mxGeometry x="110" y="530" width="30" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="analyticsLabel" value="Data Analytics Users" style="text;html=1;align=center;fontSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="65" y="578" width="110" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="circle5a" value="5" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="378" y="473" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="edgeSpoLink" value="Predefined SharePoint Link to folder" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=8;exitX=0;exitY=0.3;entryX=1;entryY=0.3;" edge="1" parent="1" source="appSubnetBox" target="spoIcon">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="avdIcon" value="Azure Virtual&#10;Desktop" style="ellipse;whiteSpace=wrap;html=1;fillColor=#1BA1E2;strokeColor=#0072C6;fontColor=#FFFFFF;fontSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="220" y="508" width="45" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="avdLabel" value="Azure Virtual Desktop" style="text;html=1;align=center;fontSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="195" y="554" width="95" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="circle5b" value="5" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="312" y="530" width="24" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="edgeAvdToDb" value="BSE DB (Read only ) access Via SSMS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=8;exitX=1;exitY=0.3;entryX=0;entryY=0.7;" edge="1" parent="1" source="avdIcon" target="dataSubnetBox">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- TSE External DB / Fortinet / IBM whitelist / SHIR (revised) -->
+        <mxCell id="tseDb" value="SQL" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#1BA1E2;strokeColor=#0072C6;fontColor=#FFFFFF;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="95" y="600" width="45" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="tseDbLabel" value="TSE External SQL DB&#10;tses.data.prd1.prd.cerespfm.cloud" style="text;html=1;align=center;fontSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="10" y="648" width="220" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ibmWhitelist" value="Hub - FortiGate Firewall&#10;(rule added by Defra network team; IBM whitelists the route)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE4D6;strokeColor=#DA3B01;strokeWidth=2;fontSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="180" y="600" width="150" height="45" as="geometry" />
+        </mxCell>
+        <mxCell id="edgeTseToIbm" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;" edge="1" parent="1" source="tseDb" target="ibmWhitelist">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="shirBox" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeColor=#FF8C00;fillColor=#FFF4E5;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="370" y="590" width="230" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="shirIcon" value="VM" style="shape=cube;whiteSpace=wrap;html=1;fillColor=#FF8C00;strokeColor=#B35F00;fontColor=#FFFFFF;fontSize=10;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="380" y="602" width="42" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="shirLabel" value="NEW: Defra Azure VM&#10;(Burstable B-series SKU) -&#10;Self-Hosted Integration&#10;Runtime (SHIR)" style="text;html=1;align=left;fontSize=8;fontStyle=1;fontColor=#B35F00;" vertex="1" parent="1">
+          <mxGeometry x="428" y="597" width="165" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="edgeIbmToShir" value="Outbound via Hub,&#10;after FortiGate rule added" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=8;" edge="1" parent="1" source="ibmWhitelist" target="shirBox">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edgeShirToAdf" value="Dispatches pipeline&#10;execution" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=8;" edge="1" parent="1" source="shirBox" target="adfContainer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Security Components bottom bar -->
+        <mxCell id="secBox" value="" style="rounded=0;dashed=1;whiteSpace=wrap;html=1;strokeColor=#666666;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="320" y="690" width="460" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="secBoxLabel" value="Security Components" style="text;html=1;align=center;fontStyle=1;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="440" y="678" width="220" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="logIcon" value="Log&#10;Workspace" style="ellipse;whiteSpace=wrap;html=1;fillColor=#1BA1E2;strokeColor=#0072C6;fontColor=#FFFFFF;fontSize=7;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="352" y="705" width="38" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="logLabel" value="Azure Log&#10;Workspace" style="text;html=1;align=center;fontSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="335" y="748" width="72" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="sentinelIcon" value="Sentinel" style="ellipse;whiteSpace=wrap;html=1;fillColor=#1BA1E2;strokeColor=#0072C6;fontColor=#FFFFFF;fontSize=7;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="440" y="705" width="38" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="sentinelLabel" value="Azure Sentinel" style="text;html=1;align=center;fontSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="418" y="748" width="82" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="defSqlIcon" value="Defender&#10;SQL" style="ellipse;whiteSpace=wrap;html=1;fillColor=#00A651;strokeColor=#006B34;fontColor=#FFFFFF;fontSize=7;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="525" y="705" width="38" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="defSqlLabel" value="Defender for SQL&#10;Database" style="text;html=1;align=center;fontSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="748" width="88" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="defAppIcon" value="Defender&#10;App" style="ellipse;whiteSpace=wrap;html=1;fillColor=#00A651;strokeColor=#006B34;fontColor=#FFFFFF;fontSize=7;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="608" y="705" width="38" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="defAppLabel" value="Defender for&#10;App Service" style="text;html=1;align=center;fontSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="585" y="748" width="84" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="defKvIcon" value="Defender&#10;KV" style="ellipse;whiteSpace=wrap;html=1;fillColor=#00A651;strokeColor=#006B34;fontColor=#FFFFFF;fontSize=7;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="690" y="705" width="38" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="defKvLabel" value="Azure Defender plans&#10;for Key Vault" style="text;html=1;align=center;fontSize=8;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="660" y="748" width="98" height="26" as="geometry" />
+        </mxCell>
+
+        <mxCell id="legendNote" value="Orange = new/revised (SHIR + IBM whitelist gate). Direct Fortinet-to-ADF path replaced." style="text;html=1;fontSize=9;fontStyle=2;fontColor=#DA3B01;" vertex="1" parent="1">
+          <mxGeometry x="8" y="795" width="600" height="18" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
