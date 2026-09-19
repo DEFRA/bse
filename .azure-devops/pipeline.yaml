@@ -113,7 +113,7 @@ stages:
 - stage: DEV
   displayName: DEV
   dependsOn: Build
-  condition: and(succeeded(), eq('${{ parameters.deployToDev }}', true))
+  condition: and(in(dependencies.Build.result, 'Succeeded'), eq('${{ parameters.deployToDev }}', true))
   variables:
     - name: appName
       value: 'DEVBSEWEBAW1401'
@@ -200,8 +200,8 @@ stages:
                 -AdnsMsGraph__FromAddress "$(msGraphSender)"
 - stage: TST
   displayName: TST
-  dependsOn: Build
-  condition: and(succeeded(), eq('${{ parameters.deployToTest }}', true))
+  dependsOn: DEV
+  condition: and(in(dependencies.DEV.result, 'Succeeded', 'Skipped'), eq('${{ parameters.deployToTest }}', true))
   variables:
     - name: appName
       value: 'TSTBSEWEBAW1401'
@@ -281,8 +281,8 @@ stages:
 
 - stage: PRE
   displayName: PRE
-  dependsOn: Build
-  condition: and(succeeded(), eq('${{ parameters.deployToPreProd }}', true))
+  dependsOn: TST
+  condition: and(in(dependencies.TST.result, 'Succeeded', 'Skipped'), eq('${{ parameters.deployToPreProd }}', true))
   variables:
     - name: appName
       value: 'PREBSEWEBAW1401'
