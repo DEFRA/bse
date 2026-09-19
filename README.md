@@ -11,6 +11,9 @@ Integration with external systems and data sources.
 Audit logging and traceability of user actions.
 Reporting and operational monitoring capabilities.
 Cloud-enabled architecture supporting scalability and reliability.
+
+**Application Classification:** Tier-3 application.
+
 Architecture
 
 The application follows a modern distributed architecture leveraging cloud-native services and industry best practices. Key architectural principles include:

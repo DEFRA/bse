@@ -1,6 +1,7 @@
 # BSE System — Risk and Governance
 
 > **Classification:** Programme Governance — Confidential  
+> **Application Tier:** Tier-3  
 > **Date:** 2026-07-20  
 > **Author:** Intelligent Migration Agent  
 > **Status:** Draft — Requires Delivery Lead Review  
