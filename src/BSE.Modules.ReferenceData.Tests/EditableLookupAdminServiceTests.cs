@@ -59,7 +59,15 @@ public sealed class EditableLookupAdminServiceTests
     {
         await _sut.AddSupplierAsync("ACME Farm Supplies", null);
 
-        await _db.Received(1).ExecuteAsync("AddluSupplier", Arg.Any<object?>());
+        await _db.Received(1).ExecuteWithOutputAsync("AddluSupplier", Arg.Any<Dapper.DynamicParameters>());
+    }
+
+    [Fact]
+    public async Task AddAHROAsync_ExecutesCorrectSP()
+    {
+        await _sut.AddAHROAsync("New AHRO");
+
+        await _db.Received(1).ExecuteWithOutputAsync("AddluAHRO", Arg.Any<Dapper.DynamicParameters>());
     }
 
     [Fact]

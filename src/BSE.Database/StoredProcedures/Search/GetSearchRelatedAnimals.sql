@@ -49,7 +49,7 @@ CREATE PROCEDURE [dbo].[GetSearchRelatedAnimals]
 	WHERE
 		[CaseRelation].[RBSE] LIKE @RBSE + '%' AND
 		@Name = '' AND
-		CASE WHEN [RelatedCase].[RBSE] IS NOT NULL THEN ISNULL([RelatedCase].[EartagCountry], '') + ISNULL([RelatedCase].[EartagHerdmark] + ' ', '') + ISNULL([RelatedCase].[Eartag], '') ELSE ISNULL([CaseRelation].[EartagCountry], '') + ISNULL([CaseRelation].[EartagHerdmark] + ' ', '') + ISNULL([CaseRelation].[Eartag], '') END LIKE @Eartag + '%' AND
+		REPLACE(CASE WHEN [RelatedCase].[RBSE] IS NOT NULL THEN ISNULL([RelatedCase].[EartagCountry], '') + ISNULL([RelatedCase].[EartagHerdmark] + ' ', '') + ISNULL([RelatedCase].[Eartag], '') ELSE ISNULL([CaseRelation].[EartagCountry], '') + ISNULL([CaseRelation].[EartagHerdmark] + ' ', '') + ISNULL([CaseRelation].[Eartag], '') END, ' ', '') LIKE REPLACE(@Eartag, ' ', '') + '%' AND
 		ISNULL([CaseRelation].[RelationRBSE], '') LIKE @RelationRBSE + '%' AND
 		[CaseRelation].[RelationType] LIKE @RelationType + '%' 
 		
@@ -77,7 +77,7 @@ CREATE PROCEDURE [dbo].[GetSearchRelatedAnimals]
 	WHERE
 		[CasePedigree].[RBSE] LIKE @RBSE + '%' AND
 		ISNULL([DamPedigree].[Name], '') LIKE @Name + '%' AND
-		CASE WHEN [DamCase].[RBSE] IS NOT NULL THEN  ISNULL([DamCase].[EartagCountry], '') + ISNULL([DamCase].[EartagHerdmark] + ' ', '') + ISNULL([DamCase].[Eartag], '') ELSE ISNULL([DamPedigree].[Eartag], '') END LIKE @Eartag + '%' AND
+		REPLACE(CASE WHEN [DamCase].[RBSE] IS NOT NULL THEN  ISNULL([DamCase].[EartagCountry], '') + ISNULL([DamCase].[EartagHerdmark] + ' ', '') + ISNULL([DamCase].[Eartag], '') ELSE ISNULL([DamPedigree].[Eartag], '') END, ' ', '') LIKE REPLACE(@Eartag, ' ', '') + '%' AND
 		ISNULL([DamPedigree].[RBSE], '') LIKE @RelationRBSE + '%' AND
 		(@RelationType = 'DAM' OR @RelationType = '')
 	
@@ -104,7 +104,7 @@ CREATE PROCEDURE [dbo].[GetSearchRelatedAnimals]
 	WHERE
 		[CasePedigree].[RBSE] LIKE @RBSE + '%' AND
 		ISNULL([SirePedigree].[Name], '') LIKE @Name + '%' AND
-		CASE WHEN [SireCase].[RBSE] IS NOT NULL THEN  ISNULL([SireCase].[EartagCountry], '') + ISNULL([SireCase].[EartagHerdmark] + ' ', '') + ISNULL([SireCase].[Eartag], '') ELSE ISNULL([SirePedigree].[Eartag], '') END LIKE @Eartag + '%' AND
+		REPLACE(CASE WHEN [SireCase].[RBSE] IS NOT NULL THEN  ISNULL([SireCase].[EartagCountry], '') + ISNULL([SireCase].[EartagHerdmark] + ' ', '') + ISNULL([SireCase].[Eartag], '') ELSE ISNULL([SirePedigree].[Eartag], '') END, ' ', '') LIKE REPLACE(@Eartag, ' ', '') + '%' AND
 		ISNULL([SirePedigree].[RBSE], '') LIKE @RelationRBSE + '%' AND
 		(@RelationType = 'SIRE' OR @RelationType = '')
 

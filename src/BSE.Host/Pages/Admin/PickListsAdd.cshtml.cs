@@ -54,12 +54,12 @@ public class PickListsAddModel(
         Fields ??= [];
         if (!CanEdit || Procs is null) return RedirectToTable();
 
-        ValidateRequired();
-        if (await HasDuplicateKeyAsync()) ModelState.AddModelError(KeyColumn, PickListsModel.DuplicateCodeMessage);
-        if (!ModelState.IsValid) return Page();
-
         try
         {
+            ValidateRequired();
+            if (await HasDuplicateKeyAsync()) ModelState.AddModelError(KeyColumn, PickListsModel.DuplicateCodeMessage);
+            if (!ModelState.IsValid) return Page();
+
             await AddAsync();
             TempData["SuccessMessage"] = "Record added.";
         }
@@ -112,6 +112,12 @@ public class PickListsAddModel(
         {
             if (string.IsNullOrWhiteSpace(Field(field.Column)))
                 ModelState.AddModelError(field.Column, $"Enter a {field.Label.ToLowerInvariant()}");
+        }
+
+        foreach (var field in DisplayFields.Where(f => f.IsRegionLookup))
+        {
+            if (string.IsNullOrWhiteSpace(Field(field.Column)))
+                ModelState.AddModelError(field.Column, $"Select a {field.Label.ToLowerInvariant()}");
         }
     }
 

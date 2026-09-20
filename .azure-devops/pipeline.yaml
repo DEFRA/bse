@@ -14,6 +14,11 @@ parameters:
     type: boolean
     default: false
 
+  - name: deployToPreProd
+    displayName: Deploy to PRE
+    type: boolean
+    default: false
+
 variables:
   - name: buildConfiguration
     value: 'Release'
@@ -35,7 +40,7 @@ stages:
     steps:
 
     - checkout: self
-      fetchDepth: 1
+      fetchDepth: 2
       persistCredentials: false
 
     - task: UseDotNet@2
@@ -43,6 +48,30 @@ stages:
       inputs:
         packageType: sdk
         version: '10.0.x'
+
+    - task: Bash@3
+      displayName: 'Detect Database script changes'
+      name: detectDbChanges
+      inputs:
+        targetType: inline
+        script: |
+          set -euo pipefail
+
+          if git rev-parse HEAD~1 >/dev/null 2>&1; then
+            CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD -- src/BSE.Database || true)
+          else
+            echo "No previous commit found - treating as changed"
+            CHANGED_FILES="initial-commit"
+          fi
+
+          if [ -n "$CHANGED_FILES" ]; then
+            echo "Database script changes detected:"
+            echo "$CHANGED_FILES"
+            echo "##vso[task.setvariable variable=dbScriptsChanged;isOutput=true]true"
+          else
+            echo "No Database script changes detected."
+            echo "##vso[task.setvariable variable=dbScriptsChanged;isOutput=true]false"
+          fi
 
     - script: dotnet restore $(solution)
       displayName: 'Restore dependencies'
@@ -73,7 +102,7 @@ stages:
       displayName: 'Stage SQL scripts'
       inputs:
         sourceFolder: 'src'
-        contents: '**/Scripts/*.sql'
+        contents: 'BSE.Database/**/*.sql'
         targetFolder: '$(Build.ArtifactStagingDirectory)/sql'
         flattenFolders: true    
 
@@ -84,7 +113,7 @@ stages:
 - stage: DEV
   displayName: DEV
   dependsOn: Build
-  condition: and(succeeded(), eq('${{ parameters.deployToDev }}', true))
+  condition: and(in(dependencies.Build.result, 'Succeeded'), eq('${{ parameters.deployToDev }}', true))
   variables:
     - name: appName
       value: 'DEVBSEWEBAW1401'
@@ -102,6 +131,8 @@ stages:
       value: '3eeeb482-eea0-4bb5-85a9-9a6fefb27a23'
     - name: msGraphSender
       value: 'tse.queries@apha.gov.uk'
+    - name: dbScriptsChanged
+      value: $[ stageDependencies.Build.build.outputs['detectDbChanges.dbScriptsChanged'] ]
   jobs:
   - deployment: deploy_dev
     environment: 'DEV'
@@ -114,8 +145,13 @@ stages:
           - download: current
             artifact: drop
 
+          - script: |
+              echo "Database script changes detected: $(dbScriptsChanged)"
+            displayName: 'Log DB script change status'
+
           - task: AzureCLI@2
             displayName: 'Apply database scripts'
+            condition: and(succeeded(), eq(variables['dbScriptsChanged'], 'true'))
             inputs:
               azureSubscription: 'AZR-BSE-DEV1'
               scriptType: bash
@@ -164,8 +200,8 @@ stages:
                 -AdnsMsGraph__FromAddress "$(msGraphSender)"
 - stage: TST
   displayName: TST
-  dependsOn: Build
-  condition: and(succeeded(), eq('${{ parameters.deployToTest }}', true))
+  dependsOn: DEV
+  condition: and(in(dependencies.DEV.result, 'Succeeded', 'Skipped'), eq('${{ parameters.deployToTest }}', true))
   variables:
     - name: appName
       value: 'TSTBSEWEBAW1401'
@@ -175,8 +211,12 @@ stages:
       value: '831094e6-109b-4555-b73f-c49e07d2d5d3'
     - name: sqlServer
       value: 'tstbseinfsq1401.database.windows.net,1433'
+    - name: sqlServerHost
+      value: 'tstbseinfsq1401.database.windows.net'
     - name: dbName
       value: 'BSE'
+    - name: dbScriptsChanged
+      value: $[ stageDependencies.Build.build.outputs['detectDbChanges.dbScriptsChanged'] ]
   jobs:
   - deployment: deploy_test
     environment: 'TST'
@@ -188,6 +228,41 @@ stages:
           steps:
           - download: current
             artifact: drop
+
+          - script: |
+              echo "Database script changes detected: $(dbScriptsChanged)"
+            displayName: 'Log DB script change status'
+
+          - task: AzureCLI@2
+            displayName: 'Apply database scripts'
+            condition: and(succeeded(), eq(variables['dbScriptsChanged'], 'true'))
+            inputs:
+              azureSubscription: 'AZR-BSE-TST1'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+
+                TOOLS="$(Agent.TempDirectory)/sqlcmd"
+                mkdir -p "$TOOLS"
+                curl -sSL --fail --max-time 60 -o "$TOOLS/sqlcmd.tar.bz2" \
+                  https://github.com/microsoft/go-sqlcmd/releases/download/v1.8.2/sqlcmd-linux-amd64.tar.bz2
+                tar -xjf "$TOOLS/sqlcmd.tar.bz2" -C "$TOOLS"
+
+                shopt -s nullglob
+                files=("$(Pipeline.Workspace)"/drop/sql/*.sql)
+                if [ ${#files[@]} -eq 0 ]; then
+                  echo "No SQL scripts found - nothing to apply"
+                  exit 0
+                fi
+
+                for f in $(printf '%s\n' "${files[@]}" | sort); do
+                  echo "Applying ${f##*/}"
+                  "$TOOLS/sqlcmd" -S "$(sqlServerHost)" -d "$(dbName)" \
+                    --authentication-method ActiveDirectoryAzCli \
+                    -i "$f" -b -t 0
+                done
+
           - task: AzureWebApp@1
             inputs:
               azureSubscription: 'AZR-BSE-TST1'
@@ -203,3 +278,126 @@ stages:
                 -Saml2__IdPMetadataUrl "https://login.microsoftonline.com/$(tenantId)/federationmetadata/2007-06/federationmetadata.xml?appid=$(appId)"
                 -Authentication__BypassEnabled "false"
                 -ConnectionStrings__BSE "Server=tcp:$(sqlServer);Database=$(dbName);Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Managed Identity;"
+
+- stage: PRE
+  displayName: PRE
+  dependsOn: TST
+  condition: and(in(dependencies.TST.result, 'Succeeded', 'Skipped'), eq('${{ parameters.deployToPreProd }}', true))
+  variables:
+    - name: appName
+      value: 'PREBSEWEBAW1401'
+    - name: tenantId
+      value: 'TBD'
+    - name: appId
+      value: 'TBD'
+    - name: sqlServer
+      value: 'TBD'
+    - name: sqlServerHost
+      value: 'TBD'
+    - name: dbName
+      value: 'BSE'
+    - name: dbScriptsChanged
+      value: $[ stageDependencies.Build.build.outputs['detectDbChanges.dbScriptsChanged'] ]
+  jobs:
+  - deployment: deploy_preprod
+    environment: 'PRE'
+    pool:
+      name: 'DEFRA-COMMON-UBUNTU-SSV5'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: drop
+
+          - script: |
+              echo "Database script changes detected: $(dbScriptsChanged)"
+            displayName: 'Log DB script change status'
+
+          - task: AzureCLI@2
+            displayName: 'Apply database scripts'
+            condition: and(succeeded(), eq(variables['dbScriptsChanged'], 'true'))
+            inputs:
+              azureSubscription: 'AZR-BSE-PRE1'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+
+                TOOLS="$(Agent.TempDirectory)/sqlcmd"
+                mkdir -p "$TOOLS"
+                curl -sSL --fail --max-time 60 -o "$TOOLS/sqlcmd.tar.bz2" \
+                  https://github.com/microsoft/go-sqlcmd/releases/download/v1.8.2/sqlcmd-linux-amd64.tar.bz2
+                tar -xjf "$TOOLS/sqlcmd.tar.bz2" -C "$TOOLS"
+
+                shopt -s nullglob
+                files=("$(Pipeline.Workspace)"/drop/sql/*.sql)
+                if [ ${#files[@]} -eq 0 ]; then
+                  echo "No SQL scripts found - nothing to apply"
+                  exit 0
+                fi
+
+                for f in $(printf '%s\n' "${files[@]}" | sort); do
+                  echo "Applying ${f##*/}"
+                  "$TOOLS/sqlcmd" -S "$(sqlServerHost)" -d "$(dbName)" \
+                    --authentication-method ActiveDirectoryAzCli \
+                    -i "$f" -b -t 0
+                done
+
+          - task: AzureWebApp@1
+            inputs:
+              azureSubscription: 'AZR-BSE-PRE1'
+              appType: 'webAppLinux'
+              appName: '$(appName)'
+              package: '$(Pipeline.Workspace)/drop/*.zip'
+              runtimeStack: 'DOTNETCORE|10.0'
+              deploymentMethod: 'zipDeploy'
+              appSettings: >-
+                -Saml2__SPEntityId "https://pre-bse.azure.defra.cloud"
+                -Saml2__PublicOrigin "https://pre-bse.azure.defra.cloud"
+                -Saml2__IdPEntityId "https://sts.windows.net/$(tenantId)/"
+                -Saml2__IdPMetadataUrl "https://login.microsoftonline.com/$(tenantId)/federationmetadata/2007-06/federationmetadata.xml?appid=$(appId)"
+                -Authentication__BypassEnabled "false"
+                -ConnectionStrings__BSE "Server=tcp:$(sqlServer);Database=$(dbName);Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Managed Identity;"
+
+# - stage: PROD
+#   displayName: PROD
+#   dependsOn: Build
+#   condition: and(succeeded(), eq('${{ parameters.deployToProd }}', true))
+#   variables:
+#     - name: appName
+#       value: 'PRDBSEWEBAW1401'
+#     - name: tenantId
+#       value: 'TBD'
+#     - name: appId
+#       value: 'TBD'
+#     - name: sqlServer
+#       value: 'TBD'
+#     - name: dbName
+#       value: 'BSE'
+#   jobs:
+#   - deployment: deploy_prod
+#     environment: 'PROD'
+#     pool:
+#       name: 'DEFRA-COMMON-UBUNTU-SSV5'
+#     strategy:
+#       runOnce:
+#         deploy:
+#           steps:
+#           - download: current
+#             artifact: drop
+#           - task: AzureWebApp@1
+#             inputs:
+#               azureSubscription: 'AZR-BSE-PRD1'
+#               appType: 'webAppLinux'
+#               appName: '$(appName)'
+#               package: '$(Pipeline.Workspace)/drop/*.zip'
+#               runtimeStack: 'DOTNETCORE|10.0'
+#               deploymentMethod: 'zipDeploy'
+#               appSettings: >-
+#                 -Saml2__SPEntityId "https://bse.azure.defra.cloud"
+#                 -Saml2__PublicOrigin "https://bse.azure.defra.cloud"
+#                 -Saml2__IdPEntityId "https://sts.windows.net/$(tenantId)/"
+#                 -Saml2__IdPMetadataUrl "https://login.microsoftonline.com/$(tenantId)/federationmetadata/2007-06/federationmetadata.xml?appid=$(appId)"
+#                 -Authentication__BypassEnabled "false"
+#                 -ConnectionStrings__BSE "Server=tcp:$(sqlServer);Database=$(dbName);Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Managed Identity;"

@@ -150,10 +150,12 @@ else
             </tbody>
         </table>
 
+        @* Legacy's DataGridPager always showed the page bar, even for a single page of results. *@
         @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData)
         {
             ["CurrentPage"] = Model.PageNumber,
-            ["TotalPages"] = Model.TotalPages
+            ["TotalPages"] = Model.TotalPages,
+            ["AlwaysShow"] = true
         })
     }
     else

@@ -38,6 +38,14 @@ public interface IDbRepository
     Task ExecuteAsync(string storedProcedure, object? param, IDbConnection connection, IDbTransaction? transaction);
 
     /// <summary>
+    /// As <see cref="ExecuteAsync(string, object?, IDbConnection, IDbTransaction?)"/> but returns
+    /// the affected row count, so a caller-supplied RowStamp/concurrency check (0 rows affected
+    /// means the record was changed or deleted by someone else) can be enforced without an
+    /// explicit SP return code.
+    /// </summary>
+    Task<int> ExecuteWithRowCountAsync(string storedProcedure, object? param, IDbConnection connection, IDbTransaction? transaction);
+
+    /// <summary>
     /// Executes a stored procedure that returns multiple result sets and passes the
     /// <see cref="Dapper.SqlMapper.GridReader"/> to <paramref name="read"/> for processing.
     /// The GridReader is always disposed after <paramref name="read"/> completes.

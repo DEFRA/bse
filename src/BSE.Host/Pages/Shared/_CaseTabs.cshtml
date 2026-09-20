@@ -8,7 +8,7 @@
         new { Label = "Farm",        Page = "/Case/Farm"     },
         new { Label = "Case (DEFRA)", Page = "/Case/Edit"    },
         new { Label = "BAB",         Page = "/Case/Bab"      },
-        new { Label = "Case (VLA)",  Page = "/Case/Vla"      },
+        new { Label = "Case (APHA)",  Page = "/Case/Vla"      },
         new { Label = "Clinical",    Page = "/Case/Clinical" },
         new { Label = "Feeds",       Page = "/Case/Feeds"    },
         new { Label = "Relations",   Page = "/Case/Relations"},
@@ -21,6 +21,93 @@
     <div class="govuk-grid-column-two-thirds">
         <h1 class="govuk-heading-l">RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Rbse)</span></h1>
     </div>
+
+<script>
+    (function () {
+        function hasUnsavedBannerOnPage() {
+            var banner = document.querySelector('.bse-unsaved-banner');
+            return !!(banner && !banner.hidden);
+        }
+
+        function extractRbseFromPath() {
+            var match = window.location.pathname.match(/\/Case\/[A-Za-z]+\/(\d{9}|\d{3}\/\d{2}\/\d{4})/i);
+            return match ? match[1] : null;
+        }
+
+        async function hasUnsavedChangesAcrossTabs() {
+            if (hasUnsavedBannerOnPage()) {
+                return true;
+            }
+
+            var rbse = extractRbseFromPath();
+            if (!rbse) {
+                return false;
+            }
+
+            try {
+                var response = await fetch('/case/' + encodeURIComponent(rbse) + '/unsaved-status', {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin'
+                });
+
+                if (!response.ok) {
+                    return false;
+                }
+
+                var payload = await response.json();
+                return !!(payload && payload.hasUnsavedChanges === true);
+            } catch {
+                return false;
+            }
+        }
+
+        async function clearUnsavedChangesAcrossTabs() {
+            var rbse = extractRbseFromPath();
+            if (!rbse) {
+                return;
+            }
+
+            try {
+                await fetch('/case/' + encodeURIComponent(rbse) + '/discard-unsaved', {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin'
+                });
+            } catch {
+                // Navigation should still proceed even if draft-clear call fails.
+            }
+        }
+
+        function isHomeLink(anchor) {
+            if (!anchor) {
+                return false;
+            }
+
+            var href = anchor.getAttribute('href') || '';
+            return href === '/Home' || href === '/' || /\/Home(?:\?|$)/i.test(href);
+        }
+
+        document.addEventListener('click', async function (event) {
+            var link = event.target.closest('a');
+            if (!isHomeLink(link)) {
+                return;
+            }
+
+            var unsaved = await hasUnsavedChangesAcrossTabs();
+            if (!unsaved) {
+                return;
+            }
+
+            event.preventDefault();
+            var confirmed = window.confirm('If you leave now, any unsaved changes will be lost.');
+            if (confirmed) {
+                await clearUnsavedChangesAcrossTabs();
+                window.location.href = link.href;
+            }
+        });
+    })();
+</script>
     <div class="govuk-grid-column-one-third">
         <div class="bse-batch-docs-row">
             <div class="bse-batch-docs-row__batch">

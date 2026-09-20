@@ -18,12 +18,30 @@ public class CheckByRbseModel(IBsessCheckService bsessCheckService) : PageModel
 
     public async Task<IActionResult> OnGetAsync()
     {
-        if (!string.IsNullOrWhiteSpace(Rbse))
+        if (Request.Query.ContainsKey(nameof(Rbse)))
         {
-            HasSearched = true;
-            var rawRbse = RbseHelper.ParseToRaw(Rbse);
-            Rbse = rawRbse;
-            Result = await bsessCheckService.GetCheckByRbseAsync(Rbse);
+            if (string.IsNullOrWhiteSpace(Rbse))
+            {
+                ModelState.AddModelError(nameof(Rbse), "Enter an RBSE number");
+            }
+            else
+            {
+                var rawRbse = RbseHelper.ParseToRaw(Rbse);
+                if (!RbseHelper.IsValid(rawRbse))
+                {
+                    ModelState.AddModelError(nameof(Rbse), "Enter the RBSE number in the format 00/00/00000");
+                }
+                else
+                {
+                    Rbse = rawRbse;
+                }
+            }
+
+            if (ModelState.IsValid)
+            {
+                HasSearched = true;
+                Result = await bsessCheckService.GetCheckByRbseAsync(Rbse);
+            }
         }
         return Page();
     }

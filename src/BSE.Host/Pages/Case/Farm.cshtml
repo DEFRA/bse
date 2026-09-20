@@ -133,23 +133,16 @@
         <input type="hidden" asp-for="EditableFarm.CPHH" />
         <input type="hidden" asp-for="EditableFarmRowStampBase64" />
 
+        <div id="case-farm-unsaved-banner"
+             class="govuk-inset-text bse-unsaved-banner"
+             role="status"
+             hidden="@(!Model.HasUnsavedChanges)">
+            <strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.
+        </div>
+
         <div class="govuk-button-group govuk-!-margin-bottom-4">
             <button type="submit" asp-page-handler="SaveFarm" class="govuk-button" data-module="govuk-button">Save</button>
             <a asp-page="/Case/Farm" asp-page-handler="CancelFarmEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
-        </div>
-
-        <div id="case-farm-unsaved-banner"
-             class="govuk-notification-banner bse-unsaved-banner"
-             role="region"
-             aria-labelledby="case-farm-unsaved-title"
-             data-module="govuk-notification-banner"
-             hidden="@(!Model.HasUnsavedChanges)">
-            <div class="govuk-notification-banner__header">
-                <h2 class="govuk-notification-banner__title" id="case-farm-unsaved-title">Unsaved changes</h2>
-            </div>
-            <div class="govuk-notification-banner__content">
-                <p class="govuk-body">You have changes in linked farms or herd size that are not saved yet. Select Save to persist them.</p>
-            </div>
         </div>
 
         <div class="bse-farm-legacy-top">

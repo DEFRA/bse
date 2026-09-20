@@ -1,19 +1,17 @@
 @page
 @model BSE.Host.Pages.Bsess.MenuModel
 @{
-    ViewData["Title"] = "BSESS check";
+    ViewData["Title"] = "TSES Check Menu";
 }
 
-<h1 class="govuk-heading-l">BSESS check</h1>
+<h1 class="govuk-heading-l">TSES Check Menu</h1>
 
 <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
     <ol class="govuk-breadcrumbs__list">
         <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-        <li class="govuk-breadcrumbs__list-item" aria-current="page">BSESS check</li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">TSES Check Menu</li>
     </ol>
 </nav>
-
-<p class="govuk-body">The BSESS check pages enable you to compare data between this system and the BSE Surveillance System (BSESS) to identify discrepancies.</p>
 
 <ul class="govuk-list govuk-list--spaced">
     <li><a asp-page="/Bsess/CheckByDate" class="govuk-link">Compare cases by date</a></li>

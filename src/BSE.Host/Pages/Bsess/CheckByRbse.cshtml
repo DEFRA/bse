@@ -1,52 +1,82 @@
 @page
 @model CheckByRbseModel
 @{
-    ViewData["Title"] = "BSESS check by RBSE";
+    ViewData["Title"] = "TSES Check : Compare Details By RBSE";
 }
 
 <div>
-    <h1 class="govuk-heading-l">BSESS check by RBSE</h1>
+    <h1 class="govuk-heading-l">TSES Check : Compare Details By RBSE</h1>
     <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
         <ol class="govuk-breadcrumbs__list">
             <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Bsess/Menu">BSESS check</a></li>
-            <li class="govuk-breadcrumbs__list-item" aria-current="page">BSESS check by RBSE</li>
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Bsess/Menu">TSES Check Menu</a></li>
+            <li class="govuk-breadcrumbs__list-item" aria-current="page">By RBSE</li>
         </ol>
     </nav>
 
+    @if (!ViewContext.ModelState.IsValid)
+    {
+        <div class="govuk-error-summary" data-module="govuk-error-summary">
+            <div role="alert">
+                <h2 class="govuk-error-summary__title">There is a problem</h2>
+                <div class="govuk-error-summary__body">
+                    <ul class="govuk-list govuk-error-summary__list">
+                        @if (ViewContext.ModelState["Rbse"]?.Errors.Count > 0)
+                        {
+                            <li><a href="#Rbse">@ViewContext.ModelState["Rbse"]!.Errors[0].ErrorMessage</a></li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    }
+
     <form method="get" novalidate>
-        <div class="govuk-form-group">
+        <div class="govuk-form-group @(ViewContext.ModelState["Rbse"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
             <label asp-for="Rbse" class="govuk-label">RBSE</label>
+            @if (ViewContext.ModelState["Rbse"]?.Errors.Count > 0)
+            {
+                <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewContext.ModelState["Rbse"]!.Errors[0].ErrorMessage</p>
+            }
             <input asp-for="Rbse" class="govuk-input govuk-!-width-one-half" />
         </div>
-        <button type="submit" class="govuk-button" data-module="govuk-button">Check</button>
+        <div class="govuk-button-group">
+            <button type="submit" class="govuk-button" data-module="govuk-button">Look Up</button>
+            <a asp-page="/Bsess/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button" role="button" draggable="false">TSES Menu</a>
+        </div>
     </form>
 
     @if (Model.Result is not null)
     {
-        <h2 class="govuk-heading-m">BSESS vs BSE comparison — @BseFormat.FormatRbse(Model.Rbse)</h2>
-        <table class="govuk-table">
-            <caption class="govuk-visually-hidden">BSESS comparison details</caption>
-            <thead class="govuk-table__head">
-                <tr class="govuk-table__row"><th scope="col" class="govuk-table__header">Field</th><th scope="col" class="govuk-table__header">BSESS</th><th scope="col" class="govuk-table__header">BSE</th></tr>
-            </thead>
-            <tbody class="govuk-table__body">
-                <tr class="govuk-table__row"><td class="govuk-table__cell">Eartag</td><td class="govuk-table__cell">@Model.Result.BsessEartag</td><td class="govuk-table__cell">@Model.Result.BseEartag</td></tr>
-                <tr class="govuk-table__row"><td class="govuk-table__cell">Birth date</td><td class="govuk-table__cell">@Model.Result.BsessBirthDate</td><td class="govuk-table__cell">@Model.Result.BseBirthDate</td></tr>
-                <tr class="govuk-table__row"><td class="govuk-table__cell">Final result</td><td class="govuk-table__cell">@Model.Result.BsssFinalResult</td><td class="govuk-table__cell">@Model.Result.BseFinalResult</td></tr>
-                <tr class="govuk-table__row"><td class="govuk-table__cell">Survey</td><td class="govuk-table__cell" colspan="2">@Model.Result.Survey</td></tr>
-                <tr class="govuk-table__row"><td class="govuk-table__cell">Notification date</td><td class="govuk-table__cell" colspan="2">@Model.Result.NotificationDate</td></tr>
-                <tr class="govuk-table__row"><td class="govuk-table__cell">Test group</td><td class="govuk-table__cell" colspan="2">@Model.Result.TestGroupName</td></tr>
-                <tr class="govuk-table__row"><td class="govuk-table__cell">Barcode</td><td class="govuk-table__cell" colspan="2">@Model.Result.Barcode</td></tr>
-                <tr class="govuk-table__row"><td class="govuk-table__cell">Form A date</td><td class="govuk-table__cell" colspan="2">@Model.Result.FormADate</td></tr>
-            </tbody>
-        </table>
+        <h2 class="govuk-heading-m">TSES vs BSE comparison — @BseFormat.FormatRbse(Model.Rbse)</h2>
     }
-    else if (Model.HasSearched)
+
+    <table class="govuk-table" style="max-width: 1000px;">
+        <caption class="govuk-visually-hidden">TSES comparison details</caption>
+        <thead class="govuk-table__head">
+            <tr class="govuk-table__row">
+                <th scope="col" class="govuk-table__header"></th>
+                <th scope="col" class="govuk-table__header" style="text-align:left; padding: 0.8rem 1rem;">TSES</th>
+                <th scope="col" class="govuk-table__header"></th>
+                <th scope="col" class="govuk-table__header" style="text-align:left; padding: 0.8rem 1rem;">BSE</th>
+            </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+            <tr class="govuk-table__row"><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">Notification Date</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">@Model.Result?.NotificationDate</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">Form A Date</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">@Model.Result?.FormADate</td></tr>
+            <tr class="govuk-table__row"><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">Eartag</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">@Model.Result?.BsessEartag</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">Eartag</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">@Model.Result?.BseEartag</td></tr>
+            <tr class="govuk-table__row"><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">Birth Date</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">@Model.Result?.BsessBirthDate</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">Birth Date</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">@Model.Result?.BseBirthDate</td></tr>
+            <tr class="govuk-table__row"><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">Testing Group</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">@Model.Result?.TestGroupName</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">Survey</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">@Model.Result?.Survey</td></tr>
+            <tr class="govuk-table__row"><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">Final Result</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">@Model.Result?.BsssFinalResult</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">Final Result</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">@Model.Result?.BseFinalResult</td></tr>
+            <tr class="govuk-table__row"><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">Barcode</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">@Model.Result?.Barcode</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;"></td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;"></td></tr>
+            <tr class="govuk-table__row"><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">AHF Reference</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;"></td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;"></td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;"></td></tr>
+        </tbody>
+    </table>
+
+    @if (Model.HasSearched && Model.Result is null)
     {
         <div class="govuk-warning-text">
             <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
-            <strong class="govuk-warning-text__text"><span class="govuk-warning-text__assistive">Warning</span>No BSESS record found for @BseFormat.FormatRbse(Model.Rbse).</strong>
+            <strong class="govuk-warning-text__text"><span class="govuk-warning-text__assistive">Warning</span>No TSES record found for @BseFormat.FormatRbse(Model.Rbse).</strong>
         </div>
     }
 </div>

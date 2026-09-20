@@ -35,7 +35,7 @@ public interface IBatchRepository
     Task<BatchAssignmentResult> AssignCaseToBatchAsync(int batchId, string rbse, string document, IDbConnection connection, IDbTransaction? transaction);
 
     /// <summary>Calls GetBatchIDForBatch — resolves BatchId from year + number. Returns null if not found.</summary>
-    Task<int?> GetBatchIdAsync(short batchYear, int batchNumber);
+    Task<int?> GetBatchIdAsync(short? batchYear, int batchNumber);
 
     /// <summary>Calls GetBatchNumberByRBSE — all batch links for a given RBSE.</summary>
     Task<IReadOnlyList<BatchNumberEntry>> GetBatchNumbersByRbseAsync(string rbse);

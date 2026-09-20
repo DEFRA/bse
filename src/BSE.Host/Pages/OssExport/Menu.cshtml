@@ -1,41 +1,19 @@
 @page
 @model OssExportMenuModel
 @{
-    ViewData["Title"] = "OSS export";
+    ViewData["Title"] = "OSS Export Menu";
 }
 
-<h1 class="govuk-heading-l">OSS export</h1>
-<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
-    <ol class="govuk-breadcrumbs__list">
-        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-        <li class="govuk-breadcrumbs__list-item" aria-current="page">OSS export</li>
-    </ol>
-</nav>
+<div>
+    <h1 class="govuk-heading-l">OSS Export Menu</h1>
+    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+        <ol class="govuk-breadcrumbs__list">
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+            <li class="govuk-breadcrumbs__list-item" aria-current="page">OSS Export Menu</li>
+        </ol>
+    </nav>
 
-<p class="govuk-body">Select the OSS export workflow you need:</p>
-
-<div class="govuk-grid-row">
-    <div class="govuk-grid-column-one-third">
-        <div class="govuk-card govuk-!-margin-bottom-6">
-            <div class="govuk-card__content">
-                <h2 class="govuk-heading-m" id="oss-bse1">
-                    <a asp-page="Bse1" class="govuk-link">BSE1</a>
-                </h2>
-                <p class="govuk-body govuk-body-s">Populate the OSS staging tables. A new BSE1 batch number is created automatically.</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="govuk-grid-column-one-third">
-        <div class="govuk-card govuk-!-margin-bottom-6">
-            <div class="govuk-card__content">
-                <h2 class="govuk-heading-m" id="oss-bse1b">
-                    <a asp-page="Bse1b" class="govuk-link">BSE1b</a>
-                </h2>
-                <p class="govuk-body govuk-body-s">Add RBSE records to create an OSS export batch and generate the export file.</p>
-            </div>
-        </div>
-    </div>
+    <p class="govuk-body"><a asp-page="Bse1" class="govuk-link">BSE1</a></p>
+    <p class="govuk-body"><a asp-page="Bse1b" class="govuk-link">BSE1b</a></p>
 </div>
-
 

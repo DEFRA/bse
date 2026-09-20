@@ -238,8 +238,8 @@ public class NiModel(
             TempData.Remove(PreviewTempDataKey);
             TempData.Remove(DraftTempDataKey);
             TempData.Remove(ContextTempDataKey);
-            TempData["Success"] = "NI ADNS export dispatched successfully.";
-            return RedirectToPage("/AdnsExport/Menu");
+            TempData["SuccessMessage"] = "The message has been successfully sent. You should receive a confirmation e-mail shortly.";
+            return RedirectToPage();
         }
         catch (Exception ex)
         {

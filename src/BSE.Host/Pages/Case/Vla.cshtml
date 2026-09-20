@@ -1,20 +1,20 @@
 ﻿@page "{rbse}"
 @model VlaModel
 @{
-    ViewData["Title"] = $"Case (VLA) — {Model.Case.Rbse}";
-    string DateVal(DateTime? d) => d?.ToString("yyyy-MM-dd") ?? "";
+    ViewData["Title"] = $"Case (APHA) — {Model.Case.Rbse}";
     string rbseNoSlash = Model.Case.Rbse.Replace("/", "");
     var viewDocsUrl = string.IsNullOrWhiteSpace(Model.SpolSiteUrl)
         ? null
         : $"{Model.SpolSiteUrl}{rbseNoSlash}";
 
     string? E(string key) => ViewData.ModelState[key]?.Errors.FirstOrDefault()?.ErrorMessage;
+    string DateVal(DateTime? d) => d?.ToString("yyyy-MM-dd") ?? string.Empty;
 }
 
 <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
     <ol class="govuk-breadcrumbs__list">
         <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-        <li class="govuk-breadcrumbs__list-item" aria-current="page">Case (VLA)</li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Case (APHA)</li>
     </ol>
 </nav>
 
@@ -74,17 +74,10 @@ else
         <input type="hidden" asp-for="OPage" />
 
         <div id="case-vla-unsaved-banner"
-             class="govuk-notification-banner bse-unsaved-banner"
-             role="region"
-             aria-labelledby="case-vla-unsaved-title"
-             data-module="govuk-notification-banner"
+             class="govuk-inset-text bse-unsaved-banner"
+             role="status"
              hidden="@(!Model.HasUnsavedOwnerChanges)">
-            <div class="govuk-notification-banner__header">
-                <h2 class="govuk-notification-banner__title" id="case-vla-unsaved-title">Unsaved changes</h2>
-            </div>
-            <div class="govuk-notification-banner__content">
-                <p class="govuk-body">You have changes in previous owners that are not saved yet. Select Save to persist them.</p>
-            </div>
+            <strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.
         </div>
 
         <div class="govuk-button-group govuk-!-margin-bottom-4">
@@ -721,5 +714,3 @@ else
         });
     })();
 </script>
-
-

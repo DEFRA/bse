@@ -15,7 +15,7 @@
 
 @if (!ViewContext.ModelState.IsValid)
 {
-    <div class="govuk-error-summary" data-module="govuk-error-summary">
+    <div class="govuk-error-summary" id="print-batch-error-summary" data-module="govuk-error-summary">
         <div role="alert">
             <h2 class="govuk-error-summary__title">There is a problem</h2>
             <div class="govuk-error-summary__body">
@@ -33,14 +33,19 @@
 <form method="post" asp-page-handler="Download" novalidate>
     <div class="bse-printbatch-panel govuk-form-group">
         <div class="bse-printbatch-row">
-            <label class="govuk-label bse-printbatch-label bse-printbatch-label--batch" for="batch-year">Enter Batch Number</label>
-            <label class="govuk-visually-hidden" for="batch-year">Batch year</label>
-            <input id="batch-year" asp-for="BatchYear" type="text" inputmode="numeric" maxlength="4"
-                   class="govuk-input bse-printbatch-year" autocomplete="off" />
+            <span class="govuk-label bse-printbatch-label bse-printbatch-label--batch">Enter Batch Number</span>
 
-            <label class="govuk-visually-hidden" for="batch-number">Batch number</label>
-            <input id="batch-number" asp-for="BatchNumber" type="text" inputmode="numeric" maxlength="6"
-                   class="govuk-input bse-printbatch-serial" autocomplete="off" />
+            <span class="bse-printbatch-item">
+                <label class="govuk-label bse-printbatch-sublabel" for="batch-year">Year</label>
+                <input id="batch-year" asp-for="BatchYear" type="text" inputmode="numeric" maxlength="4"
+                       class="govuk-input bse-printbatch-year" autocomplete="off" />
+            </span>
+
+            <span class="bse-printbatch-item">
+                <label class="govuk-label bse-printbatch-sublabel" for="batch-number">Number</label>
+                <input id="batch-number" asp-for="BatchNumber" type="text" inputmode="numeric" maxlength="6"
+                       class="govuk-input bse-printbatch-serial" autocomplete="off" />
+            </span>
 
             <label asp-for="SelectedReportType" class="govuk-label bse-printbatch-label bse-printbatch-label--report">Report type:</label>
             <select asp-for="SelectedReportType" class="govuk-select bse-printbatch-select">
@@ -67,7 +72,7 @@
 
     .bse-printbatch-row {
         display: flex;
-        align-items: center;
+        align-items: flex-end;
         gap: 10px;
         flex-wrap: wrap;
     }
@@ -84,12 +89,21 @@
         min-width: 110px;
     }
 
+    .bse-printbatch-item {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .bse-printbatch-sublabel {
+        margin-bottom: 2px;
+        font-size: 0.875rem;
+    }
+
     .bse-printbatch-year {
         box-sizing: border-box;
         width: 62px;
         min-width: 62px;
         max-width: 62px;
-        flex: 0 0 62px;
     }
 
     .bse-printbatch-serial {
@@ -97,10 +111,50 @@
         width: 72px;
         min-width: 72px;
         max-width: 72px;
-        flex: 0 0 72px;
     }
 
     .bse-printbatch-select {
         width: 250px;
     }
 </style>
+
+<script>
+    // A successful download response never navigates the browser away from this page
+    // (Content-Disposition: attachment), so a stale error banner from an earlier failed
+    // attempt would otherwise stay on screen. Intercept the submit to control both outcomes.
+    document.querySelector('form[method="post"]')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        try {
+            const response = await fetch(form.action || window.location.href, {
+                method: 'POST',
+                body: new FormData(form)
+            });
+
+            const disposition = response.headers.get('Content-Disposition');
+            if (response.ok && disposition && disposition.includes('attachment')) {
+                const blob = await response.blob();
+                const match = /filename="?([^";]+)"?/.exec(disposition);
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = match ? match[1] : 'BatchReport.doc';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+                document.getElementById('print-batch-error-summary')?.remove();
+            }
+            else {
+                // Validation failed or the batch was not found — replace the page with the
+                // freshly server-rendered error state.
+                document.open();
+                document.write(await response.text());
+                document.close();
+            }
+        }
+        catch {
+            form.submit();
+        }
+    });
+</script>

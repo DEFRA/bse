@@ -1,11 +1,11 @@
 @page
 @model NiModel
 @{
-    ViewData["Title"] = "ADNS export — Northern Ireland";
+    ViewData["Title"] = "ADNS Export : Northern Ireland Cases";
 }
 
 <div>
-    <h1 class="govuk-heading-l">ADNS export — Northern Ireland</h1>
+    <h1 class="govuk-heading-l">ADNS Export : Northern Ireland Cases</h1>
     <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
         <ol class="govuk-breadcrumbs__list">
             <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
@@ -40,48 +40,51 @@
 
     @if (Model.Preview is null)
     {
-        <h2 class="govuk-heading-m">NI export — add case to grid</h2>
-
         <form method="post" novalidate>
-            <div class="govuk-form-group">
+            <div class="govuk-form-group @(ViewContext.ModelState["EmailReference"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
                 <label asp-for="EmailReference" class="govuk-label">Email reference</label>
                 <input asp-for="EmailReference" class="govuk-input govuk-!-width-one-half" />
                 <span asp-validation-for="EmailReference" class="govuk-error-message"></span>
             </div>
 
-            <div class="govuk-form-group">
-                <label asp-for="InputAdnsYear" class="govuk-label">ADNS year</label>
-                <input asp-for="InputAdnsYear" type="number" class="govuk-input govuk-input--width-5" />
-                <span asp-validation-for="InputAdnsYear" class="govuk-error-message"></span>
-            </div>
-
-            <div class="govuk-form-group">
-                <label asp-for="InputAdnsNumber" class="govuk-label">ADNS reference number</label>
-                <input asp-for="InputAdnsNumber" type="number" class="govuk-input govuk-input--width-5" />
-                <span asp-validation-for="InputAdnsNumber" class="govuk-error-message"></span>
-            </div>
-
-            <div class="govuk-form-group">
-                <label asp-for="InputAdnsRegionId" class="govuk-label">Region</label>
-                <div id="ni-region-hint" class="govuk-hint">
-                    Enter a five digit number, with two zeroes at the end and one at the front eg. 073 = 07300
+            <div class="bse-inline-fields">
+                <fieldset class="govuk-fieldset">
+                    <legend class="govuk-fieldset__legend">ADNS Reference</legend>
+                    <div class="bse-inline-fields">
+                        <div class="govuk-form-group @(ViewContext.ModelState["InputAdnsYear"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+                            <label asp-for="InputAdnsYear" class="govuk-label">Year</label>
+                            <input asp-for="InputAdnsYear" type="number" class="govuk-input govuk-input--width-5" />
+                            <span asp-validation-for="InputAdnsYear" class="govuk-error-message"></span>
+                        </div>
+                        <div class="govuk-form-group @(ViewContext.ModelState["InputAdnsNumber"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+                            <label asp-for="InputAdnsNumber" class="govuk-label">Number</label>
+                            <input asp-for="InputAdnsNumber" type="number" class="govuk-input govuk-input--width-5" />
+                            <span asp-validation-for="InputAdnsNumber" class="govuk-error-message"></span>
+                        </div>
+                    </div>
+                </fieldset>
+                <div class="govuk-form-group @(ViewContext.ModelState["InputAdnsRegionId"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")" style="max-width: 480px;">
+                    <label asp-for="InputAdnsRegionId" class="govuk-label">Region</label>
+                    <div id="ni-region-hint" class="govuk-hint">
+                        Enter a five digit number, with two zeroes at the end and one at the front eg. 073 = 07300
+                    </div>
+                    <input asp-for="InputAdnsRegionId" type="number" class="govuk-input govuk-input--width-5" aria-describedby="ni-region-hint" />
+                    <span asp-validation-for="InputAdnsRegionId" class="govuk-error-message"></span>
                 </div>
-                <input asp-for="InputAdnsRegionId" type="number" class="govuk-input govuk-input--width-5" aria-describedby="ni-region-hint" />
-                <span asp-validation-for="InputAdnsRegionId" class="govuk-error-message"></span>
             </div>
 
-            <div class="govuk-form-group">
+            <div class="govuk-form-group @(ViewContext.ModelState["InputConfirmationDate"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
                 <label asp-for="InputConfirmationDate" class="govuk-label">Confirmation date</label>
                 <input asp-for="InputConfirmationDate" type="date" class="govuk-input govuk-input--width-10" />
                 <span asp-validation-for="InputConfirmationDate" class="govuk-error-message"></span>
             </div>
 
             <div class="govuk-button-group">
-                <button type="submit" asp-page-handler="AddToGrid" class="govuk-button govuk-button--secondary" data-module="govuk-button">Add to grid</button>
+                <button type="submit" asp-page-handler="AddToGrid" asp-fragment="ni-grid-results" class="govuk-button" data-module="govuk-button">Add to grid</button>
+                <a asp-page="/AdnsExport/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button">ADNS Export Menu</a>
             </div>
         </form>
 
-        @if (Model.CurrentRows.Any())
         {
             var sortBase = "?" + string.Join("&", HttpContext.Request.Query
                 .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
@@ -92,8 +95,9 @@
             ViewData["SortColumn"] = Model.SortColumn;
             ViewData["SortDesc"] = Model.SortDesc;
             ViewData["BaseUrl"] = sortBase;
+            ViewData["Fragment"] = "ni-grid-results";
 
-            <h3 class="govuk-heading-s">Cases in grid — @Model.TotalCount</h3>
+            <h3 id="ni-grid-results" class="govuk-heading-s">Cases in grid — @Model.TotalCount</h3>
 
             <table class="govuk-table">
                 <caption class="govuk-visually-hidden">Northern Ireland ADNS cases grid</caption>
@@ -142,10 +146,11 @@
             @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData)
             {
                 ["CurrentPage"] = Model.PageNumber,
-                ["TotalPages"] = Model.TotalPages
+                ["TotalPages"] = Model.TotalPages,
+                ["Fragment"] = "ni-grid-results"
             })
 
-            <form method="post" asp-page-handler="GenerateReport" novalidate>
+            <form method="post" asp-page-handler="GenerateReport" asp-fragment="ni-grid-results" novalidate>
                 <input type="hidden" asp-for="EmailReference" />
                 <input type="hidden" asp-for="InputAdnsYear" />
                 <button type="submit" class="govuk-button" data-module="govuk-button">Generate report</button>
@@ -220,7 +225,6 @@
 
             <div class="govuk-button-group">
                 <button type="submit" class="govuk-button" data-module="govuk-button">Send Email</button>
-                <a asp-page="/AdnsExport/Menu" class="govuk-link">Start over</a>
             </div>
         </form>
     }

@@ -44,7 +44,8 @@ public class CiModel(
     public int IsleOfManCases { get; set; }
 
     [BindProperty]
-    public DateTime ConfirmationDate { get; set; } = DateTime.Today;
+    [Required(ErrorMessage = "Enter a confirmation date.")]
+    public DateTime? ConfirmationDate { get; set; } = DateTime.Today;
 
     [BindProperty]
     public string UserEmailAddress { get; set; } = string.Empty;
@@ -93,7 +94,7 @@ public class CiModel(
                 JerseyCases,
                 GuernseyCases,
                 IsleOfManCases,
-                ConfirmationDate);
+                ConfirmationDate!.Value);
 
             TempData[PreviewTempDataKey] = JsonSerializer.Serialize(Preview);
         }
@@ -141,8 +142,8 @@ public class CiModel(
         {
             await adnsExportService.DispatchAsync(command);
             TempData.Remove(PreviewTempDataKey);
-            TempData["Success"] = "CI ADNS export dispatched successfully.";
-            return RedirectToPage("/AdnsExport/Menu");
+            TempData["SuccessMessage"] = "The message has been successfully sent. You should receive a confirmation e-mail shortly.";
+            return RedirectToPage();
         }
         catch (Exception ex)
         {

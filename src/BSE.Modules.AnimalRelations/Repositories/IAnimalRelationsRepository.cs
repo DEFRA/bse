@@ -36,6 +36,10 @@ public interface IAnimalRelationsRepository
     // ── Writes (enlisted in caller's transaction) ──────────────────────────────
 
     Task AddRelationAsync(AddCaseRelationCommand command, IDbConnection connection, IDbTransaction transaction);
-    Task EditRelationAsync(EditCaseRelationCommand command, IDbConnection connection, IDbTransaction transaction);
-    Task DeleteRelationAsync(DeleteCaseRelationCommand command, IDbConnection connection, IDbTransaction transaction);
+
+    /// <summary>Returns the affected row count so a stale RowStamp (0 rows) can be detected.</summary>
+    Task<int> EditRelationAsync(EditCaseRelationCommand command, IDbConnection connection, IDbTransaction transaction);
+
+    /// <summary>Returns the affected row count so a stale RowStamp (0 rows) can be detected.</summary>
+    Task<int> DeleteRelationAsync(DeleteCaseRelationCommand command, IDbConnection connection, IDbTransaction transaction);
 }

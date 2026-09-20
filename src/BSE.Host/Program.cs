@@ -3,6 +3,7 @@ using BSE.Host.Authentication;
 using BSE.Host.HealthChecks;
 using BSE.Infrastructure;
 using BSE.Infrastructure.Cache;
+using BSE.SharedKernel;
 using BSE.Modules.AuditLog;
 using BSE.Modules.Batch;
 using BSE.Modules.AdnsExport;
@@ -16,6 +17,7 @@ using BSE.Modules.ReferenceData;
 using BSE.Modules.Search;
 using BSE.Modules.UserManagement;
 using BSE.Modules.UserManagement.Identity;
+using BSE.Host.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -347,6 +349,7 @@ try
     builder.Services.AddScoped<BSE.Host.Services.ICaseFarmDraftStateService, BSE.Host.Services.CaseFarmDraftStateService>();
     builder.Services.AddScoped<BSE.Host.Services.ICaseClinicalDraftStateService, BSE.Host.Services.CaseClinicalDraftStateService>();
     builder.Services.AddScoped<BSE.Host.Services.ICaseFeedsDraftStateService, BSE.Host.Services.CaseFeedsDraftStateService>();
+    builder.Services.AddScoped<BSE.Host.Services.ICaseRelationsDraftStateService, BSE.Host.Services.CaseRelationsDraftStateService>();
 
     // -- Authorisation policies
     // Each policy requires exactly its own name as a role claim.
@@ -423,6 +426,45 @@ try
     }).AllowAnonymous();
 
     app.UseStaticFiles();
+
+    app.MapGet("/case/{rbse}/unsaved-status", async (
+        string rbse,
+        ICaseEditDraftStateService caseEditDraftState,
+        ICaseFarmDraftStateService caseFarmDraftState,
+        ICaseClinicalDraftStateService caseClinicalDraftState,
+        ICaseFeedsDraftStateService caseFeedsDraftState,
+        ICaseRelationsDraftStateService caseRelationsDraftState) =>
+    {
+        var normalizedRbse = RbseHelper.ParseToRaw(rbse);
+
+        var hasUnsavedChanges = (await caseEditDraftState.GetAsync(normalizedRbse))?.HasPendingChanges == true
+                                || (await caseFarmDraftState.GetAsync(normalizedRbse))?.HasPendingChanges == true
+                                || (await caseClinicalDraftState.GetAsync(normalizedRbse))?.HasPendingChanges == true
+                                || (await caseFeedsDraftState.GetAsync(normalizedRbse))?.HasPendingChanges == true
+                                || (await caseRelationsDraftState.GetAsync(normalizedRbse))?.HasPendingChanges == true;
+
+        return Results.Json(new { hasUnsavedChanges });
+    }).RequireAuthorization();
+
+    app.MapPost("/case/{rbse}/discard-unsaved", async (
+        string rbse,
+        ICaseEditDraftStateService caseEditDraftState,
+        ICaseFarmDraftStateService caseFarmDraftState,
+        ICaseClinicalDraftStateService caseClinicalDraftState,
+        ICaseFeedsDraftStateService caseFeedsDraftState,
+        ICaseRelationsDraftStateService caseRelationsDraftState) =>
+    {
+        var normalizedRbse = RbseHelper.ParseToRaw(rbse);
+
+        await caseEditDraftState.ClearAsync(normalizedRbse);
+        await caseFarmDraftState.ClearAsync(normalizedRbse);
+        await caseClinicalDraftState.ClearAsync(normalizedRbse);
+        await caseFeedsDraftState.ClearAsync(normalizedRbse);
+        await caseRelationsDraftState.ClearAsync(normalizedRbse);
+
+        return Results.Ok(new { cleared = true });
+    }).RequireAuthorization();
+
     app.MapGet("/", () => Results.Redirect("/Home"));
     app.MapRazorPages();
 

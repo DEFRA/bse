@@ -47,15 +47,17 @@ public class PrintBatchModel(IBatchRepository batchRepository) : PageModel
         var yearText = BatchYear?.Trim();
         var numberText = BatchNumber?.Trim();
 
-        if (string.IsNullOrEmpty(yearText) && string.IsNullOrEmpty(numberText))
+        if (string.IsNullOrEmpty(numberText))
         {
             ModelState.AddModelError(nameof(BatchYear), "Enter batch number.");
         }
         else
         {
-            if (!YearPattern.IsMatch(yearText ?? string.Empty))
+            // Legacy allowed the year to be left blank to look up batches recorded
+            // before the year field existed (stored with a NULL BatchYear).
+            if (!string.IsNullOrEmpty(yearText) && !YearPattern.IsMatch(yearText))
                 ModelState.AddModelError(nameof(BatchYear), "Enter a four digit year");
-            if (!NumberPattern.IsMatch(numberText ?? string.Empty))
+            if (!NumberPattern.IsMatch(numberText))
                 ModelState.AddModelError(nameof(BatchNumber), "Enter a valid batch number");
         }
 
@@ -65,20 +67,20 @@ public class PrintBatchModel(IBatchRepository batchRepository) : PageModel
         if (!ModelState.IsValid)
             return Page();
 
-        var batchYear = short.Parse(yearText!);
+        short? batchYear = string.IsNullOrEmpty(yearText) ? null : short.Parse(yearText);
         var batchNumber = int.Parse(numberText!);
 
         var batchId = await batchRepository.GetBatchIdAsync(batchYear, batchNumber);
         if (batchId is null)
         {
-            ModelState.AddModelError(nameof(BatchYear), $"Batch {batchYear}/{batchNumber} was not found.");
+            ModelState.AddModelError(nameof(BatchYear), $"Batch {FormatBatchLabel(batchYear, batchNumber)} was not found.");
             return Page();
         }
 
         var cases = await batchRepository.GetCasesByBatchIdAsync(batchId.Value);
         if (cases.Count == 0)
         {
-            ModelState.AddModelError(string.Empty, $"Batch {batchYear}/{batchNumber} contains no cases.");
+            ModelState.AddModelError(string.Empty, $"Batch {FormatBatchLabel(batchYear, batchNumber)} contains no cases.");
             return Page();
         }
 
@@ -86,4 +88,7 @@ public class PrintBatchModel(IBatchRepository batchRepository) : PageModel
         return RedirectToPage($"/Reports/{ReportType}",
             new { batchYear, batchNumber });
     }
+
+    private static string FormatBatchLabel(short? batchYear, int batchNumber) =>
+        batchYear.HasValue ? $"{batchYear}/{batchNumber}" : batchNumber.ToString();
 }
