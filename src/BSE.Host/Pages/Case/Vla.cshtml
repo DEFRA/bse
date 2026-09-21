@@ -74,17 +74,10 @@ else
         <input type="hidden" asp-for="OPage" />
 
         <div id="case-vla-unsaved-banner"
-             class="govuk-notification-banner bse-unsaved-banner"
-             role="region"
-             aria-labelledby="case-vla-unsaved-title"
-             data-module="govuk-notification-banner"
+             class="govuk-inset-text bse-unsaved-banner"
+             role="status"
              hidden="@(!Model.HasUnsavedOwnerChanges)">
-            <div class="govuk-notification-banner__header">
-                <h2 class="govuk-notification-banner__title" id="case-vla-unsaved-title">Unsaved changes</h2>
-            </div>
-            <div class="govuk-notification-banner__content">
-                <p class="govuk-body">You have changes in previous owners that are not saved yet. Select Save to persist them.</p>
-            </div>
+            <strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.
         </div>
 
         <div class="govuk-button-group govuk-!-margin-bottom-4">

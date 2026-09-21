@@ -73,18 +73,6 @@
     </div>
 }
 
-@if (Model.HasUnsavedChanges)
-{
-    <div id="case-edit-unsaved-banner" class="govuk-notification-banner bse-unsaved-banner" role="region" aria-labelledby="case-edit-unsaved-title" data-module="govuk-notification-banner">
-        <div class="govuk-notification-banner__header">
-            <h2 class="govuk-notification-banner__title" id="case-edit-unsaved-title">Unsaved changes</h2>
-        </div>
-        <div class="govuk-notification-banner__content">
-            <p class="govuk-body">You have unsaved changes. Select Save to persist them or Cancel to discard.</p>
-        </div>
-    </div>
-}
-
 @if (!User.IsInRole("DataEntry"))
 {
     <p class="govuk-body">You can view case details but cannot edit this page.</p>
@@ -93,6 +81,10 @@ else
 {
     <form method="post" novalidate id="case-edit-inline-form">
         <input type="hidden" name="Rbse" value="@Model.Rbse" />
+
+        <div id="case-edit-unsaved-banner" class="govuk-inset-text bse-unsaved-banner" role="status" hidden="@(!Model.HasUnsavedChanges)">
+            <strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.
+        </div>
 
         <div class="govuk-button-group govuk-!-margin-bottom-4">
             <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>

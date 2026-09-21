@@ -11,7 +11,6 @@ public static class RelationValidation
 {
     public const string RelationTypeRequired = "You must choose a Relation Type";
     public const string SexRequired = "You must choose a Sex";
-    public const string IdentifierRequired = "Either a relation RBSE or an eartag must be provided.";
     public const string SameAsCaseRbse = "This RBSE is the same as the case RBSE";
     public const string SameAsDamRbse = "This RBSE is the same as the dam's RBSE";
     public const string SameAsSireRbse = "This RBSE is the same as the sire's RBSE";
@@ -61,16 +60,10 @@ public static class RelationValidation
             errors["Sex"] = SexRequired;
         }
 
-        var hasEartag =
-            !string.IsNullOrWhiteSpace(input.EartagCountry)
-            || !string.IsNullOrWhiteSpace(input.EartagHerdmark)
-            || !string.IsNullOrWhiteSpace(input.Eartag);
-
-        if (relationRbse.Length == 0 && !hasEartag)
-        {
-            errors["RelationRbse"] = IdentifierRequired;
-        }
-        else if (relationRbse.Length > 0)
+        // Legacy never required an RBSE or eartag to add/update a relation — only
+        // ctlRelationRBSE.IsMarkedValid was checked, which defaults to true when the RBSE
+        // box is left empty (lblInvalid is only shown by an explicit failed check).
+        if (relationRbse.Length > 0)
         {
             if (relationRbse == RbseHelper.Normalize(input.CaseRbse))
             {

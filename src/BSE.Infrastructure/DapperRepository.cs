@@ -80,6 +80,13 @@ public class DapperRepository : IDbRepository
             transaction: transaction,
             commandType: CommandType.StoredProcedure);
 
+    public Task<int> ExecuteWithRowCountAsync(string storedProcedure, object? param, IDbConnection connection, IDbTransaction? transaction)
+        => connection.ExecuteAsync(
+            storedProcedure,
+            param,
+            transaction: transaction,
+            commandType: CommandType.StoredProcedure);
+
     public Task ExecuteWithOutputAsync(string storedProcedure, DynamicParameters param, IDbConnection connection, IDbTransaction? transaction)
         => connection.ExecuteAsync(
             storedProcedure,

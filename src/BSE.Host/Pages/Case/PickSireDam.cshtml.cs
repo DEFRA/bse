@@ -27,6 +27,7 @@ public class PickSireDamModel(IAnimalRelationsRepository relationsRepository) : 
     [BindProperty(SupportsGet = true)] public string? Name { get; set; }
     [BindProperty(SupportsGet = true)] public string? Herdbook { get; set; }
     [BindProperty(SupportsGet = true)] public string? ReturnTo { get; set; }
+    [BindProperty(SupportsGet = true)] public bool UseBlankSearch { get; set; }
 
     [BindProperty(SupportsGet = true)] public string? SortColumn { get; set; }
     [BindProperty(SupportsGet = true)] public bool SortDesc { get; set; }
@@ -40,6 +41,34 @@ public class PickSireDamModel(IAnimalRelationsRepository relationsRepository) : 
 
     public async Task<IActionResult> OnGetAsync()
     {
+        if (string.IsNullOrWhiteSpace(Rbse))
+        {
+            Rbse = TempData.Peek(PickSireDamContextKeys.Rbse) as string ?? string.Empty;
+        }
+
+        if (string.IsNullOrWhiteSpace(ReturnTo))
+        {
+            ReturnTo = TempData.Peek(PickSireDamContextKeys.ReturnTo) as string;
+        }
+
+        if (string.IsNullOrWhiteSpace(ReturnTo))
+        {
+            ReturnTo = "Relations";
+        }
+
+        // Legacy blank-RBSE navigation reaches PickSireDam with empty criteria in query.
+        // Keep that URL shape, but still allow restoring prior typed values from TempData so
+        // the picker can show the same result set users expected from the original search.
+        if (string.IsNullOrWhiteSpace(Eartag)
+            && string.IsNullOrWhiteSpace(Name)
+            && string.IsNullOrWhiteSpace(Herdbook)
+            && !UseBlankSearch)
+        {
+            Eartag = TempData.Peek(PickSireDamContextKeys.Eartag) as string;
+            Name = TempData.Peek(PickSireDamContextKeys.Name) as string;
+            Herdbook = TempData.Peek(PickSireDamContextKeys.Herdbook) as string;
+        }
+
         if (string.IsNullOrWhiteSpace(Rbse) || string.IsNullOrWhiteSpace(Sex))
         {
             return RedirectToPage("/Home");
@@ -73,13 +102,19 @@ public class PickSireDamModel(IAnimalRelationsRepository relationsRepository) : 
     }
 
     /// <summary>Legacy btnUseSelected_Click: carries the chosen pedigree row back via TempData.</summary>
+    /// <remarks>
+    /// The matched record's RBSE is bound as <c>matchedRbse</c> rather than <c>rbse</c> — a
+    /// same-named (case-insensitively) hidden field already exists for the page's own
+    /// <see cref="Rbse"/> property, and ASP.NET Core merges same-name form fields, which made
+    /// this always bind to the case's own RBSE instead of the selected record's.
+    /// </remarks>
     public IActionResult OnPostUseSelected(
-        int id, string? rbse, string? eartag, string? name, string? herdbook,
+        int id, string? matchedRbse, string? eartag, string? name, string? herdbook,
         int? birthDay, int? birthMonth, int? birthYear, string rowStampBase64,
         string? fate, string? finalResult, int? childCount)
     {
         SetPendingParent(new PendingDamSire(
-            id, NullIfBlank(rbse), eartag, name, herdbook, birthDay, birthMonth, birthYear, rowStampBase64,
+            id, NullIfBlank(matchedRbse), eartag, name, herdbook, birthDay, birthMonth, birthYear, rowStampBase64,
             fate, finalResult, childCount));
 
         return RedirectToPage(GetReturnPage(), new { rbse = Rbse, sex = Sex });
@@ -103,9 +138,7 @@ public class PickSireDamModel(IAnimalRelationsRepository relationsRepository) : 
     private static string? NullIfBlank(string? s) => string.IsNullOrWhiteSpace(s) ? null : s;
 
     private string GetReturnPage()
-        => string.Equals(ReturnTo, "RelationParentAdd", StringComparison.OrdinalIgnoreCase)
-            ? "/Case/RelationParentAdd"
-            : "/Case/Relations";
+        => "/Case/Relations";
 }
 
 /// <summary>TempData keys used to hand a picked/new pedigree row back to the Relations page.</summary>
@@ -113,6 +146,15 @@ public static class PendingDamSireKeys
 {
     public const string Dam = "PendingDam";
     public const string Sire = "PendingSire";
+}
+
+public static class PickSireDamContextKeys
+{
+    public const string Rbse = "PickSireDamRbse";
+    public const string ReturnTo = "PickSireDamReturnTo";
+    public const string Eartag = "PickSireDamEartag";
+    public const string Name = "PickSireDamName";
+    public const string Herdbook = "PickSireDamHerdbook";
 }
 
 /// <summary>Serialisable carrier for a pedigree row chosen on, or created by, PickSireDam.</summary>

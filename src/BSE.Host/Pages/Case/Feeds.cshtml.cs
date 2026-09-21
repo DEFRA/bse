@@ -265,14 +265,7 @@ public class FeedsModel(
     {
         Rbse = RbseHelper.ParseToRaw(Rbse);
         await feedsDraftState.ClearAsync(Rbse);
-        return RedirectToPage("/Home");
-    }
-
-    public async Task<IActionResult> OnGetCancelFeedsEditAsync()
-    {
-        Rbse = RbseHelper.ParseToRaw(Rbse);
-        await feedsDraftState.ClearAsync(Rbse);
-        return RedirectToPage("/Home");
+        return RedirectToPage(new { rbse = Rbse });
     }
 
     private async Task LoadAsync()

@@ -256,6 +256,291 @@
     text-align: left;
 }
 
+/* Final Result Entry aligned wrappers (mirror existing legacy metrics while removing
+   legacy-named classes from markup to keep structure consistent with other migrated pages). */
+.bse-fre-lookup-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: nowrap;
+}
+
+.bse-fre-lookup-row .govuk-form-group {
+    margin-bottom: 0;
+    display: grid;
+    grid-template-columns: 110px var(--bse-fre-control-width, 250px);
+    column-gap: 12px;
+    align-items: center;
+    min-height: 36px;
+    flex: 0 0 auto;
+    max-width: none;
+}
+
+.bse-fre-lookup-row .govuk-button {
+    margin-bottom: 0;
+    align-self: center;
+    margin-left: 0;
+}
+
+.bse-fre-lookup-row .govuk-label {
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+.bse-fre-lookup-row .govuk-input {
+    width: var(--bse-fre-control-width, 250px);
+    max-width: var(--bse-fre-control-width, 250px);
+    margin-bottom: 0;
+}
+
+.bse-fre-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-top: 1px solid #b1b4b6;
+    border-bottom: 1px solid #b1b4b6;
+    margin-top: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.bse-fre-summary-grid .bse-fre-summary-row {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    column-gap: 16px;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid #d8dadd;
+    min-height: 2.8rem;
+}
+
+.bse-fre-summary-grid .bse-fre-summary-row:nth-child(odd) {
+    padding-right: 2rem;
+}
+
+.bse-fre-summary-grid .bse-fre-summary-row:nth-child(even) {
+    padding-left: 2rem;
+}
+
+.bse-fre-summary-grid .bse-fre-summary-row:not(:last-child) {
+    border-bottom: 1px solid #d8dadd;
+}
+
+.bse-fre-summary-grid .bse-fre-summary-row > span {
+    font-family: "GDS Transport", arial, sans-serif;
+    font-size: 1.1875rem;
+    line-height: 1.3157894737;
+    color: #0b0c0c;
+    font-weight: 400;
+}
+
+.bse-fre-checklist {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(240px, 1fr));
+    column-gap: 2rem;
+    row-gap: 0.65rem;
+    margin: 0.5rem 0 1rem;
+    max-width: 820px;
+}
+
+.bse-fre-checklist .bse-fre-check-row {
+    display: grid;
+    grid-template-columns: 220px auto;
+    gap: 0.5rem 1rem;
+    align-items: center;
+    min-height: 2rem;
+    font-family: "GDS Transport", arial, sans-serif;
+    font-size: 1.1875rem;
+    line-height: 1.3157894737;
+    color: #0b0c0c;
+}
+
+.bse-fre-checklist .bse-fre-check-row > span {
+    font-family: "GDS Transport", arial, sans-serif;
+    font-size: 1.1875rem;
+    line-height: 1.3157894737;
+    font-weight: 400;
+}
+
+.bse-fre-checklist .bse-fre-check-row > div {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    justify-self: end;
+}
+
+.bse-fre-checklist .govuk-body-s {
+    font-family: "GDS Transport", arial, sans-serif;
+    font-size: 1.1875rem;
+    line-height: 1.3157894737;
+    margin: 0;
+}
+
+.bse-fre-form-row {
+    --bse-fre-label-width: 220px;
+    --bse-fre-control-width: 250px;
+    --bse-fre-label-control-gap: 16px;
+    display: grid;
+    grid-template-columns: 480px 480px;
+    column-gap: 36px;
+    row-gap: 0;
+    align-items: start;
+    margin-bottom: 1.25rem;
+}
+
+.bse-fre-form-row .govuk-form-group {
+    margin-bottom: 0;
+    display: grid;
+    grid-template-columns: var(--bse-fre-label-width) var(--bse-fre-control-width);
+    column-gap: var(--bse-fre-label-control-gap);
+    align-items: center;
+    min-height: 36px;
+}
+
+.bse-fre-form-row .govuk-form-group label,
+.bse-fre-form-row .govuk-label {
+    font-family: "GDS Transport", arial, sans-serif;
+    font-size: 1.1875rem;
+    font-weight: 400;
+    line-height: 1.25;
+    color: #0b0c0c;
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+.bse-fre-form-row .govuk-form-group .govuk-body,
+.bse-fre-form-row .govuk-form-group .govuk-hint,
+.bse-fre-form-row .govuk-form-group .govuk-error-message {
+    margin: 0;
+}
+
+.bse-fre-field-error {
+    grid-column: 2;
+    margin-top: 4px;
+    margin-bottom: 0;
+}
+
+.bse-fre-form-row .bse-final-result-selector {
+    display: inline-block;
+    width: var(--bse-fre-control-width);
+    max-width: var(--bse-fre-control-width);
+}
+
+.bse-fre-form-row .govuk-input,
+.bse-fre-form-row .govuk-select,
+.bse-fre-form-row .govuk-textarea {
+    width: var(--bse-fre-control-width);
+    max-width: var(--bse-fre-control-width);
+    margin-bottom: 0;
+}
+
+.bse-fre-form-row .bse-inline-value {
+    font-family: "GDS Transport", arial, sans-serif;
+    display: inline-block;
+    width: var(--bse-fre-control-width);
+    max-width: var(--bse-fre-control-width);
+    min-height: 2.5rem;
+    padding-top: 0.5rem;
+    font-size: 1.125rem;
+    font-weight: 400;
+    line-height: 1.4;
+    color: #0b0c0c;
+}
+
+.bse-fre-textarea {
+    min-height: 4.2rem;
+}
+
+.bse-fre-comment-row {
+    display: grid;
+    grid-template-columns: var(--bse-fre-label-width) 766px;
+    column-gap: var(--bse-fre-label-control-gap);
+    align-items: start;
+    margin-bottom: 0;
+}
+
+.bse-fre-comment-row .govuk-label {
+    margin-bottom: 0;
+    font-family: "GDS Transport", arial, sans-serif;
+    font-size: 1.1875rem;
+    font-weight: 400;
+    line-height: 1.25;
+    white-space: nowrap;
+}
+
+.bse-fre-comment-row .govuk-textarea {
+    width: 100%;
+    max-width: 100%;
+    min-height: 4.2rem;
+    margin-bottom: 0;
+}
+
+@media (max-width: 1020px) {
+    .bse-fre-form-row {
+        grid-template-columns: 1fr;
+        row-gap: 12px;
+    }
+
+    .bse-fre-form-row .govuk-form-group,
+    .bse-fre-comment-row {
+        grid-template-columns: 1fr;
+        row-gap: 6px;
+    }
+
+    .bse-fre-form-row .govuk-input,
+    .bse-fre-form-row .govuk-select,
+    .bse-fre-form-row .govuk-textarea,
+    .bse-fre-form-row .bse-final-result-selector {
+        width: 100%;
+        max-width: 100%;
+    }
+}
+
+.bse-fre-dna-warning {
+    font-family: "GDS Transport", arial, sans-serif;
+    color: #d4351c;
+    font-weight: 700;
+    margin: 0;
+    min-height: 1.5rem;
+}
+
+.bse-fre-field-warning {
+    grid-column: 2;
+    margin-top: 4px;
+}
+
+.bse-fre-tests-table .govuk-table__header,
+.bse-fre-tests-table .govuk-table__cell,
+.bse-fre-tests-table .govuk-link,
+.bse-fre-lookup-row .govuk-label,
+.bse-fre-lookup-row .govuk-input,
+.bse-fre-form-actions .govuk-link {
+    font-family: "GDS Transport", arial, sans-serif;
+}
+
+.bse-fre-note {
+    margin: 0;
+    padding: 0;
+    border-left: 0;
+    background: transparent;
+    min-height: 0;
+    display: none;
+}
+
+.bse-fre-form-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
+.bse-fre-form-actions .govuk-button-group {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
 .bse-legacy-pin { color: #d4351c; font-weight: 700; }
 
 .bse-legacy-warning {
@@ -424,6 +709,9 @@
     align-items: flex-start;
     line-height: 1.2;
 }
+
+/* Final Result test table now uses default GOV.UK table styles for consistency with
+   Case/Relations shared table structure. */
 
 /* Row actions in table cells. GOV.UK buttons are full width below the tablet
    breakpoint, which pushes a Delete button onto its own line under the Change
@@ -676,6 +964,11 @@
     align-items: center;
 }
 
+.bse-farm-legacy__field--dealer-left .govuk-checkboxes,
+.bse-farm-legacy__field--dealer-left .govuk-checkboxes__item {
+    margin: 0;
+}
+
 .bse-farm-legacy__dealer-checkbox {
     justify-self: start;
     width: 24px;
@@ -780,6 +1073,21 @@
     background-color: #ffdd00;
     box-shadow: 0 -2px #ffdd00, 0 4px #0b0c0c;
     text-decoration: none;
+}
+
+.moj-sortable-table__button:focus:not(:focus-visible) {
+    outline: none;
+    background-color: transparent;
+    box-shadow: none;
+    color: #1d70b8;
+}
+
+#closed-cases-results:focus,
+#closed-cases-results:focus-visible,
+#open-cases-results:focus,
+#open-cases-results:focus-visible {
+    outline: none;
+    box-shadow: none;
 }
 
 /* Stacked up/down triangle icons, mirroring the MOJ sortable-table pattern */
@@ -1098,7 +1406,7 @@
 
 /* ── Case section tab bar (mirrors legacy 7-tab bar) ─────────────────────────── */
 .bse-case-tabs-wrap {
-    width: 66.6667%;
+    width: 100%;
 }
 
 .bse-case-tabs {

@@ -98,23 +98,13 @@
     <input type="hidden" asp-for="EditingClientKey" />
     <input type="hidden" asp-for="EditingFeedId" />
 
-    <div id="case-feeds-unsaved-banner"
-         class="govuk-notification-banner bse-unsaved-banner"
-         role="region"
-         aria-labelledby="case-feeds-unsaved-title"
-         data-module="govuk-notification-banner"
-         hidden="@(!Model.HasUnsavedChanges)">
-        <div class="govuk-notification-banner__header">
-            <h2 class="govuk-notification-banner__title" id="case-feeds-unsaved-title">Unsaved changes</h2>
-        </div>
-        <div class="govuk-notification-banner__content">
-            <p class="govuk-body">You have changes in feed records that are not saved yet. Select Save to persist them.</p>
-        </div>
+    <div id="case-feeds-unsaved-banner" class="govuk-inset-text bse-unsaved-banner" role="status" hidden="@(!Model.HasUnsavedChanges)">
+        <strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.
     </div>
 
     <div class="govuk-button-group govuk-!-margin-bottom-4">
         <button type="submit" asp-page-handler="SaveFeeds" class="govuk-button" data-module="govuk-button">Save</button>
-        <a asp-page="/Case/Feeds" asp-page-handler="CancelFeedsEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
+        <button type="submit" asp-page-handler="CancelFeedsEdit" class="govuk-button govuk-button--secondary bse-cancel-button" data-module="govuk-button">Cancel</button>
     </div>
 
     @* -- Existing feed records -------------------------------------------------- *@
@@ -245,7 +235,7 @@
 
     <div class="govuk-button-group govuk-!-margin-top-4">
         <button type="submit" asp-page-handler="SaveFeeds" class="govuk-button" data-module="govuk-button">Save</button>
-        <a asp-page="/Case/Feeds" asp-page-handler="CancelFeedsEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
+        <button type="submit" asp-page-handler="CancelFeedsEdit" class="govuk-button govuk-button--secondary bse-cancel-button" data-module="govuk-button">Cancel</button>
     </div>
 
     @if (viewDocsUrl is not null)
@@ -387,7 +377,7 @@
             });
         }
 
-        document.querySelectorAll('.bse-cancel-link').forEach(function (b) {
+        document.querySelectorAll('.bse-cancel-button').forEach(function (b) {
             b.addEventListener('click', function (e) {
                 var banner = document.getElementById('case-feeds-unsaved-banner');
                 var hasUnsaved = banner && !banner.hidden;

@@ -37,50 +37,50 @@
 }
 
 @* ── Step 1: look up the case ───────────────────────────────────────────── *@
-<form method="post" asp-page-handler="LookUp" novalidate class="bse-final-result-lookup-row">
+<form method="post" asp-page-handler="LookUp" novalidate class="bse-fre-lookup-row">
     <div class="govuk-form-group @(Model.RbseError is not null ? "govuk-form-group--error" : "")">
         <label class="govuk-label" for="rbse">RBSE</label>
-        @if (Model.RbseError is not null)
-        {
-            <p id="rbse-error" class="govuk-error-message">
-                <span class="govuk-visually-hidden">Error:</span>@Model.RbseError
-            </p>
-        }
         <input id="rbse" name="Rbse" value="@BseFormat.FormatRbse(Model.Rbse)" type="text" maxlength="11" autocomplete="off"
                aria-describedby="rbse-hint @(Model.RbseError is not null ? "rbse-error" : "")"
                class="govuk-input govuk-input--width-10 @(Model.RbseError is not null ? "govuk-input--error" : "")" />
-        <button type="submit" class="govuk-button govuk-!-margin-top-2" data-module="govuk-button">Look Up</button>
+        @if (Model.RbseError is not null)
+        {
+            <p id="rbse-error" class="govuk-error-message bse-fre-field-error">
+                <span class="govuk-visually-hidden">Error:</span>@Model.RbseError
+            </p>
+        }
     </div>
+    <button type="submit" class="govuk-button" data-module="govuk-button">Look Up</button>
 </form>
 
 @if (Model.CaseFound)
 {
     var r = Model.Result!;
 
-    <div class="bse-legacy-case-grid">
-        <div class="bse-legacy-row">
+    <div class="bse-fre-summary-grid">
+        <div class="bse-fre-summary-row">
             <span>Eartag</span>
             <span>@r.Eartag</span>
         </div>
-        <div class="bse-legacy-row">
+        <div class="bse-fre-summary-row">
             <span>Name</span>
             <span>@r.OwnerName</span>
         </div>
-        <div class="bse-legacy-row">
+        <div class="bse-fre-summary-row">
             <span>Date of Birth</span>
             <span>@r.BirthDate?.ToString("dd/MM/yyyy")</span>
         </div>
-        <div class="bse-legacy-row">
+        <div class="bse-fre-summary-row">
             <span>Address</span>
             <span>@r.Address1</span>
         </div>
-        <div class="bse-legacy-row">
+        <div class="bse-fre-summary-row">
             <span>CPHH</span>
             <span>@BseFormat.FormatCphh(r.Cphh)</span>
         </div>
     </div>
 
-    <div class="bse-legacy-checklist">
+    <div class="bse-fre-checklist">
         @{
             var paperwork = new (string Label, bool Received, DateTime? Date)[]
             {
@@ -94,7 +94,7 @@
         }
         @foreach (var (label, received, date) in paperwork)
         {
-            <div class="bse-check-row">
+            <div class="bse-fre-check-row">
                 <span>@label</span>
                 <div>
                     <input type="checkbox" checked="@(received ? "checked" : null)" disabled />
@@ -113,15 +113,33 @@
     }
     else
     {
-        <table class="govuk-table">
+        <table class="govuk-table bse-fre-tests-table">
             <caption class="govuk-visually-hidden">Tests recorded for this case</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header">Test Type</th>
-                    <th scope="col" class="govuk-table__header">Test Result</th>
+                    @{ var testTypeDesc = Model.TestSortColumn == "TestType" && !Model.TestSortDesc; }
+                    @{ var testResultDesc = Model.TestSortColumn == "TestResult" && !Model.TestSortDesc; }
+                    <th scope="col" class="govuk-table__header moj-sortable-table__heading" aria-sort="@(Model.TestSortColumn == "TestType" ? (Model.TestSortDesc ? "descending" : "ascending") : "none")">
+                        <a class="moj-sortable-table__button" href="@Model.TestsPageUrl(1, "TestType", testTypeDesc)">
+                            Test Type
+                            <span class="moj-sortable-table__icons" aria-hidden="true">
+                                <span class="moj-sortable-table__icon moj-sortable-table__icon--up"></span>
+                                <span class="moj-sortable-table__icon moj-sortable-table__icon--down"></span>
+                            </span>
+                        </a>
+                    </th>
+                    <th scope="col" class="govuk-table__header moj-sortable-table__heading" aria-sort="@(Model.TestSortColumn == "TestResult" ? (Model.TestSortDesc ? "descending" : "ascending") : "none")">
+                        <a class="moj-sortable-table__button" href="@Model.TestsPageUrl(1, "TestResult", testResultDesc)">
+                            Test Result
+                            <span class="moj-sortable-table__icons" aria-hidden="true">
+                                <span class="moj-sortable-table__icon moj-sortable-table__icon--up"></span>
+                                <span class="moj-sortable-table__icon moj-sortable-table__icon--down"></span>
+                            </span>
+                        </a>
+                    </th>
                 </tr>
             </thead>
-            <tbody class="govuk-table__body">
+            <tbody class="govuk-table__body" id="tests-grid">
                 @foreach (var test in Model.Tests)
                 {
                     <tr class="govuk-table__row">
@@ -134,45 +152,7 @@
 
         @if (Model.TestsTotalPages > 1)
         {
-            <nav class="govuk-pagination" role="navigation" aria-label="Test records pagination">
-                @if (Model.TestPage > 1)
-                {
-                    <div class="govuk-pagination__prev">
-                        <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(Model.TestPage - 1)" rel="prev">
-                            <svg class="govuk-pagination__icon govuk-pagination__icon--prev" xmlns="http://www.w3.org/2000/svg" height="13" width="15" focusable="false" aria-hidden="true" viewBox="0 0 15 13"><path d="m6.5938-0.0078125-6.7266 6.7266 6.7441 6.4062 1.377-1.449-4.1856-3.9768h12.896v-2h-12.984l4.2931-4.293-1.414-1.414z"/></svg>
-                            <span class="govuk-pagination__link-title">Previous<span class="govuk-visually-hidden"> page</span></span>
-                        </a>
-                    </div>
-                }
-
-                <ul class="govuk-pagination__list">
-                    @{ int startPage = Math.Max(1, Model.TestPage - 4); int endPage = Math.Min(Model.TestsTotalPages, startPage + 9); if (endPage - startPage < 9) startPage = Math.Max(1, endPage - 9); }
-                    @for (int p = startPage; p <= endPage; p++)
-                    {
-                        var isCurrent = p == Model.TestPage;
-                        <li class="govuk-pagination__item @(isCurrent ? "govuk-pagination__item--current" : "")">
-                            @if (isCurrent)
-                            {
-                                <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(p)" aria-label="Page @p" aria-current="page">@p</a>
-                            }
-                            else
-                            {
-                                <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(p)" aria-label="Page @p">@p</a>
-                            }
-                        </li>
-                    }
-                </ul>
-
-                @if (Model.TestPage < Model.TestsTotalPages)
-                {
-                    <div class="govuk-pagination__next">
-                        <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(Model.TestPage + 1)" rel="next">
-                            <span class="govuk-pagination__link-title">Next<span class="govuk-visually-hidden"> page</span></span>
-                            <svg class="govuk-pagination__icon govuk-pagination__icon--next" xmlns="http://www.w3.org/2000/svg" height="13" width="15" focusable="false" aria-hidden="true" viewBox="0 0 15 13"><path d="m8.107-0.0078125-1.4136 1.414 4.2926 4.293h-12.986v2h12.896l-4.1855 3.9766 1.377 1.4492 6.7441-6.4062-6.7246-6.7246z"/></svg>
-                        </a>
-                    </div>
-                }
-            </nav>
+            @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.TestPage, ["TotalPages"] = Model.TestsTotalPages, ["PageNumberKey"] = "TestPage", ["Fragment"] = "tests-grid" })
         }
     }
 
@@ -211,19 +191,9 @@
         }
 
         <div class="bse-final-result-panel">
-            <div class="bse-legacy-form-row">
+            <div class="bse-fre-form-row">
                 <div class="govuk-form-group @(Model.FinalResultError is not null ? "govuk-form-group--error" : "")">
                     <label class="govuk-label" for="final-result">Final Result</label>
-                    @if (Model.FinalResultError is not null)
-                    {
-                        <p id="final-result-error" class="govuk-error-message">
-                            <span class="govuk-visually-hidden">Error:</span>@Model.FinalResultError
-                        </p>
-                    }
-                    @if (Model.ShowDnaMismatch)
-                    {
-                        <div class="bse-legacy-dna-warning">Check DNA match</div>
-                    }
                     <select id="final-result" name="FinalResult"
                             aria-describedby="@(Model.FinalResultError is not null ? "final-result-error" : null)"
                             class="govuk-select bse-final-result-selector @(Model.FinalResultError is not null ? "govuk-select--error" : "")">
@@ -233,6 +203,16 @@
                             <option value="@option.Code" selected="@(option.Code == Model.FinalResult)">@option.Description</option>
                         }
                     </select>
+                    @if (Model.FinalResultError is not null)
+                    {
+                        <p id="final-result-error" class="govuk-error-message bse-fre-field-error">
+                            <span class="govuk-visually-hidden">Error:</span>@Model.FinalResultError
+                        </p>
+                    }
+                    @if (Model.ShowDnaMismatch)
+                    {
+                        <div class="bse-fre-dna-warning bse-fre-field-warning">Check DNA match</div>
+                    }
                 </div>
 
                 <div class="govuk-form-group">
@@ -241,7 +221,7 @@
                 </div>
             </div>
 
-            <div class="bse-legacy-form-row">
+            <div class="bse-fre-form-row">
                 <div class="govuk-form-group">
                     <label class="govuk-label" for="case-type">Case Type</label>
                     <div id="case-type" class="bse-inline-value">@r.CaseType</div>
@@ -250,11 +230,11 @@
                 <div class="govuk-form-group">
                     <label class="govuk-label" for="lab-comment">Lab Comment</label>
                     <textarea id="lab-comment" name="LabComment" rows="3" maxlength="255"
-                              class="govuk-textarea bse-legacy-textarea">@Model.LabComment</textarea>
+                              class="govuk-textarea bse-fre-textarea">@Model.LabComment</textarea>
                 </div>
             </div>
 
-            <div class="bse-legacy-form-row">
+            <div class="bse-fre-form-row">
                 <div class="govuk-form-group">
                     <label class="govuk-label" for="dbse">DBSE</label>
                     <div id="dbse" class="bse-inline-value">@Model.DisplayDbse</div>
@@ -262,67 +242,68 @@
 
                 <div class="govuk-form-group">
                     <label class="govuk-label govuk-visually-hidden" for="legacy-note">Note</label>
-                    <div id="legacy-note" class="bse-legacy-note" aria-hidden="true"></div>
+                    <div id="legacy-note" class="bse-fre-note" aria-hidden="true"></div>
                 </div>
             </div>
 
-            @if (Model.HasFinalResult)
-            {
-                <div class="govuk-button-group govuk-!-margin-top-2">
+            <div class="govuk-button-group govuk-!-margin-top-2">
+                @if (Model.HasFinalResult)
+                {
                     <a class="govuk-button govuk-button--secondary" data-module="govuk-button"
                        asp-page="/Case/ResultMemo" asp-route-rbse="@r.Rbse" asp-route-print="true"
                        target="_blank" rel="noopener">Print Memo</a>
                     <a class="govuk-button govuk-button--secondary" data-module="govuk-button"
                        asp-page="/Case/ResultMemo" asp-route-rbse="@r.Rbse">Download</a>
-                </div>
-            }
-            else
-            {
-                <p class="govuk-body">The result memo is available once a final result has been saved for this case.</p>
-            }
-        </div>
-
-        <div class="govuk-grid-row">
-            <div class="govuk-grid-column-one-half">
-                <div class="govuk-form-group">
-                    <label class="govuk-label" for="retro-test-type">Retrospective Test Type</label>
-                    <select id="retro-test-type" name="RetrospectiveTestType" class="govuk-select">
-                        <option value=""></option>
-                        @foreach (var option in Model.TestTypes)
-                        {
-                            <option value="@option.Code" selected="@(option.Code == Model.RetrospectiveTestType)">@option.Description</option>
-                        }
-                    </select>
-                </div>
-            </div>
-
-            <div class="govuk-grid-column-one-half">
-                <div class="govuk-form-group">
-                    <label class="govuk-label" for="retro-result">Retrospective Result</label>
-                    <select id="retro-result" name="RetrospectiveResult" class="govuk-select">
-                        <option value=""></option>
-                        @foreach (var option in Model.TestResults)
-                        {
-                            <option value="@option.Code" selected="@(option.Code == Model.RetrospectiveResult)">@option.Description</option>
-                        }
-                    </select>
-                </div>
+                }
+                else
+                {
+                    <button type="button" class="govuk-button govuk-button--secondary" data-module="govuk-button" disabled>Print Memo</button>
+                    <button type="button" class="govuk-button govuk-button--secondary" data-module="govuk-button" disabled>Download</button>
+                }
             </div>
         </div>
 
-        <div class="govuk-form-group">
-            <label class="govuk-label" for="retro-date">Retrospective Date</label>
-            <input id="retro-date" name="RetrospectiveResultDate" type="date" class="govuk-input govuk-input--width-10"
-                   value="@Model.RetrospectiveResultDate?.ToString("yyyy-MM-dd")" />
+        <div class="bse-fre-form-row">
+            <div class="govuk-form-group">
+                <label class="govuk-label" for="retro-test-type">Retrospective Test Type</label>
+                <select id="retro-test-type" name="RetrospectiveTestType" class="govuk-select">
+                    <option value=""></option>
+                    @foreach (var option in Model.TestTypes)
+                    {
+                        <option value="@option.Code" selected="@(option.Code == Model.RetrospectiveTestType)">@option.Description</option>
+                    }
+                </select>
+            </div>
+
+            <div class="govuk-form-group">
+                <label class="govuk-label" for="retro-result">Retrospective Result</label>
+                <select id="retro-result" name="RetrospectiveResult" class="govuk-select">
+                    <option value=""></option>
+                    @foreach (var option in Model.TestResults)
+                    {
+                        <option value="@option.Code" selected="@(option.Code == Model.RetrospectiveResult)">@option.Description</option>
+                    }
+                </select>
+            </div>
         </div>
 
-        <div class="govuk-form-group">
+        <div class="bse-fre-form-row">
+            <div class="govuk-form-group">
+                <label class="govuk-label" for="retro-date">Retrospective Date</label>
+                <input id="retro-date" name="RetrospectiveResultDate" type="date" class="govuk-input"
+                       value="@Model.RetrospectiveResultDate?.ToString("yyyy-MM-dd")" />
+            </div>
+
+            <div class="govuk-form-group"></div>
+        </div>
+
+        <div class="govuk-form-group bse-fre-comment-row">
             <label class="govuk-label" for="retro-comment">Retrospective Comments</label>
             <textarea id="retro-comment" name="RetrospectiveComment" rows="3" maxlength="500"
                       class="govuk-textarea">@Model.RetrospectiveComment</textarea>
         </div>
 
-        <div class="bse-legacy-form-actions">
+        <div class="bse-fre-form-actions">
             <div class="govuk-button-group">
                 <button type="submit" class="govuk-button" data-module="govuk-button" data-save-button="final-result-save" disabled="disabled">Save</button>
                 <a asp-page="/Home" class="govuk-link">Cancel</a>

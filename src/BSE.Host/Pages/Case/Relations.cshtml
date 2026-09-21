@@ -3,6 +3,8 @@
 @{
     ViewData["Title"] = $"Animal relations — {Model.Rbse}";
     string rbseNoSlash = Model.Rbse.Replace("/", "");
+    var viewDocsUrl = string.IsNullOrWhiteSpace(Model.SpolSiteUrl) ? null : $"{Model.SpolSiteUrl}{rbseNoSlash}";
+    bool isEditingRelation = !string.IsNullOrEmpty(Model.EditingClientKey);
 }
 
 <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
@@ -12,7 +14,8 @@
     </ol>
 </nav>
 
-@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Relations", Model.Rbse, Model.BatchNumbers))
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Relations", Model.Rbse, Model.BatchNumbers, viewDocsUrl))
+
 
 @if (TempData["Success"] is string successMsg)
 {
@@ -27,7 +30,20 @@
     </div>
 }
 
-@if (!ViewContext.ModelState.IsValid)
+@if (TempData["RelationsWarning"] is string warningMsg)
+{
+    <div class="govuk-notification-banner" role="region"
+         aria-labelledby="relations-warning-title" data-module="govuk-notification-banner">
+        <div class="govuk-notification-banner__header">
+            <h2 class="govuk-notification-banner__title" id="relations-warning-title">Important</h2>
+        </div>
+        <div class="govuk-notification-banner__content">
+            <p class="govuk-body">@warningMsg</p>
+        </div>
+    </div>
+}
+
+@if (!ViewContext.ModelState.IsValid || Model.RelationFieldErrors.Count > 0)
 {
     <div class="govuk-error-summary" data-module="govuk-error-summary">
         <div role="alert">
@@ -37,6 +53,10 @@
                     @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
                     {
                         <li>@e.ErrorMessage</li>
+                    }
+                    @foreach (var e in Model.RelationFieldErrors.Values)
+                    {
+                        <li>@e</li>
                     }
                 </ul>
             </div>
@@ -52,19 +72,32 @@
     var sireLinked = !string.IsNullOrWhiteSpace(d.SireRbse);
 }
 
-<h2 class="govuk-heading-m">Case details</h2>
-@if (canEditRelations && Model.EditCaseHerdbook)
+@if (canEditRelations)
 {
-    <form method="post" asp-page-handler="SaveCaseHerdbook" class="govuk-!-margin-bottom-6" novalidate>
-        <div class="govuk-form-group">
-            <label class="govuk-label" asp-for="CaseHerdbook">Case Herdbook</label>
-            <input asp-for="CaseHerdbook" maxlength="15" class="govuk-input govuk-input--width-20" />
-        </div>
-        <div class="govuk-button-group">
-            <button type="submit" class="govuk-button">Save</button>
-            <a class="govuk-link" asp-page="/Case/Relations" asp-route-rbse="@Model.Rbse">Cancel</a>
-        </div>
-    </form>
+    <div id="case-relations-unsaved-banner"
+         class="govuk-inset-text bse-unsaved-banner bse-relations-panel-width"
+         role="status"
+         hidden="@(!Model.HasUnsavedChanges)">
+        <strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.
+    </div>
+
+    <div class="govuk-button-group bse-relations-panel-width govuk-!-margin-bottom-4">
+        <button type="submit" form="case-relations-inline-form" formaction="@Url.Page("/Case/Relations", "SaveRelations", new { rbse = Model.Rbse })" class="govuk-button" data-module="govuk-button">Save</button>
+        <a asp-page="/Case/Relations" asp-page-handler="CancelRelationsEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link bse-cancel-button">Cancel</a>
+    </div>
+
+    <div class="govuk-form-group bse-relations-case-row bse-relations-panel-width govuk-!-margin-bottom-6">
+        <label class="govuk-label bse-relations-case-label" asp-for="CaseHerdbook">Case Herdbook</label>
+        <input asp-for="CaseHerdbook" form="case-relations-inline-form" maxlength="15" class="govuk-input govuk-input--width-20" />
+    </div>
+
+    <input type="hidden" asp-for="DamSire.HasDam" form="case-relations-inline-form" />
+    <input type="hidden" asp-for="DamSire.DamId" form="case-relations-inline-form" />
+    <input type="hidden" asp-for="DamSire.DamRowStamp" form="case-relations-inline-form" />
+    <input type="hidden" asp-for="DamSire.HasSire" form="case-relations-inline-form" />
+    <input type="hidden" asp-for="DamSire.SireId" form="case-relations-inline-form" />
+    <input type="hidden" asp-for="DamSire.SireRowStamp" form="case-relations-inline-form" />
+
 }
 else
 {
@@ -72,202 +105,753 @@ else
     <div class="govuk-summary-list__row">
         <dt class="govuk-summary-list__key">Case Herdbook</dt>
         <dd class="govuk-summary-list__value">
-            @(string.IsNullOrWhiteSpace(Model.CaseHerdbook) ? "—" : Model.CaseHerdbook)
-            @if (canEditRelations)
-            {
-                <span class="govuk-!-margin-left-3">
-                    <a class="govuk-link" asp-page="/Case/Relations" asp-page-handler="EditCaseHerdbook" asp-route-rbse="@Model.Rbse">
-                        Change<span class="govuk-visually-hidden"> case herdbook</span>
-                    </a>
-                </span>
-            }
+            @(string.IsNullOrWhiteSpace(Model.CaseHerdbook) ? "" : Model.CaseHerdbook)
         </dd>
     </div>
 </dl>
 }
 
 <section class="bse-relations-parent-panel">
-    <h2 class="govuk-heading-m">Sire Details</h2>
+    <div class="bse-relations-parent-columns bse-relations-parent-columns--meta">
+        <div class="bse-relations-parent-column">
+            <div class="bse-relations-parent-field-row">
+                <span class="govuk-label bse-relations-parent-label-strong">Sire Details</span>
+                <span class="govuk-body bse-relations-parent-static">@(d.HasSire ? (d.SireId > 0 ? d.SireId.ToString() : "(New)") : "")</span>
+            </div>
+        </div>
+        <div class="bse-relations-parent-column">
+            <div class="bse-relations-parent-field-row">
+                <span class="govuk-label bse-relations-parent-label-nowrap">Number of Offspring:</span>
+                <span class="govuk-body bse-relations-parent-static">@(d.HasSire ? d.SireChildCount?.ToString() : "")</span>
+            </div>
+        </div>
+    </div>
     @if (!string.IsNullOrWhiteSpace(Model.SireError))
     {
         <p class="govuk-error-message">@Model.SireError</p>
     }
-    <div class="govuk-grid-row">
-        <div class="govuk-grid-column-one-half">
-            <dl class="govuk-summary-list govuk-summary-list--no-border govuk-!-margin-bottom-4">
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Eartag</dt><dd class="govuk-summary-list__value">@(d.HasSire ? d.SireEartag : "—")</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@(d.HasSire && !string.IsNullOrWhiteSpace(d.SireRbse) ? BseFormat.FormatRbse(d.SireRbse) : "—")</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Fate</dt><dd class="govuk-summary-list__value">@(d.HasSire ? d.SireFate : "—")</dd></div>
-            </dl>
+    @if (!canEditRelations)
+    {
+        <div class="govuk-grid-row">
+            <div class="govuk-grid-column-one-half">
+                <dl class="govuk-summary-list govuk-summary-list--no-border govuk-!-margin-bottom-4">
+                    <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Eartag</dt><dd class="govuk-summary-list__value">@(d.HasSire ? d.SireEartag : "")</dd></div>
+                    <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@(d.HasSire && !string.IsNullOrWhiteSpace(d.SireRbse) ? BseFormat.FormatRbse(d.SireRbse) : "")</dd></div>
+                    <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Fate</dt><dd class="govuk-summary-list__value">@(d.HasSire ? d.SireFate : "")</dd></div>
+                </dl>
+            </div>
+            <div class="govuk-grid-column-one-half">
+                <dl class="govuk-summary-list govuk-summary-list--no-border govuk-!-margin-bottom-4">
+                    <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Name</dt><dd class="govuk-summary-list__value">@(d.HasSire ? d.SireName : "")</dd></div>
+                    <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Herdbook</dt><dd class="govuk-summary-list__value">@(d.HasSire ? d.SireHerdbook : "")</dd></div>
+                    <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Date of birth</dt><dd class="govuk-summary-list__value">@(d.HasSire && d.SireBirthDay.HasValue ? $"{d.SireBirthDay}/{d.SireBirthMonth}/{d.SireBirthYear}" : "")</dd></div>
+                </dl>
+            </div>
         </div>
-        <div class="govuk-grid-column-one-half">
-            <dl class="govuk-summary-list govuk-summary-list--no-border govuk-!-margin-bottom-4">
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Number of offspring</dt><dd class="govuk-summary-list__value">@(d.HasSire ? d.SireChildCount : null)</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Name</dt><dd class="govuk-summary-list__value">@(d.HasSire ? d.SireName : "—")</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Herdbook</dt><dd class="govuk-summary-list__value">@(d.HasSire ? d.SireHerdbook : "—")</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Date of birth</dt><dd class="govuk-summary-list__value">@(d.HasSire && d.SireBirthDay.HasValue ? $"{d.SireBirthDay}/{d.SireBirthMonth}/{d.SireBirthYear}" : "—")</dd></div>
-            </dl>
-        </div>
-    </div>
+    }
     @if (canEditRelations)
     {
-        <div class="govuk-button-group bse-relations-actions">
-            @if (d.HasSire)
-            {
+        @if (d.HasSire)
+        {
+            <div class="bse-relations-parent-columns">
+                <div class="bse-relations-parent-column">
+                    <div class="bse-relations-parent-field-row">
+                        <label class="govuk-label" asp-for="DamSire.SireRbse">RBSE</label>
+                        <input asp-for="DamSire.SireRbse" value="@BseFormat.FormatRbse(d.SireRbse)" form="case-relations-inline-form" maxlength="20" class="govuk-input bse-relations-parent-input" readonly="readonly" />
+                    </div>
+                    <div class="bse-relations-parent-field-row">
+                        <label class="govuk-label" asp-for="DamSire.SireEartag">Eartag</label>
+                        <input asp-for="DamSire.SireEartag" form="case-relations-inline-form" maxlength="15" class="govuk-input bse-relations-parent-input" readonly="@(string.IsNullOrWhiteSpace(d.SireRbse) ? null : "readonly")" />
+                    </div>
+                    <div class="bse-relations-parent-field-row bse-relations-parent-field-row--button">
+                        <button type="button" class="govuk-button govuk-button--secondary bse-relations-parent-lookup-button" disabled>Look Up</button>
+                    </div>
+                    <div class="bse-relations-parent-field-row">
+                        <span class="govuk-label">Fate</span>
+                        <span class="govuk-body bse-relations-parent-static">@d.SireFate</span>
+                    </div>
+                </div>
+                <div class="bse-relations-parent-column">
+                    <div class="bse-relations-parent-field-row">
+                        <label class="govuk-label" asp-for="DamSire.SireName">Name</label>
+                        <input asp-for="DamSire.SireName" form="case-relations-inline-form" maxlength="80" class="govuk-input bse-relations-parent-input" readonly="@(string.IsNullOrWhiteSpace(d.SireRbse) ? null : "readonly")" />
+                    </div>
+                    <div class="bse-relations-parent-field-row">
+                        <label class="govuk-label" asp-for="DamSire.SireHerdbook">Herdbook</label>
+                        <input asp-for="DamSire.SireHerdbook" form="case-relations-inline-form" maxlength="15" class="govuk-input bse-relations-parent-input" readonly="@(string.IsNullOrWhiteSpace(d.SireRbse) ? null : "readonly")" />
+                    </div>
+                    <div class="bse-relations-parent-field-row bse-relations-parent-field-row--spacer"></div>
+                    <div class="bse-relations-parent-field-row">
+                        <span class="govuk-label">Date of Birth</span>
+                        @if (string.IsNullOrWhiteSpace(d.SireRbse))
+                        {
+                            <div class="govuk-date-input bse-relations-parent-date-input">
+                                <div class="govuk-date-input__item">
+                                    <input asp-for="DamSire.SireBirthDay" form="case-relations-inline-form" class="govuk-input govuk-date-input__input govuk-input--width-2" inputmode="numeric" />
+                                </div>
+                                <div class="govuk-date-input__item">
+                                    <input asp-for="DamSire.SireBirthMonth" form="case-relations-inline-form" class="govuk-input govuk-date-input__input govuk-input--width-2" inputmode="numeric" />
+                                </div>
+                                <div class="govuk-date-input__item">
+                                    <input asp-for="DamSire.SireBirthYear" form="case-relations-inline-form" class="govuk-input govuk-date-input__input govuk-input--width-4" inputmode="numeric" />
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="govuk-date-input bse-relations-parent-date-input bse-relations-disabled-date">
+                                <div class="govuk-date-input__item">
+                                    <input class="govuk-input govuk-date-input__input govuk-input--width-2" type="text" value="@d.SireBirthDay" disabled />
+                                </div>
+                                <div class="govuk-date-input__item">
+                                    <input class="govuk-input govuk-date-input__input govuk-input--width-2" type="text" value="@d.SireBirthMonth" disabled />
+                                </div>
+                                <div class="govuk-date-input__item">
+                                    <input class="govuk-input govuk-date-input__input govuk-input--width-4" type="text" value="@d.SireBirthYear" disabled />
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="govuk-button-group bse-relations-actions">
                 <form method="post" asp-page="/Case/Relations" asp-page-handler="RemoveSire" asp-route-rbse="@Model.Rbse" novalidate>
                     <input type="hidden" asp-for="Rbse" />
                     <button type="submit" class="govuk-button govuk-button--warning"
                             onclick="return confirm('This will disassociate the sire from the case.  Do you wish to continue?');">Remove Sire</button>
                 </form>
-                <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationParentAdd" asp-route-rbse="@Model.Rbse" asp-route-sex="M">Change Sire Details</a>
                 @if (sireLinked)
                 {
                     <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationsView" asp-route-rbse="@d.SireRbse">View Sire's Relations</a>
                 }
-            }
-            else
-            {
-                <a class="govuk-button govuk-button--secondary"
-                   asp-page="/Case/PickSireDam"
-                   asp-route-rbse="@Model.Rbse"
-                   asp-route-sex="M"
-                   asp-route-returnTo="RelationParentAdd">Look Up Sire</a>
-            }
-        </div>
+            </div>
+        }
+        else
+        {
+            <form method="post" asp-page="/Case/Relations" asp-page-handler="LookUpSire" asp-route-returnTo="Relations" novalidate>
+                <input type="hidden" asp-for="Rbse" />
+
+                <div class="bse-relations-parent-columns">
+                    <div class="bse-relations-parent-column">
+                        <div class="bse-relations-parent-field-row">
+                            <label class="govuk-label" asp-for="DamSire.SireSearchRbse">RBSE</label>
+                            <input asp-for="DamSire.SireSearchRbse" class="govuk-input bse-relations-parent-input" />
+                        </div>
+                        <div class="bse-relations-parent-field-row">
+                            <label class="govuk-label" asp-for="DamSire.SireSearchEartag">Eartag</label>
+                            <input asp-for="DamSire.SireSearchEartag" class="govuk-input bse-relations-parent-input" />
+                        </div>
+                        <div class="bse-relations-parent-field-row bse-relations-parent-field-row--button">
+                            <button type="submit" class="govuk-button govuk-button--secondary bse-relations-parent-lookup-button" data-module="govuk-button">Look Up</button>
+                        </div>
+                        <div class="bse-relations-parent-field-row">
+                            <span class="govuk-label">Fate</span>
+                            <span class="govuk-body bse-relations-parent-static"></span>
+                        </div>
+                    </div>
+
+                    <div class="bse-relations-parent-column">
+                        <div class="bse-relations-parent-field-row">
+                            <label class="govuk-label" asp-for="DamSire.SireSearchName">Name</label>
+                            <input asp-for="DamSire.SireSearchName" class="govuk-input bse-relations-parent-input" />
+                        </div>
+                        <div class="bse-relations-parent-field-row">
+                            <label class="govuk-label" asp-for="DamSire.SireSearchHerdbook">Herdbook</label>
+                            <input asp-for="DamSire.SireSearchHerdbook" class="govuk-input bse-relations-parent-input" />
+                        </div>
+                        <div class="bse-relations-parent-field-row bse-relations-parent-field-row--spacer"></div>
+                        <div class="bse-relations-parent-field-row">
+                            <span class="govuk-label">Date of Birth</span>
+                            <div class="govuk-date-input bse-relations-parent-date-input bse-relations-disabled-date">
+                                <div class="govuk-date-input__item"><input class="govuk-input govuk-date-input__input govuk-input--width-2" type="text" disabled /></div>
+                                <div class="govuk-date-input__item"><input class="govuk-input govuk-date-input__input govuk-input--width-2" type="text" disabled /></div>
+                                <div class="govuk-date-input__item"><input class="govuk-input govuk-date-input__input govuk-input--width-4" type="text" disabled /></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        }
     }
 </section>
 
 <section class="bse-relations-parent-panel">
-    <h2 class="govuk-heading-m">Dam Details</h2>
+    <div class="bse-relations-parent-columns bse-relations-parent-columns--meta">
+        <div class="bse-relations-parent-column">
+            <div class="bse-relations-parent-field-row">
+                <span class="govuk-label bse-relations-parent-label-strong">Dam Details</span>
+                <span class="govuk-body bse-relations-parent-static">@(d.HasDam ? (d.DamId > 0 ? d.DamId.ToString() : "(New)") : "")</span>
+            </div>
+        </div>
+        <div class="bse-relations-parent-column">
+            <div class="bse-relations-parent-field-row">
+                <span class="govuk-label bse-relations-parent-label-nowrap">Number of Offspring:</span>
+                <span class="govuk-body bse-relations-parent-static">@(d.HasDam ? d.DamChildCount?.ToString() : "")</span>
+            </div>
+        </div>
+    </div>
     @if (!string.IsNullOrWhiteSpace(Model.DamError))
     {
         <p class="govuk-error-message">@Model.DamError</p>
     }
-    <div class="govuk-grid-row">
-        <div class="govuk-grid-column-one-half">
-            <dl class="govuk-summary-list govuk-summary-list--no-border govuk-!-margin-bottom-4">
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Eartag</dt><dd class="govuk-summary-list__value">@(d.HasDam ? d.DamEartag : "—")</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@(d.HasDam && !string.IsNullOrWhiteSpace(d.DamRbse) ? BseFormat.FormatRbse(d.DamRbse) : "—")</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Fate</dt><dd class="govuk-summary-list__value">@(d.HasDam ? d.DamFate : "—")</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Final result</dt><dd class="govuk-summary-list__value">@(d.HasDam ? d.DamFinalResult : "—")</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Status</dt><dd class="govuk-summary-list__value">@(Model.DamStatusDescription ?? "—")</dd></div>
-            </dl>
+    @if (!canEditRelations)
+    {
+        <div class="govuk-grid-row">
+            <div class="govuk-grid-column-one-half">
+                <dl class="govuk-summary-list govuk-summary-list--no-border govuk-!-margin-bottom-4">
+                    <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Eartag</dt><dd class="govuk-summary-list__value">@(d.HasDam ? d.DamEartag : "")</dd></div>
+                    <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@(d.HasDam && !string.IsNullOrWhiteSpace(d.DamRbse) ? BseFormat.FormatRbse(d.DamRbse) : "")</dd></div>
+                    <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Fate</dt><dd class="govuk-summary-list__value">@(d.HasDam ? d.DamFate : "")</dd></div>
+                    <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Final result</dt><dd class="govuk-summary-list__value">@(d.HasDam ? d.DamFinalResult : "")</dd></div>
+                    <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Status</dt><dd class="govuk-summary-list__value">@(Model.DamStatusDescription ?? "")</dd></div>
+                </dl>
+            </div>
+            <div class="govuk-grid-column-one-half">
+                <dl class="govuk-summary-list govuk-summary-list--no-border govuk-!-margin-bottom-4">
+                    <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Name</dt><dd class="govuk-summary-list__value">@(d.HasDam ? d.DamName : "")</dd></div>
+                    <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Herdbook</dt><dd class="govuk-summary-list__value">@(d.HasDam ? d.DamHerdbook : "")</dd></div>
+                    <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Date of birth</dt><dd class="govuk-summary-list__value">@(d.HasDam && d.DamBirthDay.HasValue ? $"{d.DamBirthDay}/{d.DamBirthMonth}/{d.DamBirthYear}" : "")</dd></div>
+                </dl>
+            </div>
         </div>
-        <div class="govuk-grid-column-one-half">
-            <dl class="govuk-summary-list govuk-summary-list--no-border govuk-!-margin-bottom-4">
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Number of offspring</dt><dd class="govuk-summary-list__value">@(d.HasDam ? d.DamChildCount : null)</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Name</dt><dd class="govuk-summary-list__value">@(d.HasDam ? d.DamName : "—")</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Herdbook</dt><dd class="govuk-summary-list__value">@(d.HasDam ? d.DamHerdbook : "—")</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Date of birth</dt><dd class="govuk-summary-list__value">@(d.HasDam && d.DamBirthDay.HasValue ? $"{d.DamBirthDay}/{d.DamBirthMonth}/{d.DamBirthYear}" : "—")</dd></div>
-            </dl>
-        </div>
-    </div>
+    }
     @if (canEditRelations)
     {
-        <div class="govuk-button-group bse-relations-actions">
-            @if (d.HasDam)
-            {
+        @if (d.HasDam)
+        {
+            <div class="bse-relations-parent-columns">
+                <div class="bse-relations-parent-column">
+                    <div class="bse-relations-parent-field-row">
+                        <label class="govuk-label" asp-for="DamSire.DamRbse">RBSE</label>
+                        <input asp-for="DamSire.DamRbse" value="@BseFormat.FormatRbse(d.DamRbse)" form="case-relations-inline-form" maxlength="20" class="govuk-input bse-relations-parent-input" readonly="readonly" />
+                    </div>
+                    <div class="bse-relations-parent-field-row">
+                        <label class="govuk-label" asp-for="DamSire.DamEartag">Eartag</label>
+                        <input asp-for="DamSire.DamEartag" form="case-relations-inline-form" maxlength="15" class="govuk-input bse-relations-parent-input" readonly="@(string.IsNullOrWhiteSpace(d.DamRbse) ? null : "readonly")" />
+                    </div>
+                    <div class="bse-relations-parent-field-row bse-relations-parent-field-row--button">
+                        <button type="button" class="govuk-button govuk-button--secondary bse-relations-parent-lookup-button" disabled>Look Up</button>
+                    </div>
+                    <div class="bse-relations-parent-field-row">
+                        <label class="govuk-label" asp-for="DamSire.DamStatus">Status</label>
+                        <select asp-for="DamSire.DamStatus" form="case-relations-inline-form" class="govuk-select bse-relations-parent-input">
+                            <option value=""></option>
+                            @foreach (var item in Model.DamStatusOptions ?? new List<BSE.Modules.ReferenceData.Models.LookupItem>())
+                            {
+                                <option value="@item.Code">@item.Description</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="bse-relations-parent-field-row">
+                        <span class="govuk-label">Fate</span>
+                        <span class="govuk-body bse-relations-parent-static">@d.DamFate</span>
+                    </div>
+                </div>
+
+                <div class="bse-relations-parent-column">
+                    <div class="bse-relations-parent-field-row">
+                        <label class="govuk-label" asp-for="DamSire.DamName">Name</label>
+                        <input asp-for="DamSire.DamName" form="case-relations-inline-form" maxlength="80" class="govuk-input bse-relations-parent-input" readonly="@(string.IsNullOrWhiteSpace(d.DamRbse) ? null : "readonly")" />
+                    </div>
+                    <div class="bse-relations-parent-field-row">
+                        <label class="govuk-label" asp-for="DamSire.DamHerdbook">Herdbook</label>
+                        <input asp-for="DamSire.DamHerdbook" form="case-relations-inline-form" maxlength="15" class="govuk-input bse-relations-parent-input" readonly="@(string.IsNullOrWhiteSpace(d.DamRbse) ? null : "readonly")" />
+                    </div>
+                    <div class="bse-relations-parent-field-row bse-relations-parent-field-row--spacer"></div>
+                    <div class="bse-relations-parent-field-row">
+                        <span class="govuk-label">Date of Birth</span>
+                        @if (string.IsNullOrWhiteSpace(d.DamRbse))
+                        {
+                            <div class="govuk-date-input bse-relations-parent-date-input">
+                                <div class="govuk-date-input__item">
+                                    <input asp-for="DamSire.DamBirthDay" form="case-relations-inline-form" class="govuk-input govuk-date-input__input govuk-input--width-2" inputmode="numeric" />
+                                </div>
+                                <div class="govuk-date-input__item">
+                                    <input asp-for="DamSire.DamBirthMonth" form="case-relations-inline-form" class="govuk-input govuk-date-input__input govuk-input--width-2" inputmode="numeric" />
+                                </div>
+                                <div class="govuk-date-input__item">
+                                    <input asp-for="DamSire.DamBirthYear" form="case-relations-inline-form" class="govuk-input govuk-date-input__input govuk-input--width-4" inputmode="numeric" />
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="govuk-date-input bse-relations-parent-date-input bse-relations-disabled-date">
+                                <div class="govuk-date-input__item">
+                                    <input class="govuk-input govuk-date-input__input govuk-input--width-2" type="text" value="@d.DamBirthDay" disabled />
+                                </div>
+                                <div class="govuk-date-input__item">
+                                    <input class="govuk-input govuk-date-input__input govuk-input--width-2" type="text" value="@d.DamBirthMonth" disabled />
+                                </div>
+                                <div class="govuk-date-input__item">
+                                    <input class="govuk-input govuk-date-input__input govuk-input--width-4" type="text" value="@d.DamBirthYear" disabled />
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    <div class="bse-relations-parent-field-row">
+                        <span class="govuk-label">Final Result</span>
+                        <span class="govuk-body bse-relations-parent-static">@d.DamFinalResult</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="govuk-button-group bse-relations-actions">
                 <form method="post" asp-page="/Case/Relations" asp-page-handler="RemoveDam" asp-route-rbse="@Model.Rbse" novalidate>
                     <input type="hidden" asp-for="Rbse" />
                     <button type="submit" class="govuk-button govuk-button--warning"
                             onclick="return confirm('This will disassociate the dam from the case.  Do you wish to continue?');">Remove Dam</button>
                 </form>
-                <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationParentAdd" asp-route-rbse="@Model.Rbse" asp-route-sex="F">Change Dam Details</a>
                 @if (damLinked)
                 {
                     <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationsView" asp-route-rbse="@d.DamRbse">View Dam's Relations</a>
                 }
-            }
-            else
-            {
-                <a class="govuk-button govuk-button--secondary"
-                   asp-page="/Case/PickSireDam"
-                   asp-route-rbse="@Model.Rbse"
-                   asp-route-sex="F"
-                   asp-route-returnTo="RelationParentAdd">Look Up Dam</a>
-            }
-        </div>
+            </div>
+        }
+        else
+        {
+            <form method="post" asp-page="/Case/Relations" asp-page-handler="LookUpDam" asp-route-returnTo="Relations" novalidate>
+                <input type="hidden" asp-for="Rbse" />
+
+                <div class="bse-relations-parent-columns">
+                    <div class="bse-relations-parent-column">
+                        <div class="bse-relations-parent-field-row">
+                            <label class="govuk-label" asp-for="DamSire.DamSearchRbse">RBSE</label>
+                            <input asp-for="DamSire.DamSearchRbse" class="govuk-input bse-relations-parent-input" />
+                        </div>
+                        <div class="bse-relations-parent-field-row">
+                            <label class="govuk-label" asp-for="DamSire.DamSearchEartag">Eartag</label>
+                            <input asp-for="DamSire.DamSearchEartag" class="govuk-input bse-relations-parent-input" />
+                        </div>
+                        <div class="bse-relations-parent-field-row bse-relations-parent-field-row--button">
+                            <button type="submit" class="govuk-button govuk-button--secondary bse-relations-parent-lookup-button" data-module="govuk-button">Look Up</button>
+                        </div>
+                        <div class="bse-relations-parent-field-row">
+                            <label class="govuk-label" asp-for="DamSire.DamStatus">Status</label>
+                            <select asp-for="DamSire.DamStatus" form="case-relations-inline-form" class="govuk-select bse-relations-parent-input">
+                                <option value=""></option>
+                                @foreach (var item in Model.DamStatusOptions ?? new List<BSE.Modules.ReferenceData.Models.LookupItem>())
+                                {
+                                    <option value="@item.Code">@item.Description</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="bse-relations-parent-field-row">
+                            <span class="govuk-label">Fate</span>
+                            <span class="govuk-body bse-relations-parent-static"></span>
+                        </div>
+                    </div>
+
+                    <div class="bse-relations-parent-column">
+                        <div class="bse-relations-parent-field-row">
+                            <label class="govuk-label" asp-for="DamSire.DamSearchName">Name</label>
+                            <input asp-for="DamSire.DamSearchName" class="govuk-input bse-relations-parent-input" />
+                        </div>
+                        <div class="bse-relations-parent-field-row">
+                            <label class="govuk-label" asp-for="DamSire.DamSearchHerdbook">Herdbook</label>
+                            <input asp-for="DamSire.DamSearchHerdbook" class="govuk-input bse-relations-parent-input" />
+                        </div>
+                        <div class="bse-relations-parent-field-row bse-relations-parent-field-row--spacer"></div>
+                        <div class="bse-relations-parent-field-row">
+                            <span class="govuk-label">Date of Birth</span>
+                            <div class="govuk-date-input bse-relations-parent-date-input bse-relations-disabled-date">
+                                <div class="govuk-date-input__item"><input class="govuk-input govuk-date-input__input govuk-input--width-2" type="text" disabled /></div>
+                                <div class="govuk-date-input__item"><input class="govuk-input govuk-date-input__input govuk-input--width-2" type="text" disabled /></div>
+                                <div class="govuk-date-input__item"><input class="govuk-input govuk-date-input__input govuk-input--width-4" type="text" disabled /></div>
+                            </div>
+                        </div>
+                        <div class="bse-relations-parent-field-row">
+                            <span class="govuk-label">Final Result</span>
+                            <span class="govuk-body bse-relations-parent-static"></span>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        }
     }
 </section>
 
 
-@* ── Related animals ── *@
-<h2 class="govuk-heading-m">Related animals</h2>
+@* ── Other Relations ── *@
+<h2 class="govuk-heading-m bse-relations-panel-width">Other Relations</h2>
 
-@if (Model.TotalRelationsCount > 0)
+@if (User.IsInRole("DataEntry"))
 {
-    <table class="govuk-table">
-        <caption class="govuk-visually-hidden">Related animals for @Model.Rbse</caption>
-        <thead class="govuk-table__head">
-            <tr class="govuk-table__row">
-                @{
-                    var relBase = Url.Page("/Case/Relations", new { rbse = Model.Rbse });
-                }
-                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Relation Type", ["Column"]="RelationType", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
-                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="RBSE", ["Column"]="RelationRbse", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
-                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Sex", ["Column"]="Sex", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
-                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Birth Date", ["Column"]="BirthDate", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
-                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Fate", ["Column"]="RelationFate", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
-                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Date Left", ["Column"]="LeftDate", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
-                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Eartag", ["Column"]="Eartag", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
-                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Sire", ["Column"]="Sire", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
-                @if (User.IsInRole("DataEntry"))
-                {
-                    <th scope="col" class="govuk-table__header"><span class="govuk-visually-hidden">Actions</span></th>
-                }
-            </tr>
-        </thead>
-        <tbody class="govuk-table__body">
-            @foreach (var r in Model.PagedRelations)
-            {
+    <form method="post" novalidate id="case-relations-inline-form" class="bse-relations-panel-width">
+        <input type="hidden" asp-for="Rbse" />
+        <input type="hidden" asp-for="EditingClientKey" />
+
+        <table class="govuk-table">
+            <caption class="govuk-visually-hidden">Related animals for @Model.Rbse</caption>
+            <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    <td class="govuk-table__cell">@(r.RelationTypeDesc ?? r.RelationType)</td>
-                    <td class="govuk-table__cell">@BseFormat.FormatRbse(r.RelationRbse)</td>
-                    <td class="govuk-table__cell">@(r.SexDesc ?? r.Sex)</td>
-                    <td class="govuk-table__cell">@($"{r.BirthDay}/{r.BirthMonth}/{r.BirthYear}")</td>
-                    <td class="govuk-table__cell">@(r.RelationFateDesc ?? r.RelationFate)</td>
-                    <td class="govuk-table__cell">@r.LeftDate?.ToString("dd/MM/yyyy")</td>
-                    <td class="govuk-table__cell">@r.EartagCountry @r.EartagHerdmark @r.Eartag</td>
-                    <td class="govuk-table__cell">@r.Sire</td>
-                    @if (User.IsInRole("DataEntry"))
-                    {
-                        <td class="govuk-table__cell">
-                            <div class="bse-row-actions">
-                                <a class="govuk-link" asp-page="/Case/RelationEdit"
-                                   asp-route-rbse="@Model.Rbse" asp-route-relationId="@r.Id">Change<span class="govuk-visually-hidden"> relation @(r.RelationTypeDesc ?? r.RelationType)</span></a>
-                                <form method="post" asp-page-handler="DeleteRelation" novalidate>
-                                    <input type="hidden" name="RelationId" value="@r.Id" />
-                                    <input type="hidden" name="RowStampBase64" value="@Convert.ToBase64String(r.RowStamp ?? [])" />
-                                    <input type="hidden" asp-for="Rbse" />
-                                    <button type="submit" class="govuk-button govuk-button--warning"
-                                            onclick="return confirm('Delete this relation?')">Delete<span class="govuk-visually-hidden"> relation @(r.RelationTypeDesc ?? r.RelationType)</span></button>
-                                </form>
-                            </div>
-                        </td>
+                    @{
+                        var relBase = Url.Page("/Case/Relations", new { rbse = Model.Rbse });
                     }
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Relation Type", ["Column"]="RelationType", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="RBSE", ["Column"]="RelationRbse", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Sex", ["Column"]="Sex", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Birth Date", ["Column"]="BirthDate", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Fate", ["Column"]="RelationFate", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Date Left", ["Column"]="LeftDate", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Eartag", ["Column"]="Eartag", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Sire", ["Column"]="Sire", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
+                    <th scope="col" class="govuk-table__header"><span class="govuk-visually-hidden">Actions</span></th>
                 </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+                @if (Model.TotalRelationsCount > 0)
+                {
+                    @foreach (var r in Model.PagedRelations)
+                    {
+                        <tr class="govuk-table__row bse-relations-row @(r.IsUnsaved ? "bse-relations-row--unsaved" : "") @(Model.EditingClientKey == r.ClientKey ? "bse-relations-row--selected" : "")" data-client-key="@r.ClientKey">
+                            <td class="govuk-table__cell">@(r.RelationTypeDesc ?? r.RelationType)</td>
+                            <td class="govuk-table__cell">@BseFormat.FormatRbse(r.RelationRbse)</td>
+                            <td class="govuk-table__cell">@(r.SexDesc ?? r.Sex)</td>
+                            <td class="govuk-table__cell">@BseFormat.FormatPartialDate(r.BirthDay, r.BirthMonth, r.BirthYear)</td>
+                            <td class="govuk-table__cell">@(r.RelationFateDesc ?? r.RelationFate)</td>
+                            <td class="govuk-table__cell">@r.LeftDate?.ToString("dd/MM/yyyy")</td>
+                            <td class="govuk-table__cell">@r.EartagCountry @r.EartagHerdmark @r.Eartag</td>
+                            <td class="govuk-table__cell">
+                                @r.Sire
+                                @if (r.IsUnsaved)
+                                {
+                                    <strong class="govuk-tag govuk-tag--yellow govuk-!-margin-left-2">Unsaved</strong>
+                                }
+                            </td>
+                            <td class="govuk-table__cell">
+                                <div class="bse-row-actions">
+                                    <button type="submit" asp-page-handler="BeginEditRelationRow" asp-route-clientKey="@r.ClientKey"
+                                            class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">
+                                        Change<span class="govuk-visually-hidden"> relation @(r.RelationTypeDesc ?? r.RelationType)</span>
+                                    </button>
+                                    <button type="submit" asp-page-handler="DeleteRelationRow" asp-route-clientKey="@r.ClientKey"
+                                            class="govuk-button govuk-button--warning govuk-!-margin-bottom-0" data-module="govuk-button">
+                                        Delete<span class="govuk-visually-hidden"> relation @(r.RelationTypeDesc ?? r.RelationType)</span>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr class="govuk-table__row">
+                        <td class="govuk-table__cell" colspan="9">No related animals recorded.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (Model.TotalRelationsCount > 0)
+        {
+            @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
+        }
+
+        <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+
+        @* -- Shared add/edit field panel: mirrors legacy CaseEntryRelations.aspx's single
+             panel used for both "Add As New" and editing a selected row -- *@
+        @if (isEditingRelation)
+        {
+            <h2 class="govuk-heading-m">Change related animal</h2>
+        }
+
+        <div class="bse-relations-grid">
+            <div class="bse-relations-left-column">
+                <div class="govuk-form-group bse-relations-field-row govuk-!-margin-bottom-3 @(Model.RelationFieldErrors.ContainsKey("RelationType") ? "govuk-form-group--error" : "")">
+                    <label class="govuk-label" for="relation-type">Relation Type</label>
+                    @if (Model.RelationFieldErrors.TryGetValue("RelationType", out var relationTypeError)) { <p class="govuk-error-message bse-relations-field-error"><span class="govuk-visually-hidden">Error:</span> @relationTypeError</p> }
+                    <select id="relation-type" name="RelationType" class="govuk-select bse-relations-field-input @(Model.RelationFieldErrors.ContainsKey("RelationType") ? "govuk-select--error" : "")">
+                        <option value=""></option>
+                        @foreach (var rt in Model.RelationTypes)
+                        {
+                            <option value="@rt.Code" selected="@(Model.RelationType == rt.Code)">@rt.Description</option>
+                        }
+                    </select>
+                </div>
+                <div class="govuk-form-group bse-relations-field-row govuk-!-margin-bottom-3 @(Model.RelationFieldErrors.ContainsKey("Sex") ? "govuk-form-group--error" : "")">
+                    <label class="govuk-label" for="sex">Sex</label>
+                    @if (Model.RelationFieldErrors.TryGetValue("Sex", out var sexError)) { <p class="govuk-error-message bse-relations-field-error"><span class="govuk-visually-hidden">Error:</span> @sexError</p> }
+                    <select id="sex" name="Sex" class="govuk-select bse-relations-field-input @(Model.RelationFieldErrors.ContainsKey("Sex") ? "govuk-select--error" : "")">
+                        <option value=""></option>
+                        @foreach (var s in Model.Sexes)
+                        {
+                            <option value="@s.Code" selected="@(Model.Sex == s.Code)">@s.Description</option>
+                        }
+                    </select>
+                </div>
+                <div class="govuk-form-group bse-relations-field-row govuk-!-margin-bottom-3">
+                    <label class="govuk-label" for="relation-fate">Fate</label>
+                    <select id="relation-fate" name="RelationFate" class="govuk-select bse-relations-field-input">
+                        <option value=""></option>
+                        @foreach (var f in Model.RelationFates)
+                        {
+                            <option value="@f.Code" selected="@(Model.RelationFate == f.Code)">@f.Description</option>
+                        }
+                    </select>
+                </div>
+                <div class="govuk-form-group bse-relations-field-row govuk-!-margin-bottom-3">
+                    <label class="govuk-label" for="eartag-country">Eartag</label>
+                    <div class="bse-relations-eartag-inputs">
+                        <input id="eartag-country" name="EartagCountry" type="text" maxlength="5" value="@Model.EartagCountry" class="govuk-input bse-relations-eartag-country" />
+                        <input id="eartag-herdmark" name="EartagHerdmark" type="text" value="@Model.EartagHerdmark" class="govuk-input bse-relations-eartag-herdmark" />
+                        <input id="eartag" name="Eartag" type="text" value="@Model.Eartag" class="govuk-input bse-relations-eartag-number" />
+                    </div>
+                </div>
+
+                <div class="govuk-button-group govuk-!-margin-top-2 govuk-!-margin-bottom-0">
+                    <button type="submit" asp-page-handler="AddRelationRow" class="govuk-button govuk-button--secondary" data-module="govuk-button">Add As New</button>
+                    @if (isEditingRelation)
+                    {
+                        <button type="submit" asp-page-handler="UpdateRelationRow" class="govuk-button govuk-button--secondary" data-module="govuk-button">Update Selected</button>
+                        <button type="submit" asp-page-handler="DeleteRelationRow" asp-route-clientKey="@Model.EditingClientKey" class="govuk-button govuk-button--warning" data-module="govuk-button">Delete Selected</button>
+                    }
+                </div>
+            </div>
+            <div class="bse-relations-right-column">
+                <div class="govuk-form-group bse-relations-field-row govuk-!-margin-bottom-3 @(Model.RelationFieldErrors.ContainsKey("RelationRbse") ? "govuk-form-group--error" : "")">
+                    <label class="govuk-label" for="relation-rbse">RBSE</label>
+                    @if (Model.RelationFieldErrors.TryGetValue("RelationRbse", out var relationRbseError)) { <p class="govuk-error-message bse-relations-field-error"><span class="govuk-visually-hidden">Error:</span> @relationRbseError</p> }
+                    <input id="relation-rbse" name="RelationRbse" type="text" value="@Model.RelationRbse" class="govuk-input bse-relations-field-input @(Model.RelationFieldErrors.ContainsKey("RelationRbse") ? "govuk-input--error" : "")" />
+                </div>
+                <div class="govuk-form-group bse-relations-field-row govuk-!-margin-bottom-3 @((Model.RelationFieldErrors.ContainsKey("BirthDay") || Model.RelationFieldErrors.ContainsKey("BirthMonth") || Model.RelationFieldErrors.ContainsKey("BirthYear")) ? "govuk-form-group--error" : "")">
+                    <label class="govuk-label" for="birth-date">Date of Birth</label>
+                    @if (Model.RelationFieldErrors.TryGetValue("BirthDay", out var birthDayError)) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @birthDayError</p> }
+                    @if (Model.RelationFieldErrors.TryGetValue("BirthMonth", out var birthMonthError)) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @birthMonthError</p> }
+                    @if (Model.RelationFieldErrors.TryGetValue("BirthYear", out var birthYearError)) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @birthYearError</p> }
+                    <input id="birth-date" name="BirthDate" type="date" value="@(Model.BirthDate?.ToString("yyyy-MM-dd"))" class="govuk-input bse-relations-field-input" />
+                </div>
+                <div class="govuk-form-group bse-relations-field-row govuk-!-margin-bottom-3 @(Model.RelationFieldErrors.ContainsKey("LeftDate") ? "govuk-form-group--error" : "")">
+                    <label class="govuk-label" for="left-date">Date Left</label>
+                    @if (Model.RelationFieldErrors.TryGetValue("LeftDate", out var leftDateError)) { <p class="govuk-error-message bse-relations-field-error"><span class="govuk-visually-hidden">Error:</span> @leftDateError</p> }
+                    <input id="left-date" name="LeftDate" type="date" value="@(Model.LeftDate?.ToString("yyyy-MM-dd"))" class="govuk-input bse-relations-field-input" />
+                </div>
+                <div class="govuk-form-group bse-relations-field-row govuk-!-margin-bottom-3">
+                    <label class="govuk-label" for="sire">Sire</label>
+                    <input id="sire" name="Sire" type="text" maxlength="5" value="@Model.Sire" class="govuk-input bse-relations-field-input" />
+                </div>
+            </div>
+        </div>
+
+        @if (canEditRelations)
+        {
+            <div class="govuk-button-group bse-relations-panel-width govuk-!-margin-top-4">
+                <button type="submit" asp-page-handler="SaveRelations" class="govuk-button" data-module="govuk-button">Save</button>
+                <a asp-page="/Case/Relations" asp-page-handler="CancelRelationsEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link bse-cancel-button">Cancel</a>
+            </div>
+        }
+
+        @if (viewDocsUrl is not null)
+        {
+            <div class="govuk-button-group bse-relations-panel-width govuk-!-margin-top-2">
+                <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" class="govuk-link">
+                    View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
+                </a>
+            </div>
+        }
+    </form>
+
+    <style>
+        .bse-relations-panel-width {
+            width: 996px;
+            max-width: 100%;
+        }
+
+        .bse-unsaved-banner {
+            border-left-color: #1d70b8;
+        }
+
+        .bse-relations-row--unsaved {
+            background: #fffbf2;
+        }
+
+        .bse-relations-row--selected {
+            background: #f3f2f1;
+        }
+
+        .bse-relations-case-row {
+            display: grid;
+            grid-template-columns: 220px 250px;
+            column-gap: 16px;
+            align-items: center;
+        }
+
+        .bse-relations-case-label {
+            margin-bottom: 0;
+            font-weight: 400;
+        }
+
+        .bse-relations-parent-field-row .govuk-label.bse-relations-parent-label-strong { font-weight: 700; }
+
+        .bse-relations-parent-label-nowrap { white-space: nowrap; }
+
+        .bse-relations-parent-columns--meta {
+            margin-bottom: 12px;
+        }
+
+        .bse-relations-parent-columns {
+            display: grid;
+            grid-template-columns: 540px 420px;
+            column-gap: 36px;
+            row-gap: 0;
+            align-items: start;
+        }
+
+        .bse-relations-parent-column {
+            display: grid;
+            row-gap: 8px;
+            align-content: start;
+        }
+
+        .bse-relations-parent-field-row {
+            display: grid;
+            grid-template-columns: 220px 252px;
+            column-gap: 16px;
+            align-items: center;
+            min-height: 36px;
+        }
+
+        .bse-relations-parent-field-row--spacer {
+            min-height: 36px;
+        }
+
+        .bse-relations-parent-field-row--button {
+            grid-template-columns: 1fr;
+        }
+
+        .bse-relations-parent-field-row .govuk-label,
+        .bse-relations-parent-field-row .govuk-body {
+            margin: 0;
+            font-weight: 400;
+        }
+
+        .bse-relations-parent-input {
+            width: 252px;
+            max-width: 252px;
+            margin-bottom: 0;
+        }
+
+        .bse-relations-parent-date-input {
+            margin-bottom: 0;
+        }
+
+        .bse-relations-parent-lookup-button {
+            width: 96px;
+            margin-bottom: 0;
+            padding-left: 10px;
+            padding-right: 10px;
+            min-height: auto;
+            line-height: 1.2;
+            justify-self: start;
+        }
+
+        .bse-relations-parent-static {
+            min-height: 24px;
+            display: inline-block;
+        }
+
+        .bse-relations-disabled-date .govuk-input[disabled] {
+            background: #f3f2f1;
+            color: #505a5f;
+        }
+
+        .bse-relations-parent-panel .govuk-button-group {
+            margin-top: 14px;
+        }
+
+        .bse-relations-grid {
+            display: grid;
+            grid-template-columns: 540px 420px;
+            gap: 0 36px;
+        }
+
+        @@media (max-width: 1020px) {
+            .bse-relations-panel-width,
+            .bse-relations-parent-panel {
+                width: 100%;
             }
-        </tbody>
-    </table>
 
-    @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
-}
-else
-{
-    <p class="govuk-body govuk-!-colour-secondary">No related animals recorded.</p>
-}
+            .bse-relations-parent-columns,
+            .bse-relations-grid {
+                grid-template-columns: 1fr;
+                row-gap: 12px;
+            }
+        }
 
-@* -- Actions --------------------------------------------------------------- *@
-<div class="govuk-button-group govuk-!-margin-top-4">
-    @if (User.IsInRole("DataEntry"))
-    {
-        <a asp-page="/Case/RelationAdd" asp-route-rbse="@Model.Rbse" class="govuk-button govuk-button--secondary">Add As New</a>
-    }
-    @if (!string.IsNullOrEmpty(Model.SpolSiteUrl))
-    {
-        <a href="@(Model.SpolSiteUrl)@rbseNoSlash" target="_blank" rel="noopener noreferrer" class="govuk-link">
-            View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
-        </a>
-    }
-</div>
+        .bse-relations-left-column,
+        .bse-relations-right-column {
+            align-self: start;
+        }
+
+        .bse-relations-field-row {
+            display: grid;
+            grid-template-columns: 220px 252px;
+            column-gap: 16px;
+            align-items: center;
+        }
+
+        .bse-relations-field-row .govuk-label,
+        .bse-relations-field-legend {
+            margin-bottom: 0;
+            font-weight: 400;
+            white-space: nowrap;
+        }
+
+        .bse-relations-field-error {
+            grid-column: 2;
+            margin-bottom: 4px;
+        }
+
+        .bse-relations-field-input {
+            width: 252px;
+            max-width: 252px;
+            margin-bottom: 0;
+        }
+
+        .bse-row-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .bse-relations-eartag-inputs {
+            display: grid;
+            grid-template-columns: 54px 90px 96px;
+            column-gap: 6px;
+            align-items: center;
+        }
+
+        .bse-relations-eartag-country,
+        .bse-relations-eartag-herdmark,
+        .bse-relations-eartag-number {
+            margin-bottom: 0;
+        }
+
+        .bse-relations-eartag-country {
+            width: 54px;
+        }
+
+        .bse-relations-eartag-herdmark {
+            width: 90px;
+        }
+
+        .bse-relations-eartag-number {
+            width: 96px;
+        }
+    </style>
+
+    <script>
+        document.querySelectorAll('.bse-cancel-button').forEach(function (b) {
+            b.addEventListener('click', function (e) {
+                var banner = document.getElementById('case-relations-unsaved-banner');
+                var hasUnsaved = banner && !banner.hidden;
+                if (hasUnsaved && !window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+                    e.preventDefault();
+                }
+            });
+        });
+    </script>
+}
 

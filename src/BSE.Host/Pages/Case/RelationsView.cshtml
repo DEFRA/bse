@@ -28,7 +28,7 @@
                 <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Name</dt><dd class="govuk-summary-list__value">@dam.Name</dd></div>
                 <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@BseFormat.FormatRbse(dam.Rbse)</dd></div>
                 <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Herdbook</dt><dd class="govuk-summary-list__value">@dam.Herdbook</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Birth date</dt><dd class="govuk-summary-list__value">@($"{dam.BirthDay}/{dam.BirthMonth}/{dam.BirthYear}")</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Birth date</dt><dd class="govuk-summary-list__value">@BseFormat.FormatPartialDate(dam.BirthDay, dam.BirthMonth, dam.BirthYear)</dd></div>
                 <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Fate</dt><dd class="govuk-summary-list__value">@dam.Fate</dd></div>
                 <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Final result</dt><dd class="govuk-summary-list__value">@dam.FinalResult</dd></div>
                 <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Offspring count</dt><dd class="govuk-summary-list__value">@dam.ChildCount</dd></div>
@@ -49,7 +49,7 @@
                 <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Name</dt><dd class="govuk-summary-list__value">@sire.Name</dd></div>
                 <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@BseFormat.FormatRbse(sire.Rbse)</dd></div>
                 <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Herdbook</dt><dd class="govuk-summary-list__value">@sire.Herdbook</dd></div>
-                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Birth date</dt><dd class="govuk-summary-list__value">@($"{sire.BirthDay}/{sire.BirthMonth}/{sire.BirthYear}")</dd></div>
+                <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Birth date</dt><dd class="govuk-summary-list__value">@BseFormat.FormatPartialDate(sire.BirthDay, sire.BirthMonth, sire.BirthYear)</dd></div>
                 <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Fate</dt><dd class="govuk-summary-list__value">@sire.Fate</dd></div>
                 <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Offspring count</dt><dd class="govuk-summary-list__value">@sire.ChildCount</dd></div>
             </dl>
@@ -84,7 +84,7 @@
                     <td class="govuk-table__cell">@(r.RelationTypeDesc ?? r.RelationType)</td>
                     <td class="govuk-table__cell">@BseFormat.FormatRbse(r.RelationRbse)</td>
                     <td class="govuk-table__cell">@(r.SexDesc ?? r.Sex)</td>
-                    <td class="govuk-table__cell">@($"{r.BirthDay}/{r.BirthMonth}/{r.BirthYear}")</td>
+                    <td class="govuk-table__cell">@BseFormat.FormatPartialDate(r.BirthDay, r.BirthMonth, r.BirthYear)</td>
                     <td class="govuk-table__cell">@(r.RelationFateDesc ?? r.RelationFate)</td>
                     <td class="govuk-table__cell">@r.LeftDate?.ToString("dd/MM/yyyy")</td>
                     <td class="govuk-table__cell">@r.EartagCountry @r.EartagHerdmark @r.Eartag</td>
