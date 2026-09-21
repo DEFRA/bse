@@ -146,9 +146,12 @@
         var sortDesc = Model.Filter.SortDesc;
 
         @await Html.PartialAsync("_ExportLink")
-        <div style="overflow-x: auto;">
-        <table class="govuk-table govuk-table--small-text-until-tablet">
+        <div class="bse-farms-results-wrap">
+        <table class="govuk-table govuk-table--small-text-until-tablet bse-farms-results-table">
             <caption class="govuk-visually-hidden">Farm search results</caption>
+            <colgroup>
+                <col /><col /><col /><col /><col /><col /><col /><col /><col /><col /><col /><col />
+            </colgroup>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
                     @{ ViewData["Label"] = "CPHH";                   ViewData["Column"] = "Cphh";                   ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Prefix"] = "Filter."; ViewData["Fragment"] = "farm-search-results"; }
@@ -161,7 +164,7 @@
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Herdmark(s)";             ViewData["Column"] = "Herdmark"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Numeric Herdmark(s)";     ViewData["Column"] = "NumericHerdmark"; ViewData["HeaderClass"] = "govuk-table__header--numeric"; }
+                    @{ ViewData["Label"] = "Numeric Herdmark";     ViewData["Column"] = "NumericHerdmark"; ViewData["HeaderClass"] = "govuk-table__header--numeric"; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Map Ref";                 ViewData["Column"] = "MapReference"; }
                     <partial name="_SortableHeader" />
