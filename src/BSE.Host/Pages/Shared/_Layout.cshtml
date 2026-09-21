@@ -19,7 +19,7 @@
     <link rel="stylesheet" href="~/govuk/govuk-frontend.min.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/bse.css" asp-append-version="true" />
 </head>
-<body class="govuk-template__body">
+<body class="govuk-template__body @ViewData["BodyClass"]">
     <script>document.body.className += ' js-enabled' + ('noModule' in HTMLScriptElement.prototype ? ' govuk-frontend-supported' : '');</script>
     <a href="#main-content" class="govuk-skip-link" data-module="govuk-skip-link">Skip to main content</a>
 
