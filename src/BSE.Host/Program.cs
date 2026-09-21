@@ -1,6 +1,7 @@
 ﻿using BSE.Host.Cache;
 using BSE.Host.Authentication;
 using BSE.Host.HealthChecks;
+using BSE.Host.Middleware;
 using BSE.Infrastructure;
 using BSE.Infrastructure.Cache;
 using BSE.SharedKernel;
@@ -30,6 +31,7 @@ using Sustainsys.Saml2.Metadata;
 using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Json;
+using Serilog.Sinks.ApplicationInsights.TelemetryConverters;
 
 // Bootstrap logger captures startup errors before full Serilog is configured.
 Log.Logger = new LoggerConfiguration()
@@ -42,13 +44,24 @@ try
     var builder = WebApplication.CreateBuilder(args);
 
     // ── Structured logging ──────────────────────────────────────────────────
-    builder.Host.UseSerilog((context, config) =>
+    builder.Host.UseSerilog((context, _, config) =>
     {
+        var appInsightsConnectionString = context.Configuration["ApplicationInsights:ConnectionString"];
+
         config
             .MinimumLevel.Information()
             .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
             .ReadFrom.Configuration(context.Configuration)   // ← picks up Serilog:MinimumLevel:Override from appsettings
             .Enrich.FromLogContext();
+
+        var isNonProduction = !context.HostingEnvironment.IsProduction();
+        var hasAppInsights = !string.IsNullOrWhiteSpace(appInsightsConnectionString);
+
+        if (isNonProduction && hasAppInsights)
+        {
+            config.WriteTo.ApplicationInsights(appInsightsConnectionString!, TelemetryConverter.Traces);
+            return;
+        }
 
         // Structured JSON in non-Development environments; plain text locally.
         if (context.HostingEnvironment.IsDevelopment())
@@ -61,7 +74,12 @@ try
 
     // ── Data access infrastructure ──────────────────────────────────────────
     builder.Services.AddSingleton<IDbConnectionFactory, SqlConnectionFactory>();
-    builder.Services.AddScoped<IDbRepository, DapperRepository>();
+    builder.Services.AddScoped<DapperRepository>();
+    builder.Services.AddScoped<IDbRepository>(sp =>
+        new LoggingDbRepositoryDecorator(
+            sp.GetRequiredService<DapperRepository>(),
+            sp.GetRequiredService<ILogger<LoggingDbRepositoryDecorator>>(),
+            sp.GetRequiredService<IConfiguration>()));
 
     // ── Distributed cache (Redis primary / MemoryCache fallback) ────────────
     // When Redis__ConnectionString is set the app runs in distributed mode;
@@ -189,6 +207,13 @@ try
                 options.Events.OnRedirectToLogin = async ctx =>
 
                 {
+                    var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>()
+                        .CreateLogger("AuthSecurity");
+                    logger.LogWarning(
+                        "Authentication challenge redirect for {Path}. ReturnUrl={ReturnUrl}",
+                        ctx.Request.Path.Value,
+                        ctx.Request.Query["ReturnUrl"].ToString());
+
                     await ctx.HttpContext.ChallengeAsync(
                         Saml2Defaults.Scheme,
                         new AuthenticationProperties
@@ -199,6 +224,13 @@ try
                 // Redirect authenticated users with insufficient permissions to Home, not a 403.
                 options.Events.OnRedirectToAccessDenied = ctx =>
                 {
+                    var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>()
+                        .CreateLogger("AuthSecurity");
+                    logger.LogWarning(
+                        "Access denied redirect for {Path} (User={User})",
+                        ctx.Request.Path.Value,
+                        ctx.HttpContext.User.Identity?.Name ?? "unknown");
+
                     ctx.Response.Redirect("/Home");
                     return Task.CompletedTask;
                 };
@@ -406,8 +438,32 @@ try
 
     app.UseForwardedHeaders(); // options registered via builder.Services.Configure<ForwardedHeadersOptions> above
 
+    app.UseMiddleware<UnhandledExceptionLoggingMiddleware>();
     app.UseExceptionHandler("/Error");
-    app.UseSerilogRequestLogging();
+
+    var slowRequestThresholdMs = builder.Configuration.GetValue<int?>("Serilog:SlowRequestThresholdMs") ?? 1000;
+    app.UseSerilogRequestLogging(options =>
+    {
+        options.EnrichDiagnosticContext = (diag, http) =>
+        {
+            diag.Set("RequestHost", http.Request.Host.Value);
+            diag.Set("RequestScheme", http.Request.Scheme);
+            diag.Set("UserAgent", http.Request.Headers.UserAgent.ToString());
+            diag.Set("User", http.User.Identity?.Name ?? "anonymous");
+        };
+
+        options.GetLevel = (http, elapsed, ex) =>
+        {
+            if (ex is not null || http.Response.StatusCode >= 500)
+                return LogEventLevel.Error;
+
+            if (elapsed >= slowRequestThresholdMs)
+                return LogEventLevel.Warning;
+
+            return LogEventLevel.Information;
+        };
+    });
+
     app.UseAuthentication();
     app.UseSession(); // Session middleware must come after Authentication
     app.UseAuthorization();
@@ -426,6 +482,7 @@ try
     }).AllowAnonymous();
 
     app.UseStaticFiles();
+    app.UseMiddleware<UserActivityLoggingMiddleware>();
 
     app.MapGet("/case/{rbse}/unsaved-status", async (
         string rbse,
