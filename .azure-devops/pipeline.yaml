@@ -217,6 +217,10 @@ stages:
       value: 'BSE'
     - name: dbScriptsChanged
       value: $[ stageDependencies.Build.build.outputs['detectDbChanges.dbScriptsChanged'] ]
+    - name: msGraphSenderUserId
+      value: 'tse.queries@apha.gov.uk'
+    - name: msGraphFromAddress
+      value: 'tse.queries@apha.gov.uk'
   jobs:
   - deployment: deploy_test
     environment: 'TST'
@@ -278,6 +282,10 @@ stages:
                 -Saml2__IdPMetadataUrl "https://login.microsoftonline.com/$(tenantId)/federationmetadata/2007-06/federationmetadata.xml?appid=$(appId)"
                 -Authentication__BypassEnabled "false"
                 -ConnectionStrings__BSE "Server=tcp:$(sqlServer);Database=$(dbName);Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Managed Identity;"
+                -AdnsMsGraph__MsGraphTenantId "$(tenantId)"
+                -AdnsMsGraph__MsGraphClientId "$(appId)"
+                -AdnsMsGraph__MsGraphSenderUserId "$(msGraphSenderUserId)"
+                -AdnsMsGraph__FromAddress "$(msGraphFromAddress)"
 
 - stage: PRE
   displayName: PRE
