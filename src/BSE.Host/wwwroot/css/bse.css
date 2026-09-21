@@ -574,7 +574,6 @@
    (form, headings, etc. stay within the normal GDS width). Scroll the table region
    only as a fallback on viewports narrower than the table's own min-width. */
 .bse-case-search-table-wrap,
-.bse-farm-search-table-wrap,
 .bse-outstanding-search-table-wrap,
 .bse-holding-herdmark-search-table-wrap,
 .bse-herdmark-search-table-wrap {
@@ -590,13 +589,31 @@
     overflow-x: auto;
 }
 
+.bse-farm-search-table-wrap {
+    width: 100%;
+    position: static;
+    left: auto;
+    right: auto;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+    box-sizing: border-box;
+    overflow-x: hidden;
+}
+
 .bse-case-search-table,
-.bse-farm-search-table,
 .bse-outstanding-search-table,
 .bse-holding-herdmark-search-table,
 .bse-herdmark-search-table {
     table-layout: auto;
     min-width: 1600px;
+}
+
+.bse-farm-search-table {
+    width: 100%;
+    table-layout: fixed;
+    min-width: 0;
 }
 
 .bse-case-search-table .govuk-table__cell,
@@ -629,6 +646,70 @@
     white-space: normal;
     align-items: flex-start;
     line-height: 1.2;
+}
+
+.bse-farm-search-table .govuk-table__header,
+.bse-farm-search-table .govuk-table__cell {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-wrap: break-word;
+    word-break: normal;
+    vertical-align: top;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+.bse-farm-search-table .govuk-table__header:nth-child(1),
+.bse-farm-search-table .govuk-table__cell:nth-child(1) { width: 8%; }
+.bse-farm-search-table .govuk-table__header:nth-child(2),
+.bse-farm-search-table .govuk-table__cell:nth-child(2) { width: 11%; }
+.bse-farm-search-table .govuk-table__header:nth-child(3),
+.bse-farm-search-table .govuk-table__cell:nth-child(3) { width: 11%; }
+.bse-farm-search-table .govuk-table__header:nth-child(4),
+.bse-farm-search-table .govuk-table__cell:nth-child(4) { width: 7%; }
+.bse-farm-search-table .govuk-table__header:nth-child(5),
+.bse-farm-search-table .govuk-table__cell:nth-child(5) { width: 7%; }
+.bse-farm-search-table .govuk-table__header:nth-child(6),
+.bse-farm-search-table .govuk-table__cell:nth-child(6) { width: 8%; }
+.bse-farm-search-table .govuk-table__header:nth-child(7),
+.bse-farm-search-table .govuk-table__cell:nth-child(7) { width: 7%; }
+.bse-farm-search-table .govuk-table__header:nth-child(8),
+.bse-farm-search-table .govuk-table__cell:nth-child(8) { width: 5%; }
+.bse-farm-search-table .govuk-table__header:nth-child(9),
+.bse-farm-search-table .govuk-table__cell:nth-child(9) { width: 6%; }
+.bse-farm-search-table .govuk-table__header:nth-child(10),
+.bse-farm-search-table .govuk-table__cell:nth-child(10) { width: 14%; }
+.bse-farm-search-table .govuk-table__header:nth-child(11),
+.bse-farm-search-table .govuk-table__cell:nth-child(11) { width: 8%; }
+.bse-farm-search-table .govuk-table__header:nth-child(12),
+.bse-farm-search-table .govuk-table__cell:nth-child(12) { width: 8%; }
+
+.bse-farm-search-table .govuk-table__header:nth-child(1),
+.bse-farm-search-table .govuk-table__cell:nth-child(1),
+.bse-farm-search-table .govuk-table__header:nth-child(5),
+.bse-farm-search-table .govuk-table__cell:nth-child(5),
+.bse-farm-search-table .govuk-table__header:nth-child(6),
+.bse-farm-search-table .govuk-table__cell:nth-child(6),
+.bse-farm-search-table .govuk-table__header:nth-child(7),
+.bse-farm-search-table .govuk-table__cell:nth-child(7),
+.bse-farm-search-table .govuk-table__header:nth-child(8),
+.bse-farm-search-table .govuk-table__cell:nth-child(8),
+.bse-farm-search-table .govuk-table__header:nth-child(9),
+.bse-farm-search-table .govuk-table__cell:nth-child(9),
+.bse-farm-search-table .govuk-table__header:nth-child(11),
+.bse-farm-search-table .govuk-table__cell:nth-child(11),
+.bse-farm-search-table .govuk-table__header:nth-child(12),
+.bse-farm-search-table .govuk-table__cell:nth-child(12) {
+    text-align: right;
+}
+
+.bse-farm-search-table .govuk-table__header:nth-child(2),
+.bse-farm-search-table .govuk-table__cell:nth-child(2),
+.bse-farm-search-table .govuk-table__header:nth-child(3),
+.bse-farm-search-table .govuk-table__cell:nth-child(3),
+.bse-farm-search-table .govuk-table__header:nth-child(10),
+.bse-farm-search-table .govuk-table__cell:nth-child(10) {
+    overflow-wrap: anywhere;
 }
 
 /* Column widths sized to fit each header's text (plus the sort icon) without wrapping/clipping. */
