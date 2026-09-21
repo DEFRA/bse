@@ -1,5 +1,15 @@
 /* BSE custom additions on top of GOV.UK Frontend */
 
+/* Pages that need the wider, left-gutter (not centered) legacy-style layout: add
+   class="bse-wide-page" to any element on the page (e.g. the <h1>) to opt in.
+   Applies to every width-container on the page (header, nav, main, footer) so the
+   GOV.UK banner/crown lines up with the wider page content instead of staying at 960px. */
+body:has(.bse-wide-page) .govuk-width-container {
+    max-width: 1280px;
+    margin-left: 15px;
+    margin-right: 15px;
+}
+
 /* Legacy Final Result Entry alignment */
 .bse-final-result-legacy {
     margin-top: 1.5rem;
@@ -1700,5 +1710,10 @@
         flex-direction: column;
         gap: 12px;
     }
+}
+
+/* Casework Entry — left column summary list keys match the regular weight of the form labels below them */
+.bse-casework-entry-left .govuk-summary-list__key {
+    font-weight: 400;
 }
 

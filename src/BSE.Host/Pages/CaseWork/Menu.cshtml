@@ -4,7 +4,7 @@
     ViewData["Title"] = string.IsNullOrEmpty(Model.Rbse) ? "Casework menu" : $"Case work \u2014 {Model.Rbse}";
 }
 
-<h1 class="govuk-heading-l">@(string.IsNullOrEmpty(Model.Rbse) ? "Casework menu" : $"Case work \u2014 {Model.Rbse}")</h1>
+<h1 class="govuk-heading-l bse-wide-page">@(string.IsNullOrEmpty(Model.Rbse) ? "Casework menu" : $"Case work \u2014 {Model.Rbse}")</h1>
 
 @* \u2500\u2500 Standalone menu (navigated from home page without a case RBSE) \u2500\u2500 *@
 @if (string.IsNullOrEmpty(Model.Rbse))
