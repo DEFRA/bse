@@ -34,6 +34,8 @@ public class FinalResultEntryModel(
 
     [BindProperty(SupportsGet = true)] public string Rbse { get; set; } = string.Empty;
     [BindProperty(SupportsGet = true)] public int TestPage { get; set; } = 1;
+    [BindProperty(SupportsGet = true)] public string? TestSortColumn { get; set; }
+    [BindProperty(SupportsGet = true)] public bool TestSortDesc { get; set; }
 
     [BindProperty] public string? FinalResult { get; set; }
     [BindProperty] public string? RetrospectiveTestType { get; set; }
@@ -233,21 +235,48 @@ public class FinalResultEntryModel(
     public string DescribeTestResult(string? code) =>
         TestResults.FirstOrDefault(t => t.Code == code)?.Description ?? code ?? string.Empty;
 
-    public string TestsPageUrl(int page) =>
-        $"?rbse={Uri.EscapeDataString(Rbse)}&TestPage={page}";
+    public string TestsPageUrl(int page, string? sortColumn = null, bool? sortDesc = null)
+    {
+        var column = sortColumn ?? TestSortColumn;
+        var desc = sortDesc ?? TestSortDesc;
+
+        var query = new List<string>
+        {
+            $"rbse={Uri.EscapeDataString(Rbse)}",
+            $"TestPage={page}"
+        };
+
+        if (!string.IsNullOrWhiteSpace(column))
+            query.Add($"TestSortColumn={Uri.EscapeDataString(column)}");
+
+        if (desc)
+            query.Add("TestSortDesc=true");
+
+        return $"?{string.Join("&", query)}";
+    }
 
     private void ApplyTestsPaging(IReadOnlyList<CaseTestRecord> allTests)
     {
-        var ordered = allTests
-            .OrderBy(t => t.TestType)
-            .ThenBy(t => t.TestResult)
-            .ToList();
+        IEnumerable<CaseTestRecord> ordered = allTests;
 
-        TestsTotalCount = ordered.Count;
-        TestsTotalPages = Math.Max(1, (int)Math.Ceiling(ordered.Count / (double)TestsPageSize));
+        ordered = TestSortColumn switch
+        {
+            "TestType" => TestSortDesc
+                ? ordered.OrderByDescending(t => DescribeTestType(t.TestType))
+                : ordered.OrderBy(t => DescribeTestType(t.TestType)),
+            "TestResult" => TestSortDesc
+                ? ordered.OrderByDescending(t => DescribeTestResult(t.TestResult))
+                : ordered.OrderBy(t => DescribeTestResult(t.TestResult)),
+            _ => ordered.OrderBy(t => t.TestType).ThenBy(t => t.TestResult)
+        };
+
+        var orderedList = ordered.ToList();
+
+        TestsTotalCount = orderedList.Count;
+        TestsTotalPages = Math.Max(1, (int)Math.Ceiling(orderedList.Count / (double)TestsPageSize));
         TestPage = Math.Clamp(TestPage, 1, TestsTotalPages);
 
-        Tests = ordered
+        Tests = orderedList
             .Skip((TestPage - 1) * TestsPageSize)
             .Take(TestsPageSize)
             .ToList()

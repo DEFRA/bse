@@ -2,6 +2,15 @@
 @model BSE.Host.Pages.CaseWork.OpenCasesModel
 @{
     ViewData["Title"] = "View all open cases";
+
+    var sortBaseParams = ViewContext.HttpContext.Request.Query
+        .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
+                 && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase)
+                 && !string.Equals(k.Key, "PageNumber", StringComparison.OrdinalIgnoreCase))
+        .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}")
+        .ToList();
+
+    var sortBaseUrl = "?" + string.Join("&", sortBaseParams);
 }
 
 <h1 class="govuk-heading-l">View all open cases</h1>
@@ -22,45 +31,45 @@
 {
     <p class="govuk-body">Total open cases: <strong>@Model.TotalCount</strong></p>
 
-    <div style="overflow-x: auto;">
+    <div id="open-cases-results" style="overflow-x: auto;">
         <table class="govuk-table govuk-table--small-text-until-tablet">
             <caption class="govuk-visually-hidden">Open cases</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header">RBSE</th>
-                    <th scope="col" class="govuk-table__header">Survey</th>
-                    <th scope="col" class="govuk-table__header">Barcode</th>
-                    <th scope="col" class="govuk-table__header">AHF Reference</th>
-                    <th scope="col" class="govuk-table__header">Form A Date</th>
-                    <th scope="col" class="govuk-table__header">RBSE Date</th>
-                    <th scope="col" class="govuk-table__header">Slaughter Date</th>
-                    <th scope="col" class="govuk-table__header">Fate</th>
-                    <th scope="col" class="govuk-table__header">Active Memo Due</th>
-                    <th scope="col" class="govuk-table__header">Active Memo Date</th>
-                    <th scope="col" class="govuk-table__header">Annex A Due</th>
-                    <th scope="col" class="govuk-table__header">Annex A Date</th>
-                    <th scope="col" class="govuk-table__header">Annex B Due</th>
-                    <th scope="col" class="govuk-table__header">Annex B Date</th>
-                    <th scope="col" class="govuk-table__header">Paperwork Complete Date</th>
-                    <th scope="col" class="govuk-table__header">Annex C Due</th>
-                    <th scope="col" class="govuk-table__header">Annex C Date</th>
-                    <th scope="col" class="govuk-table__header">Annex D Due</th>
-                    <th scope="col" class="govuk-table__header">Annex D Date</th>
-                    <th scope="col" class="govuk-table__header">Regional Lab</th>
-                    <th scope="col" class="govuk-table__header">Regional Lab Received Date</th>
-                    <th scope="col" class="govuk-table__header">Initial Received Date</th>
-                    <th scope="col" class="govuk-table__header">Final Received Date</th>
-                    <th scope="col" class="govuk-table__header">Final Sent Date</th>
-                    <th scope="col" class="govuk-table__header">Lab Chase Due Date</th>
-                    <th scope="col" class="govuk-table__header">Lab Chased Date</th>
-                    <th scope="col" class="govuk-table__header">Final Result</th>
-                    <th scope="col" class="govuk-table__header">Final Result Date</th>
-                    <th scope="col" class="govuk-table__header">Birth Date</th>
-                    <th scope="col" class="govuk-table__header">Post 2000 Sent Date</th>
-                    <th scope="col" class="govuk-table__header">Barb Memo Due</th>
-                    <th scope="col" class="govuk-table__header">Barb Minute Sent Date</th>
-                    <th scope="col" class="govuk-table__header">Data Complete Date</th>
-                    <th scope="col" class="govuk-table__header">CaseWorkNotes</th>
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "RBSE", ["Column"] = "Rbse", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Survey", ["Column"] = "Survey", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Barcode", ["Column"] = "Barcode", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "AHF Reference", ["Column"] = "AhfReference", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Form A Date", ["Column"] = "FormADate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "RBSE Date", ["Column"] = "RbseDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Slaughter Date", ["Column"] = "SlaughterDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Fate", ["Column"] = "Fate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Active Memo Due", ["Column"] = "ActiveMemoDueDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Active Memo Date", ["Column"] = "ActiveMemoDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Annex A Due", ["Column"] = "AnnexADueDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Annex A Date", ["Column"] = "AnnexADate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Annex B Due", ["Column"] = "AnnexBDueDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Annex B Date", ["Column"] = "AnnexBDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Paperwork Complete Date", ["Column"] = "PaperworkCompleteDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Annex C Due", ["Column"] = "AnnexCDueDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Annex C Date", ["Column"] = "AnnexCDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Annex D Due", ["Column"] = "AnnexDDueDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Annex D Date", ["Column"] = "AnnexDDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Regional Lab", ["Column"] = "RegionalLab", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Regional Lab Received Date", ["Column"] = "ReceivedByRegionalLabDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Initial Received Date", ["Column"] = "InitialReceivedDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Final Received Date", ["Column"] = "FinalReceivedDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Final Sent Date", ["Column"] = "FinalSentDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Lab Chase Due Date", ["Column"] = "LabChaseDueDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Lab Chased Date", ["Column"] = "LabChasedDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Final Result", ["Column"] = "FinalResult", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Final Result Date", ["Column"] = "FinalResultDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Birth Date", ["Column"] = "BirthDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Post 2000 Sent Date", ["Column"] = "Post2000SentDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Barb Memo Due", ["Column"] = "BarbMemoDue", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Barb Minute Sent Date", ["Column"] = "BarbMinuteSentDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Data Complete Date", ["Column"] = "DataCompleteDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "CaseWorkNotes", ["Column"] = "CaseWorkNotes", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "open-cases-results" })
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
@@ -109,7 +118,12 @@
         </table>
     </div>
 
-    @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
+    @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData)
+    {
+        ["CurrentPage"] = Model.PageNumber,
+        ["TotalPages"] = Model.TotalPages,
+        ["Fragment"] = "open-cases-results"
+    })
 }
 else
 {

@@ -36,13 +36,13 @@
             <span class="govuk-label bse-printbatch-label bse-printbatch-label--batch">Enter Batch Number</span>
 
             <span class="bse-printbatch-item">
-                <label class="govuk-label bse-printbatch-sublabel" for="batch-year">Year</label>
+                <label class="govuk-visually-hidden" for="batch-year">Batch year</label>
                 <input id="batch-year" asp-for="BatchYear" type="text" inputmode="numeric" maxlength="4"
                        class="govuk-input bse-printbatch-year" autocomplete="off" />
             </span>
 
             <span class="bse-printbatch-item">
-                <label class="govuk-label bse-printbatch-sublabel" for="batch-number">Number</label>
+                <label class="govuk-visually-hidden" for="batch-number">Batch number</label>
                 <input id="batch-number" asp-for="BatchNumber" type="text" inputmode="numeric" maxlength="6"
                        class="govuk-input bse-printbatch-serial" autocomplete="off" />
             </span>
@@ -59,7 +59,7 @@
         </div>
     </div>
 
-    <button type="submit" class="govuk-button" data-module="govuk-button">Download</button>
+    <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Download</button>
 </form>
 
 <style>
