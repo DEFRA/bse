@@ -5,7 +5,7 @@
 }
 
 <div>
-    <h1 class="govuk-heading-l">Casework Entry — @BseFormat.FormatRbse(Model.Rbse)</h1>
+    <h1 class="govuk-heading-l bse-wide-page">Casework Entry — @BseFormat.FormatRbse(Model.Rbse)</h1>
     <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
         <ol class="govuk-breadcrumbs__list">
             <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
@@ -54,15 +54,14 @@
                 </div>
             }
 
-            <div class="govuk-button-group">
+            <div class="govuk-button-group bse-casework-entry-buttons">
                 <button type="submit" asp-page-handler="Save" class="govuk-button" data-module="govuk-button">Save</button>
                 <button type="submit" asp-page-handler="Cancel" class="govuk-button govuk-button--secondary" data-module="govuk-button" formnovalidate>Cancel</button>
             </div>
 
-            <div class="govuk-grid-row">
-                <div class="govuk-grid-column-one-half">
-                    <h2 class="govuk-heading-m">Case details</h2>
-                    <dl class="govuk-summary-list govuk-summary-list--no-border govuk-!-font-size-16">
+            <div class="govuk-grid-row bse-casework-entry-row">
+                <div class="govuk-grid-column-one-third bse-casework-entry-left">
+                    <dl class="govuk-summary-list govuk-summary-list--no-border bse-casework-entry-group">
                         <div class="govuk-summary-list__row">
                             <dt class="govuk-summary-list__key">Status</dt>
                             <dd class="govuk-summary-list__value">@(Model.ClosedOnLoad ? "Closed" : "Open")</dd>
@@ -101,6 +100,47 @@
                             <dt class="govuk-summary-list__key">Survey</dt>
                             <dd class="govuk-summary-list__value">@Model.SurveyDescription</dd>
                         </div>
+                    </dl>
+
+                    <div class="bse-casework-entry-edit-block bse-casework-entry-group">
+                        <div class="govuk-form-group @(Err("Barcode") is not null ? "govuk-form-group--error" : "")">
+                            <label class="govuk-label" for="Barcode">Barcode</label>
+                            @if (Err("Barcode") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("Barcode")</p> }
+                            <input id="Barcode" asp-for="Barcode" maxlength="20" class="govuk-input" />
+                        </div>
+                        <div class="govuk-form-group @(Err("AhfReference") is not null ? "govuk-form-group--error" : "")">
+                            <label class="govuk-label" for="AhfReference">AHF Reference</label>
+                            @if (Err("AhfReference") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("AhfReference")</p> }
+                            <input id="AhfReference" asp-for="AhfReference" maxlength="40" class="govuk-input" />
+                        </div>
+                    </div>
+
+                    <div class="bse-casework-entry-edit-block bse-casework-entry-group">
+                        <div class="govuk-form-group @(Err("RegionalLab") is not null ? "govuk-form-group--error" : "")">
+                            <label class="govuk-label" for="RegionalLab">Regional Lab</label>
+                            @if (Err("RegionalLab") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("RegionalLab")</p> }
+                            <select id="RegionalLab" asp-for="RegionalLab" asp-items="Model.RegionalLabOptions" class="govuk-select">
+                                <option value=""></option>
+                            </select>
+                        </div>
+                        <div class="govuk-form-group @(Err("ReceivedByRegionalLabDate") is not null ? "govuk-form-group--error" : "")">
+                            <label class="govuk-label" for="ReceivedByRegionalLabDate">Regional Lab Received</label>
+                            @if (Err("ReceivedByRegionalLabDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("ReceivedByRegionalLabDate")</p> }
+                            <input id="ReceivedByRegionalLabDate" asp-for="ReceivedByRegionalLabDate" type="date" class="govuk-input govuk-input--width-10" />
+                        </div>
+                        <div class="govuk-form-group @(Err("InitialReceivedDate") is not null ? "govuk-form-group--error" : "")">
+                            <label class="govuk-label" for="InitialReceivedDate">Initial Received</label>
+                            @if (Err("InitialReceivedDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("InitialReceivedDate")</p> }
+                            <input id="InitialReceivedDate" asp-for="InitialReceivedDate" type="date" class="govuk-input govuk-input--width-10" />
+                        </div>
+                        <div class="govuk-form-group @(Err("FinalReceivedDate") is not null ? "govuk-form-group--error" : "")">
+                            <label class="govuk-label" for="FinalReceivedDate">Final Received</label>
+                            @if (Err("FinalReceivedDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("FinalReceivedDate")</p> }
+                            <input id="FinalReceivedDate" asp-for="FinalReceivedDate" type="date" class="govuk-input govuk-input--width-10" />
+                        </div>
+                    </div>
+
+                    <dl class="govuk-summary-list govuk-summary-list--no-border bse-casework-entry-group">
                         <div class="govuk-summary-list__row">
                             <dt class="govuk-summary-list__key">Final Result</dt>
                             <dd class="govuk-summary-list__value">@Model.FinalResultDescription</dd>
@@ -117,232 +157,211 @@
                             <dt class="govuk-summary-list__key">Alternate Diagnosis</dt>
                             <dd class="govuk-summary-list__value">@Model.Entry.AlternateDiagnosis</dd>
                         </div>
+                    </dl>
+
+                    <div class="bse-casework-entry-edit-block bse-casework-entry-group bse-casework-entry-group--attached">
+                        <div class="govuk-form-group @(Err("FinalSentDate") is not null ? "govuk-form-group--error" : "")">
+                            <label class="govuk-label" for="FinalSentDate">Final Sent Date</label>
+                            @if (Err("FinalSentDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("FinalSentDate")</p> }
+                            <input id="FinalSentDate" asp-for="FinalSentDate" type="date" class="govuk-input govuk-input--width-10" />
+                        </div>
+                    </div>
+
+                    <dl class="govuk-summary-list govuk-summary-list--no-border bse-casework-entry-group">
                         <div class="govuk-summary-list__row">
                             <dt class="govuk-summary-list__key">Birth Date</dt>
                             <dd class="govuk-summary-list__value">@(Model.Entry.BirthDate?.ToString("dd/MM/yyyy"))</dd>
                         </div>
                     </dl>
 
-                    <h2 class="govuk-heading-m">Laboratory</h2>
-
-                    <div class="govuk-form-group">
-                        <label class="govuk-label" for="Barcode">Barcode</label>
-                        <input id="Barcode" asp-for="Barcode" maxlength="20" class="govuk-input govuk-!-width-one-half" />
-                    </div>
-                    <div class="govuk-form-group">
-                        <label class="govuk-label" for="AhfReference">AHF Reference</label>
-                        <input id="AhfReference" asp-for="AhfReference" maxlength="40" class="govuk-input govuk-!-width-one-half" />
-                    </div>
-                    <div class="govuk-form-group">
-                        <label class="govuk-label" for="RegionalLab">Regional Lab</label>
-                        <select id="RegionalLab" asp-for="RegionalLab" asp-items="Model.RegionalLabOptions" class="govuk-select">
-                            <option value=""></option>
-                        </select>
-                    </div>
-                    <div class="govuk-form-group">
-                        <label class="govuk-label" for="ReceivedByRegionalLabDate">Regional Lab Received</label>
-                        <input id="ReceivedByRegionalLabDate" asp-for="ReceivedByRegionalLabDate" type="date" class="govuk-input govuk-input--width-10" />
-                    </div>
-                    <div class="govuk-form-group">
-                        <label class="govuk-label" for="InitialReceivedDate">Initial Received</label>
-                        <input id="InitialReceivedDate" asp-for="InitialReceivedDate" type="date" class="govuk-input govuk-input--width-10" />
-                    </div>
-                    <div class="govuk-form-group @(Err("FinalReceivedDate") is not null ? "govuk-form-group--error" : "")">
-                        <label class="govuk-label" for="FinalReceivedDate">Final Received</label>
-                        @if (Err("FinalReceivedDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("FinalReceivedDate")</p> }
-                        <input id="FinalReceivedDate" asp-for="FinalReceivedDate" type="date" class="govuk-input govuk-input--width-10" />
-                    </div>
-                    <div class="govuk-form-group @(Err("FinalSentDate") is not null ? "govuk-form-group--error" : "")">
-                        <label class="govuk-label" for="FinalSentDate">Final Sent Date</label>
-                        @if (Err("FinalSentDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("FinalSentDate")</p> }
-                        <input id="FinalSentDate" asp-for="FinalSentDate" type="date" class="govuk-input govuk-input--width-10" />
-                    </div>
-                </div>
-
-                <div class="govuk-grid-column-one-half">
-                    <h2 class="govuk-heading-m">Paperwork Received</h2>
-
-                    <div class="govuk-form-group @(Err("PurchaserBse1ReceivedDate") is not null ? "govuk-form-group--error" : "")">
-                        <label class="govuk-label" for="PurchaserBse1ReceivedDate">Purchaser BSE1</label>
-                        @if (Err("PurchaserBse1ReceivedDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("PurchaserBse1ReceivedDate")</p> }
-                        <input id="PurchaserBse1ReceivedDate" asp-for="PurchaserBse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" />
-                    </div>
-                    <div class="govuk-form-group @(Err("BreederBse1ReceivedDate") is not null ? "govuk-form-group--error" : "")">
-                        <label class="govuk-label" for="BreederBse1ReceivedDate">Breeder BSE1</label>
-                        @if (Err("BreederBse1ReceivedDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("BreederBse1ReceivedDate")</p> }
-                        <input id="BreederBse1ReceivedDate" asp-for="BreederBse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" />
-                    </div>
-                    <div class="govuk-form-group @(Err("Vendor1Bse1ReceivedDate") is not null ? "govuk-form-group--error" : "")">
-                        <label class="govuk-label" for="Vendor1Bse1ReceivedDate">Vendor BSE1</label>
-                        @if (Err("Vendor1Bse1ReceivedDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("Vendor1Bse1ReceivedDate")</p> }
-                        <input id="Vendor1Bse1ReceivedDate" asp-for="Vendor1Bse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" />
-                    </div>
-                    <div class="govuk-form-group @(Err("HomebredBse1ReceivedDate") is not null ? "govuk-form-group--error" : "")">
-                        <label class="govuk-label" for="HomebredBse1ReceivedDate">Homebred BSE1</label>
-                        @if (Err("HomebredBse1ReceivedDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("HomebredBse1ReceivedDate")</p> }
-                        <input id="HomebredBse1ReceivedDate" asp-for="HomebredBse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" />
-                    </div>
-                    <div class="govuk-form-group @(Err("SummarySheetReceivedDate") is not null ? "govuk-form-group--error" : "")">
-                        <label class="govuk-label" for="SummarySheetReceivedDate">Summary Sheet</label>
-                        @if (Err("SummarySheetReceivedDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("SummarySheetReceivedDate")</p> }
-                        <input id="SummarySheetReceivedDate" asp-for="SummarySheetReceivedDate" type="date" class="govuk-input govuk-input--width-10" />
-                    </div>
-                    <div class="govuk-form-group @(Err("PaperworkCompleteDate") is not null ? "govuk-form-group--error" : "")">
-                        <label class="govuk-label" for="PaperworkCompleteDate">Paperwork Complete</label>
-                        @if (Err("PaperworkCompleteDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("PaperworkCompleteDate")</p> }
-                        <input id="PaperworkCompleteDate" asp-for="PaperworkCompleteDate" type="date" class="govuk-input govuk-input--width-10" />
-                    </div>
-                    <div class="govuk-form-group @(Err("DataCompleteDate") is not null ? "govuk-form-group--error" : "")">
-                        <label class="govuk-label" for="DataCompleteDate">Data Complete</label>
-                        @if (Err("DataCompleteDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("DataCompleteDate")</p> }
-                        <input id="DataCompleteDate" asp-for="DataCompleteDate" type="date" class="govuk-input govuk-input--width-10" />
-                    </div>
-
-                    @if (Model.ShowTseFields)
+                    @if (Model.ShowPost2000Warning)
                     {
-                        <div class="govuk-form-group @(Err("TseTestingSite") is not null ? "govuk-form-group--error" : "")">
-                            <label class="govuk-label" for="TseTestingSite">TSE Testing Site</label>
-                            @if (Err("TseTestingSite") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("TseTestingSite")</p> }
-                            <select id="TseTestingSite" asp-for="TseTestingSite" asp-items="Model.TseTestingSiteOptions" class="govuk-select">
-                                <option value=""></option>
-                            </select>
-                        </div>
-                        <div class="govuk-form-group @(Err("SamplingDate") is not null ? "govuk-form-group--error" : "")">
-                            <label class="govuk-label" for="SamplingDate">Sampling Date</label>
-                            @if (Err("SamplingDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("SamplingDate")</p> }
-                            <input id="SamplingDate" asp-for="SamplingDate" type="date" class="govuk-input govuk-input--width-10" />
-                            <div class="govuk-checkboxes govuk-checkboxes--small govuk-!-margin-top-2" data-module="govuk-checkboxes">
-                                <div class="govuk-checkboxes__item">
-                                    <input class="govuk-checkboxes__input" id="SamplingDateIsUnknown" asp-for="SamplingDateIsUnknown" type="checkbox" />
-                                    <label class="govuk-label govuk-checkboxes__label" for="SamplingDateIsUnknown">Unknown</label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="govuk-form-group">
-                            <label class="govuk-label" for="AhroId">AHRO</label>
-                            <select id="AhroId" asp-for="AhroId" asp-items="Model.AhroOptions" class="govuk-select">
-                                <option value=""></option>
-                            </select>
-                        </div>
+                        <p class="govuk-body govuk-!-font-weight-bold bse-casework-entry-post2000-warning">Born after December 2000 - Inform Defra if positive</p>
                     }
 
-                    <h2 class="govuk-heading-m">Minutes</h2>
-                    <table class="govuk-table govuk-table--small-text-until-tablet">
-                        <caption class="govuk-visually-hidden">Minutes due and sent</caption>
-                        <thead class="govuk-table__head">
-                            <tr class="govuk-table__row">
-                                <th scope="col" class="govuk-table__header">Minute</th>
-                                <th scope="col" class="govuk-table__header">Due</th>
-                                <th scope="col" class="govuk-table__header">Sent on</th>
-                                <th scope="col" class="govuk-table__header"><span class="govuk-visually-hidden">Action</span></th>
-                            </tr>
-                        </thead>
-                        <tbody class="govuk-table__body">
-                            @{
-                                // Legacy hides the due date once the minute has been sent, and reddens it when overdue.
-                                var minutes = new (string Label, string Type, DateTime? Due, DateTime? Sent, string? Disabled)[]
-                                {
-                                    ("Active Memo", "ActiveMemo", Model.Entry.ActiveMemoDueDate, Model.Entry.ActiveMemoDate, null),
-                                    ("Annex A",     "AnnexA",     Model.Entry.AnnexADueDate,     Model.Entry.AnnexADate,     Model.AnnexADisabledReason),
-                                    ("Annex B",     "AnnexB",     Model.Entry.AnnexBDueDate,     Model.Entry.AnnexBDate,     Model.AnnexBDisabledReason),
-                                    ("Annex C",     "AnnexC",     Model.Entry.AnnexCDueDate,     Model.Entry.AnnexCDate,     Model.AnnexCDisabledReason),
-                                    ("Annex D",     "AnnexD",     Model.Entry.AnnexDDueDate,     Model.Entry.AnnexDDate,     Model.AnnexDDisabledReason),
-                                };
-                            }
-                            @foreach (var m in minutes)
+                </div>
+
+                <div class="govuk-grid-column-two-thirds bse-casework-entry-main">
+                    <div class="govuk-grid-row">
+                        <div class="govuk-grid-column-two-thirds bse-casework-entry-middle">
+                            <h2 class="govuk-heading-m">Paperwork Received</h2>
+
+                            <div class="govuk-form-group @(Err("PurchaserBse1ReceivedDate") is not null ? "govuk-form-group--error" : "")">
+                                <label class="govuk-label" for="PurchaserBse1ReceivedDate">Purchaser BSE1</label>
+                                @if (Err("PurchaserBse1ReceivedDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("PurchaserBse1ReceivedDate")</p> }
+                                <input id="PurchaserBse1ReceivedDate" asp-for="PurchaserBse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" />
+                            </div>
+                            <div class="govuk-form-group @(Err("BreederBse1ReceivedDate") is not null ? "govuk-form-group--error" : "")">
+                                <label class="govuk-label" for="BreederBse1ReceivedDate">Breeder BSE1</label>
+                                @if (Err("BreederBse1ReceivedDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("BreederBse1ReceivedDate")</p> }
+                                <input id="BreederBse1ReceivedDate" asp-for="BreederBse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" />
+                            </div>
+                            <div class="govuk-form-group @(Err("Vendor1Bse1ReceivedDate") is not null ? "govuk-form-group--error" : "")">
+                                <label class="govuk-label" for="Vendor1Bse1ReceivedDate">Vendor BSE1</label>
+                                @if (Err("Vendor1Bse1ReceivedDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("Vendor1Bse1ReceivedDate")</p> }
+                                <input id="Vendor1Bse1ReceivedDate" asp-for="Vendor1Bse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" />
+                            </div>
+                            <div class="govuk-form-group @(Err("HomebredBse1ReceivedDate") is not null ? "govuk-form-group--error" : "")">
+                                <label class="govuk-label" for="HomebredBse1ReceivedDate">Homebred BSE1</label>
+                                @if (Err("HomebredBse1ReceivedDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("HomebredBse1ReceivedDate")</p> }
+                                <input id="HomebredBse1ReceivedDate" asp-for="HomebredBse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" />
+                            </div>
+                            <div class="govuk-form-group @(Err("SummarySheetReceivedDate") is not null ? "govuk-form-group--error" : "")">
+                                <label class="govuk-label" for="SummarySheetReceivedDate">Summary Sheet</label>
+                                @if (Err("SummarySheetReceivedDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("SummarySheetReceivedDate")</p> }
+                                <input id="SummarySheetReceivedDate" asp-for="SummarySheetReceivedDate" type="date" class="govuk-input govuk-input--width-10" />
+                            </div>
+                            <div class="govuk-form-group @(Err("PaperworkCompleteDate") is not null ? "govuk-form-group--error" : "")">
+                                <label class="govuk-label" for="PaperworkCompleteDate">Paperwork Complete</label>
+                                @if (Err("PaperworkCompleteDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("PaperworkCompleteDate")</p> }
+                                <input id="PaperworkCompleteDate" asp-for="PaperworkCompleteDate" type="date" class="govuk-input govuk-input--width-10" />
+                            </div>
+                            <div class="govuk-form-group @(Err("DataCompleteDate") is not null ? "govuk-form-group--error" : "")">
+                                <label class="govuk-label" for="DataCompleteDate">Data Complete</label>
+                                @if (Err("DataCompleteDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("DataCompleteDate")</p> }
+                                <input id="DataCompleteDate" asp-for="DataCompleteDate" type="date" class="govuk-input govuk-input--width-10" />
+                            </div>
+
+                            @if (Model.ShowTseFields)
                             {
-                                var overdue = m.Sent is null && m.Due is not null && m.Due <= DateTime.Today;
-                                <tr class="govuk-table__row">
-                                    <th scope="row" class="govuk-table__header">@m.Label</th>
-                                    <td class="govuk-table__cell">
-                                        @if (m.Sent is null && m.Due is not null)
+                                <div class="govuk-form-group @(Err("TseTestingSite") is not null ? "govuk-form-group--error" : "")">
+                                    <label class="govuk-label" for="TseTestingSite">TSE Testing Site</label>
+                                    @if (Err("TseTestingSite") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("TseTestingSite")</p> }
+                                    <select id="TseTestingSite" asp-for="TseTestingSite" asp-items="Model.TseTestingSiteOptions" class="govuk-select">
+                                        <option value=""></option>
+                                    </select>
+                                </div>
+                                <div class="govuk-form-group @(Err("SamplingDate") is not null ? "govuk-form-group--error" : "")">
+                                    <label class="govuk-label" for="SamplingDate">Sampling Date</label>
+                                    @if (Err("SamplingDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("SamplingDate")</p> }
+                                    <input id="SamplingDate" asp-for="SamplingDate" type="date" class="govuk-input govuk-input--width-10" />
+                                    <input type="hidden" asp-for="SamplingDateIsUnknown" />
+                                </div>
+                                <div class="govuk-form-group">
+                                    <label class="govuk-label" for="AhroId">AHRO</label>
+                                    <select id="AhroId" asp-for="AhroId" asp-items="Model.AhroOptions" class="govuk-select">
+                                        <option value=""></option>
+                                    </select>
+                                </div>
+                            }
+
+                            <table class="govuk-table govuk-table--small-text-until-tablet bse-casework-entry-minutes-table">
+                                <caption class="govuk-visually-hidden">Minutes due and sent</caption>
+                                <thead class="govuk-table__head">
+                                    <tr class="govuk-table__row">
+                                        <th scope="col" class="govuk-table__header">Minutes</th>
+                                        <th scope="col" class="govuk-table__header">Due</th>
+                                        <th scope="col" class="govuk-table__header">Sent on</th>
+                                        <th scope="col" class="govuk-table__header"><span class="govuk-visually-hidden">Action</span></th>
+                                    </tr>
+                                </thead>
+                                <tbody class="govuk-table__body">
+                                    @{
+                                        // Legacy hides the due date once the minute has been sent, and reddens it when overdue.
+                                        var minutes = new (string Label, string Type, DateTime? Due, DateTime? Sent, string? Disabled)[]
                                         {
-                                            @if (overdue)
-                                            {
-                                                <strong class="govuk-tag govuk-tag--red">@m.Due?.ToString("dd/MM/yyyy")</strong>
-                                            }
-                                            else
-                                            {
-                                                @m.Due?.ToString("dd/MM/yyyy")
-                                            }
-                                        }
-                                    </td>
-                                    <td class="govuk-table__cell">@(m.Sent?.ToString("dd/MM/yyyy"))</td>
-                                    <td class="govuk-table__cell">
-                                        <button type="submit" asp-page-handler="SendMinute" name="minuteType" value="@m.Type"
-                                                class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0"
-                                                data-module="govuk-button"
-                                                title="@m.Disabled"
-                                                disabled="@(m.Disabled is not null)">
-                                            Send
-                                        </button>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+                                            ("Active Memo", "ActiveMemo", Model.Entry.ActiveMemoDueDate, Model.Entry.ActiveMemoDate, null),
+                                            ("Annex A",     "AnnexA",     Model.Entry.AnnexADueDate,     Model.Entry.AnnexADate,     Model.AnnexADisabledReason),
+                                            ("Annex B",     "AnnexB",     Model.Entry.AnnexBDueDate,     Model.Entry.AnnexBDate,     Model.AnnexBDisabledReason),
+                                            ("Annex C",     "AnnexC",     Model.Entry.AnnexCDueDate,     Model.Entry.AnnexCDate,     Model.AnnexCDisabledReason),
+                                            ("Annex D",     "AnnexD",     Model.Entry.AnnexDDueDate,     Model.Entry.AnnexDDate,     Model.AnnexDDisabledReason),
+                                        };
+                                    }
+                                    @foreach (var m in minutes)
+                                    {
+                                        var overdue = m.Sent is null && m.Due is not null && m.Due <= DateTime.Today;
+                                        <tr class="govuk-table__row">
+                                            <th scope="row" class="govuk-table__header">@m.Label</th>
+                                            <td class="govuk-table__cell">
+                                                @if (m.Sent is null && m.Due is not null)
+                                                {
+                                                    @if (overdue)
+                                                    {
+                                                        <strong class="govuk-tag govuk-tag--red">@m.Due?.ToString("dd/MM/yyyy")</strong>
+                                                    }
+                                                    else
+                                                    {
+                                                        @m.Due?.ToString("dd/MM/yyyy")
+                                                    }
+                                                }
+                                            </td>
+                                            <td class="govuk-table__cell">@(m.Sent?.ToString("dd/MM/yyyy"))</td>
+                                            <td class="govuk-table__cell">
+                                                <button type="submit" asp-page-handler="SendMinute" name="minuteType" value="@m.Type"
+                                                        class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0"
+                                                        data-module="govuk-button"
+                                                        title="@m.Disabled"
+                                                        disabled="@(m.Disabled is not null)">
+                                                    Send
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
 
-                    <div class="govuk-form-group @(Err("LabChasedDate") is not null ? "govuk-form-group--error" : "")">
-                        <label class="govuk-label" for="LabChasedDate">
-                            Chase lab results@(Model.Entry.LabChaseDueDate is not null ? $" — due {Model.Entry.LabChaseDueDate:dd/MM/yyyy}" : "")
-                        </label>
-                        @if (Err("LabChasedDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("LabChasedDate")</p> }
-                        <input id="LabChasedDate" asp-for="LabChasedDate" type="date" class="govuk-input govuk-input--width-10" />
-                    </div>
+                            <div class="govuk-form-group bse-casework-entry-minute-sent-row @(Err("LabChasedDate") is not null ? "govuk-form-group--error" : "")">
+                                <span class="govuk-body bse-minute-name">Chase lab results</span>
+                                <span class="bse-minute-status">
+                                    @if (Model.Entry.LabChaseDueDate is not null)
+                                    {
+                                        <strong class="govuk-tag govuk-tag--red">@Model.Entry.LabChaseDueDate?.ToString("dd/MM/yyyy")</strong>
+                                    }
+                                </span>
+                                <label class="govuk-label bse-minute-sent-on-label" for="LabChasedDate">Chased on</label>
+                                @if (Err("LabChasedDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("LabChasedDate")</p> }
+                                <input id="LabChasedDate" asp-for="LabChasedDate" type="date" class="govuk-input" />
+                            </div>
 
-                    <div class="govuk-form-group @(Err("BarbMinuteSentDate") is not null ? "govuk-form-group--error" : "")">
-                        <label class="govuk-label" for="BarbMinuteSentDate">
-                            BARB Minute
-                            @if (string.Equals(Model.Entry.BarbMemoDue, "Yes", StringComparison.OrdinalIgnoreCase))
+                            <div class="govuk-form-group bse-casework-entry-minute-sent-row @(Err("BarbMinuteSentDate") is not null ? "govuk-form-group--error" : "")">
+                                <span class="govuk-body bse-minute-name">BARB Minute</span>
+                                <span class="bse-minute-status">
+                                    @if (string.Equals(Model.Entry.BarbMemoDue, "Yes", StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <strong class="govuk-tag govuk-tag--red">Yes</strong>
+                                    }
+                                </span>
+                                <label class="govuk-label bse-minute-sent-on-label" for="BarbMinuteSentDate">Sent on</label>
+                                @if (Err("BarbMinuteSentDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("BarbMinuteSentDate")</p> }
+                                <input id="BarbMinuteSentDate" asp-for="BarbMinuteSentDate" type="date" class="govuk-input" />
+                            </div>
+
+                            @if (Model.ShowPost2000Warning)
                             {
-                                <strong class="govuk-tag govuk-tag--red">Due</strong>
+                                <div class="govuk-form-group bse-casework-entry-minute-sent-row @(Err("Post2000SentDate") is not null ? "govuk-form-group--error" : "")">
+                                    <span class="bse-minute-name" aria-hidden="true"></span>
+                                    <span class="bse-minute-status" aria-hidden="true"></span>
+                                    <label class="govuk-label bse-minute-sent-on-label" for="Post2000SentDate">DEFRA informed on</label>
+                                    @if (Err("Post2000SentDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("Post2000SentDate")</p> }
+                                    <input id="Post2000SentDate" asp-for="Post2000SentDate" type="date" class="govuk-input" />
+                                </div>
                             }
-                        </label>
-                        @if (Err("BarbMinuteSentDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("BarbMinuteSentDate")</p> }
-                        <input id="BarbMinuteSentDate" asp-for="BarbMinuteSentDate" type="date" class="govuk-input govuk-input--width-10" />
+                        </div>
+
+                        <div class="govuk-grid-column-one-third bse-casework-entry-right">
+                            <div class="govuk-form-group bse-casework-entry-close-case">
+                                <div class="govuk-checkboxes govuk-checkboxes--small" data-module="govuk-checkboxes">
+                                    <div class="govuk-checkboxes__item">
+                                        <input class="govuk-checkboxes__input" id="ToggleCaseStatus" asp-for="ToggleCaseStatus" type="checkbox" />
+                                        <label class="govuk-label govuk-checkboxes__label" for="ToggleCaseStatus">
+                                            @(Model.ClosedOnLoad ? "Open Case" : "Close Case")
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="govuk-form-group bse-casework-entry-comments">
+                                <label class="govuk-label govuk-label--m" for="CaseWorkNotes">Casework Comments</label>
+                                <textarea id="CaseWorkNotes" asp-for="CaseWorkNotes" maxlength="500" class="govuk-textarea" rows="5"></textarea>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="govuk-grid-row">
-                <div class="govuk-grid-column-two-thirds">
-                    <div class="govuk-form-group">
-                        <label class="govuk-label govuk-label--m" for="CaseWorkNotes">Casework Comments</label>
-                        <textarea id="CaseWorkNotes" asp-for="CaseWorkNotes" maxlength="500" class="govuk-textarea" rows="5"></textarea>
-                    </div>
-
-                    @if (Model.ShowPost2000Warning)
-                    {
-                        <div class="govuk-warning-text">
-                            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
-                            <strong class="govuk-warning-text__text">
-                                <span class="govuk-warning-text__assistive">Warning</span>
-                                Born after December 2000 — inform DEFRA if positive
-                            </strong>
-                        </div>
-                        <div class="govuk-form-group @(Err("Post2000SentDate") is not null ? "govuk-form-group--error" : "")">
-                            <label class="govuk-label" for="Post2000SentDate">DEFRA informed on</label>
-                            @if (Err("Post2000SentDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("Post2000SentDate")</p> }
-                            <input id="Post2000SentDate" asp-for="Post2000SentDate" type="date" class="govuk-input govuk-input--width-10" />
-                        </div>
-                    }
-
-                    <div class="govuk-form-group">
-                        <div class="govuk-checkboxes" data-module="govuk-checkboxes">
-                            <div class="govuk-checkboxes__item">
-                                <input class="govuk-checkboxes__input" id="ToggleCaseStatus" asp-for="ToggleCaseStatus" type="checkbox" />
-                                <label class="govuk-label govuk-checkboxes__label" for="ToggleCaseStatus">
-                                    @(Model.ClosedOnLoad ? "Open Case" : "Close Case")
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="govuk-button-group">
-                        <button type="submit" asp-page-handler="Save" class="govuk-button" data-module="govuk-button">Save</button>
-                        <button type="submit" asp-page-handler="Cancel" class="govuk-button govuk-button--secondary" data-module="govuk-button" formnovalidate>Cancel</button>
-                    </div>
-                </div>
+            <div class="govuk-button-group govuk-!-margin-top-4 bse-casework-entry-buttons">
+                <button type="submit" asp-page-handler="Save" class="govuk-button" data-module="govuk-button">Save</button>
+                <button type="submit" asp-page-handler="Cancel" class="govuk-button govuk-button--secondary" data-module="govuk-button" formnovalidate>Cancel</button>
             </div>
         </form>
     }
@@ -383,3 +402,251 @@
     });
 }());
 </script>
+
+<style>
+    /* Page width/gutter handled globally by .bse-wide-page (see bse.css) via the <h1> above */
+
+    .bse-casework-entry-row {
+        margin-left: 0;
+        margin-right: 0;
+        display: flex;
+        align-items: stretch;
+    }
+
+    .bse-casework-entry-row:after,
+    .bse-casework-entry-main > .govuk-grid-row:after {
+        content: none;
+    }
+
+    /* Stretch left/main to equal height, then push each column's last row to the bottom
+       so the left column's warning text lines up with the middle column's last field,
+       as in legacy, regardless of how much content precedes them. */
+    .bse-casework-entry-left {
+        width: 38%;
+        padding-right: 0.5rem;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .bse-casework-entry-left > *:last-child {
+        margin-top: auto;
+    }
+
+    .bse-casework-entry-main {
+        width: 62%;
+        padding-left: 0.5rem;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .bse-casework-entry-main > .govuk-grid-row {
+        display: flex;
+        align-items: stretch;
+        flex: 1;
+    }
+
+    .bse-casework-entry-middle {
+        display: flex;
+        flex-direction: column;
+        width: 80%;
+    }
+
+    .bse-casework-entry-middle > *:last-child {
+        margin-top: auto;
+    }
+
+    .bse-casework-entry-buttons {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .bse-casework-entry-left .govuk-summary-list {
+        margin-bottom: 0.5rem;
+    }
+
+    .bse-casework-entry-left .govuk-summary-list__row {
+        margin-bottom: 0;
+    }
+
+    .bse-casework-entry-left .govuk-summary-list__key,
+    .bse-casework-entry-left .govuk-summary-list__value {
+        padding-bottom: 0.25rem;
+    }
+
+    .bse-casework-entry-left .govuk-form-group {
+        margin-bottom: 0.25rem;
+    }
+
+    .bse-casework-entry-edit-block .govuk-form-group {
+        margin-bottom: 0.25rem;
+    }
+
+    .bse-casework-entry-group {
+        margin-top: 0;
+    }
+
+    .bse-casework-entry-group + .bse-casework-entry-group {
+        margin-top: 0;
+        padding-top: 1.5rem;
+    }
+
+    /* Final Result group and Final Sent Date read as one group, with spacing only before/after it */
+    .bse-casework-entry-group + .bse-casework-entry-group.bse-casework-entry-group--attached {
+        padding-top: 0;
+    }
+
+    .bse-casework-entry-post2000-warning {
+        color: #d4351c;
+        margin-top: 1.5rem;
+        margin-bottom: 0;
+    }
+
+    /* Field rows: a fixed-width label column so values/inputs line up vertically,
+       matching the label column used by the read-only summary list above/below them. */
+    .bse-casework-entry-left .govuk-summary-list__key {
+        width: 11.5rem;
+    }
+
+    .bse-casework-entry-right {
+        width: 20%;
+    }
+
+    /* Legacy's Casework Comments box extends left into the middle column's otherwise-unused
+       space at that row (Paperwork Received fields don't reach nearly that far right). */
+    .bse-casework-entry-comments {
+        margin-left: -140px;
+    }
+
+    .bse-casework-entry-close-case .govuk-checkboxes {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .bse-casework-entry-close-case .govuk-checkboxes__item {
+        flex: 0 0 auto;
+        margin-right: 0;
+    }
+
+    .bse-casework-entry-close-case .govuk-checkboxes__label {
+        white-space: nowrap;
+    }
+
+    .bse-casework-entry-left .govuk-form-group,
+    .bse-casework-entry-middle .govuk-form-group {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        column-gap: 0.5rem;
+        row-gap: 0.25rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .bse-casework-entry-left .govuk-form-group:not(.bse-casework-entry-minute-sent-row) > .govuk-label {
+        flex: 0 0 11.5rem;
+        margin-bottom: 0;
+    }
+
+    .bse-casework-entry-middle .govuk-form-group:not(.bse-casework-entry-minute-sent-row) > .govuk-label {
+        flex: 0 0 11rem;
+        margin-bottom: 0;
+    }
+
+    .bse-casework-entry-left .govuk-form-group > .govuk-error-message,
+    .bse-casework-entry-middle .govuk-form-group > .govuk-error-message {
+        flex-basis: 100%;
+        margin: 0;
+    }
+
+    .bse-casework-entry-left .govuk-form-group input,
+    .bse-casework-entry-left .govuk-form-group select,
+    .bse-casework-entry-middle .govuk-form-group input,
+    .bse-casework-entry-middle .govuk-form-group select {
+        width: auto;
+        flex: 0 0 auto;
+    }
+
+    .bse-casework-entry-left .govuk-form-group input[type="text"],
+    .bse-casework-entry-left .govuk-form-group input[type="date"] {
+        max-width: 9.5em;
+    }
+
+    .bse-casework-entry-left .govuk-form-group select {
+        width: 9.5em;
+        min-width: 0;
+    }
+
+    .bse-casework-entry-middle .govuk-form-group input[type="date"] {
+        max-width: 9.5em;
+    }
+
+    .bse-casework-entry-middle #TseTestingSite {
+        width: 12em;
+        min-width: 0;
+    }
+
+    .bse-casework-entry-middle #AhroId {
+        width: 20em;
+        min-width: 0;
+    }
+
+    /* Prevent the Minutes table's natural column widths from overflowing into the right column on narrower viewports */
+    .bse-casework-entry-minutes-table {
+        table-layout: fixed;
+        width: 100%;
+    }
+
+    .bse-casework-entry-minutes-table .govuk-table__cell,
+    .bse-casework-entry-minutes-table .govuk-table__header {
+        overflow-wrap: break-word;
+        padding: 3px 8px 3px 0;
+        border-top: none;
+        border-bottom: none;
+    }
+
+    /* Minute name cells ("Active Memo", "Annex A"-"D") are row headers but read as plain text in legacy */
+    .bse-casework-entry-minutes-table tbody .govuk-table__header {
+        font-weight: 400;
+    }
+
+    .bse-casework-entry-minutes-table .govuk-button {
+        margin-bottom: 0;
+    }
+
+    /* Chase lab results / BARB minute: minute name, status tag, then its own "Chased on" / "Sent on" field */
+    .bse-casework-entry-middle .bse-casework-entry-minute-sent-row {
+        column-gap: 0.5rem;
+        flex-wrap: nowrap;
+    }
+
+    .bse-casework-entry-middle .bse-minute-name {
+        flex: 0 0 11rem;
+        min-width: 0;
+        overflow-wrap: break-word;
+    }
+
+    /* Fixed (not content-hugging) so the empty placeholder in the DEFRA informed on row
+       reserves the same width, keeping "Chased on" / "Sent on" / "DEFRA informed on" aligned. */
+    .bse-casework-entry-middle .bse-minute-status {
+        flex: 0 0 7.5rem;
+        min-width: 0;
+    }
+
+    .bse-casework-entry-middle .bse-minute-status .govuk-tag {
+        white-space: nowrap;
+    }
+
+    /* Fixed width (not content-hugging) so "Chased on" / "Sent on" / "DEFRA informed on"
+       all end at the same x, keeping their date inputs vertically aligned in one column. */
+    .bse-casework-entry-middle .bse-minute-sent-on-label {
+        flex: 0 0 10rem;
+        min-width: 0;
+        margin-bottom: 0;
+        white-space: nowrap;
+        text-align: right;
+    }
+
+    .bse-casework-entry-middle .bse-casework-entry-minute-sent-row input[type="date"] {
+        flex: 0 0 auto;
+        max-width: 8.5em;
+    }
+</style>

@@ -12,6 +12,30 @@
     }
 }
 
+/* Grid lines on every table site-wide, matching legacy (GOV.UK default is bottom-border-only). */
+.govuk-table {
+    border-collapse: collapse;
+}
+
+.govuk-table__header,
+.govuk-table__cell {
+    border: 1px solid var(--govuk-border-colour, #b1b4b6);
+}
+
+/* Home page tables have no grid lines at all, unlike the site-wide grid */
+.bse-home-batch-table .govuk-table__header,
+.bse-home-batch-table .govuk-table__cell,
+.bse-home-rbse-table .govuk-table__header,
+.bse-home-rbse-table .govuk-table__cell {
+    border: none;
+}
+
+/* CheckByRbse table has no grid lines, unlike the site-wide grid */
+.bse-check-by-rbse-table .govuk-table__header,
+.bse-check-by-rbse-table .govuk-table__cell {
+    border: none;
+}
+
 /* Legacy Final Result Entry alignment */
 .bse-final-result-legacy {
     margin-top: 1.5rem;
@@ -320,7 +344,6 @@
     grid-template-columns: 220px minmax(0, 1fr);
     column-gap: 16px;
     padding: 0.65rem 0;
-    border-bottom: 1px solid #d8dadd;
     min-height: 2.8rem;
 }
 
@@ -330,10 +353,6 @@
 
 .bse-fre-summary-grid .bse-fre-summary-row:nth-child(even) {
     padding-left: 2rem;
-}
-
-.bse-fre-summary-grid .bse-fre-summary-row:not(:last-child) {
-    border-bottom: 1px solid #d8dadd;
 }
 
 .bse-fre-summary-grid .bse-fre-summary-row > span {
@@ -1736,5 +1755,10 @@
         flex-direction: column;
         gap: 12px;
     }
+}
+
+/* Casework Entry — left column summary list keys match the regular weight of the form labels below them */
+.bse-casework-entry-left .govuk-summary-list__key {
+    font-weight: 400;
 }
 

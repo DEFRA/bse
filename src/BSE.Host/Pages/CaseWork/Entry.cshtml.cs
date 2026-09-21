@@ -195,7 +195,7 @@ public class CaseWorkEntryModel(
             ModelState.AddModelError(nameof(TseTestingSite), "You must select a TSE testing site.");
 
         if (!SamplingDateIsUnknown && SamplingDate is null)
-            ModelState.AddModelError(nameof(SamplingDate), "You must enter a sampling date, or tick Unknown.");
+            ModelState.AddModelError(nameof(SamplingDate), "You must enter a sampling date.");
     }
 
     private void RequireRange(string key, DateTime? value, DateTime earliest, DateTime latest, string message)
