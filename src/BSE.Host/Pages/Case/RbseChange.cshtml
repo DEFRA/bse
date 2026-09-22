@@ -50,14 +50,12 @@
                aria-describedby="old-rbse-hint @(Model.OldRbseError is not null ? "old-rbse-error" : "")"
                class="govuk-input govuk-input--width-10 @(Model.OldRbseError is not null ? "govuk-input--error" : "")" />
     </div>
-    <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Look Up</button>
+    <button type="submit" class="govuk-button" data-module="govuk-button">Look Up</button>
 </form>
 
 @if (Model.CaseFound)
 {
     <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
-
-    <h2 class="govuk-heading-m">Case @BseFormat.FormatRbse(Model.Case!.Rbse)</h2>
     <dl class="govuk-summary-list">
         <div class="govuk-summary-list__row">
             <dt class="govuk-summary-list__key">Owner Name</dt>
@@ -98,14 +96,6 @@
             <input id="new-rbse" name="NewRbse" value="@Model.NewRbse" type="text" maxlength="11" autocomplete="off"
                    aria-describedby="new-rbse-hint @(Model.NewRbseError is not null ? "new-rbse-error" : "")"
                    class="govuk-input govuk-input--width-10 @(Model.NewRbseError is not null ? "govuk-input--error" : "")" />
-        </div>
-
-        <div class="govuk-warning-text">
-            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
-            <strong class="govuk-warning-text__text">
-                <span class="govuk-warning-text__assistive">Warning</span>
-                Changing the RBSE updates every record linked to this case. This cannot be undone.
-            </strong>
         </div>
 
         <div class="govuk-button-group">

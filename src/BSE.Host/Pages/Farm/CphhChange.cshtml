@@ -50,14 +50,13 @@
                aria-describedby="old-cphh-hint @(Model.OldCphhError is not null ? "old-cphh-error" : "")"
                class="govuk-input govuk-input--width-20 @(Model.OldCphhError is not null ? "govuk-input--error" : "")" />
     </div>
-    <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Look Up</button>
+    <button type="submit" class="govuk-button" data-module="govuk-button">Look Up</button>
 </form>
 
 @if (Model.FarmFound)
 {
     <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
 
-    <h2 class="govuk-heading-m">Farm @BseFormat.FormatCphh(Model.Farm!.CPHH)</h2>
     <dl class="govuk-summary-list govuk-summary-list--no-border">
         <div class="govuk-summary-list__row">
             <dt class="govuk-summary-list__key">Owner Name</dt>
@@ -94,14 +93,6 @@
             <input id="new-cphh" name="NewCphh" value="@Model.NewCphh" type="text" inputmode="numeric" autocomplete="off"
                    aria-describedby="new-cphh-hint @(Model.NewCphhError is not null ? "new-cphh-error" : "")"
                    class="govuk-input govuk-input--width-20 @(Model.NewCphhError is not null ? "govuk-input--error" : "")" />
-        </div>
-
-        <div class="govuk-warning-text">
-            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
-            <strong class="govuk-warning-text__text">
-                <span class="govuk-warning-text__assistive">Warning</span>
-                Location information for the farm, including County, AHO and ADNS Region, will not be changed. Check and amend them afterwards if necessary.
-            </strong>
         </div>
 
         <div class="govuk-button-group">
