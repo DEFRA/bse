@@ -9,7 +9,7 @@
     <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
         <ol class="govuk-breadcrumbs__list">
             <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/CaseWork/Menu" asp-route-rbse="@Model.Rbse">Case work</a></li>
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/CaseWork/Menu">Case work</a></li>
             <li class="govuk-breadcrumbs__list-item" aria-current="page">Entry</li>
         </ol>
     </nav>
@@ -174,11 +174,6 @@
                         </div>
                     </dl>
 
-                    @if (Model.ShowPost2000Warning)
-                    {
-                        <p class="govuk-body govuk-!-font-weight-bold bse-casework-entry-post2000-warning">Born after December 2000 - Inform Defra if positive</p>
-                    }
-
                 </div>
 
                 <div class="govuk-grid-column-two-thirds bse-casework-entry-main">
@@ -235,7 +230,12 @@
                                     <label class="govuk-label" for="SamplingDate">Sampling Date</label>
                                     @if (Err("SamplingDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("SamplingDate")</p> }
                                     <input id="SamplingDate" asp-for="SamplingDate" type="date" class="govuk-input govuk-input--width-10" />
-                                    <input type="hidden" asp-for="SamplingDateIsUnknown" />
+                                    <div class="govuk-checkboxes govuk-checkboxes--small govuk-!-margin-top-1" data-module="govuk-checkboxes">
+                                        <div class="govuk-checkboxes__item">
+                                            <input class="govuk-checkboxes__input" id="SamplingDateIsUnknown" asp-for="SamplingDateIsUnknown" type="checkbox" />
+                                            <label class="govuk-label govuk-checkboxes__label" for="SamplingDateIsUnknown">Unknown</label>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="govuk-form-group">
                                     <label class="govuk-label" for="AhroId">AHRO</label>
@@ -249,10 +249,9 @@
                                 <caption class="govuk-visually-hidden">Minutes due and sent</caption>
                                 <thead class="govuk-table__head">
                                     <tr class="govuk-table__row">
-                                        <th scope="col" class="govuk-table__header">Minutes</th>
-                                        <th scope="col" class="govuk-table__header">Due</th>
-                                        <th scope="col" class="govuk-table__header">Sent on</th>
-                                        <th scope="col" class="govuk-table__header"><span class="govuk-visually-hidden">Action</span></th>
+                                        <th scope="col" colspan="2" class="govuk-table__header">Minutes Due</th>
+                                        <th scope="col" class="govuk-table__header"></th>
+                                        <th scope="col" class="govuk-table__header">Minute Sent On</th>
                                     </tr>
                                 </thead>
                                 <tbody class="govuk-table__body">
@@ -326,38 +325,37 @@
                                 <input id="BarbMinuteSentDate" asp-for="BarbMinuteSentDate" type="date" class="govuk-input" />
                             </div>
 
-                            @if (Model.ShowPost2000Warning)
-                            {
-                                <div class="govuk-form-group bse-casework-entry-minute-sent-row @(Err("Post2000SentDate") is not null ? "govuk-form-group--error" : "")">
-                                    <span class="bse-minute-name" aria-hidden="true"></span>
-                                    <span class="bse-minute-status" aria-hidden="true"></span>
-                                    <label class="govuk-label bse-minute-sent-on-label" for="Post2000SentDate">DEFRA informed on</label>
-                                    @if (Err("Post2000SentDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("Post2000SentDate")</p> }
-                                    <input id="Post2000SentDate" asp-for="Post2000SentDate" type="date" class="govuk-input" />
-                                </div>
-                            }
                         </div>
 
                         <div class="govuk-grid-column-one-third bse-casework-entry-right">
-                            <div class="govuk-form-group bse-casework-entry-close-case">
-                                <div class="govuk-checkboxes govuk-checkboxes--small" data-module="govuk-checkboxes">
-                                    <div class="govuk-checkboxes__item">
-                                        <input class="govuk-checkboxes__input" id="ToggleCaseStatus" asp-for="ToggleCaseStatus" type="checkbox" />
-                                        <label class="govuk-label govuk-checkboxes__label" for="ToggleCaseStatus">
-                                            @(Model.ClosedOnLoad ? "Open Case" : "Close Case")
-                                        </label>
+                            <div class="govuk-form-group bse-casework-entry-comments">
+                                <div class="govuk-form-group bse-casework-entry-close-case">
+                                    <div class="govuk-checkboxes govuk-checkboxes--small" data-module="govuk-checkboxes">
+                                        <div class="govuk-checkboxes__item">
+                                            <input class="govuk-checkboxes__input" id="ToggleCaseStatus" asp-for="ToggleCaseStatus" type="checkbox" />
+                                            <label class="govuk-label govuk-checkboxes__label" for="ToggleCaseStatus">
+                                                @(Model.ClosedOnLoad ? "Open Case" : "Close Case")
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-
-                            <div class="govuk-form-group bse-casework-entry-comments">
-                                <label class="govuk-label govuk-label--m" for="CaseWorkNotes">Casework Comments</label>
+                                <label class="govuk-label govuk-label--m bse-casework-entry-comments-label" for="CaseWorkNotes">Casework Comments</label>
                                 <textarea id="CaseWorkNotes" asp-for="CaseWorkNotes" maxlength="500" class="govuk-textarea" rows="5"></textarea>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            @if (Model.ShowPost2000Warning)
+            {
+                <div class="govuk-form-group bse-casework-entry-post2000-row @(Err("Post2000SentDate") is not null ? "govuk-form-group--error" : "")">
+                    <span class="govuk-body bse-casework-entry-post2000-warning-inline">Born after December 2000 - Inform Defra if positive</span>
+                    <label class="govuk-label bse-casework-entry-post2000-label" for="Post2000SentDate">DEFRA informed on</label>
+                    @if (Err("Post2000SentDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("Post2000SentDate")</p> }
+                    <input id="Post2000SentDate" asp-for="Post2000SentDate" type="date" class="govuk-input" />
+                </div>
+            }
 
             <div class="govuk-button-group govuk-!-margin-top-4 bse-casework-entry-buttons">
                 <button type="submit" asp-page-handler="Save" class="govuk-button" data-module="govuk-button">Save</button>
@@ -411,6 +409,7 @@
         margin-right: 0;
         display: flex;
         align-items: stretch;
+        column-gap: 12rem;
     }
 
     .bse-casework-entry-row:after,
@@ -422,8 +421,7 @@
        so the left column's warning text lines up with the middle column's last field,
        as in legacy, regardless of how much content precedes them. */
     .bse-casework-entry-left {
-        width: 38%;
-        padding-right: 0.5rem;
+        width: 33%;
         display: flex;
         flex-direction: column;
     }
@@ -433,22 +431,25 @@
     }
 
     .bse-casework-entry-main {
-        width: 62%;
-        padding-left: 0.5rem;
+        width: 67%;
         display: flex;
         flex-direction: column;
     }
 
     .bse-casework-entry-main > .govuk-grid-row {
         display: flex;
-        align-items: stretch;
+        align-items: flex-start;
         flex: 1;
+        column-gap: 12rem;
     }
 
     .bse-casework-entry-middle {
         display: flex;
         flex-direction: column;
-        width: 80%;
+        flex: 0 0 53%;
+        width: 53%;
+        max-width: 53%;
+        min-width: 0;
     }
 
     .bse-casework-entry-middle > *:last-child {
@@ -457,7 +458,7 @@
 
     .bse-casework-entry-buttons {
         display: flex;
-        justify-content: flex-end;
+        justify-content: flex-start;
     }
 
     .bse-casework-entry-left .govuk-summary-list {
@@ -473,12 +474,16 @@
         padding-bottom: 0.25rem;
     }
 
+    .bse-casework-entry-left .govuk-summary-list__value {
+        white-space: nowrap;
+    }
+
     .bse-casework-entry-left .govuk-form-group {
-        margin-bottom: 0.25rem;
+        margin-bottom: 0.5rem;
     }
 
     .bse-casework-entry-edit-block .govuk-form-group {
-        margin-bottom: 0.25rem;
+        margin-bottom: 0.5rem;
     }
 
     .bse-casework-entry-group {
@@ -501,6 +506,41 @@
         margin-bottom: 0;
     }
 
+    .bse-casework-entry-post2000-warning-inline {
+        color: #d4351c;
+        font-weight: 700;
+    }
+
+    .bse-casework-entry-post2000-row {
+        display: flex;
+        align-items: center;
+        column-gap: 1rem;
+        margin-top: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .bse-casework-entry-post2000-row .bse-casework-entry-post2000-warning-inline {
+        flex: 1 1 auto;
+        margin: 0;
+        white-space: nowrap;
+    }
+
+    .bse-casework-entry-post2000-label {
+        margin-bottom: 0;
+        white-space: nowrap;
+    }
+
+    .bse-casework-entry-post2000-row input[type="date"] {
+        flex: 0 0 auto;
+        width: 12rem;
+        max-width: 12rem;
+    }
+
+    .bse-casework-entry-post2000-row .govuk-error-message {
+        flex-basis: 100%;
+        margin: 0;
+    }
+
     /* Field rows: a fixed-width label column so values/inputs line up vertically,
        matching the label column used by the read-only summary list above/below them. */
     .bse-casework-entry-left .govuk-summary-list__key {
@@ -508,18 +548,34 @@
     }
 
     .bse-casework-entry-right {
-        width: 20%;
+        flex: 1 1 47%;
+        width: 47%;
+        min-width: 0;
+        position: relative;
     }
 
     /* Legacy's Casework Comments box extends left into the middle column's otherwise-unused
        space at that row (Paperwork Received fields don't reach nearly that far right). */
     .bse-casework-entry-comments {
-        margin-left: -140px;
+        margin-left: 0;
+        position: relative;
     }
 
     .bse-casework-entry-close-case .govuk-checkboxes {
         display: flex;
         justify-content: flex-end;
+    }
+
+    .bse-casework-entry-close-case {
+        position: absolute;
+        top: -2.25rem;
+        right: -20rem;
+        margin: 0;
+        z-index: 1;
+    }
+
+    .bse-casework-entry-close-case .govuk-checkboxes {
+        width: 100%;
     }
 
     .bse-casework-entry-close-case .govuk-checkboxes__item {
@@ -536,19 +592,26 @@
         display: flex;
         align-items: center;
         flex-wrap: wrap;
-        column-gap: 0.5rem;
-        row-gap: 0.25rem;
-        margin-bottom: 0.25rem;
+        column-gap: 0.75rem;
+        row-gap: 0.35rem;
+        margin-bottom: 0.5rem;
     }
 
     .bse-casework-entry-left .govuk-form-group:not(.bse-casework-entry-minute-sent-row) > .govuk-label {
-        flex: 0 0 11.5rem;
+        flex: 0 0 12rem;
         margin-bottom: 0;
+        font-weight: 400;
     }
 
     .bse-casework-entry-middle .govuk-form-group:not(.bse-casework-entry-minute-sent-row) > .govuk-label {
-        flex: 0 0 11rem;
+        flex: 0 0 12rem;
         margin-bottom: 0;
+        font-weight: 400;
+    }
+
+    .bse-casework-entry-left .govuk-form-group:not(.bse-casework-entry-minute-sent-row),
+    .bse-casework-entry-middle .govuk-form-group:not(.bse-casework-entry-minute-sent-row) {
+        flex-wrap: nowrap;
     }
 
     .bse-casework-entry-left .govuk-form-group > .govuk-error-message,
@@ -567,40 +630,81 @@
 
     .bse-casework-entry-left .govuk-form-group input[type="text"],
     .bse-casework-entry-left .govuk-form-group input[type="date"] {
-        max-width: 9.5em;
+        max-width: 12rem;
     }
 
     .bse-casework-entry-left .govuk-form-group select {
-        width: 9.5em;
+        width: 14rem;
         min-width: 0;
     }
 
     .bse-casework-entry-middle .govuk-form-group input[type="date"] {
-        max-width: 9.5em;
+        max-width: 11.5rem;
     }
 
     .bse-casework-entry-middle #TseTestingSite {
-        width: 12em;
+        width: 15rem;
         min-width: 0;
     }
 
     .bse-casework-entry-middle #AhroId {
-        width: 20em;
+        width: 23rem;
+        max-width: 23rem;
         min-width: 0;
+    }
+
+    .bse-casework-entry-comments .govuk-label {
+        font-weight: 400;
+        margin-bottom: 0.5rem;
+    }
+
+    .bse-casework-entry-comments-label {
+        font-weight: 700 !important;
+        white-space: nowrap;
+    }
+
+    .bse-casework-entry-comments .govuk-textarea {
+        width: 25rem !important;
+        max-width: 25rem !important;
+        min-height: 12rem;
     }
 
     /* Prevent the Minutes table's natural column widths from overflowing into the right column on narrower viewports */
     .bse-casework-entry-minutes-table {
-        table-layout: fixed;
-        width: 100%;
+        table-layout: auto;
+        width: auto;
+        min-width: 30rem;
+        border: 0;
     }
 
     .bse-casework-entry-minutes-table .govuk-table__cell,
     .bse-casework-entry-minutes-table .govuk-table__header {
         overflow-wrap: break-word;
         padding: 3px 8px 3px 0;
-        border-top: none;
-        border-bottom: none;
+        border: 0 !important;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    .bse-casework-entry-minutes-table .govuk-table__head .govuk-table__header {
+        font-weight: 700;
+    }
+
+    .bse-casework-entry-minutes-table tbody .govuk-table__header {
+        width: 10.5rem;
+    }
+
+    .bse-casework-entry-minutes-table tbody .govuk-table__cell:nth-child(2) {
+        width: 6rem;
+    }
+
+    .bse-casework-entry-minutes-table tbody .govuk-table__cell:nth-child(4) {
+        width: 9.5rem;
+        white-space: nowrap;
+    }
+
+    .bse-casework-entry-minutes-table tbody .govuk-table__cell:nth-child(3) {
+        width: 6rem;
     }
 
     /* Minute name cells ("Active Memo", "Annex A"-"D") are row headers but read as plain text in legacy */
@@ -610,6 +714,7 @@
 
     .bse-casework-entry-minutes-table .govuk-button {
         margin-bottom: 0;
+        min-width: 4.75rem;
     }
 
     /* Chase lab results / BARB minute: minute name, status tag, then its own "Chased on" / "Sent on" field */

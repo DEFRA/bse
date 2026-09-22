@@ -1,16 +1,15 @@
 /* BSE custom additions on top of GOV.UK Frontend */
 
-/* GOV.UK Frontend centres .govuk-width-container (margin: auto) from 1020px up.
-   The legacy WinForms app was always left-aligned in the browser window, so pin
-   the content to the left edge instead of centring it on wide screens.
-   Scoped to the Farm Search screen only (body.bse-farm-search-page) so other
-   screens keep the default GOV.UK centred layout. */
-@media (min-width: 1020px) {
-    body.bse-farm-search-page .govuk-width-container {
-        margin-left: 15px;
-        margin-right: auto;
-    }
+:root {
+    --bse-app-left-gutter: 15px;
 }
+
+.bse-app-layout-container {
+    margin-left: var(--bse-app-left-gutter) !important;
+    margin-right: auto !important;
+}
+
+/* Use a single left boundary for all shared layout containers (header/nav/main/footer). */
 
 /* Grid lines on every table site-wide, matching legacy (GOV.UK default is bottom-border-only). */
 .govuk-table {
@@ -614,8 +613,8 @@
     right: 50%;
     margin-left: -50vw;
     margin-right: -50vw;
-    padding-left: 15px;
-    padding-right: 15px;
+    padding-left: var(--bse-app-left-gutter);
+    padding-right: var(--bse-app-left-gutter);
     box-sizing: border-box;
     overflow-x: auto;
 }
@@ -641,6 +640,17 @@
     min-width: 1600px;
 }
 
+.bse-open-cases-table-wrap {
+    width: 100%;
+    overflow-x: visible;
+}
+
+.bse-open-cases-table {
+    width: 100%;
+    table-layout: auto;
+    min-width: 0;
+}
+
 .bse-farm-search-table {
     width: auto;
     table-layout: fixed;
@@ -657,6 +667,8 @@
 
 .bse-case-search-table .govuk-table__cell,
 .bse-case-search-table .govuk-table__header,
+.bse-open-cases-table .govuk-table__cell,
+.bse-open-cases-table .govuk-table__header,
 .bse-farm-search-table .govuk-table__cell,
 .bse-farm-search-table .govuk-table__header,
 .bse-outstanding-search-table .govuk-table__cell,
@@ -671,6 +683,7 @@
 /* Prevent sortable header text/icon overlap in the fixed-width narrow columns.
    Farm search columns are sized in ch to fit their content, so they must not clip. */
 .bse-case-search-table .govuk-table__header,
+.bse-open-cases-table .govuk-table__header,
 .bse-outstanding-search-table .govuk-table__header,
 .bse-holding-herdmark-search-table .govuk-table__header,
 .bse-herdmark-search-table .govuk-table__header {
@@ -819,8 +832,8 @@
     right: 50%;
     margin-left: -50vw;
     margin-right: -50vw;
-    padding-left: 15px;
-    padding-right: 15px;
+    padding-left: var(--bse-app-left-gutter);
+    padding-right: var(--bse-app-left-gutter);
     box-sizing: border-box;
     overflow-x: auto;
 }
@@ -1487,10 +1500,23 @@
     padding-right: 36px;
 }
 
+.bse-home-links-panel {
+    max-width: 980px;
+}
+
+.bse-home-links-panel > .govuk-grid-column-one-third {
+    padding-right: 15px;
+    box-sizing: border-box;
+}
+
 @media (max-width: 48.0525em) {
     .bse-home-batch-layout {
         grid-template-columns: 1fr;
         row-gap: 16px;
+    }
+
+    .bse-home-links-panel > .govuk-grid-column-one-third {
+        padding-right: 0;
     }
 }
 

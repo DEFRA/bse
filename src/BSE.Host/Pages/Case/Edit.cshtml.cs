@@ -39,6 +39,7 @@ public class EditModel(
 
     public string? ConcurrencyError { get; private set; }
     public IReadOnlyList<BatchNumberEntry> BatchNumbers { get; private set; } = [];
+    public bool HasCaseWorkLink { get; private set; }
 
     // Lookup options for dropdowns
     public IEnumerable<BSE.SharedKernel.ILookupItem> FateOptions { get; private set; } = [];
@@ -91,6 +92,9 @@ public class EditModel(
         var caseWork = await caseWorkRepository.GetByRbseAsync(Rbse);
         if (caseWork is not null)
             Case.ApplyCaseWork(caseWork);
+
+        HasCaseWorkLink = caseWork is not null
+                          || await caseWorkRepository.GetEntryByRbseAsync(Rbse) is not null;
 
         var batchTask = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
@@ -325,6 +329,9 @@ public class EditModel(
         var caseWork = await caseWorkRepository.GetByRbseAsync(Rbse);
         if (caseWork is not null)
             Case.ApplyCaseWork(caseWork);
+
+        HasCaseWorkLink = caseWork is not null
+                          || await caseWorkRepository.GetEntryByRbseAsync(Rbse) is not null;
 
         var batchTask = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;

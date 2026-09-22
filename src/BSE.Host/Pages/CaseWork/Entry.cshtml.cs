@@ -320,7 +320,13 @@ public class CaseWorkEntryModel(
     private async Task SetPost2000WarningAsync()
     {
         if (Entry?.BirthDate is null || Entry.BirthDate <= new DateTime(2000, 12, 31)) return;
-        if (Entry.Fate?.Trim() is not ("DIED" or "SL")) return;
+
+        var fate = Entry.Fate?.Trim();
+        if (!string.Equals(fate, "DIED", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(fate, "SL", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
 
         var tests = await testRepository.GetByRbseAsync(Rbse);
         ShowPost2000Warning = tests.Any(t => !string.Equals(t.TestResult?.Trim(), "Neg", StringComparison.OrdinalIgnoreCase));

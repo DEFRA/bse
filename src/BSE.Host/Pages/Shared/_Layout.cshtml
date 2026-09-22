@@ -25,7 +25,7 @@
 
     <header class="govuk-template__header">
         <div class="govuk-header bse-global-header" data-module="govuk-header">
-            <div class="govuk-header__container govuk-width-container bse-global-header__container">
+            <div class="govuk-header__container govuk-width-container bse-app-layout-container bse-global-header__container">
                 <div class="govuk-header__logo">
                     <a asp-page="/Home" class="govuk-header__homepage-link">
                         <svg focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 324 60" height="30" width="162" fill="currentcolor" class="govuk-header__logotype" aria-label="GOV.UK">
@@ -65,7 +65,7 @@
             </div>
         </div>
         <section class="bse-global-header-nav" aria-label="Service navigation">
-            <div class="govuk-width-container">
+            <div class="govuk-width-container bse-app-layout-container">
                 <nav aria-label="Menu" id="global-header-navigation" class="bse-global-header-nav__panel" hidden>
                     <ul class="bse-global-header-nav__list">
                         <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/Search/Menu">Search</a></li>
@@ -110,7 +110,7 @@
         </section>
     </header>
 
-    <div class="govuk-width-container">
+    <div class="govuk-width-container bse-app-layout-container">
         <main class="govuk-main-wrapper" id="main-content" role="main">
             @if (TempData["SuccessMessage"] is string success)
             {
@@ -144,7 +144,7 @@
 
     <footer class="govuk-template__footer" role="contentinfo">
         <div class="govuk-footer">
-            <div class="govuk-width-container">
+            <div class="govuk-width-container bse-app-layout-container">
                 <img class="govuk-footer__crown bse-footer-apha-logo"
                      src="~/assets/images/APHA_Lesser_Arms_Stacked_colour.png"
                      alt="Animal and Plant Health Agency logo"
