@@ -524,6 +524,12 @@ else
 
         <div class="govuk-!-margin-top-6">
             <ul class="govuk-list">
+                @if (Model.HasCaseWorkLink)
+                {
+                    <li>
+                        <a asp-page="/CaseWork/Entry" asp-route-rbse="@Model.Case.Rbse" class="govuk-link">Casework</a>
+                    </li>
+                }
                 <li>
                     <a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse" asp-route-returnTo="/Case/Edit" class="govuk-link">Case audit log</a>
                 </li>

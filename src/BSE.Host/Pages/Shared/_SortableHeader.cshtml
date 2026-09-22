@@ -17,6 +17,7 @@
     var prefix = (string?)ViewData["Prefix"] ?? "";
     var fragment = (string?)ViewData["Fragment"] ?? "";
     var headerClass = (string?)ViewData["HeaderClass"] ?? "";
+    var wrapWords = (bool?)ViewData["WrapWords"] ?? false;
 
     bool isActive = string.Equals(sortCol, column, StringComparison.OrdinalIgnoreCase);
     bool nextDesc = isActive && !sortDesc;
@@ -44,6 +45,11 @@
         @if (!string.IsNullOrWhiteSpace(labelMarkup))
         {
             @Html.Raw(labelMarkup)
+        }
+        else if (wrapWords)
+        {
+            @* Each word of the header on its own row, matching the legacy grid header layout. *@
+            @Html.Raw(System.Net.WebUtility.HtmlEncode(label).Replace(" ", "<br />"))
         }
         else
         {

@@ -13,7 +13,7 @@
     var sortBaseUrl = "?" + string.Join("&", sortBaseParams);
 }
 
-<h1 class="govuk-heading-l">View all open cases</h1>
+<h1 class="govuk-heading-l bse-wide-page">View all open cases</h1>
 
 <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
     <ol class="govuk-breadcrumbs__list">
@@ -31,8 +31,8 @@
 {
     <p class="govuk-body">Total open cases: <strong>@Model.TotalCount</strong></p>
 
-    <div id="open-cases-results" style="overflow-x: auto;">
-        <table class="govuk-table govuk-table--small-text-until-tablet">
+    <div id="open-cases-results" class="bse-open-cases-table-wrap">
+        <table class="govuk-table bse-open-cases-table govuk-table--small-text-until-tablet">
             <caption class="govuk-visually-hidden">Open cases</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">

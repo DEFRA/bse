@@ -1,5 +1,40 @@
 /* BSE custom additions on top of GOV.UK Frontend */
 
+:root {
+    --bse-app-left-gutter: 15px;
+}
+
+.bse-app-layout-container {
+    margin-left: var(--bse-app-left-gutter) !important;
+    margin-right: auto !important;
+}
+
+/* Use a single left boundary for all shared layout containers (header/nav/main/footer). */
+
+/* Grid lines on every table site-wide, matching legacy (GOV.UK default is bottom-border-only). */
+.govuk-table {
+    border-collapse: collapse;
+}
+
+.govuk-table__header,
+.govuk-table__cell {
+    border: 1px solid var(--govuk-border-colour, #b1b4b6);
+}
+
+/* Home page tables have no grid lines at all, unlike the site-wide grid */
+.bse-home-batch-table .govuk-table__header,
+.bse-home-batch-table .govuk-table__cell,
+.bse-home-rbse-table .govuk-table__header,
+.bse-home-rbse-table .govuk-table__cell {
+    border: none;
+}
+
+/* CheckByRbse table has no grid lines, unlike the site-wide grid */
+.bse-check-by-rbse-table .govuk-table__header,
+.bse-check-by-rbse-table .govuk-table__cell {
+    border: none;
+}
+
 /* Legacy Final Result Entry alignment */
 .bse-final-result-legacy {
     margin-top: 1.5rem;
@@ -308,7 +343,6 @@
     grid-template-columns: 220px minmax(0, 1fr);
     column-gap: 16px;
     padding: 0.65rem 0;
-    border-bottom: 1px solid #d8dadd;
     min-height: 2.8rem;
 }
 
@@ -318,10 +352,6 @@
 
 .bse-fre-summary-grid .bse-fre-summary-row:nth-child(even) {
     padding-left: 2rem;
-}
-
-.bse-fre-summary-grid .bse-fre-summary-row:not(:last-child) {
-    border-bottom: 1px solid #d8dadd;
 }
 
 .bse-fre-summary-grid .bse-fre-summary-row > span {
@@ -574,7 +604,6 @@
    (form, headings, etc. stay within the normal GDS width). Scroll the table region
    only as a fallback on viewports narrower than the table's own min-width. */
 .bse-case-search-table-wrap,
-.bse-farm-search-table-wrap,
 .bse-outstanding-search-table-wrap,
 .bse-holding-herdmark-search-table-wrap,
 .bse-herdmark-search-table-wrap {
@@ -584,14 +613,26 @@
     right: 50%;
     margin-left: -50vw;
     margin-right: -50vw;
-    padding-left: 15px;
-    padding-right: 15px;
+    padding-left: var(--bse-app-left-gutter);
+    padding-right: var(--bse-app-left-gutter);
     box-sizing: border-box;
     overflow-x: auto;
 }
 
+.bse-farm-search-table-wrap {
+    width: 100%;
+    position: static;
+    left: auto;
+    right: auto;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+    box-sizing: border-box;
+    overflow-x: visible;
+}
+
 .bse-case-search-table,
-.bse-farm-search-table,
 .bse-outstanding-search-table,
 .bse-holding-herdmark-search-table,
 .bse-herdmark-search-table {
@@ -599,8 +640,35 @@
     min-width: 1600px;
 }
 
+.bse-open-cases-table-wrap {
+    width: 100%;
+    overflow-x: visible;
+}
+
+.bse-open-cases-table {
+    width: 100%;
+    table-layout: auto;
+    min-width: 0;
+}
+
+.bse-farm-search-table {
+    width: auto;
+    table-layout: fixed;
+    min-width: 100%;
+    border-collapse: collapse;
+}
+
+/* Legacy grid drew a full border around every cell, not just a bottom rule. */
+.bse-farm-search-table.govuk-table,
+.bse-farm-search-table .govuk-table__header,
+.bse-farm-search-table .govuk-table__cell {
+    border: 1px solid #b1b4b6;
+}
+
 .bse-case-search-table .govuk-table__cell,
 .bse-case-search-table .govuk-table__header,
+.bse-open-cases-table .govuk-table__cell,
+.bse-open-cases-table .govuk-table__header,
 .bse-farm-search-table .govuk-table__cell,
 .bse-farm-search-table .govuk-table__header,
 .bse-outstanding-search-table .govuk-table__cell,
@@ -612,9 +680,10 @@
     overflow-wrap: break-word;
 }
 
-/* Prevent sortable header text/icon overlap in the fixed-width narrow columns */
+/* Prevent sortable header text/icon overlap in the fixed-width narrow columns.
+   Farm search columns are sized in ch to fit their content, so they must not clip. */
 .bse-case-search-table .govuk-table__header,
-.bse-farm-search-table .govuk-table__header,
+.bse-open-cases-table .govuk-table__header,
 .bse-outstanding-search-table .govuk-table__header,
 .bse-holding-herdmark-search-table .govuk-table__header,
 .bse-herdmark-search-table .govuk-table__header {
@@ -629,6 +698,86 @@
     white-space: normal;
     align-items: flex-start;
     line-height: 1.2;
+}
+
+.bse-farm-search-table .govuk-table__header,
+.bse-farm-search-table .govuk-table__cell {
+    white-space: normal;
+    word-wrap: break-word;
+    word-break: normal;
+    vertical-align: top;
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+.bse-farm-search-table .govuk-table__cell {
+    overflow-wrap: anywhere;
+}
+
+/* All farm search columns are sized in ch (character widths), like the legacy grid.
+   Mixing % with a fixed ch column previously forced the fixed table layout to
+   squeeze every other column to fit 100% — using ch throughout avoids that. */
+.bse-farm-search-table .govuk-table__header:nth-child(1),
+.bse-farm-search-table .govuk-table__cell:nth-child(1) { width: 14ch; }
+.bse-farm-search-table .govuk-table__cell:nth-child(1) {
+    white-space: nowrap;
+}
+.bse-farm-search-table .govuk-table__header:nth-child(1) .moj-sortable-table__button,
+.bse-farm-search-table .govuk-table__header:nth-child(2) .moj-sortable-table__button,
+.bse-farm-search-table .govuk-table__header:nth-child(3) .moj-sortable-table__button,
+.bse-farm-search-table .govuk-table__header:nth-child(4) .moj-sortable-table__button,
+.bse-farm-search-table .govuk-table__header:nth-child(6) .moj-sortable-table__button,
+.bse-farm-search-table .govuk-table__header:nth-child(7) .moj-sortable-table__button,
+.bse-farm-search-table .govuk-table__header:nth-child(8) .moj-sortable-table__button,
+.bse-farm-search-table .govuk-table__header:nth-child(9) .moj-sortable-table__button,
+.bse-farm-search-table .govuk-table__header:nth-child(11) .moj-sortable-table__button,
+.bse-farm-search-table .govuk-table__header:nth-child(12) .moj-sortable-table__button {
+    white-space: nowrap;
+}
+.bse-farm-search-table .govuk-table__header:nth-child(2),
+.bse-farm-search-table .govuk-table__cell:nth-child(2) { width: 20ch; }
+.bse-farm-search-table .govuk-table__header:nth-child(3),
+.bse-farm-search-table .govuk-table__cell:nth-child(3) { width: 40ch; }
+.bse-farm-search-table .govuk-table__header:nth-child(4),
+.bse-farm-search-table .govuk-table__cell:nth-child(4) { width: 10ch; }
+.bse-farm-search-table .govuk-table__header:nth-child(5),
+.bse-farm-search-table .govuk-table__cell:nth-child(5) { width: 12ch; }
+.bse-farm-search-table .govuk-table__header:nth-child(6),
+.bse-farm-search-table .govuk-table__cell:nth-child(6) { width: 10ch; }
+.bse-farm-search-table .govuk-table__header:nth-child(7),
+.bse-farm-search-table .govuk-table__cell:nth-child(7) { width: 8ch; }
+.bse-farm-search-table .govuk-table__cell:nth-child(7) {
+    white-space: nowrap;
+}
+.bse-farm-search-table .govuk-table__header:nth-child(8),
+.bse-farm-search-table .govuk-table__cell:nth-child(8) { width: 6ch; }
+.bse-farm-search-table .govuk-table__header:nth-child(9),
+.bse-farm-search-table .govuk-table__cell:nth-child(9) { width: 10ch; }
+.bse-farm-search-table .govuk-table__header:nth-child(10),
+.bse-farm-search-table .govuk-table__cell:nth-child(10) { width: 40ch; }
+.bse-farm-search-table .govuk-table__header:nth-child(11),
+.bse-farm-search-table .govuk-table__cell:nth-child(11) { width: 8ch; }
+.bse-farm-search-table .govuk-table__header:nth-child(12),
+.bse-farm-search-table .govuk-table__cell:nth-child(12) { width: 10ch; }
+
+/* Legacy grid left-aligned every column header and cell, including numeric ones. */
+.bse-farm-search-table .govuk-table__header,
+.bse-farm-search-table .govuk-table__cell,
+.bse-farm-search-table .govuk-table__cell--numeric {
+    text-align: left;
+}
+
+.bse-farm-search-table .moj-sortable-table__button {
+    justify-content: flex-start;
+    align-items: flex-start;
+    text-align: left;
+    white-space: normal;
+}
+
+.bse-farm-search-table .govuk-table__cell:nth-child(2),
+.bse-farm-search-table .govuk-table__cell:nth-child(3),
+.bse-farm-search-table .govuk-table__cell:nth-child(10) {
+    overflow-wrap: anywhere;
 }
 
 /* Column widths sized to fit each header's text (plus the sort icon) without wrapping/clipping. */
@@ -683,8 +832,8 @@
     right: 50%;
     margin-left: -50vw;
     margin-right: -50vw;
-    padding-left: 15px;
-    padding-right: 15px;
+    padding-left: var(--bse-app-left-gutter);
+    padding-right: var(--bse-app-left-gutter);
     box-sizing: border-box;
     overflow-x: auto;
 }
@@ -1351,10 +1500,23 @@
     padding-right: 36px;
 }
 
+.bse-home-links-panel {
+    max-width: 980px;
+}
+
+.bse-home-links-panel > .govuk-grid-column-one-third {
+    padding-right: 15px;
+    box-sizing: border-box;
+}
+
 @media (max-width: 48.0525em) {
     .bse-home-batch-layout {
         grid-template-columns: 1fr;
         row-gap: 16px;
+    }
+
+    .bse-home-links-panel > .govuk-grid-column-one-third {
+        padding-right: 0;
     }
 }
 
@@ -1619,5 +1781,10 @@
         flex-direction: column;
         gap: 12px;
     }
+}
+
+/* Casework Entry — left column summary list keys match the regular weight of the form labels below them */
+.bse-casework-entry-left .govuk-summary-list__key {
+    font-weight: 400;
 }
 

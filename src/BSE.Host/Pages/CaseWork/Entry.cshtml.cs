@@ -195,7 +195,7 @@ public class CaseWorkEntryModel(
             ModelState.AddModelError(nameof(TseTestingSite), "You must select a TSE testing site.");
 
         if (!SamplingDateIsUnknown && SamplingDate is null)
-            ModelState.AddModelError(nameof(SamplingDate), "You must enter a sampling date, or tick Unknown.");
+            ModelState.AddModelError(nameof(SamplingDate), "You must enter a sampling date.");
     }
 
     private void RequireRange(string key, DateTime? value, DateTime earliest, DateTime latest, string message)
@@ -320,7 +320,13 @@ public class CaseWorkEntryModel(
     private async Task SetPost2000WarningAsync()
     {
         if (Entry?.BirthDate is null || Entry.BirthDate <= new DateTime(2000, 12, 31)) return;
-        if (Entry.Fate?.Trim() is not ("DIED" or "SL")) return;
+
+        var fate = Entry.Fate?.Trim();
+        if (!string.Equals(fate, "DIED", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(fate, "SL", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
 
         var tests = await testRepository.GetByRbseAsync(Rbse);
         ShowPost2000Warning = tests.Any(t => !string.Equals(t.TestResult?.Trim(), "Neg", StringComparison.OrdinalIgnoreCase));

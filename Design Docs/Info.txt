@@ -1,0 +1,17 @@
+Below are the ip ranges for our Data Subnets in each of our AWS Accounts/Environments.  
+The RDS IP is dynamically assigned within these subnets so all three will need to be added for any outbound rules attempting to connect to our RDS's.
+
+Development
+AZ1 - 10.218.82.0/24
+AZ2 - 10.218.83.0/24
+AZ3 - 10.218.84.0/24
+
+Pre-Production
+AZ1 - 10.218.50.0/24
+AZ2 - 10.218.51.0/24
+AZ3 - 10.218.52.0/24
+
+Production
+AZ1 - 10.218.18.0/24
+AZ2 - 10.218.19.0/24
+AZ3 - 10.218.20.0/24

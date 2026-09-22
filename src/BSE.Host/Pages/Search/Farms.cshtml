@@ -2,6 +2,7 @@
 @model BSE.Host.Pages.Search.FarmsModel
 @{
     ViewData["Title"] = "Farm Search";
+    ViewData["BodyClass"] = "bse-farm-search-page";
 }
 
 <h1 class="govuk-heading-l">Farm Search</h1>
@@ -146,34 +147,37 @@
         var sortDesc = Model.Filter.SortDesc;
 
         @await Html.PartialAsync("_ExportLink")
-        <div style="overflow-x: auto;">
-        <table class="govuk-table govuk-table--small-text-until-tablet">
+        <div class="bse-farm-search-table-wrap">
+        <table class="govuk-table govuk-table--small-text-until-tablet bse-farm-search-table">
             <caption class="govuk-visually-hidden">Farm search results</caption>
+            <colgroup>
+                <col style="width: 14ch" /><col style="width: 20ch" /><col style="width: 40ch" /><col style="width: 10ch" /><col style="width: 12ch" /><col style="width: 10ch" /><col style="width: 8ch" /><col style="width: 6ch" /><col style="width: 10ch" /><col style="width: 40ch" /><col style="width: 8ch" /><col style="width: 10ch" />
+            </colgroup>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    @{ ViewData["Label"] = "CPHH";                   ViewData["Column"] = "Cphh";                   ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Prefix"] = "Filter."; ViewData["Fragment"] = "farm-search-results"; }
+                    @{ ViewData["Label"] = "CPHH";                   ViewData["Column"] = "Cphh";                   ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Prefix"] = "Filter."; ViewData["Fragment"] = "farm-search-results"; ViewData["WrapWords"] = false; ViewData["HeaderClass"] = null; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Owner Name";              ViewData["Column"] = "OwnerName"; }
+                    @{ ViewData["Label"] = "Owner Name";              ViewData["Column"] = "OwnerName"; ViewData["WrapWords"] = false; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Address";                 ViewData["Column"] = "Address"; }
+                    @{ ViewData["Label"] = "Address\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0";                 ViewData["Column"] = "Address"; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "County";                  ViewData["Column"] = "County"; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Herdmark(s)";             ViewData["Column"] = "Herdmark"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Numeric Herdmark(s)";     ViewData["Column"] = "NumericHerdmark"; ViewData["HeaderClass"] = "govuk-table__header--numeric"; }
+                    @{ ViewData["Label"] = "Numeric Herdmark";     ViewData["Column"] = "NumericHerdmark"; ViewData["HeaderClass"] = "govuk-table__header--numeric"; ViewData["WrapWords"] = true; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Map Ref";                 ViewData["Column"] = "MapReference"; }
+                    @{ ViewData["Label"] = "Map Ref";                 ViewData["Column"] = "MapReference"; ViewData["HeaderClass"] = null; ViewData["WrapWords"] = false; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "AHO";                     ViewData["Column"] = "Aho"; }
+                    @{ ViewData["Label"] = "AHO\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0";                     ViewData["Column"] = "Aho"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Herd Type";               ViewData["Column"] = "HerdType"; }
+                    @{ ViewData["Label"] = "Herd Type";               ViewData["Column"] = "HerdType"; ViewData["WrapWords"] = false; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Correspondence Address";  ViewData["Column"] = "CorrespondenceAddress"; }
+                    @{ ViewData["Label"] = "Correspondence Address";  ViewData["Column"] = "CorrespondenceAddress"; ViewData["WrapWords"] = true; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Cases";                   ViewData["Column"] = "CasesCount"; ViewData["HeaderClass"] = "govuk-table__header--numeric"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Confirmed Cases";         ViewData["Column"] = "ConfirmedCasesCount"; ViewData["HeaderClass"] = "govuk-table__header--numeric"; }
+                    @{ ViewData["Label"] = "Confirmed Cases";         ViewData["Column"] = "ConfirmedCasesCount"; ViewData["HeaderClass"] = "govuk-table__header--numeric"; ViewData["WrapWords"] = true; }
                     <partial name="_SortableHeader" />
                 </tr>
             </thead>

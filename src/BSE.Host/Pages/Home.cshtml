@@ -352,7 +352,7 @@
 
 @* Quick-case and quick-farm inputs removed — Home now exposes only Batch and RBSE inputs per migration requirement *@
 
-<div class="govuk-grid-row">
+<div class="govuk-grid-row bse-home-links-panel">
     @* Column 1: Search *@
     <div class="govuk-grid-column-one-third">
         <h2 class="govuk-heading-m">Search</h2>
@@ -376,7 +376,7 @@
         <ul class="govuk-list">
             @if (User.IsInRole("VLAMaintenance"))
             {
-                <li><a asp-page="/CaseWork/Menu" class="govuk-link">Casework menu</a></li>
+                <li><a asp-page="/CaseWork/Menu" class="govuk-link">Casework</a></li>
             }
             @if (User.IsInRole("VLAAccess"))
             {
