@@ -1,31 +1,33 @@
 @model BSE.Host.Models.ViewModels.AuditDateRangeViewModel
 
 <form method="get" novalidate class="govuk-!-margin-bottom-6">
-    <div class="govuk-form-group @(Model.StartDateError is not null || Model.EndDateError is not null ? "govuk-form-group--error" : "")">
-        <label class="govuk-label">Log Entries Between</label>
-        @if (Model.StartDateError is not null || Model.EndDateError is not null)
-        {
-            @if (Model.StartDateError is not null)
+    <div class="bse-date-search-row">
+        <div class="govuk-form-group @(Model.StartDateError is not null || Model.EndDateError is not null ? "govuk-form-group--error" : "")">
+            <label class="govuk-label">Log Entries Between</label>
+            @if (Model.StartDateError is not null || Model.EndDateError is not null)
             {
-                <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.StartDateError</p>
+                @if (Model.StartDateError is not null)
+                {
+                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.StartDateError</p>
+                }
+                @if (Model.EndDateError is not null)
+                {
+                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.EndDateError</p>
+                }
             }
-            @if (Model.EndDateError is not null)
-            {
-                <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.EndDateError</p>
-            }
-        }
-        <div class="bse-date-range-input-wrapper">
-            <input id="audit-start-date" name="StartDate" type="date"
-                   class="govuk-input govuk-input--width-10 @(Model.StartDateError is not null ? "govuk-input--error" : "")"
-                   value="@(Model.StartDate?.ToString("yyyy-MM-dd"))" />
-            <span class="bse-date-range-separator govuk-label">and</span>
-            <input id="audit-end-date" name="EndDate" type="date"
-                   class="govuk-input govuk-input--width-10 @(Model.EndDateError is not null ? "govuk-input--error" : "")"
-                   value="@(Model.EndDate?.ToString("yyyy-MM-dd"))" />
+            <div class="bse-date-range-input-wrapper">
+                <input id="audit-start-date" name="StartDate" type="date"
+                       class="govuk-input govuk-input--width-10 @(Model.StartDateError is not null ? "govuk-input--error" : "")"
+                       value="@(Model.StartDate?.ToString("yyyy-MM-dd"))" />
+                <span class="bse-date-range-separator govuk-label">and</span>
+                <input id="audit-end-date" name="EndDate" type="date"
+                       class="govuk-input govuk-input--width-10 @(Model.EndDateError is not null ? "govuk-input--error" : "")"
+                       value="@(Model.EndDate?.ToString("yyyy-MM-dd"))" />
+            </div>
         </div>
-    </div>
-    <div class="govuk-button-group">
-        <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
-        <a asp-page="/AuditLog/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button" role="button" draggable="false">Audit Log Menu</a>
+        <div class="govuk-button-group">
+            <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
+            <a asp-page="/AuditLog/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button" role="button" draggable="false">Audit Log Menu</a>
+        </div>
     </div>
 </form>
