@@ -14,7 +14,7 @@
 
 -- Step 1: Load stored procedures
 PRINT '--- Deploying stored procedures ---';
-:r ../StoredProcedures/dbo.GetUserByEmail.sql
+:r ../StoredProcedures/GetUserByEmail.sql
 GO
 
 -- Step 2: Deployment script to used to alter/create tables, columns etc

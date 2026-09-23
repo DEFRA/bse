@@ -259,7 +259,7 @@
                     <col class="case-farm-herd-table__col-year" />
                     <col class="case-farm-herd-table__col-size" />
                     <col class="case-farm-herd-table__col-lac" span="11" />
-                    <col />
+                    <col class="case-farm-herd-table__col-action" />
                 </colgroup>
                 <thead class="govuk-table__head">
                     <tr class="govuk-table__row">
@@ -306,6 +306,9 @@
                         </th>
                         <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac10p" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac10p")">10+</a>
+                        </th>
+                        <th class="govuk-table__header">
+                            <span class="govuk-visually-hidden">Actions</span>
                         </th>
                     </tr>
                 </thead>
@@ -495,6 +498,8 @@ else
     .case-farm-herd-table__group-right {
         background: #fff;
         color: #0b0c0c;
+        text-align: left;
+        white-space: nowrap;
         border-bottom: 1px solid #b1b4b6;
     }
 
@@ -513,6 +518,10 @@ else
 
     .case-farm-herd-table__col-lac {
         width: 68px;
+    }
+
+    .case-farm-herd-table__col-action {
+        width: 200px;
     }
 
     .case-farm-herd-table .govuk-input {
