@@ -19,6 +19,15 @@ parameters:
     type: boolean
     default: false
 
+  - name: runSonar
+    displayName: Run SonarCloud analysis
+    type: boolean
+    default: false
+
+  - name: sonarServiceConnection
+    type: string
+    default: 'SonarCloud-BSE'  
+
 variables:
   - name: buildConfiguration
     value: 'Release'
@@ -42,7 +51,7 @@ stages:
     steps:
 
     - checkout: self
-      fetchDepth: 2
+      fetchDepth: 0
       persistCredentials: false
 
     - task: UseDotNet@2
@@ -51,6 +60,17 @@ stages:
         packageType: sdk
         version: '10.0.x'
   
+
+    - ${{ if eq(parameters.runSonar, true) }}:
+      - task: SonarCloudPrepare@4
+        displayName: 'Prepare Sonar analysis'
+        condition: ne(variables['Build.Reason'], 'PullRequest')
+        inputs:
+          SonarCloud: ${{ parameters.sonarServiceConnection }}
+          organization: 'defra'
+          scannerMode: 'dotnet'
+          projectKey: 'DEFRA_bse'
+          projectName: 'BSE'
 
     - script: dotnet restore $(solution)
       displayName: 'Restore dependencies'
@@ -88,7 +108,7 @@ stages:
     - bash: |
         set -euo pipefail
 
-        # Detect whether any file under the database scripts path (src/Database —
+        # Detect whether any file under the database scripts path (src/Database ï¿½
         # covering Deploy/, Migrations/, StoredProcedures/) changed, so downstream
         # deployment stages can skip applying database scripts when there are no
         # script changes to deploy.
@@ -114,6 +134,17 @@ stages:
     - publish: '$(Build.ArtifactStagingDirectory)'
       artifact: drop
       displayName: 'Publish artifact'
+
+    - ${{ if eq(parameters.runSonar, true) }}:
+      - task: SonarCloudAnalyze@4
+        displayName: 'Run Sonar analysis'
+        condition: and(succeededOrFailed(), ne(variables['Build.Reason'], 'PullRequest'))
+
+      - task: SonarCloudPublish@4
+        displayName: 'Publish quality gate result'
+        condition: and(succeededOrFailed(), ne(variables['Build.Reason'], 'PullRequest'))
+        inputs:
+          pollingTimeoutSec: '300'
 
 - stage: DEV
   displayName: DEV
@@ -152,9 +183,9 @@ stages:
 
           - script: |
               if [ "$(dbScriptsChanged)" = "true" ]; then
-                echo "Database script changes detected — database deployment WILL be applied for DEV."
+                echo "Database script changes detected ï¿½ database deployment WILL be applied for DEV."
               else
-                echo "No database script changes detected — database deployment WILL BE SKIPPED for DEV."
+                echo "No database script changes detected ï¿½ database deployment WILL BE SKIPPED for DEV."
               fi
             displayName: 'Log database deployment decision'
 
@@ -244,9 +275,9 @@ stages:
 
           - script: |
               if [ "$(dbScriptsChanged)" = "true" ]; then
-                echo "Database script changes detected — database deployment WILL be applied for DEV."
+                echo "Database script changes detected ï¿½ database deployment WILL be applied for DEV."
               else
-                echo "No database script changes detected — database deployment WILL BE SKIPPED for DEV."
+                echo "No database script changes detected ï¿½ database deployment WILL BE SKIPPED for DEV."
               fi
             displayName: 'Log database deployment decision'
 
@@ -333,9 +364,9 @@ stages:
 
           - script: |
               if [ "$(dbScriptsChanged)" = "true" ]; then
-                echo "Database script changes detected — database deployment WILL be applied for DEV."
+                echo "Database script changes detected ï¿½ database deployment WILL be applied for DEV."
               else
-                echo "No database script changes detected — database deployment WILL BE SKIPPED for DEV."
+                echo "No database script changes detected ï¿½ database deployment WILL BE SKIPPED for DEV."
               fi
             displayName: 'Log database deployment decision'
 
