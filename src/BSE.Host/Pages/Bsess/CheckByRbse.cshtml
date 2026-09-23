@@ -32,17 +32,21 @@
     }
 
     <form method="get" novalidate>
-        <div class="govuk-form-group @(ViewContext.ModelState["Rbse"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
-            <label asp-for="Rbse" class="govuk-label">RBSE</label>
-            @if (ViewContext.ModelState["Rbse"]?.Errors.Count > 0)
-            {
-                <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewContext.ModelState["Rbse"]!.Errors[0].ErrorMessage</p>
-            }
-            <input asp-for="Rbse" class="govuk-input govuk-!-width-one-half" />
-        </div>
-        <div class="govuk-button-group">
-            <button type="submit" class="govuk-button" data-module="govuk-button">Look Up</button>
-            <a asp-page="/Bsess/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button" role="button" draggable="false">TSES Menu</a>
+        <div class="bse-rbse-lookup-row">
+            <div class="govuk-form-group @(ViewContext.ModelState["Rbse"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+                <label asp-for="Rbse" class="govuk-label">RBSE</label>
+                <div>
+                    @if (ViewContext.ModelState["Rbse"]?.Errors.Count > 0)
+                    {
+                        <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewContext.ModelState["Rbse"]!.Errors[0].ErrorMessage</p>
+                    }
+                    <input asp-for="Rbse" class="govuk-input bse-rbse-input" />
+                </div>
+            </div>
+            <div class="govuk-button-group bse-rbse-action-group">
+                <button type="submit" class="govuk-button" data-module="govuk-button">Look Up</button>
+                <a asp-page="/Bsess/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button" role="button" draggable="false">TSES Menu</a>
+            </div>
         </div>
     </form>
 

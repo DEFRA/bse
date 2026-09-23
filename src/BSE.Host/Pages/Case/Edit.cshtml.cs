@@ -207,6 +207,10 @@ public class EditModel(
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadLookupsAsync();
         await LoadOrInitializeDraftStateAsync();
+
+        ApplyLegacyPreSaveNormalizations();
+        ValidateLegacyParityRules();
+
         if (!ModelState.IsValid)
             return Page();
 
@@ -270,6 +274,115 @@ public class EditModel(
 
         TempData["Success"] = $"Case {Rbse} has been updated.";
         return RedirectToPage(new { rbse = Rbse });
+    }
+
+    private void ApplyLegacyPreSaveNormalizations()
+    {
+        if (!Case.BirthDate.HasValue)
+        {
+            Case.BirthDateSource = null;
+            Case.IsBirthDateEst = false;
+        }
+
+        // Legacy behavior: when Form B is entered and Slaughter Date is empty,
+        // Slaughter Date is set to Form B Date during save mapping.
+        if (!Case.SlaughterDate.HasValue && Case.FormBDate.HasValue)
+            Case.SlaughterDate = Case.FormBDate;
+    }
+
+    private void ValidateLegacyParityRules()
+    {
+        var today = DateTime.Today;
+
+        if (Case.Bse1ReceivedDate.HasValue && Case.Bse1ReceivedDate.Value.Date > today)
+            ModelState.AddModelError("Case.Bse1ReceivedDate", "You must enter a past date.");
+
+        if (Case.FormADate.HasValue)
+        {
+            var latest = Case.SlaughterDate?.Date ?? today;
+            var formA = Case.FormADate.Value.Date;
+            if (formA > latest)
+            {
+                var message = Case.SlaughterDate.HasValue
+                    ? "You must enter a date before the Slaughter Date."
+                    : "You must enter a past date.";
+                ModelState.AddModelError("Case.FormADate", message);
+            }
+        }
+
+        if (Case.FormAResubmittedDate.HasValue)
+        {
+            if (!Case.FormADate.HasValue)
+            {
+                ModelState.AddModelError("Case.FormAResubmittedDate", "You must enter a Form A Date first.");
+            }
+            else
+            {
+                var value = Case.FormAResubmittedDate.Value.Date;
+                var min = Case.FormADate.Value.Date;
+                if (value < min || value > today)
+                    ModelState.AddModelError("Case.FormAResubmittedDate", "You must enter a date in the past but after the Form A Date.");
+            }
+        }
+
+        if (Case.FormBDate.HasValue)
+        {
+            if (!Case.FormADate.HasValue)
+            {
+                ModelState.AddModelError("Case.FormBDate", "You must enter a Form A Date first.");
+            }
+            else
+            {
+                var value = Case.FormBDate.Value.Date;
+                var min = Case.FormADate.Value.Date;
+                if (value < min || value > today)
+                    ModelState.AddModelError("Case.FormBDate", "You must enter a date in the past but after the Form A Date.");
+            }
+        }
+
+        if (Case.FormCDate.HasValue && !Case.FormBDate.HasValue)
+            ModelState.AddModelError("Case.FormCDate", "You must enter a Form B Date first.");
+
+        if (Case.FormBDate.HasValue && string.IsNullOrWhiteSpace(Case.Fate))
+            ModelState.AddModelError("Case.Fate", "Select a fate.");
+
+        if (Case.BirthDate.HasValue)
+        {
+            var birthDate = Case.BirthDate.Value.Date;
+            if (birthDate < new DateTime(1970, 1, 1))
+                ModelState.AddModelError("Case.BirthDate", "Date of Birth must be on or after 01/01/1970.");
+
+            var latestForFormA = Case.FormADate?.Date ?? today;
+            if (birthDate > latestForFormA)
+                ModelState.AddModelError("Case.BirthDate", "Date of Birth must be before the Form A Date");
+
+            if (Case.OnsetDate.HasValue && birthDate > Case.OnsetDate.Value.Date)
+                ModelState.AddModelError("Case.BirthDate", "Date of Birth must be before the Onset Date");
+        }
+
+        if (Case.HasCaseWork && Case.RbseDate.HasValue)
+        {
+            var min = Case.RbseDate.Value.Date.AddDays(1);
+            var max = today;
+            var message = $"You must enter a date in the past but after the RBSE Date ({Case.RbseDate.Value:dd/MM/yyyy})";
+
+            ValidateOptionalRange(Case.PurchaserBse1ReceivedDate, "Case.PurchaserBse1ReceivedDate", min, max, message);
+            ValidateOptionalRange(Case.BreederBse1ReceivedDate, "Case.BreederBse1ReceivedDate", min, max, message);
+            ValidateOptionalRange(Case.Vendor1Bse1ReceivedDate, "Case.Vendor1Bse1ReceivedDate", min, max, message);
+            ValidateOptionalRange(Case.HomebredBse1ReceivedDate, "Case.HomebredBse1ReceivedDate", min, max, message);
+            ValidateOptionalRange(Case.SummarySheetReceivedDate, "Case.SummarySheetReceivedDate", min, max, message);
+            ValidateOptionalRange(Case.PaperworkCompleteDate, "Case.PaperworkCompleteDate", min, max, message);
+        }
+    }
+
+    private void ValidateOptionalRange(DateTime? value, string modelKey, DateTime min, DateTime max, string message)
+    {
+        if (!value.HasValue)
+            return;
+
+        var date = value.Value.Date;
+        if (date < min || date > max)
+            ModelState.AddModelError(modelKey, message);
     }
 
     private async Task LoadLookupsAsync()

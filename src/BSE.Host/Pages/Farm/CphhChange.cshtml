@@ -38,67 +38,77 @@
 
 @* ── Step 1: look up the farm to be changed ─────────────────────────────── *@
 <form method="post" asp-page-handler="LookUp" novalidate>
-    <div class="govuk-form-group @(Model.OldCphhError is not null ? "govuk-form-group--error" : "")">
-        <label class="govuk-label" for="old-cphh">Old CPHH</label>
-        @if (Model.OldCphhError is not null)
-        {
-            <p id="old-cphh-error" class="govuk-error-message">
-                <span class="govuk-visually-hidden">Error:</span>@Model.OldCphhError
-            </p>
-        }
-        <input id="old-cphh" name="OldCphh" value="@Model.OldCphh" type="text" inputmode="numeric" autocomplete="off"
-               aria-describedby="old-cphh-hint @(Model.OldCphhError is not null ? "old-cphh-error" : "")"
-               class="govuk-input govuk-input--width-20 @(Model.OldCphhError is not null ? "govuk-input--error" : "")" />
+    <div class="bse-rbse-lookup-row">
+        <div class="govuk-form-group @(Model.OldCphhError is not null ? "govuk-form-group--error" : "")">
+            <label class="govuk-label" for="old-cphh">Old CPHH</label>
+            <div>
+                @if (Model.OldCphhError is not null)
+                {
+                    <p id="old-cphh-error" class="govuk-error-message">
+                        <span class="govuk-visually-hidden">Error:</span>@Model.OldCphhError
+                    </p>
+                }
+                <input id="old-cphh" name="OldCphh" value="@Model.OldCphh" type="text" inputmode="numeric" autocomplete="off"
+                       aria-describedby="old-cphh-hint @(Model.OldCphhError is not null ? "old-cphh-error" : "")"
+                       class="govuk-input govuk-input--width-20 @(Model.OldCphhError is not null ? "govuk-input--error" : "")" />
+            </div>
+        </div>
+        <button type="submit" class="govuk-button" data-module="govuk-button">Look Up</button>
     </div>
-    <button type="submit" class="govuk-button" data-module="govuk-button">Look Up</button>
 </form>
 
 @if (Model.FarmFound)
 {
     <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
 
-    <dl class="govuk-summary-list govuk-summary-list--no-border">
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Owner Name</dt>
-            <dd class="govuk-summary-list__value">@Model.Farm.OwnerName</dd>
+    <div class="bse-cphh-summary-grid">
+        <div class="bse-cphh-summary-item">
+            <span class="bse-cphh-summary-label">Owner Name</span>
+            <span class="bse-cphh-summary-value">@Model.Farm.OwnerName</span>
         </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Address</dt>
-            <dd class="govuk-summary-list__value">
+
+        <div class="bse-cphh-summary-item">
+            <span class="bse-cphh-summary-label">Address</span>
+            <span class="bse-cphh-summary-value">
                 @Model.Farm.Address1<br>
                 @Model.Farm.Address2<br>
                 @Model.Farm.Address3<br>
                 @Model.Farm.Postcode
-            </dd>
+            </span>
         </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Number of Confirmed Cases</dt>
-            <dd class="govuk-summary-list__value">@Model.ConfirmedCases</dd>
+
+        <div class="bse-cphh-summary-item">
+            <span class="bse-cphh-summary-label">Number of confirmed cases</span>
+            <span class="bse-cphh-summary-value">@Model.ConfirmedCases</span>
         </div>
-    </dl>
+    </div>
 
     <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
 
     @* ── Step 2: enter the replacement CPHH ─────────────────────────────── *@
     <form method="post" asp-page-handler="Change" novalidate>
         <input type="hidden" name="OldCphh" value="@Model.OldCphh" />
-        <div class="govuk-form-group @(Model.NewCphhError is not null ? "govuk-form-group--error" : "")">
-            <label class="govuk-label" for="new-cphh">New CPHH</label>
-            @if (Model.NewCphhError is not null)
-            {
-                <p id="new-cphh-error" class="govuk-error-message">
-                    <span class="govuk-visually-hidden">Error:</span>@Model.NewCphhError
-                </p>
-            }
-            <input id="new-cphh" name="NewCphh" value="@Model.NewCphh" type="text" inputmode="numeric" autocomplete="off"
-                   aria-describedby="new-cphh-hint @(Model.NewCphhError is not null ? "new-cphh-error" : "")"
-                   class="govuk-input govuk-input--width-20 @(Model.NewCphhError is not null ? "govuk-input--error" : "")" />
-        </div>
+        <div class="bse-cphh-change-row">
+            <div class="govuk-form-group @(Model.NewCphhError is not null ? "govuk-form-group--error" : "")">
+                <label class="govuk-label" for="new-cphh">New CPHH</label>
+                <div class="bse-rbse-input-wrap">
+                    @if (Model.NewCphhError is not null)
+                    {
+                        <p id="new-cphh-error" class="govuk-error-message">
+                            <span class="govuk-visually-hidden">Error:</span>@Model.NewCphhError
+                        </p>
+                    }
+                    <input id="new-cphh" name="NewCphh" value="@Model.NewCphh" type="text" inputmode="numeric" autocomplete="off"
+                           aria-describedby="new-cphh-hint @(Model.NewCphhError is not null ? "new-cphh-error" : "")"
+                           class="govuk-input govuk-input--width-20 @(Model.NewCphhError is not null ? "govuk-input--error" : "")" />
+                </div>
+            </div>
 
-        <div class="govuk-button-group">
-            <button type="submit" class="govuk-button govuk-button--warning" data-module="govuk-button"
-                    onclick="return confirm('Click OK to confirm change');">OK</button>
-            <a asp-page="/Home" class="govuk-link">Cancel</a>
+            <div class="govuk-button-group bse-rbse-action-group">
+                <button type="submit" class="govuk-button govuk-button--warning" data-module="govuk-button"
+                        onclick="return confirm('Click OK to confirm change');">OK</button>
+                <a asp-page="/Home" class="govuk-link">Cancel</a>
+            </div>
         </div>
     </form>
 }

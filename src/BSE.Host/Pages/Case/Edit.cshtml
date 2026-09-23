@@ -8,6 +8,9 @@
     var viewDocsUrl = string.IsNullOrWhiteSpace(Model.SpolSiteUrl)
         ? null
         : $"{Model.SpolSiteUrl}{rbseNoSlash}";
+    var hasFormA = Model.Case.FormADate.HasValue;
+    var hasFormB = Model.Case.FormBDate.HasValue;
+    var hasBirthDate = Model.Case.BirthDate.HasValue;
 
     string? eEartag       = ViewData.ModelState["Case.EartagCountry"]?.Errors.FirstOrDefault()?.ErrorMessage;
     string? eFormA         = ViewData.ModelState["Case.FormADate"]?.Errors.FirstOrDefault()?.ErrorMessage;
@@ -156,7 +159,7 @@ else
                 <div class="defra-legacy-field @(eFormAResub is not null ? "govuk-form-group--error" : "")">
                     <label asp-for="Case.FormAResubmittedDate" class="govuk-label">Form A Resubmitted Date</label>
                     @if (eFormAResub is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eFormAResub</p> }
-                    <input asp-for="Case.FormAResubmittedDate" type="date" class="govuk-input defra-legacy-date @(eFormAResub is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.FormAResubmittedDate)" />
+                    <input asp-for="Case.FormAResubmittedDate" type="date" class="govuk-input defra-legacy-date @(eFormAResub is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.FormAResubmittedDate)" disabled="@(!hasFormA)" />
                 </div>
             </div>
 
@@ -164,12 +167,12 @@ else
                 <div class="defra-legacy-field @(eFormB is not null ? "govuk-form-group--error" : "")">
                     <label asp-for="Case.FormBDate" class="govuk-label">Form B Date</label>
                     @if (eFormB is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eFormB</p> }
-                    <input asp-for="Case.FormBDate" type="date" class="govuk-input defra-legacy-date @(eFormB is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.FormBDate)" />
+                    <input asp-for="Case.FormBDate" type="date" class="govuk-input defra-legacy-date @(eFormB is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.FormBDate)" disabled="@(!hasFormA)" />
                 </div>
                 <div class="defra-legacy-field @(eFate is not null ? "govuk-form-group--error" : "")">
                     <label asp-for="Case.Fate" class="govuk-label">Fate (Form B reason)</label>
                     @if (eFate is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eFate</p> }
-                    <select asp-for="Case.Fate" class="govuk-select defra-legacy-input--sm @(eFate is not null ? "govuk-select--error" : "")">
+                    <select asp-for="Case.Fate" class="govuk-select defra-legacy-input--sm @(eFate is not null ? "govuk-select--error" : "")" disabled="@(!hasFormB)">
                         <option value="">-- Select --</option>
                         @foreach (var o in Model.FateOptions)
                         {
@@ -190,7 +193,7 @@ else
                             <strong class="govuk-warning-text__text"><span class="govuk-warning-text__assistive">Warning</span> Form C date differs from Form B date — please check.</strong>
                         </p>
                     }
-                    <input asp-for="Case.FormCDate" type="date" class="govuk-input defra-legacy-date @(eFormC is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.FormCDate)" />
+                    <input asp-for="Case.FormCDate" type="date" class="govuk-input defra-legacy-date @(eFormC is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.FormCDate)" disabled="@(!hasFormB)" />
                 </div>
                 <div class="defra-legacy-field"></div>
             </div>
@@ -394,7 +397,7 @@ else
             <div class="defra-legacy-grid">
                 <div class="defra-legacy-field">
                     <label asp-for="Case.BirthDateSource" class="govuk-label">Date Of Birth Source</label>
-                    <select asp-for="Case.BirthDateSource" class="govuk-select defra-legacy-input--sm">
+                    <select asp-for="Case.BirthDateSource" class="govuk-select defra-legacy-input--sm" disabled="@(!hasBirthDate)">
                         <option value="">-- Select --</option>
                         @foreach (var o in Model.BirthDateSourceOptions)
                         {
@@ -411,7 +414,7 @@ else
             <div class="defra-legacy-grid">
                 <div class="defra-legacy-field defra-legacy-field--checkbox-inline">
                     <label asp-for="Case.IsBirthDateEst" class="govuk-label">Is Date Of Birth Estimated?</label>
-                    <input asp-for="Case.IsBirthDateEst" type="checkbox" class="defra-legacy-receipt-check defra-legacy-inline-checkbox" />
+                    <input asp-for="Case.IsBirthDateEst" type="checkbox" class="defra-legacy-receipt-check defra-legacy-inline-checkbox" disabled="@(!hasBirthDate)" />
                 </div>
                 <div class="defra-legacy-field">
                     <label asp-for="Case.Survey" class="govuk-label">Survey</label>

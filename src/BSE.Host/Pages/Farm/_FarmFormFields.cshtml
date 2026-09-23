@@ -8,6 +8,7 @@
     var authCountyOptions  = ViewData["AuthorityCountyOptions"]  as IEnumerable<BSE.SharedKernel.ILookupItem> ?? Enumerable.Empty<BSE.SharedKernel.ILookupItem>();
     var authorityOptions   = ViewData["AuthorityOptions"]        as IEnumerable<LuAuthority>                  ?? Enumerable.Empty<LuAuthority>();
     var adnsOptions        = ViewData["AdnsOptions"]             as IEnumerable<LuADNSRegion>                 ?? Enumerable.Empty<LuADNSRegion>();
+    var isNonGbFarm = !string.IsNullOrWhiteSpace(Model?.CPHH) && BSE.SharedKernel.CphhNormalizer.Normalize(Model.CPHH).StartsWith("00", StringComparison.Ordinal);
 }
 
 <div class="bse-farm-legacy">
@@ -19,7 +20,7 @@
             </div>
             <div class="bse-farm-legacy__field">
                 <label asp-for="Parish" class="govuk-label">Parish</label>
-                <input asp-for="Parish" class="govuk-input bse-farm-legacy__input" maxlength="50" />
+                <input asp-for="Parish" class="govuk-input bse-farm-legacy__input" maxlength="50" disabled="@(isNonGbFarm ? "disabled" : null)" />
             </div>
         </div>
 
@@ -58,7 +59,7 @@
             </div>
             <div class="bse-farm-legacy__field">
                 <label asp-for="AHO" class="govuk-label">AHO</label>
-                <select asp-for="AHO" class="govuk-select bse-farm-legacy__input">
+                <select asp-for="AHO" class="govuk-select bse-farm-legacy__input" disabled="@(isNonGbFarm ? "disabled" : null)">
                     <option value="">-- Select --</option>
                     @foreach (var a in ahoOptions)
                     {
@@ -106,7 +107,7 @@
             </div>
             <div class="bse-farm-legacy__field">
                 <label class="govuk-label" for="AuthorityCountyID">Authority County</label>
-                <select asp-for="AuthorityCountyID" id="AuthorityCountyID" class="govuk-select bse-farm-legacy__input">
+                <select asp-for="AuthorityCountyID" id="AuthorityCountyID" class="govuk-select bse-farm-legacy__input" disabled="@(isNonGbFarm ? "disabled" : null)">
                     <option value="">-- Select --</option>
                     @foreach (var ac in authCountyOptions)
                     {
@@ -123,7 +124,7 @@
             </div>
             <div class="bse-farm-legacy__field">
                 <label class="govuk-label" for="AuthorityID">Local Authority</label>
-                <select asp-for="AuthorityID" id="AuthorityID" class="govuk-select bse-farm-legacy__input">
+                <select asp-for="AuthorityID" id="AuthorityID" class="govuk-select bse-farm-legacy__input" disabled="@(isNonGbFarm ? "disabled" : null)">
                     <option value="">-- Select --</option>
                     @foreach (var a in authorityOptions)
                     {
@@ -140,7 +141,7 @@
             </div>
             <div class="bse-farm-legacy__field">
                 <label class="govuk-label" for="ADNSRegionID">ADNS Region</label>
-                <select asp-for="ADNSRegionID" id="ADNSRegionID" class="govuk-select bse-farm-legacy__input">
+                <select asp-for="ADNSRegionID" id="ADNSRegionID" class="govuk-select bse-farm-legacy__input" disabled="@(isNonGbFarm ? "disabled" : null)">
                     <option value="">-- Select --</option>
                     @foreach (var r in adnsOptions)
                     {

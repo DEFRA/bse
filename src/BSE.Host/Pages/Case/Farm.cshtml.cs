@@ -16,6 +16,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Configuration;
+using System.Text.RegularExpressions;
 using IGeoLookupService = BSE.Host.Services.IGeoLookupService;
 
 namespace BSE.Host.Pages.Case;
@@ -501,7 +502,7 @@ public class FarmModel(
     // TotalSize between 1 and 2000; each Lactation value fits legacy's 3-digit textbox (0–999).
     private const int MinHerdYear = 1975;
     private const int MinTotalSize = 1;
-    private const int MaxTotalSize = 2000;
+    private const int MaxTotalSize = 1999;
     private const int MinLactationSize = 0;
     private const int MaxLactationSize = 999;
 
@@ -761,6 +762,8 @@ public class FarmModel(
             EditableFarm = FarmEditViewModel.FromRecord(Farm);
             EditableFarmRowStampBase64 = Farm.RowStamp is null ? string.Empty : Convert.ToBase64String(Farm.RowStamp);
             await LoadLookupsForEditAsync();
+
+        ValidateLegacyFarmParityRules();
         }
     }
 
@@ -866,6 +869,58 @@ public class FarmModel(
             return options.Any(x => x.Id == model.ADNSRegionID.Value);
 
         return true;
+    }
+
+    private void ApplyLegacyFarmNormalizations()
+    {
+        if (EditableFarm is null)
+            return;
+
+        if (IsNonGbFarmCphh(EditableFarm.CPHH))
+        {
+            EditableFarm.Parish = null;
+            EditableFarm.AHO = null;
+            EditableFarm.AuthorityCountyID = null;
+            EditableFarm.AuthorityID = null;
+            EditableFarm.ADNSRegionID = null;
+        }
+    }
+
+    private void ValidateLegacyFarmParityRules()
+    {
+        if (EditableFarm is null)
+            return;
+
+        ValidateHerdmarkFormat("EditableFarm.Herdmark1", EditableFarm.Herdmark1);
+        ValidateHerdmarkFormat("EditableFarm.Herdmark2", EditableFarm.Herdmark2);
+        ValidateHerdmarkFormat("EditableFarm.Herdmark3", EditableFarm.Herdmark3);
+
+        ValidateNumericHerdmarkFormat("EditableFarm.NumericHerdmark1", EditableFarm.NumericHerdmark1);
+        ValidateNumericHerdmarkFormat("EditableFarm.NumericHerdmark2", EditableFarm.NumericHerdmark2);
+    }
+
+    private void ValidateHerdmarkFormat(string key, string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return;
+
+        if (!Regex.IsMatch(value.Trim(), @"^[A-Za-z]{0,4}[0-9]{0,4}$"))
+            ModelState.AddModelError(key, "Herdmark must be up to 4 letters followed by up to 4 numbers.");
+    }
+
+    private void ValidateNumericHerdmarkFormat(string key, string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return;
+
+        if (!Regex.IsMatch(value.Trim(), @"^[0-9]{6}$"))
+            ModelState.AddModelError(key, "Numeric herdmark must be 6 digits.");
+    }
+
+    private static bool IsNonGbFarmCphh(string? cphh)
+    {
+        var normalised = CphhNormalizer.Normalize(cphh);
+        return normalised.StartsWith("00", StringComparison.Ordinal);
     }
 
     private async Task LoadLookupsForEditAsync()
