@@ -41,13 +41,15 @@
 {
     @* Standalone search form — only shown when not arriving from a case context *@
     <form method="get" novalidate class="govuk-!-margin-bottom-6">
-        <div class="govuk-form-group">
-            <label asp-for="Cphh" class="govuk-label">CPHH number</label>
-            <input asp-for="Cphh" type="text" class="govuk-input govuk-input--width-20" aria-describedby="cphh-hint" spellcheck="false" autocomplete="off" />
-        </div>
-        <div class="govuk-button-group">
-            <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
-            <a asp-page="/AuditLog/ByFarm" class="govuk-link">Clear search</a>
+        <div class="bse-date-search-row">
+            <div class="govuk-form-group">
+                <label asp-for="Cphh" class="govuk-label">CPHH number</label>
+                <input asp-for="Cphh" type="text" class="govuk-input govuk-input--width-20" aria-describedby="cphh-hint" spellcheck="false" autocomplete="off" />
+            </div>
+            <div class="govuk-button-group">
+                <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
+                <a asp-page="/AuditLog/ByFarm" class="govuk-link">Clear search</a>
+            </div>
         </div>
     </form>
 }
@@ -60,7 +62,6 @@
     }
     else
     {
-        <p class="govuk-body govuk-!-margin-bottom-4">@Model.Entries.Count() @(Model.Entries.Count() == 1 ? "entry" : "entries") found.</p>
         var sortBase = "?" + string.Join("&", HttpContext.Request.Query
             .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
                      && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase)
