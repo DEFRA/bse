@@ -596,27 +596,21 @@
     font-weight: 400;
 }
 
-/* Cases By Holding/Herdmark: table-layout:auto resizes columns to fit each result set's
-   content, so the table visibly widens/shortens between searches. Fixed layout with
-   explicit per-column widths keeps it stable.
-   Case Search / Farm Search: break out of the 960px govuk-width-container to use
-   the full viewport width (matching legacy), without widening the rest of the page
-   (form, headings, etc. stay within the normal GDS width). Scroll the table region
-   only as a fallback on viewports narrower than the table's own min-width. */
+/* Keep search tables using the same non-scrolling structure as Farm search. */
 .bse-case-search-table-wrap,
 .bse-outstanding-search-table-wrap,
 .bse-holding-herdmark-search-table-wrap,
 .bse-herdmark-search-table-wrap {
-    width: 100vw;
-    position: relative;
-    left: 50%;
-    right: 50%;
-    margin-left: -50vw;
-    margin-right: -50vw;
-    padding-left: var(--bse-app-left-gutter);
-    padding-right: var(--bse-app-left-gutter);
+    width: 100%;
+    position: static;
+    left: auto;
+    right: auto;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
     box-sizing: border-box;
-    overflow-x: auto;
+    overflow-x: visible;
 }
 
 .bse-farm-search-table-wrap {
@@ -636,8 +630,9 @@
 .bse-outstanding-search-table,
 .bse-holding-herdmark-search-table,
 .bse-herdmark-search-table {
-    table-layout: auto;
-    min-width: 1600px;
+    width: 100%;
+    table-layout: fixed;
+    min-width: 100%;
 }
 
 .bse-open-cases-table-wrap {
@@ -821,26 +816,24 @@
     width: 13%;
 }
 
-/* Related Animal Search: table-layout:auto resizes columns to fit each result set's
-   content, so the table visibly widens/shortens between searches. Fixed layout with
-   explicit per-column widths keeps it stable; break out of the govuk-width-container
-   to use the full viewport width, scrolling only as a fallback on narrow viewports. */
+/* Related Animal Search: follow the same non-scrolling wrapper style as Farm search. */
 .bse-related-animals-search-table-wrap {
-    width: 100vw;
-    position: relative;
-    left: 50%;
-    right: 50%;
-    margin-left: -50vw;
-    margin-right: -50vw;
-    padding-left: var(--bse-app-left-gutter);
-    padding-right: var(--bse-app-left-gutter);
+    width: 100%;
+    position: static;
+    left: auto;
+    right: auto;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
     box-sizing: border-box;
-    overflow-x: auto;
+    overflow-x: visible;
 }
 
 .bse-related-animals-search-table {
+    width: 100%;
     table-layout: fixed;
-    min-width: 1200px;
+    min-width: 100%;
 }
 
 .bse-related-animals-search-table .govuk-table__cell,
