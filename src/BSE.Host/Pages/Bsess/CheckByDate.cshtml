@@ -36,29 +36,31 @@
     }
 
     <form method="get" novalidate class="govuk-!-margin-bottom-6">
-        <div class="govuk-form-group @(!ViewContext.ModelState.IsValid ? "govuk-form-group--error" : "")">
-            <label class="govuk-label">Notification Date Between</label>
-            @if (ViewContext.ModelState["StartDate"]?.Errors.Count > 0)
-            {
-                <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewContext.ModelState["StartDate"]!.Errors[0].ErrorMessage</p>
-            }
-            @if (ViewContext.ModelState["EndDate"]?.Errors.Count > 0)
-            {
-                <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewContext.ModelState["EndDate"]!.Errors[0].ErrorMessage</p>
-            }
-            <div class="bse-date-range-input-wrapper">
-                <input id="audit-start-date" name="StartDate" type="date"
-                       class="govuk-input govuk-input--width-10"
-                       value="@Model.StartDate?.ToString("yyyy-MM-dd")" />
-                <span class="bse-date-range-separator govuk-label">and</span>
-                <input id="audit-end-date" name="EndDate" type="date"
-                       class="govuk-input govuk-input--width-10"
-                       value="@Model.EndDate?.ToString("yyyy-MM-dd")" />
+        <div class="bse-date-search-row">
+            <div class="govuk-form-group @(!ViewContext.ModelState.IsValid ? "govuk-form-group--error" : "")">
+                <label class="govuk-label">Notification Date Between</label>
+                @if (ViewContext.ModelState["StartDate"]?.Errors.Count > 0)
+                {
+                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewContext.ModelState["StartDate"]!.Errors[0].ErrorMessage</p>
+                }
+                @if (ViewContext.ModelState["EndDate"]?.Errors.Count > 0)
+                {
+                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewContext.ModelState["EndDate"]!.Errors[0].ErrorMessage</p>
+                }
+                <div class="bse-date-range-input-wrapper">
+                    <input id="audit-start-date" name="StartDate" type="date"
+                           class="govuk-input govuk-input--width-10"
+                           value="@Model.StartDate?.ToString("yyyy-MM-dd")" />
+                    <span class="bse-date-range-separator govuk-label">and</span>
+                    <input id="audit-end-date" name="EndDate" type="date"
+                           class="govuk-input govuk-input--width-10"
+                           value="@Model.EndDate?.ToString("yyyy-MM-dd")" />
+                </div>
             </div>
-        </div>
-        <div class="govuk-button-group">
-            <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
-            <a asp-page="/Bsess/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button" role="button" draggable="false">TSES Menu</a>
+            <div class="govuk-button-group bse-rbse-action-group">
+                <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
+                <a asp-page="/Bsess/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button" role="button" draggable="false">TSES Menu</a>
+            </div>
         </div>
     </form>
 

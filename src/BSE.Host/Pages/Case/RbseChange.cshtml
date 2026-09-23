@@ -38,70 +38,83 @@
 
 @* ── Step 1: look up the case to be renumbered ──────────────────────────── *@
 <form method="post" asp-page-handler="LookUp" novalidate>
-    <div class="govuk-form-group @(Model.OldRbseError is not null ? "govuk-form-group--error" : "")">
-        <label class="govuk-label" for="old-rbse">Old RBSE</label>
-        @if (Model.OldRbseError is not null)
-        {
-            <p id="old-rbse-error" class="govuk-error-message">
-                <span class="govuk-visually-hidden">Error:</span>@Model.OldRbseError
-            </p>
-        }
-        <input id="old-rbse" name="OldRbse" value="@Model.OldRbse" type="text" maxlength="11" autocomplete="off"
-               aria-describedby="old-rbse-hint @(Model.OldRbseError is not null ? "old-rbse-error" : "")"
-               class="govuk-input govuk-input--width-10 @(Model.OldRbseError is not null ? "govuk-input--error" : "")" />
+    <div class="bse-rbse-lookup-row">
+        <div class="govuk-form-group @(Model.OldRbseError is not null ? "govuk-form-group--error" : "")">
+            <label class="govuk-label" for="old-rbse">Old RBSE</label>
+            <div>
+                @if (Model.OldRbseError is not null)
+                {
+                    <p id="old-rbse-error" class="govuk-error-message">
+                        <span class="govuk-visually-hidden">Error:</span>@Model.OldRbseError
+                    </p>
+                }
+                <input id="old-rbse" name="OldRbse" value="@Model.OldRbse" type="text" maxlength="11" autocomplete="off"
+                       aria-describedby="old-rbse-hint @(Model.OldRbseError is not null ? "old-rbse-error" : "")"
+                       class="govuk-input govuk-input--width-10 @(Model.OldRbseError is not null ? "govuk-input--error" : "")" />
+            </div>
+        </div>
+        <button type="submit" class="govuk-button" data-module="govuk-button">Look Up</button>
     </div>
-    <button type="submit" class="govuk-button" data-module="govuk-button">Look Up</button>
 </form>
 
 @if (Model.CaseFound)
 {
     <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
-    <dl class="govuk-summary-list">
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Owner Name</dt>
-            <dd class="govuk-summary-list__value">@Model.Farm?.OwnerName</dd>
+
+    <div class="bse-rbse-summary-grid">
+        <div class="bse-rbse-summary-row">
+            <div class="bse-rbse-summary-item">
+                <span class="bse-rbse-summary-label">Owner Name</span>
+                <span class="bse-rbse-summary-value">@Model.Farm?.OwnerName</span>
+            </div>
+            <div class="bse-rbse-summary-item">
+                <span class="bse-rbse-summary-label">Eartag</span>
+                <span class="bse-rbse-summary-value">@Model.EartagDisplay</span>
+            </div>
         </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Address</dt>
-            <dd class="govuk-summary-list__value">
-                @Model.Farm?.Address1<br>
-                @Model.Farm?.Address2<br>
-                @Model.Farm?.Address3<br>
-                @Model.Farm?.Postcode
-            </dd>
+        <div class="bse-rbse-summary-row">
+            <div class="bse-rbse-summary-item">
+                <span class="bse-rbse-summary-label">Address</span>
+                <span class="bse-rbse-summary-value">
+                    @Model.Farm?.Address1<br>
+                    @Model.Farm?.Address2<br>
+                    @Model.Farm?.Address3<br>
+                    @Model.Farm?.Postcode
+                </span>
+            </div>
+            <div class="bse-rbse-summary-item">
+                <span class="bse-rbse-summary-label">CPHH</span>
+                <span class="bse-rbse-summary-value">@BseFormat.FormatCphh(Model.Case.Cphh)</span>
+            </div>
         </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Eartag</dt>
-            <dd class="govuk-summary-list__value">@Model.EartagDisplay</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">CPHH</dt>
-            <dd class="govuk-summary-list__value">@BseFormat.FormatCphh(Model.Case.Cphh)</dd>
-        </div>
-    </dl>
+    </div>
 
     <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
 
     @* ── Step 2: enter the replacement RBSE ─────────────────────────────── *@
     <form method="post" asp-page-handler="Change" novalidate>
         <input type="hidden" name="OldRbse" value="@Model.OldRbse" />
-        <div class="govuk-form-group @(Model.NewRbseError is not null ? "govuk-form-group--error" : "")">
-            <label class="govuk-label" for="new-rbse">New RBSE</label>
-            @if (Model.NewRbseError is not null)
-            {
-                <p id="new-rbse-error" class="govuk-error-message">
-                    <span class="govuk-visually-hidden">Error:</span>@Model.NewRbseError
-                </p>
-            }
-            <input id="new-rbse" name="NewRbse" value="@Model.NewRbse" type="text" maxlength="11" autocomplete="off"
-                   aria-describedby="new-rbse-hint @(Model.NewRbseError is not null ? "new-rbse-error" : "")"
-                   class="govuk-input govuk-input--width-10 @(Model.NewRbseError is not null ? "govuk-input--error" : "")" />
-        </div>
+        <div class="bse-cphh-change-row">
+            <div class="govuk-form-group @(Model.NewRbseError is not null ? "govuk-form-group--error" : "")">
+                <label class="govuk-label" for="new-rbse">New RBSE</label>
+                <div class="bse-rbse-input-wrap">
+                    @if (Model.NewRbseError is not null)
+                    {
+                        <p id="new-rbse-error" class="govuk-error-message">
+                            <span class="govuk-visually-hidden">Error:</span>@Model.NewRbseError
+                        </p>
+                    }
+                    <input id="new-rbse" name="NewRbse" value="@Model.NewRbse" type="text" maxlength="11" autocomplete="off"
+                           aria-describedby="new-rbse-hint @(Model.NewRbseError is not null ? "new-rbse-error" : "")"
+                           class="govuk-input govuk-input--width-10 @(Model.NewRbseError is not null ? "govuk-input--error" : "")" />
+                </div>
+            </div>
 
-        <div class="govuk-button-group">
-            <button type="submit" class="govuk-button govuk-button--warning" data-module="govuk-button"
-                    onclick="return confirm('Click OK to confirm change');">OK</button>
-            <a asp-page="/Home" class="govuk-link">Cancel</a>
+            <div class="govuk-button-group bse-rbse-action-group">
+                <button type="submit" class="govuk-button govuk-button--warning" data-module="govuk-button"
+                        onclick="return confirm('Click OK to confirm change');">OK</button>
+                <a asp-page="/Home" class="govuk-link">Cancel</a>
+            </div>
         </div>
     </form>
 }
