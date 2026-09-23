@@ -195,19 +195,17 @@ stages:
                   https://github.com/microsoft/go-sqlcmd/releases/download/v1.8.2/sqlcmd-linux-amd64.tar.bz2
                 tar -xjf "$TOOLS/sqlcmd.tar.bz2" -C "$TOOLS"
 
-                shopt -s nullglob
-                files=("$(Pipeline.Workspace)"/drop/sql/*.sql)
-                if [ ${#files[@]} -eq 0 ]; then
-                  echo "No SQL scripts found - nothing to apply"
-                  exit 0
+                DEPLOY=$(find "$(Pipeline.Workspace)/drop/sql" -name Deploy.sql | head -1)
+                if [ -z "$DEPLOY" ]; then
+                  echo "Deploy.sql not found"
+                  exit 1
                 fi
 
-                for f in $(printf '%s\n' "${files[@]}" | sort); do
-                  echo "Applying ${f##*/}"
-                  "$TOOLS/sqlcmd" -S "$(sqlServerHost)" -d "$(dbName)" \
-                    --authentication-method ActiveDirectoryAzCli \
-                    -i "$f" -b -t 0
-                done
+                echo "Applying $DEPLOY"
+                cd "$(dirname "$DEPLOY")"
+                "$TOOLS/sqlcmd" -S "$(sqlServerHost)" -d "$(dbName)" \
+                  --authentication-method ActiveDirectoryAzCli \
+                  -i Deploy.sql -b -t 0
 
           - task: AzureWebApp@1
             inputs:
@@ -284,19 +282,17 @@ stages:
                   https://github.com/microsoft/go-sqlcmd/releases/download/v1.8.2/sqlcmd-linux-amd64.tar.bz2
                 tar -xjf "$TOOLS/sqlcmd.tar.bz2" -C "$TOOLS"
 
-                shopt -s nullglob
-                files=("$(Pipeline.Workspace)"/drop/sql/*.sql)
-                if [ ${#files[@]} -eq 0 ]; then
-                  echo "No SQL scripts found - nothing to apply"
-                  exit 0
+                DEPLOY=$(find "$(Pipeline.Workspace)/drop/sql" -name Deploy.sql | head -1)
+                if [ -z "$DEPLOY" ]; then
+                  echo "Deploy.sql not found"
+                  exit 1
                 fi
 
-                for f in $(printf '%s\n' "${files[@]}" | sort); do
-                  echo "Applying ${f##*/}"
-                  "$TOOLS/sqlcmd" -S "$(sqlServerHost)" -d "$(dbName)" \
-                    --authentication-method ActiveDirectoryAzCli \
-                    -i "$f" -b -t 0
-                done
+                echo "Applying $DEPLOY"
+                cd "$(dirname "$DEPLOY")"
+                "$TOOLS/sqlcmd" -S "$(sqlServerHost)" -d "$(dbName)" \
+                  --authentication-method ActiveDirectoryAzCli \
+                  -i Deploy.sql -b -t 0
 
           - task: AzureWebApp@1
             inputs:
@@ -369,19 +365,17 @@ stages:
                   https://github.com/microsoft/go-sqlcmd/releases/download/v1.8.2/sqlcmd-linux-amd64.tar.bz2
                 tar -xjf "$TOOLS/sqlcmd.tar.bz2" -C "$TOOLS"
 
-                shopt -s nullglob
-                files=("$(Pipeline.Workspace)"/drop/sql/*.sql)
-                if [ ${#files[@]} -eq 0 ]; then
-                  echo "No SQL scripts found - nothing to apply"
-                  exit 0
+                DEPLOY=$(find "$(Pipeline.Workspace)/drop/sql" -name Deploy.sql | head -1)
+                if [ -z "$DEPLOY" ]; then
+                  echo "Deploy.sql not found"
+                  exit 1
                 fi
 
-                for f in $(printf '%s\n' "${files[@]}" | sort); do
-                  echo "Applying ${f##*/}"
-                  "$TOOLS/sqlcmd" -S "$(sqlServerHost)" -d "$(dbName)" \
-                    --authentication-method ActiveDirectoryAzCli \
-                    -i "$f" -b -t 0
-                done
+                echo "Applying $DEPLOY"
+                cd "$(dirname "$DEPLOY")"
+                "$TOOLS/sqlcmd" -S "$(sqlServerHost)" -d "$(dbName)" \
+                  --authentication-method ActiveDirectoryAzCli \
+                  -i Deploy.sql -b -t 0
 
           - task: AzureWebApp@1
             inputs:
