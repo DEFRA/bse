@@ -333,11 +333,20 @@ stages:
 
 - stage: PRE
   displayName: PRE
-  dependsOn: TST
-  condition: and(in(dependencies.TST.result, 'Succeeded', 'Skipped'), eq('${{ parameters.deployToPreProd }}', true))
+  dependsOn:
+  - Build
+  - TST
+  condition: >-
+    and(
+      eq(dependencies.Build.result, 'Succeeded'),
+      in(dependencies.TST.result, 'Succeeded', 'Skipped'),
+      eq('${{ parameters.deployToPreProd }}', true)
+    )
   variables:
     - name: appName
       value: 'PREBSEWEBAW1401'
+    - name: resourceGroup
+      value: 'PREBSEINFRG1401'
     - name: tenantId
       value: 'TBD'
     - name: appId
@@ -362,11 +371,35 @@ stages:
           - download: current
             artifact: drop
 
+          - task: AzureCLI@2
+            displayName: 'Check plan is zone redundant'
+            inputs:
+              azureSubscription: 'AZR-BSE-PRE1'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+
+                PLAN_ID=$(az webapp show -g "$(resourceGroup)" -n "$(appName)" --query appServicePlanId -o tsv)
+                read -r ZR CAP SKU < <(az appservice plan show --ids "$PLAN_ID" \
+                  --query "[zoneRedundant, sku.capacity, sku.name]" -o tsv)
+
+                echo "Plan: ${PLAN_ID##*/}  SKU: $SKU  instances: $CAP  zoneRedundant: $ZR"
+
+                if [ "$ZR" != "true" ]; then
+                  echo "##vso[task.logissue type=error]App Service Plan is not zone redundant. Refusing to deploy to $(appName)."
+                  exit 1
+                fi
+                if [ "$CAP" -lt 2 ]; then
+                  echo "##vso[task.logissue type=error]Zone-redundant plan has fewer than 2 instances."
+                  exit 1
+                fi
+
           - script: |
               if [ "$(dbScriptsChanged)" = "true" ]; then
-                echo "Database script changes detected � database deployment WILL be applied for DEV."
+                echo "Database script changes detected - database deployment WILL be applied for PRE."
               else
-                echo "No database script changes detected � database deployment WILL BE SKIPPED for DEV."
+                echo "No database script changes detected - database deployment WILL BE SKIPPED for PRE."
               fi
             displayName: 'Log database deployment decision'
 
@@ -415,7 +448,7 @@ stages:
                 -Saml2__IdPMetadataUrl "https://login.microsoftonline.com/$(tenantId)/federationmetadata/2007-06/federationmetadata.xml?appid=$(appId)"
                 -Authentication__BypassEnabled "false"
                 -ConnectionStrings__BSE "Server=tcp:$(sqlServer);Database=$(dbName);Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Managed Identity;"
-
+                
 # - stage: PROD
 #   displayName: PROD
 #   dependsOn: Build
