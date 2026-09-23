@@ -37,7 +37,7 @@
 }
 
 @* ── Step 1: look up the case to be moved ───────────────────────────────── *@
-<form method="post" asp-page-handler="LookUp" novalidate>
+<form method="post" asp-page-handler="LookUp" novalidate class="bse-legacy-inline-form">
     <div class="govuk-form-group @(Model.RbseError is not null ? "govuk-form-group--error" : "")">
         <label class="govuk-label" for="rbse">RBSE</label>
         @if (Model.RbseError is not null)
@@ -50,42 +50,54 @@
                aria-describedby="rbse-hint @(Model.RbseError is not null ? "rbse-error" : "")"
                class="govuk-input govuk-input--width-10 @(Model.RbseError is not null ? "govuk-input--error" : "")" />
     </div>
-    <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Look Up</button>
+    <button type="submit" class="govuk-button" data-module="govuk-button">Look Up</button>
 </form>
 
 @if (Model.CaseFound)
 {
     <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
 
-    <h2 class="govuk-heading-m">Case @BseFormat.FormatRbse(Model.CaseRecord!.Rbse)</h2>
-    <dl class="govuk-summary-list">
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Owner Name</dt>
-            <dd class="govuk-summary-list__value">@Model.CurrentFarm?.OwnerName</dd>
+    <div class="bse-rbse-summary-grid">
+        <div class="bse-rbse-summary-row">
+            <div class="bse-rbse-summary-item">
+                <span class="bse-rbse-summary-label">Owner Name</span>
+                <span class="bse-rbse-summary-value">@Model.CurrentFarm?.OwnerName</span>
+            </div>
+            <div class="bse-rbse-summary-item">
+                <span class="bse-rbse-summary-label">Eartag</span>
+                <span class="bse-rbse-summary-value">@Model.EartagDisplay</span>
+            </div>
         </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Address</dt>
-            <dd class="govuk-summary-list__value">
-                @Model.CurrentFarm?.Address1<br>
-                @Model.CurrentFarm?.Address2<br>
-                @Model.CurrentFarm?.Address3<br>
-                @Model.CurrentFarm?.Postcode
-            </dd>
+        <div class="bse-rbse-summary-row">
+            <div class="bse-rbse-summary-item">
+                <span class="bse-rbse-summary-label">Address</span>
+                <span class="bse-rbse-summary-value">
+                    @Model.CurrentFarm?.Address1<br>
+                    @Model.CurrentFarm?.Address2<br>
+                    @Model.CurrentFarm?.Address3<br>
+                    @Model.CurrentFarm?.Postcode
+                </span>
+            </div>
+            <div class="bse-rbse-summary-item">
+                <span class="bse-rbse-summary-label">CPHH</span>
+                <span class="bse-rbse-summary-value">@BseFormat.FormatCphh(Model.CaseRecord.Cphh)</span>
+            </div>
         </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Eartag</dt>
-            <dd class="govuk-summary-list__value">@Model.EartagDisplay</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">CPHH</dt>
-            <dd class="govuk-summary-list__value">@BseFormat.FormatCphh(Model.CaseRecord.Cphh)</dd>
-        </div>
-    </dl>
+        @if (Model.FarmWillBeDeleted)
+        {
+            <div class="bse-rbse-summary-row">
+                <div class="bse-rbse-summary-item bse-rbse-summary-item--empty"></div>
+                <div class="bse-rbse-summary-item bse-rbse-summary-item--full">
+                    <span class="bse-farm-delete-message bse-farm-delete-message--wrap">This is the only case on this farm so the farm record will be removed</span>
+                </div>
+            </div>
+        }
+    </div>
 
     <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
 
     @* ── Step 2: check the destination farm ─────────────────────────────── *@
-    <form method="post" asp-page-handler="Check" novalidate>
+    <form method="post" asp-page-handler="Check" novalidate class="bse-legacy-inline-form">
         <input type="hidden" name="Rbse" value="@Model.Rbse" />
         <div class="govuk-form-group @(Model.CphhError is not null ? "govuk-form-group--error" : "")">
             <label class="govuk-label" for="new-cphh">New CPHH</label>
@@ -99,7 +111,7 @@
                    aria-describedby="new-cphh-hint @(Model.CphhError is not null ? "new-cphh-error" : "")"
                    class="govuk-input govuk-input--width-20 @(Model.CphhError is not null ? "govuk-input--error" : "")" />
         </div>
-        <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Check</button>
+        <button type="submit" class="govuk-button" data-module="govuk-button">Check</button>
     </form>
 
     @if (Model.ShowNewFarmPrompt)
@@ -111,10 +123,9 @@
 
     @if (Model.CanMove)
     {
-        <h2 class="govuk-heading-m">Destination farm @BseFormat.FormatCphh(Model.NewFarm!.CPHH)</h2>
-        <dl class="govuk-summary-list">
+        <dl class="govuk-summary-list bse-legacy-summary-list">
             <div class="govuk-summary-list__row">
-                <dt class="govuk-summary-list__key">Name</dt>
+                <dt class="govuk-summary-list__key">New Owners Name</dt>
                 <dd class="govuk-summary-list__value">@Model.NewFarm.OwnerName</dd>
             </div>
             <div class="govuk-summary-list__row">
@@ -128,20 +139,14 @@
             </div>
         </dl>
 
+        <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
+
         <form method="post" asp-page-handler="Move">
             <input type="hidden" name="Rbse" value="@Model.Rbse" />
             <input type="hidden" name="NewCphh" value="@Model.NewCphh" />
 
-            <div class="govuk-warning-text">
-                <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
-                <strong class="govuk-warning-text__text">
-                    <span class="govuk-warning-text__assistive">Warning</span>
-                    If no other case remains on the original farm, that farm record will be deleted.
-                </strong>
-            </div>
-
-            <div class="govuk-button-group">
-                <button type="submit" class="govuk-button govuk-button--warning" data-module="govuk-button"
+            <div class="govuk-button-group bse-rbse-action-group">
+                <button type="submit" class="govuk-button" data-module="govuk-button"
                         onclick="return confirm('Click OK to confirm change');">OK</button>
                 <a asp-page="/Home" class="govuk-link">Cancel</a>
             </div>

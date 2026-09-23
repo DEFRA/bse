@@ -156,7 +156,7 @@
         }
     }
 
-    <form method="post" asp-page-handler="Save" novalidate>
+    <form id="final-result-save-form" method="post" asp-page-handler="Save" novalidate>
         <input type="hidden" name="Rbse" value="@Model.Rbse" />
 
         @if (Model.ShowPositiveWithoutPositiveTest)
@@ -192,27 +192,29 @@
 
         <div class="bse-final-result-panel">
             <div class="bse-fre-form-row">
-                <div class="govuk-form-group @(Model.FinalResultError is not null ? "govuk-form-group--error" : "")">
-                    <label class="govuk-label" for="final-result">Final Result</label>
-                    <select id="final-result" name="FinalResult"
-                            aria-describedby="@(Model.FinalResultError is not null ? "final-result-error" : null)"
-                            class="govuk-select bse-final-result-selector @(Model.FinalResultError is not null ? "govuk-select--error" : "")">
-                        <option value=""></option>
+                <div class="bse-fre-final-result-cell">
+                    @if (Model.ShowDnaMismatch)
+                    {
+                        <div class="bse-fre-dna-warning bse-fre-dna-warning--above">Check DNA match</div>
+                    }
+                    <div class="govuk-form-group @(Model.FinalResultError is not null ? "govuk-form-group--error" : "")">
+                        <label class="govuk-label" for="final-result">Final Result</label>
+                        <select id="final-result" name="FinalResult"
+                                aria-describedby="@(Model.FinalResultError is not null ? "final-result-error" : null)"
+                                class="govuk-select bse-final-result-selector @(Model.FinalResultError is not null ? "govuk-select--error" : "")">
+                            <option value=""></option>
                         @foreach (var option in Model.TestResults)
                         {
                             <option value="@option.Code" selected="@(option.Code == Model.FinalResult)">@option.Description</option>
                         }
-                    </select>
-                    @if (Model.FinalResultError is not null)
-                    {
-                        <p id="final-result-error" class="govuk-error-message bse-fre-field-error">
-                            <span class="govuk-visually-hidden">Error:</span>@Model.FinalResultError
-                        </p>
-                    }
-                    @if (Model.ShowDnaMismatch)
-                    {
-                        <div class="bse-fre-dna-warning bse-fre-field-warning">Check DNA match</div>
-                    }
+                        </select>
+                        @if (Model.FinalResultError is not null)
+                        {
+                            <p id="final-result-error" class="govuk-error-message bse-fre-field-error">
+                                <span class="govuk-visually-hidden">Error:</span>@Model.FinalResultError
+                            </p>
+                        }
+                    </div>
                 </div>
 
                 <div class="govuk-form-group">
@@ -315,7 +317,7 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const form = document.querySelector('form[asp-page-handler="Save"]');
+        const form = document.getElementById('final-result-save-form');
         const finalResultSelect = document.getElementById('final-result');
         const saveButton = document.querySelector('[data-save-button="final-result-save"]');
 
