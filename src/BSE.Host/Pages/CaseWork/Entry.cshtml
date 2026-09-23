@@ -230,7 +230,7 @@
                                     <label class="govuk-label" for="SamplingDate">Sampling Date</label>
                                     @if (Err("SamplingDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("SamplingDate")</p> }
                                     <input id="SamplingDate" asp-for="SamplingDate" type="date" class="govuk-input govuk-input--width-10" />
-                                    <div class="govuk-checkboxes govuk-checkboxes--small govuk-!-margin-top-1" data-module="govuk-checkboxes">
+                                    <div class="govuk-checkboxes govuk-checkboxes--small bse-casework-entry-unknown" data-module="govuk-checkboxes">
                                         <div class="govuk-checkboxes__item">
                                             <input class="govuk-checkboxes__input" id="SamplingDateIsUnknown" asp-for="SamplingDateIsUnknown" type="checkbox" />
                                             <label class="govuk-label govuk-checkboxes__label" for="SamplingDateIsUnknown">Unknown</label>
@@ -651,6 +651,34 @@
         width: 23rem;
         max-width: 23rem;
         min-width: 0;
+    }
+
+    .bse-casework-entry-middle .bse-casework-entry-unknown {
+        margin: 0 0 0 0.25rem;
+        flex: 0 0 auto;
+    }
+
+    .bse-casework-entry-middle .bse-casework-entry-unknown .govuk-checkboxes__item {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        min-height: 1.5rem;
+        margin: 0;
+        padding-left: 1.75rem;
+    }
+
+    .bse-casework-entry-middle .bse-casework-entry-unknown .govuk-checkboxes__input {
+        left: 0;
+        top: 50%;
+        margin: 0;
+        transform: translateY(-50%);
+    }
+
+    .bse-casework-entry-middle .bse-casework-entry-unknown .govuk-checkboxes__label {
+        margin: 0;
+        padding: 0;
+        line-height: 1.2;
+        white-space: nowrap;
     }
 
     .bse-casework-entry-comments .govuk-label {

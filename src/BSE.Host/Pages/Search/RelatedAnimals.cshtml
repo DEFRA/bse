@@ -2,6 +2,7 @@
 @model BSE.Host.Pages.Search.RelatedAnimalsModel
 @{
     ViewData["Title"] = "Related Animal Search";
+    ViewData["BodyClass"] = "bse-related-animals-search-page";
 }
 
 <h1 class="govuk-heading-l">Related Animal Search</h1>
@@ -28,44 +29,55 @@
 }
 
 <form method="get" novalidate>
-    <div class="govuk-grid-row">
-        <div class="govuk-grid-column-two-thirds">
-            <div class="govuk-form-group">
+    <div class="bse-farm-legacy">
+        <div class="bse-farm-legacy__row">
+            <div class="bse-farm-legacy__field">
                 <label asp-for="Rbse" class="govuk-label">RBSE Of Case</label>
-                <input asp-for="Rbse" class="govuk-input govuk-!-width-two-thirds" aria-describedby="rbse-hint" maxlength="11" />
-                <span asp-validation-for="Rbse" class="govuk-error-message"></span>
+                <div class="govuk-form-group">
+                    <input asp-for="Rbse" class="govuk-input bse-farm-legacy__input" maxlength="11" />
+                    <span asp-validation-for="Rbse" class="govuk-error-message"></span>
+                </div>
             </div>
-
-            <div class="govuk-form-group">
+            <div class="bse-farm-legacy__field">
                 <label asp-for="Eartag" class="govuk-label">Eartag of Related Animal (starting with...)</label>
-                <input asp-for="Eartag" class="govuk-input govuk-!-width-two-thirds" />
+                <div class="govuk-form-group">
+                    <input asp-for="Eartag" class="govuk-input bse-farm-legacy__input" />
+                </div>
             </div>
+        </div>
 
-            <div class="govuk-form-group">
+        <div class="bse-farm-legacy__row">
+            <div class="bse-farm-legacy__field">
                 <label asp-for="RelationRbse" class="govuk-label">RBSE of Related Animal</label>
-                <input asp-for="RelationRbse" class="govuk-input govuk-!-width-two-thirds" aria-describedby="relation-rbse-hint" maxlength="11" />
-                <span asp-validation-for="RelationRbse" class="govuk-error-message"></span>
+                <div class="govuk-form-group">
+                    <input asp-for="RelationRbse" class="govuk-input bse-farm-legacy__input" maxlength="11" />
+                    <span asp-validation-for="RelationRbse" class="govuk-error-message"></span>
+                </div>
             </div>
-
-            <div class="govuk-form-group">
+            <div class="bse-farm-legacy__field">
                 <label asp-for="RelationType" class="govuk-label">Relation Type</label>
-                <select asp-for="RelationType" class="govuk-select govuk-!-width-two-thirds">
-                    <option value=""></option>
-                    @foreach (var item in Model.RelationTypeOptions)
-                    {
-                        <option value="@item.Code">@item.Description</option>
-                    }
-                </select>
+                <div class="govuk-form-group">
+                    <select asp-for="RelationType" class="govuk-select bse-farm-legacy__input">
+                        <option value=""></option>
+                        @foreach (var item in Model.RelationTypeOptions)
+                        {
+                            <option value="@item.Code">@item.Description</option>
+                        }
+                    </select>
+                </div>
             </div>
+        </div>
 
-            <div class="govuk-form-group">
+        <div class="bse-farm-legacy__row">
+            <div class="bse-farm-legacy__field">
                 <label asp-for="Name" class="govuk-label">Name of Related Animal (starting with...)</label>
-                <input asp-for="Name" class="govuk-input govuk-!-width-two-thirds" />
-            </div>
-
-            <div class="govuk-button-group">
-                <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
-                <a asp-page="/Search/Menu" class="govuk-link">Search Menu</a>
+                <div class="govuk-form-group">
+                    <input asp-for="Name" class="govuk-input bse-farm-legacy__input" />
+                </div>
+                <div class="govuk-button-group">
+                    <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
+                    <a asp-page="/Search/Menu" class="govuk-link">Search Menu</a>
+                </div>
             </div>
         </div>
     </div>
@@ -91,27 +103,27 @@
             <caption class="govuk-visually-hidden">Related animal results</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    @{ ViewData["Label"] = "RBSE";                ViewData["Column"] = "Rbse";         ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "related-animals-search-results"; ViewData["HeaderClass"] = "bse-w-8"; }
+                    @{ ViewData["Label"] = "RBSE";                ViewData["Column"] = "Rbse";         ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "related-animals-search-results"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "CPHH";                ViewData["Column"] = "Cphh"; ViewData["HeaderClass"] = "bse-w-8"; }
+                    @{ ViewData["Label"] = "CPHH";                ViewData["Column"] = "Cphh"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Relation";       ViewData["Column"] = "RelationType"; ViewData["HeaderClass"] = "bse-w-9"; }
+                    @{ ViewData["Label"] = "Relation";       ViewData["Column"] = "RelationType"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Sex";            ViewData["Column"] = "RelSex"; ViewData["HeaderClass"] = "bse-w-5"; }
+                    @{ ViewData["Label"] = "Sex";            ViewData["Column"] = "RelSex"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Eartag";         ViewData["Column"] = "Eartag"; ViewData["HeaderClass"] = "bse-w-9"; }
+                    @{ ViewData["Label"] = "Eartag";         ViewData["Column"] = "Eartag"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Rel Birth Date"; ViewData["Column"] = "RelBirthDate"; ViewData["HeaderClass"] = "bse-w-13"; }
+                    @{ ViewData["Label"] = "Rel Birth Date"; ViewData["Column"] = "RelBirthDate"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Rel Fate";       ViewData["Column"] = "RelFate"; ViewData["HeaderClass"] = "bse-w-9"; }
+                    @{ ViewData["Label"] = "Rel Fate";       ViewData["Column"] = "RelFate"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Date Left";      ViewData["Column"] = "LeftDate"; ViewData["HeaderClass"] = "bse-w-10"; }
+                    @{ ViewData["Label"] = "Date Left";      ViewData["Column"] = "LeftDate"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Rel Name";       ViewData["Column"] = "RelName"; ViewData["HeaderClass"] = "bse-w-9"; }
+                    @{ ViewData["Label"] = "Rel Name";       ViewData["Column"] = "RelName"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Rel Eartag";     ViewData["Column"] = "RelEartag"; ViewData["HeaderClass"] = "bse-w-11"; }
+                    @{ ViewData["Label"] = "Rel Eartag";     ViewData["Column"] = "RelEartag"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Rel RBSE";       ViewData["Column"] = "RelationRbse"; ViewData["HeaderClass"] = "bse-w-9"; }
+                    @{ ViewData["Label"] = "Rel RBSE";       ViewData["Column"] = "RelationRbse"; }
                     <partial name="_SortableHeader" />
                 </tr>
             </thead>

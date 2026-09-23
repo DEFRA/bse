@@ -2,6 +2,7 @@
 @model BSE.Host.Pages.Search.CasesModel
 @{
     ViewData["Title"] = "Case Search";
+    ViewData["BodyClass"] = "bse-case-search-page";
 }
 
 <h1 class="govuk-heading-l">Case Search</h1>
@@ -77,198 +78,211 @@
 }
 
 <form method="get" novalidate>
-    <div class="govuk-grid-row">
-        @* Legacy Case Search paired the fields into a left/right column grid; mirrored here row-for-row. *@
-        <div class="govuk-grid-column-one-half">
-            <div class="govuk-form-group">
+    <div class="bse-farm-legacy bse-case-legacy">
+        <div class="bse-farm-legacy__row">
+            <div class="bse-farm-legacy__field">
                 <label asp-for="Filter.Rbse" class="govuk-label">RBSE</label>
-                <input asp-for="Filter.Rbse" class="govuk-input govuk-input--width-20" aria-describedby="rbse-hint" maxlength="11" />
-                <span asp-validation-for="Filter.Rbse" class="govuk-error-message"></span>
-            </div>
-
-            <div class="govuk-form-group">
-                <label asp-for="Filter.Dbse" class="govuk-label">DBSE</label>
-                <div id="dbse-hint" class="govuk-hint">Format: YY/NNNNN</div>
-                <input asp-for="Filter.Dbse" class="govuk-input govuk-input--width-10" aria-describedby="dbse-hint" maxlength="8" />
-                <span asp-validation-for="Filter.Dbse" class="govuk-error-message"></span>
-            </div>
-
-            <div class="govuk-form-group">
-                <label asp-for="Filter.FinalResult" class="govuk-label">Final Result</label>
-                <select asp-for="Filter.FinalResult" class="govuk-select">
-                    <option value=""></option>
-                    @foreach (var item in Model.FinalResultOptions)
-                    {
-                        <option value="@item.Code">@item.Description</option>
-                    }
-                </select>
-            </div>
-
-            <div class="govuk-form-group">
-                <label asp-for="Filter.Survey" class="govuk-label">Survey</label>
-                <select asp-for="Filter.Survey" class="govuk-select">
-                    <option value=""></option>
-                    @foreach (var item in Model.SurveyOptions)
-                    {
-                        <option value="@item.Code">@item.Description</option>
-                    }
-                </select>
-            </div>
-
-            <div class="govuk-form-group">
-                <div class="govuk-checkboxes" data-module="govuk-checkboxes">
-                    <div class="govuk-checkboxes__item">
-                        <input asp-for="Filter.IncludeNonGb" class="govuk-checkboxes__input" />
-                        <label asp-for="Filter.IncludeNonGb" class="govuk-label govuk-checkboxes__label">Include Non-GB Cases?</label>
-                    </div>
+                <div class="govuk-form-group">
+                    <input asp-for="Filter.Rbse" class="govuk-input bse-farm-legacy__input" maxlength="11" />
+                    <span asp-validation-for="Filter.Rbse" class="govuk-error-message"></span>
                 </div>
             </div>
-        </div>
-
-        <div class="govuk-grid-column-one-half">
-            <div class="govuk-form-group">
+            <div class="bse-farm-legacy__field">
                 <label asp-for="Filter.Eartag" class="govuk-label">Eartag (starting with...)</label>
-                <input asp-for="Filter.Eartag" class="govuk-input govuk-!-width-two-thirds" maxlength="35" />
+                <div class="govuk-form-group">
+                    <input asp-for="Filter.Eartag" class="govuk-input bse-farm-legacy__input" maxlength="35" />
+                </div>
             </div>
+        </div>
 
-            <div class="govuk-form-group">
+        <div class="bse-farm-legacy__row">
+            <div class="bse-farm-legacy__field">
+                <label asp-for="Filter.Dbse" class="govuk-label">DBSE</label>
+                <div class="govuk-form-group">
+                    <input asp-for="Filter.Dbse" class="govuk-input bse-farm-legacy__input" maxlength="8" />
+                    <span asp-validation-for="Filter.Dbse" class="govuk-error-message"></span>
+                </div>
+            </div>
+            <div class="bse-farm-legacy__field">
                 <label asp-for="Filter.Fate" class="govuk-label">Fate</label>
-                <select asp-for="Filter.Fate" class="govuk-select">
-                    <option value=""></option>
-                    @foreach (var item in Model.FateOptions)
-                    {
-                        <option value="@item.Code">@item.Description</option>
-                    }
-                </select>
+                <div class="govuk-form-group">
+                    <select asp-for="Filter.Fate" class="govuk-select bse-farm-legacy__input">
+                        <option value=""></option>
+                        @foreach (var item in Model.FateOptions)
+                        {
+                            <option value="@item.Code">@item.Description</option>
+                        }
+                    </select>
+                </div>
             </div>
+        </div>
 
-            <div class="govuk-form-group">
+        <div class="bse-farm-legacy__row">
+            <div class="bse-farm-legacy__field">
+                <label asp-for="Filter.FinalResult" class="govuk-label">Final Result</label>
+                <div class="govuk-form-group">
+                    <select asp-for="Filter.FinalResult" class="govuk-select bse-farm-legacy__input">
+                        <option value=""></option>
+                        @foreach (var item in Model.FinalResultOptions)
+                        {
+                            <option value="@item.Code">@item.Description</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="bse-farm-legacy__field">
                 <label asp-for="Filter.Sex" class="govuk-label">Sex</label>
-                <select asp-for="Filter.Sex" class="govuk-select">
-                    <option value=""></option>
-                    @foreach (var item in Model.SexOptions)
-                    {
-                        <option value="@item.Code">@item.Description</option>
-                    }
-                </select>
+                <div class="govuk-form-group">
+                    <select asp-for="Filter.Sex" class="govuk-select bse-farm-legacy__input">
+                        <option value=""></option>
+                        @foreach (var item in Model.SexOptions)
+                        {
+                            <option value="@item.Code">@item.Description</option>
+                        }
+                    </select>
+                </div>
             </div>
+        </div>
 
-            <div class="govuk-form-group">
+        <div class="bse-farm-legacy__row">
+            <div class="bse-farm-legacy__field">
+                <label asp-for="Filter.Survey" class="govuk-label">Survey</label>
+                <div class="govuk-form-group">
+                    <select asp-for="Filter.Survey" class="govuk-select bse-farm-legacy__input">
+                        <option value=""></option>
+                        @foreach (var item in Model.SurveyOptions)
+                        {
+                            <option value="@item.Code">@item.Description</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="bse-farm-legacy__field">
                 <label asp-for="Filter.PassiveActive" class="govuk-label">Passive/Active</label>
-                <select asp-for="Filter.PassiveActive" class="govuk-select">
-                    <option value=""></option>
-                    <option value="P">Passive</option>
-                    <option value="A">Active</option>
-                </select>
+                <div class="govuk-form-group">
+                    <select asp-for="Filter.PassiveActive" class="govuk-select bse-farm-legacy__input">
+                        <option value=""></option>
+                        <option value="P">Passive</option>
+                        <option value="A">Active</option>
+                    </select>
+                </div>
             </div>
+        </div>
 
-            <div class="govuk-form-group">
+        <div class="bse-farm-legacy__row">
+            <div class="bse-farm-legacy__field bse-farm-legacy__field--dealer-left">
+                <label asp-for="Filter.IncludeNonGb" class="govuk-label">Include Non-GB Cases?</label>
                 <div class="govuk-checkboxes" data-module="govuk-checkboxes">
                     <div class="govuk-checkboxes__item">
-                        <input asp-for="Filter.IsImportedCase" class="govuk-checkboxes__input" />
-                        <label asp-for="Filter.IsImportedCase" class="govuk-label govuk-checkboxes__label">Imported Cases</label>
+                        <input asp-for="Filter.IncludeNonGb" class="govuk-checkboxes__input bse-farm-legacy__dealer-checkbox" />
+                        <label asp-for="Filter.IncludeNonGb" class="govuk-label govuk-checkboxes__label"><span class="govuk-visually-hidden">Include Non-GB Cases?</span></label>
+                    </div>
+                </div>
+            </div>
+            <div class="bse-farm-legacy__field bse-farm-legacy__field--dealer-left">
+                <label asp-for="Filter.IsImportedCase" class="govuk-label">Imported Cases</label>
+                <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                    <div class="govuk-checkboxes__item">
+                        <input asp-for="Filter.IsImportedCase" class="govuk-checkboxes__input bse-farm-legacy__dealer-checkbox" />
+                        <label asp-for="Filter.IsImportedCase" class="govuk-label govuk-checkboxes__label"><span class="govuk-visually-hidden">Imported Cases</span></label>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="govuk-grid-column-full">
-            <div class="govuk-form-group">
-                <fieldset class="govuk-fieldset" role="group" aria-describedby="form-a-date-hint">
-                    <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">Form A Date Between</legend>
-                    <div id="form-a-date-hint" class="govuk-hint">Leave blank to search all dates.</div>
-                    <div class="govuk-date-input" id="form-a-dates">
-                        <div class="govuk-date-input__item">
-                            <div class="govuk-form-group @(Model.Filter.EarliestFormADateError is not null ? "govuk-form-group--error" : "")">
-                                <label asp-for="Filter.EarliestFormADate" class="govuk-label govuk-date-input__label">From</label>
-                                @if (Model.Filter.EarliestFormADateError is not null)
-                                {
-                                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.EarliestFormADateError</p>
-                                }
-                                <input asp-for="Filter.EarliestFormADate" type="date" class="govuk-input govuk-date-input__input @(Model.Filter.EarliestFormADateError is not null ? "govuk-input--error" : "")" />
-                            </div>
-                        </div>
-                        <div class="govuk-date-input__item">
-                            <div class="govuk-form-group @(Model.Filter.LatestFormADateError is not null ? "govuk-form-group--error" : "")">
-                                <label asp-for="Filter.LatestFormADate" class="govuk-label govuk-date-input__label">To</label>
-                                @if (Model.Filter.LatestFormADateError is not null)
-                                {
-                                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.LatestFormADateError</p>
-                                }
-                                <input asp-for="Filter.LatestFormADate" type="date" class="govuk-input govuk-date-input__input @(Model.Filter.LatestFormADateError is not null ? "govuk-input--error" : "")" />
-                            </div>
-                        </div>
+        <div class="bse-farm-legacy__row">
+            <div class="bse-farm-legacy__field bse-case-legacy__field--date bse-case-legacy__field--wide">
+                <label for="Filter_EarliestFormADate" class="govuk-label">Form A Date Between</label>
+                <div class="bse-case-legacy__date-range" role="group" aria-labelledby="Filter_EarliestFormADate">
+                    <div class="govuk-form-group @(Model.Filter.EarliestFormADateError is not null ? "govuk-form-group--error" : "")">
+                        <label asp-for="Filter.EarliestFormADate" class="govuk-visually-hidden">Form A date from</label>
+                        @if (Model.Filter.EarliestFormADateError is not null)
+                        {
+                            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.EarliestFormADateError</p>
+                        }
+                        <input asp-for="Filter.EarliestFormADate" type="date" class="govuk-input bse-case-legacy__date-input @(Model.Filter.EarliestFormADateError is not null ? "govuk-input--error" : "")" />
                     </div>
-                </fieldset>
-            </div>
-
-            <div class="govuk-form-group">
-                <fieldset class="govuk-fieldset" role="group" aria-describedby="final-result-date-hint">
-                    <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">Final Result Date Between</legend>
-                    <div id="final-result-date-hint" class="govuk-hint">Leave blank to search all dates.</div>
-                    <div class="govuk-date-input" id="final-result-dates">
-                        <div class="govuk-date-input__item">
-                            <div class="govuk-form-group @(Model.Filter.EarliestFinalResultDateError is not null ? "govuk-form-group--error" : "")">
-                                <label asp-for="Filter.EarliestFinalResultDate" class="govuk-label govuk-date-input__label">From</label>
-                                @if (Model.Filter.EarliestFinalResultDateError is not null)
-                                {
-                                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.EarliestFinalResultDateError</p>
-                                }
-                                <input asp-for="Filter.EarliestFinalResultDate" type="date" class="govuk-input govuk-date-input__input @(Model.Filter.EarliestFinalResultDateError is not null ? "govuk-input--error" : "")" />
-                            </div>
-                        </div>
-                        <div class="govuk-date-input__item">
-                            <div class="govuk-form-group @(Model.Filter.LatestFinalResultDateError is not null ? "govuk-form-group--error" : "")">
-                                <label asp-for="Filter.LatestFinalResultDate" class="govuk-label govuk-date-input__label">To</label>
-                                @if (Model.Filter.LatestFinalResultDateError is not null)
-                                {
-                                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.LatestFinalResultDateError</p>
-                                }
-                                <input asp-for="Filter.LatestFinalResultDate" type="date" class="govuk-input govuk-date-input__input @(Model.Filter.LatestFinalResultDateError is not null ? "govuk-input--error" : "")" />
-                            </div>
-                        </div>
+                    <span class="bse-case-legacy__and">and</span>
+                    <div class="govuk-form-group @(Model.Filter.LatestFormADateError is not null ? "govuk-form-group--error" : "")">
+                        <label asp-for="Filter.LatestFormADate" class="govuk-visually-hidden">Form A date to</label>
+                        @if (Model.Filter.LatestFormADateError is not null)
+                        {
+                            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.LatestFormADateError</p>
+                        }
+                        <input asp-for="Filter.LatestFormADate" type="date" class="govuk-input bse-case-legacy__date-input @(Model.Filter.LatestFormADateError is not null ? "govuk-input--error" : "")" />
                     </div>
-                </fieldset>
+                </div>
             </div>
+        </div>
 
-            <div class="govuk-form-group">
-                <fieldset class="govuk-fieldset" role="group" aria-describedby="birth-date-hint">
-                    <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">Birth Date Between</legend>
-                    <div id="birth-date-hint" class="govuk-hint">Leave blank to search all dates.</div>
-                    <div class="govuk-date-input" id="birth-dates">
-                        <div class="govuk-date-input__item">
-                            <div class="govuk-form-group @(Model.Filter.EarliestBirthDateError is not null ? "govuk-form-group--error" : "")">
-                                <label asp-for="Filter.EarliestBirthDate" class="govuk-label govuk-date-input__label">From</label>
-                                @if (Model.Filter.EarliestBirthDateError is not null)
-                                {
-                                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.EarliestBirthDateError</p>
-                                }
-                                <input asp-for="Filter.EarliestBirthDate" type="date" class="govuk-input govuk-date-input__input @(Model.Filter.EarliestBirthDateError is not null ? "govuk-input--error" : "")" />
-                            </div>
-                        </div>
-                        <div class="govuk-date-input__item">
-                            <div class="govuk-form-group @(Model.Filter.LatestBirthDateError is not null ? "govuk-form-group--error" : "")">
-                                <label asp-for="Filter.LatestBirthDate" class="govuk-label govuk-date-input__label">To</label>
-                                @if (Model.Filter.LatestBirthDateError is not null)
-                                {
-                                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.LatestBirthDateError</p>
-                                }
-                                <input asp-for="Filter.LatestBirthDate" type="date" class="govuk-input govuk-date-input__input @(Model.Filter.LatestBirthDateError is not null ? "govuk-input--error" : "")" />
-                            </div>
-                        </div>
+        <div class="bse-farm-legacy__row">
+            <div class="bse-farm-legacy__field bse-case-legacy__field--date bse-case-legacy__field--wide">
+                <label for="Filter_EarliestFinalResultDate" class="govuk-label">Final Result Date Between</label>
+                <div class="bse-case-legacy__date-range" role="group" aria-labelledby="Filter_EarliestFinalResultDate">
+                    <div class="govuk-form-group @(Model.Filter.EarliestFinalResultDateError is not null ? "govuk-form-group--error" : "")">
+                        <label asp-for="Filter.EarliestFinalResultDate" class="govuk-visually-hidden">Final result date from</label>
+                        @if (Model.Filter.EarliestFinalResultDateError is not null)
+                        {
+                            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.EarliestFinalResultDateError</p>
+                        }
+                        <input asp-for="Filter.EarliestFinalResultDate" type="date" class="govuk-input bse-case-legacy__date-input @(Model.Filter.EarliestFinalResultDateError is not null ? "govuk-input--error" : "")" />
                     </div>
-                </fieldset>
+                    <span class="bse-case-legacy__and">and</span>
+                    <div class="govuk-form-group @(Model.Filter.LatestFinalResultDateError is not null ? "govuk-form-group--error" : "")">
+                        <label asp-for="Filter.LatestFinalResultDate" class="govuk-visually-hidden">Final result date to</label>
+                        @if (Model.Filter.LatestFinalResultDateError is not null)
+                        {
+                            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.LatestFinalResultDateError</p>
+                        }
+                        <input asp-for="Filter.LatestFinalResultDate" type="date" class="govuk-input bse-case-legacy__date-input @(Model.Filter.LatestFinalResultDateError is not null ? "govuk-input--error" : "")" />
+                    </div>
+                </div>
             </div>
+        </div>
 
-            <div class="govuk-form-group">
+        <div class="bse-farm-legacy__row">
+            <div class="bse-farm-legacy__field bse-case-legacy__field--date bse-case-legacy__field--wide">
+                <label for="Filter_EarliestBirthDate" class="govuk-label">Birth Date Between</label>
+                <div class="bse-case-legacy__date-range" role="group" aria-labelledby="Filter_EarliestBirthDate">
+                    <div class="govuk-form-group @(Model.Filter.EarliestBirthDateError is not null ? "govuk-form-group--error" : "")">
+                        <label asp-for="Filter.EarliestBirthDate" class="govuk-visually-hidden">Birth date from</label>
+                        @if (Model.Filter.EarliestBirthDateError is not null)
+                        {
+                            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.EarliestBirthDateError</p>
+                        }
+                        <input asp-for="Filter.EarliestBirthDate" type="date" class="govuk-input bse-case-legacy__date-input @(Model.Filter.EarliestBirthDateError is not null ? "govuk-input--error" : "")" />
+                    </div>
+                    <span class="bse-case-legacy__and">and</span>
+                    <div class="govuk-form-group @(Model.Filter.LatestBirthDateError is not null ? "govuk-form-group--error" : "")">
+                        <label asp-for="Filter.LatestBirthDate" class="govuk-visually-hidden">Birth date to</label>
+                        @if (Model.Filter.LatestBirthDateError is not null)
+                        {
+                            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.LatestBirthDateError</p>
+                        }
+                        <input asp-for="Filter.LatestBirthDate" type="date" class="govuk-input bse-case-legacy__date-input @(Model.Filter.LatestBirthDateError is not null ? "govuk-input--error" : "")" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bse-farm-legacy__row">
+            <div class="bse-farm-legacy__field bse-case-legacy__field--wide">
                 <label asp-for="Filter.Notes" class="govuk-label">Notes (partial search)</label>
-                <textarea asp-for="Filter.Notes" class="govuk-textarea govuk-!-width-two-thirds" rows="5" maxlength="500" aria-describedby="notes-wildcard-hint"></textarea>
-                <div id="notes-wildcard-hint" class="govuk-hint">Note: % character can be used as wildcard character in text fields</div>
+                <div class="govuk-form-group">
+                    <textarea asp-for="Filter.Notes" class="govuk-textarea bse-case-legacy__notes" rows="5" maxlength="500"></textarea>
+                </div>
             </div>
+        </div>
 
-            <div class="govuk-button-group">
-                <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
-                <a asp-page="/Search/Menu" class="govuk-link">Search Menu</a>
+        <div class="bse-farm-legacy__row bse-case-legacy__row--actions">
+            <div class="bse-farm-legacy__field bse-case-legacy__field--note">
+                <p class="govuk-body-s bse-case-legacy__wildcard-note">Note: % character can be used as wildcard character in text fields</p>
+            </div>
+            <div class="bse-farm-legacy__field bse-case-legacy__field--actions">
+                <div class="govuk-button-group">
+                    <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
+                    <a asp-page="/Search/Menu" class="govuk-link">Search Menu</a>
+                </div>
             </div>
         </div>
     </div>
