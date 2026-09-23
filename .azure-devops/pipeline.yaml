@@ -71,6 +71,8 @@ stages:
           scannerMode: 'dotnet'
           projectKey: 'DEFRA_bse'
           projectName: 'BSE'
+          extraProperties: |
+            sonar.cs.opencover.reportsPaths=$(Agent.TempDirectory)/**/coverage.opencover.xml
 
     - script: dotnet restore $(solution)
       displayName: 'Restore dependencies'
@@ -78,8 +80,8 @@ stages:
     - script: dotnet build $(solution) --configuration $(buildConfiguration) --no-restore
       displayName: 'Build'
 
-    - script: dotnet test $(solution) --configuration $(buildConfiguration) --no-build --logger trx
-      displayName: 'Run tests'
+    - script: dotnet test $(solution) --configuration $(buildConfiguration) --no-build --logger trx --collect:"XPlat Code Coverage" --results-directory $(Agent.TempDirectory) -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
+      displayName: 'Run tests with code coverage'
 
     - task: PublishTestResults@2
       displayName: 'Publish test results'
