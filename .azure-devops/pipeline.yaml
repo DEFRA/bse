@@ -19,6 +19,15 @@ parameters:
     type: boolean
     default: false
 
+  - name: runSonar
+    displayName: Run SonarCloud analysis
+    type: boolean
+    default: false
+
+  - name: sonarServiceConnection
+    type: string
+    default: 'SonarCloud-BSE'
+
 variables:
   - name: buildConfiguration
     value: 'Release'
@@ -40,7 +49,7 @@ stages:
     steps:
 
     - checkout: self
-      fetchDepth: 2
+      fetchDepth: 0
       persistCredentials: false
 
     - task: UseDotNet@2
@@ -73,6 +82,17 @@ stages:
             echo "##vso[task.setvariable variable=dbScriptsChanged;isOutput=true]false"
           fi
 
+    - ${{ if eq(parameters.runSonar, true) }}:
+      - task: SonarCloudPrepare@4
+        displayName: 'Prepare Sonar analysis'
+        condition: ne(variables['Build.Reason'], 'PullRequest')
+        inputs:
+          SonarCloud: ${{ parameters.sonarServiceConnection }}
+          organization: 'defra'
+          scannerMode: 'dotnet'
+          projectKey: 'DEFRA_bse'
+          projectName: 'BSE'
+
     - script: dotnet restore $(solution)
       displayName: 'Restore dependencies'
 
@@ -104,11 +124,22 @@ stages:
         sourceFolder: 'src'
         contents: 'BSE.Database/**/*.sql'
         targetFolder: '$(Build.ArtifactStagingDirectory)/sql'
-        flattenFolders: true    
+        flattenFolders: true
 
     - publish: '$(Build.ArtifactStagingDirectory)'
       artifact: drop
       displayName: 'Publish artifact'
+
+    - ${{ if eq(parameters.runSonar, true) }}:
+      - task: SonarCloudAnalyze@4
+        displayName: 'Run Sonar analysis'
+        condition: and(succeededOrFailed(), ne(variables['Build.Reason'], 'PullRequest'))
+
+      - task: SonarCloudPublish@4
+        displayName: 'Publish quality gate result'
+        condition: and(succeededOrFailed(), ne(variables['Build.Reason'], 'PullRequest'))
+        inputs:
+          pollingTimeoutSec: '300'
 
 - stage: DEV
   displayName: DEV
@@ -124,7 +155,7 @@ stages:
     - name: sqlServer
       value: 'devbseinfsq1401.database.windows.net,1433'
     - name: sqlServerHost
-      value: 'devbseinfsq1401.database.windows.net'  
+      value: 'devbseinfsq1401.database.windows.net'
     - name: dbName
       value: 'BSE'
     - name: msGraphClientId
@@ -178,7 +209,7 @@ stages:
                     --authentication-method ActiveDirectoryAzCli \
                     -i "$f" -b -t 0
                 done
-                  
+
           - task: AzureWebApp@1
             inputs:
               azureSubscription: 'AZR-BSE-DEV1'
@@ -198,6 +229,7 @@ stages:
                 -AdnsMsGraph__MsGraphClientId "$(msGraphClientId)"
                 -AdnsMsGraph__MsGraphSenderUserId "$(msGraphSender)"
                 -AdnsMsGraph__FromAddress "$(msGraphSender)"
+
 - stage: TST
   displayName: TST
   dependsOn: DEV
