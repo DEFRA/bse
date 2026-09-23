@@ -1,2 +1,2 @@
-:r ./StoredProcedures/GetUserByEmail.sql
-:r ./Permissions/GrantPermissions.sql
+:r ../StoredProcedures/GetUserByEmail.sql
+:r ../Permissions/GrantPermissions.sql
