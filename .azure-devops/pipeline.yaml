@@ -124,7 +124,6 @@ stages:
         sourceFolder: 'src'
         contents: 'BSE.Database/**/*.sql'
         targetFolder: '$(Build.ArtifactStagingDirectory)/sql'
-        flattenFolders: true
 
     - publish: '$(Build.ArtifactStagingDirectory)'
       artifact: drop
