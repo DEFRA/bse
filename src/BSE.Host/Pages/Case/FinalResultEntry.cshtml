@@ -236,13 +236,13 @@
 
             <div class="bse-fre-form-row">
                 <div class="govuk-form-group">
-                    <label class="govuk-label" for="dbse">DBSE</label>
-                    <div id="dbse" class="bse-inline-value">@Model.DisplayDbse</div>
+                    <label class="govuk-label govuk-visually-hidden" for="legacy-note">Note</label>
+                    <div id="legacy-note" class="bse-fre-note" aria-hidden="true"></div>
                 </div>
 
                 <div class="govuk-form-group">
-                    <label class="govuk-label govuk-visually-hidden" for="legacy-note">Note</label>
-                    <div id="legacy-note" class="bse-fre-note" aria-hidden="true"></div>
+                    <label class="govuk-label" for="dbse">DBSE</label>
+                    <div id="dbse" class="bse-inline-value">@Model.DisplayDbse</div>
                 </div>
             </div>
 
@@ -250,15 +250,15 @@
                 @if (Model.HasFinalResult)
                 {
                     <a class="govuk-button govuk-button--secondary" data-module="govuk-button"
+                       asp-page="/Case/ResultMemo" asp-route-rbse="@r.Rbse">Download</a>
+                    <a class="govuk-button govuk-button--secondary" data-module="govuk-button"
                        asp-page="/Case/ResultMemo" asp-route-rbse="@r.Rbse" asp-route-print="true"
                        target="_blank" rel="noopener">Print Memo</a>
-                    <a class="govuk-button govuk-button--secondary" data-module="govuk-button"
-                       asp-page="/Case/ResultMemo" asp-route-rbse="@r.Rbse">Download</a>
                 }
                 else
                 {
-                    <button type="button" class="govuk-button govuk-button--secondary" data-module="govuk-button" disabled>Print Memo</button>
                     <button type="button" class="govuk-button govuk-button--secondary" data-module="govuk-button" disabled>Download</button>
+                    <button type="button" class="govuk-button govuk-button--secondary" data-module="govuk-button" disabled>Print Memo</button>
                 }
             </div>
         </div>
