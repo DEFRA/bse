@@ -179,6 +179,11 @@ stages:
               echo "Database script changes detected: $(dbScriptsChanged)"
             displayName: 'Log DB script change status'
 
+          - script: |
+              echo "--- staged sql tree ---"
+              find "$(Pipeline.Workspace)/drop/sql" -type f | sort
+            displayName: 'List staged SQL'
+            
           - task: AzureCLI@2
             displayName: 'Apply database scripts'
             condition: and(succeeded(), eq(variables['dbScriptsChanged'], 'true'))
