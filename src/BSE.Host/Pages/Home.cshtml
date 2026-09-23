@@ -2,6 +2,7 @@
 @model BSE.Host.Pages.HomeModel
 @{
     ViewData["Title"] = "BSE Database System";
+    ViewData["BodyClass"] = "bse-home-page";
     var batchYearError   = Model.ModelState[nameof(Model.BatchYear)]?.Errors.FirstOrDefault()?.ErrorMessage;
     var batchNumberError = Model.ModelState[nameof(Model.BatchNumber)]?.Errors.FirstOrDefault()?.ErrorMessage;
     var hasBatchError    = batchYearError is not null || batchNumberError is not null;

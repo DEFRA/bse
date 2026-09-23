@@ -2,6 +2,7 @@
 @model BSE.Host.Pages.Search.OutstandingModel
 @{
     ViewData["Title"] = "Outstanding Data Search";
+    ViewData["BodyClass"] = "bse-outstanding-search-page";
 }
 
 <h1 class="govuk-heading-l">Outstanding Data Search</h1>
@@ -35,69 +36,65 @@
 }
 
 <form method="get" novalidate>
-    <div class="govuk-grid-row">
-        <div class="govuk-grid-column-two-thirds">
-            <div class="govuk-form-group">
-                <fieldset class="govuk-fieldset" aria-describedby="outstanding-type-hint">
-                    <div id="outstanding-type-hint" class="govuk-hint">Select what you want to search for.</div>
-                    <div class="govuk-radios govuk-radios--inline" data-module="govuk-radios">
-                        <div class="govuk-radios__item">
-                            <input asp-for="Filter.SearchType" class="govuk-radios__input" id="search-type-results" type="radio" value="Results" />
-                            <label class="govuk-label govuk-radios__label" for="search-type-results">Outstanding Results</label>
-                        </div>
-                        <div class="govuk-radios__item">
-                            <input asp-for="Filter.SearchType" class="govuk-radios__input" id="search-type-fates" type="radio" value="Fates" />
-                            <label class="govuk-label govuk-radios__label" for="search-type-fates">Fate</label>
-                        </div>
-                        <div class="govuk-radios__item">
-                            <input asp-for="Filter.SearchType" class="govuk-radios__input" id="search-type-bse1" type="radio" value="BSE1" />
-                            <label class="govuk-label govuk-radios__label" for="search-type-bse1">BSE1s</label>
-                        </div>
+    <div class="bse-farm-legacy">
+        <div class="bse-farm-legacy__row">
+            <div class="bse-farm-legacy__field bse-outstanding-legacy__field--wide">
+                <label class="govuk-visually-hidden" for="search-type-results">Outstanding data type</label>
+                <div class="govuk-radios govuk-radios--inline" data-module="govuk-radios">
+                    <div class="govuk-radios__item">
+                        <input asp-for="Filter.SearchType" class="govuk-radios__input" id="search-type-results" type="radio" value="Results" />
+                        <label class="govuk-label govuk-radios__label" for="search-type-results">Outstanding Results</label>
                     </div>
-                </fieldset>
-            </div>
-
-            <div class="govuk-form-group">
-                <fieldset class="govuk-fieldset" role="group" aria-describedby="outstanding-date-hint">
-                    <legend class="govuk-fieldset__legend govuk-fieldset__legend--m">Form A Date Between</legend>
-                    <div id="outstanding-date-hint" class="govuk-hint">Leave blank to search all dates.</div>
-                    <div class="govuk-date-input">
-                        <div class="govuk-date-input__item">
-                            <div class="govuk-form-group @(Model.Filter.EarliestFormADateError is not null ? "govuk-form-group--error" : "")">
-                                <label asp-for="Filter.EarliestFormADate" class="govuk-label govuk-date-input__label">From</label>
-                                @if (Model.Filter.EarliestFormADateError is not null)
-                                {
-                                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.EarliestFormADateError</p>
-                                }
-                                <input asp-for="Filter.EarliestFormADate" type="date" class="govuk-input govuk-date-input__input @(Model.Filter.EarliestFormADateError is not null ? "govuk-input--error" : "")" />
-                            </div>
-                        </div>
-                        <div class="govuk-date-input__item">
-                            <div class="govuk-form-group @(Model.Filter.LatestFormADateError is not null ? "govuk-form-group--error" : "")">
-                                <label asp-for="Filter.LatestFormADate" class="govuk-label govuk-date-input__label">To</label>
-                                @if (Model.Filter.LatestFormADateError is not null)
-                                {
-                                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.LatestFormADateError</p>
-                                }
-                                <input asp-for="Filter.LatestFormADate" type="date" class="govuk-input govuk-date-input__input @(Model.Filter.LatestFormADateError is not null ? "govuk-input--error" : "")" />
-                            </div>
-                        </div>
+                    <div class="govuk-radios__item">
+                        <input asp-for="Filter.SearchType" class="govuk-radios__input" id="search-type-fates" type="radio" value="Fates" />
+                        <label class="govuk-label govuk-radios__label" for="search-type-fates">Fate</label>
                     </div>
-                </fieldset>
-            </div>
-
-            <div class="govuk-form-group">
-                <div class="govuk-checkboxes" data-module="govuk-checkboxes">
-                    <div class="govuk-checkboxes__item">
-                        <input asp-for="Filter.IncludeNonGb" class="govuk-checkboxes__input" />
-                        <label asp-for="Filter.IncludeNonGb" class="govuk-label govuk-checkboxes__label">Include Non-GB Cases?</label>
+                    <div class="govuk-radios__item">
+                        <input asp-for="Filter.SearchType" class="govuk-radios__input" id="search-type-bse1" type="radio" value="BSE1" />
+                        <label class="govuk-label govuk-radios__label" for="search-type-bse1">BSE1s</label>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <div class="govuk-button-group">
-                <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
-                <a asp-page="/Search/Menu" class="govuk-link">Search Menu</a>
+        <div class="bse-farm-legacy__row">
+            <div class="bse-farm-legacy__field bse-outstanding-legacy__field--date bse-outstanding-legacy__field--wide">
+                <label for="Filter_EarliestFormADate" class="govuk-label">Form A Date Between</label>
+                <div class="bse-outstanding-legacy__date-range" role="group" aria-labelledby="Filter_EarliestFormADate">
+                    <div class="govuk-form-group @(Model.Filter.EarliestFormADateError is not null ? "govuk-form-group--error" : "")">
+                        <label asp-for="Filter.EarliestFormADate" class="govuk-visually-hidden">Form A date from</label>
+                        @if (Model.Filter.EarliestFormADateError is not null)
+                        {
+                            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.EarliestFormADateError</p>
+                        }
+                        <input asp-for="Filter.EarliestFormADate" type="date" class="govuk-input bse-outstanding-legacy__date-input @(Model.Filter.EarliestFormADateError is not null ? "govuk-input--error" : "")" />
+                    </div>
+                    <span class="bse-outstanding-legacy__and">and</span>
+                    <div class="govuk-form-group @(Model.Filter.LatestFormADateError is not null ? "govuk-form-group--error" : "")">
+                        <label asp-for="Filter.LatestFormADate" class="govuk-visually-hidden">Form A date to</label>
+                        @if (Model.Filter.LatestFormADateError is not null)
+                        {
+                            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.LatestFormADateError</p>
+                        }
+                        <input asp-for="Filter.LatestFormADate" type="date" class="govuk-input bse-outstanding-legacy__date-input @(Model.Filter.LatestFormADateError is not null ? "govuk-input--error" : "")" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bse-farm-legacy__row bse-outstanding-legacy__row--actions">
+            <div class="bse-farm-legacy__field bse-farm-legacy__field--dealer-left bse-outstanding-legacy__field--include">
+                <label asp-for="Filter.IncludeNonGb" class="govuk-label">Include Non-GB Cases?</label>
+                <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                    <div class="govuk-checkboxes__item">
+                        <input asp-for="Filter.IncludeNonGb" class="govuk-checkboxes__input bse-farm-legacy__dealer-checkbox" />
+                        <label asp-for="Filter.IncludeNonGb" class="govuk-label govuk-checkboxes__label"><span class="govuk-visually-hidden">Include Non-GB Cases?</span></label>
+                    </div>
+                </div>
+                <div class="govuk-button-group">
+                    <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
+                    <a asp-page="/Search/Menu" class="govuk-link">Search Menu</a>
+                </div>
             </div>
         </div>
     </div>

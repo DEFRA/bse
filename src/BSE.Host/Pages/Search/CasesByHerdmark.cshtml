@@ -1,10 +1,11 @@
 @page
 @model BSE.Host.Pages.Search.CasesByHerdmarkModel
 @{
-    ViewData["Title"] = "List Of Cases With A Given Herdmark";
+    ViewData["Title"] = "List Of Cases With A Given Herdmark (includes animals sold off)";
+    ViewData["BodyClass"] = "bse-herdmark-search-page";
 }
 
-<h1 class="govuk-heading-l">List Of Cases With A Given Herdmark</h1>
+<h1 class="govuk-heading-l">List Of Cases With A Given Herdmark (includes animals sold off)</h1>
 <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
     <ol class="govuk-breadcrumbs__list">
         <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
@@ -15,26 +16,34 @@
 
 <form method="get" novalidate>
     <input type="hidden" name="Searched" value="true" />
-    <div class="govuk-grid-row">
-        <div class="govuk-grid-column-two-thirds">
-            <div class="govuk-form-group">
+    <div class="bse-farm-legacy">
+        <div class="bse-farm-legacy__row">
+            <div class="bse-farm-legacy__field">
                 <label asp-for="Herdmark" class="govuk-label">Herdmark</label>
-                <input asp-for="Herdmark" maxlength="35" class="govuk-input govuk-!-width-two-thirds" />
-                <span asp-validation-for="Herdmark" class="govuk-error-message"></span>
-            </div>
-
-            <div class="govuk-form-group">
-                <div class="govuk-checkboxes" data-module="govuk-checkboxes">
-                    <div class="govuk-checkboxes__item">
-                        <input asp-for="IncludeNonGb" class="govuk-checkboxes__input" />
-                        <label asp-for="IncludeNonGb" class="govuk-label govuk-checkboxes__label">Include Non-GB Cases?</label>
-                    </div>
+                <div class="govuk-form-group">
+                    <input asp-for="Herdmark" maxlength="35" class="govuk-input bse-farm-legacy__input" />
+                    <span asp-validation-for="Herdmark" class="govuk-error-message"></span>
                 </div>
             </div>
 
-            <div class="govuk-button-group">
-                <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
-                <a asp-page="/Search/Menu" class="govuk-link">Search Menu</a>
+            <div class="bse-farm-legacy__field bse-farm-legacy__field--dealer-left">
+                <label asp-for="IncludeNonGb" class="govuk-label">Include Non-GB Cases?</label>
+                <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                    <div class="govuk-checkboxes__item">
+                        <input asp-for="IncludeNonGb" class="govuk-checkboxes__input bse-farm-legacy__dealer-checkbox" />
+                        <label asp-for="IncludeNonGb" class="govuk-label govuk-checkboxes__label"><span class="govuk-visually-hidden">Include Non-GB Cases?</span></label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bse-farm-legacy__row">
+            <div class="bse-farm-legacy__field bse-farm-legacy__field--continuation">
+                <label class="govuk-label" aria-hidden="true">&nbsp;</label>
+                <div class="govuk-button-group">
+                    <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
+                    <a asp-page="/Search/Menu" class="govuk-link">Search Menu</a>
+                </div>
             </div>
         </div>
     </div>
@@ -82,13 +91,13 @@
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Slaughter Date";   ViewData["Column"] = "SlaughterDate"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Final Result Date"; ViewData["Column"] = "FinalResultDate"; }
-                    <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Age at Onset";     ViewData["Column"] = "OnsetAgeInMonths"; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Fate";             ViewData["Column"] = "Fate"; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Final Result";     ViewData["Column"] = "FinalResult"; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Final Result Date"; ViewData["Column"] = "FinalResultDate"; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Survey";           ViewData["Column"] = "Survey"; }
                     <partial name="_SortableHeader" />
@@ -113,10 +122,10 @@
                         <td class="govuk-table__cell">@r.OnsetDate?.ToString("dd/MM/yyyy")</td>
                         <td class="govuk-table__cell">@r.FormADate?.ToString("dd/MM/yyyy")</td>
                         <td class="govuk-table__cell">@r.SlaughterDate?.ToString("dd/MM/yyyy")</td>
-                        <td class="govuk-table__cell">@r.FinalResultDate?.ToString("dd/MM/yyyy")</td>
                         <td class="govuk-table__cell">@r.OnsetAgeInMonths</td>
                         <td class="govuk-table__cell">@r.Fate</td>
                         <td class="govuk-table__cell">@r.FinalResult</td>
+                        <td class="govuk-table__cell">@r.FinalResultDate?.ToString("dd/MM/yyyy")</td>
                         <td class="govuk-table__cell">@r.Survey</td>
                         <td class="govuk-table__cell">@r.CaseStatus</td>
                         <td class="govuk-table__cell">@r.TimeElapsed</td>

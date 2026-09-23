@@ -28,6 +28,8 @@ variables:
 
   - name: webProject
     value: 'src/BSE.Host/BSE.Host.csproj'
+  - name: databaseScriptsPath
+    value: 'src/Database'
 
 stages:
 
@@ -48,30 +50,7 @@ stages:
       inputs:
         packageType: sdk
         version: '10.0.x'
-
-    - task: Bash@3
-      displayName: 'Detect Database script changes'
-      name: detectDbChanges
-      inputs:
-        targetType: inline
-        script: |
-          set -euo pipefail
-
-          if git rev-parse HEAD~1 >/dev/null 2>&1; then
-            CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD -- src/BSE.Database || true)
-          else
-            echo "No previous commit found - treating as changed"
-            CHANGED_FILES="initial-commit"
-          fi
-
-          if [ -n "$CHANGED_FILES" ]; then
-            echo "Database script changes detected:"
-            echo "$CHANGED_FILES"
-            echo "##vso[task.setvariable variable=dbScriptsChanged;isOutput=true]true"
-          else
-            echo "No Database script changes detected."
-            echo "##vso[task.setvariable variable=dbScriptsChanged;isOutput=true]false"
-          fi
+  
 
     - script: dotnet restore $(solution)
       displayName: 'Restore dependencies'
@@ -101,10 +80,36 @@ stages:
     - task: CopyFiles@2
       displayName: 'Stage SQL scripts'
       inputs:
-        sourceFolder: 'src'
-        contents: 'BSE.Database/**/*.sql'
+        sourceFolder: 'src/Database'
+        contents: '**/*.sql'
         targetFolder: '$(Build.ArtifactStagingDirectory)/sql'
-        flattenFolders: true    
+        flattenFolders: true
+        
+    - bash: |
+        set -euo pipefail
+
+        # Detect whether any file under the database scripts path (src/Database —
+        # covering Deploy/, Migrations/, StoredProcedures/) changed, so downstream
+        # deployment stages can skip applying database scripts when there are no
+        # script changes to deploy.
+        if [ "$(Build.Reason)" = "PullRequest" ]; then
+          DIFF_RANGE="origin/$(System.PullRequest.TargetBranch)...HEAD"
+        else
+          DIFF_RANGE="HEAD~1...HEAD"
+        fi
+
+        echo "Checking for database script changes using range: $DIFF_RANGE"
+
+        if git diff --name-only $DIFF_RANGE -- $(databaseScriptsPath) | grep -q .; then
+          echo "Database script changes detected under $(databaseScriptsPath):"
+          git diff --name-only $DIFF_RANGE -- $(databaseScriptsPath)
+          echo "##vso[task.setvariable variable=dbScriptsChanged;isOutput=true]true"
+        else
+          echo "No database script changes detected under $(databaseScriptsPath)."
+          echo "##vso[task.setvariable variable=dbScriptsChanged;isOutput=true]false"
+        fi
+      name: detectDbChanges
+      displayName: 'Detect database script changes'
 
     - publish: '$(Build.ArtifactStagingDirectory)'
       artifact: drop
@@ -146,8 +151,12 @@ stages:
             artifact: drop
 
           - script: |
-              echo "Database script changes detected: $(dbScriptsChanged)"
-            displayName: 'Log DB script change status'
+              if [ "$(dbScriptsChanged)" = "true" ]; then
+                echo "Database script changes detected — database deployment WILL be applied for DEV."
+              else
+                echo "No database script changes detected — database deployment WILL BE SKIPPED for DEV."
+              fi
+            displayName: 'Log database deployment decision'
 
           - task: AzureCLI@2
             displayName: 'Apply database scripts'
@@ -234,8 +243,12 @@ stages:
             artifact: drop
 
           - script: |
-              echo "Database script changes detected: $(dbScriptsChanged)"
-            displayName: 'Log DB script change status'
+              if [ "$(dbScriptsChanged)" = "true" ]; then
+                echo "Database script changes detected — database deployment WILL be applied for DEV."
+              else
+                echo "No database script changes detected — database deployment WILL BE SKIPPED for DEV."
+              fi
+            displayName: 'Log database deployment decision'
 
           - task: AzureCLI@2
             displayName: 'Apply database scripts'
@@ -319,8 +332,12 @@ stages:
             artifact: drop
 
           - script: |
-              echo "Database script changes detected: $(dbScriptsChanged)"
-            displayName: 'Log DB script change status'
+              if [ "$(dbScriptsChanged)" = "true" ]; then
+                echo "Database script changes detected — database deployment WILL be applied for DEV."
+              else
+                echo "No database script changes detected — database deployment WILL BE SKIPPED for DEV."
+              fi
+            displayName: 'Log database deployment decision'
 
           - task: AzureCLI@2
             displayName: 'Apply database scripts'

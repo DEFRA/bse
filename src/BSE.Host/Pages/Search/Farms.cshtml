@@ -35,7 +35,6 @@
                 <label asp-for="Filter.Cphh" class="govuk-label">CPH(H)</label>
                 <div class="govuk-form-group">
                     <input asp-for="Filter.Cphh" class="govuk-input bse-farm-legacy__input" aria-describedby="cphh-hint" />
-                    <span asp-validation-for="Filter.Cphh" class="govuk-error-message"></span>
                 </div>
             </div>
             <div class="bse-farm-legacy__field">
@@ -66,7 +65,6 @@
                 <label asp-for="Filter.NumericHerdmark" class="govuk-label">Numeric Herdmark</label>
                 <div class="govuk-form-group">
                     <input asp-for="Filter.NumericHerdmark" class="govuk-input bse-farm-legacy__input" />
-                    <span asp-validation-for="Filter.NumericHerdmark" class="govuk-error-message"></span>
                 </div>
             </div>
             <div class="bse-farm-legacy__field">
@@ -150,26 +148,23 @@
         <div class="bse-farm-search-table-wrap">
         <table class="govuk-table govuk-table--small-text-until-tablet bse-farm-search-table">
             <caption class="govuk-visually-hidden">Farm search results</caption>
-            <colgroup>
-                <col style="width: 14ch" /><col style="width: 20ch" /><col style="width: 40ch" /><col style="width: 10ch" /><col style="width: 12ch" /><col style="width: 10ch" /><col style="width: 8ch" /><col style="width: 6ch" /><col style="width: 10ch" /><col style="width: 40ch" /><col style="width: 8ch" /><col style="width: 10ch" />
-            </colgroup>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
                     @{ ViewData["Label"] = "CPHH";                   ViewData["Column"] = "Cphh";                   ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Prefix"] = "Filter."; ViewData["Fragment"] = "farm-search-results"; ViewData["WrapWords"] = false; ViewData["HeaderClass"] = null; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Owner Name";              ViewData["Column"] = "OwnerName"; ViewData["WrapWords"] = false; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Address\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0";                 ViewData["Column"] = "Address"; }
+                    @{ ViewData["Label"] = "Address";                 ViewData["Column"] = "Address"; ViewData["WrapWords"] = true; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "County";                  ViewData["Column"] = "County"; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Herdmark(s)";             ViewData["Column"] = "Herdmark"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Numeric Herdmark";     ViewData["Column"] = "NumericHerdmark"; ViewData["HeaderClass"] = "govuk-table__header--numeric"; ViewData["WrapWords"] = true; }
+                    @{ ViewData["Label"] = "Numeric Herdmark(s)"; ViewData["Column"] = "NumericHerdmark"; ViewData["HeaderClass"] = "govuk-table__header--numeric"; ViewData["WrapWords"] = true; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Map Ref";                 ViewData["Column"] = "MapReference"; ViewData["HeaderClass"] = null; ViewData["WrapWords"] = false; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "AHO\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0";                     ViewData["Column"] = "Aho"; }
+                    @{ ViewData["Label"] = "AHO";                     ViewData["Column"] = "Aho"; ViewData["WrapWords"] = false; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Herd Type";               ViewData["Column"] = "HerdType"; ViewData["WrapWords"] = false; }
                     <partial name="_SortableHeader" />
