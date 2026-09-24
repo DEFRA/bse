@@ -78,7 +78,9 @@ public sealed class AdnsExportService : IAdnsExportService
     {
         var sentDate = DateTime.UtcNow;
         var subject = BuildSubject(command.EmailReference);
-        var body = AdnsEmailBodyBuilder.Build(command.Cases);
+        // Legacy parity: only regenerate when no message was ever supplied. A blank string means
+        // the user intentionally cleared the body before sending, so it must be sent as blank.
+        var body = command.Message ?? AdnsEmailBodyBuilder.Build(command.Cases);
         var endReference = command.Cases.OrderByDescending(c => c.AdnsNumber).FirstOrDefault()?.AdnsReference;
 
         using var connection = _connectionFactory.CreateConnection();

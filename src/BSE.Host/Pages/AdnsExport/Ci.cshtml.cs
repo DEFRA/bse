@@ -50,6 +50,9 @@ public class CiModel(
     [BindProperty]
     public string UserEmailAddress { get; set; } = string.Empty;
 
+    [BindProperty]
+    public string Message { get; set; } = string.Empty;
+
     // CI must remain false (no persisted Case rows for manual CI entries).
     [BindProperty]
     public bool SaveAdnsData { get; set; } = false;
@@ -101,6 +104,7 @@ public class CiModel(
                 IsleOfManCases,
                 ConfirmationDate!.Value);
 
+            Message = Preview.EmailBody;
             TempData[PreviewTempDataKey] = JsonSerializer.Serialize(Preview);
         }
         catch (Exception ex)
@@ -127,6 +131,10 @@ public class CiModel(
 
         Preview = preview;
 
+        // Dispatch only needs the recipient address — the report fields (e.g. ConfirmationDate)
+        // aren't posted from this form and their stale Required errors must not block sending.
+        ModelState.Clear();
+
         if (string.IsNullOrWhiteSpace(UserEmailAddress))
         {
             ModelState.AddModelError(nameof(UserEmailAddress), "Enter your email address.");
@@ -144,7 +152,8 @@ public class CiModel(
             EmailReference: EmailReference,
             Cases: preview!.Cases.ToList(),
             UserEmailAddress: UserEmailAddress,
-            SaveAdnsData: SaveAdnsData);
+            SaveAdnsData: SaveAdnsData,
+            Message: Message.Trim());
 
         try
         {

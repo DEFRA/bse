@@ -161,13 +161,47 @@ public sealed class AdnsExportServiceTests
     public async Task DispatchAsync_SaveAdnsDataFalse_DoesNotCallEditCaseAdns()
     {
         var cases = new[] { MakeCase(1, "2024/00001") };
-        var cmd = new DispatchAdnsCommand("GB", "DBSE2024/00001", cases, "user@test.com", SaveAdnsData: false);
+        var cmd = new DispatchAdnsCommand("GB", "DBSE2024/00001", cases, "user@test.com", SaveAdnsData: false, Message: "custom message");
 
         await _sut.DispatchAsync(cmd);
 
         await _repo.DidNotReceive().EditCaseAdnsAsync(Arg.Any<string>(), Arg.Any<DateTime>(),
             Arg.Any<int>(), Arg.Any<short>(), Arg.Any<int>(), Arg.Any<byte[]>(),
             Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>());
+    }
+
+    [Fact]
+    public async Task DispatchAsync_MessageExplicitlyBlank_SendsBlankBody()
+    {
+        var cases = new[] { MakeCase(1, "2024/00001") };
+        _repo.EditCaseAdnsAsync(Arg.Any<string>(), Arg.Any<DateTime>(), Arg.Any<int>(),
+            Arg.Any<short>(), Arg.Any<int>(), Arg.Any<byte[]>(),
+            Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>())
+            .Returns(0);
+
+        // Legacy parity: the user cleared the body on purpose before clicking send —
+        // it must not be silently regenerated.
+        var cmd = new DispatchAdnsCommand("GB", "DBSE2024/00001", cases, "user@test.com", SaveAdnsData: true, Message: string.Empty);
+        await _sut.DispatchAsync(cmd);
+
+        await _msGraphMail.Received(1).SendAsync("from@test.com", "user@test.com", Arg.Any<string>(), string.Empty);
+        await _msGraphMail.Received(1).SendAsync("from@test.com", "brussels@adns.int", Arg.Any<string>(), string.Empty);
+    }
+
+    [Fact]
+    public async Task DispatchAsync_MessageNotSupplied_GeneratesBody()
+    {
+        var cases = new[] { MakeCase(1, "2024/00001") };
+        _repo.EditCaseAdnsAsync(Arg.Any<string>(), Arg.Any<DateTime>(), Arg.Any<int>(),
+            Arg.Any<short>(), Arg.Any<int>(), Arg.Any<byte[]>(),
+            Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>())
+            .Returns(0);
+
+        var cmd = new DispatchAdnsCommand("GB", "DBSE2024/00001", cases, "user@test.com", SaveAdnsData: true);
+        await _sut.DispatchAsync(cmd);
+
+        await _msGraphMail.Received(1).SendAsync("from@test.com", "user@test.com", Arg.Any<string>(),
+            Arg.Is<string>(b => b.Contains("<I>CVETUNK1")));
     }
 
     [Fact]

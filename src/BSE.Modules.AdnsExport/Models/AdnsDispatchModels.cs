@@ -32,4 +32,7 @@ public sealed record DispatchAdnsCommand(
     /// <summary>User's own email address — receives a copy of the notification.</summary>
     string UserEmailAddress,
     /// <summary>Whether to persist the ADNS reference assignments to the database.</summary>
-    bool SaveAdnsData);
+    bool SaveAdnsData,
+    /// <summary>User-editable ADNS message body. When null (not supplied), the generated payload is used;
+    /// an empty string is sent as-is, matching legacy behaviour where the user may intentionally clear it.</summary>
+    string? Message = null);
