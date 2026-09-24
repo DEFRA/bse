@@ -131,6 +131,8 @@ public class NewNonGbModel : PageModel
 
         if (string.IsNullOrWhiteSpace(normalizedCphh))
             ModelState.AddModelError(nameof(Cphh), "You need to enter a CPHH.");
+        else if (normalizedCphh.Length != 11)
+            ModelState.AddModelError(nameof(Cphh), "Enter CPHH as 11 digits in the format NN/NNN/NNNN/NN.");
         else if (!normalizedCphh.StartsWith("009999", StringComparison.Ordinal))
             ModelState.AddModelError(nameof(Cphh), "Please enter the CPHH of a non-GB farm.");
         // Legacy rfvOwnerName/rfvAddress1 are enabled together with the farm fields once a CPHH is entered.
@@ -246,6 +248,13 @@ public class NewNonGbModel : PageModel
 
         var normalized = CphhNormalizer.Normalize(Cphh);
         Cphh = normalized;
+
+        if (normalized.Length != 11)
+        {
+            ModelState.AddModelError(nameof(Cphh), "Enter CPHH as 11 digits in the format NN/NNN/NNNN/NN.");
+            await LoadLookupsAsync();
+            return Page();
+        }
 
         if (!normalized.StartsWith("009999", StringComparison.Ordinal))
         {

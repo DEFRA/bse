@@ -583,6 +583,7 @@
     }
 
     window.addEventListener('beforeunload', function (e) {
+        if (window.__bseCaseTabNavigationInProgress) return;
         if (dirty && !submitting) {
             e.preventDefault();
             e.returnValue = '';

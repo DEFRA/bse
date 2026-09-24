@@ -350,13 +350,13 @@ stages:
     - name: resourceGroup
       value: 'PREBSEINFRG1401'
     - name: tenantId
-      value: 'TBD'
+      value: '770a2450-0227-4c62-90c7-4e38537f1102'
     - name: appId
-      value: 'TBD'
+      value: 'b5bd1613-6e97-466b-b5aa-dfce852f8268'
     - name: sqlServer
-      value: 'TBD'
+      value: 'prebseinfsq1401.database.windows.net,1433'
     - name: sqlServerHost
-      value: 'TBD'
+      value: 'prebseinfsq1401.database.windows.net'
     - name: dbName
       value: 'BSE'
     - name: dbScriptsChanged

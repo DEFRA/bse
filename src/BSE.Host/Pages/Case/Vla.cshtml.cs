@@ -20,6 +20,7 @@ namespace BSE.Host.Pages.Case;
 [Authorize]
 public class VlaModel(
     ICaseService caseService,
+    IBabRepository babRepository,
     ICurrentUserService currentUserService,
     ICaseWizardStateService wizardState,
     ICaseEditDraftStateService caseEditDraftState,
@@ -48,6 +49,7 @@ public class VlaModel(
     public IReadOnlyList<BatchNumberEntry> BatchNumbers { get; private set; } = [];
     public CaseWizardState? PendingBatch { get; private set; }
     public bool CanEditMainCase { get; private set; }
+    public bool HasTracedBabData { get; private set; }
 
     public IEnumerable<ILookupItem> BirthDateSourceOptions { get; private set; } = [];
     public IEnumerable<ILookupItem> SexOptions            { get; private set; } = [];
@@ -88,6 +90,7 @@ public class VlaModel(
         TempData[string.Format(RowStampKey, Rbse)] = Convert.ToBase64String(record.RowStamp ?? []);
         Case = VlaEditViewModel.FromRecord(record);
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+        HasTracedBabData = await HasTracedBabDataAsync(Rbse);
 
         var batchTask = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
         var pendingBatchTask = wizardState.GetAsync();
@@ -126,6 +129,8 @@ public class VlaModel(
             TempData["Warning"] = $"Case '{caseRbse}' is not saved yet. Complete Farm first.";
             return Page();
         }
+
+        HasTracedBabData = await HasTracedBabDataAsync(caseRbse);
 
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadLookupsAsync();
@@ -349,6 +354,20 @@ public class VlaModel(
         draft.HasPendingChanges = true;
         await caseEditDraftState.SetAsync(draft);
         return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
+    }
+
+    private async Task<bool> HasTracedBabDataAsync(string rbse)
+    {
+        var bab = await babRepository.GetByRbseAsync(rbse);
+        if (bab is null)
+            return false;
+
+        return !string.IsNullOrWhiteSpace(bab.NatalCphh)
+               || !string.IsNullOrWhiteSpace(bab.TracedName)
+               || !string.IsNullOrWhiteSpace(bab.TracedAddress1)
+               || !string.IsNullOrWhiteSpace(bab.TracedAddress2)
+               || !string.IsNullOrWhiteSpace(bab.TracedAddress3)
+               || !string.IsNullOrWhiteSpace(bab.TracedPostcode);
     }
 
     private async Task LoadOrInitializeOwnersDraftAsync()

@@ -91,6 +91,11 @@ public class NewModel : PageModel
             ModelState.AddModelError(nameof(FormADate), "Enter a Form A date.");
 
         var normalisedCphh = CphhNormalizer.Normalize(Cphh);
+        Cphh = normalisedCphh;
+
+        if (!string.IsNullOrWhiteSpace(normalisedCphh) && normalisedCphh.Length != 11)
+            ModelState.AddModelError(nameof(Cphh), "Enter CPHH as 11 digits in the format NN/NNN/NNNN/NN.");
+
         FarmRecord? farm = null;
         if (!string.IsNullOrWhiteSpace(normalisedCphh))
             farm = await _farms.GetByCphhAsync(normalisedCphh);

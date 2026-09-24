@@ -124,7 +124,7 @@
                     <label class="govuk-label" for="bab-natal-cphh">Traced CPHH</label>
                     <input id="bab-natal-cphh" name="Bab.NatalCphh" class="govuk-input bab-legacy-input"
                            disabled="@(tracedReadOnly ? "disabled" : null)"
-                           value="@Model.Bab?.NatalCphh" maxlength="11" inputmode="numeric" />
+                           value="@Model.Bab?.NatalCphh" maxlength="14" inputmode="text" />
                 </div>
                 <div class="bab-legacy-field">
                     <span class="govuk-label bab-legacy-label-spacer" aria-hidden="true">&nbsp;</span>
@@ -375,8 +375,30 @@ else
     (function () {
         var origin = document.getElementById('bab-origin');
         var traced = document.getElementById('bab-traced-section');
+        var tabLinks = document.querySelectorAll('.bse-case-tabs__link[href]');
         var tracedFieldIds = ['bab-natal-cphh', 'bab-traced-name', 'bab-addr1', 'bab-addr2', 'bab-addr3', 'bab-postcode'];
         var baseReadOnly = @(babReadOnly ? "true" : "false");
+        var hadPurchasedOriginOnLoad = isPurchased();
+        var hasPurchaseDataOnLoad = @Html.Raw(Model.HasPurchaseData ? "true" : "false");
+        var pendingOriginChangeMessage = null;
+
+        function buildLegacyOriginChangeMessage() {
+            var hadTraceData = hasTracedData();
+
+            if (hasPurchaseDataOnLoad && hadTraceData) {
+                return 'Purchase And Trace data has been entered on this Case.  If you do not Cancel then this data will be lost.';
+            }
+
+            if (hasPurchaseDataOnLoad) {
+                return 'Purchase data has been entered on this Case.  If you do not Cancel then this data will be lost.';
+            }
+
+            if (hadTraceData) {
+                return 'Trace data has been entered on this Case.  If you do not Cancel then this data will be lost.';
+            }
+
+            return null;
+        }
 
         function isPurchased() {
             if (!origin) return false;
@@ -411,14 +433,26 @@ else
 
         if (origin && traced) {
             origin.addEventListener('change', function () {
-                if (!isPurchased() && hasTracedData()) {
-                    alert('Trace data has been entered on this case. If you click Save then this data will be lost.');
+                var movedFromPurchased = hadPurchasedOriginOnLoad && !isPurchased();
+                if (movedFromPurchased) {
+                    pendingOriginChangeMessage = buildLegacyOriginChangeMessage();
+
+                    hasPurchaseDataOnLoad = false;
+                    hadPurchasedOriginOnLoad = false;
                     clearTracedFields();
                 }
                 refreshTracedVisibility();
             });
             refreshTracedVisibility();
         }
+
+        tabLinks.forEach(function (tabLink) {
+            tabLink.addEventListener('click', function () {
+                if (pendingOriginChangeMessage) {
+                    alert(pendingOriginChangeMessage);
+                }
+            });
+        });
 
         var form = document.getElementById('case-bab-inline-form');
         var cancelLinks = document.querySelectorAll('.bse-cancel-link');
@@ -441,6 +475,7 @@ else
         });
 
         window.addEventListener('beforeunload', function (e) {
+            if (window.__bseCaseTabNavigationInProgress) return;
             if (dirty && !submitting) {
                 e.preventDefault();
                 e.returnValue = '';
