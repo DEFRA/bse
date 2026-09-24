@@ -17,7 +17,6 @@
 
     @if (Model.Entries.Any())
     {
-        <h2 id="cphh-changes-results" class="govuk-heading-m">@Model.Entries.Count() CPHH changes</h2>
         var sortBase = "?" + string.Join("&", HttpContext.Request.Query
             .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
                      && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase)
@@ -25,7 +24,7 @@
             .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
         var sortCol  = Model.SortColumn;
         var sortDesc = Model.SortDesc;
-        <div class="bse-audit-table-wrap">
+        <div id="cphh-changes-results" class="bse-audit-table-wrap">
             <table class="govuk-table bse-audit-table">
                 <caption class="govuk-visually-hidden">CPHH change audit log entries</caption>
                 <thead class="govuk-table__head">

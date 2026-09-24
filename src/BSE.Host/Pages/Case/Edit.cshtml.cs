@@ -40,6 +40,8 @@ public class EditModel(
     public string? ConcurrencyError { get; private set; }
     public IReadOnlyList<BatchNumberEntry> BatchNumbers { get; private set; } = [];
     public bool HasCaseWorkLink { get; private set; }
+    public bool CanEditDefraNotes { get; private set; }
+    public bool IsNonGbCase { get; private set; }
 
     // Lookup options for dropdowns
     public IEnumerable<BSE.SharedKernel.ILookupItem> FateOptions { get; private set; } = [];
@@ -79,15 +81,26 @@ public class EditModel(
 
     public async Task<IActionResult> OnGetAsync()
     {
+        ApplyLegacyDefraPermissions();
+
         var record = await caseService.GetCaseAsync(Rbse);
         if (record is null)
         {
-            TempData["Warning"] = $"Case '{Rbse}' not found.";
-            return RedirectToPage("/Home");
+            Case.Rbse = Rbse;
+            var missingCaseBatchTask = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
+            SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+            var missingCaseWork = await caseWorkRepository.GetByRbseAsync(Rbse);
+            HasCaseWorkLink = missingCaseWork is not null
+                              || await caseWorkRepository.GetEntryByRbseAsync(Rbse) is not null;
+            await Task.WhenAll(LoadLookupsAsync(), missingCaseBatchTask, LoadOrInitializeDraftStateAsync());
+            BatchNumbers = (await missingCaseBatchTask).ToList().AsReadOnly();
+            TempData["Warning"] = $"Case '{Rbse}' is not saved yet. Complete Farm first.";
+            return Page();
         }
 
         TempData[string.Format(RowStampKey, Rbse)] = Convert.ToBase64String(record.RowStamp ?? []);
         Case = CaseEditViewModel.FromRecord(record);
+        IsNonGbCase = record.IsNonGbCase;
 
         var caseWork = await caseWorkRepository.GetByRbseAsync(Rbse);
         if (caseWork is not null)
@@ -204,6 +217,31 @@ public class EditModel(
     {
         if (!User.IsInRole("DataEntry"))
             return Forbid();
+
+        ApplyLegacyDefraPermissions();
+
+        var persistedRecord = await caseService.GetCaseAsync(Rbse);
+        if (persistedRecord is null)
+        {
+            Case.Rbse = Rbse;
+            var batchTask = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
+            SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+            var caseWork = await caseWorkRepository.GetByRbseAsync(Rbse);
+            HasCaseWorkLink = caseWork is not null
+                              || await caseWorkRepository.GetEntryByRbseAsync(Rbse) is not null;
+            await LoadLookupsAsync();
+            await LoadOrInitializeDraftStateAsync();
+            BatchNumbers = (await batchTask).ToList().AsReadOnly();
+            TempData["Warning"] = $"Case '{Rbse}' is not saved yet. Complete Farm first.";
+            return Page();
+        }
+
+        IsNonGbCase = persistedRecord.IsNonGbCase;
+
+        // Legacy CaseEntryDEFRA behavior: Form A date is read-only for non-GB cases.
+        if (IsNonGbCase)
+            Case.FormADate = persistedRecord.FormADate;
+
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadLookupsAsync();
         await LoadOrInitializeDraftStateAsync();
@@ -293,6 +331,18 @@ public class EditModel(
     private void ValidateLegacyParityRules()
     {
         var today = DateTime.Today;
+
+        if (string.IsNullOrWhiteSpace(Case.EartagCountry)
+            && string.IsNullOrWhiteSpace(Case.EartagHerdmark)
+            && string.IsNullOrWhiteSpace(Case.Eartag))
+        {
+            ModelState.AddModelError("Case.EartagCountry", "Enter an eartag.");
+        }
+
+        if (!IsNonGbCase && !Case.FormADate.HasValue)
+        {
+            ModelState.AddModelError("Case.FormADate", "Enter a Form A date.");
+        }
 
         if (Case.Bse1ReceivedDate.HasValue && Case.Bse1ReceivedDate.Value.Date > today)
             ModelState.AddModelError("Case.Bse1ReceivedDate", "You must enter a past date.");
@@ -434,11 +484,14 @@ public class EditModel(
 
     private async Task LoadReadonlyPageAsync()
     {
+        ApplyLegacyDefraPermissions();
+
         var record = await caseService.GetCaseAsync(Rbse);
         if (record is null)
             return;
 
         Case = CaseEditViewModel.FromRecord(record);
+        IsNonGbCase = record.IsNonGbCase;
         var caseWork = await caseWorkRepository.GetByRbseAsync(Rbse);
         if (caseWork is not null)
             Case.ApplyCaseWork(caseWork);
@@ -451,6 +504,11 @@ public class EditModel(
 
         await Task.WhenAll(LoadLookupsAsync(), batchTask, LoadTestsAsync());
         BatchNumbers = (await batchTask).ToList().AsReadOnly();
+    }
+
+    private void ApplyLegacyDefraPermissions()
+    {
+        CanEditDefraNotes = User.IsInRole("DataEntry");
     }
 
     private async Task<CaseEditDraftState> LoadOrInitializeDraftStateAsync()

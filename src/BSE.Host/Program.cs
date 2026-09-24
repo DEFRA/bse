@@ -368,7 +368,7 @@ try
     // ── Session support (for grid state persistence in OSS Export and other pages) ──
     builder.Services.AddSession(options =>
     {
-        options.IdleTimeout = TimeSpan.FromHours(1);
+        options.IdleTimeout = TimeSpan.FromMinutes(20);
         options.Cookie.HttpOnly = true;
         options.Cookie.IsEssential = true; // Required for app to function
     });

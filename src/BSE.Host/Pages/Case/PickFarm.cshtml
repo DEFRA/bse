@@ -1,0 +1,87 @@
+@page "{rbse}"
+@model BSE.Host.Pages.Case.PickFarmModel
+@{
+    ViewData["Title"] = "Pick farm";
+}
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Farm" asp-route-rbse="@Model.Rbse">Case @BseFormat.FormatRbse(Model.Rbse)</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Pick farm</li>
+    </ol>
+</nav>
+
+<h1 class="govuk-heading-l">Pick farm</h1>
+<p class="govuk-body">Requested CPHH: <strong>@Model.FormattedRequestedCphh</strong></p>
+
+@if (!ViewContext.ModelState.IsValid)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@e.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+@if (!Model.Farms.Any())
+{
+    <div class="govuk-inset-text">No farms were found for this CPH prefix.</div>
+}
+else
+{
+    var pickBase = Url.Page("/Case/PickFarm", new
+    {
+        rbse = Model.Rbse,
+        cphh = Model.Cphh
+    });
+
+    <table class="govuk-table">
+        <caption class="govuk-visually-hidden">Matching farms</caption>
+        <thead class="govuk-table__head">
+            <tr class="govuk-table__row">
+                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "CPHH", ["Column"] = "CPHH", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = pickBase })
+                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Owner name", ["Column"] = "OwnerName", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = pickBase })
+                @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Address", ["Column"] = "Address1", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = pickBase })
+                <th scope="col" class="govuk-table__header"><span class="govuk-visually-hidden">Actions</span></th>
+            </tr>
+        </thead>
+        <tbody class="govuk-table__body">
+            @foreach (var farm in Model.Farms)
+            {
+                <tr class="govuk-table__row">
+                    <td class="govuk-table__cell">@BseFormat.FormatCphh(farm.CPHH)</td>
+                    <td class="govuk-table__cell">@farm.OwnerName</td>
+                    <td class="govuk-table__cell">@farm.Address1</td>
+                    <td class="govuk-table__cell">
+                        <form method="post" asp-page-handler="UseSelected" novalidate>
+                            <input type="hidden" name="Rbse" value="@Model.Rbse" />
+                            <input type="hidden" name="Cphh" value="@Model.Cphh" />
+                            <input type="hidden" name="selectedFarmCphh" value="@farm.CPHH" />
+                            <button type="submit" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">Use Selected</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
+}
+
+<form method="post" asp-page-handler="New">
+    <input type="hidden" asp-for="Rbse" />
+    <input type="hidden" asp-for="Cphh" />
+    <div class="govuk-button-group">
+        <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">New</button>
+        <button type="submit" asp-page-handler="Cancel" class="govuk-button govuk-button--secondary" data-module="govuk-button">Back</button>
+    </div>
+</form>

@@ -29,23 +29,24 @@
     }
 
     <form method="get" novalidate class="govuk-!-margin-bottom-6">
-        <div class="govuk-form-group @(Model.LogDateError is not null ? "govuk-form-group--error" : "")">
-            <label asp-for="LogDate" class="govuk-label">Log Entries On</label>
-            @if (Model.LogDateError is not null)
-            {
-                <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.LogDateError</p>
-            }
-            <input asp-for="LogDate" type="date" class="govuk-input govuk-input--width-10 @(Model.LogDateError is not null ? "govuk-input--error" : "")" />
-        </div>
-        <div class="govuk-button-group">
-            <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
-            <a asp-page="/AuditLog/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button" role="button" draggable="false">Audit Log Menu</a>
+        <div class="bse-date-search-row">
+            <div class="govuk-form-group @(Model.LogDateError is not null ? "govuk-form-group--error" : "")">
+                <label asp-for="LogDate" class="govuk-label">Log Entries On</label>
+                @if (Model.LogDateError is not null)
+                {
+                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.LogDateError</p>
+                }
+                <input asp-for="LogDate" type="date" class="govuk-input govuk-input--width-10 @(Model.LogDateError is not null ? "govuk-input--error" : "")" />
+            </div>
+            <div class="govuk-button-group">
+                <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
+                <a asp-page="/AuditLog/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button" role="button" draggable="false">Audit Log Menu</a>
+            </div>
         </div>
     </form>
 
     @if (Model.Entries.Any())
     {
-        <h2 id="daily-audit-results" class="govuk-heading-m">@Model.Entries.Count() entries on @Model.LogDate?.ToString("dd/MM/yyyy")</h2>
         var sortBase = "?" + string.Join("&", HttpContext.Request.Query
             .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
                      && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase)
@@ -53,7 +54,7 @@
             .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
         var sortCol  = Model.SortColumn;
         var sortDesc = Model.SortDesc;
-        <div class="bse-audit-table-wrap">
+        <div id="daily-audit-results" class="bse-audit-table-wrap">
             <table class="govuk-table bse-audit-table">
                 <caption class="govuk-visually-hidden">Audit log entries by date</caption>
             <thead class="govuk-table__head">

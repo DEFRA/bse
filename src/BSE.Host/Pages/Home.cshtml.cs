@@ -126,6 +126,8 @@ public class HomeModel(
     /// <summary>
     /// Legacy Home.aspx had a single Go button that took the batch number and the RBSE
     /// together: the batch was validated, held in session, and the case opened in case entry.
+    /// Mirrors legacy btnGo_Click's full branching: existing GB/non-GB case, new GB/non-GB
+    /// case, and the per-group restrictions on each path.
     /// </summary>
     public async Task<IActionResult> OnPostRbseLookupAsync()
     {
@@ -167,7 +169,59 @@ public class HomeModel(
             await wizardState.ClearAsync();
         }
 
-        return RedirectToPage("/Case/Farm", new { Rbse = normalized });
+        var isVlaMaintenance = User.IsInRole("VLAMaintenance");
+        var isVlaDataEntry = User.IsInRole("VLAAccess") && !isVlaMaintenance;
+        var isDefraViewer = User.IsInRole("DEFRAAccess") && !User.IsInRole("DataEntry");
+
+        var existing = await caseRepository.GetCaseByRbseAsync(normalized);
+
+        if (existing is not null)
+        {
+            // Legacy: an existing non-GB case can only be opened by the VLA groups.
+            if (existing.IsNonGbCase && !isVlaMaintenance && !isVlaDataEntry)
+            {
+                ModelState.AddModelError(nameof(LookupRbse), "This is not a GB case");
+                await OnGetAsync();
+                return Page();
+            }
+
+            return RedirectToPage("/Case/Farm", new { Rbse = normalized });
+        }
+
+        // Case doesn't exist — legacy's non-GB reference block is "63/00" or "23/00".
+        var isNonGbReference = normalized.StartsWith("6300", StringComparison.Ordinal)
+            || normalized.StartsWith("2300", StringComparison.Ordinal);
+
+        if (isNonGbReference)
+        {
+            if (isVlaMaintenance)
+                return RedirectToPage("/Case/NewNonGb", new { rbse = normalized });
+
+            ModelState.AddModelError(nameof(LookupRbse), isVlaDataEntry
+                ? "This case does not exist"
+                : "This is not a GB case");
+            await OnGetAsync();
+            return Page();
+        }
+
+        // New GB case — DEFRA Viewer and VLA Data Entry cannot create new GB cases.
+        if (isDefraViewer || isVlaDataEntry)
+        {
+            ModelState.AddModelError(nameof(LookupRbse), "This case does not exist");
+            await OnGetAsync();
+            return Page();
+        }
+
+        // Legacy: the RBSE year part (raw positions 2-3) must not contain 'X'.
+        if (normalized.Length >= 4 && (normalized[2] is 'X' or 'x' || normalized[3] is 'X' or 'x'))
+        {
+            ModelState.AddModelError(nameof(LookupRbse), "This RBSE is not valid for a new case");
+            await OnGetAsync();
+            return Page();
+        }
+
+        // Legacy redirects a brand-new GB case straight to CaseEntryFarm.aspx, not a separate page.
+        return RedirectToPage("/Case/Farm", new { rbse = normalized });
     }
 
     /// <summary>Batch fields are pre-filled via redirect so the user sees the assigned number — matches legacy behaviour.</summary>

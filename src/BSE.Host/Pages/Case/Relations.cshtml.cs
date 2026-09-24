@@ -803,6 +803,12 @@ public class RelationsModel(
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
         var caseRecord = await caseService.GetCaseAsync(caseRbse);
 
+        if (caseRecord is null)
+        {
+            TempData["Warning"] = $"Case '{caseRbse}' is not saved yet. Complete Farm first.";
+            return RedirectToPage(new { rbse = Rbse });
+        }
+
         // Keep explicit parent intent even if HasDam/HasSire hidden flags are stale in the post.
         if (!DamSire.HasDam && (DamSire.DamId > 0 || !string.IsNullOrWhiteSpace(DamSire.DamRbse)))
             DamSire.HasDam = true;

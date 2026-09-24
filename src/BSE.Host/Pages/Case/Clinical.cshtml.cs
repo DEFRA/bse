@@ -63,6 +63,14 @@ public class ClinicalModel(
     {
         if (!User.IsInRole("DataEntry"))
             return Forbid();
+
+        var caseRecord = await caseRepository.GetCaseByRbseAsync(Rbse);
+        if (caseRecord is null)
+        {
+            TempData["Warning"] = $"Case '{Rbse}' is not saved yet. Complete Farm first.";
+            return RedirectToPage(new { rbse = Rbse });
+        }
+
         var signs = new ClinicalSignsViewModel();
         // Manually bind from form — avoid ambiguous binding with Signs property
         signs.Apprehension = Request.Form["Signs.Apprehension"] == "true";

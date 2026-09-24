@@ -16,6 +16,10 @@
 
 @await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Relations", Model.Rbse, Model.BatchNumbers, viewDocsUrl))
 
+@{
+    var relationsWarningMsg = TempData["RelationsWarning"] as string;
+    var genericWarningMsg = TempData["Warning"] as string;
+}
 
 @if (TempData["Success"] is string successMsg)
 {
@@ -30,7 +34,7 @@
     </div>
 }
 
-@if (TempData["RelationsWarning"] is string warningMsg)
+@if (!string.IsNullOrWhiteSpace(relationsWarningMsg))
 {
     <div class="govuk-notification-banner" role="region"
          aria-labelledby="relations-warning-title" data-module="govuk-notification-banner">
@@ -38,7 +42,20 @@
             <h2 class="govuk-notification-banner__title" id="relations-warning-title">Important</h2>
         </div>
         <div class="govuk-notification-banner__content">
-            <p class="govuk-body">@warningMsg</p>
+            <p class="govuk-body">@relationsWarningMsg</p>
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(genericWarningMsg))
+{
+    <div class="govuk-notification-banner" role="region"
+         aria-labelledby="relations-generic-warning-title" data-module="govuk-notification-banner">
+        <div class="govuk-notification-banner__header">
+            <h2 class="govuk-notification-banner__title" id="relations-generic-warning-title">Important</h2>
+        </div>
+        <div class="govuk-notification-banner__content">
+            <p class="govuk-body">@genericWarningMsg</p>
         </div>
     </div>
 }

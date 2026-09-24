@@ -37,6 +37,11 @@ public class MoveCaseModel(
     public FarmRecord? CurrentFarm { get; private set; }
     public FarmRecord? NewFarm { get; private set; }
 
+    public int NumberOfCasesOnFarm { get; private set; }
+
+    /// <summary>Legacy showed "This is the only case on this farm so the farm record will be removed" when this was the farm's only case.</summary>
+    public bool FarmWillBeDeleted => NumberOfCasesOnFarm == 1;
+
     public string? RbseError { get; private set; }
     public string? CphhError { get; private set; }
     public string? ErrorMessage { get; private set; }
@@ -147,6 +152,7 @@ public class MoveCaseModel(
             if (!string.IsNullOrWhiteSpace(CaseRecord.Cphh))
             {
                 CurrentFarm = await farmService.GetByCphhAsync(CaseRecord.Cphh);
+                NumberOfCasesOnFarm = await farmService.GetCaseCountByCphhAsync(CaseRecord.Cphh);
             }
         }
         catch (Exception ex)

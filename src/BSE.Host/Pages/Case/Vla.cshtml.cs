@@ -21,6 +21,7 @@ namespace BSE.Host.Pages.Case;
 public class VlaModel(
     ICaseService caseService,
     ICurrentUserService currentUserService,
+    ICaseWizardStateService wizardState,
     ICaseEditDraftStateService caseEditDraftState,
     ILookupDataService lookups,
     IBatchRepository batchRepository,
@@ -45,6 +46,8 @@ public class VlaModel(
 
     public string? ConcurrencyError { get; private set; }
     public IReadOnlyList<BatchNumberEntry> BatchNumbers { get; private set; } = [];
+    public CaseWizardState? PendingBatch { get; private set; }
+    public bool CanEditMainCase { get; private set; }
 
     public IEnumerable<ILookupItem> BirthDateSourceOptions { get; private set; } = [];
     public IEnumerable<ILookupItem> SexOptions            { get; private set; } = [];
@@ -75,8 +78,11 @@ public class VlaModel(
         var record = await caseService.GetCaseAsync(Rbse);
         if (record is null)
         {
-            TempData["Warning"] = $"Case '{Rbse}' not found.";
-            return RedirectToPage("/Home");
+            Case.Rbse = Rbse;
+            SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+            await LoadLookupsAsync();
+            TempData["Warning"] = $"Case '{Rbse}' is not saved yet. Complete Farm first.";
+            return Page();
         }
 
         TempData[string.Format(RowStampKey, Rbse)] = Convert.ToBase64String(record.RowStamp ?? []);
@@ -84,8 +90,11 @@ public class VlaModel(
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
 
         var batchTask = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
-        await Task.WhenAll(LoadLookupsAsync(), batchTask);
+        var pendingBatchTask = wizardState.GetAsync();
+        await Task.WhenAll(LoadLookupsAsync(), batchTask, pendingBatchTask);
         BatchNumbers = (await batchTask).ToList().AsReadOnly();
+        PendingBatch = await pendingBatchTask;
+        ApplyLegacyVlaEditPermissions();
         await LoadOrInitializeOwnersDraftAsync();
 
         return Page();
@@ -98,6 +107,25 @@ public class VlaModel(
 
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
         Rbse = caseRbse;
+
+        var batchTask = batchRepository.GetBatchNumbersByRbseAsync(caseRbse);
+        var pendingBatchTask = wizardState.GetAsync();
+        await Task.WhenAll(batchTask, pendingBatchTask);
+        BatchNumbers = (await batchTask).ToList().AsReadOnly();
+        PendingBatch = await pendingBatchTask;
+        ApplyLegacyVlaEditPermissions();
+        if (!CanEditMainCase)
+            return RedirectToPage(new { rbse = caseRbse });
+
+        var persistedRecord = await caseService.GetCaseAsync(caseRbse);
+        if (persistedRecord is null)
+        {
+            Case.Rbse = caseRbse;
+            SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+            await LoadLookupsAsync();
+            TempData["Warning"] = $"Case '{caseRbse}' is not saved yet. Complete Farm first.";
+            return Page();
+        }
 
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadLookupsAsync();
@@ -116,7 +144,6 @@ public class VlaModel(
 
         if (!ModelState.IsValid)
         {
-            BatchNumbers = (await batchRepository.GetBatchNumbersByRbseAsync(caseRbse)).ToList().AsReadOnly();
             await LoadOrInitializeOwnersDraftAsync();
             return Page();
         }
@@ -142,7 +169,6 @@ public class VlaModel(
             var current = await caseService.GetCaseAsync(Rbse);
             if (current is not null)
                 TempData[string.Format(RowStampKey, caseRbse)] = Convert.ToBase64String(current.RowStamp ?? []);
-            BatchNumbers = (await batchRepository.GetBatchNumbersByRbseAsync(caseRbse)).ToList().AsReadOnly();
             await LoadOrInitializeOwnersDraftAsync();
             return Page();
         }
@@ -157,7 +183,6 @@ public class VlaModel(
                 _                              => $"Update failed: {result}"
             };
             ModelState.AddModelError("", message);
-            BatchNumbers = (await batchRepository.GetBatchNumbersByRbseAsync(caseRbse)).ToList().AsReadOnly();
             await LoadOrInitializeOwnersDraftAsync();
             return Page();
         }
@@ -184,7 +209,15 @@ public class VlaModel(
         Rbse = caseRbse;
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadLookupsAsync();
-        BatchNumbers = (await batchRepository.GetBatchNumbersByRbseAsync(caseRbse)).ToList().AsReadOnly();
+        var batchTask = batchRepository.GetBatchNumbersByRbseAsync(caseRbse);
+        var pendingBatchTask = wizardState.GetAsync();
+        await Task.WhenAll(batchTask, pendingBatchTask);
+        BatchNumbers = (await batchTask).ToList().AsReadOnly();
+        PendingBatch = await pendingBatchTask;
+        ApplyLegacyVlaEditPermissions();
+        if (!CanEditMainCase)
+            return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
+
         await LoadOrInitializeOwnersDraftAsync();
 
         var owner = StagedOtherOwners.FirstOrDefault(o => (o.Id ?? 0) == ownerId);
@@ -208,7 +241,15 @@ public class VlaModel(
         Rbse = caseRbse;
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadLookupsAsync();
-        BatchNumbers = (await batchRepository.GetBatchNumbersByRbseAsync(caseRbse)).ToList().AsReadOnly();
+        var batchTask = batchRepository.GetBatchNumbersByRbseAsync(caseRbse);
+        var pendingBatchTask = wizardState.GetAsync();
+        await Task.WhenAll(batchTask, pendingBatchTask);
+        BatchNumbers = (await batchTask).ToList().AsReadOnly();
+        PendingBatch = await pendingBatchTask;
+        ApplyLegacyVlaEditPermissions();
+        if (!CanEditMainCase)
+            return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
+
         await LoadOrInitializeOwnersDraftAsync();
 
         var normalizedCphh = string.IsNullOrWhiteSpace(NewOwnerCphh) ? null : CphhNormalizer.Normalize(NewOwnerCphh);
@@ -244,7 +285,15 @@ public class VlaModel(
         Rbse = caseRbse;
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadLookupsAsync();
-        BatchNumbers = (await batchRepository.GetBatchNumbersByRbseAsync(caseRbse)).ToList().AsReadOnly();
+        var batchTask = batchRepository.GetBatchNumbersByRbseAsync(caseRbse);
+        var pendingBatchTask = wizardState.GetAsync();
+        await Task.WhenAll(batchTask, pendingBatchTask);
+        BatchNumbers = (await batchTask).ToList().AsReadOnly();
+        PendingBatch = await pendingBatchTask;
+        ApplyLegacyVlaEditPermissions();
+        if (!CanEditMainCase)
+            return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
+
         await LoadOrInitializeOwnersDraftAsync();
 
         var normalizedCphh = string.IsNullOrWhiteSpace(EditOwnerCphh) ? null : CphhNormalizer.Normalize(EditOwnerCphh);
@@ -279,6 +328,15 @@ public class VlaModel(
             return Forbid();
 
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
+        var batchTask = batchRepository.GetBatchNumbersByRbseAsync(caseRbse);
+        var pendingBatchTask = wizardState.GetAsync();
+        await Task.WhenAll(batchTask, pendingBatchTask);
+        BatchNumbers = (await batchTask).ToList().AsReadOnly();
+        PendingBatch = await pendingBatchTask;
+        ApplyLegacyVlaEditPermissions();
+        if (!CanEditMainCase)
+            return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
+
         var draft = await GetOrCreateOwnersDraftAsync(caseRbse);
         var owner = draft.OtherOwners.FirstOrDefault(o => (o.Id ?? 0) == ownerId);
         if (owner is null)
@@ -309,6 +367,24 @@ public class VlaModel(
                 ? (ODir == "desc" ? allOwners.OrderByDescending(o => o.Name) : allOwners.OrderBy(o => o.Name))
                 : (ODir == "desc" ? allOwners.OrderByDescending(o => o.Type) : allOwners.OrderBy(o => o.Type));
         OtherOwners = sorted.Skip((OPage - 1) * OwnersPageSize).Take(OwnersPageSize).ToList().AsReadOnly();
+    }
+
+    private void ApplyLegacyVlaEditPermissions()
+    {
+        // Legacy CaseEntryVLA uses IsVLAAllowedMainCaseEdit(Session):
+        // selected batch present OR existing batch numbers linked to case.
+        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
+        {
+            CanEditMainCase = false;
+            return;
+        }
+
+        var hasCurrentBatchSelection = PendingBatch is not null
+            && string.Equals(RbseHelper.ParseToRaw(PendingBatch.RbseNumber), RbseHelper.ParseToRaw(Rbse), StringComparison.OrdinalIgnoreCase)
+            && !string.IsNullOrWhiteSpace(PendingBatch.BatchNumber);
+
+        var hasAnyBatchHistory = BatchNumbers.Count > 0;
+        CanEditMainCase = hasCurrentBatchSelection || hasAnyBatchHistory;
     }
 
     private async Task<CaseEditDraftState> GetOrCreateOwnersDraftAsync(string caseRbse)

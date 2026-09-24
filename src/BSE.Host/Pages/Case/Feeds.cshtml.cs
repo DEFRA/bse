@@ -250,6 +250,13 @@ public class FeedsModel(
 
         Rbse = RbseHelper.ParseToRaw(Rbse);
 
+        var caseRecord = await caseService.GetCaseAsync(Rbse);
+        if (caseRecord is null)
+        {
+            TempData["Warning"] = $"Case '{Rbse}' is not saved yet. Complete Farm first.";
+            return RedirectToPage(new { rbse = Rbse });
+        }
+
         await LoadAsync();
         await LoadOrInitializeDraftStateAsync();
 
