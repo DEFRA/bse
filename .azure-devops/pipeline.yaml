@@ -347,8 +347,6 @@ stages:
   variables:
     - name: appName
       value: 'PREBSEWEBAW1401'
-    - name: resourceGroup
-      value: 'PREBSEINFRG1401'
     - name: tenantId
       value: '770a2450-0227-4c62-90c7-4e38537f1102'
     - name: appId
@@ -382,16 +380,24 @@ stages:
               inlineScript: |
                 set -euo pipefail
 
-                PLAN_ID=$(az webapp show -g "$(resourceGroup)" -n "$(appName)" --query appServicePlanId -o tsv)
-                read -r ZR CAP SKU < <(az appservice plan show --ids "$PLAN_ID" \
-                  --query "[zoneRedundant, sku.capacity, sku.name]" -o tsv)
+                PLAN_ID=$(az webapp list --query "[?name=='$(appName)'].serverFarmId | [0]" -o tsv)
+
+                if [ -z "$PLAN_ID" ]; then
+                  echo "##vso[task.logissue type=error]Could not find $(appName) or its App Service Plan in this subscription."
+                  exit 1
+                fi
+
+                ZR=$(az appservice plan show --ids "$PLAN_ID" --query "zoneRedundant" -o tsv)
+                CAP=$(az appservice plan show --ids "$PLAN_ID" --query "sku.capacity" -o tsv)
+                SKU=$(az appservice plan show --ids "$PLAN_ID" --query "sku.name" -o tsv)
 
                 echo "Plan: ${PLAN_ID##*/}  SKU: $SKU  instances: $CAP  zoneRedundant: $ZR"
 
-                if [ "$ZR" != "true" ]; then
-                  echo "##vso[task.logissue type=error]App Service Plan is not zone redundant. Refusing to deploy to $(appName)."
+                if [ "${ZR,,}" != "true" ]; then
+                  echo "##vso[task.logissue type=error]App Service Plan ${PLAN_ID##*/} is not zone redundant. Refusing to deploy to $(appName)."
                   exit 1
                 fi
+
                 if [ "$CAP" -lt 2 ]; then
                   echo "##vso[task.logissue type=error]Zone-redundant plan has fewer than 2 instances."
                   exit 1
