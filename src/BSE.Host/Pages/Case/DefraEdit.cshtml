@@ -147,7 +147,11 @@
             <div class="defra-legacy-field @(eFormA is not null ? "govuk-form-group--error" : "")">
                 <label asp-for="Case.FormADate" class="govuk-label">Form A Date</label>
                 @if (eFormA is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eFormA</p> }
-                <input asp-for="Case.FormADate" type="date" class="govuk-input defra-legacy-date @(eFormA is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.FormADate)" />
+                <input asp-for="Case.FormADate" type="date" class="govuk-input defra-legacy-date @(eFormA is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.FormADate)" disabled="@(Model.IsNonGbCase ? "disabled" : null)" />
+                @if (Model.IsNonGbCase)
+                {
+                    <input type="hidden" asp-for="Case.FormADate" />
+                }
             </div>
             <div class="defra-legacy-field @(eFormAResub is not null ? "govuk-form-group--error" : "")">
                 <label asp-for="Case.FormAResubmittedDate" class="govuk-label">Form A Resubmitted Date</label>

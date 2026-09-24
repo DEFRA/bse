@@ -1724,6 +1724,18 @@
     background: #f3f2f1;
 }
 
+.bse-farm-legacy-top__row--lookup {
+    grid-template-columns: 230px 230px max-content;
+    column-gap: 12px;
+}
+
+.bse-farm-legacy-top__lookup {
+    margin-bottom: 0;
+    align-self: center;
+    justify-self: start;
+    width: auto;
+}
+
 .bse-farm-legacy__section {
     border-top: 1px solid #b1b4b6;
     padding-top: 12px;
@@ -2202,6 +2214,100 @@
 
 .bse-farm-legacy__field .govuk-input,
 .bse-farm-legacy__field .govuk-select {
+    margin-bottom: 0;
+}
+
+/* Farm-detail fields are locked until a CPHH has been looked up (legacy EnableFarmControls
+   parity). Uses readonly/pointer-events rather than the disabled attribute so populated
+   values still render and still submit with the form. */
+.bse-farm-legacy__input[readonly] {
+    background-color: #f3f2f1;
+    color: #505a5f;
+}
+
+.bse-non-gb-case-form__locked {
+    background-color: #f3f2f1;
+    color: #505a5f;
+    pointer-events: none;
+}
+
+/* Non-GB case creation (legacy parity): reuse shared farm legacy geometry with
+   specific eartag and lookup control sizing. */
+.bse-non-gb-case-form {
+    max-width: 1080px;
+    margin-top: 0;
+}
+
+.bse-non-gb-case-form .bse-farm-legacy__section {
+    margin-top: 0;
+}
+
+.bse-non-gb-case-form .govuk-form-group {
+    display: grid;
+    grid-template-columns: 235px 252px;
+    column-gap: 10px;
+    align-items: center;
+    margin-bottom: 0;
+}
+
+.bse-non-gb-case-form .govuk-label {
+    white-space: nowrap;
+    margin-bottom: 0;
+    grid-column: 1;
+}
+
+.bse-non-gb-case-form .govuk-error-message {
+    margin-bottom: 0;
+    grid-column: 2;
+}
+
+.bse-non-gb-case-form .govuk-form-group > .govuk-input,
+.bse-non-gb-case-form .govuk-form-group > .govuk-select,
+.bse-non-gb-case-form .govuk-form-group > .bse-non-gb-case-form__lookup-row,
+.bse-non-gb-case-form .govuk-form-group > .bse-non-gb-case-form__eartag {
+    grid-column: 2;
+}
+
+.bse-non-gb-case-form__eartag {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.bse-non-gb-case-form__eartag-country {
+    width: 52px;
+    max-width: 52px;
+}
+
+.bse-non-gb-case-form__eartag-herdmark {
+    width: 88px;
+    max-width: 88px;
+}
+
+.bse-non-gb-case-form__eartag-animal {
+    width: 116px;
+    max-width: 116px;
+}
+
+.bse-non-gb-case-form__lookup-row {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: nowrap;
+}
+
+.bse-non-gb-case-form__lookup-btn {
+    margin-bottom: 0;
+    min-width: 156px;
+}
+
+.bse-non-gb-case-form__actions {
+    justify-content: flex-end;
+}
+
+.bse-non-gb-case-form__actions .govuk-button,
+.bse-non-gb-case-form__actions .govuk-link,
+.bse-non-gb-case-form__actions a {
     margin-bottom: 0;
 }
 

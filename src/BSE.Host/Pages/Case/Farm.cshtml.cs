@@ -4,6 +4,8 @@ using BSE.Host.Models;
 using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Repositories;
 using BSE.Modules.Batch.Services;
+using BSE.Modules.CaseManagement.Commands;
+using BSE.Modules.CaseManagement.Enums;
 using BSE.Modules.CaseManagement.Models;
 using BSE.Modules.CaseManagement.Services;
 using BSE.Modules.FarmManagement.Models;
@@ -47,6 +49,39 @@ public class FarmModel(
     [BindProperty(SupportsGet = true)]
     public string Rbse { get; set; } = string.Empty;
 
+    // ── Create mode — shown instead of the tabs when no case exists yet for this RBSE
+    // (legacy Home.aspx redirected a brand-new GB case straight to CaseEntryFarm.aspx) ──
+    [BindProperty(SupportsGet = true)] public string NewCphh { get; set; } = "";
+    [BindProperty(SupportsGet = true)] public string? SelectedCphh { get; set; }
+    [BindProperty(SupportsGet = true)] public bool ForceNewFarmDetails { get; set; }
+    [BindProperty] public string? NewSurvey { get; set; }
+    [BindProperty] public string? NewSex { get; set; }
+    [BindProperty] public string? NewBreed { get; set; }
+    [BindProperty] public string? NewEartagCountry { get; set; }
+    [BindProperty] public string? NewEartagHerdmark { get; set; }
+    [BindProperty] public string? NewEartag { get; set; }
+    [BindProperty] public DateTime? NewBirthDate { get; set; }
+    [BindProperty] public DateTime? NewFormADate { get; set; }
+    [BindProperty] public string? NewFate { get; set; }
+    [BindProperty] public string? NewOrigin { get; set; }
+    [BindProperty] public string? NewNotes { get; set; }
+    [BindProperty] public string? NewCaseType { get; set; }
+    [BindProperty] public string? NewOwnerName { get; set; }
+    [BindProperty] public string? NewAddress1 { get; set; }
+    [BindProperty] public string? NewAddress2 { get; set; }
+    [BindProperty] public string? NewAddress3 { get; set; }
+    [BindProperty] public string? NewPostcode { get; set; }
+    [BindProperty] public string? NewParish { get; set; }
+    [BindProperty] public string? NewCounty { get; set; }
+    [BindProperty] public string? NewAho { get; set; }
+    [BindProperty] public int? NewAdnsRegionId { get; set; }
+
+    /// <summary>True once a Farm lookup has confirmed the CPHH has no existing farm — shows the farm fields.</summary>
+    public bool RequireFarmDetails { get; private set; }
+    public IReadOnlyList<LookupItem> NewCountyOptions { get; private set; } = [];
+    public IReadOnlyList<LookupItem> NewAhoOptions { get; private set; } = [];
+    public IReadOnlyList<LuADNSRegion> NewAdnsOptions { get; private set; } = [];
+
     public CaseRecord? Case { get; private set; }
     public FarmRecord? Farm { get; private set; }
     public int ConfirmedCaseCount { get; private set; }
@@ -60,6 +95,20 @@ public class FarmModel(
     public string? AuthorityCountyName { get; private set; }
     public string? LocalAuthorityName { get; private set; }
     public IReadOnlyList<BatchNumberEntry> BatchNumbers { get; private set; } = [];
+    public bool CanEditJointControls { get; private set; }
+    public bool CanEditVlaControls { get; private set; }
+    public bool CanEditCreateMode { get; private set; }
+
+    /// <summary>Legacy MakeDEFRAControlsWritable/ReadOnly: every group except DEFRA Viewer can edit.</summary>
+    public bool CanEditDefraControls { get; private set; }
+
+    /// <summary>Legacy DEFRAViewerEnable(): shows the "CONFIDENTIAL DATA" banner and locks every field.</summary>
+    public bool IsConfidentialViewOnly => !CanEditDefraControls;
+
+    /// <summary>Legacy CPHH1.Enabled: DEFRA Data Entry/Maintenance and VLA Maintenance can look up a
+    /// different farm for this case (VLA Data Entry and DEFRA Viewer cannot). Routed via the existing,
+    /// validated /Case/MoveCase page rather than re-implementing farm-reassignment inline.</summary>
+    public bool CanChangeCphh => User.IsInRole("DEFRAMaintenance");
     private List<FarmRelationRecord> PersistedLinkedFarms { get; set; } = [];
     private List<HerdSizeRecord> PersistedHerdSizes { get; set; } = [];
 
@@ -126,8 +175,233 @@ public class FarmModel(
     {
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadAsync();
+
+        if (Case is null)
+        {
+            CanEditCreateMode = CanEditCreateModeForCurrentUser();
+            ApplyLegacyEditPermissions();
+            EditableFarm ??= new FarmEditViewModel();
+
+            if (string.IsNullOrWhiteSpace(EditableFarm.CPHH))
+            {
+                var existingDraft = await farmDraftState.GetAsync(Rbse);
+                if (!string.IsNullOrWhiteSpace(existingDraft?.Cphh))
+                    EditableFarm.CPHH = CphhNormalizer.Normalize(existingDraft.Cphh);
+            }
+
+            if (string.IsNullOrWhiteSpace(EditableFarm.CPHH) && !string.IsNullOrWhiteSpace(NewCphh))
+                EditableFarm.CPHH = CphhNormalizer.Normalize(NewCphh);
+
+            if (!string.IsNullOrWhiteSpace(SelectedCphh))
+            {
+                var selectedFarm = await farmService.GetByCphhAsync(CphhNormalizer.Normalize(SelectedCphh));
+                if (selectedFarm is not null)
+                {
+                    EditableFarm = FarmEditViewModel.FromRecord(selectedFarm);
+                    RequireFarmDetails = false;
+                }
+            }
+            else if (ForceNewFarmDetails && !string.IsNullOrWhiteSpace(NewCphh))
+            {
+                EditableFarm.CPHH = CphhNormalizer.Normalize(NewCphh);
+                RequireFarmDetails = true;
+            }
+            else if (!string.IsNullOrWhiteSpace(EditableFarm.CPHH))
+            {
+                EditableFarm.CPHH = CphhNormalizer.Normalize(EditableFarm.CPHH);
+            }
+
+            if (Farm is null && !string.IsNullOrWhiteSpace(EditableFarm.CPHH))
+                await LoadFromFarmCphhAsync(EditableFarm.CPHH);
+
+            if (Farm is not null)
+                await LoadOrInitializeDraftStateAsync();
+
+            await LoadLookupsForEditAsync();
+            return Page();
+        }
+
         await LoadOrInitializeDraftStateAsync();
         return Page();
+    }
+
+    /// <summary>Creates the case (and its farm, if the CPHH has none yet) for a brand-new GB case
+    /// opened from the Home page — mirrors legacy CaseEntryFarm.aspx's create-mode behaviour.</summary>
+    public async Task<IActionResult> OnPostCreateCaseAsync()
+    {
+        var postedEditableFarm = EditableFarm;
+
+        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+        await LoadAsync();
+        EditableFarm = postedEditableFarm ?? EditableFarm;
+
+        if (!CanEditCreateModeForCurrentUser())
+            return Forbid();
+
+        if (string.IsNullOrWhiteSpace(EditableFarm?.CPHH))
+            ModelState.AddModelError("EditableFarm.CPHH", "Enter a CPHH.");
+
+        var normalisedCphh = CphhNormalizer.Normalize(EditableFarm?.CPHH);
+        if (string.IsNullOrWhiteSpace(normalisedCphh))
+            normalisedCphh = CphhNormalizer.Normalize(NewCphh);
+
+        FarmRecord? farm = null;
+        if (!string.IsNullOrWhiteSpace(normalisedCphh))
+            farm = await farmService.GetByCphhAsync(normalisedCphh);
+
+        RequireFarmDetails = farm is null;
+
+        EditableFarm ??= new FarmEditViewModel();
+        EditableFarm.CPHH = normalisedCphh;
+
+        if (RequireFarmDetails)
+        {
+            if (string.IsNullOrWhiteSpace(EditableFarm.OwnerName))
+                ModelState.AddModelError("EditableFarm.OwnerName", "Enter an owner name for the farm.");
+            if (string.IsNullOrWhiteSpace(EditableFarm.Address1))
+                ModelState.AddModelError("EditableFarm.Address1", "Enter the first line of the farm address.");
+            if (string.IsNullOrWhiteSpace(EditableFarm.Parish))
+                ModelState.AddModelError("EditableFarm.Parish", "Enter a parish for the farm.");
+            if (string.IsNullOrWhiteSpace(EditableFarm.County))
+                ModelState.AddModelError("EditableFarm.County", "Specify a county for the farm.");
+            if (string.IsNullOrWhiteSpace(EditableFarm.AHO))
+                ModelState.AddModelError("EditableFarm.AHO", "Specify an AHO for the farm.");
+            if (EditableFarm.ADNSRegionID is null)
+                ModelState.AddModelError("EditableFarm.ADNSRegionID", "Specify an ADNS region for the farm.");
+        }
+
+        if (EditableFarm.MapReference is { Length: >= 8 } mapRef
+            && EditableFarm.CPHH.Length >= 5
+            && !await MapReferenceWithinParishAsync(EditableFarm.CPHH, mapRef))
+        {
+            ModelState.AddModelError("EditableFarm.MapRef1", "Map reference does not lie within the parish boundaries for this CPHH.");
+        }
+
+        if (!IsAdnsCompatibleWithAuthoritySelection(EditableFarm))
+        {
+            ModelState.AddModelError("EditableFarm.ADNSRegionID", "ADNS region does not match the selected local authority. Please select ADNS region again.");
+        }
+
+        if (!ModelState.IsValid)
+        {
+            await LoadLookupsForEditAsync();
+            return Page();
+        }
+
+        var userId = await currentUser.GetUserIdAsync();
+
+        if (RequireFarmDetails)
+        {
+            await farmService.AddAsync(EditableFarm.ToAddCommand(), userId);
+        }
+        else
+        {
+            await farmService.UpdateAsync(EditableFarm.ToUpdateCommand(farm?.RowStamp), userId);
+        }
+
+        // Legacy validated the batch on the Home page before redirecting to CaseEntryFarm.aspx.
+        var pendingBatch = await wizardState.GetAsync();
+        int batchId;
+        if (pendingBatch is not null && string.Equals(pendingBatch.RbseNumber, Rbse, StringComparison.OrdinalIgnoreCase))
+        {
+            batchId = pendingBatch.BatchId;
+        }
+        else
+        {
+            var batch = await batchService.GetOrCreateBatchNumberAsync();
+            batchId = batch.BatchId;
+        }
+
+        var addCase = new AddCaseCommand(
+            Rbse: Rbse.Trim(), Cphh: normalisedCphh,
+            EartagCountry: NewEartagCountry, EartagHerdmark: NewEartagHerdmark, Eartag: NewEartag,
+            PreviousEartag: null, Bse1ReceivedDate: null, FormADate: NewFormADate,
+            FormAResubmittedDate: null, FormBDate: null, Fate: NewFate, FormCDate: null,
+            IsPurchaserBse1Received: false, IsBreederBse1Received: false,
+            IsVendor1Bse1Received: false, IsHomebredBse1Received: false,
+            IsSummarySheetReceived: false, IsPaperworkComplete: false,
+            ReportedLocation: null, Survey: NewSurvey, Notes: NewNotes,
+            BirthDate: NewBirthDate, IsBirthDateEst: NewBirthDate.HasValue ? false : null, DamStatus: null,
+            BirthDateSource: null, ValuationAge: null, Sex: NewSex, Breed: NewBreed,
+            Origin: NewOrigin, PurchaseDate: null, PurchaseAgeInMonths: null,
+            PurchasedCounty: null, HerdEntryDate: null, OnsetDate: null,
+            IsOnsetDateEst: null, MonthsPregnant: null, MonthsPostCalving: null,
+            OnsetAgeInMonths: null, SlaughterDate: null, AlternateDiagnosis: null,
+            LabComment: null, CaseType: NewCaseType);
+
+        var command = new UpdateCaseDetailsCommand(
+            addCase, batchId,
+            Clinical: null, Bab: null,
+            Feeds: [], Tests: [], OtherOwners: [],
+            DamSire: null, ClinicalVisits: []);
+
+        var result = await caseService.CreateCaseAsync(command, userId);
+
+        if (result != AddCaseResult.Success)
+        {
+            var message = result switch
+            {
+                AddCaseResult.DuplicateRbse => $"Case '{Rbse}' already exists.",
+                AddCaseResult.InsertError => "Database error during insert.",
+                AddCaseResult.AuditLogError => "Audit log error during create.",
+                _ => $"Failed to create case: {result}"
+            };
+            ModelState.AddModelError("", message);
+            await LoadLookupsForEditAsync();
+            return Page();
+        }
+
+        await farmDraftState.ClearAsync(Rbse);
+        TempData["SuccessMessage"] = $"Case {Rbse} created successfully.";
+        return RedirectToPage("/Case/Farm", new { rbse = Rbse.Trim() });
+    }
+
+    public async Task<IActionResult> OnPostLookupNewCaseAsync()
+    {
+        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+        await LoadAsync();
+        if (!CanEditCreateModeForCurrentUser())
+            return Forbid();
+
+        var normalisedCphh = CphhNormalizer.Normalize(EditableFarm?.CPHH);
+
+        if (IsNonGbFarmCphh(normalisedCphh))
+        {
+            ModelState.AddModelError("EditableFarm.CPHH", "The CPHH you have entered is for a non-GB Farm.");
+            EditableFarm ??= new FarmEditViewModel();
+            EditableFarm.CPHH = normalisedCphh;
+            await LoadLookupsForEditAsync();
+            return Page();
+        }
+
+        if (!string.IsNullOrWhiteSpace(normalisedCphh))
+        {
+            var farm = await farmService.GetByCphhAsync(normalisedCphh);
+            if (farm is not null)
+            {
+                RequireFarmDetails = false;
+                EditableFarm = FarmEditViewModel.FromRecord(farm);
+                await LoadLookupsForEditAsync();
+                return Page();
+            }
+        }
+
+        return RedirectToPage("/Case/PickFarm", new { rbse = Rbse, cphh = normalisedCphh });
+    }
+
+    private async Task LoadNewCaseLookupsAsync()
+    {
+        NewCountyOptions = (await lookups.GetLookupAsync(LookupTableId.BSECounty)).ToList();
+        NewAhoOptions = (await lookups.GetLookupAsync(LookupTableId.AHO)).ToList();
+        NewAdnsOptions = (await lookups.GetADNSRegionsAsync()).ToList();
+    }
+
+    private bool CanEditCreateModeForCurrentUser()
+    {
+        if (User.IsInRole("DEFRAAccess") && !User.IsInRole("DataEntry"))
+            return false;
+
+        return User.IsInRole("DataEntry") || User.IsInRole("VLAMaintenance");
     }
 
     public async Task<IActionResult> OnPostAddLinkedFarmRowAsync()
@@ -139,6 +413,10 @@ public class FarmModel(
 
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadAsync();
+
+        if (!CanEditDefraControls)
+            return RedirectToPage(new { rbse = Rbse });
+
         var draft = await LoadOrInitializeDraftStateAsync();
 
         var normalisedCphh = CphhNormalizer.Normalize(postedCphh);
@@ -191,6 +469,8 @@ public class FarmModel(
         await LoadOrInitializeDraftStateAsync();
         EditableFarm = postedEditableFarm;
         EditableFarmRowStampBase64 = postedFarmRowStamp;
+
+        ApplyLegacyJointAndVlaEditGuards();
 
         if (!TryValidateStagedCollections())
         {
@@ -267,6 +547,10 @@ public class FarmModel(
 
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadAsync();
+
+        if (!CanEditDefraControls)
+            return RedirectToPage(new { rbse = Rbse });
+
         var draft = await LoadOrInitializeDraftStateAsync();
 
         var item = draft.LinkedFarms.FirstOrDefault(x => x.ClientKey == clientKey);
@@ -289,6 +573,10 @@ public class FarmModel(
 
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadAsync();
+
+        if (!CanEditDefraControls)
+            return RedirectToPage(new { rbse = Rbse });
+
         var draft = await LoadOrInitializeDraftStateAsync();
 
         var item = draft.LinkedFarms.FirstOrDefault(x => x.ClientKey == clientKey);
@@ -334,6 +622,10 @@ public class FarmModel(
 
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadAsync();
+
+        if (!CanEditDefraControls)
+            return RedirectToPage(new { rbse = Rbse });
+
         var draft = await LoadOrInitializeDraftStateAsync();
         var item = draft.LinkedFarms.FirstOrDefault(x => x.ClientKey == clientKey);
         if (item is not null)
@@ -752,10 +1044,17 @@ public class FarmModel(
     private async Task LoadAsync()
     {
         Case = await caseService.GetCaseAsync(Rbse);
+        CanEditCreateMode = Case is null && CanEditCreateModeForCurrentUser();
         var batchTask = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
-        await Task.WhenAll(LoadFromCase(), batchTask);
+
+        var farmCphh = Case?.Cphh;
+        if (string.IsNullOrWhiteSpace(farmCphh))
+            farmCphh = CphhNormalizer.Normalize(EditableFarm?.CPHH ?? SelectedCphh ?? NewCphh);
+
+        await Task.WhenAll(LoadFromFarmCphhAsync(farmCphh), batchTask);
         BatchNumbers = (await batchTask).ToList().AsReadOnly();
         PendingBatch = await wizardState.GetAsync();
+        ApplyLegacyEditPermissions();
 
         if (Farm is not null)
         {
@@ -767,9 +1066,72 @@ public class FarmModel(
         }
     }
 
-    private async Task LoadFromCase()
+    private void ApplyLegacyEditPermissions()
     {
-        if (Case?.Cphh is not { } cphh) return;
+        // Mirrors legacy CaseEntryFarm:
+        // - DEFRA Data Entry / DEFRA Maintenance: joint controls writable, VLA controls read-only.
+        // - VLA Data Entry / VLA Maintenance: joint + VLA controls writable only when
+        //   IsVLAAllowedMainCaseEdit(Session) is true.
+        // - everyone else: read-only.
+        if (!User.IsInRole("DataEntry"))
+        {
+            CanEditJointControls = false;
+            CanEditVlaControls = false;
+            CanEditDefraControls = false;
+            return;
+        }
+
+        CanEditDefraControls = true;
+
+        var isVlaGroup = User.IsInRole("VLAAccess");
+        if (!isVlaGroup)
+        {
+            CanEditJointControls = true;
+            CanEditVlaControls = false;
+            return;
+        }
+
+        var canVlaMainEdit = IsVlaAllowedMainCaseEdit();
+        CanEditJointControls = canVlaMainEdit;
+        CanEditVlaControls = canVlaMainEdit;
+    }
+
+    private bool IsVlaAllowedMainCaseEdit()
+    {
+        // Legacy Common.vb IsVLAAllowedMainCaseEdit(Session):
+        // Session[SV_BatchNumber] <> "" OR Session[SV_BatchNumbersTable].Rows.Count > 0
+        var hasCurrentBatchSelection = PendingBatch is not null
+            && string.Equals(RbseHelper.ParseToRaw(PendingBatch.RbseNumber), RbseHelper.ParseToRaw(Rbse), StringComparison.OrdinalIgnoreCase)
+            && !string.IsNullOrWhiteSpace(PendingBatch.BatchNumber);
+
+        var hasAnyBatchHistory = BatchNumbers.Count > 0;
+        return hasCurrentBatchSelection || hasAnyBatchHistory;
+    }
+
+    private void ApplyLegacyJointAndVlaEditGuards()
+    {
+        if (EditableFarm is null || Farm is null)
+            return;
+
+        if (!CanEditJointControls)
+        {
+            EditableFarm.Herdmark1 = Farm.Herdmark1;
+            EditableFarm.Herdmark2 = Farm.Herdmark2;
+            EditableFarm.Herdmark3 = Farm.Herdmark3;
+            EditableFarm.NumericHerdmark1 = Farm.NumericHerdmark1;
+            EditableFarm.NumericHerdmark2 = Farm.NumericHerdmark2;
+        }
+
+        if (!CanEditVlaControls)
+        {
+            EditableFarm.PedigreeType = Farm.PedigreeType;
+        }
+    }
+
+    private async Task LoadFromFarmCphhAsync(string? cphh)
+    {
+        if (string.IsNullOrWhiteSpace(cphh))
+            return;
 
         var farmTask        = farmService.GetByCphhAsync(cphh);
         var confirmedTask   = farmService.GetConfirmedCaseCountAsync(cphh);

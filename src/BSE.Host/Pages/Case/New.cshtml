@@ -41,6 +41,72 @@
         <input asp-for="Cphh" class="govuk-input govuk-!-width-one-half" aria-describedby="cphh-hint" />
         <span asp-validation-for="Cphh" class="govuk-error-message"></span>
     </div>
+
+    @if (Model.RequireFarmDetails)
+    {
+        <h2 class="govuk-heading-m">Farm details</h2>
+        <p class="govuk-body">No farm record exists for this CPHH yet — enter its details below to create one.</p>
+        <div class="govuk-form-group">
+            <label asp-for="OwnerName" class="govuk-label">Owner name</label>
+            <input asp-for="OwnerName" class="govuk-input govuk-!-width-two-thirds" />
+            <span asp-validation-for="OwnerName" class="govuk-error-message"></span>
+        </div>
+        <div class="govuk-form-group">
+            <label asp-for="Address1" class="govuk-label">Address line 1</label>
+            <input asp-for="Address1" class="govuk-input govuk-!-width-two-thirds" />
+            <span asp-validation-for="Address1" class="govuk-error-message"></span>
+        </div>
+        <div class="govuk-form-group">
+            <label asp-for="Address2" class="govuk-label">Address line 2</label>
+            <input asp-for="Address2" class="govuk-input govuk-!-width-two-thirds" />
+        </div>
+        <div class="govuk-form-group">
+            <label asp-for="Address3" class="govuk-label">Address line 3</label>
+            <input asp-for="Address3" class="govuk-input govuk-!-width-two-thirds" />
+        </div>
+        <div class="govuk-form-group">
+            <label asp-for="Postcode" class="govuk-label">Postcode</label>
+            <input asp-for="Postcode" class="govuk-input govuk-input--width-10" />
+        </div>
+        <div class="govuk-form-group">
+            <label asp-for="Parish" class="govuk-label">Parish</label>
+            <input asp-for="Parish" class="govuk-input govuk-!-width-one-half" />
+            <span asp-validation-for="Parish" class="govuk-error-message"></span>
+        </div>
+        <div class="govuk-form-group">
+            <label asp-for="County" class="govuk-label">County</label>
+            <select asp-for="County" class="govuk-select">
+                <option value=""></option>
+                @foreach (var option in Model.CountyOptions)
+                {
+                    <option value="@option.Code">@option.Description</option>
+                }
+            </select>
+            <span asp-validation-for="County" class="govuk-error-message"></span>
+        </div>
+        <div class="govuk-form-group">
+            <label asp-for="Aho" class="govuk-label">AHO</label>
+            <select asp-for="Aho" class="govuk-select">
+                <option value=""></option>
+                @foreach (var option in Model.AhoOptions)
+                {
+                    <option value="@option.Code">@option.Description</option>
+                }
+            </select>
+            <span asp-validation-for="Aho" class="govuk-error-message"></span>
+        </div>
+        <div class="govuk-form-group">
+            <label asp-for="AdnsRegionId" class="govuk-label">ADNS region</label>
+            <select asp-for="AdnsRegionId" class="govuk-select">
+                <option value=""></option>
+                @foreach (var option in Model.AdnsOptions)
+                {
+                    <option value="@option.Id">@option.Name</option>
+                }
+            </select>
+            <span asp-validation-for="AdnsRegionId" class="govuk-error-message"></span>
+        </div>
+    }
     <div class="govuk-form-group">
         <label asp-for="Survey" class="govuk-label">Survey</label>
         <input asp-for="Survey" class="govuk-input govuk-!-width-one-third" />
@@ -64,6 +130,7 @@
     <div class="govuk-form-group">
         <label asp-for="Eartag" class="govuk-label">Eartag</label>
         <input asp-for="Eartag" class="govuk-input govuk-!-width-two-thirds" />
+        <span asp-validation-for="Eartag" class="govuk-error-message"></span>
     </div>
     <div class="govuk-form-group">
         <label asp-for="BirthDate" class="govuk-label">Birth date</label>
@@ -72,6 +139,7 @@
     <div class="govuk-form-group">
         <label asp-for="FormADate" class="govuk-label">Form A date</label>
         <input asp-for="FormADate" type="date" class="govuk-input govuk-input--width-10" />
+        <span asp-validation-for="FormADate" class="govuk-error-message"></span>
     </div>
     <div class="govuk-form-group">
         <label asp-for="Fate" class="govuk-label">Fate</label>

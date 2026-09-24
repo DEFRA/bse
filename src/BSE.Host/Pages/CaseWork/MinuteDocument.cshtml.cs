@@ -41,7 +41,7 @@ public class MinuteDocumentModel(ICaseWorkService caseWorkService) : PageModel
         {
             OutstandingForms = ReadOutstandingForms();
             if (OutstandingForms.Count == 0)
-                return BadRequest("At least one outstanding form must be selected for Annex C or Annex D.");
+                return RedirectToPage("/SessionError");
         }
 
         if (!IsPrintMode)

@@ -9,6 +9,7 @@
 
     string? E(string key) => ViewData.ModelState[key]?.Errors.FirstOrDefault()?.ErrorMessage;
     string DateVal(DateTime? d) => d?.ToString("yyyy-MM-dd") ?? string.Empty;
+    var vlaReadOnly = !Model.CanEditMainCase;
 }
 
 <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
@@ -29,6 +30,19 @@
         </div>
         <div class="govuk-notification-banner__content">
             <p class="govuk-notification-banner__heading">@successMsg</p>
+        </div>
+    </div>
+}
+
+@if (TempData["Warning"] is string warningMsg)
+{
+    <div class="govuk-notification-banner" role="region"
+         aria-labelledby="vla-warning-title" data-module="govuk-notification-banner">
+        <div class="govuk-notification-banner__header">
+            <h2 class="govuk-notification-banner__title" id="vla-warning-title">Important</h2>
+        </div>
+        <div class="govuk-notification-banner__content">
+            <p class="govuk-body">@warningMsg</p>
         </div>
     </div>
 }
@@ -61,7 +75,7 @@
     </div>
 }
 
-@if (!User.IsInRole("DataEntry"))
+@if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
 {
     <p class="govuk-body">You can view case details but cannot edit this page.</p>
 }
@@ -111,6 +125,7 @@ else
         <input type="hidden" asp-for="Case.LabComment" />
         <input type="hidden" asp-for="Case.CaseType" />
 
+        <fieldset class="bse-form-fieldset-reset" disabled="@(vlaReadOnly ? "disabled" : null)">
         <div class="vla-legacy-grid">
             <div class="vla-legacy-field @(E("Case.BirthDate") is not null ? "govuk-form-group--error" : "")">
                 <label asp-for="Case.BirthDate" class="govuk-label">Date Of Birth</label>
@@ -439,6 +454,7 @@ else
             <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
             <a asp-page="/Case/Vla" asp-page-handler="CancelVlaEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
         </div>
+        </fieldset>
 
         <div class="govuk-!-margin-top-6">
             <ul class="govuk-list">
@@ -459,6 +475,13 @@ else
 }
 
 <style>
+    .bse-form-fieldset-reset {
+        border: 0;
+        margin: 0;
+        padding: 0;
+        min-width: 0;
+    }
+
     .vla-legacy-grid {
         display: grid;
         grid-template-columns: 500px 500px;

@@ -48,6 +48,19 @@
     </div>
 }
 
+@if (TempData["Warning"] is string warningMsg)
+{
+    <div class="govuk-notification-banner" role="region"
+         aria-labelledby="defra-warning-title" data-module="govuk-notification-banner">
+        <div class="govuk-notification-banner__header">
+            <h2 class="govuk-notification-banner__title" id="defra-warning-title">Important</h2>
+        </div>
+        <div class="govuk-notification-banner__content">
+            <p class="govuk-body">@warningMsg</p>
+        </div>
+    </div>
+}
+
 @if (!ViewContext.ModelState.IsValid)
 {
     <div class="govuk-error-summary" data-module="govuk-error-summary">
@@ -154,7 +167,11 @@ else
                 <div class="defra-legacy-field @(eFormA is not null ? "govuk-form-group--error" : "")">
                     <label asp-for="Case.FormADate" class="govuk-label">Form A Date</label>
                     @if (eFormA is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eFormA</p> }
-                    <input asp-for="Case.FormADate" type="date" class="govuk-input defra-legacy-date @(eFormA is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.FormADate)" />
+                    <input asp-for="Case.FormADate" type="date" class="govuk-input defra-legacy-date @(eFormA is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.FormADate)" disabled="@(Model.IsNonGbCase ? "disabled" : null)" />
+                    @if (Model.IsNonGbCase)
+                    {
+                        <input type="hidden" asp-for="Case.FormADate" />
+                    }
                 </div>
                 <div class="defra-legacy-field @(eFormAResub is not null ? "govuk-form-group--error" : "")">
                     <label asp-for="Case.FormAResubmittedDate" class="govuk-label">Form A Resubmitted Date</label>
@@ -397,7 +414,7 @@ else
             <div class="defra-legacy-grid">
                 <div class="defra-legacy-field">
                     <label asp-for="Case.BirthDateSource" class="govuk-label">Date Of Birth Source</label>
-                    <select asp-for="Case.BirthDateSource" class="govuk-select defra-legacy-input--sm" disabled="@(!hasBirthDate)">
+                    <select asp-for="Case.BirthDateSource" class="govuk-select defra-legacy-input--sm">
                         <option value="">-- Select --</option>
                         @foreach (var o in Model.BirthDateSourceOptions)
                         {
@@ -414,7 +431,7 @@ else
             <div class="defra-legacy-grid">
                 <div class="defra-legacy-field defra-legacy-field--checkbox-inline">
                     <label asp-for="Case.IsBirthDateEst" class="govuk-label">Is Date Of Birth Estimated?</label>
-                    <input asp-for="Case.IsBirthDateEst" type="checkbox" class="defra-legacy-receipt-check defra-legacy-inline-checkbox" disabled="@(!hasBirthDate)" />
+                    <input asp-for="Case.IsBirthDateEst" type="checkbox" class="defra-legacy-receipt-check defra-legacy-inline-checkbox" />
                 </div>
                 <div class="defra-legacy-field">
                     <label asp-for="Case.Survey" class="govuk-label">Survey</label>
@@ -472,50 +489,32 @@ else
                 <div class="defra-legacy-receipt-row">
                     <label for="Case_IsPurchaserBse1Received" class="govuk-label defra-legacy-receipt-label">Is Purchaser BSE1 Received?</label>
                     <input asp-for="Case.IsPurchaserBse1Received" id="Case_IsPurchaserBse1Received" type="checkbox" class="defra-legacy-receipt-check" />
-                    @if (Model.Case.HasCaseWork)
-                    {
-                        <input asp-for="Case.PurchaserBse1ReceivedDate" type="date" class="govuk-input defra-legacy-date @(ePurchaserBse1 is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.PurchaserBse1ReceivedDate)" aria-label="Purchaser BSE1 received date" />
-                    }
+                    <input asp-for="Case.PurchaserBse1ReceivedDate" type="date" class="govuk-input defra-legacy-date @(ePurchaserBse1 is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.PurchaserBse1ReceivedDate)" aria-label="Purchaser BSE1 received date" disabled="@(!Model.Case.HasCaseWork)" />
                 </div>
                 <div class="defra-legacy-receipt-row">
                     <label for="Case_IsBreederBse1Received" class="govuk-label defra-legacy-receipt-label">Is Breeder BSE1 Received?</label>
                     <input asp-for="Case.IsBreederBse1Received" id="Case_IsBreederBse1Received" type="checkbox" class="defra-legacy-receipt-check" />
-                    @if (Model.Case.HasCaseWork)
-                    {
-                        <input asp-for="Case.BreederBse1ReceivedDate" type="date" class="govuk-input defra-legacy-date @(eBreederBse1 is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.BreederBse1ReceivedDate)" aria-label="Breeder BSE1 received date" />
-                    }
+                    <input asp-for="Case.BreederBse1ReceivedDate" type="date" class="govuk-input defra-legacy-date @(eBreederBse1 is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.BreederBse1ReceivedDate)" aria-label="Breeder BSE1 received date" disabled="@(!Model.Case.HasCaseWork)" />
                 </div>
                 <div class="defra-legacy-receipt-row">
                     <label for="Case_IsVendor1Bse1Received" class="govuk-label defra-legacy-receipt-label">Is Vendor 1 BSE1 Received?</label>
                     <input asp-for="Case.IsVendor1Bse1Received" id="Case_IsVendor1Bse1Received" type="checkbox" class="defra-legacy-receipt-check" />
-                    @if (Model.Case.HasCaseWork)
-                    {
-                        <input asp-for="Case.Vendor1Bse1ReceivedDate" type="date" class="govuk-input defra-legacy-date @(eVendor1Bse1 is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.Vendor1Bse1ReceivedDate)" aria-label="Vendor 1 BSE1 received date" />
-                    }
+                    <input asp-for="Case.Vendor1Bse1ReceivedDate" type="date" class="govuk-input defra-legacy-date @(eVendor1Bse1 is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.Vendor1Bse1ReceivedDate)" aria-label="Vendor 1 BSE1 received date" disabled="@(!Model.Case.HasCaseWork)" />
                 </div>
                 <div class="defra-legacy-receipt-row">
                     <label for="Case_IsHomebredBse1Received" class="govuk-label defra-legacy-receipt-label">Is Homebred BSE1 Received?</label>
                     <input asp-for="Case.IsHomebredBse1Received" id="Case_IsHomebredBse1Received" type="checkbox" class="defra-legacy-receipt-check" />
-                    @if (Model.Case.HasCaseWork)
-                    {
-                        <input asp-for="Case.HomebredBse1ReceivedDate" type="date" class="govuk-input defra-legacy-date @(eHomebredBse1 is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.HomebredBse1ReceivedDate)" aria-label="Homebred BSE1 received date" />
-                    }
+                    <input asp-for="Case.HomebredBse1ReceivedDate" type="date" class="govuk-input defra-legacy-date @(eHomebredBse1 is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.HomebredBse1ReceivedDate)" aria-label="Homebred BSE1 received date" disabled="@(!Model.Case.HasCaseWork)" />
                 </div>
                 <div class="defra-legacy-receipt-row">
                     <label for="Case_IsSummarySheetReceived" class="govuk-label defra-legacy-receipt-label">Is Summary Sheet Received?</label>
                     <input asp-for="Case.IsSummarySheetReceived" id="Case_IsSummarySheetReceived" type="checkbox" class="defra-legacy-receipt-check" />
-                    @if (Model.Case.HasCaseWork)
-                    {
-                        <input asp-for="Case.SummarySheetReceivedDate" type="date" class="govuk-input defra-legacy-date @(eSummarySheet is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.SummarySheetReceivedDate)" aria-label="Summary sheet received date" />
-                    }
+                    <input asp-for="Case.SummarySheetReceivedDate" type="date" class="govuk-input defra-legacy-date @(eSummarySheet is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.SummarySheetReceivedDate)" aria-label="Summary sheet received date" disabled="@(!Model.Case.HasCaseWork)" />
                 </div>
                 <div class="defra-legacy-receipt-row">
                     <label for="Case_IsPaperworkComplete" class="govuk-label defra-legacy-receipt-label">Is Paperwork Complete?</label>
                     <input asp-for="Case.IsPaperworkComplete" id="Case_IsPaperworkComplete" type="checkbox" class="defra-legacy-receipt-check" />
-                    @if (Model.Case.HasCaseWork)
-                    {
-                        <input asp-for="Case.PaperworkCompleteDate" type="date" class="govuk-input defra-legacy-date @(ePaperwork is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.PaperworkCompleteDate)" aria-label="Paperwork complete date" />
-                    }
+                    <input asp-for="Case.PaperworkCompleteDate" type="date" class="govuk-input defra-legacy-date @(ePaperwork is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.PaperworkCompleteDate)" aria-label="Paperwork complete date" disabled="@(!Model.Case.HasCaseWork)" />
                 </div>
             </div>
         </section>

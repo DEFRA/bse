@@ -24,6 +24,9 @@ public class NewModel(IFarmService farmService, ICurrentUserService currentUserS
     [BindProperty(SupportsGet = true)]
     public string? ReturnCphh { get; set; }
 
+    [BindProperty(SupportsGet = true)]
+    public bool ReturnToCaseFarm { get; set; }
+
     public async Task<IActionResult> OnGetAsync(string? cphh = null)
     {
         Farm.CPHH = CphhNormalizer.Normalize(ReturnCphh ?? cphh);
@@ -44,6 +47,9 @@ public class NewModel(IFarmService farmService, ICurrentUserService currentUserS
         await farmService.AddAsync(command, userId);
 
         TempData["Success"] = $"Farm {Farm.CPHH} has been created.";
+
+        if (!string.IsNullOrEmpty(ReturnRbse) && ReturnToCaseFarm)
+            return RedirectToPage("/Case/Farm", new { rbse = ReturnRbse, selectedCphh = Farm.CPHH });
 
         if (!string.IsNullOrEmpty(ReturnRbse))
             return RedirectToPage("/Case/MoveCase", new { rbse = ReturnRbse });

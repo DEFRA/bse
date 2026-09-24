@@ -6,15 +6,295 @@
 
 @if (Model.Case is null)
 {
-    <div class="govuk-warning-text">
-        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
-        <strong class="govuk-warning-text__text">
-            <span class="govuk-warning-text__assistive">Warning</span>
-            Case not found.
-        </strong>
-    </div>
+    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+        <ol class="govuk-breadcrumbs__list">
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+            <li class="govuk-breadcrumbs__list-item" aria-current="page">Case @BseFormat.FormatRbse(Model.Rbse)</li>
+        </ol>
+    </nav>
 
-    <a asp-page="/Home" class="govuk-link">Back to home</a>
+    var createModeViewDocsUrl = string.IsNullOrWhiteSpace(Model.SpolSiteUrl)
+        ? null
+        : $"{Model.SpolSiteUrl}{Model.Rbse.Replace("/", "")}";
+    var createReadOnly = !Model.CanEditCreateMode;
+    @await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Farm", Model.Rbse, Model.BatchNumbers, createModeViewDocsUrl))
+
+    @if (!ViewContext.ModelState.IsValid)
+    {
+        <div class="govuk-error-summary" data-module="govuk-error-summary">
+            <div role="alert">
+                <h2 class="govuk-error-summary__title">There is a problem</h2>
+                <div class="govuk-error-summary__body">
+                    <ul class="govuk-list govuk-error-summary__list">
+                        @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <li>@e.ErrorMessage</li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    }
+
+    <form method="post" novalidate>
+        <input type="hidden" name="Rbse" value="@Model.Rbse" />
+
+        @if (!createReadOnly)
+        {
+            <div class="govuk-button-group govuk-!-margin-bottom-4">
+                <button type="submit" asp-page-handler="CreateCase" class="govuk-button" data-module="govuk-button">Save</button>
+                <a asp-page="/Home" class="govuk-link">Cancel</a>
+            </div>
+        }
+
+        <div class="bse-farm-legacy-top">
+            <div class="bse-farm-legacy-top__row bse-farm-legacy-top__row--lookup">
+                <label class="govuk-label" for="create-farm-cphh">CPHH</label>
+                <input id="create-farm-cphh" asp-for="EditableFarm!.CPHH" class="govuk-input bse-farm-legacy-top__input" readonly="@(createReadOnly ? "readonly" : null)" />
+                @if (!createReadOnly)
+                {
+                    <button type="submit" asp-page-handler="LookupNewCase" class="govuk-button govuk-button--secondary bse-farm-legacy-top__lookup" data-module="govuk-button">Look Up</button>
+                }
+            </div>
+        </div>
+
+        <fieldset class="bse-form-fieldset-reset" disabled="@(createReadOnly ? "disabled" : null)" style="border:0;margin:0;padding:0;">
+
+        @await Html.PartialAsync("~/Pages/Farm/_FarmFormFields.cshtml", Model.EditableFarm!, new ViewDataDictionary(ViewData)
+        {
+            ["CanEditJointControls"] = Model.CanEditJointControls,
+            ["CanEditVlaControls"] = Model.CanEditVlaControls,
+            ["CanEditDefraControls"] = Model.CanEditDefraControls,
+            TemplateInfo = { HtmlFieldPrefix = "EditableFarm" }
+        })
+
+        <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+
+        <h2 id="linked-farms-section" class="govuk-heading-m">Linked farms</h2>
+        <table class="govuk-table">
+            <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                    <th scope="col" class="govuk-table__header">CPHH</th>
+                    <th scope="col" class="govuk-table__header">Status</th>
+                    <th scope="col" class="govuk-table__header">Action</th>
+                </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+                @if (!Model.StagedLinkedFarms.Any())
+                {
+                    <tr class="govuk-table__row">
+                        <td class="govuk-table__cell" colspan="3">No linked farms recorded.</td>
+                    </tr>
+                }
+
+                <tr id="add-linked-row-inline" class="govuk-table__row bse-herd-row--unsaved" hidden="@(!Model.ShowAddLinkedRow)">
+                    <td class="govuk-table__cell">
+                        <label class="govuk-visually-hidden" for="new-linked-cphh">Linked farm CPHH</label>
+                        <input id="new-linked-cphh"
+                               name="NewLinkedCphh"
+                               value="@Model.NewLinkedCphh"
+                               class="govuk-input govuk-input--width-10" />
+                    </td>
+                    <td class="govuk-table__cell"></td>
+                    <td class="govuk-table__cell">
+                        <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
+                            <button type="submit" asp-page-handler="AddLinkedFarmRow" class="bse-inline-row-button bse-inline-row-button--confirm" data-module="govuk-button">Confirm</button>
+                            <button type="button" id="cancel-add-linked-row" class="bse-inline-row-button bse-inline-row-button--secondary">Cancel</button>
+                        </div>
+                    </td>
+                </tr>
+
+                @foreach (var lf in Model.StagedLinkedFarms)
+                {
+                    var isEditingLinked = Model.ReopenLinkedEditClientKey == lf.ClientKey;
+                    var linkedError = isEditingLinked
+                        ? ViewContext.ModelState[nameof(Model.EditLinkedCphh)]?.Errors.FirstOrDefault()?.ErrorMessage
+                        : null;
+
+                    <tr class="govuk-table__row bse-linked-row" data-client-key="@lf.ClientKey">
+                        @if (isEditingLinked)
+                        {
+                            <td class="govuk-table__cell">
+                                <label class="govuk-visually-hidden" for="edit-linked-cphh-@lf.ClientKey">Linked farm CPHH</label>
+                                <input id="edit-linked-cphh-@lf.ClientKey"
+                                       name="EditLinkedCphh"
+                                       value="@Model.EditLinkedCphh"
+                                       class="govuk-input govuk-input--width-10" />
+                                @if (linkedError is not null)
+                                {
+                                    <span class="govuk-visually-hidden">Error: @linkedError</span>
+                                }
+                            </td>
+                            <td class="govuk-table__cell">@lf.Status</td>
+                            <td class="govuk-table__cell">
+                                <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
+                                    <input type="hidden" name="EditingLinkedClientKey" value="@lf.ClientKey" />
+                                    <button type="submit" asp-page-handler="UpdateLinkedFarmRow" class="bse-inline-row-button bse-inline-row-button--confirm" data-module="govuk-button">Confirm</button>
+                                    <button type="button" class="bse-inline-row-button bse-inline-row-button--secondary js-cancel-edit-linked-row" data-client-key="@lf.ClientKey">Cancel</button>
+                                </div>
+                            </td>
+                        }
+                        else
+                        {
+                            <td class="govuk-table__cell">@BseFormat.FormatCphh(lf.RelatedCphh)</td>
+                            <td class="govuk-table__cell">@lf.Status</td>
+                            <td class="govuk-table__cell">
+                                <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
+                                    @if (Model.CanEditDefraControls)
+                                    {
+                                        <button type="submit"
+                                                asp-page-handler="BeginEditLinkedFarmRow"
+                                                name="EditingLinkedClientKey"
+                                                value="@lf.ClientKey"
+                                                class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">
+                                            Change
+                                        </button>
+                                        <button type="submit"
+                                                asp-page-handler="DeleteLinkedFarm"
+                                                asp-route-clientKey="@lf.ClientKey"
+                                                class="govuk-button govuk-button--warning govuk-!-margin-bottom-0"
+                                                data-module="govuk-button">
+                                            Remove
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        @if (Model.CanEditDefraControls)
+        {
+            <div class="govuk-button-group govuk-!-margin-bottom-6">
+                <button type="button" id="show-add-linked-row" class="govuk-button govuk-button--secondary" data-module="govuk-button">Add linked farm</button>
+            </div>
+        }
+
+        <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+
+        <table id="herd-size-section" class="govuk-table govuk-!-font-size-16 case-farm-herd-table">
+                <colgroup>
+                    <col class="case-farm-herd-table__col-year" />
+                    <col class="case-farm-herd-table__col-size" />
+                    <col class="case-farm-herd-table__col-lac" span="11" />
+                </colgroup>
+                <thead class="govuk-table__head">
+                    <tr class="govuk-table__row">
+                        <th colspan="2" class="govuk-table__header case-farm-herd-table__group-left">Herd size</th>
+                        <th colspan="11" class="govuk-table__header case-farm-herd-table__group-mid">Lactation</th>
+                    </tr>
+                    <tr class="govuk-table__row">
+                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="year" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("year")">Year</a>
+                        </th>
+                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="total" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("total")">Size</a>
+                        </th>
+                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac1" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac1")">1</a>
+                        </th>
+                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac2" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac2")">2</a>
+                        </th>
+                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac3" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac3")">3</a>
+                        </th>
+                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac4" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac4")">4</a>
+                        </th>
+                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac5" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac5")">5</a>
+                        </th>
+                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac6" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac6")">6</a>
+                        </th>
+                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac7" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac7")">7</a>
+                        </th>
+                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac8" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac8")">8</a>
+                        </th>
+                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac9" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac9")">9</a>
+                        </th>
+                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac10" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac10")">10</a>
+                        </th>
+                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac10p" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                            <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac10p")">10+</a>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="govuk-table__body" id="herd-size-tbody">
+                    @if (!Model.SortedStagedHerdSizes.Any())
+                    {
+                        <tr class="govuk-table__row">
+                            <td class="govuk-table__cell" colspan="13">No herd size records for this farm.</td>
+                        </tr>
+                    }
+
+                    @foreach (var h in Model.SortedStagedHerdSizes)
+                    {
+                        <tr class="govuk-table__row bse-herd-row @(h.IsUnsaved ? "bse-herd-row--unsaved" : "")" data-client-key="@h.ClientKey">
+                            <td class="govuk-table__cell">
+                                @h.HerdYear
+                                @if (h.IsUnsaved)
+                                {
+                                    <strong class="govuk-tag govuk-tag--yellow govuk-!-margin-left-2">Unsaved</strong>
+                                }
+                            </td>
+                            <td class="govuk-table__cell">
+                                @h.TotalSize
+                                @if (h.LactationMismatchWarning is not null)
+                                {
+                                    <span class="bse-mismatch-warning" title="@h.LactationMismatchWarning">
+                                        <span aria-hidden="true">&#9888;</span>
+                                        <span class="govuk-visually-hidden">Warning: @h.LactationMismatchWarning</span>
+                                    </span>
+                                }
+                            </td>
+                            <td class="govuk-table__cell">@h.Lactation1Size</td>
+                            <td class="govuk-table__cell">@h.Lactation2Size</td>
+                            <td class="govuk-table__cell">@h.Lactation3Size</td>
+                            <td class="govuk-table__cell">@h.Lactation4Size</td>
+                            <td class="govuk-table__cell">@h.Lactation5Size</td>
+                            <td class="govuk-table__cell">@h.Lactation6Size</td>
+                            <td class="govuk-table__cell">@h.Lactation7Size</td>
+                            <td class="govuk-table__cell">@h.Lactation8Size</td>
+                            <td class="govuk-table__cell">@h.Lactation9Size</td>
+                            <td class="govuk-table__cell">@h.Lactation10Size</td>
+                            <td class="govuk-table__cell">@h.Lactation10PlusSize</td>
+                        </tr>
+                    }
+                </tbody>
+        </table>
+
+        </fieldset>
+
+        @if (!createReadOnly)
+        {
+            <div class="govuk-button-group govuk-!-margin-top-4">
+                <button type="submit" asp-page-handler="CreateCase" class="govuk-button" data-module="govuk-button">Save</button>
+                <a asp-page="/Home" class="govuk-link">Cancel</a>
+            </div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(createModeViewDocsUrl))
+        {
+            <div class="govuk-!-margin-top-6">
+                <ul class="govuk-list">
+                    <li>
+                        <a href="@createModeViewDocsUrl" target="_blank" rel="noopener noreferrer" class="govuk-link">
+                            View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        }
+    </form>
+
     return;
 }
 
@@ -152,7 +432,12 @@
             </div>
         </div>
 
-        @await Html.PartialAsync("~/Pages/Farm/_FarmFormFields.cshtml", Model.EditableFarm, new ViewDataDictionary(ViewData) { TemplateInfo = { HtmlFieldPrefix = "EditableFarm" } })
+        @await Html.PartialAsync("~/Pages/Farm/_FarmFormFields.cshtml", Model.EditableFarm, new ViewDataDictionary(ViewData)
+        {
+            ["CanEditJointControls"] = Model.CanEditJointControls,
+            ["CanEditVlaControls"] = Model.CanEditVlaControls,
+            TemplateInfo = { HtmlFieldPrefix = "EditableFarm" }
+        })
 
         <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
 
@@ -226,20 +511,23 @@
                             <td class="govuk-table__cell">@lf.Status</td>
                             <td class="govuk-table__cell">
                                 <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
-                                    <button type="submit"
-                                            asp-page-handler="BeginEditLinkedFarmRow"
-                                            name="EditingLinkedClientKey"
-                                            value="@lf.ClientKey"
-                                            class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">
-                                        Change
-                                    </button>
-                                    <button type="submit"
-                                            asp-page-handler="DeleteLinkedFarm"
-                                            asp-route-clientKey="@lf.ClientKey"
-                                            class="govuk-button govuk-button--warning govuk-!-margin-bottom-0"
-                                            data-module="govuk-button">
-                                        Remove
-                                    </button>
+                                    @if (Model.CanEditDefraControls)
+                                    {
+                                        <button type="submit"
+                                                asp-page-handler="BeginEditLinkedFarmRow"
+                                                name="EditingLinkedClientKey"
+                                                value="@lf.ClientKey"
+                                                class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">
+                                            Change
+                                        </button>
+                                        <button type="submit"
+                                                asp-page-handler="DeleteLinkedFarm"
+                                                asp-route-clientKey="@lf.ClientKey"
+                                                class="govuk-button govuk-button--warning govuk-!-margin-bottom-0"
+                                                data-module="govuk-button">
+                                            Remove
+                                        </button>
+                                    }
                                 </div>
                             </td>
                         }
@@ -248,9 +536,12 @@
             </tbody>
         </table>
 
-        <div class="govuk-button-group govuk-!-margin-bottom-6">
-            <button type="button" id="show-add-linked-row" class="govuk-button govuk-button--secondary" data-module="govuk-button">Add linked farm</button>
-        </div>
+        @if (Model.CanEditDefraControls)
+        {
+            <div class="govuk-button-group govuk-!-margin-bottom-6">
+                <button type="button" id="show-add-linked-row" class="govuk-button govuk-button--secondary" data-module="govuk-button">Add linked farm</button>
+            </div>
+        }
 
         <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
 
@@ -480,6 +771,12 @@ else
 }
 
 <style>
+    .bse-form-fieldset-reset {
+        border: 0;
+        margin: 0;
+        padding: 0;
+    }
+
     .case-farm-herd-table__group-left {
         background: #fff;
         color: #0b0c0c;

@@ -29,6 +29,19 @@
     </div>
 }
 
+@if (TempData["Warning"] is string warningMsg)
+{
+    <div class="govuk-notification-banner" role="region"
+         aria-labelledby="feeds-warning-title" data-module="govuk-notification-banner">
+        <div class="govuk-notification-banner__header">
+            <h2 class="govuk-notification-banner__title" id="feeds-warning-title">Important</h2>
+        </div>
+        <div class="govuk-notification-banner__content">
+            <p class="govuk-body">@warningMsg</p>
+        </div>
+    </div>
+}
+
 @if (!ViewContext.ModelState.IsValid || Model.FieldErrors.Count > 0)
 {
     <div class="govuk-error-summary" data-module="govuk-error-summary">

@@ -40,6 +40,7 @@ public class DefraEditModel(
     public string? ConcurrencyError { get; private set; }
     public IReadOnlyList<BatchNumberEntry> BatchNumbers { get; private set; } = [];
     public string SpolSiteUrl { get; private set; } = string.Empty;
+    public bool IsNonGbCase { get; private set; }
 
     public IEnumerable<ILookupItem> FateOptions { get; private set; } = [];
     public IEnumerable<ILookupItem> SurveyOptions { get; private set; } = [];
@@ -61,6 +62,7 @@ public class DefraEditModel(
 
         TempData[string.Format(RowStampKey, Rbse)] = Convert.ToBase64String(record.RowStamp ?? []);
         Case = CaseEditViewModel.FromRecord(record);
+        IsNonGbCase = record.IsNonGbCase;
 
         var caseWork = await caseWorkRepository.GetByRbseAsync(Rbse);
         if (caseWork is not null)
@@ -75,6 +77,20 @@ public class DefraEditModel(
     public async Task<IActionResult> OnPostAsync()
     {
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+
+        var currentRecord = await caseService.GetCaseAsync(Rbse);
+        if (currentRecord is null)
+        {
+            TempData["Warning"] = $"Case '{Rbse}' not found.";
+            return RedirectToPage("/Home");
+        }
+
+        IsNonGbCase = currentRecord.IsNonGbCase;
+
+        // Legacy CaseEntryDEFRA: Form A date is read-only for non-GB cases.
+        if (IsNonGbCase)
+            Case.FormADate = currentRecord.FormADate;
+
         await LoadLookupsAsync();
 
         // Mirrors legacy CaseEntryDEFRA: clear dependent dates when anchor date is removed
@@ -181,6 +197,18 @@ public class DefraEditModel(
     // Mirrors legacy UpdateSessionWithCaseDetails validation (FormXDateValid, DateOfBirthValid, BSE1ReceivedDateValid)
     private void ValidateDomainRules()
     {
+        if (string.IsNullOrWhiteSpace(Case.EartagCountry)
+            && string.IsNullOrWhiteSpace(Case.EartagHerdmark)
+            && string.IsNullOrWhiteSpace(Case.Eartag))
+        {
+            ModelState.AddModelError("Case.EartagCountry", "Enter an eartag.");
+        }
+
+        if (!IsNonGbCase && !Case.FormADate.HasValue)
+        {
+            ModelState.AddModelError("Case.FormADate", "Enter a Form A date.");
+        }
+
         // Eartag: mirrors BSELib.Eartag.GetEartag + .ErrorCode check from ThreePartEartag.Validate()
         var eartagError = ValidateEartagFormat(Case.EartagCountry, Case.EartagHerdmark, Case.Eartag);
         if (eartagError is not null)

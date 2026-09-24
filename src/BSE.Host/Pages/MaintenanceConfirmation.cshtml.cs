@@ -36,7 +36,7 @@ public class MaintenanceConfirmationModel : PageModel
         // Legacy redirected to SessionError.aspx when the page was reached without either value.
         if (ConfirmationTitle.Length == 0 && ConfirmationMessage.Length == 0)
         {
-            return RedirectToPage("/Home");
+            return RedirectToPage("/SessionError");
         }
 
         return Page();

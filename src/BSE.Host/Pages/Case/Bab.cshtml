@@ -16,6 +16,8 @@
                       || !string.IsNullOrWhiteSpace(Model.Bab?.TracedPostcode);
     string Desc(IEnumerable<BSE.SharedKernel.ILookupItem> opts, string? code) =>
         opts.FirstOrDefault(o => o.Code == code)?.Description ?? code ?? "—";
+    var babReadOnly = User.IsInRole("DataEntry") && !Model.CanEditBabControls;
+    var tracedReadOnly = babReadOnly || !IsPurchasedOrigin(Model.Origin);
 }
 
 <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
@@ -36,6 +38,19 @@
         </div>
         <div class="govuk-notification-banner__content">
             <p class="govuk-notification-banner__heading">@successMsg</p>
+        </div>
+    </div>
+}
+
+@if (TempData["Warning"] is string warningMsg)
+{
+    <div class="govuk-notification-banner" role="region"
+         aria-labelledby="bab-warning-title" data-module="govuk-notification-banner">
+        <div class="govuk-notification-banner__header">
+            <h2 class="govuk-notification-banner__title" id="bab-warning-title">Important</h2>
+        </div>
+        <div class="govuk-notification-banner__content">
+            <p class="govuk-body">@warningMsg</p>
         </div>
     </div>
 }
@@ -74,16 +89,16 @@
 
         <div class="bab-legacy-notes">
             <label class="govuk-label" for="bab-notes">Notes</label>
-            <textarea id="bab-notes" name="Bab.Notes" class="govuk-textarea" rows="3" maxlength="500">@Model.Bab?.Notes</textarea>
+            <textarea id="bab-notes" name="Bab.Notes" class="govuk-textarea" rows="3" maxlength="500" disabled="@(babReadOnly ? "disabled" : null)">@Model.Bab?.Notes</textarea>
         </div>
 
         <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
 
-        <div id="bab-traced-section" @( !IsPurchasedOrigin(Model.Origin) && !hasTracedData ? "style=\"display:none\"" : "")>
+        <div id="bab-traced-section">
             <div class="bab-legacy-grid">
                 <div class="bab-legacy-field">
                     <label class="govuk-label" for="bab-origin">Origin</label>
-                    <select id="bab-origin" name="Origin" class="govuk-select bab-legacy-input">
+                    <select id="bab-origin" name="Origin" class="govuk-select bab-legacy-input" disabled="@(babReadOnly ? "disabled" : null)">
                         <option value="">— select —</option>
                         @foreach (var o in Model.AnimalOrigins)
                         {
@@ -101,28 +116,33 @@
                 <div class="bab-legacy-field">
                     <label class="govuk-label" for="bab-addr1">Traced Address</label>
                     <input id="bab-addr1" name="Bab.TracedAddress1" class="govuk-input bab-legacy-input"
+                           disabled="@(tracedReadOnly ? "disabled" : null)"
                            value="@Model.Bab?.TracedAddress1" maxlength="30" aria-label="Address line 1" />
                 </div>
 
                 <div class="bab-legacy-field">
                     <label class="govuk-label" for="bab-natal-cphh">Traced CPHH</label>
                     <input id="bab-natal-cphh" name="Bab.NatalCphh" class="govuk-input bab-legacy-input"
+                           disabled="@(tracedReadOnly ? "disabled" : null)"
                            value="@Model.Bab?.NatalCphh" maxlength="11" inputmode="numeric" />
                 </div>
                 <div class="bab-legacy-field">
                     <span class="govuk-label bab-legacy-label-spacer" aria-hidden="true">&nbsp;</span>
                     <input id="bab-addr2" name="Bab.TracedAddress2" class="govuk-input bab-legacy-input"
+                           disabled="@(tracedReadOnly ? "disabled" : null)"
                            value="@Model.Bab?.TracedAddress2" maxlength="30" aria-label="Address line 2" />
                 </div>
 
                 <div class="bab-legacy-field">
                     <label class="govuk-label" for="bab-traced-name">Traced Name</label>
                     <input id="bab-traced-name" name="Bab.TracedName" class="govuk-input bab-legacy-input"
+                           disabled="@(tracedReadOnly ? "disabled" : null)"
                            value="@Model.Bab?.TracedName" maxlength="30" />
                 </div>
                 <div class="bab-legacy-field">
                     <span class="govuk-label bab-legacy-label-spacer" aria-hidden="true">&nbsp;</span>
                     <input id="bab-addr3" name="Bab.TracedAddress3" class="govuk-input bab-legacy-input"
+                           disabled="@(tracedReadOnly ? "disabled" : null)"
                            value="@Model.Bab?.TracedAddress3" maxlength="30" aria-label="Address line 3" />
                 </div>
 
@@ -130,6 +150,7 @@
                 <div class="bab-legacy-field">
                     <label class="govuk-label" for="bab-postcode">Traced Postcode</label>
                     <input id="bab-postcode" name="Bab.TracedPostcode" class="govuk-input bab-legacy-input"
+                           disabled="@(tracedReadOnly ? "disabled" : null)"
                            value="@Model.Bab?.TracedPostcode" maxlength="10" />
                 </div>
             </div>
@@ -140,7 +161,7 @@
         <div class="bab-legacy-grid">
             <div class="bab-legacy-field">
                 <label class="govuk-label" for="bab-feed-risk">Feed Risk</label>
-                <select id="bab-feed-risk" name="Bab.FeedRisk" class="govuk-select bab-legacy-input">
+                <select id="bab-feed-risk" name="Bab.FeedRisk" class="govuk-select bab-legacy-input" disabled="@(babReadOnly ? "disabled" : null)">
                     <option value="">— select —</option>
                     @foreach (var r in Model.FeedRisks)
                     {
@@ -157,7 +178,7 @@
             </div>
             <div class="bab-legacy-field">
                 <label class="govuk-label" for="bab-horiz-risk">Horizontal Risk</label>
-                <select id="bab-horiz-risk" name="Bab.HorizontalRisk" class="govuk-select bab-legacy-input">
+                <select id="bab-horiz-risk" name="Bab.HorizontalRisk" class="govuk-select bab-legacy-input" disabled="@(babReadOnly ? "disabled" : null)">
                     <option value="">— select —</option>
                     @foreach (var r in Model.HorizontalRisks)
                     {
@@ -175,7 +196,7 @@
 
             <div class="bab-legacy-field">
                 <label class="govuk-label" for="bab-maternal-risk">Maternal Risk</label>
-                <select id="bab-maternal-risk" name="Bab.MaternalRisk" class="govuk-select bab-legacy-input">
+                <select id="bab-maternal-risk" name="Bab.MaternalRisk" class="govuk-select bab-legacy-input" disabled="@(babReadOnly ? "disabled" : null)">
                     <option value="">— select —</option>
                     @foreach (var r in Model.MaternalRisks)
                     {
@@ -354,6 +375,8 @@ else
     (function () {
         var origin = document.getElementById('bab-origin');
         var traced = document.getElementById('bab-traced-section');
+        var tracedFieldIds = ['bab-natal-cphh', 'bab-traced-name', 'bab-addr1', 'bab-addr2', 'bab-addr3', 'bab-postcode'];
+        var baseReadOnly = @(babReadOnly ? "true" : "false");
 
         function isPurchased() {
             if (!origin) return false;
@@ -364,18 +387,26 @@ else
         }
 
         function hasTracedData() {
-            return ['bab-natal-cphh', 'bab-traced-name', 'bab-addr1', 'bab-addr2', 'bab-addr3', 'bab-postcode']
+            return tracedFieldIds
                 .some(function (id) { var el = document.getElementById(id); return el && el.value.trim() !== ''; });
         }
 
         function clearTracedFields() {
-            ['bab-natal-cphh', 'bab-traced-name', 'bab-addr1', 'bab-addr2', 'bab-addr3', 'bab-postcode']
+            tracedFieldIds
                 .forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ''; });
+        }
+
+        function refreshTracedEditability() {
+            var editable = !baseReadOnly && isPurchased();
+            tracedFieldIds.forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el) el.disabled = !editable;
+            });
         }
 
         function refreshTracedVisibility() {
             if (!origin || !traced) return;
-            traced.style.display = (isPurchased() || hasTracedData()) ? '' : 'none';
+            refreshTracedEditability();
         }
 
         if (origin && traced) {

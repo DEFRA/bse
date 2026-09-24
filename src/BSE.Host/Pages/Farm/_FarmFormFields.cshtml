@@ -9,6 +9,10 @@
     var authorityOptions   = ViewData["AuthorityOptions"]        as IEnumerable<LuAuthority>                  ?? Enumerable.Empty<LuAuthority>();
     var adnsOptions        = ViewData["AdnsOptions"]             as IEnumerable<LuADNSRegion>                 ?? Enumerable.Empty<LuADNSRegion>();
     var isNonGbFarm = !string.IsNullOrWhiteSpace(Model?.CPHH) && BSE.SharedKernel.CphhNormalizer.Normalize(Model.CPHH).StartsWith("00", StringComparison.Ordinal);
+    var canEditJointControls = ViewData["CanEditJointControls"] as bool? ?? true;
+    var canEditVlaControls = ViewData["CanEditVlaControls"] as bool? ?? true;
+    var canEditDefraControls = ViewData["CanEditDefraControls"] as bool? ?? true;
+    var lockGbOnlyField = isNonGbFarm || !canEditDefraControls;
 }
 
 <div class="bse-farm-legacy">
@@ -16,33 +20,33 @@
         <div class="bse-farm-legacy__row">
             <div class="bse-farm-legacy__field">
                 <label asp-for="OwnerName" class="govuk-label">Owner Name</label>
-                <input asp-for="OwnerName" id="OwnerName" class="govuk-input bse-farm-legacy__input" maxlength="100" />
+                <input asp-for="OwnerName" id="OwnerName" class="govuk-input bse-farm-legacy__input" maxlength="100" readonly="@(!canEditDefraControls)" />
             </div>
             <div class="bse-farm-legacy__field">
                 <label asp-for="Parish" class="govuk-label">Parish</label>
-                <input asp-for="Parish" class="govuk-input bse-farm-legacy__input" maxlength="50" disabled="@(isNonGbFarm ? "disabled" : null)" />
+                <input asp-for="Parish" class="govuk-input bse-farm-legacy__input" maxlength="50" disabled="@(lockGbOnlyField ? "disabled" : null)" />
             </div>
         </div>
 
         <div class="bse-farm-legacy__row">
             <div class="bse-farm-legacy__field">
                 <label asp-for="Address1" class="govuk-label">Address</label>
-                <input asp-for="Address1" id="Address1" class="govuk-input bse-farm-legacy__input" maxlength="50" />
+                <input asp-for="Address1" id="Address1" class="govuk-input bse-farm-legacy__input" maxlength="50" readonly="@(!canEditDefraControls)" />
             </div>
             <div class="bse-farm-legacy__field">
                 <label asp-for="District" class="govuk-label">District</label>
-                <input asp-for="District" class="govuk-input bse-farm-legacy__input" maxlength="50" />
+                <input asp-for="District" class="govuk-input bse-farm-legacy__input" maxlength="50" readonly="@(!canEditDefraControls)" />
             </div>
         </div>
 
         <div class="bse-farm-legacy__row">
             <div class="bse-farm-legacy__field bse-farm-legacy__field--continuation">
                 <label asp-for="Address2" class="govuk-label">Address line 2</label>
-                <input asp-for="Address2" id="Address2" class="govuk-input bse-farm-legacy__input" maxlength="50" />
+                <input asp-for="Address2" id="Address2" class="govuk-input bse-farm-legacy__input" maxlength="50" readonly="@(!canEditDefraControls)" />
             </div>
             <div class="bse-farm-legacy__field">
                 <label asp-for="County" class="govuk-label">County</label>
-                <select asp-for="County" class="govuk-select bse-farm-legacy__input">
+                <select asp-for="County" class="govuk-select bse-farm-legacy__input" disabled="@(!canEditDefraControls)">
                     <option value="">-- Select --</option>
                     @foreach (var c in countyOptions)
                     {
@@ -55,11 +59,11 @@
         <div class="bse-farm-legacy__row">
             <div class="bse-farm-legacy__field bse-farm-legacy__field--continuation">
                 <label asp-for="Address3" class="govuk-label">Address line 3</label>
-                <input asp-for="Address3" id="Address3" class="govuk-input bse-farm-legacy__input" maxlength="50" />
+                <input asp-for="Address3" id="Address3" class="govuk-input bse-farm-legacy__input" maxlength="50" readonly="@(!canEditDefraControls)" />
             </div>
             <div class="bse-farm-legacy__field">
                 <label asp-for="AHO" class="govuk-label">AHO</label>
-                <select asp-for="AHO" class="govuk-select bse-farm-legacy__input" disabled="@(isNonGbFarm ? "disabled" : null)">
+                <select asp-for="AHO" class="govuk-select bse-farm-legacy__input" disabled="@(lockGbOnlyField ? "disabled" : null)">
                     <option value="">-- Select --</option>
                     @foreach (var a in ahoOptions)
                     {
@@ -72,19 +76,19 @@
         <div class="bse-farm-legacy__row">
             <div class="bse-farm-legacy__field">
                 <label asp-for="Postcode" class="govuk-label">Postcode</label>
-                <input asp-for="Postcode" id="Postcode" class="govuk-input bse-farm-legacy__input" maxlength="10" />
+                <input asp-for="Postcode" id="Postcode" class="govuk-input bse-farm-legacy__input" maxlength="10" readonly="@(!canEditDefraControls)" />
             </div>
             <div class="bse-farm-legacy__field bse-farm-legacy__field--map">
                 <fieldset class="govuk-fieldset">
                     <legend class="govuk-label">Map Reference</legend>
                     <div class="bse-farm-mapref-row">
                         <input asp-for="MapRef1" id="MapRef1" class="govuk-input bse-farm-mapref-input bse-farm-mapref-input--prefix"
-                               maxlength="2" spellcheck="false" autocomplete="off" style="text-transform:uppercase" aria-label="Map reference grid square" />
+                               maxlength="2" spellcheck="false" autocomplete="off" style="text-transform:uppercase" aria-label="Map reference grid square" readonly="@(!canEditDefraControls)" />
                         <input asp-for="MapRef2" id="MapRef2" class="govuk-input bse-farm-mapref-input"
-                               maxlength="3" spellcheck="false" autocomplete="off" aria-label="Map reference easting" />
+                               maxlength="3" spellcheck="false" autocomplete="off" aria-label="Map reference easting" readonly="@(!canEditDefraControls)" />
                         <input asp-for="MapRef3" id="MapRef3" class="govuk-input bse-farm-mapref-input"
-                               maxlength="3" spellcheck="false" autocomplete="off" aria-label="Map reference northing" />
-                        <button type="button" id="estimate-map-ref-btn" class="govuk-button govuk-button--secondary bse-farm-legacy-btn bse-farm-legacy-btn--estimate govuk-!-margin-bottom-0">Estimate</button>
+                               maxlength="3" spellcheck="false" autocomplete="off" aria-label="Map reference northing" readonly="@(!canEditDefraControls)" />
+                        <button type="button" id="estimate-map-ref-btn" class="govuk-button govuk-button--secondary bse-farm-legacy-btn bse-farm-legacy-btn--estimate govuk-!-margin-bottom-0" disabled="@(!canEditDefraControls)">Estimate</button>
                     </div>
                 </fieldset>
                 <p id="estimate-map-ref-msg" class="govuk-hint" style="display:none"></p>
@@ -95,7 +99,7 @@
     <div class="bse-farm-legacy__section">
         <div class="bse-farm-legacy__row bse-farm-legacy__row--button">
             <div class="bse-farm-legacy__field bse-farm-legacy__field--button">
-                <button type="button" id="use-above-address" class="govuk-button govuk-button--secondary bse-farm-legacy-btn bse-farm-legacy-btn--use govuk-!-margin-bottom-0">Use Above Address</button>
+                <button type="button" id="use-above-address" class="govuk-button govuk-button--secondary bse-farm-legacy-btn bse-farm-legacy-btn--use govuk-!-margin-bottom-0" disabled="@(!canEditDefraControls)">Use Above Address</button>
             </div>
             <div class="bse-farm-legacy__field"></div>
         </div>
@@ -103,11 +107,11 @@
         <div class="bse-farm-legacy__row">
             <div class="bse-farm-legacy__field">
                 <label asp-for="CorrespondenceAddress1" class="govuk-label">Correspondence Address</label>
-                <input asp-for="CorrespondenceAddress1" id="CorrespondenceAddress1" class="govuk-input bse-farm-legacy__input" maxlength="50" />
+                <input asp-for="CorrespondenceAddress1" id="CorrespondenceAddress1" class="govuk-input bse-farm-legacy__input" maxlength="50" readonly="@(!canEditDefraControls)" />
             </div>
             <div class="bse-farm-legacy__field">
                 <label class="govuk-label" for="AuthorityCountyID">Authority County</label>
-                <select asp-for="AuthorityCountyID" id="AuthorityCountyID" class="govuk-select bse-farm-legacy__input" disabled="@(isNonGbFarm ? "disabled" : null)">
+                <select asp-for="AuthorityCountyID" id="AuthorityCountyID" class="govuk-select bse-farm-legacy__input" disabled="@(lockGbOnlyField ? "disabled" : null)">
                     <option value="">-- Select --</option>
                     @foreach (var ac in authCountyOptions)
                     {
@@ -120,11 +124,11 @@
         <div class="bse-farm-legacy__row">
             <div class="bse-farm-legacy__field bse-farm-legacy__field--continuation">
                 <label asp-for="CorrespondenceAddress2" class="govuk-label">Correspondence address line 2</label>
-                <input asp-for="CorrespondenceAddress2" id="CorrespondenceAddress2" class="govuk-input bse-farm-legacy__input" maxlength="50" />
+                <input asp-for="CorrespondenceAddress2" id="CorrespondenceAddress2" class="govuk-input bse-farm-legacy__input" maxlength="50" readonly="@(!canEditDefraControls)" />
             </div>
             <div class="bse-farm-legacy__field">
                 <label class="govuk-label" for="AuthorityID">Local Authority</label>
-                <select asp-for="AuthorityID" id="AuthorityID" class="govuk-select bse-farm-legacy__input" disabled="@(isNonGbFarm ? "disabled" : null)">
+                <select asp-for="AuthorityID" id="AuthorityID" class="govuk-select bse-farm-legacy__input" disabled="@(lockGbOnlyField ? "disabled" : null)">
                     <option value="">-- Select --</option>
                     @foreach (var a in authorityOptions)
                     {
@@ -137,11 +141,11 @@
         <div class="bse-farm-legacy__row">
             <div class="bse-farm-legacy__field bse-farm-legacy__field--continuation">
                 <label asp-for="CorrespondenceAddress3" class="govuk-label">Correspondence address line 3</label>
-                <input asp-for="CorrespondenceAddress3" id="CorrespondenceAddress3" class="govuk-input bse-farm-legacy__input" maxlength="50" />
+                <input asp-for="CorrespondenceAddress3" id="CorrespondenceAddress3" class="govuk-input bse-farm-legacy__input" maxlength="50" readonly="@(!canEditDefraControls)" />
             </div>
             <div class="bse-farm-legacy__field">
                 <label class="govuk-label" for="ADNSRegionID">ADNS Region</label>
-                <select asp-for="ADNSRegionID" id="ADNSRegionID" class="govuk-select bse-farm-legacy__input" disabled="@(isNonGbFarm ? "disabled" : null)">
+                <select asp-for="ADNSRegionID" id="ADNSRegionID" class="govuk-select bse-farm-legacy__input" disabled="@(lockGbOnlyField ? "disabled" : null)">
                     <option value="">-- Select --</option>
                     @foreach (var r in adnsOptions)
                     {
@@ -154,7 +158,7 @@
         <div class="bse-farm-legacy__row">
             <div class="bse-farm-legacy__field">
                 <label asp-for="CorrespondencePostcode" class="govuk-label">Correspondence Postcode</label>
-                <input asp-for="CorrespondencePostcode" id="CorrespondencePostcode" class="govuk-input bse-farm-legacy__input" maxlength="10" />
+                <input asp-for="CorrespondencePostcode" id="CorrespondencePostcode" class="govuk-input bse-farm-legacy__input" maxlength="10" readonly="@(!canEditDefraControls)" />
             </div>
             <div class="bse-farm-legacy__field"></div>
         </div>
@@ -164,52 +168,60 @@
         <div class="bse-farm-legacy__row">
             <div class="bse-farm-legacy__field">
                 <label asp-for="Herdmark1" class="govuk-label">Herdmark 1</label>
-                <input asp-for="Herdmark1" class="govuk-input bse-farm-legacy__input" maxlength="8" spellcheck="false" />
+                <input asp-for="Herdmark1" class="govuk-input bse-farm-legacy__input" maxlength="8" spellcheck="false" readonly="@(!canEditJointControls)" />
             </div>
             <div class="bse-farm-legacy__field">
                 <label asp-for="NumericHerdmark1" class="govuk-label">Numeric Herdmark 1</label>
-                <input asp-for="NumericHerdmark1" class="govuk-input bse-farm-legacy__input" maxlength="6" spellcheck="false" />
+                <input asp-for="NumericHerdmark1" class="govuk-input bse-farm-legacy__input" maxlength="6" spellcheck="false" readonly="@(!canEditJointControls)" />
             </div>
         </div>
 
         <div class="bse-farm-legacy__row">
             <div class="bse-farm-legacy__field">
                 <label asp-for="Herdmark2" class="govuk-label">Herdmark 2</label>
-                <input asp-for="Herdmark2" class="govuk-input bse-farm-legacy__input" maxlength="8" spellcheck="false" />
+                <input asp-for="Herdmark2" class="govuk-input bse-farm-legacy__input" maxlength="8" spellcheck="false" readonly="@(!canEditJointControls)" />
             </div>
             <div class="bse-farm-legacy__field">
                 <label asp-for="NumericHerdmark2" class="govuk-label">Numeric Herdmark 2</label>
-                <input asp-for="NumericHerdmark2" class="govuk-input bse-farm-legacy__input" maxlength="6" spellcheck="false" />
+                <input asp-for="NumericHerdmark2" class="govuk-input bse-farm-legacy__input" maxlength="6" spellcheck="false" readonly="@(!canEditJointControls)" />
             </div>
         </div>
 
         <div class="bse-farm-legacy__row">
             <div class="bse-farm-legacy__field">
                 <label asp-for="Herdmark3" class="govuk-label">Herdmark 3</label>
-                <input asp-for="Herdmark3" class="govuk-input bse-farm-legacy__input" maxlength="8" spellcheck="false" />
+                <input asp-for="Herdmark3" class="govuk-input bse-farm-legacy__input" maxlength="8" spellcheck="false" readonly="@(!canEditJointControls)" />
             </div>
             <div class="bse-farm-legacy__field">
                 <label asp-for="HerdType" class="govuk-label">Herd Type</label>
-                <select asp-for="HerdType" class="govuk-select bse-farm-legacy__input">
+                <select asp-for="HerdType" class="govuk-select bse-farm-legacy__input" disabled="@(!canEditVlaControls)">
                     <option value="">-- Select --</option>
                     @foreach (var h in herdTypeOptions)
                     {
                         <option value="@h.Code" selected="@(h.Code == Model.HerdType ? "selected" : null)">@h.Description</option>
                     }
                 </select>
+                @if (!canEditVlaControls)
+                {
+                    <input type="hidden" asp-for="HerdType" />
+                }
             </div>
         </div>
 
         <div class="bse-farm-legacy__row">
             <div class="bse-farm-legacy__field">
                 <label asp-for="PedigreeType" class="govuk-label">Pedigree</label>
-                <select asp-for="PedigreeType" class="govuk-select bse-farm-legacy__input">
+                <select asp-for="PedigreeType" class="govuk-select bse-farm-legacy__input" disabled="@(!canEditVlaControls)">
                     <option value="">-- Select --</option>
                     @foreach (var p in pedigreeOptions)
                     {
                         <option value="@p.Code" selected="@(p.Code == Model.PedigreeType ? "selected" : null)">@p.Description</option>
                     }
                 </select>
+                @if (!canEditVlaControls)
+                {
+                    <input type="hidden" asp-for="PedigreeType" />
+                }
             </div>
             <div class="bse-farm-legacy__field"></div>
         </div>
