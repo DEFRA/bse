@@ -60,13 +60,18 @@ public class CiModel(
     public string FromEmailAddress => _msGraphOptions.FromAddress;
     public string DefaultToEmailAddress => _msGraphOptions.ToAddress;
 
-    public IActionResult OnGet()
+    public async Task<IActionResult> OnGetAsync()
     {
-        if (TryLoadPreview(out var preview))
+        // A fresh visit to this page (e.g. via the breadcrumb or menu) always starts clean —
+        // a previously generated report must not resurface just because TempData hadn't expired yet.
+        TempData.Remove(PreviewTempDataKey);
+
+        var lastReference = await adnsExportService.GetLastReferenceAsync("CI");
+        if (lastReference is not null)
         {
-            Preview = preview;
-            if (string.IsNullOrWhiteSpace(UserEmailAddress))
-                UserEmailAddress = DefaultToEmailAddress;
+            AdnsYear = lastReference.LastAdnsReferenceYear ?? DateTime.Today.Year;
+            StartAdnsNumber = (lastReference.LastAdnsReferenceNumber ?? 0) + 1;
+            EmailReference = $"DBSE{StartAdnsNumber:00000}";
         }
 
         return Page();
@@ -117,6 +122,9 @@ public class CiModel(
             return Page();
         }
 
+        // Keep the preview available in case validation below fails and we re-render this same form.
+        TempData.Keep(PreviewTempDataKey);
+
         Preview = preview;
 
         if (string.IsNullOrWhiteSpace(UserEmailAddress))
@@ -154,7 +162,7 @@ public class CiModel(
 
     private bool TryLoadPreview(out AdnsExportPreview? preview)
     {
-        var json = TempData.Peek(PreviewTempDataKey)?.ToString();
+        var json = TempData[PreviewTempDataKey]?.ToString();
         preview = string.IsNullOrWhiteSpace(json)
             ? null
             : JsonSerializer.Deserialize<AdnsExportPreview>(json);

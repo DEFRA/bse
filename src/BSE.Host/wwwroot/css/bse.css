@@ -965,11 +965,7 @@
 }
 
 .govuk-hint {
-    display: none !important;
-}
-
-.bse-home-page .govuk-hint {
-    display: block !important;
+    display: block;
 }
 
 .bse-rbse {
@@ -3100,6 +3096,81 @@
     .bse-inline-fields {
         flex-direction: column;
         gap: 12px;
+    }
+}
+
+/* ADNS export legacy layout — label sits beside its input on the same row, matching legacy screens */
+.bse-adns-form-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 2rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+}
+
+/* GOV.UK width utility classes only cap max-width (base .govuk-input is width:100%), so the
+   same class renders at different sizes depending on the surrounding flex/block context.
+   Force a fixed width here so Email reference is identical across GB/CI/NI regardless of layout. */
+.bse-adns-field > .govuk-input--width-10 {
+    width: 11.5em !important;
+    max-width: 11.5em !important;
+    flex: 0 0 auto;
+}
+
+.bse-adns-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Line up the start of every input box across rows, regardless of each row's label length
+   (Email reference/ADNS Reference/Number of cases in:/Confirmation date are all different widths). */
+.bse-adns-form-row > .govuk-form-group > .govuk-label,
+.bse-adns-form-row > .bse-adns-group > .govuk-label {
+    min-width: 170px;
+}
+
+.bse-adns-group > .govuk-label {
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+.bse-adns-field {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    column-gap: 0.5rem;
+    row-gap: 0.25rem;
+    margin: 0;
+}
+
+/* Only fields with a hint/error beneath the input (e.g. NI Region) need to wrap. */
+.bse-adns-field--with-hint {
+    flex-wrap: wrap;
+}
+
+.bse-adns-field > .govuk-label {
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+.bse-adns-field > .govuk-hint,
+.bse-adns-field > .govuk-error-message {
+    flex-basis: 100%;
+    margin: 0;
+}
+
+@media (max-width: 40.0525em) {
+    .bse-adns-form-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .bse-adns-group {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
     }
 }
 

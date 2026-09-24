@@ -89,10 +89,12 @@ public class CasesByHoldingHerdmarkModel : PageModel
         // Legacy's HTML export had no gridlines outside the bordered table; match that here.
         ws.ShowGridLines = false;
         // Legacy exported the raw result-set column names, not the on-screen captions.
+        // Legacy's DataGrid export bound to the whole result set, so it also included the
+        // hidden DaysElapsed sort value alongside the on-screen TimeElapsed column.
         string[] headers = ["RBSE", "CPHH", "Sex", "Eartag", "BirthDate", "Origin",
             "PurchaseDate", "PurchaseAgeInMonths", "OnsetDate", "FormADate",
             "SlaughterDate", "FinalResultDate", "OnsetAgeInMonths",
-            "Fate", "FinalResult", "Survey", "CaseStatus", "TimeElapsed"];
+            "Fate", "FinalResult", "Survey", "CaseStatus", "TimeElapsed", "DaysElapsed"];
         // Legacy's exported header row was plain text, not bold.
         for (var c = 1; c <= headers.Length; c++) { ws.Cell(1, c).Value = headers[c - 1]; }
         var row = 2;
@@ -116,6 +118,7 @@ public class CasesByHoldingHerdmarkModel : PageModel
             ws.Cell(row, 16).Value = r.Survey;
             ws.Cell(row, 17).Value = r.CaseStatus;
             ws.Cell(row, 18).Value = r.TimeElapsed;
+            ws.Cell(row, 19).Value = r.DaysElapsed?.ToString();
             row++;
         }
         // Legacy rendered the exported grid with all borders around the record area only.

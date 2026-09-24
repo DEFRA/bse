@@ -75,11 +75,26 @@ public class NiModel(
     public IReadOnlyList<NiGridRow> PagedRows =>
         ApplySorting(CurrentRows).Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
 
-    public IActionResult OnGet()
+    public async Task<IActionResult> OnGetAsync()
     {
-        RestoreContext();
-        LoadDraftCases();
-        LoadPreview();
+        // A fresh visit to this page (e.g. via the breadcrumb or menu) always starts clean —
+        // neither the staged cases grid nor a previously generated report should resurface
+        // just because TempData hadn't expired yet.
+        TempData.Remove(DraftTempDataKey);
+        TempData.Remove(PreviewTempDataKey);
+        TempData.Remove(ContextTempDataKey);
+        DraftCases = [];
+        Preview = null;
+
+        InputConfirmationDate = DateTime.Today;
+
+        var lastReference = await adnsExportService.GetLastReferenceAsync("NI");
+        if (lastReference is not null)
+        {
+            InputAdnsYear = lastReference.LastAdnsReferenceYear ?? DateTime.Today.Year;
+            InputAdnsNumber = (lastReference.LastAdnsReferenceNumber ?? 0) + 1;
+            EmailReference = $"DBSE{InputAdnsNumber:00000}";
+        }
 
         if (string.IsNullOrWhiteSpace(UserEmailAddress))
             UserEmailAddress = DefaultToEmailAddress;

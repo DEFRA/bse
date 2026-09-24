@@ -1,7 +1,7 @@
 ﻿@page "{rbse}"
 @model VlaModel
 @{
-    ViewData["Title"] = $"Case (APHA) — {Model.Case.Rbse}";
+    ViewData["TiGet-Process -Id 5776 -ErrorAction SilentlyContinue | Stop-Process -ForceGet-Process -Id 5776 -ErrorAction SilentlyContinue | Stop-Process -Forcetle"] = $"Case (APHA) — {Model.Case.Rbse}";
     string rbseNoSlash = Model.Case.Rbse.Replace("/", "");
     var viewDocsUrl = string.IsNullOrWhiteSpace(Model.SpolSiteUrl)
         ? null
