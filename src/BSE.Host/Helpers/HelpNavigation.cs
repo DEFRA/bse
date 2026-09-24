@@ -37,6 +37,7 @@ public static class HelpNavigation
         ("/Farm/Details", "CaseEntryFarm"),
         ("/Farm/Edit", "CaseEntryFarm"),
         ("/Farm/New", "CaseEntryFarm"),
+        ("/Farm/MoveCaseNewFarm", "MoveCase"),
 
         ("/Search/Cases", "SearchCase"),
         ("/Search/CasesByHerdmark", "SearchCaseByHerdMark"),

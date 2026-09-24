@@ -41,53 +41,59 @@
     @if (Model.Preview is null)
     {
         <form method="post" asp-page-handler="GenerateReport" novalidate>
-            <div class="govuk-form-group @(ViewContext.ModelState["EmailReference"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
-                <label asp-for="EmailReference" class="govuk-label">Email reference</label>
-                <input asp-for="EmailReference" class="govuk-input" />
-                <span asp-validation-for="EmailReference" class="govuk-error-message"></span>
+            <div class="bse-adns-form-row">
+                <div class="govuk-form-group bse-adns-field @(ViewContext.ModelState["EmailReference"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+                    <label asp-for="EmailReference" class="govuk-label">Email reference</label>
+                    <input asp-for="EmailReference" class="govuk-input govuk-input--width-10" />
+                    <span asp-validation-for="EmailReference" class="govuk-error-message"></span>
+                </div>
+
+                <div class="bse-adns-group" role="group" aria-labelledby="ci-adns-reference-legend">
+                    <span id="ci-adns-reference-legend" class="govuk-label">ADNS Reference</span>
+                    <div class="bse-inline-fields">
+                        <div class="govuk-form-group bse-adns-field @(ViewContext.ModelState["AdnsYear"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+                            <label asp-for="AdnsYear" class="govuk-label govuk-visually-hidden">Year</label>
+                            <input asp-for="AdnsYear" type="number" class="govuk-input govuk-input--width-5" />
+                            <span asp-validation-for="AdnsYear" class="govuk-error-message"></span>
+                        </div>
+                        <div class="govuk-form-group bse-adns-field @(ViewContext.ModelState["StartAdnsNumber"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+                            <label asp-for="StartAdnsNumber" class="govuk-label govuk-visually-hidden">Start number</label>
+                            <input asp-for="StartAdnsNumber" type="number" class="govuk-input govuk-input--width-5" />
+                            <span asp-validation-for="StartAdnsNumber" class="govuk-error-message"></span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <fieldset class="govuk-fieldset">
-                <legend class="govuk-fieldset__legend">ADNS Reference</legend>
-                <div class="bse-inline-fields">
-                    <div class="govuk-form-group @(ViewContext.ModelState["AdnsYear"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
-                        <label asp-for="AdnsYear" class="govuk-label">Year</label>
-                        <input asp-for="AdnsYear" type="number" class="govuk-input govuk-input--width-5" />
-                        <span asp-validation-for="AdnsYear" class="govuk-error-message"></span>
-                    </div>
-                    <div class="govuk-form-group @(ViewContext.ModelState["StartAdnsNumber"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
-                        <label asp-for="StartAdnsNumber" class="govuk-label">Start number</label>
-                        <input asp-for="StartAdnsNumber" type="number" class="govuk-input govuk-input--width-5" />
-                        <span asp-validation-for="StartAdnsNumber" class="govuk-error-message"></span>
-                    </div>
-                </div>
-            </fieldset>
-
-            <fieldset class="govuk-fieldset">
-                <legend class="govuk-fieldset__legend">Number of cases in:</legend>
-                <div class="bse-inline-fields">
-                    <div class="govuk-form-group @(ViewContext.ModelState["JerseyCases"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
-                        <label asp-for="JerseyCases" class="govuk-label">Jersey</label>
-                        <input asp-for="JerseyCases" type="number" class="govuk-input govuk-input--width-4" min="0" />
-                        <span asp-validation-for="JerseyCases" class="govuk-error-message"></span>
-                    </div>
-                    <div class="govuk-form-group @(ViewContext.ModelState["GuernseyCases"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
-                        <label asp-for="GuernseyCases" class="govuk-label">Guernsey</label>
-                        <input asp-for="GuernseyCases" type="number" class="govuk-input govuk-input--width-4" min="0" />
-                        <span asp-validation-for="GuernseyCases" class="govuk-error-message"></span>
-                    </div>
-                    <div class="govuk-form-group @(ViewContext.ModelState["IsleOfManCases"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
-                        <label asp-for="IsleOfManCases" class="govuk-label">Isle of Man</label>
-                        <input asp-for="IsleOfManCases" type="number" class="govuk-input govuk-input--width-4" min="0" />
-                        <span asp-validation-for="IsleOfManCases" class="govuk-error-message"></span>
+            <div class="bse-adns-form-row">
+                <div class="bse-adns-group" role="group" aria-labelledby="ci-cases-in-legend">
+                    <span id="ci-cases-in-legend" class="govuk-label">Number of cases in:</span>
+                    <div class="bse-inline-fields">
+                        <div class="govuk-form-group bse-adns-field @(ViewContext.ModelState["JerseyCases"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+                            <label asp-for="JerseyCases" class="govuk-label">Jersey</label>
+                            <input asp-for="JerseyCases" type="number" class="govuk-input govuk-input--width-4" min="0" />
+                            <span asp-validation-for="JerseyCases" class="govuk-error-message"></span>
+                        </div>
+                        <div class="govuk-form-group bse-adns-field @(ViewContext.ModelState["GuernseyCases"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+                            <label asp-for="GuernseyCases" class="govuk-label">Guernsey</label>
+                            <input asp-for="GuernseyCases" type="number" class="govuk-input govuk-input--width-4" min="0" />
+                            <span asp-validation-for="GuernseyCases" class="govuk-error-message"></span>
+                        </div>
+                        <div class="govuk-form-group bse-adns-field @(ViewContext.ModelState["IsleOfManCases"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+                            <label asp-for="IsleOfManCases" class="govuk-label">Isle of Man</label>
+                            <input asp-for="IsleOfManCases" type="number" class="govuk-input govuk-input--width-4" min="0" />
+                            <span asp-validation-for="IsleOfManCases" class="govuk-error-message"></span>
+                        </div>
                     </div>
                 </div>
-            </fieldset>
+            </div>
 
-            <div class="govuk-form-group @(ViewContext.ModelState["ConfirmationDate"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
-                <label asp-for="ConfirmationDate" class="govuk-label">Confirmation date</label>
-                <input asp-for="ConfirmationDate" type="date" class="govuk-input govuk-input--width-10" />
-                <span asp-validation-for="ConfirmationDate" class="govuk-error-message"></span>
+            <div class="bse-adns-form-row">
+                <div class="govuk-form-group bse-adns-field @(ViewContext.ModelState["ConfirmationDate"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+                    <label asp-for="ConfirmationDate" class="govuk-label">Confirmation date</label>
+                    <input asp-for="ConfirmationDate" type="date" class="govuk-input govuk-input--width-10" />
+                    <span asp-validation-for="ConfirmationDate" class="govuk-error-message"></span>
+                </div>
             </div>
 
             <div class="govuk-button-group">
@@ -98,20 +104,19 @@
     }
     else
     {
-        <h2 class="govuk-heading-m">Generated report — @Model.Preview.Cases.Count cases</h2>
-
         <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
 
         <div class="govuk-grid-row">
             <div class="govuk-grid-column-one-half">
-                <p class="govuk-body"><strong>Starting ADNS Reference:</strong> @Model.Preview.StartAdnsReference</p>
+                <p class="govuk-body">Starting ADNS Reference: @Model.Preview.StartAdnsReference</p>
             </div>
             <div class="govuk-grid-column-one-half">
-                <p class="govuk-body"><strong>Ending ADNS Reference:</strong> @Model.Preview.EndAdnsReference</p>
+                <p class="govuk-body">Ending ADNS Reference: @Model.Preview.EndAdnsReference</p>
             </div>
         </div>
 
         <table class="govuk-table">
+            <caption class="govuk-visually-hidden">Generated report summary by ADNS region</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
                     <th scope="col" class="govuk-table__header">ADNS Number</th>
@@ -142,8 +147,8 @@
             <input type="hidden" asp-for="SaveAdnsData" value="false" />
 
             <div class="govuk-form-group">
-                <label class="govuk-label">From:</label>
-                <input class="govuk-input govuk-!-width-two-thirds" value="@Model.FromEmailAddress" readonly />
+                <label class="govuk-label" for="ci-email-from">From:</label>
+                <input id="ci-email-from" class="govuk-input govuk-!-width-two-thirds" value="@Model.FromEmailAddress" readonly />
             </div>
 
             <div class="govuk-form-group">
@@ -153,13 +158,13 @@
             </div>
 
             <div class="govuk-form-group">
-                <label class="govuk-label">Subject:</label>
-                <input class="govuk-input govuk-!-width-two-thirds" value="@Model.Preview.EmailSubject" readonly />
+                <label class="govuk-label" for="ci-email-subject">Subject:</label>
+                <input id="ci-email-subject" class="govuk-input govuk-!-width-two-thirds" value="@Model.Preview.EmailSubject" readonly />
             </div>
 
             <div class="govuk-form-group">
-                <label class="govuk-label">Message:</label>
-                <textarea class="govuk-textarea govuk-!-width-two-thirds" rows="8" readonly>@Model.Preview.EmailBody</textarea>
+                <label class="govuk-label" for="ci-email-body">Message:</label>
+                <textarea id="ci-email-body" class="govuk-textarea govuk-!-width-two-thirds" rows="8" readonly>@Model.Preview.EmailBody</textarea>
             </div>
 
             <div class="govuk-button-group">

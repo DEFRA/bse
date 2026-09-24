@@ -1,7 +1,7 @@
 ﻿@page "{rbse}"
 @model VlaModel
 @{
-    ViewData["Title"] = $"Case (APHA) — {Model.Case.Rbse}";
+    ViewData["TiGet-Process -Id 5776 -ErrorAction SilentlyContinue | Stop-Process -ForceGet-Process -Id 5776 -ErrorAction SilentlyContinue | Stop-Process -Forcetle"] = $"Case (APHA) — {Model.Case.Rbse}";
     string rbseNoSlash = Model.Case.Rbse.Replace("/", "");
     var viewDocsUrl = string.IsNullOrWhiteSpace(Model.SpolSiteUrl)
         ? null
@@ -10,6 +10,15 @@
     string? E(string key) => ViewData.ModelState[key]?.Errors.FirstOrDefault()?.ErrorMessage;
     string DateVal(DateTime? d) => d?.ToString("yyyy-MM-dd") ?? string.Empty;
     var vlaReadOnly = !Model.CanEditMainCase;
+
+    var showInformDefraWarning = Model.Case.BirthDate.HasValue;
+    var showOnsetDateWarning = Model.Case.OnsetDate.HasValue
+        && Model.Case.FormADate.HasValue
+        && Model.Case.OnsetDate.Value.Date < Model.Case.FormADate.Value.Date.AddMonths(-3);
+    var showOnsetAgeWarning = Model.Case.OnsetAgeInMonths.HasValue && Model.Case.OnsetAgeInMonths.Value < 18;
+    var showHerdDateWarning = Model.Case.HerdEntryDate.HasValue
+        && Model.Case.BirthDate.HasValue
+        && Model.Case.HerdEntryDate.Value.Date < Model.Case.BirthDate.Value.Date.AddMonths(18);
 }
 
 <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
@@ -128,7 +137,23 @@ else
         <fieldset class="bse-form-fieldset-reset" disabled="@(vlaReadOnly ? "disabled" : null)">
         <div class="vla-legacy-grid">
             <div class="vla-legacy-field @(E("Case.BirthDate") is not null ? "govuk-form-group--error" : "")">
-                <label asp-for="Case.BirthDate" class="govuk-label">Date Of Birth</label>
+                <div class="bse-vla-help-inline">
+                    <label asp-for="Case.BirthDate" class="govuk-label">Date Of Birth</label>
+                    @if (showInformDefraWarning)
+                    {
+                        <button type="button"
+                                class="bse-vla-help__icon"
+                                data-bse-tooltip-trigger
+                                aria-label="Date of birth warning"
+                                aria-controls="vla-inform-defra-tooltip"
+                                aria-expanded="false">
+                            <span aria-hidden="true">*</span>
+                        </button>
+                        <span id="vla-inform-defra-tooltip" class="bse-vla-help__tooltip" role="tooltip" hidden>
+                            DEFRA may need informing if you change the Date Of Birth
+                        </span>
+                    }
+                </div>
                 <div>
                     @if (E("Case.BirthDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.BirthDate")</p> }
                     <input asp-for="Case.BirthDate" type="date" class="govuk-input vla-legacy-input @(E("Case.BirthDate") is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.BirthDate)" />
@@ -243,14 +268,46 @@ else
 
         <div class="vla-legacy-grid">
             <div class="vla-legacy-field @(E("Case.HerdEntryDate") is not null ? "govuk-form-group--error" : "")">
-                <label asp-for="Case.HerdEntryDate" class="govuk-label">Herd Entry Date</label>
+                <div class="bse-vla-help-inline">
+                    <label asp-for="Case.HerdEntryDate" class="govuk-label">Herd Entry Date</label>
+                    @if (showHerdDateWarning)
+                    {
+                        <button type="button"
+                                class="bse-vla-help__icon"
+                                data-bse-tooltip-trigger
+                                aria-label="Herd entry warning"
+                                aria-controls="vla-herd-date-tooltip"
+                                aria-expanded="false">
+                            <span aria-hidden="true">*</span>
+                        </button>
+                        <span id="vla-herd-date-tooltip" class="bse-vla-help__tooltip" role="tooltip" hidden>
+                            Are you sure the Herd Entry is less than 18 months after the Date of Birth
+                        </span>
+                    }
+                </div>
                 <div>
                     @if (E("Case.HerdEntryDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.HerdEntryDate")</p> }
                     <input asp-for="Case.HerdEntryDate" type="date" class="govuk-input vla-legacy-input @(E("Case.HerdEntryDate") is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.HerdEntryDate)" />
                 </div>
             </div>
             <div class="vla-legacy-field @(E("Case.OnsetDate") is not null ? "govuk-form-group--error" : "")">
-                <label asp-for="Case.OnsetDate" class="govuk-label">Onset Date</label>
+                <div class="bse-vla-help-inline">
+                    <label asp-for="Case.OnsetDate" class="govuk-label">Onset Date</label>
+                    @if (showOnsetDateWarning)
+                    {
+                        <button type="button"
+                                class="bse-vla-help__icon"
+                                data-bse-tooltip-trigger
+                                aria-label="Onset date warning"
+                                aria-controls="vla-onset-date-tooltip"
+                                aria-expanded="false">
+                            <span aria-hidden="true">*</span>
+                        </button>
+                        <span id="vla-onset-date-tooltip" class="bse-vla-help__tooltip" role="tooltip" hidden>
+                            Are you sure that the onset date was more than 3 months before the Form A Date?
+                        </span>
+                    }
+                </div>
                 <div>
                     @if (E("Case.OnsetDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.OnsetDate")</p> }
                     <input asp-for="Case.OnsetDate" type="date" class="govuk-input vla-legacy-input @(E("Case.OnsetDate") is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.OnsetDate)" />
@@ -277,7 +334,23 @@ else
                 </div>
             </div>
             <div class="vla-legacy-field">
-                <label class="govuk-label">Onset Age</label>
+                <div class="bse-vla-help-inline">
+                    <label class="govuk-label">Onset Age</label>
+                    @if (showOnsetAgeWarning)
+                    {
+                        <button type="button"
+                                class="bse-vla-help__icon"
+                                data-bse-tooltip-trigger
+                                aria-label="Onset age warning"
+                                aria-controls="vla-onset-age-tooltip"
+                                aria-expanded="false">
+                            <span aria-hidden="true">*</span>
+                        </button>
+                        <span id="vla-onset-age-tooltip" class="bse-vla-help__tooltip" role="tooltip" hidden>
+                            Are you sure that the onset age is less than 18 months?
+                        </span>
+                    }
+                </div>
                 <div class="vla-legacy-age-group vla-legacy-age-group--header">
                     <button type="button" id="btn-calc-onset-age" class="govuk-button govuk-button--secondary vla-legacy-calc-button">Calculate</button>
                 </div>
@@ -303,10 +376,7 @@ else
             </div>
         </div>
 
-        <div id="onset-age-warning" class="govuk-warning-text govuk-!-margin-top-2 govuk-!-margin-bottom-2" style="@(Model.Case.OnsetAgeInMonths.HasValue && Model.Case.OnsetAgeInMonths.Value < 18 ? "" : "display:none")">
-            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
-            <strong class="govuk-warning-text__text"><span class="govuk-warning-text__assistive">Warning</span> Onset age appears to be less than 18 months — please check.</strong>
-        </div>
+        <div id="onset-age-warning" class="govuk-visually-hidden" style="display:none"></div>
 
         <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
 
@@ -585,6 +655,46 @@ else
         border-color: #005a30;
     }
 
+    .bse-vla-help-inline {
+        display: inline-flex;
+        align-items: center;
+        position: relative;
+    }
+
+    .bse-vla-help__icon {
+        border: 0;
+        background: transparent;
+        color: #00703c;
+        font-size: 1.35rem;
+        line-height: 1;
+        font-weight: 700;
+        padding: 0 2px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: help;
+    }
+
+    .bse-vla-help__icon:focus {
+        outline: 3px solid #ffdd00;
+        outline-offset: 2px;
+    }
+
+    .bse-vla-help__tooltip {
+        position: absolute;
+        left: calc(100% + 0.35rem);
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 20;
+        max-width: 24rem;
+        background: #ffffff;
+        border: 1px solid #b1b4b6;
+        box-shadow: 0 2px 6px rgba(11, 12, 12, 0.15);
+        padding: 0.5rem 0.65rem;
+        font-size: 0.95rem;
+        line-height: 1.3;
+    }
+
     @@media (max-width: 768px) {
         .vla-legacy-grid {
             grid-template-columns: 1fr;
@@ -604,6 +714,64 @@ else
 
 <script>
     (function () {
+        var tooltipTriggers = Array.prototype.slice.call(document.querySelectorAll('[data-bse-tooltip-trigger]'));
+
+        function getTooltipForTrigger(trigger) {
+            var id = trigger ? trigger.getAttribute('aria-controls') : null;
+            return id ? document.getElementById(id) : null;
+        }
+
+        function hideTooltipFor(trigger) {
+            var tooltip = getTooltipForTrigger(trigger);
+            if (!trigger || !tooltip) return;
+            tooltip.hidden = true;
+            trigger.setAttribute('aria-expanded', 'false');
+        }
+
+        function hideAllTooltips(exceptTrigger) {
+            tooltipTriggers.forEach(function (trigger) {
+                if (exceptTrigger && trigger === exceptTrigger) return;
+                hideTooltipFor(trigger);
+            });
+        }
+
+        function showTooltipFor(trigger) {
+            var tooltip = getTooltipForTrigger(trigger);
+            if (!trigger || !tooltip) return;
+            hideAllTooltips(trigger);
+            tooltip.hidden = false;
+            trigger.setAttribute('aria-expanded', 'true');
+        }
+
+        tooltipTriggers.forEach(function (trigger) {
+            var tooltip = getTooltipForTrigger(trigger);
+            if (!tooltip) return;
+
+            trigger.addEventListener('mouseenter', function () { showTooltipFor(trigger); });
+            trigger.addEventListener('mouseleave', function () { hideTooltipFor(trigger); });
+            trigger.addEventListener('focus', function () { showTooltipFor(trigger); });
+            trigger.addEventListener('blur', function () { hideTooltipFor(trigger); });
+            trigger.addEventListener('click', function (e) {
+                e.preventDefault();
+                if (tooltip.hidden) showTooltipFor(trigger); else hideTooltipFor(trigger);
+            });
+
+            tooltip.addEventListener('mouseenter', function () { showTooltipFor(trigger); });
+            tooltip.addEventListener('mouseleave', function () { hideTooltipFor(trigger); });
+        });
+
+        document.addEventListener('click', function (e) {
+            var clickedInside = tooltipTriggers.some(function (trigger) {
+                var tooltip = getTooltipForTrigger(trigger);
+                return trigger.contains(e.target) || (tooltip && tooltip.contains(e.target));
+            });
+            if (!clickedInside) hideAllTooltips();
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') hideAllTooltips();
+        });
+
         var originSel = document.getElementById('Case_Origin');
         var purchaseSection = document.getElementById('purchase-section');
         var hasTracedBabDataOnLoad = @Html.Raw(Model.HasTracedBabData ? "true" : "false");

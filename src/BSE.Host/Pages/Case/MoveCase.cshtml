@@ -117,7 +117,10 @@
     @if (Model.ShowNewFarmPrompt)
     {
         <p class="govuk-body">
-            <a asp-page="/Farm/New" asp-route-cphh="@Model.NewCphh" class="govuk-link">Create New Farm</a>
+            <a asp-page="/Farm/MoveCaseNewFarm"
+               asp-route-returnRbse="@Model.Rbse"
+               asp-route-returnCphh="@Model.NewCphh"
+               class="govuk-link">Create New Farm</a>
         </p>
     }
 

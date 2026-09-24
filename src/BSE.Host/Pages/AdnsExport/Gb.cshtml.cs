@@ -66,22 +66,17 @@ public class GbModel(
 
     public async Task<IActionResult> OnGetAsync()
     {
-        if (TryLoadPreview(out var preview))
-        {
-            Preview = preview;
-            RestoreContext();
-            if (string.IsNullOrWhiteSpace(UserEmailAddress))
-            {
-                UserEmailAddress = DefaultToEmailAddress;
-            }
-            return Page();
-        }
+        // A fresh visit to this page (e.g. via the breadcrumb or menu) always starts clean —
+        // a previously generated report must not resurface just because TempData hadn't expired yet.
+        TempData.Remove(PreviewTempDataKey);
+        TempData.Remove(ContextTempDataKey);
 
         LastReference = await adnsExportService.GetLastReferenceAsync("GB");
         if (LastReference is not null)
         {
             AdnsYear = LastReference.LastAdnsReferenceYear ?? DateTime.Today.Year;
             StartAdnsNumber = (LastReference.LastAdnsReferenceNumber ?? 0) + 1;
+            EmailReference = $"DBSE{StartAdnsNumber:00000}";
         }
         if (string.IsNullOrWhiteSpace(UserEmailAddress))
         {
@@ -131,6 +126,10 @@ public class GbModel(
             return Page();
         }
 
+        // Keep the preview available in case validation below fails and we re-render this same form.
+        TempData.Keep(PreviewTempDataKey);
+        TempData.Keep(ContextTempDataKey);
+
         Preview = preview;
         RestoreContext();
 
@@ -173,7 +172,7 @@ public class GbModel(
 
     private bool TryLoadPreview(out AdnsExportPreview? preview)
     {
-        var previewJson = TempData.Peek(PreviewTempDataKey)?.ToString();
+        var previewJson = TempData[PreviewTempDataKey]?.ToString();
         preview = string.IsNullOrWhiteSpace(previewJson)
             ? null
             : JsonSerializer.Deserialize<AdnsExportPreview>(previewJson);
