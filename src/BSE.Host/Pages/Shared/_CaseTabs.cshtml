@@ -24,6 +24,116 @@
 
 <script>
     (function () {
+        var caseFormSelector = '#case-farm-inline-form, #case-edit-inline-form, #case-bab-inline-form, #edit-vla-form, #case-clinical-inline-form, #case-feeds-inline-form, #case-relations-inline-form';
+        var storagePrefix = 'bse:case-tab-draft:';
+        var initialSnapshot = null;
+        var restoredFromDraft = false;
+
+        function normalizeRbse(rbse) {
+            return (rbse || '').replace(/\//g, '').trim();
+        }
+
+        function getCurrentCaseForm() {
+            return document.querySelector(caseFormSelector);
+        }
+
+        function getCurrentTabPath() {
+            var match = window.location.pathname.match(/^\/Case\/[A-Za-z]+/i);
+            return match ? match[0].toLowerCase() : null;
+        }
+
+        function getDraftStorageKey(tabPath, rbse) {
+            return storagePrefix + tabPath + ':' + normalizeRbse(rbse);
+        }
+
+        function serializeForm(form) {
+            var payload = {};
+            if (!form) {
+                return payload;
+            }
+
+            form.querySelectorAll('input, select, textarea').forEach(function (el) {
+                var name = el.name || el.id;
+                if (!name) {
+                    return;
+                }
+
+                if (el.tagName === 'INPUT') {
+                    var type = (el.type || '').toLowerCase();
+                    if (type === 'hidden' || type === 'submit' || type === 'button' || type === 'reset' || type === 'file' || type === 'image') {
+                        return;
+                    }
+
+                    if (type === 'checkbox') {
+                        payload[name] = !!el.checked;
+                        return;
+                    }
+
+                    if (type === 'radio') {
+                        if (el.checked) {
+                            payload[name] = el.value;
+                        }
+                        return;
+                    }
+                }
+
+                payload[name] = el.value;
+            });
+
+            return payload;
+        }
+
+        function restoreForm(form, payload) {
+            if (!form || !payload) {
+                return;
+            }
+
+            form.querySelectorAll('input, select, textarea').forEach(function (el) {
+                var name = el.name || el.id;
+                if (!name || !(name in payload)) {
+                    return;
+                }
+
+                if (el.tagName === 'INPUT') {
+                    var type = (el.type || '').toLowerCase();
+                    if (type === 'checkbox') {
+                        el.checked = !!payload[name];
+                        return;
+                    }
+
+                    if (type === 'radio') {
+                        el.checked = (el.value === payload[name]);
+                        return;
+                    }
+                }
+
+                el.value = payload[name] ?? '';
+            });
+
+            form.querySelectorAll('select, input[type="checkbox"], input[type="radio"]').forEach(function (el) {
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+        }
+
+        function showUnsavedBanner() {
+            var banner = document.querySelector('.bse-unsaved-banner');
+            if (banner) {
+                banner.hidden = false;
+                return;
+            }
+
+            var form = getCurrentCaseForm();
+            if (!form) {
+                return;
+            }
+
+            var created = document.createElement('div');
+            created.className = 'govuk-inset-text bse-unsaved-banner';
+            created.setAttribute('role', 'status');
+            created.innerHTML = '<strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.';
+            form.insertBefore(created, form.firstChild);
+        }
+
         function hasUnsavedBannerOnPage() {
             var banner = document.querySelector('.bse-unsaved-banner');
             return !!(banner && !banner.hidden);
@@ -33,6 +143,76 @@
             var match = window.location.pathname.match(/\/Case\/[A-Za-z]+\/(\d{9}|\d{3}\/\d{2}\/\d{4})/i);
             return match ? match[1] : null;
         }
+
+        function clearClientSideDrafts(rbse) {
+            var normalized = normalizeRbse(rbse);
+            if (!normalized) {
+                return;
+            }
+
+            for (var i = sessionStorage.length - 1; i >= 0; i--) {
+                var key = sessionStorage.key(i);
+                if (!key || !key.startsWith(storagePrefix)) {
+                    continue;
+                }
+
+                if (key.endsWith(':' + normalized)) {
+                    sessionStorage.removeItem(key);
+                }
+            }
+        }
+
+        function persistCurrentTabDraft() {
+            var form = getCurrentCaseForm();
+            var rbse = extractRbseFromPath();
+            var tabPath = getCurrentTabPath();
+            if (!form || !rbse || !tabPath) {
+                return;
+            }
+
+            var key = getDraftStorageKey(tabPath, rbse);
+            var snapshot = JSON.stringify(serializeForm(form));
+
+            if (restoredFromDraft || snapshot !== initialSnapshot) {
+                sessionStorage.setItem(key, snapshot);
+                showUnsavedBanner();
+            } else {
+                sessionStorage.removeItem(key);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var form = getCurrentCaseForm();
+            var rbse = extractRbseFromPath();
+            var tabPath = getCurrentTabPath();
+            if (!form || !rbse || !tabPath) {
+                return;
+            }
+
+            var key = getDraftStorageKey(tabPath, rbse);
+            var hasSuccessBanner = !!document.querySelector('.govuk-notification-banner--success');
+
+            if (hasSuccessBanner) {
+                sessionStorage.removeItem(key);
+                initialSnapshot = JSON.stringify(serializeForm(form));
+                restoredFromDraft = false;
+                return;
+            }
+
+            initialSnapshot = JSON.stringify(serializeForm(form));
+            var raw = sessionStorage.getItem(key);
+            if (!raw) {
+                return;
+            }
+
+            try {
+                restoreForm(form, JSON.parse(raw));
+                restoredFromDraft = true;
+                showUnsavedBanner();
+            } catch {
+                sessionStorage.removeItem(key);
+            }
+        });
 
         async function hasUnsavedChangesAcrossTabs() {
             if (hasUnsavedBannerOnPage()) {
@@ -74,6 +254,7 @@
                     headers: { 'Accept': 'application/json' },
                     credentials: 'same-origin'
                 });
+                clearClientSideDrafts(rbse);
             } catch {
                 // Navigation should still proceed even if draft-clear call fails.
             }
@@ -89,6 +270,13 @@
         }
 
         document.addEventListener('click', async function (event) {
+            var tabLink = event.target.closest('a.bse-case-tabs__link');
+            if (tabLink) {
+                window.__bseCaseTabNavigationInProgress = true;
+                persistCurrentTabDraft();
+                return;
+            }
+
             var link = event.target.closest('a');
             if (!isHomeLink(link)) {
                 return;

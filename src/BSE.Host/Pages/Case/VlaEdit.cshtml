@@ -402,6 +402,7 @@
             if (!form) return;
             form.addEventListener('submit', function () { saved = true; });
             window.addEventListener('beforeunload', function (e) {
+                if (window.__bseCaseTabNavigationInProgress) return;
                 if (!saved) { e.preventDefault(); e.returnValue = ''; }
             });
             var cancelLink = document.getElementById('cancel-link');

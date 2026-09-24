@@ -32,6 +32,7 @@ public class BabModel(
     public string SpolSiteUrl { get; private set; } = string.Empty;
     public IReadOnlyList<BatchNumberEntry> BatchNumbers { get; private set; } = [];
     public bool CanEditBabControls { get; private set; }
+    public bool HasPurchaseData { get; private set; }
 
     public IEnumerable<LookupItem> AnimalOrigins { get; private set; } = [];
     public IEnumerable<LookupItem> FeedRisks { get; private set; } = [];
@@ -72,6 +73,18 @@ public class BabModel(
         var canEdit = EvaluateLegacyBabEditPermission(currentCase, currentBab);
         if (!canEdit)
             return RedirectToPage(new { rbse = Rbse });
+
+        var normalisedNatalCphh = CphhNormalizer.Normalize(Bab.NatalCphh);
+        if (!string.IsNullOrWhiteSpace(normalisedNatalCphh) && normalisedNatalCphh.Length != 11)
+        {
+            ModelState.AddModelError("Bab.NatalCphh", "Enter CPHH as 11 digits in the format NN/NNN/NNNN/NN.");
+            SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+            await LoadAsync();
+            Bab.NatalCphh = normalisedNatalCphh;
+            return Page();
+        }
+
+        Bab.NatalCphh = string.IsNullOrWhiteSpace(normalisedNatalCphh) ? null : normalisedNatalCphh;
 
         if (Origin != "P")
         {
@@ -129,6 +142,10 @@ public class BabModel(
         Bab            = bab is not null ? BabFormViewModel.FromRecord(bab) : new BabFormViewModel();
         RowStampBase64 = bab?.RowStamp is not null ? Convert.ToBase64String(bab.RowStamp) : null;
         Origin         = caseRecord?.Origin;
+        HasPurchaseData = caseRecord is not null
+            && (caseRecord.PurchaseDate.HasValue
+                || !string.IsNullOrWhiteSpace(caseRecord.PurchasedCounty)
+                || caseRecord.PurchaseAgeInMonths.HasValue);
         CanEditBabControls = EvaluateLegacyBabEditPermission(caseRecord, bab);
         BatchNumbers   = (await batchTask).ToList().AsReadOnly();
         AnimalOrigins  = (await originsTask).Select(x => new LookupItem(x.Id, x.Code, x.Description)).ToList();

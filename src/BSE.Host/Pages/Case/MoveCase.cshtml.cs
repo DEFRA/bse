@@ -21,6 +21,7 @@ public class MoveCaseModel(
 {
     public const string CaseNotFoundMessage = "A case with this RBSE was not found";
     public const string FarmNotFoundMessage = "A farm with this CPHH was not found";
+    public const string InvalidCphhMessage = "Enter CPHH as 11 digits in the format NN/NNN/NNNN/NN.";
     public const string SameCphhMessage = "The CPHH you have entered is the same as the existing one.";
     public const string GbCaseNonGbFarmMessage = "You have entered a GB Case and a Non-GB Farm";
     public const string NonGbCaseGbFarmMessage = "You have entered a Non-GB Case and a GB Farm";
@@ -171,6 +172,12 @@ public class MoveCaseModel(
         if (newCphh.Length == 0)
         {
             CphhError = FarmNotFoundMessage;
+            return;
+        }
+
+        if (newCphh.Length != 11)
+        {
+            CphhError = InvalidCphhMessage;
             return;
         }
 

@@ -19,6 +19,7 @@ public class CphhChangeModel(
     public const string NewCphhRequiredMessage = "You must enter a new CPHH";
     public const string SameCphhMessage = "The Old and New CPHHs are the same";
     public const string NewCphhExistsMessage = "This Farm already exists in the database.";
+    public const string InvalidCphhMessage = "Enter CPHH as 11 digits in the format NN/NNN/NNNN/NN.";
     public const string UpdateFailedMessage = "Error updating the CPHH";
     public const string LoadFailedMessage = "Failed to load farm details.";
     public const string OldCphhRequiredMessage = "You must enter the old CPHH";
@@ -65,6 +66,12 @@ public class CphhChangeModel(
         if (newCphh.Length == 0)
         {
             NewCphhError = NewCphhRequiredMessage;
+            return Page();
+        }
+
+        if (newCphh.Length != 11)
+        {
+            NewCphhError = InvalidCphhMessage;
             return Page();
         }
 
@@ -119,6 +126,12 @@ public class CphhChangeModel(
         if (cphh.Length == 0)
         {
             OldCphhError = OldCphhRequiredMessage;
+            return;
+        }
+
+        if (cphh.Length != 11)
+        {
+            OldCphhError = InvalidCphhMessage;
             return;
         }
 

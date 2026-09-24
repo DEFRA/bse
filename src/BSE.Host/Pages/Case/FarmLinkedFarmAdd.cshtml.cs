@@ -35,6 +35,12 @@ public class FarmLinkedFarmAddModel(
 
         var normalisedCphh = CphhNormalizer.Normalize(RelatedCphh);
 
+        if (string.IsNullOrWhiteSpace(normalisedCphh))
+            ModelState.AddModelError(nameof(RelatedCphh), "Enter a CPHH.");
+
+        if (!string.IsNullOrWhiteSpace(normalisedCphh) && normalisedCphh.Length != 11)
+            ModelState.AddModelError(nameof(RelatedCphh), "Enter CPHH as 11 digits in the format NN/NNN/NNNN/NN.");
+
         if (string.Equals(CphhNormalizer.Normalize(cphh), normalisedCphh, StringComparison.OrdinalIgnoreCase))
             ModelState.AddModelError(nameof(RelatedCphh), "Cannot link a farm to itself.");
 

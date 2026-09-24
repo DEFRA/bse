@@ -50,6 +50,18 @@ public class BabEditModel(
 
     public async Task<IActionResult> OnPostSaveBabAsync(string? rowStampBase64)
     {
+        var normalisedNatalCphh = CphhNormalizer.Normalize(Bab.NatalCphh);
+        if (!string.IsNullOrWhiteSpace(normalisedNatalCphh) && normalisedNatalCphh.Length != 11)
+        {
+            ModelState.AddModelError("Bab.NatalCphh", "Enter CPHH as 11 digits in the format NN/NNN/NNNN/NN.");
+            SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+            await LoadAsync();
+            Bab.NatalCphh = normalisedNatalCphh;
+            return Page();
+        }
+
+        Bab.NatalCphh = string.IsNullOrWhiteSpace(normalisedNatalCphh) ? null : normalisedNatalCphh;
+
         // Traced fields only apply when Origin = "P" (Purchased); mirrors legacy EmptyTracedFields
         if (Origin != "P")
         {
