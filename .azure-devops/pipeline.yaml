@@ -387,7 +387,7 @@ stages:
                   exit 1
                 fi
 
-                ZR=$(az appservice plan show --ids "$PLAN_ID" --query "zoneRedundant" -o tsv)
+                ZR=$(az resource show --ids "$PLAN_ID" --query "properties.zoneRedundant" -o tsv)
                 CAP=$(az appservice plan show --ids "$PLAN_ID" --query "sku.capacity" -o tsv)
                 SKU=$(az appservice plan show --ids "$PLAN_ID" --query "sku.name" -o tsv)
 
