@@ -31,7 +31,7 @@ public class MoveCaseModel(
     [BindProperty(SupportsGet = true)]
     public string Rbse { get; set; } = string.Empty;
 
-    [BindProperty]
+    [BindProperty(SupportsGet = true)]
     public string NewCphh { get; set; } = string.Empty;
 
     public CaseRecord? CaseRecord { get; private set; }
@@ -64,6 +64,9 @@ public class MoveCaseModel(
         if (!string.IsNullOrWhiteSpace(Rbse))
         {
             await LookUpCaseAsync();
+
+            if (CaseFound && !string.IsNullOrWhiteSpace(NewCphh))
+                await CheckNewFarmAsync();
         }
 
         return Page();

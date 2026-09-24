@@ -25,6 +25,19 @@
     string? eHomebredBse1  = ViewData.ModelState["Case.HomebredBse1ReceivedDate"]?.Errors.FirstOrDefault()?.ErrorMessage;
     string? eSummarySheet  = ViewData.ModelState["Case.SummarySheetReceivedDate"]?.Errors.FirstOrDefault()?.ErrorMessage;
     string? ePaperwork     = ViewData.ModelState["Case.PaperworkCompleteDate"]?.Errors.FirstOrDefault()?.ErrorMessage;
+
+    var showFormCDateWarning = eFormC is null
+        && Model.Case.FormCDate.HasValue
+        && Model.Case.FormBDate.HasValue
+        && Model.Case.FormCDate != Model.Case.FormBDate;
+
+    var showHerdEntryDateWarning = false;
+    if (Model.Case.HerdEntryDate.HasValue && Model.Case.BirthDate.HasValue)
+    {
+        var latestBirthDate = Model.Case.HerdEntryDate.Value.Date.AddMonths(-18);
+        var birthDate = Model.Case.BirthDate.Value.Date;
+        showHerdEntryDateWarning = !(birthDate >= new DateTime(1970, 1, 1) && birthDate <= latestBirthDate);
+    }
 }
 
 <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
@@ -146,6 +159,19 @@ else
                             <input asp-for="Case.EartagHerdmark" id="Case_EartagHerdmark" class="govuk-input defra-legacy-eartag-herdmark" maxlength="8" spellcheck="false" autocomplete="off" />
                             <label class="govuk-visually-hidden" for="Case_Eartag">Animal number</label>
                             <input asp-for="Case.Eartag" id="Case_Eartag" class="govuk-input defra-legacy-eartag-animal" maxlength="25" spellcheck="false" autocomplete="off" />
+                            <span class="bse-eartag-help-inline">
+                                <button type="button"
+                                        class="bse-eartag-help__icon"
+                                        data-eartag-tooltip-trigger
+                                        aria-label="Help about eartag format"
+                                        aria-controls="case-eartag-help-tooltip"
+                                        aria-expanded="false">
+                                    <span aria-hidden="true">*</span>
+                                </button>
+                                <span id="case-eartag-help-tooltip" class="bse-eartag-help__tooltip" role="tooltip" hidden>
+                                    Enter the animal eartag in parts: country, herdmark and animal number.
+                                </span>
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -201,9 +227,25 @@ else
 
             <div class="defra-legacy-grid">
                 <div class="defra-legacy-field @(eFormC is not null ? "govuk-form-group--error" : "")">
-                    <label asp-for="Case.FormCDate" class="govuk-label">Form C Date</label>
+                    <div class="bse-eartag-help-inline">
+                        <label asp-for="Case.FormCDate" class="govuk-label">Form C Date</label>
+                        @if (showFormCDateWarning)
+                        {
+                            <button type="button"
+                                    class="bse-eartag-help__icon bse-eartag-help__icon--small"
+                                    data-bse-tooltip-trigger
+                                    aria-label="Form C date warning"
+                                    aria-controls="case-formc-warning-tooltip"
+                                    aria-expanded="false">
+                                <span aria-hidden="true">*</span>
+                            </button>
+                            <span id="case-formc-warning-tooltip" class="bse-eartag-help__tooltip" role="tooltip" hidden>
+                                Are you sure the Form C Date isn't the same as the Form B Date?
+                            </span>
+                        }
+                    </div>
                     @if (eFormC is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eFormC</p> }
-                    @if (eFormC is null && Model.Case.FormCDate.HasValue && Model.Case.FormBDate.HasValue && Model.Case.FormCDate != Model.Case.FormBDate)
+                    @if (showFormCDateWarning)
                     {
                         <p class="govuk-warning-text govuk-!-margin-bottom-0 govuk-!-font-size-16">
                             <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
@@ -395,7 +437,23 @@ else
 
             <div class="defra-legacy-grid">
                 <div class="defra-legacy-field @(eBirth is not null ? "govuk-form-group--error" : "")">
-                    <label asp-for="Case.BirthDate" class="govuk-label">Date of Birth</label>
+                    <div class="bse-eartag-help-inline">
+                        <label asp-for="Case.BirthDate" class="govuk-label">Date of Birth</label>
+                        @if (eBirth is null && showHerdEntryDateWarning)
+                        {
+                            <button type="button"
+                                    class="bse-eartag-help__icon bse-eartag-help__icon--small"
+                                    data-bse-tooltip-trigger
+                                    aria-label="Herd entry date warning"
+                                    aria-controls="case-herdentry-warning-tooltip"
+                                    aria-expanded="false">
+                                <span aria-hidden="true">*</span>
+                            </button>
+                            <span id="case-herdentry-warning-tooltip" class="bse-eartag-help__tooltip" role="tooltip" hidden>
+                                Are you sure the Herd Entry is less than 18 months after the Date of Birth
+                            </span>
+                        }
+                    </div>
                     @if (eBirth is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eBirth</p> }
                     <input asp-for="Case.BirthDate" type="date" class="govuk-input defra-legacy-date @(eBirth is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.BirthDate)" />
                 </div>
@@ -725,6 +783,51 @@ else
         border-color: #005a30;
     }
 
+    .bse-eartag-help-inline {
+        display: inline-flex;
+        align-items: center;
+        position: relative;
+    }
+
+    .bse-eartag-help__icon {
+        border: 0;
+        background: transparent;
+        color: #00703c;
+        font-size: 1.7rem;
+        line-height: 1;
+        font-weight: 700;
+        padding: 0 2px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: help;
+    }
+
+    .bse-eartag-help__icon--small {
+        font-size: 1.3rem;
+        padding: 0 1px;
+    }
+
+    .bse-eartag-help__icon:focus {
+        outline: 3px solid #ffdd00;
+        outline-offset: 2px;
+    }
+
+    .bse-eartag-help__tooltip {
+        position: absolute;
+        left: calc(100% + 0.35rem);
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 20;
+        max-width: 24rem;
+        background: #ffffff;
+        border: 1px solid #b1b4b6;
+        box-shadow: 0 2px 6px rgba(11, 12, 12, 0.15);
+        padding: 0.5rem 0.65rem;
+        font-size: 0.95rem;
+        line-height: 1.3;
+    }
+
     @@media (max-width: 768px) {
         .defra-legacy-grid {
             grid-template-columns: 1fr;
@@ -751,6 +854,194 @@ else
         var showAddTestBtn = document.getElementById('show-add-test-row');
         var addTestRow = document.getElementById('add-test-row-inline');
         var cancelAddTestBtn = document.getElementById('cancel-add-test-row');
+        var tooltipTriggers = Array.prototype.slice.call(document.querySelectorAll('[data-bse-tooltip-trigger], [data-eartag-tooltip-trigger]'));
+        var eartagTooltipTrigger = document.querySelector('[data-eartag-tooltip-trigger]');
+        var eartagTooltip = document.getElementById('case-eartag-help-tooltip');
+        var eartagCountryInput = document.getElementById('Case_EartagCountry');
+        var eartagHerdmarkInput = document.getElementById('Case_EartagHerdmark');
+        var eartagAnimalInput = document.getElementById('Case_Eartag');
+
+        function getTooltipForTrigger(trigger) {
+            if (!trigger) {
+                return null;
+            }
+
+            var id = trigger.getAttribute('aria-controls');
+            return id ? document.getElementById(id) : null;
+        }
+
+        function hideTooltipFor(trigger) {
+            var tooltip = getTooltipForTrigger(trigger);
+            if (!trigger || !tooltip) {
+                return;
+            }
+
+            tooltip.hidden = true;
+            trigger.setAttribute('aria-expanded', 'false');
+        }
+
+        function hideAllTooltips(exceptTrigger) {
+            tooltipTriggers.forEach(function (trigger) {
+                if (exceptTrigger && trigger === exceptTrigger) {
+                    return;
+                }
+
+                hideTooltipFor(trigger);
+            });
+        }
+
+        function showTooltipFor(trigger) {
+            var tooltip = getTooltipForTrigger(trigger);
+            if (!trigger || !tooltip) {
+                return;
+            }
+
+            if (trigger === eartagTooltipTrigger) {
+                updateEartagTooltipText();
+            }
+
+            hideAllTooltips(trigger);
+            tooltip.hidden = false;
+            trigger.setAttribute('aria-expanded', 'true');
+        }
+
+        function norm(value) {
+            return (value || '').trim().toUpperCase();
+        }
+
+        function hasDigitsOnly(value) {
+            return /^\d+$/.test(value);
+        }
+
+        function checkDigitFormat9(herd, animal) {
+            var herdNum = (herd || '').trim();
+            var animalNum = (animal || '').trim();
+
+            if (!/^\d{6}$/.test(herdNum) || !/^\d{8}[A-Z]$/.test(animalNum)) {
+                return true;
+            }
+
+            var electoralId = herdNum.substring(0, 2);
+            var herdPart = herdNum.substring(2);
+            var animalPart = animalNum.substring(0, 8);
+            var checkLetter = animalNum.substring(8);
+
+            var electoralHerd = Number(electoralId + herdPart);
+            var animalNumber = Number(animalPart);
+            if (Number.isNaN(electoralHerd) || Number.isNaN(animalNumber)) {
+                return true;
+            }
+
+            var check = electoralHerd * 10000 + animalNumber;
+            var alphabet = 'ABCDEFHIKLMNOPRSTUVWXYZ';
+            var mod = check % 23;
+            return mod < alphabet.length && checkLetter === alphabet.charAt(mod);
+        }
+
+        function resolveEartagHintText(country, herdmark, animal) {
+            if (!country && !herdmark && !animal) {
+                return 'Enter the animal eartag in parts: country, herdmark and animal number.';
+            }
+
+            if (country.length > 2) {
+                if (country && hasDigitsOnly(country.charAt(0)) && !/^\d{3}[012_ ]?$/.test(country)) {
+                    return 'Country component is invalid.';
+                }
+                if (!/^\d{6}$/.test(herdmark)) {
+                    return 'Country-coded eartag: herd component should be 6 digits.';
+                }
+                if (!/^\d{5}$/.test(animal)) {
+                    return 'Country-coded eartag: animal component should be 5 digits.';
+                }
+                return hasDigitsOnly(country.charAt(0)) ? 'ISO Numeric Country' : 'ISO Alpha Country';
+            }
+
+            if (country === 'UK') {
+                if (/^\d{6}$/.test(herdmark) && /^\d{8}[A-Z]$/.test(animal) && !checkDigitFormat9(herdmark, animal)) {
+                    return 'Eartag check digit is invalid.';
+                }
+                return 'Mainland GB Numeric';
+            }
+
+            var ecCodes = ['AT', 'BE', 'DE', 'DK', 'EL', 'ES', 'FI', 'FR', 'IE', 'IT', 'LU', 'NL', 'PT', 'SE'];
+            if (ecCodes.indexOf(country) >= 0) {
+                if (!/^[0-9A-Z]{1,12}$/.test(animal)) {
+                    return 'EC eartag: animal component should be 1 to 12 uppercase letters or digits.';
+                }
+                return 'EC non-UK';
+            }
+
+            if (!country && (herdmark || animal)) {
+                return 'No-country / legacy format';
+            }
+
+            return 'Unknown format';
+        }
+
+        function updateEartagTooltipText() {
+            if (!eartagTooltip) {
+                return;
+            }
+
+            var country = norm(eartagCountryInput ? eartagCountryInput.value : '');
+            var herdmark = norm(eartagHerdmarkInput ? eartagHerdmarkInput.value : '');
+            var animal = norm(eartagAnimalInput ? eartagAnimalInput.value : '');
+            eartagTooltip.textContent = resolveEartagHintText(country, herdmark, animal);
+        }
+
+        if (eartagTooltipTrigger && eartagTooltip) {
+            updateEartagTooltipText();
+        }
+
+        if (tooltipTriggers.length) {
+            tooltipTriggers.forEach(function (trigger) {
+                var tooltip = getTooltipForTrigger(trigger);
+                if (!tooltip) {
+                    return;
+                }
+
+                trigger.addEventListener('mouseenter', function () { showTooltipFor(trigger); });
+                trigger.addEventListener('mouseleave', function () { hideTooltipFor(trigger); });
+                trigger.addEventListener('focus', function () { showTooltipFor(trigger); });
+                trigger.addEventListener('blur', function () { hideTooltipFor(trigger); });
+
+                trigger.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    if (tooltip.hidden) {
+                        showTooltipFor(trigger);
+                    } else {
+                        hideTooltipFor(trigger);
+                    }
+                });
+
+                tooltip.addEventListener('mouseenter', function () { showTooltipFor(trigger); });
+                tooltip.addEventListener('mouseleave', function () { hideTooltipFor(trigger); });
+            });
+
+            [eartagCountryInput, eartagHerdmarkInput, eartagAnimalInput].forEach(function (el) {
+                if (el) {
+                    el.addEventListener('input', updateEartagTooltipText);
+                    el.addEventListener('change', updateEartagTooltipText);
+                }
+            });
+
+            document.addEventListener('click', function (e) {
+                var clickedInsideTooltipOrTrigger = tooltipTriggers.some(function (trigger) {
+                    var tooltip = getTooltipForTrigger(trigger);
+                    return trigger.contains(e.target) || (tooltip && tooltip.contains(e.target));
+                });
+
+                if (!clickedInsideTooltipOrTrigger) {
+                    hideAllTooltips();
+                }
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    hideAllTooltips();
+                }
+            });
+        }
 
         if (showAddTestBtn && addTestRow) {
             showAddTestBtn.addEventListener('click', function () {

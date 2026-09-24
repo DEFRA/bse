@@ -250,7 +250,7 @@
                                 @if (h.LactationMismatchWarning is not null)
                                 {
                                     <span class="bse-mismatch-warning" title="@h.LactationMismatchWarning">
-                                        <span aria-hidden="true">&#9888;</span>
+                                        <span aria-hidden="true">*</span>
                                         <span class="govuk-visually-hidden">Warning: @h.LactationMismatchWarning</span>
                                     </span>
                                 }
@@ -665,7 +665,7 @@
                                     @if (h.LactationMismatchWarning is not null)
                                     {
                                         <span class="bse-mismatch-warning" title="@h.LactationMismatchWarning">
-                                            <span aria-hidden="true">&#9888;</span>
+                                            <span aria-hidden="true">*</span>
                                             <span class="govuk-visually-hidden">Warning: @h.LactationMismatchWarning</span>
                                         </span>
                                     }
@@ -837,7 +837,10 @@ else
     .bse-mismatch-warning {
         display: inline-block;
         margin-left: 6px;
-        color: #d4351c;
+        color: #00703c;
+        font-weight: 700;
+        font-size: 1.15rem;
+        line-height: 1;
         cursor: help;
     }
 

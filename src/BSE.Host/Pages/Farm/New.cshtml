@@ -1,17 +1,34 @@
 @page
+@using BSE.Host.Helpers
 @model BSE.Host.Pages.Farm.NewModel
 @{
-    ViewData["Title"] = "Create a new farm";
+    var pageTitle = Model.ReturnToCaseFarm ? "New Farm" : "Create a new farm";
+    ViewData["Title"] = pageTitle;
 }
 
 <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
     <ol class="govuk-breadcrumbs__list">
         <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-        <li class="govuk-breadcrumbs__list-item" aria-current="page">Create a new farm</li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">@pageTitle</li>
     </ol>
 </nav>
 
-<h1 class="govuk-heading-l">Create a new farm</h1>
+<h1 class="govuk-heading-l">@pageTitle</h1>
+
+@if (Model.ReturnToCaseFarm)
+{
+    <p class="govuk-body"><strong>CPH:</strong> @BseFormat.FormatCphh(Model.Farm.CPHH ?? Model.ReturnCphh)</p>
+}
+
+@if (!string.IsNullOrWhiteSpace(Model.VetnetMessage))
+{
+    <p class="govuk-body">@Model.VetnetMessage</p>
+}
+
+@if (Model.ShowAuthorityMissingWarning)
+{
+    <p class="govuk-body govuk-!-font-weight-bold">Local authority not on file – case won’t be notifiable to Brussels. Please investigate.</p>
+}
 
 @if (!ViewContext.ModelState.IsValid)
 {
@@ -31,11 +48,68 @@
 }
 
 <form method="post" novalidate id="farm-new-form">
-    <input type="hidden" name="Farm.CPHH" value="@Model.Farm.CPHH" />
-    @await Html.PartialAsync("_FarmFormFields", Model.Farm, new ViewDataDictionary(ViewData) { TemplateInfo = { HtmlFieldPrefix = "Farm" } })
+    <input type="hidden" asp-for="ReturnRbse" />
+    <input type="hidden" asp-for="ReturnCphh" />
+    <input type="hidden" asp-for="ReturnToCaseFarm" />
+    <input type="hidden" asp-for="Farm.Herdmark1" />
+    <input type="hidden" asp-for="Farm.NumericHerdmark1" />
+
+    @if (Model.ReturnToCaseFarm)
+    {
+        <input type="hidden" asp-for="Farm.CPHH" />
+
+        <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+
+        @if (!string.IsNullOrWhiteSpace(Model.Farm.Herdmark1) || !string.IsNullOrWhiteSpace(Model.Farm.NumericHerdmark1))
+        {
+            <dl class="govuk-summary-list govuk-!-margin-bottom-6">
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">Herdmark 1</dt>
+                    <dd class="govuk-summary-list__value">@(Model.Farm.Herdmark1 ?? string.Empty)</dd>
+                </div>
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">Numeric Herdmark 1</dt>
+                    <dd class="govuk-summary-list__value">@(Model.Farm.NumericHerdmark1 ?? string.Empty)</dd>
+                </div>
+            </dl>
+        }
+    }
+    else
+    {
+        <div class="govuk-form-group @(ViewData.ModelState.ContainsKey("Farm.CPHH") && ViewData.ModelState["Farm.CPHH"]!.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+            <label asp-for="Farm.CPHH" class="govuk-label">CPHH</label>
+            @if (ViewData.ModelState.ContainsKey("Farm.CPHH") && ViewData.ModelState["Farm.CPHH"]!.Errors.Count > 0)
+            {
+                <p id="farm-cphh-error" class="govuk-error-message">
+                    <span class="govuk-visually-hidden">Error:</span>@ViewData.ModelState["Farm.CPHH"]!.Errors[0].ErrorMessage
+                </p>
+            }
+            <input asp-for="Farm.CPHH"
+                   id="farm-cphh"
+                   class="govuk-input govuk-input--width-20 @(ViewData.ModelState.ContainsKey("Farm.CPHH") && ViewData.ModelState["Farm.CPHH"]!.Errors.Count > 0 ? "govuk-input--error" : "")"
+                   autocomplete="off"
+                   maxlength="14" />
+        </div>
+    }
+
+    @if (!Model.ReturnToCaseFarm)
+    {
+        @await Html.PartialAsync("_FarmFormFields", Model.Farm, new ViewDataDictionary(ViewData) { TemplateInfo = { HtmlFieldPrefix = "Farm" } })
+    }
 
     <div class="govuk-button-group">
-        <button type="submit" class="govuk-button" data-module="govuk-button">Save farm</button>
-        <a id="cancel-link" asp-page="/Home" class="govuk-link">Cancel</a>
+        <button type="submit" class="govuk-button" data-module="govuk-button">@(Model.ReturnToCaseFarm ? "Create Farm" : "OK")</button>
+        @if (!string.IsNullOrWhiteSpace(Model.ReturnRbse) && Model.ReturnToCaseFarm)
+        {
+            <a id="cancel-link" asp-page="/Case/PickFarm" asp-route-rbse="@Model.ReturnRbse" asp-route-cphh="@Model.ReturnCphh" class="govuk-link">Cancel</a>
+        }
+        else if (!string.IsNullOrWhiteSpace(Model.ReturnRbse))
+        {
+            <a id="cancel-link" asp-page="/Case/Farm" asp-route-rbse="@Model.ReturnRbse" asp-route-newCphh="@Model.ReturnCphh" class="govuk-link">Cancel</a>
+        }
+        else
+        {
+            <a id="cancel-link" asp-page="/Home" class="govuk-link">Cancel</a>
+        }
     </div>
 </form>
