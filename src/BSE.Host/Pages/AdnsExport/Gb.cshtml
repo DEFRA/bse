@@ -145,8 +145,8 @@
             </div>
 
             <div class="govuk-form-group">
-                <label class="govuk-label" for="gb-email-body">Message:</label>
-                <textarea id="gb-email-body" class="govuk-textarea govuk-!-width-two-thirds" rows="8" readonly>@Model.Preview.EmailBody</textarea>
+                <label asp-for="Message" class="govuk-label">Message</label>
+                <textarea asp-for="Message" class="govuk-textarea govuk-!-width-two-thirds" rows="8"></textarea>
             </div>
 
             <div class="govuk-button-group">

@@ -36,6 +36,9 @@ public class GbModel(
     [BindProperty]
     public string UserEmailAddress { get; set; } = string.Empty;
 
+    [BindProperty]
+    public string Message { get; set; } = string.Empty;
+
     [BindProperty] public bool SaveAdnsData { get; set; } = true;
 
     [BindProperty(SupportsGet = true)] public string SortColumn { get; set; } = string.Empty;
@@ -103,6 +106,7 @@ public class GbModel(
         try
         {
             Preview = await adnsExportService.PreviewGbExportAsync(EmailReference, AdnsYear, StartAdnsNumber);
+            Message = Preview.EmailBody;
             PersistPreview(Preview);
             PersistContext();
         }
@@ -150,7 +154,8 @@ public class GbModel(
             EmailReference: EmailReference,
             Cases: preview!.Cases.ToList(),
             UserEmailAddress: UserEmailAddress,
-            SaveAdnsData: SaveAdnsData);
+            SaveAdnsData: SaveAdnsData,
+            Message: Message.Trim());
 
         try
         {
