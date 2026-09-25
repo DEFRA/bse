@@ -27,9 +27,8 @@ public class OssExportBse1Model(IBatchService batchService) : PageModel
 
     public async Task<IActionResult> OnPostDownloadAsync()
     {
-        if (BatchYear is null)
-            ModelState.AddModelError(nameof(BatchYear), "Enter a batch year.");
-
+        // Legacy allowed the year to be left blank to look up batches recorded
+        // before the year field existed (stored with a NULL BatchYear).
         if (BatchNumber is null)
             ModelState.AddModelError(nameof(BatchNumber), "Enter a batch number.");
 
@@ -38,21 +37,24 @@ public class OssExportBse1Model(IBatchService batchService) : PageModel
 
         try
         {
-            var batchId = await batchService.GetBatchIdAsync(BatchYear!.Value, BatchNumber!.Value);
+            var batchId = await batchService.GetBatchIdAsync(BatchYear, BatchNumber!.Value);
             if (batchId is null)
             {
-                ErrorMessage = $"Batch {BatchYear}/{BatchNumber} was not found.";
+                ErrorMessage = $"Batch {FormatBatchLabel(BatchYear, BatchNumber.Value)} was not found.";
                 return Page();
             }
 
             var cases = await batchService.GetCasesByBatchIdAsync(batchId.Value);
             if (cases.Count == 0)
             {
-                ErrorMessage = $"Batch {BatchYear}/{BatchNumber} contains no cases.";
+                ErrorMessage = $"Batch {FormatBatchLabel(BatchYear, BatchNumber.Value)} contains no cases.";
                 return Page();
             }
 
-            return BuildLegacyBse1File(BatchYear.Value, BatchNumber.Value, cases);
+            // Legacy displayed/filed the batch under the current year when the
+            // year was left blank; the lookup above already matched on NULL.
+            var displayYear = BatchYear ?? (short)DateTime.Today.Year;
+            return BuildLegacyBse1File(displayYear, BatchNumber.Value, cases);
         }
         catch (Exception ex)
         {
@@ -61,6 +63,9 @@ public class OssExportBse1Model(IBatchService batchService) : PageModel
 
         return Page();
     }
+
+    private static string FormatBatchLabel(short? batchYear, int batchNumber) =>
+        batchYear.HasValue ? $"{batchYear}/{batchNumber}" : batchNumber.ToString();
 
     private static FileContentResult BuildLegacyBse1File(
         short batchYear,

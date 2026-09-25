@@ -1,14 +1,14 @@
 ﻿@page "{rbse}"
 @model VlaModel
 @{
-    ViewData["TiGet-Process -Id 5776 -ErrorAction SilentlyContinue | Stop-Process -ForceGet-Process -Id 5776 -ErrorAction SilentlyContinue | Stop-Process -Forcetle"] = $"Case (APHA) — {Model.Case.Rbse}";
+    ViewData["Title"] = $"Case (APHA) — {Model.Case.Rbse}";
     string rbseNoSlash = Model.Case.Rbse.Replace("/", "");
     var viewDocsUrl = string.IsNullOrWhiteSpace(Model.SpolSiteUrl)
         ? null
         : $"{Model.SpolSiteUrl}{rbseNoSlash}";
 
     string? E(string key) => ViewData.ModelState[key]?.Errors.FirstOrDefault()?.ErrorMessage;
-    string DateVal(DateTime? d) => d?.ToString("yyyy-MM-dd") ?? string.Empty;
+    string DateVal(DateTime? d) => d?.ToString("dd/MM/yyyy") ?? string.Empty;
     var vlaReadOnly = !Model.CanEditMainCase;
 
     var showInformDefraWarning = Model.Case.BirthDate.HasValue;
@@ -156,7 +156,9 @@ else
                 </div>
                 <div>
                     @if (E("Case.BirthDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.BirthDate")</p> }
-                    <input asp-for="Case.BirthDate" type="date" class="govuk-input vla-legacy-input @(E("Case.BirthDate") is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.BirthDate)" />
+                    <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                        <input asp-for="Case.BirthDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.BirthDate") is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.BirthDate)" />
+                    </div>
                 </div>
             </div>
             <div class="vla-legacy-field @(E("Case.Sex") is not null ? "govuk-form-group--error" : "")">
@@ -227,7 +229,9 @@ else
                     <label asp-for="Case.PurchaseDate" class="govuk-label">Date Purchased</label>
                     <div>
                         @if (E("Case.PurchaseDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.PurchaseDate")</p> }
-                        <input asp-for="Case.PurchaseDate" type="date" class="govuk-input vla-legacy-input @(E("Case.PurchaseDate") is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.PurchaseDate)" />
+                        <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                            <input asp-for="Case.PurchaseDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.PurchaseDate") is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.PurchaseDate)" />
+                        </div>
                     </div>
                 </div>
                 <div class="vla-legacy-field">
@@ -287,7 +291,9 @@ else
                 </div>
                 <div>
                     @if (E("Case.HerdEntryDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.HerdEntryDate")</p> }
-                    <input asp-for="Case.HerdEntryDate" type="date" class="govuk-input vla-legacy-input @(E("Case.HerdEntryDate") is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.HerdEntryDate)" />
+                    <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                        <input asp-for="Case.HerdEntryDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.HerdEntryDate") is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.HerdEntryDate)" />
+                    </div>
                 </div>
             </div>
             <div class="vla-legacy-field @(E("Case.OnsetDate") is not null ? "govuk-form-group--error" : "")">
@@ -310,7 +316,9 @@ else
                 </div>
                 <div>
                     @if (E("Case.OnsetDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.OnsetDate")</p> }
-                    <input asp-for="Case.OnsetDate" type="date" class="govuk-input vla-legacy-input @(E("Case.OnsetDate") is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.OnsetDate)" />
+                    <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                        <input asp-for="Case.OnsetDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.OnsetDate") is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.OnsetDate)" />
+                    </div>
                 </div>
             </div>
 
@@ -360,7 +368,9 @@ else
                 <label asp-for="Case.SlaughterDate" class="govuk-label">Slaughter Date</label>
                 <div>
                     @if (E("Case.SlaughterDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.SlaughterDate")</p> }
-                    <input asp-for="Case.SlaughterDate" type="date" class="govuk-input vla-legacy-input @(E("Case.SlaughterDate") is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.SlaughterDate)" />
+                    <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                        <input asp-for="Case.SlaughterDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.SlaughterDate") is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.SlaughterDate)" />
+                    </div>
                 </div>
             </div>
             <div class="vla-legacy-field @(E("Case.OnsetAgeInMonths") is not null ? "govuk-form-group--error" : "")">
@@ -576,7 +586,8 @@ else
         white-space: nowrap;
     }
 
-    .vla-legacy-input {
+    .vla-legacy-input,
+    .moj-datepicker__wrapper {
         width: 252px;
         max-width: 252px;
         margin-bottom: 0;

@@ -13,6 +13,27 @@
             <li class="govuk-breadcrumbs__list-item" aria-current="page">Case moves</li>
         </ol>
     </nav>
+
+    @if (Model.StartDateError is not null || Model.EndDateError is not null)
+    {
+        <div class="govuk-error-summary" data-module="govuk-error-summary">
+            <div role="alert">
+                <h2 class="govuk-error-summary__title">There is a problem</h2>
+                <div class="govuk-error-summary__body">
+                    <ul class="govuk-list govuk-error-summary__list">
+                        @if (Model.StartDateError is not null)
+                        {
+                            <li><a href="#audit-start-date">@Model.StartDateError</a></li>
+                        }
+                        @if (Model.EndDateError is not null)
+                        {
+                            <li><a href="#audit-end-date">@Model.EndDateError</a></li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    }
     <partial name="_AuditDateRangeForm" model="@(new BSE.Host.Models.ViewModels.AuditDateRangeViewModel(Model.StartDate, Model.EndDate, Model.StartDateError, Model.EndDateError))" />
 
     @if (Model.Entries.Any())

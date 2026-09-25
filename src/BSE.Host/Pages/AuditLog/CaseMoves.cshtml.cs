@@ -1,4 +1,5 @@
 using BSE.Host.Helpers;
+using BSE.Host.ModelBinding;
 using BSE.Modules.AuditLog.Models;
 using BSE.Modules.AuditLog.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -12,8 +13,8 @@ public class CaseMovesModel(IAuditLogService auditLogService) : PageModel
 {
     private const int PageSize = 10;
 
-    [BindProperty(SupportsGet = true)] public DateTime? StartDate { get; set; }
-    [BindProperty(SupportsGet = true)] public DateTime? EndDate { get; set; }
+    [BindProperty(SupportsGet = true), ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? StartDate { get; set; }
+    [BindProperty(SupportsGet = true), ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? EndDate { get; set; }
     [BindProperty(SupportsGet = true)] public string SortColumn { get; set; } = string.Empty;
     [BindProperty(SupportsGet = true)] public bool SortDesc { get; set; }
     [BindProperty(SupportsGet = true)] public int PageNumber { get; set; } = 1;

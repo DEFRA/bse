@@ -1,4 +1,5 @@
 ﻿using BSE.Host.Services;
+using BSE.Host.ModelBinding;
 using BSE.Modules.Batch.Services;
 using BSE.Modules.CaseManagement.Commands;
 using BSE.Modules.CaseManagement.Enums;
@@ -44,8 +45,8 @@ public class NewModel : PageModel
     [BindProperty] public string? EartagCountry { get; set; }
     [BindProperty] public string? EartagHerdmark { get; set; }
     [BindProperty] public string? Eartag { get; set; }
-    [BindProperty] public DateTime? BirthDate { get; set; }
-    [BindProperty] public DateTime? FormADate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? BirthDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? FormADate { get; set; }
     [BindProperty] public string? Fate { get; set; }
     [BindProperty] public string? Origin { get; set; }
     [BindProperty] public string? Notes { get; set; }

@@ -1,5 +1,28 @@
 /* BSE custom additions on top of GOV.UK Frontend */
 
+/* MOJ date-picker wraps its text input in a div; keep it transparent to layout everywhere
+   it's used so surrounding flex/grid rules keep treating the input as a direct child, matching
+   the layout in place before the wrapper was introduced. */
+.moj-datepicker {
+    display: contents;
+}
+
+/* MOJ's calendar toggle button sits beside the input inside a flex wrapper, adding its own
+   width on top of the input's — without this the whole widget is wider than the plain date
+   input it replaced. Cap the widget (input + button) to that original width instead, and let
+   the input shrink to share it with the button, so every row that used a date input keeps
+   its original footprint. Per-field width overrides (e.g. CaseWork) target this same wrapper. */
+.moj-datepicker__wrapper {
+    max-width: 11.5em; /* matches govuk-input--width-10 / MOJ's own default input width */
+}
+
+.moj-datepicker__wrapper .moj-js-datepicker-input {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+}
+
 /* Global RBSE/CPHH autosuggest list */
 .bse-autosuggest-list {
     position: absolute;
@@ -204,7 +227,8 @@
 
 .bse-date-search-row {
     display: flex;
-    align-items: flex-end;
+    align-items: center;
+    flex-wrap: wrap;
     gap: 1rem;
     max-width: 1100px;
     margin-bottom: 1rem;
@@ -232,7 +256,7 @@
 
 .bse-date-search-row .govuk-button-group {
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     gap: 1rem;
     margin: 0;
 }
@@ -240,7 +264,7 @@
 .bse-date-search-row .govuk-button-group .govuk-button,
 .bse-date-search-row .govuk-button-group a {
     margin-bottom: 0;
-    align-self: flex-end;
+    align-self: center;
 }
 
 .bse-rbse-summary-grid {
@@ -1918,7 +1942,8 @@
     font-weight: 400;
 }
 
-.bse-case-search-page .bse-case-legacy__date-input {
+.bse-case-search-page .bse-case-legacy__date-input,
+.bse-case-search-page .moj-datepicker__wrapper {
     width: 216px;
     max-width: 216px;
 }
@@ -2158,7 +2183,8 @@
     margin: 0;
 }
 
-.bse-outstanding-search-page .bse-outstanding-legacy__date-input {
+.bse-outstanding-search-page .bse-outstanding-legacy__date-input,
+.bse-outstanding-search-page .moj-datepicker__wrapper {
     width: 161px;
     max-width: 161px;
 }
@@ -2248,7 +2274,8 @@
         row-gap: 8px;
     }
 
-    .bse-outstanding-search-page .bse-outstanding-legacy__date-input {
+    .bse-outstanding-search-page .bse-outstanding-legacy__date-input,
+    .bse-outstanding-search-page .moj-datepicker__wrapper {
         width: 100%;
         max-width: 100%;
     }
@@ -2286,6 +2313,7 @@
     }
 
     .bse-case-search-page .bse-case-legacy__date-input,
+    .bse-case-search-page .moj-datepicker__wrapper,
     .bse-case-search-page .bse-case-legacy__notes,
     .bse-case-search-page .bse-farm-legacy__input {
         width: 100% !important;
@@ -2404,7 +2432,8 @@
     margin-bottom: 0;
 }
 
-.bse-farm-legacy__input {
+.bse-farm-legacy__input,
+.bse-non-gb-case-page .moj-datepicker__wrapper {
     width: 252px !important;
     max-width: 252px !important;
 }
@@ -3276,7 +3305,8 @@
 /* Line up the start of every input box across rows, regardless of each row's label length
    (Email reference/ADNS Reference/Number of cases in:/Confirmation date are all different widths). */
 .bse-adns-form-row > .govuk-form-group > .govuk-label,
-.bse-adns-form-row > .bse-adns-group > .govuk-label {
+.bse-adns-form-row > .bse-adns-group > .govuk-label,
+.bse-adns-form-row > .moj-datepicker > .govuk-form-group > .govuk-label {
     min-width: 170px;
 }
 
