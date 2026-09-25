@@ -83,7 +83,7 @@
             <div class="bse-farm-legacy__field">
                 <label asp-for="Filter.Rbse" class="govuk-label">RBSE</label>
                 <div class="govuk-form-group">
-                    <input asp-for="Filter.Rbse" class="govuk-input bse-farm-legacy__input" maxlength="11" />
+                    <input asp-for="Filter.Rbse" class="govuk-input bse-farm-legacy__input" maxlength="11" autocomplete="on" data-bse-disable-click-open="true" />
                     <span asp-validation-for="Filter.Rbse" class="govuk-error-message"></span>
                 </div>
             </div>

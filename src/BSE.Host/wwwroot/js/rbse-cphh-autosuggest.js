@@ -1,4 +1,9 @@
 (function () {
+    if (window.__bseAutosuggestInitialized === true) {
+        return;
+    }
+    window.__bseAutosuggestInitialized = true;
+
     var MAX_LOCAL_VALUES = 20;
     var MAX_RBSE_LOCAL_VALUES = 10;
     var MAX_RENDER = 20;
@@ -204,6 +209,12 @@
         var field = inferField(input);
         if (!field) return;
 
+        // Remove any leftover legacy Home RBSE overlays that may still exist.
+        var legacyPanel = document.getElementById('rbse-saved-panel');
+        if (legacyPanel) legacyPanel.remove();
+        var legacyHint = document.getElementById('rbse-format-hint');
+        if (legacyHint) legacyHint.remove();
+
         // Defensive cleanup: remove stale floating UI already associated with this input.
         document.querySelectorAll('[data-bse-owner="' + ownerId + '"]').forEach(function (el) { el.remove(); });
 
@@ -219,7 +230,7 @@
         function hideOtherPopupsForField() {
             // Remove any previously created autosuggest overlays for this field,
             // keeping only the current input's UI elements.
-            document.querySelectorAll('.bse-autosuggest-panel, .bse-autosuggest-format-hint, .bse-autosuggest-list[data-bse-autosuggest-floating="true"]').forEach(function (el) {
+            document.querySelectorAll('.bse-autosuggest-panel, .bse-autosuggest-format-hint, .bse-autosuggest-list[data-bse-autosuggest-floating="true"], .bse-home-rbse-saved-panel, .bse-home-rbse-format-hint').forEach(function (el) {
                 if (el === popup || el === formatHint) return;
                 var elField = el.getAttribute('data-bse-field');
                 if (!elField || elField === field) {
@@ -318,7 +329,9 @@
             input.addEventListener('focus', function () {
                 if (popup.hidden) showHintOnly();
             });
-            input.addEventListener('click', function () { loadAndShow(); });
+            if (input.dataset.bseDisableClickOpen !== 'true') {
+                input.addEventListener('click', function () { loadAndShow(); });
+            }
         } else {
             input.addEventListener('focus', function () { loadAndShow(); });
             input.addEventListener('click', function () { loadAndShow(); });
@@ -384,7 +397,7 @@
     function init() {
         // Clean up previously created popup artifacts (e.g. after hot-reload/script re-exec)
         // so we do not stack duplicate "Saved info" panels.
-        document.querySelectorAll('.bse-autosuggest-panel, .bse-autosuggest-format-hint, .bse-autosuggest-list[data-bse-autosuggest-floating="true"]')
+        document.querySelectorAll('.bse-autosuggest-panel, .bse-autosuggest-format-hint, .bse-autosuggest-list[data-bse-autosuggest-floating="true"], .bse-home-rbse-saved-panel, .bse-home-rbse-format-hint')
             .forEach(function (el) { el.remove(); });
 
         var inputs = Array.from(document.querySelectorAll('input'));
