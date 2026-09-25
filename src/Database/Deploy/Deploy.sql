@@ -2,7 +2,7 @@
 -- DEPLOYMENT MANIFEST — One-Time Database Migration
 -- ============================================================================
 -- This script is idempotent and safe to re-run via CI/CD pipeline.
--- All scripts herein use DROP+CREATE or IF EXISTS guards.
+-- All scripts herein use DROP+CREATE or IF EXISTS guards. 
 --
 -- Deployment checklist:
 --   1. Run against target environment (DEV / STAGING / PROD)
