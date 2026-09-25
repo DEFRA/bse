@@ -288,30 +288,6 @@
             renderList();
         }
 
-        async function loadRemoteSuggestions() {
-            try {
-                var response = await fetch('/Api/Suggestions?field=rbse&query=' + encodeURIComponent(input.value || '') + '&limit=20', {
-                    headers: { 'Accept': 'application/json' }
-                });
-                if (!response.ok) return false;
-                var payload = await response.json();
-                if (!payload || !Array.isArray(payload.values)) return false;
-                var merged = mergeUnique(allValues.concat(payload.values || []));
-                var changed = merged.length !== allValues.length
-                    || merged.some(function (v, i) { return v !== allValues[i]; });
-                allValues = merged;
-                writeRecent(allValues);
-                return changed;
-            } catch {
-                return false;
-            }
-        }
-
-        async function hydrateSuggestions() {
-            var changed = await loadRemoteSuggestions();
-            if (changed) applyFilter();
-        }
-
         var seeded = [combo.dataset.seedCurrent || '', combo.dataset.seedPrevious || ''];
         allValues = mergeUnique(readRecent().concat(seeded));
         writeRecent(allValues);
@@ -330,13 +306,11 @@
 
         input.addEventListener('click', function () {
             applyFilter();
-            void hydrateSuggestions();
         });
 
         input.addEventListener('input', function () {
             hidden.value = input.value || '';
             applyFilter();
-            void hydrateSuggestions();
         });
 
         input.addEventListener('keydown', function (e) {
