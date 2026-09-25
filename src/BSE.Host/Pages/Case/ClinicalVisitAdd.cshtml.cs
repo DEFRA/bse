@@ -1,4 +1,5 @@
 using BSE.Infrastructure;
+using BSE.Host.ModelBinding;
 using BSE.Modules.CaseManagement.Commands;
 using BSE.Modules.CaseManagement.Repositories;
 using Microsoft.AspNetCore.Authorization;
@@ -14,7 +15,7 @@ public class ClinicalVisitAddModel(
     IDbConnectionFactory connectionFactory) : PageModel
 {
     [BindProperty(SupportsGet = true)] public string Rbse { get; set; } = string.Empty;
-    [BindProperty] public DateTime? VisitDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? VisitDate { get; set; }
 
     public async Task<IActionResult> OnGetAsync()
     {

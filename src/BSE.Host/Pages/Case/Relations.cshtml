@@ -638,12 +638,16 @@ else
                     @if (Model.RelationFieldErrors.TryGetValue("BirthDay", out var birthDayError)) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @birthDayError</p> }
                     @if (Model.RelationFieldErrors.TryGetValue("BirthMonth", out var birthMonthError)) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @birthMonthError</p> }
                     @if (Model.RelationFieldErrors.TryGetValue("BirthYear", out var birthYearError)) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @birthYearError</p> }
-                    <input id="birth-date" name="BirthDate" type="date" value="@(Model.BirthDate?.ToString("yyyy-MM-dd"))" class="govuk-input bse-relations-field-input" />
+                    <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                        <input id="birth-date" name="BirthDate" type="text" value="@(Model.BirthDate?.ToString("dd/MM/yyyy"))" class="govuk-input bse-relations-field-input moj-js-datepicker-input" autocomplete="off" />
+                    </div>
                 </div>
                 <div class="govuk-form-group bse-relations-field-row govuk-!-margin-bottom-3 @(Model.RelationFieldErrors.ContainsKey("LeftDate") ? "govuk-form-group--error" : "")">
                     <label class="govuk-label" for="left-date">Date Left</label>
                     @if (Model.RelationFieldErrors.TryGetValue("LeftDate", out var leftDateError)) { <p class="govuk-error-message bse-relations-field-error"><span class="govuk-visually-hidden">Error:</span> @leftDateError</p> }
-                    <input id="left-date" name="LeftDate" type="date" value="@(Model.LeftDate?.ToString("yyyy-MM-dd"))" class="govuk-input bse-relations-field-input" />
+                    <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                        <input id="left-date" name="LeftDate" type="text" value="@(Model.LeftDate?.ToString("dd/MM/yyyy"))" class="govuk-input bse-relations-field-input moj-js-datepicker-input" autocomplete="off" />
+                    </div>
                 </div>
                 <div class="govuk-form-group bse-relations-field-row govuk-!-margin-bottom-3">
                     <label class="govuk-label" for="sire">Sire</label>
@@ -821,7 +825,8 @@ else
             margin-bottom: 4px;
         }
 
-        .bse-relations-field-input {
+        .bse-relations-field-input,
+        .moj-datepicker__wrapper {
             width: 252px;
             max-width: 252px;
             margin-bottom: 0;

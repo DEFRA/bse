@@ -12,9 +12,10 @@ internal static class SearchDateField
     public const string InvalidDateMessage = "Enter a valid date";
 
     /// <summary>
-    /// Parses an `&lt;input type="date"&gt;` value (yyyy-MM-dd). A blank value is valid (the
-    /// field is optional). Returns false with <paramref name="error"/> set when non-blank but
-    /// not a real date.
+    /// Parses a date-range field value — either the MOJ date-picker's free-text d/M/yyyy /
+    /// dd/MM/yyyy format, or the legacy native date input's yyyy-MM-dd (ISO). A blank value is
+    /// valid (the field is optional). Returns false with <paramref name="error"/> set when
+    /// non-blank but not a real date.
     /// </summary>
     public static bool TryParse(string? raw, out DateTime? value, out string? error)
     {
@@ -25,7 +26,8 @@ internal static class SearchDateField
             return true;
         }
 
-        if (DateTime.TryParseExact(raw, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed)
+        if (DateTime.TryParseExact(raw.Trim(), ["yyyy-MM-dd", "d/M/yyyy", "dd/MM/yyyy", "d/MM/yyyy", "dd/M/yyyy"],
+                CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed)
             && parsed.Year >= 1900)
         {
             value = parsed;

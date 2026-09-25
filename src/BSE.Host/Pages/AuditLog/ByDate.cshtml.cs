@@ -1,4 +1,5 @@
 using BSE.Host.Helpers;
+using BSE.Host.ModelBinding;
 using BSE.Modules.AuditLog.Models;
 using BSE.Modules.AuditLog.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -13,6 +14,7 @@ public class ByDateModel(IAuditLogService auditLogService) : PageModel
     private const int PageSize = 10;
 
     [BindProperty(SupportsGet = true)]
+    [ModelBinder(BinderType = typeof(MojDateModelBinder))]
     public DateTime? LogDate { get; set; }
     [BindProperty(SupportsGet = true)] public string SortColumn { get; set; } = string.Empty;
     [BindProperty(SupportsGet = true)] public bool SortDesc { get; set; }
