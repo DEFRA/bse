@@ -2,7 +2,7 @@
 @model BSE.Host.Pages.Case.VlaEditModel
 @{
     ViewData["Title"] = $"Edit Case (APHA) — {Model.Case.Rbse}";
-    string DateVal(DateTime? d) => d?.ToString("yyyy-MM-dd") ?? "";
+    string DateVal(DateTime? d) => d?.ToString("dd/MM/yyyy") ?? "";
     string rbseNoSlash = Model.Case.Rbse.Replace("/", "");
 }
 
@@ -94,8 +94,10 @@
         {
             <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["Case.BirthDate"]!.Errors[0].ErrorMessage</p>
         }
-        <input asp-for="Case.BirthDate" type="date" class="govuk-input govuk-input--width-10 @(ViewData.ModelState["Case.BirthDate"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
-               value="@DateVal(Model.Case.BirthDate)" />
+        <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+            <input asp-for="Case.BirthDate" type="text" class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(ViewData.ModelState["Case.BirthDate"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
+                   autocomplete="off" value="@DateVal(Model.Case.BirthDate)" />
+        </div>
     </div>
     <div class="govuk-form-group @(ViewData.ModelState["Case.BirthDateSource"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
         <label asp-for="Case.BirthDateSource" class="govuk-label">Date of birth source</label>
@@ -161,8 +163,10 @@
         {
             <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["Case.PurchaseDate"]!.Errors[0].ErrorMessage</p>
         }
-        <input asp-for="Case.PurchaseDate" type="date" class="govuk-input govuk-input--width-10 @(ViewData.ModelState["Case.PurchaseDate"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
-               value="@DateVal(Model.Case.PurchaseDate)" />
+        <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+            <input asp-for="Case.PurchaseDate" type="text" class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(ViewData.ModelState["Case.PurchaseDate"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
+                   autocomplete="off" value="@DateVal(Model.Case.PurchaseDate)" />
+        </div>
     </div>
     <div class="govuk-form-group @(ViewData.ModelState["Case.PurchaseAgeInMonths"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
         <fieldset class="govuk-fieldset">
@@ -217,8 +221,10 @@
         {
             <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["Case.HerdEntryDate"]!.Errors[0].ErrorMessage</p>
         }
-        <input asp-for="Case.HerdEntryDate" type="date" class="govuk-input govuk-input--width-10 @(ViewData.ModelState["Case.HerdEntryDate"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
-               value="@DateVal(Model.Case.HerdEntryDate)" />
+        <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+            <input asp-for="Case.HerdEntryDate" type="text" class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(ViewData.ModelState["Case.HerdEntryDate"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
+                   autocomplete="off" value="@DateVal(Model.Case.HerdEntryDate)" />
+        </div>
     </div>
     <div class="govuk-form-group @(ViewData.ModelState["Case.OnsetDate"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
         <label asp-for="Case.OnsetDate" class="govuk-label">Onset date</label>
@@ -226,8 +232,10 @@
         {
             <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["Case.OnsetDate"]!.Errors[0].ErrorMessage</p>
         }
-        <input asp-for="Case.OnsetDate" type="date" class="govuk-input govuk-input--width-10 @(ViewData.ModelState["Case.OnsetDate"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
-               value="@DateVal(Model.Case.OnsetDate)" />
+        <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+            <input asp-for="Case.OnsetDate" type="text" class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(ViewData.ModelState["Case.OnsetDate"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
+                   autocomplete="off" value="@DateVal(Model.Case.OnsetDate)" />
+        </div>
     </div>
     <div class="govuk-form-group">
         <div class="govuk-checkboxes" data-module="govuk-checkboxes">
@@ -293,9 +301,11 @@
         {
             <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["Case.SlaughterDate"]!.Errors[0].ErrorMessage</p>
         }
-        <input asp-for="Case.SlaughterDate" type="date"
-               class="govuk-input govuk-input--width-10 @(ViewData.ModelState["Case.SlaughterDate"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
-               value="@DateVal(Model.Case.SlaughterDate)" />
+        <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+            <input asp-for="Case.SlaughterDate" type="text"
+                   class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(ViewData.ModelState["Case.SlaughterDate"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
+                   autocomplete="off" value="@DateVal(Model.Case.SlaughterDate)" />
+        </div>
     </div>
 
     <div class="govuk-button-group">

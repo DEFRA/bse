@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using System.Text.Json;
 using BSE.Modules.AdnsExport.Configuration;
 using BSE.Modules.AdnsExport.Models;
@@ -45,7 +46,7 @@ public class CiModel(
 
     [BindProperty]
     [Required(ErrorMessage = "Enter a confirmation date.")]
-    public DateTime? ConfirmationDate { get; set; } = DateTime.Today;
+    public string ConfirmationDate { get; set; } = DateTime.Today.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
 
     [BindProperty]
     public string UserEmailAddress { get; set; } = string.Empty;
@@ -95,6 +96,14 @@ public class CiModel(
 
         try
         {
+            if (!TryParseConfirmationDate(ConfirmationDate, out var confirmationDate))
+            {
+                ModelState.AddModelError(nameof(ConfirmationDate), "Enter a confirmation date in the format 17/05/2024.");
+                if (string.IsNullOrWhiteSpace(UserEmailAddress))
+                    UserEmailAddress = DefaultToEmailAddress;
+                return Page();
+            }
+
             Preview = adnsExportService.PreviewCiExport(
                 EmailReference,
                 AdnsYear,
@@ -102,7 +111,7 @@ public class CiModel(
                 JerseyCases,
                 GuernseyCases,
                 IsleOfManCases,
-                ConfirmationDate!.Value);
+                confirmationDate);
 
             Message = Preview.EmailBody;
             TempData[PreviewTempDataKey] = JsonSerializer.Serialize(Preview);
@@ -168,6 +177,11 @@ public class CiModel(
             return Page();
         }
     }
+
+    // Accepts the MOJ date-picker's free-text d/M/yyyy format, independent of server locale.
+    private static bool TryParseConfirmationDate(string? text, out DateTime date) =>
+        DateTime.TryParseExact(text?.Trim(), ["d/M/yyyy", "dd/MM/yyyy", "d/MM/yyyy", "dd/M/yyyy"],
+            CultureInfo.InvariantCulture, DateTimeStyles.None, out date);
 
     private bool TryLoadPreview(out AdnsExportPreview? preview)
     {

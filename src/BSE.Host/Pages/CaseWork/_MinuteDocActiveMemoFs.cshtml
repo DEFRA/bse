@@ -2,7 +2,7 @@
 @{
     var cphh = BseFormat.FormatCphh(Model.Details.Cphh);
     var cph = cphh.Contains('/') ? cphh[..cphh.LastIndexOf('/')] : cphh;
-    var samplingDate = Model.Details.SamplingDate == DateTime.MaxValue
+    var samplingDate = Model.Details.SamplingDate?.Date == DateTime.MaxValue.Date
         ? "unknown"
         : Model.Details.SamplingDate?.ToString("dd/MM/yyyy");
     var testResult = Model.Details.TestResult ?? string.Empty;

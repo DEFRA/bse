@@ -1,6 +1,8 @@
 using BSE.Modules.CaseManagement.Commands;
 using BSE.Modules.CaseManagement.Models;
 using BSE.Modules.CaseWork.Models;
+using BSE.Host.ModelBinding;
+using Microsoft.AspNetCore.Mvc;
 using CaseWorkRecord = BSE.Modules.CaseWork.Models.CaseWorkRecord;
 
 namespace BSE.Host.Models.ViewModels;
@@ -17,12 +19,12 @@ public class CaseEditViewModel
     public string? EartagHerdmark { get; set; }
     public string? Eartag { get; set; }
     public string? PreviousEartag { get; set; }
-    public DateTime? Bse1ReceivedDate { get; set; }
-    public DateTime? FormADate { get; set; }
-    public DateTime? FormAResubmittedDate { get; set; }
-    public DateTime? FormBDate { get; set; }
+    [ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? Bse1ReceivedDate { get; set; }
+    [ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? FormADate { get; set; }
+    [ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? FormAResubmittedDate { get; set; }
+    [ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? FormBDate { get; set; }
     public string? Fate { get; set; }
-    public DateTime? FormCDate { get; set; }
+    [ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? FormCDate { get; set; }
     public bool IsPurchaserBse1Received { get; set; }
     public bool IsBreederBse1Received { get; set; }
     public bool IsVendor1Bse1Received { get; set; }
@@ -32,7 +34,7 @@ public class CaseEditViewModel
     public string? ReportedLocation { get; set; }
     public string? Survey { get; set; }
     public string? Notes { get; set; }
-    public DateTime? BirthDate { get; set; }
+    [ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? BirthDate { get; set; }
     public bool IsBirthDateEst { get; set; }
     public string? DamStatus { get; set; }
     public string? BirthDateSource { get; set; }
@@ -62,12 +64,12 @@ public class CaseEditViewModel
     // ── Casework fields (CaseWork table, EditCaseWork SP) ─────────────────────
     public string? Barcode { get; set; }
     public string? AhfReference { get; set; }
-    public DateTime? PurchaserBse1ReceivedDate { get; set; }
-    public DateTime? BreederBse1ReceivedDate { get; set; }
-    public DateTime? Vendor1Bse1ReceivedDate { get; set; }
-    public DateTime? HomebredBse1ReceivedDate { get; set; }
-    public DateTime? SummarySheetReceivedDate { get; set; }
-    public DateTime? PaperworkCompleteDate { get; set; }
+    [ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? PurchaserBse1ReceivedDate { get; set; }
+    [ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? BreederBse1ReceivedDate { get; set; }
+    [ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? Vendor1Bse1ReceivedDate { get; set; }
+    [ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? HomebredBse1ReceivedDate { get; set; }
+    [ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? SummarySheetReceivedDate { get; set; }
+    [ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? PaperworkCompleteDate { get; set; }
     public DateTime? RbseDate { get; set; }
     public bool HasCaseWork { get; set; }
 

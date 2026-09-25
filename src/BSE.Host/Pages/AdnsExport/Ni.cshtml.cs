@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using System.Text.Json;
 using BSE.Modules.AdnsExport.Configuration;
 using BSE.Modules.AdnsExport.Models;
@@ -37,8 +38,8 @@ public class NiModel(
     public int InputAdnsRegionId { get; set; }
 
     [BindProperty]
-    [Required(ErrorMessage = "Enter a confirmation date.")]
-    public DateTime? InputConfirmationDate { get; set; }
+    [Required(ErrorMessage = "Enter a confirmation date in the format 17/05/2024.")]
+    public string? InputConfirmationDate { get; set; }
 
     [BindProperty]
     public string UserEmailAddress { get; set; } = string.Empty;
@@ -89,7 +90,7 @@ public class NiModel(
         DraftCases = [];
         Preview = null;
 
-        InputConfirmationDate = DateTime.Today;
+        InputConfirmationDate = DateTime.Today.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
 
         var lastReference = await adnsExportService.GetLastReferenceAsync("NI");
         if (lastReference is not null)
@@ -115,7 +116,13 @@ public class NiModel(
 
         if (InputConfirmationDate is null)
         {
-            ModelState.AddModelError(nameof(InputConfirmationDate), "Enter a confirmation date.");
+            ModelState.AddModelError(nameof(InputConfirmationDate), "Enter a confirmation date in the format 17/05/2024.");
+            return Page();
+        }
+
+        if (!TryParseConfirmationDate(InputConfirmationDate, out var confirmationDate))
+        {
+            ModelState.AddModelError(nameof(InputConfirmationDate), "Enter a confirmation date in the format 17/05/2024.");
             return Page();
         }
 
@@ -125,7 +132,7 @@ public class NiModel(
             AdnsNumber: InputAdnsNumber,
             AdnsRegionId: InputAdnsRegionId,
             AdnsRegionName: $"{InputAdnsRegionId:00000}",
-            ConfirmationDate: InputConfirmationDate.Value);
+            ConfirmationDate: confirmationDate);
 
         DraftCases.Add(newCase);
         SaveDraftCases();
@@ -138,7 +145,9 @@ public class NiModel(
         // reset current entry fields
         InputAdnsNumber = 0;
         InputAdnsRegionId = 0;
-        InputConfirmationDate = null;
+        // Legacy parity: reset to today's date, not blank, so adding several rows in a row
+        // doesn't force the user to re-enter a confirmation date every time.
+        InputConfirmationDate = DateTime.Today.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
 
         return Page();
     }
@@ -266,6 +275,11 @@ public class NiModel(
             return Page();
         }
     }
+
+    // Accepts the MOJ date-picker's free-text d/M/yyyy format, independent of server locale.
+    private static bool TryParseConfirmationDate(string? text, out DateTime date) =>
+        DateTime.TryParseExact(text?.Trim(), ["d/M/yyyy", "dd/MM/yyyy", "d/MM/yyyy", "dd/M/yyyy"],
+            CultureInfo.InvariantCulture, DateTimeStyles.None, out date);
 
     private static NiGridRow ToGridRow(NiCaseInput c) =>
         new(
