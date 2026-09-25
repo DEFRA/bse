@@ -15,6 +15,8 @@ namespace BSE.Host.Pages.Farm;
 [Authorize(Policy = "FarmCreation")]
 public class NewModel(IFarmService farmService, ICurrentUserService currentUserService, ILookupDataService lookups, IGeoLookupService geoLookup) : PageModel
 {
+    private const string VetnetNotFoundMessage = "The CPHH you entered was not Found on Vetnet";
+    private const string BrusselsWarningMessage = "Local authority not on file – case won’t be notifiable to Brussels.  Please investigate.";
     private const string FarmAlreadyExistsMessage = "A farm with this CPHH already exists.";
     private const string InvalidCphhMessage = "Enter CPHH as 11 digits in the format NN/NNN/NNNN/NN.";
     private const string SaveFailedMessage = "Unable to save farm details. Please check the entered values and try again.";
@@ -33,7 +35,21 @@ public class NewModel(IFarmService farmService, ICurrentUserService currentUserS
     public bool ReturnToCaseFarm { get; set; }
 
     public string? VetnetMessage { get; private set; }
-    public bool ShowAuthorityMissingWarning { get; private set; }
+
+    [BindProperty]
+    public bool AcceptVetnetDetails { get; set; }
+
+    public string? VetnetHerdmark { get; private set; }
+    public string? VetnetNumericHerdmark { get; private set; }
+    public bool VetnetFound => !string.IsNullOrWhiteSpace(VetnetHerdmark) && !string.IsNullOrWhiteSpace(VetnetNumericHerdmark);
+    public bool ShowBrusselsWarning { get; private set; }
+    public string BrusselsWarningText => BrusselsWarningMessage;
+
+    private string? DerivedParish { get; set; }
+    private string? DerivedCounty { get; set; }
+    private int? DerivedAdnsRegionId { get; set; }
+    private int? DerivedAuthorityId { get; set; }
+    private int? DerivedAuthorityCountyId { get; set; }
 
     public async Task<IActionResult> OnGetAsync(string? cphh = null)
     {
@@ -45,7 +61,9 @@ public class NewModel(IFarmService farmService, ICurrentUserService currentUserS
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (ReturnToCaseFarm)
+        var isPickFarmJourney = ReturnToCaseFarm || !string.IsNullOrWhiteSpace(ReturnRbse);
+
+        if (isPickFarmJourney)
             Farm.CPHH = CphhNormalizer.Normalize(ReturnCphh ?? Farm.CPHH);
 
         Farm.CPHH = CphhNormalizer.Normalize(Farm.CPHH);
@@ -59,6 +77,32 @@ public class NewModel(IFarmService farmService, ICurrentUserService currentUserS
             return Page();
 
         var existingFarm = await farmService.GetByCphhAsync(Farm.CPHH);
+
+        // Legacy PickFarm -> NewFarm flow did not persist a new farm row directly from this
+        // confirmation screen. "Create Farm" returns to CaseEntryFarm with seeded defaults.
+        if (isPickFarmJourney)
+        {
+            if (string.IsNullOrWhiteSpace(ReturnRbse))
+                return RedirectToPage("/Home");
+
+            if (existingFarm is not null)
+                return RedirectToPage("/Case/Farm", new { rbse = ReturnRbse, selectedCphh = Farm.CPHH });
+
+            return RedirectToPage("/Case/Farm", new
+            {
+                rbse = ReturnRbse,
+                newCphh = Farm.CPHH,
+                forceNewFarmDetails = true,
+                seedParish = DerivedParish,
+                seedCounty = DerivedCounty,
+                seedAdnsRegionId = DerivedAdnsRegionId,
+                seedAuthorityId = DerivedAuthorityId,
+                seedAuthorityCountyId = DerivedAuthorityCountyId,
+                seedHerdmark1 = AcceptVetnetDetails && VetnetFound ? VetnetHerdmark : null,
+                seedNumericHerdmark1 = AcceptVetnetDetails && VetnetFound ? VetnetNumericHerdmark : null
+            });
+        }
+
         if (existingFarm is not null)
         {
             ModelState.AddModelError("Farm.CPHH", FarmAlreadyExistsMessage);
@@ -91,15 +135,21 @@ public class NewModel(IFarmService farmService, ICurrentUserService currentUserS
     private async Task ApplyPickFarmVetnetDefaultsAsync()
     {
         VetnetMessage = null;
-        ShowAuthorityMissingWarning = false;
+        VetnetHerdmark = null;
+        VetnetNumericHerdmark = null;
+        ShowBrusselsWarning = false;
+        DerivedParish = null;
+        DerivedCounty = null;
+        DerivedAdnsRegionId = null;
+        DerivedAuthorityId = null;
+        DerivedAuthorityCountyId = null;
 
         if (!ReturnToCaseFarm)
             return;
 
         if (string.IsNullOrWhiteSpace(Farm.CPHH))
         {
-            VetnetMessage = "The CPHH you entered was not Found on Vetnet";
-            ShowAuthorityMissingWarning = true;
+            VetnetMessage = VetnetNotFoundMessage;
             return;
         }
 
@@ -109,15 +159,31 @@ public class NewModel(IFarmService farmService, ICurrentUserService currentUserS
 
         if (preferred is null)
         {
-            VetnetMessage = "The CPHH you entered was not Found on Vetnet";
+            VetnetMessage = VetnetNotFoundMessage;
         }
         else
         {
-            Farm.Herdmark1 ??= preferred.Herdmark;
-            Farm.NumericHerdmark1 ??= preferred.NumericHerdmark;
+            VetnetHerdmark = preferred.Herdmark;
+            VetnetNumericHerdmark = preferred.NumericHerdmark;
         }
 
-        ShowAuthorityMissingWarning = Farm.AuthorityID is null;
+        if (Farm.CPHH.Length >= 5)
+        {
+            var county = Farm.CPHH[..2];
+            var parish = Farm.CPHH[2..5];
+            var parishData = await geoLookup.GetParishAsync(county, parish);
+
+            if (parishData is not null)
+            {
+                DerivedParish = parishData.Name;
+                DerivedCounty = parishData.BSECounty;
+                DerivedAdnsRegionId = parishData.ADNSRegionID;
+                DerivedAuthorityId = parishData.AuthorityID;
+                DerivedAuthorityCountyId = parishData.AuthorityCountyID;
+            }
+
+            ShowBrusselsWarning = !DerivedAdnsRegionId.HasValue;
+        }
     }
 
     private async Task LoadLookupsAsync()

@@ -131,7 +131,14 @@
                            role="combobox" aria-haspopup="listbox" aria-controls="rbse-recent-listbox"
                            aria-expanded="false" aria-autocomplete="list" aria-activedescendant=""
                            aria-describedby="@(rbseError is not null ? "rbse-error" : "")" />
-                    <ul id="rbse-recent-listbox" class="bse-home-rbse-suggestions" role="listbox" hidden></ul>
+                    <div id="rbse-saved-panel" class="bse-home-rbse-saved-panel" hidden>
+                        <div class="bse-home-rbse-saved-panel__header">
+                            <strong>Saved info</strong>
+                            <button type="button" id="rbse-saved-close" class="bse-home-rbse-saved-panel__close" aria-label="Close saved RBSE list">×</button>
+                        </div>
+                        <ul id="rbse-recent-listbox" class="bse-home-rbse-suggestions" role="listbox"></ul>
+                    </div>
+                    <div id="rbse-format-hint" class="bse-home-rbse-format-hint" hidden>RBSE Format: NN/NN/NNNNN</div>
                 </div>
 
                 <button type="submit" class="govuk-button"
@@ -144,8 +151,11 @@
         var hidden = document.getElementById('rbse-lookup');
         var combo = document.getElementById('rbse-combobox');
         var input = document.getElementById('rbse-lookup-input');
+        var panel = document.getElementById('rbse-saved-panel');
+        var closeBtn = document.getElementById('rbse-saved-close');
+        var formatHint = document.getElementById('rbse-format-hint');
         var listbox = document.getElementById('rbse-recent-listbox');
-        if (!form || !hidden || !combo || !input || !listbox) return;
+        if (!form || !hidden || !combo || !input || !listbox || !panel || !closeBtn || !formatHint) return;
 
         var storageKey = 'bse.recent.rbse';
         var maxItems = 10;
@@ -190,7 +200,16 @@
         }
 
         function closeList() {
-            listbox.hidden = true;
+            panel.hidden = true;
+            formatHint.hidden = true;
+            input.setAttribute('aria-expanded', 'false');
+            input.setAttribute('aria-activedescendant', '');
+            activeIndex = -1;
+        }
+
+        function showFormatHintOnly() {
+            panel.hidden = true;
+            formatHint.hidden = false;
             input.setAttribute('aria-expanded', 'false');
             input.setAttribute('aria-activedescendant', '');
             activeIndex = -1;
@@ -198,10 +217,13 @@
 
         function openList() {
             if (!filteredValues.length) {
-                closeList();
+                panel.hidden = true;
+                formatHint.hidden = false;
+                input.setAttribute('aria-expanded', 'false');
                 return;
             }
-            listbox.hidden = false;
+            panel.hidden = false;
+            formatHint.hidden = true;
             input.setAttribute('aria-expanded', 'true');
         }
 
@@ -266,6 +288,30 @@
             renderList();
         }
 
+        async function loadRemoteSuggestions() {
+            try {
+                var response = await fetch('/Api/Suggestions?field=rbse&query=' + encodeURIComponent(input.value || '') + '&limit=20', {
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (!response.ok) return false;
+                var payload = await response.json();
+                if (!payload || !Array.isArray(payload.values)) return false;
+                var merged = mergeUnique(allValues.concat(payload.values || []));
+                var changed = merged.length !== allValues.length
+                    || merged.some(function (v, i) { return v !== allValues[i]; });
+                allValues = merged;
+                writeRecent(allValues);
+                return changed;
+            } catch {
+                return false;
+            }
+        }
+
+        async function hydrateSuggestions() {
+            var changed = await loadRemoteSuggestions();
+            if (changed) applyFilter();
+        }
+
         var seeded = [combo.dataset.seedCurrent || '', combo.dataset.seedPrevious || ''];
         allValues = mergeUnique(readRecent().concat(seeded));
         writeRecent(allValues);
@@ -274,33 +320,39 @@
             input.value = hidden.value;
         }
 
-        input.addEventListener('focus', function () {
-            applyFilter();
+        input.addEventListener('mouseenter', function () {
+            if (panel.hidden) showFormatHintOnly();
+        });
+
+        input.addEventListener('mouseleave', function () {
+            if (panel.hidden) formatHint.hidden = true;
         });
 
         input.addEventListener('click', function () {
             applyFilter();
+            void hydrateSuggestions();
         });
 
         input.addEventListener('input', function () {
             hidden.value = input.value || '';
             applyFilter();
+            void hydrateSuggestions();
         });
 
         input.addEventListener('keydown', function (e) {
             if (e.key === 'ArrowDown') {
                 e.preventDefault();
-                if (listbox.hidden) applyFilter();
+                if (panel.hidden) applyFilter();
                 setActive(activeIndex + 1);
                 return;
             }
             if (e.key === 'ArrowUp') {
                 e.preventDefault();
-                if (listbox.hidden) applyFilter();
+                if (panel.hidden) applyFilter();
                 setActive(activeIndex - 1);
                 return;
             }
-            if (e.key === 'Enter' && !listbox.hidden && activeIndex >= 0) {
+            if (e.key === 'Enter' && !panel.hidden && activeIndex >= 0) {
                 e.preventDefault();
                 selectValue(filteredValues[activeIndex]);
                 return;
@@ -312,6 +364,11 @@
 
         document.addEventListener('click', function (e) {
             if (!combo.contains(e.target)) closeList();
+        });
+
+        closeBtn.addEventListener('click', function () {
+            closeList();
+            input.focus();
         });
 
         form.addEventListener('submit', function () {

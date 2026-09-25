@@ -54,6 +54,13 @@ public class FarmModel(
     [BindProperty(SupportsGet = true)] public string NewCphh { get; set; } = "";
     [BindProperty(SupportsGet = true)] public string? SelectedCphh { get; set; }
     [BindProperty(SupportsGet = true)] public bool ForceNewFarmDetails { get; set; }
+    [BindProperty(SupportsGet = true)] public string? SeedParish { get; set; }
+    [BindProperty(SupportsGet = true)] public string? SeedCounty { get; set; }
+    [BindProperty(SupportsGet = true)] public int? SeedAdnsRegionId { get; set; }
+    [BindProperty(SupportsGet = true)] public int? SeedAuthorityId { get; set; }
+    [BindProperty(SupportsGet = true)] public int? SeedAuthorityCountyId { get; set; }
+    [BindProperty(SupportsGet = true)] public string? SeedHerdmark1 { get; set; }
+    [BindProperty(SupportsGet = true)] public string? SeedNumericHerdmark1 { get; set; }
     [BindProperty] public string? NewSurvey { get; set; }
     [BindProperty] public string? NewSex { get; set; }
     [BindProperty] public string? NewBreed { get; set; }
@@ -204,6 +211,13 @@ public class FarmModel(
             else if (ForceNewFarmDetails && !string.IsNullOrWhiteSpace(NewCphh))
             {
                 EditableFarm.CPHH = CphhNormalizer.Normalize(NewCphh);
+                EditableFarm.Parish = SeedParish;
+                EditableFarm.County = SeedCounty;
+                EditableFarm.ADNSRegionID = SeedAdnsRegionId;
+                EditableFarm.AuthorityID = SeedAuthorityId;
+                EditableFarm.AuthorityCountyID = SeedAuthorityCountyId;
+                EditableFarm.Herdmark1 = SeedHerdmark1;
+                EditableFarm.NumericHerdmark1 = SeedNumericHerdmark1;
                 RequireFarmDetails = true;
             }
             else if (!string.IsNullOrWhiteSpace(EditableFarm.CPHH))

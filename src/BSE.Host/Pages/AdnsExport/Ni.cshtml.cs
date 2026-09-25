@@ -44,6 +44,9 @@ public class NiModel(
     public string UserEmailAddress { get; set; } = string.Empty;
 
     [BindProperty]
+    public string Message { get; set; } = string.Empty;
+
+    [BindProperty]
     public bool SaveAdnsData { get; set; } = false;
 
     [BindProperty(SupportsGet = true)] public string SortColumn { get; set; } = "AdnsReference";
@@ -200,6 +203,7 @@ public class NiModel(
         }
 
         Preview = adnsExportService.PreviewNiExport(EmailReference, DraftCases);
+        Message = Preview.EmailBody;
         TempData[PreviewTempDataKey] = JsonSerializer.Serialize(Preview);
         PersistContext();
 
@@ -245,7 +249,7 @@ public class NiModel(
 
         // NI export rows are manually entered and are not backed by persisted Case rows,
         // so ADNS case updates must remain disabled.
-        var command = new DispatchAdnsCommand("NI", EmailReference, cases, UserEmailAddress, SaveAdnsData: false);
+        var command = new DispatchAdnsCommand("NI", EmailReference, cases, UserEmailAddress, SaveAdnsData: false, Message: Message.Trim());
 
         try
         {

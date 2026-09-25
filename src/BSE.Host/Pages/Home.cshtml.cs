@@ -60,7 +60,7 @@ public class HomeModel(
         if (User.IsInRole("VLAAccess"))
             tasks.Add(LoadBatchDataAsync());
 
-        if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess"))
+        if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess") || User.IsInRole("DEFRAMaintenance") || User.IsInRole("VLAMaintenance"))
             tasks.Add(LoadRbseDataAsync(currentYear, previousYear));
 
         await Task.WhenAll(tasks);
