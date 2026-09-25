@@ -126,17 +126,23 @@
                         <div class="govuk-form-group @(Err("ReceivedByRegionalLabDate") is not null ? "govuk-form-group--error" : "")">
                             <label class="govuk-label" for="ReceivedByRegionalLabDate">Regional Lab Received</label>
                             @if (Err("ReceivedByRegionalLabDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("ReceivedByRegionalLabDate")</p> }
-                            <input id="ReceivedByRegionalLabDate" asp-for="ReceivedByRegionalLabDate" type="date" class="govuk-input govuk-input--width-10" />
+                            <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                                <input id="ReceivedByRegionalLabDate" name="ReceivedByRegionalLabDate" type="text" class="govuk-input moj-js-datepicker-input" autocomplete="off" value="@(Model.ReceivedByRegionalLabDate?.ToString("dd/MM/yyyy") ?? "")" />
+                            </div>
                         </div>
                         <div class="govuk-form-group @(Err("InitialReceivedDate") is not null ? "govuk-form-group--error" : "")">
                             <label class="govuk-label" for="InitialReceivedDate">Initial Received</label>
                             @if (Err("InitialReceivedDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("InitialReceivedDate")</p> }
-                            <input id="InitialReceivedDate" asp-for="InitialReceivedDate" type="date" class="govuk-input govuk-input--width-10" />
+                            <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                                <input id="InitialReceivedDate" name="InitialReceivedDate" type="text" class="govuk-input moj-js-datepicker-input" autocomplete="off" value="@(Model.InitialReceivedDate?.ToString("dd/MM/yyyy") ?? "")" />
+                            </div>
                         </div>
                         <div class="govuk-form-group @(Err("FinalReceivedDate") is not null ? "govuk-form-group--error" : "")">
                             <label class="govuk-label" for="FinalReceivedDate">Final Received</label>
                             @if (Err("FinalReceivedDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("FinalReceivedDate")</p> }
-                            <input id="FinalReceivedDate" asp-for="FinalReceivedDate" type="date" class="govuk-input govuk-input--width-10" />
+                            <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                                <input id="FinalReceivedDate" name="FinalReceivedDate" type="text" class="govuk-input moj-js-datepicker-input" autocomplete="off" value="@(Model.FinalReceivedDate?.ToString("dd/MM/yyyy") ?? "")" />
+                            </div>
                         </div>
                     </div>
 
@@ -163,7 +169,9 @@
                         <div class="govuk-form-group @(Err("FinalSentDate") is not null ? "govuk-form-group--error" : "")">
                             <label class="govuk-label" for="FinalSentDate">Final Sent Date</label>
                             @if (Err("FinalSentDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("FinalSentDate")</p> }
-                            <input id="FinalSentDate" asp-for="FinalSentDate" type="date" class="govuk-input govuk-input--width-10" />
+                            <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                                <input id="FinalSentDate" name="FinalSentDate" type="text" class="govuk-input moj-js-datepicker-input" autocomplete="off" value="@(Model.FinalSentDate?.ToString("dd/MM/yyyy") ?? "")" />
+                            </div>
                         </div>
                     </div>
 
@@ -184,37 +192,51 @@
                             <div class="govuk-form-group @(Err("PurchaserBse1ReceivedDate") is not null ? "govuk-form-group--error" : "")">
                                 <label class="govuk-label" for="PurchaserBse1ReceivedDate">Purchaser BSE1</label>
                                 @if (Err("PurchaserBse1ReceivedDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("PurchaserBse1ReceivedDate")</p> }
-                                <input id="PurchaserBse1ReceivedDate" asp-for="PurchaserBse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" />
+                                <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                                    <input id="PurchaserBse1ReceivedDate" name="PurchaserBse1ReceivedDate" type="text" class="govuk-input moj-js-datepicker-input" autocomplete="off" value="@(Model.PurchaserBse1ReceivedDate?.ToString("dd/MM/yyyy") ?? "")" />
+                                </div>
                             </div>
                             <div class="govuk-form-group @(Err("BreederBse1ReceivedDate") is not null ? "govuk-form-group--error" : "")">
                                 <label class="govuk-label" for="BreederBse1ReceivedDate">Breeder BSE1</label>
                                 @if (Err("BreederBse1ReceivedDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("BreederBse1ReceivedDate")</p> }
-                                <input id="BreederBse1ReceivedDate" asp-for="BreederBse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" />
+                                <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                                    <input id="BreederBse1ReceivedDate" name="BreederBse1ReceivedDate" type="text" class="govuk-input moj-js-datepicker-input" autocomplete="off" value="@(Model.BreederBse1ReceivedDate?.ToString("dd/MM/yyyy") ?? "")" />
+                                </div>
                             </div>
                             <div class="govuk-form-group @(Err("Vendor1Bse1ReceivedDate") is not null ? "govuk-form-group--error" : "")">
                                 <label class="govuk-label" for="Vendor1Bse1ReceivedDate">Vendor BSE1</label>
                                 @if (Err("Vendor1Bse1ReceivedDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("Vendor1Bse1ReceivedDate")</p> }
-                                <input id="Vendor1Bse1ReceivedDate" asp-for="Vendor1Bse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" />
+                                <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                                    <input id="Vendor1Bse1ReceivedDate" name="Vendor1Bse1ReceivedDate" type="text" class="govuk-input moj-js-datepicker-input" autocomplete="off" value="@(Model.Vendor1Bse1ReceivedDate?.ToString("dd/MM/yyyy") ?? "")" />
+                                </div>
                             </div>
                             <div class="govuk-form-group @(Err("HomebredBse1ReceivedDate") is not null ? "govuk-form-group--error" : "")">
                                 <label class="govuk-label" for="HomebredBse1ReceivedDate">Homebred BSE1</label>
                                 @if (Err("HomebredBse1ReceivedDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("HomebredBse1ReceivedDate")</p> }
-                                <input id="HomebredBse1ReceivedDate" asp-for="HomebredBse1ReceivedDate" type="date" class="govuk-input govuk-input--width-10" />
+                                <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                                    <input id="HomebredBse1ReceivedDate" name="HomebredBse1ReceivedDate" type="text" class="govuk-input moj-js-datepicker-input" autocomplete="off" value="@(Model.HomebredBse1ReceivedDate?.ToString("dd/MM/yyyy") ?? "")" />
+                                </div>
                             </div>
                             <div class="govuk-form-group @(Err("SummarySheetReceivedDate") is not null ? "govuk-form-group--error" : "")">
                                 <label class="govuk-label" for="SummarySheetReceivedDate">Summary Sheet</label>
                                 @if (Err("SummarySheetReceivedDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("SummarySheetReceivedDate")</p> }
-                                <input id="SummarySheetReceivedDate" asp-for="SummarySheetReceivedDate" type="date" class="govuk-input govuk-input--width-10" />
+                                <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                                    <input id="SummarySheetReceivedDate" name="SummarySheetReceivedDate" type="text" class="govuk-input moj-js-datepicker-input" autocomplete="off" value="@(Model.SummarySheetReceivedDate?.ToString("dd/MM/yyyy") ?? "")" />
+                                </div>
                             </div>
                             <div class="govuk-form-group @(Err("PaperworkCompleteDate") is not null ? "govuk-form-group--error" : "")">
                                 <label class="govuk-label" for="PaperworkCompleteDate">Paperwork Complete</label>
                                 @if (Err("PaperworkCompleteDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("PaperworkCompleteDate")</p> }
-                                <input id="PaperworkCompleteDate" asp-for="PaperworkCompleteDate" type="date" class="govuk-input govuk-input--width-10" />
+                                <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                                    <input id="PaperworkCompleteDate" name="PaperworkCompleteDate" type="text" class="govuk-input moj-js-datepicker-input" autocomplete="off" value="@(Model.PaperworkCompleteDate?.ToString("dd/MM/yyyy") ?? "")" />
+                                </div>
                             </div>
                             <div class="govuk-form-group @(Err("DataCompleteDate") is not null ? "govuk-form-group--error" : "")">
                                 <label class="govuk-label" for="DataCompleteDate">Data Complete</label>
                                 @if (Err("DataCompleteDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("DataCompleteDate")</p> }
-                                <input id="DataCompleteDate" asp-for="DataCompleteDate" type="date" class="govuk-input govuk-input--width-10" />
+                                <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                                    <input id="DataCompleteDate" name="DataCompleteDate" type="text" class="govuk-input moj-js-datepicker-input" autocomplete="off" value="@(Model.DataCompleteDate?.ToString("dd/MM/yyyy") ?? "")" />
+                                </div>
                             </div>
 
                             @if (Model.ShowTseFields)
@@ -229,12 +251,9 @@
                                 <div class="govuk-form-group @(Err("SamplingDate") is not null ? "govuk-form-group--error" : "")">
                                     <label class="govuk-label" for="SamplingDate">Sampling Date</label>
                                     @if (Err("SamplingDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("SamplingDate")</p> }
-                                    <input id="SamplingDate" asp-for="SamplingDate" type="date" class="govuk-input govuk-input--width-10" />
-                                    <div class="govuk-checkboxes govuk-checkboxes--small bse-casework-entry-unknown" data-module="govuk-checkboxes">
-                                        <div class="govuk-checkboxes__item">
-                                            <input class="govuk-checkboxes__input" id="SamplingDateIsUnknown" asp-for="SamplingDateIsUnknown" type="checkbox" />
-                                            <label class="govuk-label govuk-checkboxes__label" for="SamplingDateIsUnknown">Unknown</label>
-                                        </div>
+                                    <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                                        <input id="SamplingDate" name="SamplingDate" type="text" class="govuk-input moj-js-datepicker-input" autocomplete="off"
+                                               value="@(Model.SamplingDate?.Date == DateTime.MaxValue.Date ? "unknown" : Model.SamplingDate?.ToString("dd/MM/yyyy") ?? "")" />
                                     </div>
                                 </div>
                                 <div class="govuk-form-group">
@@ -309,7 +328,9 @@
                                 </span>
                                 <label class="govuk-label bse-minute-sent-on-label" for="LabChasedDate">Chased on</label>
                                 @if (Err("LabChasedDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("LabChasedDate")</p> }
-                                <input id="LabChasedDate" asp-for="LabChasedDate" type="date" class="govuk-input" />
+                                <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                                    <input id="LabChasedDate" name="LabChasedDate" type="text" class="govuk-input moj-js-datepicker-input" autocomplete="off" value="@(Model.LabChasedDate?.ToString("dd/MM/yyyy") ?? "")" />
+                                </div>
                             </div>
 
                             <div class="govuk-form-group bse-casework-entry-minute-sent-row @(Err("BarbMinuteSentDate") is not null ? "govuk-form-group--error" : "")">
@@ -322,7 +343,9 @@
                                 </span>
                                 <label class="govuk-label bse-minute-sent-on-label" for="BarbMinuteSentDate">Sent on</label>
                                 @if (Err("BarbMinuteSentDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("BarbMinuteSentDate")</p> }
-                                <input id="BarbMinuteSentDate" asp-for="BarbMinuteSentDate" type="date" class="govuk-input" />
+                                <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                                    <input id="BarbMinuteSentDate" name="BarbMinuteSentDate" type="text" class="govuk-input moj-js-datepicker-input" autocomplete="off" value="@(Model.BarbMinuteSentDate?.ToString("dd/MM/yyyy") ?? "")" />
+                                </div>
                             </div>
 
                         </div>
@@ -353,7 +376,9 @@
                     <span class="govuk-body bse-casework-entry-post2000-warning-inline">Born after December 2000 - Inform Defra if positive</span>
                     <label class="govuk-label bse-casework-entry-post2000-label" for="Post2000SentDate">DEFRA informed on</label>
                     @if (Err("Post2000SentDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("Post2000SentDate")</p> }
-                    <input id="Post2000SentDate" asp-for="Post2000SentDate" type="date" class="govuk-input" />
+                    <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                        <input id="Post2000SentDate" name="Post2000SentDate" type="text" class="govuk-input moj-js-datepicker-input" autocomplete="off" value="@(Model.Post2000SentDate?.ToString("dd/MM/yyyy") ?? "")" />
+                    </div>
                 </div>
             }
 
@@ -530,7 +555,8 @@
         white-space: nowrap;
     }
 
-    .bse-casework-entry-post2000-row input[type="date"] {
+    .bse-casework-entry-post2000-row input[type="date"],
+    .bse-casework-entry-post2000-row .moj-datepicker__wrapper {
         flex: 0 0 auto;
         width: 12rem;
         max-width: 12rem;
@@ -629,7 +655,8 @@
     }
 
     .bse-casework-entry-left .govuk-form-group input[type="text"],
-    .bse-casework-entry-left .govuk-form-group input[type="date"] {
+    .bse-casework-entry-left .govuk-form-group input[type="date"],
+    .bse-casework-entry-left .govuk-form-group .moj-datepicker__wrapper {
         max-width: 12rem;
     }
 
@@ -638,7 +665,8 @@
         min-width: 0;
     }
 
-    .bse-casework-entry-middle .govuk-form-group input[type="date"] {
+    .bse-casework-entry-middle .govuk-form-group input[type="date"],
+    .bse-casework-entry-middle .govuk-form-group .moj-datepicker__wrapper {
         max-width: 11.5rem;
     }
 
@@ -651,34 +679,6 @@
         width: 23rem;
         max-width: 23rem;
         min-width: 0;
-    }
-
-    .bse-casework-entry-middle .bse-casework-entry-unknown {
-        margin: 0 0 0 0.25rem;
-        flex: 0 0 auto;
-    }
-
-    .bse-casework-entry-middle .bse-casework-entry-unknown .govuk-checkboxes__item {
-        position: relative;
-        display: inline-flex;
-        align-items: center;
-        min-height: 1.5rem;
-        margin: 0;
-        padding-left: 1.75rem;
-    }
-
-    .bse-casework-entry-middle .bse-casework-entry-unknown .govuk-checkboxes__input {
-        left: 0;
-        top: 50%;
-        margin: 0;
-        transform: translateY(-50%);
-    }
-
-    .bse-casework-entry-middle .bse-casework-entry-unknown .govuk-checkboxes__label {
-        margin: 0;
-        padding: 0;
-        line-height: 1.2;
-        white-space: nowrap;
     }
 
     .bse-casework-entry-comments .govuk-label {
@@ -778,7 +778,8 @@
         text-align: right;
     }
 
-    .bse-casework-entry-middle .bse-casework-entry-minute-sent-row input[type="date"] {
+    .bse-casework-entry-middle .bse-casework-entry-minute-sent-row input[type="date"],
+    .bse-casework-entry-middle .bse-casework-entry-minute-sent-row .moj-datepicker__wrapper {
         flex: 0 0 auto;
         max-width: 8.5em;
     }

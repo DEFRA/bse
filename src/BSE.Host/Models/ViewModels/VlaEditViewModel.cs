@@ -1,5 +1,7 @@
 using BSE.Modules.CaseManagement.Commands;
 using BSE.Modules.CaseManagement.Models;
+using BSE.Host.ModelBinding;
+using Microsoft.AspNetCore.Mvc;
 
 namespace BSE.Host.Models.ViewModels;
 
@@ -13,22 +15,22 @@ public class VlaEditViewModel
     public string Rbse { get; set; } = string.Empty;
 
     // ── VLA-owned editable fields ─────────────────────────────────────────────
-    public DateTime? BirthDate { get; set; }
+    [ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? BirthDate { get; set; }
     public string? BirthDateSource { get; set; }
     public bool IsBirthDateEst { get; set; }
     public string? Sex { get; set; }
     public string? Breed { get; set; }
     public string? Origin { get; set; }
-    public DateTime? PurchaseDate { get; set; }
+    [ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? PurchaseDate { get; set; }
     public short? PurchaseAgeInMonths { get; set; }
     public string? PurchasedCounty { get; set; }
-    public DateTime? HerdEntryDate { get; set; }
-    public DateTime? OnsetDate { get; set; }
+    [ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? HerdEntryDate { get; set; }
+    [ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? OnsetDate { get; set; }
     public bool IsOnsetDateEst { get; set; }
     public byte? MonthsPregnant { get; set; }
     public byte? MonthsPostCalving { get; set; }
     public short? OnsetAgeInMonths { get; set; }
-    public DateTime? SlaughterDate { get; set; }
+    [ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? SlaughterDate { get; set; }
 
     // ── DEFRA-owned pass-through fields (hidden in form) ─────────────────────
     public string? EartagCountry { get; set; }

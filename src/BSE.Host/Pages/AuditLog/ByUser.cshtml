@@ -55,13 +55,19 @@
                     }
                 }
                 <div class="bse-date-range-input-wrapper">
-                    <input asp-for="StartDate" type="date"
-                           class="govuk-input govuk-input--width-10 @(Model.StartDateError is not null ? "govuk-input--error" : "")"
-                           value="@(Model.StartDate?.ToString("yyyy-MM-dd"))" />
+                    <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                        <input id="StartDate" name="StartDate" type="text"
+                               class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(Model.StartDateError is not null ? "govuk-input--error" : "")"
+                               autocomplete="off"
+                               value="@(Model.StartDate?.ToString("dd/MM/yyyy"))" />
+                    </div>
                     <span class="bse-date-range-separator govuk-label">and</span>
-                    <input asp-for="EndDate" type="date"
-                           class="govuk-input govuk-input--width-10 @(Model.EndDateError is not null ? "govuk-input--error" : "")"
-                           value="@(Model.EndDate?.ToString("yyyy-MM-dd"))" />
+                    <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                        <input id="EndDate" name="EndDate" type="text"
+                               class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(Model.EndDateError is not null ? "govuk-input--error" : "")"
+                               autocomplete="off"
+                               value="@(Model.EndDate?.ToString("dd/MM/yyyy"))" />
+                    </div>
                 </div>
             </div>
         </div>

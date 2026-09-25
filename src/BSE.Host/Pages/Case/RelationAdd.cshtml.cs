@@ -1,4 +1,5 @@
 using BSE.Host.Helpers;
+using BSE.Host.ModelBinding;
 using BSE.Infrastructure;
 using BSE.Modules.AnimalRelations.Commands;
 using BSE.Modules.AnimalRelations.Repositories;
@@ -29,7 +30,7 @@ public class RelationAddModel(
     [BindProperty] public int? BirthDay { get; set; }
     [BindProperty] public int? BirthMonth { get; set; }
     [BindProperty] public int? BirthYear { get; set; }
-    [BindProperty] public DateTime? LeftDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? LeftDate { get; set; }
     [BindProperty] public string? RelationFate { get; set; }
     [BindProperty] public string? Sire { get; set; }
 

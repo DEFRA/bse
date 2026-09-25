@@ -4,6 +4,7 @@ using BSE.Modules.CaseWork.Commands;
 using BSE.Modules.CaseWork.Models;
 using BSE.Modules.CaseWork.Services;
 using BSE.Modules.ReferenceData.Repositories;
+using BSE.Host.ModelBinding;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -20,9 +21,6 @@ public class CaseWorkEntryModel(
 {
     private const string SurveyFallenStock = "fallen stock";
     private const string SurveySurveillanceCohort = "surveillance cohort";
-
-    /// <summary>Legacy sentinel: a SamplingDate of DateTime.MaxValue means "unknown".</summary>
-    private static readonly DateTime SamplingDateUnknown = DateTime.MaxValue;
 
     [BindProperty(SupportsGet = true)]
     public string Rbse { get; set; } = string.Empty;
@@ -56,23 +54,22 @@ public class CaseWorkEntryModel(
     [BindProperty] public string? Barcode { get; set; }
     [BindProperty] public string? AhfReference { get; set; }
     [BindProperty] public string? RegionalLab { get; set; }
-    [BindProperty] public DateTime? ReceivedByRegionalLabDate { get; set; }
-    [BindProperty] public DateTime? InitialReceivedDate { get; set; }
-    [BindProperty] public DateTime? FinalReceivedDate { get; set; }
-    [BindProperty] public DateTime? FinalSentDate { get; set; }
-    [BindProperty] public DateTime? PurchaserBse1ReceivedDate { get; set; }
-    [BindProperty] public DateTime? BreederBse1ReceivedDate { get; set; }
-    [BindProperty] public DateTime? Vendor1Bse1ReceivedDate { get; set; }
-    [BindProperty] public DateTime? HomebredBse1ReceivedDate { get; set; }
-    [BindProperty] public DateTime? SummarySheetReceivedDate { get; set; }
-    [BindProperty] public DateTime? PaperworkCompleteDate { get; set; }
-    [BindProperty] public DateTime? DataCompleteDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? ReceivedByRegionalLabDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? InitialReceivedDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? FinalReceivedDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? FinalSentDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? PurchaserBse1ReceivedDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? BreederBse1ReceivedDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? Vendor1Bse1ReceivedDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? HomebredBse1ReceivedDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? SummarySheetReceivedDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? PaperworkCompleteDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? DataCompleteDate { get; set; }
     [BindProperty] public string? TseTestingSite { get; set; }
-    [BindProperty] public DateTime? SamplingDate { get; set; }
-    [BindProperty] public bool SamplingDateIsUnknown { get; set; }
-    [BindProperty] public DateTime? LabChasedDate { get; set; }
-    [BindProperty] public DateTime? BarbMinuteSentDate { get; set; }
-    [BindProperty] public DateTime? Post2000SentDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(SamplingDateModelBinder))] public DateTime? SamplingDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? LabChasedDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? BarbMinuteSentDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? Post2000SentDate { get; set; }
     [BindProperty] public string? CaseWorkNotes { get; set; }
     [BindProperty] public int? AhroId { get; set; }
 
@@ -108,11 +105,7 @@ public class CaseWorkEntryModel(
         Post2000SentDate = Entry.Post2000SentDate;
         CaseWorkNotes = Entry.CaseWorkNotes;
         ClosedOnLoad = Entry.IsCaseClosed == true;
-
-        if (Entry.SamplingDate == SamplingDateUnknown)
-            SamplingDateIsUnknown = true;
-        else
-            SamplingDate = Entry.SamplingDate;
+        SamplingDate = Entry.SamplingDate;
 
         return Page();
     }
@@ -194,7 +187,7 @@ public class CaseWorkEntryModel(
         if (string.IsNullOrWhiteSpace(TseTestingSite))
             ModelState.AddModelError(nameof(TseTestingSite), "You must select a TSE testing site.");
 
-        if (!SamplingDateIsUnknown && SamplingDate is null)
+        if (!SamplingDate.HasValue)
             ModelState.AddModelError(nameof(SamplingDate), "You must enter a sampling date.");
     }
 
@@ -247,7 +240,7 @@ public class CaseWorkEntryModel(
             IsCaseClosed: isCaseClosed,
             UserId: userId,
             TseTestingSite: string.IsNullOrWhiteSpace(TseTestingSite) ? null : TseTestingSite,
-            SamplingDate: SamplingDateIsUnknown ? SamplingDateUnknown : SamplingDate,
+            SamplingDate: SamplingDate,
             AhroId: AhroId);
 
         await caseWorkService.EditCaseWorkEntryAsync(command);

@@ -1,4 +1,5 @@
 using BSE.Host.Helpers;
+using BSE.Host.ModelBinding;
 using BSE.Host.Services;
 using BSE.Infrastructure;
 using BSE.Modules.AnimalRelations.Commands;
@@ -87,11 +88,11 @@ public class RelationsModel(
     /// <summary>Posted single calendar date (legacy ctlRelationBirthDate is a CalendarDate
     /// control, not a day/month/year PartialDate). Decomposed into BirthDay/Month/Year, the
     /// storage shape CaseRelation actually persists, before validation.</summary>
-    [BindProperty] public DateTime? BirthDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? BirthDate { get; set; }
     public int? BirthDay { get; set; }
     public int? BirthMonth { get; set; }
     public int? BirthYear { get; set; }
-    [BindProperty] public DateTime? LeftDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? LeftDate { get; set; }
     [BindProperty] public string? RelationFate { get; set; }
     [BindProperty] public string? Sire { get; set; }
 

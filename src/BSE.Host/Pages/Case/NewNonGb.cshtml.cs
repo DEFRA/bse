@@ -1,4 +1,5 @@
 using BSE.Host.Services;
+using BSE.Host.ModelBinding;
 using BSE.Modules.BsessIntegration.Services;
 using BSE.Modules.CaseManagement.Commands;
 using BSE.Modules.CaseManagement.Enums;
@@ -50,8 +51,8 @@ public class NewNonGbModel : PageModel
     [BindProperty] public string? Eartag { get; set; }
     [BindProperty] public string? Fate { get; set; } = "SL";
     [BindProperty] public string? FinalResult { get; set; } = "NE";
-    [BindProperty] public DateTime? FinalResultDate { get; set; }
-    [BindProperty] public DateTime? SlaughterDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? FinalResultDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? SlaughterDate { get; set; }
     [BindProperty] public string? OwnerName { get; set; }
     [BindProperty] public string? Address1 { get; set; }
     [BindProperty] public string? Address2 { get; set; }

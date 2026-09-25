@@ -17,6 +17,7 @@
     <link rel="mask-icon" href="~/assets/images/govuk-icon-mask.svg" color="#1d70b8" asp-append-version="true" />
     <title>@(ViewData["Title"] != null ? $"{ViewData["Title"]} — BSE Database System" : "BSE Database System")</title>
     <link rel="stylesheet" href="~/govuk/govuk-frontend.min.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/moj/moj-frontend.min.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/bse.css" asp-append-version="true" />
 </head>
 <body class="govuk-template__body @ViewData["BodyClass"]">
@@ -179,10 +180,13 @@
     </footer>
 
     <script type="module" src="/govuk/govuk-frontend.min.js"></script>
+    <script type="module" src="/moj/moj-frontend.min.js"></script>
     <script src="~/js/rbse-cphh-autosuggest.js" asp-append-version="true"></script>
     <script type="module">
         import { initAll } from '/govuk/govuk-frontend.min.js';
+        import * as MOJFrontend from '/moj/moj-frontend.min.js';
         initAll();
+        MOJFrontend.initAll();
 
         const headerMenuButton = document.querySelector('.bse-global-header__menu-button');
         const headerNavigation = document.getElementById('global-header-navigation');
