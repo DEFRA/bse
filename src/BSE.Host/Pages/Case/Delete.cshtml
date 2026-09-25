@@ -45,12 +45,88 @@
                 <span class="govuk-visually-hidden">Error:</span>@Model.RbseError
             </p>
         }
-        <input id="rbse" name="Rbse" value="@Model.Rbse" type="text" maxlength="11" autocomplete="off"
+        <input id="rbse-hidden" name="Rbse" type="hidden" value="@Model.Rbse" />
+        <input id="rbse" name="RbseInput" value="@Model.Rbse" type="text" maxlength="11" autocomplete="off" list="rbse-suggestions"
+               data-no-global-autosuggest="true"
                aria-describedby="rbse-hint @(Model.RbseError is not null ? "rbse-error" : "")"
                class="govuk-input govuk-input--width-10 @(Model.RbseError is not null ? "govuk-input--error" : "")" />
+        <datalist id="rbse-suggestions"></datalist>
     </div>
     <button type="submit" class="govuk-button" data-module="govuk-button">Look Up</button>
 </form>
+
+<script>
+(function () {
+    var form = document.querySelector('form[asp-page-handler="LookUp"], form[action*="handler=LookUp"]') || document.querySelector('.bse-legacy-inline-form');
+    var input = document.getElementById('rbse');
+    var hidden = document.getElementById('rbse-hidden');
+    var list = document.getElementById('rbse-suggestions');
+    if (!form || !input || !hidden || !list) return;
+
+    var storageKey = 'bse.recent.rbse';
+
+    function normalize(v) { return (v || '').replace(/\D/g, '').trim(); }
+    function format(v) {
+        var d = normalize(v);
+        if (d.length !== 9) return (v || '').trim();
+        return d.substring(0,2) + '/' + d.substring(2,4) + '/' + d.substring(4);
+    }
+    function readRecent() {
+        try {
+            var p = JSON.parse(localStorage.getItem(storageKey) || '[]');
+            return Array.isArray(p) ? p : [];
+        } catch { return []; }
+    }
+    function writeRecent(values) { localStorage.setItem(storageKey, JSON.stringify(values.slice(0, 10))); }
+    function mergeUnique(values) {
+        var seen = new Set();
+        var out = [];
+        values.forEach(function (v) {
+            var n = normalize(v);
+            if (n.length === 9 && !seen.has(n)) { seen.add(n); out.push(n); }
+        });
+        return out;
+    }
+    function syncHidden() { hidden.value = format(input.value); }
+    function render(values) {
+        list.innerHTML = '';
+        values.forEach(function (raw) {
+            var option = document.createElement('option');
+            option.value = format(raw);
+            list.appendChild(option);
+        });
+    }
+
+    async function load() {
+        var recent = readRecent();
+        var remote = [];
+        try {
+            var res = await fetch('/Api/Suggestions?field=rbse&query=' + encodeURIComponent(input.value || '') + '&limit=20', { headers: { 'Accept': 'application/json' } });
+            if (res.ok) {
+                var json = await res.json();
+                remote = Array.isArray(json.values) ? json.values : [];
+            }
+        } catch { }
+        render(mergeUnique(recent.concat(remote)));
+    }
+
+    input.addEventListener('focus', function () { void load(); });
+    input.addEventListener('click', function () { void load(); });
+    input.addEventListener('input', function () { syncHidden(); void load(); });
+    input.addEventListener('change', function () { syncHidden(); });
+
+    form.addEventListener('submit', function () {
+        syncHidden();
+        var n = normalize(input.value);
+        if (n.length === 9) {
+            var merged = mergeUnique([n].concat(readRecent()));
+            writeRecent(merged);
+        }
+    });
+
+    syncHidden();
+})();
+</script>
 
 @if (Model.CaseFound)
 {

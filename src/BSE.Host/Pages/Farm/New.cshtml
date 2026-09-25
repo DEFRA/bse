@@ -25,9 +25,33 @@
     <p class="govuk-body">@Model.VetnetMessage</p>
 }
 
-@if (Model.ShowAuthorityMissingWarning)
+@if (Model.ReturnToCaseFarm && Model.VetnetFound)
 {
-    <p class="govuk-body govuk-!-font-weight-bold">Local authority not on file – case won’t be notifiable to Brussels. Please investigate.</p>
+    <p class="govuk-body">Found on Vetnet</p>
+    <dl class="govuk-summary-list govuk-!-margin-bottom-4">
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Herdmark</dt>
+            <dd class="govuk-summary-list__value">@Model.VetnetHerdmark</dd>
+        </div>
+        <div class="govuk-summary-list__row">
+            <dt class="govuk-summary-list__key">Numeric Herdmark</dt>
+            <dd class="govuk-summary-list__value">@Model.VetnetNumericHerdmark</dd>
+        </div>
+    </dl>
+
+    <div class="govuk-form-group">
+        <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+            <div class="govuk-checkboxes__item">
+                <input asp-for="AcceptVetnetDetails" class="govuk-checkboxes__input" />
+                <label asp-for="AcceptVetnetDetails" class="govuk-label govuk-checkboxes__label">Accept Vetnet Details?</label>
+            </div>
+        </div>
+    </div>
+}
+
+@if (Model.ShowBrusselsWarning)
+{
+    <p class="govuk-body govuk-!-font-weight-bold">@Model.BrusselsWarningText</p>
 }
 
 @if (!ViewContext.ModelState.IsValid)
@@ -51,28 +75,10 @@
     <input type="hidden" asp-for="ReturnRbse" />
     <input type="hidden" asp-for="ReturnCphh" />
     <input type="hidden" asp-for="ReturnToCaseFarm" />
-    <input type="hidden" asp-for="Farm.Herdmark1" />
-    <input type="hidden" asp-for="Farm.NumericHerdmark1" />
 
     @if (Model.ReturnToCaseFarm)
     {
         <input type="hidden" asp-for="Farm.CPHH" />
-
-        <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
-
-        @if (!string.IsNullOrWhiteSpace(Model.Farm.Herdmark1) || !string.IsNullOrWhiteSpace(Model.Farm.NumericHerdmark1))
-        {
-            <dl class="govuk-summary-list govuk-!-margin-bottom-6">
-                <div class="govuk-summary-list__row">
-                    <dt class="govuk-summary-list__key">Herdmark 1</dt>
-                    <dd class="govuk-summary-list__value">@(Model.Farm.Herdmark1 ?? string.Empty)</dd>
-                </div>
-                <div class="govuk-summary-list__row">
-                    <dt class="govuk-summary-list__key">Numeric Herdmark 1</dt>
-                    <dd class="govuk-summary-list__value">@(Model.Farm.NumericHerdmark1 ?? string.Empty)</dd>
-                </div>
-            </dl>
-        }
     }
     else
     {
@@ -101,7 +107,7 @@
         <button type="submit" class="govuk-button" data-module="govuk-button">@(Model.ReturnToCaseFarm ? "Create Farm" : "OK")</button>
         @if (!string.IsNullOrWhiteSpace(Model.ReturnRbse) && Model.ReturnToCaseFarm)
         {
-            <a id="cancel-link" asp-page="/Case/PickFarm" asp-route-rbse="@Model.ReturnRbse" asp-route-cphh="@Model.ReturnCphh" class="govuk-link">Cancel</a>
+            <a id="cancel-link" asp-page="/Case/Farm" asp-route-rbse="@Model.ReturnRbse" class="govuk-link">Cancel</a>
         }
         else if (!string.IsNullOrWhiteSpace(Model.ReturnRbse))
         {
