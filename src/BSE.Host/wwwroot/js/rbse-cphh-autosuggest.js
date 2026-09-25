@@ -1,8 +1,12 @@
 (function () {
+    if (window.__bseAutosuggestInitialized === true) {
+        return;
+    }
+    window.__bseAutosuggestInitialized = true;
+
     var MAX_LOCAL_VALUES = 20;
     var MAX_RBSE_LOCAL_VALUES = 10;
     var MAX_RENDER = 20;
-    var preloaded = { rbse: [], cphh: [] };
 
     function normalizeValue(field, value) {
         if (!value) return '';
@@ -81,17 +85,6 @@
         writeLocal(field, merged);
     }
 
-    async function preloadField(field) {
-        try {
-            var remote = await fetchValues(field, '');
-            preloaded[field] = unique(remote || []);
-            if (preloaded[field].length) {
-                var existing = readLocal(field);
-                writeLocal(field, unique(existing.concat(preloaded[field])));
-            }
-        } catch { }
-    }
-
     function inferField(input) {
         var parts = [input.name || '', input.id || '', input.getAttribute('aria-label') || '', input.placeholder || ''];
         var label = document.querySelector('label[for="' + (input.id || '') + '"]');
@@ -111,18 +104,6 @@
         if (input.disabled || input.readOnly) return false;
         if (input.closest('#rbse-combobox')) return false;
         return inferField(input) !== null;
-    }
-
-    async function fetchValues(field, query) {
-        var url = '/Api/Suggestions?field=' + encodeURIComponent(field) + '&query=' + encodeURIComponent(query || '') + '&limit=20';
-        try {
-            var response = await fetch(url, { headers: { 'Accept': 'application/json' } });
-            if (!response.ok) return [];
-            var json = await response.json();
-            return Array.isArray(json.values) ? json.values : [];
-        } catch {
-            return [];
-        }
     }
 
     function unique(values) {
@@ -228,6 +209,12 @@
         var field = inferField(input);
         if (!field) return;
 
+        // Remove any leftover legacy Home RBSE overlays that may still exist.
+        var legacyPanel = document.getElementById('rbse-saved-panel');
+        if (legacyPanel) legacyPanel.remove();
+        var legacyHint = document.getElementById('rbse-format-hint');
+        if (legacyHint) legacyHint.remove();
+
         // Defensive cleanup: remove stale floating UI already associated with this input.
         document.querySelectorAll('[data-bse-owner="' + ownerId + '"]').forEach(function (el) { el.remove(); });
 
@@ -243,7 +230,7 @@
         function hideOtherPopupsForField() {
             // Remove any previously created autosuggest overlays for this field,
             // keeping only the current input's UI elements.
-            document.querySelectorAll('.bse-autosuggest-panel, .bse-autosuggest-format-hint, .bse-autosuggest-list[data-bse-autosuggest-floating="true"]').forEach(function (el) {
+            document.querySelectorAll('.bse-autosuggest-panel, .bse-autosuggest-format-hint, .bse-autosuggest-list[data-bse-autosuggest-floating="true"], .bse-home-rbse-saved-panel, .bse-home-rbse-format-hint').forEach(function (el) {
                 if (el === popup || el === formatHint) return;
                 var elField = el.getAttribute('data-bse-field');
                 if (!elField || elField === field) {
@@ -323,20 +310,13 @@
             input.setAttribute('aria-expanded', 'true');
         }
 
-        async function loadAndShow() {
-            var local = unique(readLocal(field).concat(preloaded[field] || []));
-
-            // Show something immediately on first interaction (legacy-like responsiveness).
-            render(unique(local));
-
-            var remote = await fetchValues(field, input.value || '');
-            var merged = unique(local.concat(remote));
-            var changed = merged.length !== items.length
-                || merged.some(function (v, i) { return v !== items[i]; });
-
-            if (changed) {
-                render(merged);
-            }
+        function loadAndShow() {
+            var local = unique(readLocal(field));
+            var q = String(input.value || '').trim().toLowerCase();
+            var filtered = q
+                ? local.filter(function (v) { return String(v).toLowerCase().indexOf(q) === 0; })
+                : local;
+            render(filtered);
         }
 
         if (useSavedPanel) {
@@ -349,12 +329,14 @@
             input.addEventListener('focus', function () {
                 if (popup.hidden) showHintOnly();
             });
-            input.addEventListener('click', function () { void loadAndShow(); });
+            if (input.dataset.bseDisableClickOpen !== 'true') {
+                input.addEventListener('click', function () { loadAndShow(); });
+            }
         } else {
-            input.addEventListener('focus', function () { void loadAndShow(); });
-            input.addEventListener('click', function () { void loadAndShow(); });
+            input.addEventListener('focus', function () { loadAndShow(); });
+            input.addEventListener('click', function () { loadAndShow(); });
         }
-        input.addEventListener('input', function () { void loadAndShow(); });
+        input.addEventListener('input', function () { loadAndShow(); });
 
         input.addEventListener('keydown', function (e) {
             if (popup.hidden || items.length === 0) return;
@@ -415,13 +397,8 @@
     function init() {
         // Clean up previously created popup artifacts (e.g. after hot-reload/script re-exec)
         // so we do not stack duplicate "Saved info" panels.
-        document.querySelectorAll('.bse-autosuggest-panel, .bse-autosuggest-format-hint, .bse-autosuggest-list[data-bse-autosuggest-floating="true"]')
+        document.querySelectorAll('.bse-autosuggest-panel, .bse-autosuggest-format-hint, .bse-autosuggest-list[data-bse-autosuggest-floating="true"], .bse-home-rbse-saved-panel, .bse-home-rbse-format-hint')
             .forEach(function (el) { el.remove(); });
-        document.querySelectorAll('input[data-bse-autosuggest-bound="true"]')
-            .forEach(function (input) { input.removeAttribute('data-bse-autosuggest-bound'); });
-
-        void preloadField('rbse');
-        void preloadField('cphh');
 
         var inputs = Array.from(document.querySelectorAll('input'));
         inputs.filter(isEligible).forEach(attachAutosuggest);

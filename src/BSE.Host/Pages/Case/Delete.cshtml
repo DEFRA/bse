@@ -97,22 +97,18 @@
         });
     }
 
-    async function load() {
+    function load() {
         var recent = readRecent();
-        var remote = [];
-        try {
-            var res = await fetch('/Api/Suggestions?field=rbse&query=' + encodeURIComponent(input.value || '') + '&limit=20', { headers: { 'Accept': 'application/json' } });
-            if (res.ok) {
-                var json = await res.json();
-                remote = Array.isArray(json.values) ? json.values : [];
-            }
-        } catch { }
-        render(mergeUnique(recent.concat(remote)));
+        var q = normalize(input.value).toLowerCase();
+        var values = q
+            ? recent.filter(function (x) { return normalize(x).toLowerCase().indexOf(q) === 0; })
+            : recent;
+        render(mergeUnique(values));
     }
 
-    input.addEventListener('focus', function () { void load(); });
-    input.addEventListener('click', function () { void load(); });
-    input.addEventListener('input', function () { syncHidden(); void load(); });
+    input.addEventListener('focus', function () { load(); });
+    input.addEventListener('click', function () { load(); });
+    input.addEventListener('input', function () { syncHidden(); load(); });
     input.addEventListener('change', function () { syncHidden(); });
 
     form.addEventListener('submit', function () {
