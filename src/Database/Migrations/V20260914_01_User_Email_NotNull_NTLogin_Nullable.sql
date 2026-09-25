@@ -7,12 +7,14 @@ GO
 
 BEGIN TRANSACTION;
 
--- Duplicate emails can exist where the same person has two User rows: an older
--- NTLogin using the legacy single-character-prefix convention (e.g. x0391401)
--- and a newer one using the current multi-character prefix convention
--- (e.g. ns000060). For each such duplicate pair, deactivate the legacy row and
--- rename its email so it no longer collides with the active row's email,
--- before the NOT NULL/UNIQUE constraints below are enforced.
+-- Duplicate emails can exist where the same person has multiple User rows: e.g. an
+-- older NTLogin using the legacy single-character-prefix convention (e.g. x0391401)
+-- and a newer one using the current multi-character prefix convention (e.g. ns000060).
+-- Rank every row in each duplicate-email group and keep exactly one (preferring a
+-- modern-style NTLogin, then an already-active row, then the highest ID) untouched;
+-- all other rows are deactivated and suffixed with their own ID so the rename can
+-- never collide with another renamed row, even when a group has more than one
+-- legacy-style NTLogin (e.g. two single-character-prefix logins sharing an email).
 ;WITH DuplicateEmails AS (
     SELECT Email
     FROM dbo.[User]
@@ -20,18 +22,24 @@ BEGIN TRANSACTION;
     GROUP BY Email
     HAVING COUNT(*) > 1
 ),
-LegacyRows AS (
-    SELECT u.ID, u.Email, u.NTLogin
+RankedRows AS (
+    SELECT u.ID, u.Email,
+           ROW_NUMBER() OVER (
+               PARTITION BY u.Email
+               ORDER BY
+                   CASE WHEN u.NTLogin LIKE '[a-zA-Z][0-9]%' AND u.NTLogin NOT LIKE '[a-zA-Z][a-zA-Z]%' THEN 1 ELSE 0 END ASC,
+                   u.IsActive DESC,
+                   u.ID DESC
+           ) AS RowNum
     FROM dbo.[User] u
     INNER JOIN DuplicateEmails d ON d.Email = u.Email
-    WHERE u.NTLogin LIKE '[a-zA-Z][0-9]%'
-      AND u.NTLogin NOT LIKE '[a-zA-Z][a-zA-Z]%'
 )
 UPDATE u
 SET u.IsActive = 0,
-    u.Email = CONCAT(l.Email, '__LEGACY')
+    u.Email = CONCAT(r.Email, '__LEGACY_', r.ID)
 FROM dbo.[User] u
-INNER JOIN LegacyRows l ON l.ID = u.ID;
+INNER JOIN RankedRows r ON r.ID = u.ID
+WHERE r.RowNum > 1;
 
 UPDATE dbo.[User]
 SET Email = CONCAT('old_email_legacy', ID, '@apha.gov.uk')
