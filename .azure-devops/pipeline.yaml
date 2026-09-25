@@ -105,7 +105,7 @@ stages:
         sourceFolder: 'src/Database'
         contents: '**/*.sql'
         targetFolder: '$(Build.ArtifactStagingDirectory)/sql'
-        flattenFolders: true
+        flattenFolders: false
         
     - bash: |
         set -euo pipefail
@@ -207,19 +207,17 @@ stages:
                   https://github.com/microsoft/go-sqlcmd/releases/download/v1.8.2/sqlcmd-linux-amd64.tar.bz2
                 tar -xjf "$TOOLS/sqlcmd.tar.bz2" -C "$TOOLS"
 
-                shopt -s nullglob
-                files=("$(Pipeline.Workspace)"/drop/sql/*.sql)
-                if [ ${#files[@]} -eq 0 ]; then
-                  echo "No SQL scripts found - nothing to apply"
-                  exit 0
+                DEPLOY_DIR="$(Pipeline.Workspace)/drop/sql/Deploy"
+                if [ ! -f "$DEPLOY_DIR/Deploy.sql" ]; then
+                  echo "##vso[task.logissue type=error]Deploy.sql not found in $DEPLOY_DIR"
+                  exit 1
                 fi
 
-                for f in $(printf '%s\n' "${files[@]}" | sort); do
-                  echo "Applying ${f##*/}"
-                  "$TOOLS/sqlcmd" -S "$(sqlServerHost)" -d "$(dbName)" \
-                    --authentication-method ActiveDirectoryAzCli \
-                    -i "$f" -b -t 0
-                done
+                cd "$DEPLOY_DIR"
+                echo "Applying Deploy.sql"
+                "$TOOLS/sqlcmd" -S "$(sqlServerHost)" -d "$(dbName)" \
+                  --authentication-method ActiveDirectoryAzCli \
+                  -i Deploy.sql -b -t 0
                   
           - task: AzureWebApp@1
             inputs:
@@ -299,19 +297,17 @@ stages:
                   https://github.com/microsoft/go-sqlcmd/releases/download/v1.8.2/sqlcmd-linux-amd64.tar.bz2
                 tar -xjf "$TOOLS/sqlcmd.tar.bz2" -C "$TOOLS"
 
-                shopt -s nullglob
-                files=("$(Pipeline.Workspace)"/drop/sql/*.sql)
-                if [ ${#files[@]} -eq 0 ]; then
-                  echo "No SQL scripts found - nothing to apply"
-                  exit 0
+                DEPLOY_DIR="$(Pipeline.Workspace)/drop/sql/Deploy"
+                if [ ! -f "$DEPLOY_DIR/Deploy.sql" ]; then
+                  echo "##vso[task.logissue type=error]Deploy.sql not found in $DEPLOY_DIR"
+                  exit 1
                 fi
 
-                for f in $(printf '%s\n' "${files[@]}" | sort); do
-                  echo "Applying ${f##*/}"
-                  "$TOOLS/sqlcmd" -S "$(sqlServerHost)" -d "$(dbName)" \
-                    --authentication-method ActiveDirectoryAzCli \
-                    -i "$f" -b -t 0
-                done
+                cd "$DEPLOY_DIR"
+                echo "Applying Deploy.sql"
+                "$TOOLS/sqlcmd" -S "$(sqlServerHost)" -d "$(dbName)" \
+                  --authentication-method ActiveDirectoryAzCli \
+                  -i Deploy.sql -b -t 0
 
           - task: AzureWebApp@1
             inputs:
@@ -427,19 +423,17 @@ stages:
                   https://github.com/microsoft/go-sqlcmd/releases/download/v1.8.2/sqlcmd-linux-amd64.tar.bz2
                 tar -xjf "$TOOLS/sqlcmd.tar.bz2" -C "$TOOLS"
 
-                shopt -s nullglob
-                files=("$(Pipeline.Workspace)"/drop/sql/*.sql)
-                if [ ${#files[@]} -eq 0 ]; then
-                  echo "No SQL scripts found - nothing to apply"
-                  exit 0
+                DEPLOY_DIR="$(Pipeline.Workspace)/drop/sql/Deploy"
+                if [ ! -f "$DEPLOY_DIR/Deploy.sql" ]; then
+                  echo "##vso[task.logissue type=error]Deploy.sql not found in $DEPLOY_DIR"
+                  exit 1
                 fi
 
-                for f in $(printf '%s\n' "${files[@]}" | sort); do
-                  echo "Applying ${f##*/}"
-                  "$TOOLS/sqlcmd" -S "$(sqlServerHost)" -d "$(dbName)" \
-                    --authentication-method ActiveDirectoryAzCli \
-                    -i "$f" -b -t 0
-                done
+                cd "$DEPLOY_DIR"
+                echo "Applying Deploy.sql"
+                "$TOOLS/sqlcmd" -S "$(sqlServerHost)" -d "$(dbName)" \
+                  --authentication-method ActiveDirectoryAzCli \
+                  -i Deploy.sql -b -t 0
 
           - task: AzureWebApp@1
             inputs:
