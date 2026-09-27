@@ -1,0 +1,53 @@
+@page
+@model BSE.Host.Pages.Case.ClinicalVisitEditModel
+@{
+    ViewData["Title"] = "Edit clinical visit";
+    var visitDateError = ViewData.ModelState[nameof(Model.VisitDate)]?.Errors.FirstOrDefault()?.ErrorMessage;
+}
+
+<h1 class="govuk-heading-l">Edit clinical visit</h1>
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Clinical" asp-route-rbse="@Model.Rbse">Clinical</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Edit visit</li>
+    </ol>
+</nav>
+
+@if (!ViewContext.ModelState.IsValid)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@e.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+<form method="post" novalidate>
+    <input type="hidden" asp-for="Rbse" />
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="RowStampBase64" />
+
+    <div class="govuk-form-group @(visitDateError is not null ? "govuk-form-group--error" : "")">
+        <label class="govuk-label" for="visit-date">Visit date</label>
+        @if (visitDateError is not null)
+        {
+            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @visitDateError</p>
+        }
+        <input id="visit-date" asp-for="VisitDate" type="date" class="govuk-input govuk-input--width-10 @(visitDateError is not null ? "govuk-input--error" : "")" />
+    </div>
+
+    <div class="govuk-button-group">
+        <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+        <a asp-page="/Case/Clinical" asp-route-rbse="@Model.Rbse" class="govuk-link">Cancel</a>
+    </div>
+</form>

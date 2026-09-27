@@ -57,7 +57,7 @@ public sealed class DevelopmentAuthHandler : AuthenticationHandler<DevelopmentAu
         {
             new Claim(ClaimTypes.NameIdentifier, ntLogin),
             new Claim(ClaimTypes.Name,           ntLogin),
-            new Claim("preferred_username",      ntLogin + "@dev.local"),
+            new Claim("preferred_username",      ntLogin),
         };
 
         var identity  = new ClaimsIdentity(claims, SchemeName);

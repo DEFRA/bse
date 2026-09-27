@@ -1,7 +1,8 @@
 @page
 @model BSE.Host.Pages.HomeModel
 @{
-    ViewData["Title"] = "BSE system";
+    ViewData["Title"] = "BSE Database System";
+    ViewData["BodyClass"] = "bse-home-page";
     var batchYearError   = Model.ModelState[nameof(Model.BatchYear)]?.Errors.FirstOrDefault()?.ErrorMessage;
     var batchNumberError = Model.ModelState[nameof(Model.BatchNumber)]?.Errors.FirstOrDefault()?.ErrorMessage;
     var hasBatchError    = batchYearError is not null || batchNumberError is not null;
@@ -9,7 +10,7 @@
     var hasAnyError      = hasBatchError || rbseError is not null;
 }
 
-<h1 class="govuk-heading-l">BSE system</h1>
+<h1 class="govuk-heading-l">BSE Database System</h1>
 
 @* ── Error summary (batch panel validation) ──────────────────────────────────── *@
 @if (hasBatchError)
@@ -36,59 +37,53 @@
 @* ── Batch Number panel — VLA Data Entry + VLA Maintenance ────────────────────── *@
 @if (User.IsInRole("VLAAccess"))
 {
-    <section aria-labelledby="batch-panel-heading" class="govuk-!-margin-bottom-6">
-        <h2 class="govuk-heading-m" id="batch-panel-heading">Batch number</h2>
-        <p class="govuk-body">Only enter a batch number if you are entering a batch of case details.</p>
+    <section aria-labelledby="batch-panel-heading" class="bse-home-panel govuk-!-margin-bottom-4">
+        <div class="bse-home-batch-layout">
+            <div class="bse-home-batch-layout__form">
+                <h2 class="govuk-heading-m govuk-!-margin-bottom-3" id="batch-panel-heading">Batch Number</h2>
+                <p class="govuk-body govuk-!-margin-bottom-4">Only enter a batch number if you are entering a batch of case details</p>
 
-        <div class="govuk-grid-row">
-            <div class="govuk-grid-column-two-thirds">
                 <form method="post">
                     <div class="govuk-form-group @(hasBatchError ? "govuk-form-group--error" : "")">
-                        <fieldset class="govuk-fieldset" aria-describedby="@(hasBatchError ? "batch-error" : "batch-hint")">
-                            <legend class="govuk-fieldset__legend">
-                                Enter batch number
-                            </legend>
-                          
-                            @if (hasBatchError)
-                            {
-                                <p id="batch-error" class="govuk-error-message">
-                                    <span class="govuk-visually-hidden">Error:</span>
-                                    @(batchYearError ?? batchNumberError)
-                                </p>
-                            }
-                            <div class="govuk-!-display-flex govuk-!-gap-3 govuk-!-align-items-end">
-                                <div>
-                                    <label class="govuk-label govuk-!-font-weight-bold" for="batch-year">Year</label>
-                                    <input id="batch-year" name="BatchYear" type="text" inputmode="numeric"
-                                           class="govuk-input govuk-input--width-4 @(batchYearError is not null || Model.BatchNotFound ? "govuk-input--error" : "")"
-                                           value="@Model.BatchYear" autocomplete="off" />
-                                </div>
-                                <div>
-                                    <label class="govuk-label govuk-!-font-weight-bold" for="batch-number">Number</label>
-                                    <input id="batch-number" name="BatchNumber" type="text" inputmode="numeric"
-                                           class="govuk-input govuk-input--width-5 @(batchNumberError is not null || Model.BatchNotFound ? "govuk-input--error" : "")"
-                                           value="@Model.BatchNumber" autocomplete="off" />
-                                </div>
-                        
-                                <div>
-                                    <button type="submit" asp-page-handler="CreateBatch"
-                                            class="govuk-button govuk-button--secondary"
-                                            data-module="govuk-button">Create new</button>
-                                </div>
-                            </div>
-                        </fieldset>
+                        @if (hasBatchError)
+                        {
+                            <p id="batch-error" class="govuk-error-message">
+                                <span class="govuk-visually-hidden">Error:</span>
+                                @(batchYearError ?? batchNumberError)
+                            </p>
+                        }
+
+                        <div class="bse-home-batch-entry" aria-describedby="@(hasBatchError ? "batch-error" : "")">
+                            <label class="govuk-label govuk-!-margin-bottom-0" for="batch-year">Enter Batch Number</label>
+
+                            <input id="batch-year" name="BatchYear" type="text" inputmode="numeric"
+                                   form="case-entry-form" aria-label="Batch year"
+                                   class="govuk-input bse-home-batch-year @(batchYearError is not null || Model.BatchNotFound ? "govuk-input--error" : "")"
+                                   value="@Model.BatchYear" autocomplete="off" />
+
+                            <input id="batch-number" name="BatchNumber" type="text" inputmode="numeric"
+                                   form="case-entry-form" aria-label="Batch number"
+                                   class="govuk-input bse-home-batch-number @(batchNumberError is not null || Model.BatchNotFound ? "govuk-input--error" : "")"
+                                   value="@Model.BatchNumber" autocomplete="off" />
+
+                            <span class="govuk-body govuk-!-margin-bottom-0">Or</span>
+
+                            <button type="submit" asp-page-handler="CreateBatch"
+                                    class="govuk-button"
+                                    data-module="govuk-button">Create New</button>
+                        </div>
                     </div>
                 </form>
             </div>
 
             @if (Model.LatestBatches.Count > 0)
             {
-                <div class="govuk-grid-column-one-third">
-                    <table class="govuk-table govuk-!-font-size-16">
+                <div class="bse-home-batch-layout__table">
+                    <table class="govuk-table govuk-!-font-size-16 bse-home-batch-table">
                         <caption class="govuk-table__caption govuk-table__caption--s govuk-visually-hidden">Recent batches</caption>
                         <thead class="govuk-table__head">
                             <tr class="govuk-table__row">
-                                <th scope="col" class="govuk-table__header">Batch number</th>
+                                <th scope="col" class="govuk-table__header">Batch Number</th>
                                 <th scope="col" class="govuk-table__header govuk-table__header--numeric">Cases</th>
                             </tr>
                         </thead>
@@ -106,18 +101,18 @@
             }
         </div>
     </section>
-    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-bottom-6" />
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-top-4 govuk-!-margin-bottom-4" />
 }
 
 @* ── RBSE Number panel — all DEFRA groups + VLA Data Entry + VLA Maintenance ─── *@
 @if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess"))
 {
-    <section aria-labelledby="rbse-panel-heading" class="govuk-!-margin-bottom-6">
-        <h2 class="govuk-heading-m" id="rbse-panel-heading">RBSE number</h2>
+    <section aria-labelledby="rbse-panel-heading" class="bse-home-panel govuk-!-margin-bottom-4">
+        <h2 class="govuk-heading-m govuk-!-margin-bottom-3" id="rbse-panel-heading">RBSE Number</h2>
 
-        <form method="post" asp-page-handler="RbseLookup" class="govuk-!-margin-bottom-4">
-            <div class="govuk-form-group @(rbseError is not null ? "govuk-form-group--error" : "")">
-                <label class="govuk-label" for="rbse-lookup">Enter RBSE to open case</label>
+        <form id="case-entry-form" method="post" asp-page-handler="RbseLookup" class="govuk-!-margin-bottom-4">
+            <div class="govuk-form-group bse-home-rbse-entry @(rbseError is not null ? "govuk-form-group--error" : "")">
+                <label class="govuk-label govuk-!-margin-bottom-0" for="rbse-lookup-input">RBSE</label>
                 @if (rbseError is not null)
                 {
                     <p id="rbse-error" class="govuk-error-message">
@@ -125,16 +120,269 @@
                         @rbseError
                     </p>
                 }
-                <input id="rbse-lookup" name="LookupRbse" type="text"
-                       class="govuk-input govuk-input--width-10 @(rbseError is not null ? "govuk-input--error" : "")"
-                       value="@Model.LookupRbse" autocomplete="off"
-                       aria-describedby="@(rbseError is not null ? "rbse-error" : "")" />
+                <input id="rbse-lookup" name="LookupRbse" type="hidden" value="@Model.LookupRbse" />
+
+                <div id="rbse-combobox" class="bse-home-rbse-combobox"
+                     data-seed-current="@Model.LatestRbseCurrentYear"
+                     data-seed-previous="@Model.LatestRbsePreviousYear">
+                    <input id="rbse-lookup-input" name="LookupRbseInput" type="text"
+                           class="govuk-input bse-home-rbse-input @(rbseError is not null ? "govuk-input--error" : "")"
+                           value="@Model.LookupRbse" autocomplete="new-password" spellcheck="false" autocapitalize="off"
+                           role="combobox" aria-haspopup="listbox" aria-controls="rbse-recent-listbox"
+                           aria-expanded="false" aria-autocomplete="list" aria-activedescendant=""
+                           aria-describedby="@(rbseError is not null ? "rbse-error" : "")" />
+                    <div id="rbse-saved-panel" class="bse-home-rbse-saved-panel" hidden>
+                        <div class="bse-home-rbse-saved-panel__header">
+                            <strong>Saved info</strong>
+                            <button type="button" id="rbse-saved-close" class="bse-home-rbse-saved-panel__close" aria-label="Close saved RBSE list">×</button>
+                        </div>
+                        <ul id="rbse-recent-listbox" class="bse-home-rbse-suggestions" role="listbox"></ul>
+                    </div>
+                    <div id="rbse-format-hint" class="bse-home-rbse-format-hint" hidden>RBSE Format: NN/NN/NNNNN</div>
+                </div>
+
+                <button type="submit" class="govuk-button"
+                        data-module="govuk-button">Go</button>
             </div>
-            <button type="submit" class="govuk-button govuk-button--secondary"
-                    data-module="govuk-button">Go</button>
+
+<script>
+    (function () {
+        var form = document.getElementById('case-entry-form');
+        var hidden = document.getElementById('rbse-lookup');
+        var combo = document.getElementById('rbse-combobox');
+        var input = document.getElementById('rbse-lookup-input');
+        var panel = document.getElementById('rbse-saved-panel');
+        var closeBtn = document.getElementById('rbse-saved-close');
+        var formatHint = document.getElementById('rbse-format-hint');
+        var listbox = document.getElementById('rbse-recent-listbox');
+        if (!form || !hidden || !combo || !input || !listbox || !panel || !closeBtn || !formatHint) return;
+
+        var storageKey = 'bse.recent.rbse';
+        var maxItems = 10;
+        var allValues = [];
+        var filteredValues = [];
+        var activeIndex = -1;
+
+        function normalise(value) {
+            return (value || '').replace(/\D/g, '').trim();
+        }
+
+        function formatRbse(raw) {
+            var digits = normalise(raw);
+            if (digits.length !== 9) return (raw || '').trim();
+            return digits.substring(0, 2) + '/' + digits.substring(2, 4) + '/' + digits.substring(4);
+        }
+
+        function readRecent() {
+            try {
+                var parsed = JSON.parse(localStorage.getItem(storageKey) || '[]');
+                return Array.isArray(parsed) ? parsed : [];
+            } catch {
+                return [];
+            }
+        }
+
+        function writeRecent(values) {
+            localStorage.setItem(storageKey, JSON.stringify(values.slice(0, maxItems)));
+        }
+
+        function mergeUnique(values) {
+            var seen = new Set();
+            var merged = [];
+            for (var i = 0; i < values.length; i++) {
+                var v = normalise(values[i]);
+                if (v.length === 9 && !seen.has(v)) {
+                    seen.add(v);
+                    merged.push(v);
+                }
+            }
+            return merged.slice(0, maxItems);
+        }
+
+        function closeList() {
+            panel.hidden = true;
+            formatHint.hidden = true;
+            input.setAttribute('aria-expanded', 'false');
+            input.setAttribute('aria-activedescendant', '');
+            activeIndex = -1;
+        }
+
+        function showFormatHintOnly() {
+            panel.hidden = true;
+            formatHint.hidden = false;
+            input.setAttribute('aria-expanded', 'false');
+            input.setAttribute('aria-activedescendant', '');
+            activeIndex = -1;
+        }
+
+        function openList() {
+            if (!filteredValues.length) {
+                panel.hidden = true;
+                formatHint.hidden = false;
+                input.setAttribute('aria-expanded', 'false');
+                return;
+            }
+            panel.hidden = false;
+            formatHint.hidden = true;
+            input.setAttribute('aria-expanded', 'true');
+        }
+
+        function selectValue(raw) {
+            var formatted = formatRbse(raw);
+            input.value = formatted;
+            hidden.value = formatted;
+            closeList();
+        }
+
+        function setActive(index) {
+            var options = listbox.querySelectorAll('[role="option"]');
+            if (!options.length) {
+                activeIndex = -1;
+                input.setAttribute('aria-activedescendant', '');
+                return;
+            }
+
+            if (index < 0) index = options.length - 1;
+            if (index >= options.length) index = 0;
+            activeIndex = index;
+
+            for (var i = 0; i < options.length; i++) {
+                var selected = i === activeIndex;
+                options[i].setAttribute('aria-selected', selected ? 'true' : 'false');
+                options[i].classList.toggle('bse-home-rbse-suggestions__item--active', selected);
+            }
+
+            var active = options[activeIndex];
+            input.setAttribute('aria-activedescendant', active.id);
+            active.scrollIntoView({ block: 'nearest' });
+        }
+
+        function renderList() {
+            listbox.innerHTML = '';
+            for (var i = 0; i < filteredValues.length; i++) {
+                var raw = filteredValues[i];
+                var li = document.createElement('li');
+                li.id = 'rbse-option-' + i;
+                li.className = 'bse-home-rbse-suggestions__item';
+                li.setAttribute('role', 'option');
+                li.setAttribute('aria-selected', 'false');
+                li.textContent = formatRbse(raw);
+                li.dataset.rawValue = raw;
+                li.addEventListener('mousedown', function (e) {
+                    e.preventDefault();
+                    selectValue(this.dataset.rawValue || '');
+                });
+                listbox.appendChild(li);
+            }
+
+            activeIndex = -1;
+            input.setAttribute('aria-activedescendant', '');
+            openList();
+        }
+
+        function applyFilter() {
+            var q = normalise(input.value);
+            filteredValues = q
+                ? allValues.filter(function (x) { return x.indexOf(q) === 0; })
+                : allValues.slice();
+            renderList();
+        }
+
+        async function loadRemoteSuggestions() {
+            try {
+                var response = await fetch('/Api/Suggestions?field=rbse&query=' + encodeURIComponent(input.value || '') + '&limit=20', {
+                    headers: { 'Accept': 'application/json' }
+                });
+                if (!response.ok) return false;
+                var payload = await response.json();
+                if (!payload || !Array.isArray(payload.values)) return false;
+                var merged = mergeUnique(allValues.concat(payload.values || []));
+                var changed = merged.length !== allValues.length
+                    || merged.some(function (v, i) { return v !== allValues[i]; });
+                allValues = merged;
+                writeRecent(allValues);
+                return changed;
+            } catch {
+                return false;
+            }
+        }
+
+        async function hydrateSuggestions() {
+            var changed = await loadRemoteSuggestions();
+            if (changed) applyFilter();
+        }
+
+        var seeded = [combo.dataset.seedCurrent || '', combo.dataset.seedPrevious || ''];
+        allValues = mergeUnique(readRecent().concat(seeded));
+        writeRecent(allValues);
+
+        if (!input.value && hidden.value) {
+            input.value = hidden.value;
+        }
+
+        input.addEventListener('mouseenter', function () {
+            if (panel.hidden) showFormatHintOnly();
+        });
+
+        input.addEventListener('mouseleave', function () {
+            if (panel.hidden) formatHint.hidden = true;
+        });
+
+        input.addEventListener('click', function () {
+            applyFilter();
+            void hydrateSuggestions();
+        });
+
+        input.addEventListener('input', function () {
+            hidden.value = input.value || '';
+            applyFilter();
+            void hydrateSuggestions();
+        });
+
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (panel.hidden) applyFilter();
+                setActive(activeIndex + 1);
+                return;
+            }
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (panel.hidden) applyFilter();
+                setActive(activeIndex - 1);
+                return;
+            }
+            if (e.key === 'Enter' && !panel.hidden && activeIndex >= 0) {
+                e.preventDefault();
+                selectValue(filteredValues[activeIndex]);
+                return;
+            }
+            if (e.key === 'Escape') {
+                closeList();
+            }
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!combo.contains(e.target)) closeList();
+        });
+
+        closeBtn.addEventListener('click', function () {
+            closeList();
+            input.focus();
+        });
+
+        form.addEventListener('submit', function () {
+            hidden.value = input.value || '';
+            var entered = normalise(input.value);
+            if (entered.length !== 9) return;
+            allValues = mergeUnique([entered].concat(readRecent(), seeded));
+            writeRecent(allValues);
+        });
+    })();
+</script>
         </form>
 
-        <table class="govuk-table govuk-!-font-size-16">
+        <table class="govuk-table govuk-!-font-size-16 bse-home-rbse-table">
             <caption class="govuk-table__caption govuk-table__caption--s govuk-visually-hidden">Latest RBSE and DBSE references</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
@@ -157,28 +405,28 @@
             </tbody>
         </table>
     </section>
-    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-bottom-6" />
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible govuk-!-margin-top-4 govuk-!-margin-bottom-4" />
 }
 
 @* Quick-case and quick-farm inputs removed — Home now exposes only Batch and RBSE inputs per migration requirement *@
 
-<div class="govuk-grid-row">
+<div class="govuk-grid-row bse-home-links-panel">
     @* Column 1: Search *@
     <div class="govuk-grid-column-one-third">
         <h2 class="govuk-heading-m">Search</h2>
         <ul class="govuk-list">
-            <li><a asp-page="/Search/Cases" class="govuk-link">Cases</a></li>
-            <li><a asp-page="/Search/CasesByHerdmark" class="govuk-link">Cases by herdmark</a></li>
-            <li><a asp-page="/Search/CasesByHoldingHerdmark" class="govuk-link">Cases by holding/herdmark</a></li>
             <li><a asp-page="/Search/Farms" class="govuk-link">Farms</a></li>
-            <li><a asp-page="/Search/Outstanding" class="govuk-link">Outstanding data</a></li>
+            <li><a asp-page="/Search/Cases" class="govuk-link">Cases</a></li>
+            <li><a asp-page="/Search/CasesByHerdmark" class="govuk-link">Cases by herdmark(includes animals sold off)</a></li>
+            <li><a asp-page="/Search/CasesByHoldingHerdmark" class="govuk-link">Cases by holding/herdmark(for organic farmer checks)</a></li>
             <li><a asp-page="/Search/RelatedAnimals" class="govuk-link">Related animals</a></li>
+            <li><a asp-page="/Search/Outstanding" class="govuk-link">Outstanding data</a></li>
         </ul>
     </div>
 
     @* Column 2: Casework and reports *@
     <div class="govuk-grid-column-one-third">
-        @if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess") || User.IsInRole("VLAMaintenance"))
+        @if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess") || User.IsInRole("VLAMaintenance") || User.IsInRole("DEFRAMaintenance"))
         {
             <h2 class="govuk-heading-m">Casework and reports</h2>
         }
@@ -186,7 +434,7 @@
         <ul class="govuk-list">
             @if (User.IsInRole("VLAMaintenance"))
             {
-                <li><a asp-page="/CaseWork/Menu" class="govuk-link">Casework menu</a></li>
+                <li><a asp-page="/CaseWork/Menu" class="govuk-link">Casework</a></li>
             }
             @if (User.IsInRole("VLAAccess"))
             {
@@ -194,13 +442,20 @@
             }
             @if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess"))
             {
-                <li><a asp-page="/AuditLog/Menu" class="govuk-link">Audit log</a></li>
-                <li><a asp-page="/Bsess/Menu" class="govuk-link">BSESS check</a></li>
+                <li><a asp-page="/Bsess/Menu" class="govuk-link">TSES check</a></li>
+            }
+            @if (User.IsInRole("DEFRAMaintenance"))
+            {
+                <li><a asp-page="/Case/FinalResultEntry" class="govuk-link">Final result entry</a></li>
+                <li><a asp-page="/Farm/CphhChange" class="govuk-link">CPHH change</a></li>
+                <li><a asp-page="/Case/RbseChange" class="govuk-link">RBSE change</a></li>
+                <li><a asp-page="/Case/MoveCase" class="govuk-link">Move case</a></li>
+                <li><a asp-page="/Case/Delete" class="govuk-link">Delete case</a></li>
             }
         </ul>
     </div>
 
-    @* Column 3: Exports + Case maintenance + Administration *@
+    @* Column 3: Exports + Administration *@
     <div class="govuk-grid-column-one-third">
         @if (User.IsInRole("DEFRAMaintenance") || User.IsInRole("VLAAccess"))
         {
@@ -208,38 +463,30 @@
             <ul class="govuk-list">
                 @if (User.IsInRole("DEFRAMaintenance"))
                 {
-                    <li><a asp-page="/AdnsExport/Menu" class="govuk-link">ADNS export</a></li>
+                    <li><a asp-page="/AdnsExport/Menu" class="govuk-link">Export to ADNS</a></li>
                 }
                 @if (User.IsInRole("VLAAccess"))
                 {
-                    <li><a asp-page="/OssExport/Menu" class="govuk-link">OSS export</a></li>
+                    <li><a asp-page="/OssExport/Menu" class="govuk-link">Export to OSS</a></li>
                 }
             </ul>
         }
 
-        @if (User.IsInRole("DEFRAMaintenance"))
+        @if (User.IsInRole("VLAMaintenance") || User.IsInRole("PickListAccess") || User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess"))
         {
             <h2 class="govuk-heading-m">Maintenance</h2>
             <ul class="govuk-list">
-                <li><a asp-page="/Case/FinalResultEntry" class="govuk-link">Final result entry</a></li>
-                <li><a asp-page="/Farm/CphhChange" class="govuk-link">CPHH change</a></li>
-                <li><a asp-page="/Case/RbseChange" class="govuk-link">RBSE change</a></li>
-                <li><a asp-page="/Case/MoveCase" class="govuk-link">Move case</a></li>
-                <li><a asp-page="/Case/Delete" class="govuk-link">Delete case</a></li>
-            </ul>
-        }
-
-        @if (User.IsInRole("VLAMaintenance") || User.IsInRole("PickListAccess"))
-        {
-            <h2 class="govuk-heading-m">Administration</h2>
-            <ul class="govuk-list">
                 @if (User.IsInRole("VLAMaintenance"))
                 {
-                    <li><a asp-page="/Admin/Users" class="govuk-link">Manage users</a></li>
+                    <li><a asp-page="/Admin/Users" class="govuk-link">User Maintenance</a></li>
                 }
                 @if (User.IsInRole("PickListAccess"))
                 {
-                    <li><a asp-page="/Admin/PickLists" class="govuk-link">Manage pick lists</a></li>
+                    <li><a asp-page="/Admin/PickLists" class="govuk-link">Pick List Maintenance</a></li>
+                }
+                @if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess"))
+                {
+                    <li><a asp-page="/AuditLog/Menu" class="govuk-link">Audit log</a></li>
                 }
             </ul>
         }

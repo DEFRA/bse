@@ -1,0 +1,129 @@
+@page "{rbse}/{feedId:int}"
+@using BSE.Host.Helpers
+@model BSE.Host.Pages.Case.FeedEditModel
+@{
+    ViewData["Title"] = $"Edit feed record — {Model.Rbse}";
+    string? Err(string key) => Model.FieldErrors.TryGetValue(key, out var m) ? m : null;
+}
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Feeds" asp-route-rbse="@Model.Rbse">@BseFormat.FormatRbse(Model.Rbse)</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Edit Feed Record</li>
+    </ol>
+</nav>
+
+<h1 class="govuk-heading-l">RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Rbse)</span></h1>
+
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Feeds", Model.Rbse))
+
+@if (Model.FieldErrors.Count > 0)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var error in Model.FieldErrors)
+                    {
+                        <li><a href="#feed-@error.Key.ToLowerInvariant()">@error.Value</a></li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+<h2 class="govuk-heading-m">Edit feed record</h2>
+
+<form method="post" novalidate>
+    <input type="hidden" name="Feed.RowStamp" value="@Model.Feed.RowStamp" />
+
+    <div class="govuk-form-group @(Err("YearFrom") is not null ? "govuk-form-group--error" : "")">
+        <label class="govuk-label" for="feed-yearfrom">Year From</label>
+        @if (Err("YearFrom") is { } yearFromError)
+        {
+            <p id="feed-yearfrom-error" class="govuk-error-message">
+                <span class="govuk-visually-hidden">Error:</span>@yearFromError
+            </p>
+        }
+        <input id="feed-yearfrom" name="Feed.YearFrom" type="text" inputmode="numeric" maxlength="4"
+               value="@Model.Feed.YearFrom"
+               aria-describedby="@(Err("YearFrom") is not null ? "feed-yearfrom-error" : null)"
+               class="govuk-input govuk-input--width-4 @(Err("YearFrom") is not null ? "govuk-input--error" : "")" />
+    </div>
+
+    <div class="govuk-form-group @(Err("YearTo") is not null ? "govuk-form-group--error" : "")">
+        <label class="govuk-label" for="feed-yearto">Year To</label>
+        @if (Err("YearTo") is { } yearToError)
+        {
+            <p id="feed-yearto-error" class="govuk-error-message">
+                <span class="govuk-visually-hidden">Error:</span>@yearToError
+            </p>
+        }
+        <input id="feed-yearto" name="Feed.YearTo" type="text" inputmode="numeric" maxlength="4"
+               value="@Model.Feed.YearTo"
+               aria-describedby="@(Err("YearTo") is not null ? "feed-yearto-error" : null)"
+               class="govuk-input govuk-input--width-4 @(Err("YearTo") is not null ? "govuk-input--error" : "")" />
+    </div>
+
+    <div class="govuk-form-group @(Err("RationType") is not null ? "govuk-form-group--error" : "")">
+        <label class="govuk-label" for="feed-rationtype">Ration Type</label>
+        @if (Err("RationType") is { } rationTypeError)
+        {
+            <p id="feed-rationtype-error" class="govuk-error-message">
+                <span class="govuk-visually-hidden">Error:</span>@rationTypeError
+            </p>
+        }
+        <select id="feed-rationtype" name="Feed.RationType"
+                aria-describedby="@(Err("RationType") is not null ? "feed-rationtype-error" : null)"
+                class="govuk-select govuk-!-width-one-half @(Err("RationType") is not null ? "govuk-select--error" : "")">
+            <option value=""></option>
+            @foreach (var rt in Model.RationTypes)
+            {
+                <option value="@rt.Code" selected="@(rt.Code == Model.Feed.RationType)">@rt.Description</option>
+            }
+        </select>
+    </div>
+
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="feed-rationname">Ration Name</label>
+        <input id="feed-rationname" name="Feed.RationName" maxlength="60" value="@Model.Feed.RationName"
+               class="govuk-input govuk-!-width-two-thirds" />
+    </div>
+
+    <div class="govuk-form-group">
+        <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+            <div class="govuk-checkboxes__item">
+                <input id="feed-prepurchase" name="Feed.IsPrePurchase" type="checkbox"
+                       class="govuk-checkboxes__input" value="true" checked="@Model.Feed.IsPrePurchase" />
+                <label class="govuk-label govuk-checkboxes__label" for="feed-prepurchase">Is Pre-Purchase?</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="govuk-form-group @(Err("SupplierId") is not null ? "govuk-form-group--error" : "")">
+        <label class="govuk-label" for="feed-supplierid">Supplier</label>
+        @if (Err("SupplierId") is { } supplierError)
+        {
+            <p id="feed-supplierid-error" class="govuk-error-message">
+                <span class="govuk-visually-hidden">Error:</span>@supplierError
+            </p>
+        }
+        <select id="feed-supplierid" name="Feed.SupplierId"
+                aria-describedby="@(Err("SupplierId") is not null ? "feed-supplierid-error" : null)"
+                class="govuk-select govuk-!-width-two-thirds @(Err("SupplierId") is not null ? "govuk-select--error" : "")">
+            <option value=""></option>
+            @foreach (var s in Model.Suppliers)
+            {
+                <option value="@s.Id" selected="@(s.Id == Model.Feed.SupplierId)">@s.Description</option>
+            }
+        </select>
+    </div>
+
+    <div class="govuk-button-group">
+        <button type="submit" class="govuk-button" data-module="govuk-button">Update Selected</button>
+        <a asp-page="/Case/Feeds" asp-route-rbse="@Model.Rbse" class="govuk-link">Cancel</a>
+    </div>
+</form>

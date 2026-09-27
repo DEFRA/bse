@@ -12,6 +12,7 @@ using BSE.SharedKernel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Configuration;
 using System.Text.RegularExpressions;
 
 namespace BSE.Host.Pages.Case;
@@ -22,18 +23,24 @@ public class DefraEditModel(
     ICurrentUserService currentUserService,
     ILookupDataService lookups,
     ICaseWorkRepository caseWorkRepository,
-    IBatchRepository batchRepository) : PageModel
+    IBatchRepository batchRepository,
+    IConfiguration configuration) : PageModel
 {
     private const string RowStampKey = "DefraEdit_RowStamp_{0}";
 
     [BindProperty(SupportsGet = true)]
     public string Rbse { get; set; } = string.Empty;
 
+    [BindProperty(SupportsGet = true)]
+    public bool Embed { get; set; }
+
     [BindProperty]
     public CaseEditViewModel Case { get; set; } = new();
 
     public string? ConcurrencyError { get; private set; }
     public IReadOnlyList<BatchNumberEntry> BatchNumbers { get; private set; } = [];
+    public string SpolSiteUrl { get; private set; } = string.Empty;
+    public bool IsNonGbCase { get; private set; }
 
     public IEnumerable<ILookupItem> FateOptions { get; private set; } = [];
     public IEnumerable<ILookupItem> SurveyOptions { get; private set; } = [];
@@ -44,15 +51,18 @@ public class DefraEditModel(
 
     public async Task<IActionResult> OnGetAsync()
     {
+        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+
         var record = await caseService.GetCaseAsync(Rbse);
         if (record is null)
         {
             TempData["Warning"] = $"Case '{Rbse}' not found.";
-            return RedirectToPage("/Case/Lookup");
+            return RedirectToPage("/Home");
         }
 
         TempData[string.Format(RowStampKey, Rbse)] = Convert.ToBase64String(record.RowStamp ?? []);
         Case = CaseEditViewModel.FromRecord(record);
+        IsNonGbCase = record.IsNonGbCase;
 
         var caseWork = await caseWorkRepository.GetByRbseAsync(Rbse);
         if (caseWork is not null)
@@ -66,6 +76,21 @@ public class DefraEditModel(
 
     public async Task<IActionResult> OnPostAsync()
     {
+        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+
+        var currentRecord = await caseService.GetCaseAsync(Rbse);
+        if (currentRecord is null)
+        {
+            TempData["Warning"] = $"Case '{Rbse}' not found.";
+            return RedirectToPage("/Home");
+        }
+
+        IsNonGbCase = currentRecord.IsNonGbCase;
+
+        // Legacy CaseEntryDEFRA: Form A date is read-only for non-GB cases.
+        if (IsNonGbCase)
+            Case.FormADate = currentRecord.FormADate;
+
         await LoadLookupsAsync();
 
         // Mirrors legacy CaseEntryDEFRA: clear dependent dates when anchor date is removed
@@ -172,6 +197,18 @@ public class DefraEditModel(
     // Mirrors legacy UpdateSessionWithCaseDetails validation (FormXDateValid, DateOfBirthValid, BSE1ReceivedDateValid)
     private void ValidateDomainRules()
     {
+        if (string.IsNullOrWhiteSpace(Case.EartagCountry)
+            && string.IsNullOrWhiteSpace(Case.EartagHerdmark)
+            && string.IsNullOrWhiteSpace(Case.Eartag))
+        {
+            ModelState.AddModelError("Case.EartagCountry", "Enter an eartag.");
+        }
+
+        if (!IsNonGbCase && !Case.FormADate.HasValue)
+        {
+            ModelState.AddModelError("Case.FormADate", "Enter a Form A date.");
+        }
+
         // Eartag: mirrors BSELib.Eartag.GetEartag + .ErrorCode check from ThreePartEartag.Validate()
         var eartagError = ValidateEartagFormat(Case.EartagCountry, Case.EartagHerdmark, Case.Eartag);
         if (eartagError is not null)

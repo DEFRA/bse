@@ -1,0 +1,70 @@
+@page
+@model BSE.Host.Pages.Case.CaseTestEditModel
+@{
+    ViewData["Title"] = "Edit test record";
+    var testTypeError = ViewData.ModelState[nameof(Model.TestType)]?.Errors.FirstOrDefault()?.ErrorMessage;
+}
+
+<h1 class="govuk-heading-l">Edit test record</h1>
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Edit" asp-route-rbse="@Model.Rbse">Case (DEFRA)</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Edit test</li>
+    </ol>
+</nav>
+
+@if (!ViewContext.ModelState.IsValid)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <li>@e.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}
+
+<form method="post" novalidate>
+    <input type="hidden" asp-for="Rbse" />
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="RowStampBase64" />
+
+    <div class="govuk-form-group @(testTypeError is not null ? "govuk-form-group--error" : "")">
+        <label class="govuk-label" for="test-type">Test type</label>
+        @if (testTypeError is not null)
+        {
+            <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @testTypeError</p>
+        }
+        <select id="test-type" asp-for="TestType" class="govuk-select @(testTypeError is not null ? "govuk-select--error" : "")">
+            <option value="">-- Select --</option>
+            @foreach (var o in Model.TestTypeOptions)
+            {
+                <option value="@o.Code">@o.Description</option>
+            }
+        </select>
+    </div>
+
+    <div class="govuk-form-group">
+        <label class="govuk-label" for="test-result">Test result</label>
+        <select id="test-result" asp-for="TestResult" class="govuk-select">
+            <option value="">-- Select --</option>
+            @foreach (var o in Model.TestResultOptions)
+            {
+                <option value="@o.Code">@o.Description</option>
+            }
+        </select>
+    </div>
+
+    <div class="govuk-button-group">
+        <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+        <a asp-page="/Case/Edit" asp-route-rbse="@Model.Rbse" class="govuk-link">Cancel</a>
+    </div>
+</form>

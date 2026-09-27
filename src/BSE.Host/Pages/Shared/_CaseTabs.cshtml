@@ -8,31 +8,370 @@
         new { Label = "Farm",        Page = "/Case/Farm"     },
         new { Label = "Case (DEFRA)", Page = "/Case/Edit"    },
         new { Label = "BAB",         Page = "/Case/Bab"      },
-        new { Label = "Case (VLA)",  Page = "/Case/Vla"      },
+        new { Label = "Case (APHA)",  Page = "/Case/Vla"      },
         new { Label = "Clinical",    Page = "/Case/Clinical" },
         new { Label = "Feeds",       Page = "/Case/Feeds"    },
         new { Label = "Relations",   Page = "/Case/Relations"},
     };
 }
 
-<nav class="bse-case-tabs govuk-!-margin-bottom-6" aria-label="Case sections">
-    <ul class="bse-case-tabs__list" role="list">
-        @foreach (var tab in tabs)
-        {
-            bool isActive = string.Equals(tab.Label, Model.ActiveTab, StringComparison.OrdinalIgnoreCase);
-            if (isActive)
-            {
-                <li class="bse-case-tabs__item bse-case-tabs__item--active" aria-current="page">
-                    <span class="bse-case-tabs__link">@tab.Label</span>
-                </li>
+@* RBSE heading + batch numbers panel side-by-side (GOV.UK grid — stacks on narrow screens),
+   mirroring legacy's RBSE number / BatchNumberDisplay1 header row. *@
+<div class="govuk-grid-row govuk-!-margin-bottom-2">
+    <div class="govuk-grid-column-two-thirds">
+        <h1 class="govuk-heading-l">RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Rbse)</span></h1>
+    </div>
+
+<script>
+    (function () {
+        var caseFormSelector = '#case-farm-inline-form, #case-edit-inline-form, #case-bab-inline-form, #edit-vla-form, #case-clinical-inline-form, #case-feeds-inline-form, #case-relations-inline-form';
+        var storagePrefix = 'bse:case-tab-draft:';
+        var initialSnapshot = null;
+        var restoredFromDraft = false;
+
+        function normalizeRbse(rbse) {
+            return (rbse || '').replace(/\//g, '').trim();
+        }
+
+        function getCurrentCaseForm() {
+            return document.querySelector(caseFormSelector);
+        }
+
+        function getCurrentTabPath() {
+            var match = window.location.pathname.match(/^\/Case\/[A-Za-z]+/i);
+            return match ? match[0].toLowerCase() : null;
+        }
+
+        function getDraftStorageKey(tabPath, rbse) {
+            return storagePrefix + tabPath + ':' + normalizeRbse(rbse);
+        }
+
+        function serializeForm(form) {
+            var payload = {};
+            if (!form) {
+                return payload;
             }
-            else
-            {
-                <li class="bse-case-tabs__item">
-                    <a class="bse-case-tabs__link govuk-link govuk-link--no-visited-state"
-                       asp-page="@tab.Page" asp-route-rbse="@Model.Rbse">@tab.Label</a>
-                </li>
+
+            form.querySelectorAll('input, select, textarea').forEach(function (el) {
+                var name = el.name || el.id;
+                if (!name) {
+                    return;
+                }
+
+                if (el.tagName === 'INPUT') {
+                    var type = (el.type || '').toLowerCase();
+                    if (type === 'hidden' || type === 'submit' || type === 'button' || type === 'reset' || type === 'file' || type === 'image') {
+                        return;
+                    }
+
+                    if (type === 'checkbox') {
+                        payload[name] = !!el.checked;
+                        return;
+                    }
+
+                    if (type === 'radio') {
+                        if (el.checked) {
+                            payload[name] = el.value;
+                        }
+                        return;
+                    }
+                }
+
+                payload[name] = el.value;
+            });
+
+            return payload;
+        }
+
+        function restoreForm(form, payload) {
+            if (!form || !payload) {
+                return;
+            }
+
+            form.querySelectorAll('input, select, textarea').forEach(function (el) {
+                var name = el.name || el.id;
+                if (!name || !(name in payload)) {
+                    return;
+                }
+
+                if (el.tagName === 'INPUT') {
+                    var type = (el.type || '').toLowerCase();
+                    if (type === 'checkbox') {
+                        el.checked = !!payload[name];
+                        return;
+                    }
+
+                    if (type === 'radio') {
+                        el.checked = (el.value === payload[name]);
+                        return;
+                    }
+                }
+
+                el.value = payload[name] ?? '';
+            });
+
+            form.querySelectorAll('select, input[type="checkbox"], input[type="radio"]').forEach(function (el) {
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+        }
+
+        function showUnsavedBanner() {
+            var banner = document.querySelector('.bse-unsaved-banner');
+            if (banner) {
+                banner.hidden = false;
+                return;
+            }
+
+            var form = getCurrentCaseForm();
+            if (!form) {
+                return;
+            }
+
+            var created = document.createElement('div');
+            created.className = 'govuk-inset-text bse-unsaved-banner';
+            created.setAttribute('role', 'status');
+            created.innerHTML = '<strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.';
+            form.insertBefore(created, form.firstChild);
+        }
+
+        function hasUnsavedBannerOnPage() {
+            var banner = document.querySelector('.bse-unsaved-banner');
+            return !!(banner && !banner.hidden);
+        }
+
+        function extractRbseFromPath() {
+            var match = window.location.pathname.match(/\/Case\/[A-Za-z]+\/(\d{9}|\d{3}\/\d{2}\/\d{4})/i);
+            return match ? match[1] : null;
+        }
+
+        function clearClientSideDrafts(rbse) {
+            var normalized = normalizeRbse(rbse);
+            if (!normalized) {
+                return;
+            }
+
+            for (var i = sessionStorage.length - 1; i >= 0; i--) {
+                var key = sessionStorage.key(i);
+                if (!key || !key.startsWith(storagePrefix)) {
+                    continue;
+                }
+
+                if (key.endsWith(':' + normalized)) {
+                    sessionStorage.removeItem(key);
+                }
             }
         }
-    </ul>
-</nav>
+
+        function persistCurrentTabDraft() {
+            var form = getCurrentCaseForm();
+            var rbse = extractRbseFromPath();
+            var tabPath = getCurrentTabPath();
+            if (!form || !rbse || !tabPath) {
+                return;
+            }
+
+            var key = getDraftStorageKey(tabPath, rbse);
+            var snapshot = JSON.stringify(serializeForm(form));
+
+            if (restoredFromDraft || snapshot !== initialSnapshot) {
+                sessionStorage.setItem(key, snapshot);
+                showUnsavedBanner();
+            } else {
+                sessionStorage.removeItem(key);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            var form = getCurrentCaseForm();
+            var rbse = extractRbseFromPath();
+            var tabPath = getCurrentTabPath();
+            if (!form || !rbse || !tabPath) {
+                return;
+            }
+
+            var key = getDraftStorageKey(tabPath, rbse);
+            var hasSuccessBanner = !!document.querySelector('.govuk-notification-banner--success');
+
+            if (hasSuccessBanner) {
+                sessionStorage.removeItem(key);
+                initialSnapshot = JSON.stringify(serializeForm(form));
+                restoredFromDraft = false;
+                return;
+            }
+
+            initialSnapshot = JSON.stringify(serializeForm(form));
+            var raw = sessionStorage.getItem(key);
+            if (!raw) {
+                return;
+            }
+
+            try {
+                restoreForm(form, JSON.parse(raw));
+                restoredFromDraft = true;
+                showUnsavedBanner();
+            } catch {
+                sessionStorage.removeItem(key);
+            }
+        });
+
+        async function hasUnsavedChangesAcrossTabs() {
+            if (hasUnsavedBannerOnPage()) {
+                return true;
+            }
+
+            var rbse = extractRbseFromPath();
+            if (!rbse) {
+                return false;
+            }
+
+            try {
+                var response = await fetch('/case/' + encodeURIComponent(rbse) + '/unsaved-status', {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin'
+                });
+
+                if (!response.ok) {
+                    return false;
+                }
+
+                var payload = await response.json();
+                return !!(payload && payload.hasUnsavedChanges === true);
+            } catch {
+                return false;
+            }
+        }
+
+        async function clearUnsavedChangesAcrossTabs() {
+            var rbse = extractRbseFromPath();
+            if (!rbse) {
+                return;
+            }
+
+            try {
+                await fetch('/case/' + encodeURIComponent(rbse) + '/discard-unsaved', {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json' },
+                    credentials: 'same-origin'
+                });
+                clearClientSideDrafts(rbse);
+            } catch {
+                // Navigation should still proceed even if draft-clear call fails.
+            }
+        }
+
+        function isHomeLink(anchor) {
+            if (!anchor) {
+                return false;
+            }
+
+            var href = anchor.getAttribute('href') || '';
+            return href === '/Home' || href === '/' || /\/Home(?:\?|$)/i.test(href);
+        }
+
+        document.addEventListener('click', async function (event) {
+            var tabLink = event.target.closest('a.bse-case-tabs__link');
+            if (tabLink) {
+                window.__bseCaseTabNavigationInProgress = true;
+                persistCurrentTabDraft();
+                return;
+            }
+
+            var link = event.target.closest('a');
+            if (!isHomeLink(link)) {
+                return;
+            }
+
+            var unsaved = await hasUnsavedChangesAcrossTabs();
+            if (!unsaved) {
+                return;
+            }
+
+            event.preventDefault();
+            var confirmed = window.confirm('If you leave now, any unsaved changes will be lost.');
+            if (confirmed) {
+                await clearUnsavedChangesAcrossTabs();
+                window.location.href = link.href;
+            }
+        });
+    })();
+</script>
+    <div class="govuk-grid-column-one-third">
+        <div class="bse-batch-docs-row">
+            <div class="bse-batch-docs-row__batch">
+                @await Html.PartialAsync("_BatchNumbersPanel", new BSE.Host.Models.BatchNumbersPanelViewModel(Model.Rbse, Model.BatchNumbers ?? []))
+            </div>
+            @if (!string.IsNullOrWhiteSpace(Model.ViewDocsUrl))
+            {
+                <div class="bse-batch-docs-row__docs">
+                    <a href="@Model.ViewDocsUrl" target="_blank" rel="noopener noreferrer" class="govuk-link govuk-details__summary-text bse-batch-docs-row__docs-link">
+                        View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .bse-batch-docs-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 20px;
+        flex-wrap: nowrap;
+    }
+
+    .bse-batch-docs-row__batch .bse-batch-panel {
+        margin-bottom: 0;
+    }
+
+    .bse-batch-docs-row__batch .govuk-details {
+        margin-bottom: 0;
+    }
+
+    .bse-batch-docs-row__docs {
+        white-space: nowrap;
+        padding-top: 2px;
+    }
+
+    .bse-batch-docs-row__docs-link {
+        font-family: "GDS Transport", arial, sans-serif;
+        font-size: 1.1875rem;
+        line-height: 1.3157894737;
+        font-weight: 400;
+        margin-bottom: 0;
+    }
+
+    @@media (max-width: 40.0525em) {
+        .bse-batch-docs-row {
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: flex-start;
+        }
+    }
+</style>
+
+<div class="bse-case-tabs-wrap">
+    <nav class="bse-case-tabs govuk-!-margin-bottom-6" aria-label="Case sections">
+        <ul class="bse-case-tabs__list" role="list">
+            @foreach (var tab in tabs)
+            {
+                bool isActive = string.Equals(tab.Label, Model.ActiveTab, StringComparison.OrdinalIgnoreCase);
+                if (isActive)
+                {
+                    <li class="bse-case-tabs__item bse-case-tabs__item--active" aria-current="page">
+                        <span class="bse-case-tabs__link">@tab.Label</span>
+                    </li>
+                }
+                else
+                {
+                    <li class="bse-case-tabs__item">
+                        <a class="bse-case-tabs__link govuk-link govuk-link--no-visited-state"
+                           asp-page="@tab.Page" asp-route-rbse="@Model.Rbse">@tab.Label</a>
+                    </li>
+                }
+            }
+        </ul>
+    </nav>
+</div>
+

@@ -12,9 +12,11 @@
     </ol>
 </nav>
 
-<h1 class="govuk-heading-l">RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Rbse)</span></h1>
-
 @await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Farm", Model.Rbse))
+
+<div class="govuk-inset-text bse-farm-confirmed-cases">
+    <strong>Number of Confirmed Cases: @Model.ConfirmedCaseCount</strong>
+</div>
 
 @if (!ViewContext.ModelState.IsValid)
 {
@@ -36,6 +38,14 @@
 <form method="post" novalidate id="farm-edit-form">
     <input type="hidden" name="Farm.CPHH" value="@Model.Farm?.CPHH" />
     <input type="hidden" name="Rbse" value="@Model.Rbse" />
+
+    <div class="bse-farm-legacy-top">
+        <div class="bse-farm-legacy-top__row">
+            <label class="govuk-label" for="farm-cphh-display">CPHH</label>
+            <input id="farm-cphh-display" class="govuk-input bse-farm-legacy-top__input" value="@BseFormat.FormatCphh(Model.Farm?.CPHH)" readonly />
+        </div>
+    </div>
+
     @await Html.PartialAsync("_FarmFormFields", Model.Farm, new ViewDataDictionary(ViewData) { TemplateInfo = { HtmlFieldPrefix = "Farm" } })
 
     <div class="govuk-button-group govuk-!-margin-top-4">

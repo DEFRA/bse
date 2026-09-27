@@ -1,4 +1,5 @@
 using BSE.Infrastructure;
+using BSE.Modules.Batch.Repositories;
 using BSE.Modules.CaseManagement.Commands;
 using BSE.Modules.CaseManagement.Enums;
 using BSE.Modules.CaseManagement.Exceptions;
@@ -29,6 +30,7 @@ public sealed class CaseService : ICaseService
     private readonly ITestRepository _testRepository;
     private readonly IOtherOwnerRepository _otherOwnerRepository;
     private readonly IPedigreeRepository _pedigreeRepository;
+    private readonly IBatchRepository _batchRepository;
 
     public CaseService(
         IDbConnectionFactory connectionFactory,
@@ -38,7 +40,8 @@ public sealed class CaseService : ICaseService
         IFeedRepository feedRepository,
         ITestRepository testRepository,
         IOtherOwnerRepository otherOwnerRepository,
-        IPedigreeRepository pedigreeRepository)
+        IPedigreeRepository pedigreeRepository,
+        IBatchRepository batchRepository)
     {
         _connectionFactory = connectionFactory;
         _caseRepository = caseRepository;
@@ -48,6 +51,7 @@ public sealed class CaseService : ICaseService
         _testRepository = testRepository;
         _otherOwnerRepository = otherOwnerRepository;
         _pedigreeRepository = pedigreeRepository;
+        _batchRepository = batchRepository;
     }
 
     public Task<CaseDetailRecord?> GetCaseDetailsAsync(string rbse)
@@ -102,6 +106,13 @@ public sealed class CaseService : ICaseService
             // ── 8. Clinical visits ───────────────────────────────────────
             foreach (var visit in command.ClinicalVisits)
                 await _clinicalRepository.AddVisitAsync(visit, connection, transaction);
+
+            // ── 9. Batch link ────────────────────────────────────────────
+            // Legacy clsCase.UpdateCaseDetails created the BSE1 link in this same
+            // transaction whenever a batch was in context. A duplicate link is a no-op.
+            if (command.BatchId is > 0)
+                await _batchRepository.AssignCaseToBatchAsync(
+                    command.BatchId.Value, rbse, "BSE1", connection, transaction);
 
             transaction.Commit();
             return AddCaseResult.Success;

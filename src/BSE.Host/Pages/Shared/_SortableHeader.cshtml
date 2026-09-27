@@ -1,21 +1,26 @@
-@* Renders a server-side sortable <th> aligned to the MOJ/GDS sortable-table pattern.
+@* Renders a server-side sortable <th> aligned to the GDS sortable-table pattern.
    Parameters (passed via ViewData):
      Label        - column display text
      Column       - sort key string (matches SortColumn values in the view model)
      SortColumn   - currently active sort column (string)
      SortDesc     - current sort is descending (bool)
      BaseUrl      - query string base (all params except SortColumn/SortDesc/PageNumber)
+     HeaderClass  - optional extra CSS class(es) added to the <th> (e.g. for a shared column width)
 *@
 @{
-    var label      = (string)ViewData["Label"]!;
-    var column     = (string)ViewData["Column"]!;
-    var sortCol    = (string?)ViewData["SortColumn"] ?? "";
-    var sortDesc   = (bool?)ViewData["SortDesc"] ?? false;
-    var baseUrl    = (string?)ViewData["BaseUrl"] ?? "?";
-    var prefix     = (string?)ViewData["Prefix"] ?? "";
+    var label = (string)ViewData["Label"]!;
+    var labelMarkup = (string?)ViewData["LabelHtml"] ?? "";
+    var column = (string)ViewData["Column"]!;
+    var sortCol = (string?)ViewData["SortColumn"] ?? "";
+    var sortDesc = (bool?)ViewData["SortDesc"] ?? false;
+    var baseUrl = (string?)ViewData["BaseUrl"] ?? "?";
+    var prefix = (string?)ViewData["Prefix"] ?? "";
+    var fragment = (string?)ViewData["Fragment"] ?? "";
+    var headerClass = (string?)ViewData["HeaderClass"] ?? "";
+    var wrapWords = (bool?)ViewData["WrapWords"] ?? false;
 
-    bool isActive  = string.Equals(sortCol, column, StringComparison.OrdinalIgnoreCase);
-    bool nextDesc  = isActive && !sortDesc;   // toggle on second click
+    bool isActive = string.Equals(sortCol, column, StringComparison.OrdinalIgnoreCase);
+    bool nextDesc = isActive && !sortDesc;
 
     var joiner = baseUrl.Contains('?') ? "&" : "?";
     if (baseUrl.EndsWith('?') || baseUrl.EndsWith('&')) joiner = "";
@@ -25,6 +30,9 @@
         + $"&{prefix}SortDesc=" + nextDesc.ToString().ToLowerInvariant()
         + $"&{prefix}PageNumber=1";
 
+    if (!string.IsNullOrWhiteSpace(fragment))
+        href += "#" + Uri.EscapeDataString(fragment);
+
     string ariaSort = isActive ? (sortDesc ? "descending" : "ascending") : "none";
     string screenReaderText = isActive
         ? (sortDesc
@@ -32,9 +40,21 @@
             : $"Sorted ascending. Activate to sort {label} descending.")
         : $"Not sorted. Activate to sort {label} ascending.";
 }
-<th scope="col" class="govuk-table__header moj-sortable-table__heading" aria-sort="@ariaSort">
+<th scope="col" class="govuk-table__header moj-sortable-table__heading @headerClass" aria-sort="@ariaSort">
     <a class="moj-sortable-table__button" href="@href">
-        @label
+        @if (!string.IsNullOrWhiteSpace(labelMarkup))
+        {
+            @Html.Raw(labelMarkup)
+        }
+        else if (wrapWords)
+        {
+            @* Each word of the header on its own row, matching the legacy grid header layout. *@
+            @Html.Raw(System.Net.WebUtility.HtmlEncode(label).Replace(" ", "<br />"))
+        }
+        else
+        {
+            @label
+        }
         <span class="moj-sortable-table__icons" aria-hidden="true">
             <span class="moj-sortable-table__icon moj-sortable-table__icon--up"></span>
             <span class="moj-sortable-table__icon moj-sortable-table__icon--down"></span>

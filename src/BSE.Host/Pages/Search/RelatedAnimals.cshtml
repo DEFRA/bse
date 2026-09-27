@@ -2,49 +2,82 @@
 @model BSE.Host.Pages.Search.RelatedAnimalsModel
 @{
     ViewData["Title"] = "Related Animal Search";
+    ViewData["BodyClass"] = "bse-related-animals-search-page";
 }
 
 <h1 class="govuk-heading-l">Related Animal Search</h1>
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Search/Menu">Search Menu</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Related Animal Search</li>
+    </ol>
+</nav>
+
+@if (Model.NoCriteria)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    <li><a href="#Rbse">@BSE.Host.Pages.Search.RelatedAnimalsModel.NoCriteriaMessage</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+}
 
 <form method="get" novalidate>
-    <div class="govuk-grid-row">
-        <div class="govuk-grid-column-two-thirds">
-            <div class="govuk-form-group">
+    <div class="bse-farm-legacy">
+        <div class="bse-farm-legacy__row">
+            <div class="bse-farm-legacy__field">
                 <label asp-for="Rbse" class="govuk-label">RBSE Of Case</label>
-                <input asp-for="Rbse" class="govuk-input govuk-!-width-two-thirds" maxlength="11" />
-                <span asp-validation-for="Rbse" class="govuk-error-message"></span>
+                <div class="govuk-form-group">
+                    <input asp-for="Rbse" class="govuk-input bse-farm-legacy__input" maxlength="11" />
+                    <span asp-validation-for="Rbse" class="govuk-error-message"></span>
+                </div>
             </div>
-
-            <div class="govuk-form-group">
+            <div class="bse-farm-legacy__field">
                 <label asp-for="Eartag" class="govuk-label">Eartag of Related Animal (starting with...)</label>
-                <input asp-for="Eartag" class="govuk-input govuk-!-width-two-thirds" />
+                <div class="govuk-form-group">
+                    <input asp-for="Eartag" class="govuk-input bse-farm-legacy__input" />
+                </div>
             </div>
+        </div>
 
-            <div class="govuk-form-group">
+        <div class="bse-farm-legacy__row">
+            <div class="bse-farm-legacy__field">
                 <label asp-for="RelationRbse" class="govuk-label">RBSE of Related Animal</label>
-                <input asp-for="RelationRbse" class="govuk-input govuk-!-width-two-thirds" maxlength="11" />
-                <span asp-validation-for="RelationRbse" class="govuk-error-message"></span>
+                <div class="govuk-form-group">
+                    <input asp-for="RelationRbse" class="govuk-input bse-farm-legacy__input" maxlength="11" />
+                    <span asp-validation-for="RelationRbse" class="govuk-error-message"></span>
+                </div>
             </div>
-
-            <div class="govuk-form-group">
+            <div class="bse-farm-legacy__field">
                 <label asp-for="RelationType" class="govuk-label">Relation Type</label>
-                <select asp-for="RelationType" class="govuk-select govuk-!-width-two-thirds">
-                    <option value=""></option>
-                    @foreach (var item in Model.RelationTypeOptions)
-                    {
-                        <option value="@item.Code">@item.Description</option>
-                    }
-                </select>
+                <div class="govuk-form-group">
+                    <select asp-for="RelationType" class="govuk-select bse-farm-legacy__input">
+                        <option value=""></option>
+                        @foreach (var item in Model.RelationTypeOptions)
+                        {
+                            <option value="@item.Code">@item.Description</option>
+                        }
+                    </select>
+                </div>
             </div>
+        </div>
 
-            <div class="govuk-form-group">
+        <div class="bse-farm-legacy__row">
+            <div class="bse-farm-legacy__field">
                 <label asp-for="Name" class="govuk-label">Name of Related Animal (starting with...)</label>
-                <input asp-for="Name" class="govuk-input govuk-!-width-two-thirds" />
-            </div>
-
-            <div class="govuk-button-group">
-                <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
-                <a asp-page="/Home" class="govuk-link">Search Menu</a>
+                <div class="govuk-form-group">
+                    <input asp-for="Name" class="govuk-input bse-farm-legacy__input" />
+                </div>
+                <div class="govuk-button-group">
+                    <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
+                    <a asp-page="/Search/Menu" class="govuk-link">Search Menu</a>
+                </div>
             </div>
         </div>
     </div>
@@ -52,7 +85,7 @@
 
 @if (Model.HasSearched)
 {
-    <p class="govuk-body">@Model.TotalCount result(s) found.</p>
+    <p id="related-animals-search-results" class="govuk-body">@Model.TotalCount result(s) found.</p>
 
     @if (Model.TotalCount > 0)
     {
@@ -65,31 +98,32 @@
         var sortDesc = Model.SortDesc;
 
         @await Html.PartialAsync("_ExportLink")
-        <table class="govuk-table">
+        <div class="bse-related-animals-search-table-wrap">
+        <table class="govuk-table bse-related-animals-search-table">
             <caption class="govuk-visually-hidden">Related animal results</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    @{ ViewData["Label"] = "RBSE";                ViewData["Column"] = "Rbse";         ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; }
+                    @{ ViewData["Label"] = "RBSE";                ViewData["Column"] = "Rbse";         ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "related-animals-search-results"; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "CPHH";                ViewData["Column"] = "Cphh"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Relation type";       ViewData["Column"] = "RelationType"; }
+                    @{ ViewData["Label"] = "Relation";       ViewData["Column"] = "RelationType"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Relation sex";        ViewData["Column"] = "RelSex"; }
+                    @{ ViewData["Label"] = "Sex";            ViewData["Column"] = "RelSex"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Eartag";              ViewData["Column"] = "Eartag"; }
+                    @{ ViewData["Label"] = "Eartag";         ViewData["Column"] = "Eartag"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Relation birth date"; ViewData["Column"] = "RelBirthDate"; }
+                    @{ ViewData["Label"] = "Rel Birth Date"; ViewData["Column"] = "RelBirthDate"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Relation fate";       ViewData["Column"] = "RelFate"; }
+                    @{ ViewData["Label"] = "Rel Fate";       ViewData["Column"] = "RelFate"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Date left";           ViewData["Column"] = "LeftDate"; }
+                    @{ ViewData["Label"] = "Date Left";      ViewData["Column"] = "LeftDate"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Name";                ViewData["Column"] = "RelName"; }
+                    @{ ViewData["Label"] = "Rel Name";       ViewData["Column"] = "RelName"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Relation eartag";     ViewData["Column"] = "RelEartag"; }
+                    @{ ViewData["Label"] = "Rel Eartag";     ViewData["Column"] = "RelEartag"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "Relation RBSE";       ViewData["Column"] = "RelationRbse"; }
+                    @{ ViewData["Label"] = "Rel RBSE";       ViewData["Column"] = "RelationRbse"; }
                     <partial name="_SortableHeader" />
                 </tr>
             </thead>
@@ -112,6 +146,7 @@
                 }
             </tbody>
         </table>
-        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
+        </div>
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages, ["Fragment"] = "related-animals-search-results" })
     }
 }

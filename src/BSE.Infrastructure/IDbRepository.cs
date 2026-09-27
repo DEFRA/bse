@@ -23,12 +23,27 @@ public interface IDbRepository
     Task ExecuteWithOutputAsync(string storedProcedure, DynamicParameters param);
 
     /// <summary>
+    /// As <see cref="ExecuteWithOutputAsync(string, DynamicParameters)"/> but on a caller-supplied
+    /// open connection and optional transaction, so RETURN and OUTPUT values can be read back
+    /// from a stored procedure enlisted in the caller's transaction.
+    /// </summary>
+    Task ExecuteWithOutputAsync(string storedProcedure, DynamicParameters param, IDbConnection connection, IDbTransaction? transaction);
+
+    /// <summary>
     /// Executes a stored procedure on a caller-supplied <paramref name="connection"/> and
     /// optional <paramref name="transaction"/>. Use when the caller manages the transaction
     /// boundary (e.g. Case Management enlisting <c>AddBatchNumberLink</c> in the case-save
     /// transaction). The connection must already be open.
     /// </summary>
     Task ExecuteAsync(string storedProcedure, object? param, IDbConnection connection, IDbTransaction? transaction);
+
+    /// <summary>
+    /// As <see cref="ExecuteAsync(string, object?, IDbConnection, IDbTransaction?)"/> but returns
+    /// the affected row count, so a caller-supplied RowStamp/concurrency check (0 rows affected
+    /// means the record was changed or deleted by someone else) can be enforced without an
+    /// explicit SP return code.
+    /// </summary>
+    Task<int> ExecuteWithRowCountAsync(string storedProcedure, object? param, IDbConnection connection, IDbTransaction? transaction);
 
     /// <summary>
     /// Executes a stored procedure that returns multiple result sets and passes the

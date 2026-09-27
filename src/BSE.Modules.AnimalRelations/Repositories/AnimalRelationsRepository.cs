@@ -63,8 +63,8 @@ public sealed class AnimalRelationsRepository : DapperRepository, IAnimalRelatio
             Sire = c.Sire
         }, conn, tx);
 
-    public Task EditRelationAsync(EditCaseRelationCommand c, IDbConnection conn, IDbTransaction tx)
-        => ExecuteAsync("EditCaseRelation", new
+    public Task<int> EditRelationAsync(EditCaseRelationCommand c, IDbConnection conn, IDbTransaction tx)
+        => ExecuteWithRowCountAsync("EditCaseRelation", new
         {
             ID = c.Id,
             RelationType = c.RelationType,
@@ -82,6 +82,6 @@ public sealed class AnimalRelationsRepository : DapperRepository, IAnimalRelatio
             RowStamp = c.RowStamp
         }, conn, tx);
 
-    public Task DeleteRelationAsync(DeleteCaseRelationCommand c, IDbConnection conn, IDbTransaction tx)
-        => ExecuteAsync("DeleteCaseRelation", new { ID = c.Id, RowStamp = c.RowStamp }, conn, tx);
+    public Task<int> DeleteRelationAsync(DeleteCaseRelationCommand c, IDbConnection conn, IDbTransaction tx)
+        => ExecuteWithRowCountAsync("DeleteCaseRelation", new { ID = c.Id, RowStamp = c.RowStamp }, conn, tx);
 }

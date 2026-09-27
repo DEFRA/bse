@@ -21,7 +21,10 @@ public sealed class BatchService : IBatchService
     public Task AddBatchNumberLinkAsync(int batchId, string rbse, string document)
         => _repository.AddBatchNumberLinkAsync(batchId, rbse, document);
 
-    public Task<int?> GetBatchIdAsync(short batchYear, int batchNumber)
+    public Task<BatchAssignmentResult> AssignCaseToBatchAsync(int batchId, string rbse, string document)
+        => _repository.AssignCaseToBatchAsync(batchId, rbse, document);
+
+    public Task<int?> GetBatchIdAsync(short? batchYear, int batchNumber)
         => _repository.GetBatchIdAsync(batchYear, batchNumber);
 
     public Task<IReadOnlyList<BatchNumberEntry>> GetBatchNumbersByRbseAsync(string rbse)
@@ -38,4 +41,7 @@ public sealed class BatchService : IBatchService
 
     public Task<IReadOnlyList<BatchCaseRecord>> GetCaseDetailsByBatchIdAsync(int batchId)
         => _repository.GetCaseDetailsByBatchIdAsync(batchId);
+
+    public Task<IReadOnlyList<IDictionary<string, object?>>> GetReportRowsAsync(string storedProcedure, int batchId)
+        => _repository.GetReportRowsAsync(storedProcedure, batchId);
 }

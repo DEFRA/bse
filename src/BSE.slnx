@@ -30,5 +30,6 @@
   <Project Path="BSE.Modules.Search/BSE.Modules.Search.csproj" />
   <Project Path="BSE.Modules.UserManagement.Tests/BSE.Modules.UserManagement.Tests.csproj" />
   <Project Path="BSE.Modules.UserManagement/BSE.Modules.UserManagement.csproj" />
+  <Project Path="BSE.SharedKernel.Tests/BSE.SharedKernel.Tests.csproj" />
   <Project Path="BSE.SharedKernel/BSE.SharedKernel.csproj" />
 </Solution>

@@ -1,0 +1,48 @@
+﻿@model BSE.Host.Pages.CaseWork.MinuteDocumentModel
+
+<p align="left">Appendix 1</p>
+
+<h1 align="left">
+    BOVINE SPONGIFORM ENCEPHALOPATHY:<br />
+    POSITIVE RESULT TO AN INITIAL SCREENING TEST -<br />
+    ANIMAL TAKEN IN A SURVEY
+</h1>
+
+<p align="right"><strong>RBSE: @BseFormat.FormatRbse(Model.Details.Rbse)</strong></p>
+<p align="right"><strong>AHO: @Model.Details.AhoNumber</strong></p>
+<p align="right"><strong>CPHH: @BseFormat.FormatCphh(Model.Details.Cphh)</strong></p>
+<p align="right"><strong>Date of Report: @Model.MinuteDate?.ToString("dd/MM/yyyy")</strong></p>
+
+<p align="left">To <strong>SSC Worcester</strong> (AHspecialistservicecentreworcester@apha.gov.uk)</p>
+
+<ol>
+    <li value="1">Sample taken in the @Model.Details.SurveyDescription</li>
+    <li value="2">Tissue from the animal identified below has given a positive result to a <strong>screening</strong> test for BSE.</li>
+    <li value="3">The brain tissue has been identified as coming from the following animal:</li>
+</ol>
+
+<h1>Schedule of Case</h1>
+
+<table class="ScheduleTable" align="center">
+    <tr class="ScheduleTableHeader">
+        <td class="ScheduleTableCell">Owner</td>
+        <td class="ScheduleTableCell">Ear tag no</td>
+        <td class="ScheduleTableCell">Date of birth/age</td>
+        <td class="ScheduleTableCell">Date of Slaughter/Death</td>
+    </tr>
+    <tr>
+        <td class="ScheduleTableCell">@Model.Details.OwnerName</td>
+        <td class="ScheduleTableCell">@Model.Details.EartagCountry @Model.Details.EartagHerdmark @Model.Details.Eartag</td>
+        <td class="ScheduleTableCell">@Model.Details.BirthDate?.ToString("dd/MM/yyyy")</td>
+        <td class="ScheduleTableCell">@Model.Details.SlaughterDate?.ToString("dd/MM/yyyy")</td>
+    </tr>
+</table>
+
+<h1>Potential offspring</h1>
+
+<p align="left"><strong><u>Please check carefully at on-farm visit</u></strong></p>
+
+<ol>
+    <li value="4">This is not yet a confirmed result. Please initiate the necessary action in accordance with paragraphs K 16 - 23 of Chapter 25.</li>
+    <li value="5">Further definitive tests will now be carried out and a final result will follow.</li>
+</ol>

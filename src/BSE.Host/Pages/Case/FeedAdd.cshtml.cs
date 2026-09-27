@@ -1,6 +1,9 @@
-﻿using BSE.Infrastructure;
+﻿using BSE.Host.Helpers;
+using BSE.Infrastructure;
 using BSE.Modules.CaseManagement.Commands;
+using BSE.Modules.CaseManagement.Models;
 using BSE.Modules.CaseManagement.Repositories;
+using BSE.Modules.CaseManagement.Services;
 using BSE.Modules.ReferenceData.Models;
 using BSE.Modules.ReferenceData.Services;
 using BSE.SharedKernel;
@@ -14,6 +17,7 @@ namespace BSE.Host.Pages.Case;
 [Authorize(Policy = "DataEntry")]
 public class FeedAddModel(
     IFeedRepository feedRepository,
+    ICaseService caseService,
     ILookupDataService lookups,
     IDbConnectionFactory connectionFactory,
     IConfiguration configuration) : PageModel
@@ -24,6 +28,9 @@ public class FeedAddModel(
     public IEnumerable<LookupItem> RationTypes { get; private set; } = [];
     public IEnumerable<LookupItem> Suppliers { get; private set; } = [];
     public string SpolSiteUrl { get; private set; } = string.Empty;
+
+    /// <summary>Field-keyed validation messages, mirroring the legacy per-field markers.</summary>
+    public IDictionary<string, string> FieldErrors { get; private set; } = new Dictionary<string, string>();
 
     [BindProperty]
     public NewFeedViewModel NewFeed { get; set; } = new();
@@ -37,18 +44,25 @@ public class FeedAddModel(
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (string.IsNullOrWhiteSpace(NewFeed.RationType))
+        await LoadLookupsAsync();
+
+        var rbse = RbseHelper.ParseToRaw(Rbse);
+        var caseRecord = await caseService.GetCaseAsync(rbse);
+
+        FieldErrors = FeedValidation.Validate(
+            new FeedValidation.Input(NewFeed.YearFrom, NewFeed.YearTo, NewFeed.RationType, NewFeed.SupplierId),
+            caseRecord);
+
+        if (FieldErrors.Count > 0)
         {
-            ModelState.AddModelError(string.Empty, "Ration type is required.");
-            await LoadLookupsAsync();
             return Page();
         }
 
         var command = new AddFeedCommand(
-            Rbse: Rbse,
+            Rbse: rbse,
             YearFrom: NewFeed.YearFrom,
             YearTo: NewFeed.YearTo,
-            RationType: NewFeed.RationType,
+            RationType: NewFeed.RationType!,
             SupplierId: NewFeed.SupplierId,
             RationName: string.IsNullOrWhiteSpace(NewFeed.RationName) ? null : NewFeed.RationName,
             IsPrePurchase: NewFeed.IsPrePurchase);

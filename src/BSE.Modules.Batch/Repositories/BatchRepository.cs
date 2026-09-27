@@ -71,10 +71,38 @@ public sealed class BatchRepository : DapperRepository, IBatchRepository
             Document = document
         }, connection, transaction);
 
-    public async Task<int?> GetBatchIdAsync(short batchYear, int batchNumber)
+    public async Task<BatchAssignmentResult> AssignCaseToBatchAsync(
+        int batchId, string rbse, string document)
+    {
+        var param = BuildAssignmentParameters(batchId, rbse, document);
+        await ExecuteWithOutputAsync("AddBatchNumberLink", param);
+        return (BatchAssignmentResult)param.Get<int>("@RETURN_VALUE");
+    }
+
+    public async Task<BatchAssignmentResult> AssignCaseToBatchAsync(
+        int batchId, string rbse, string document,
+        IDbConnection connection, IDbTransaction? transaction)
+    {
+        var param = BuildAssignmentParameters(batchId, rbse, document);
+        await ExecuteWithOutputAsync("AddBatchNumberLink", param, connection, transaction);
+        return (BatchAssignmentResult)param.Get<int>("@RETURN_VALUE");
+    }
+
+    private static DynamicParameters BuildAssignmentParameters(
+        int batchId, string rbse, string document)
     {
         var param = new DynamicParameters();
-        param.Add("@BatchYear", batchYear, dbType: DbType.Int16);
+        param.Add("@BatchID", batchId, dbType: DbType.Int32);
+        param.Add("@RBSE", rbse, dbType: DbType.String, size: 9);
+        param.Add("@Document", document, dbType: DbType.String, size: 5);
+        param.Add("@RETURN_VALUE", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+        return param;
+    }
+
+    public async Task<int?> GetBatchIdAsync(short? batchYear, int batchNumber)
+    {
+        var param = new DynamicParameters();
+        param.Add("@BatchYear", (object?)batchYear ?? DBNull.Value, dbType: DbType.Int16);
         param.Add("@BatchNumber", batchNumber, dbType: DbType.Int32);
         param.Add("@BatchID", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
@@ -116,5 +144,24 @@ public sealed class BatchRepository : DapperRepository, IBatchRepository
     {
         var result = await QueryAsync<BatchCaseRecord>("GetCPHHRBSEForBatchID", new { BatchID = batchId });
         return result.ToList();
+    }
+    public async Task<IReadOnlyList<IDictionary<string, object?>>> GetReportRowsAsync(string storedProcedure, int batchId)
+    {
+        var rows = await QueryAsync<dynamic>(storedProcedure, new { BatchID = batchId });
+
+        var result = new List<IDictionary<string, object?>>();
+        foreach (var r in rows)
+        {
+            if (r is IDictionary<string, object> d)
+            {
+                result.Add(d.ToDictionary(k => k.Key, v => (object?)v.Value));
+            }
+            else
+            {
+                result.Add(new Dictionary<string, object?>());
+            }
+        }
+
+        return result;
     }
 }

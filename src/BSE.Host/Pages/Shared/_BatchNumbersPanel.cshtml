@@ -1,0 +1,68 @@
+@* Batch numbers panel — mirrors legacy BatchNumberDisplay control, present identically on every case-entry page for VLA roles. *@
+@model BSE.Host.Models.BatchNumbersPanelViewModel
+@if (User.IsInRole("VLAAccess"))
+{
+    var batchSortBase = "?" + string.Join("&", Context.Request.Query
+        .Where(k => !string.Equals(k.Key, "BSortColumn", StringComparison.OrdinalIgnoreCase)
+                 && !string.Equals(k.Key, "BSortDesc", StringComparison.OrdinalIgnoreCase)
+                 && !string.Equals(k.Key, "BPageNumber", StringComparison.OrdinalIgnoreCase))
+        .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
+    var batchSortColumn = Context.Request.Query["BSortColumn"].ToString();
+    var batchSortDesc = bool.TryParse(Context.Request.Query["BSortDesc"], out var desc) && desc;
+    var sortedBatchNumbers = batchSortColumn == "Document"
+        ? (batchSortDesc ? Model.BatchNumbers.OrderByDescending(b => b.Document) : Model.BatchNumbers.OrderBy(b => b.Document))
+        : (batchSortDesc ? Model.BatchNumbers.OrderByDescending(b => b.BatchNumber) : Model.BatchNumbers.OrderBy(b => b.BatchNumber));
+
+    <div class="bse-batch-panel govuk-!-margin-bottom-4">
+        <details class="govuk-details" data-module="govuk-details">
+            <summary class="govuk-details__summary">
+                <span class="govuk-details__summary-text">Batch numbers</span>
+            </summary>
+            <div class="govuk-details__text">
+                <table class="govuk-table">
+                    <caption class="govuk-visually-hidden">Batch numbers for @Model.Rbse</caption>
+                    <thead class="govuk-table__head">
+                        <tr class="govuk-table__row">
+                            @{ ViewData["Label"] = "Batch Number"; ViewData["Column"] = "BatchNumber"; ViewData["SortColumn"] = batchSortColumn; ViewData["SortDesc"] = batchSortDesc; ViewData["BaseUrl"] = batchSortBase; ViewData["Prefix"] = "B"; }
+                            <partial name="_SortableHeader" />
+                            @{ ViewData["Label"] = "Document"; ViewData["Column"] = "Document"; }
+                            <partial name="_SortableHeader" />
+                        </tr>
+                    </thead>
+                    <tbody class="govuk-table__body">
+                        @if (Model.BatchNumbers.Count == 0)
+                        {
+                            <tr class="govuk-table__row">
+                                <td class="govuk-table__cell" colspan="2">No batch numbers recorded for this case.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var b in sortedBatchNumbers)
+                            {
+                                <tr class="govuk-table__row">
+                                    <td class="govuk-table__cell">@b.BatchNumber</td>
+                                    <td class="govuk-table__cell">@(string.IsNullOrWhiteSpace(b.Document) ? "—" : b.Document)</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </details>
+    </div>
+
+    <script>
+    (function () {
+        var panel = document.currentScript.previousElementSibling;
+        var details = panel.querySelector('details');
+        document.addEventListener('click', function (e) {
+            if (details.open && !panel.contains(e.target)) details.removeAttribute('open');
+        });
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && details.open) { details.removeAttribute('open'); details.querySelector('summary').focus(); }
+        });
+    }());
+    </script>
+}
+

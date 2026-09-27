@@ -31,14 +31,17 @@ public class EditModel : PageModel
     public string Rbse { get; set; } = string.Empty;
 
     [BindProperty] public FarmEditViewModel? Farm { get; set; }
+    public int ConfirmedCaseCount { get; private set; }
 
     public async Task<IActionResult> OnGetAsync(string cphh, string? rbse = null)
     {
+        cphh = CphhNormalizer.Normalize(cphh);
         Rbse = rbse ?? string.Empty;
         var record = await _farm.GetByCphhAsync(cphh);
         if (record is null) return NotFound();
 
         Farm = FarmEditViewModel.FromRecord(record);
+        ConfirmedCaseCount = await _farm.GetConfirmedCaseCountAsync(cphh);
         TempData["FarmRowStamp"] = record.RowStamp != null ? Convert.ToBase64String(record.RowStamp) : null;
         await LoadLookupsAsync();
         return Page();
@@ -46,7 +49,17 @@ public class EditModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
+        if (Farm is not null)
+        {
+            Farm.CPHH = CphhNormalizer.Normalize(Farm.CPHH);
+        }
+
         await LoadLookupsAsync();
+
+        if (Farm is not null && !string.IsNullOrWhiteSpace(Farm.CPHH))
+        {
+            ConfirmedCaseCount = await _farm.GetConfirmedCaseCountAsync(Farm.CPHH);
+        }
 
         // Validate map reference is within the parish for the CPHH (mirrors legacy MapReference1_MapReferenceChanged)
         if (Farm is not null
@@ -162,7 +175,7 @@ public class EditModel : PageModel
         var isValid = await MapReferenceWithinParishAsync(cphh, mapRef);
         return new JsonResult(isValid
             ? new { valid = true, message = (string?)null }
-            : new { valid = false, message = "Map reference does not lie within the parish boundaries for this CPHH." });
+            : new { valid = false, message = (string?)"Map reference does not lie within the parish boundaries for this CPHH." });
     }
 
     // ── Private helpers ────────────────────────────────────────────────────────

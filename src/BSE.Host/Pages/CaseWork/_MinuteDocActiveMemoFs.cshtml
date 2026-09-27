@@ -1,0 +1,87 @@
+﻿@model BSE.Host.Pages.CaseWork.MinuteDocumentModel
+@{
+    var cphh = BseFormat.FormatCphh(Model.Details.Cphh);
+    var cph = cphh.Contains('/') ? cphh[..cphh.LastIndexOf('/')] : cphh;
+    var samplingDate = Model.Details.SamplingDate == DateTime.MaxValue
+        ? "unknown"
+        : Model.Details.SamplingDate?.ToString("dd/MM/yyyy");
+    var testResult = Model.Details.TestResult ?? string.Empty;
+    var bodyArticle = string.Equals(testResult, "Inconclusive", StringComparison.OrdinalIgnoreCase) ? "an" : "a";
+}
+
+<p align="left">Appendix 1</p>
+
+<h1 align="left">
+    BOVINE SPONGIFORM ENCEPHALOPATHY:<br />
+    @testResult.ToUpper() RESULT TO AN INITIAL SCREENING TEST -<br />
+    ANIMAL TAKEN IN A SURVEY
+</h1>
+
+<p align="right"><strong>RBSE Ref: @BseFormat.FormatRbse(Model.Details.Rbse)</strong></p>
+<p align="right"><strong>CPH: @cph</strong></p>
+<p align="right"><strong>Date of Report: @Model.MinuteDate?.ToString("dd/MM/yyyy")</strong></p>
+
+<div><strong>To&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SSC Worcester</strong> (AHspecialistservicecentreworcester@apha.gov.uk)<br /></div>
+<div id="textAddress">
+    @Model.Details.FarmAhoName<br />
+    VeterinaryandTechnical.ServiceTeam@apha.gov.uk<br />
+    Victor Andres VSM<br />
+    Mike Dawson AHVLA
+</div>
+
+<ol>
+    <li value="1">Sample taken in the <strong>@Model.Details.SurveyDescription?.ToUpper() SURVEY.</strong></li>
+    <li value="2">Tissue from the animal identified below has given @bodyArticle @testResult.ToLower() result to a <strong>screening</strong> test for BSE.</li>
+    <li value="3">The brain tissue has been identified as coming from the following animal:</li>
+</ol>
+
+<h1>Schedule of Case</h1>
+
+<table class="ScheduleTable" align="center">
+    <tr class="ScheduleTableHeader">
+        <td class="ScheduleTableCell">Owner</td>
+        <td class="ScheduleTableCell">Ear tag no</td>
+        <td class="ScheduleTableCell">Date of birth/age</td>
+        <td class="ScheduleTableCell">Date of Slaughter/Death</td>
+    </tr>
+    <tr>
+        <td class="ScheduleTableCell">@Model.Details.OwnerName</td>
+        <td class="ScheduleTableCell">@Model.Details.EartagCountry @Model.Details.EartagHerdmark @Model.Details.Eartag</td>
+        <td class="ScheduleTableCell">@Model.Details.BirthDate?.ToString("dd/MM/yyyy")</td>
+        <td class="ScheduleTableCell">@Model.Details.SlaughterDate?.ToString("dd/MM/yyyy")</td>
+    </tr>
+</table>
+
+<ol>
+    <li value="4">This is not yet a confirmed result. Further definitive tests will now be carried out and a final result will follow.</li>
+    <li value="5">The brain tissue has been identified to come from the following TSE Testing site:</li>
+</ol>
+
+<table class="ScheduleTable" align="center">
+    <tr class="ScheduleTableHeader">
+        <td class="ScheduleTableCell">TSE Testing site name</td>
+        <td class="ScheduleTableCell">Address</td>
+        <td class="ScheduleTableCell">Approval Number</td>
+        <td class="ScheduleTableCell">Date of sampling</td>
+    </tr>
+    <tr>
+        <td class="ScheduleTableCell">@Model.Details.TseTestingSite</td>
+        <td class="ScheduleTableCell">@Model.Details.TseAddress</td>
+        <td class="ScheduleTableCell">@Model.Details.TseCph</td>
+        <td class="ScheduleTableCell">@samplingDate</td>
+    </tr>
+</table>
+
+<ol>
+    <li value="6">
+        SSC at Worcester -
+        <br />
+        MUST FOLLOW INSTRUCTIONS 'ACTION FOLLOWING PRELIMINARY POSITIVE RESULT'
+        <br />
+        WHICH CAN BE FOUND AT
+        <br />
+        <a href="http://intranet/v1p3r/opsman/content/chp25/sample/results.html#6">
+            http://intranet/v1p3r/opsman/content/chp25/sample/results.html#6
+        </a>
+    </li>
+</ol>

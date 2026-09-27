@@ -25,6 +25,7 @@ public class EditModel(
     ILookupDataService lookups,
     ICaseWorkRepository caseWorkRepository,
     ITestRepository testRepository,
+    ICaseEditDraftStateService caseEditDraftState,
     IBatchRepository batchRepository,
     IConfiguration configuration) : PageModel
 {
@@ -38,6 +39,9 @@ public class EditModel(
 
     public string? ConcurrencyError { get; private set; }
     public IReadOnlyList<BatchNumberEntry> BatchNumbers { get; private set; } = [];
+    public bool HasCaseWorkLink { get; private set; }
+    public bool CanEditDefraNotes { get; private set; }
+    public bool IsNonGbCase { get; private set; }
 
     // Lookup options for dropdowns
     public IEnumerable<BSE.SharedKernel.ILookupItem> FateOptions { get; private set; } = [];
@@ -49,12 +53,23 @@ public class EditModel(
 
     // Tests grid
     public IReadOnlyList<CaseTestRecord> Tests { get; private set; } = [];
+    [BindProperty] public List<StagedTestItem> StagedTests { get; set; } = [];
+    public bool HasUnsavedChanges { get; private set; }
 
     // View Docs — SharePoint URL (RBSE appended by view, slashes stripped)
     public string SpolSiteUrl { get; private set; } = string.Empty;
 
     public IEnumerable<ILookupItem> TestTypeOptions { get; private set; } = [];
     public IEnumerable<ILookupItem> TestResultOptions { get; private set; } = [];
+
+    [BindProperty] public string NewTestType { get; set; } = string.Empty;
+    [BindProperty] public string? NewTestResult { get; set; }
+    [BindProperty] public int EditingTestId { get; set; }
+    [BindProperty] public string EditTestType { get; set; } = string.Empty;
+    [BindProperty] public string? EditTestResult { get; set; }
+    [BindProperty] public string EditTestRowStampBase64 { get; set; } = string.Empty;
+    public bool ShowAddTestRow { get; private set; }
+    public int? ReopenEditTestId { get; private set; }
 
     private const int TestsPageSize = 10;
     [BindProperty(SupportsGet = true)] public int    TPage { get; set; } = 1;
@@ -63,43 +78,177 @@ public class EditModel(
     public int TestsTotalPages { get; private set; } = 1;
     public int TestsTotalCount { get; private set; }
 
-    [BindProperty] public string  NewTestType          { get; set; } = string.Empty;
-    [BindProperty] public string? NewTestResult        { get; set; }
-    [BindProperty(SupportsGet = true)] public int EditTestId { get; set; }
-    [BindProperty] public string  EditTestType          { get; set; } = string.Empty;
-    [BindProperty] public string? EditTestResult        { get; set; }
-    [BindProperty] public string? EditTestRowStampBase64 { get; set; }
 
     public async Task<IActionResult> OnGetAsync()
     {
+        ApplyLegacyDefraPermissions();
+
         var record = await caseService.GetCaseAsync(Rbse);
         if (record is null)
         {
-            TempData["Warning"] = $"Case '{Rbse}' not found.";
-            return RedirectToPage("/Case/Lookup");
+            Case.Rbse = Rbse;
+            var missingCaseBatchTask = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
+            SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+            var missingCaseWork = await caseWorkRepository.GetByRbseAsync(Rbse);
+            HasCaseWorkLink = missingCaseWork is not null
+                              || await caseWorkRepository.GetEntryByRbseAsync(Rbse) is not null;
+            await Task.WhenAll(LoadLookupsAsync(), missingCaseBatchTask, LoadOrInitializeDraftStateAsync());
+            BatchNumbers = (await missingCaseBatchTask).ToList().AsReadOnly();
+            TempData["Warning"] = $"Case '{Rbse}' is not saved yet. Complete Farm first.";
+            return Page();
         }
 
         TempData[string.Format(RowStampKey, Rbse)] = Convert.ToBase64String(record.RowStamp ?? []);
         Case = CaseEditViewModel.FromRecord(record);
+        IsNonGbCase = record.IsNonGbCase;
 
         var caseWork = await caseWorkRepository.GetByRbseAsync(Rbse);
         if (caseWork is not null)
             Case.ApplyCaseWork(caseWork);
 
+        HasCaseWorkLink = caseWork is not null
+                          || await caseWorkRepository.GetEntryByRbseAsync(Rbse) is not null;
+
         var batchTask = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
 
-        await Task.WhenAll(LoadLookupsAsync(), batchTask, LoadTestsAsync());
+        await Task.WhenAll(LoadLookupsAsync(), batchTask);
+        await LoadOrInitializeDraftStateAsync();
         BatchNumbers = (await batchTask).ToList().AsReadOnly();
         return Page();
+    }
+
+    public async Task<IActionResult> OnPostBeginEditTestRowAsync(int id)
+    {
+        if (!User.IsInRole("DataEntry"))
+            return Forbid();
+
+        await LoadReadonlyPageAsync();
+        await LoadOrInitializeDraftStateAsync();
+
+        var test = StagedTests.FirstOrDefault(t => t.Id == id);
+        if (test is null)
+            return RedirectToPage(new { rbse = Rbse });
+
+        ReopenEditTestId = id;
+        EditTestType = test.TestType;
+        EditTestResult = test.TestResult;
+        EditTestRowStampBase64 = test.RowStampBase64;
+        return Page();
+    }
+
+    public async Task<IActionResult> OnPostAddTestRowAsync()
+    {
+        if (!User.IsInRole("DataEntry"))
+            return Forbid();
+
+        await LoadReadonlyPageAsync();
+        await LoadOrInitializeDraftStateAsync();
+
+        if (string.IsNullOrWhiteSpace(NewTestType))
+            ModelState.AddModelError(nameof(NewTestType), "Select a test type.");
+
+        if (!ModelState.IsValid)
+        {
+            ShowAddTestRow = true;
+            return Page();
+        }
+
+        StagedTests.Add(new StagedTestItem
+        {
+            Id = NextTemporaryTestId(),
+            TestType = NewTestType,
+            TestResult = NewTestResult,
+            RowStampBase64 = string.Empty
+        });
+
+        await SaveDraftStateAsync();
+        return RedirectToPage(new { rbse = Rbse });
+    }
+
+    public async Task<IActionResult> OnPostSaveAsync()
+    {
+        if (!User.IsInRole("DataEntry"))
+            return Forbid();
+
+        await LoadReadonlyPageAsync();
+        await LoadOrInitializeDraftStateAsync();
+
+        await PersistStagedTestsAsync();
+        await caseEditDraftState.ClearAsync(Rbse);
+        TempData["Success"] = "Case test changes saved.";
+        return RedirectToPage(new { rbse = Rbse });
+    }
+
+    public async Task<IActionResult> OnGetCancelEditAsync()
+    {
+        await caseEditDraftState.ClearAsync(Rbse);
+        return RedirectToPage("/Home");
+    }
+
+    public async Task<IActionResult> OnPostUpdateTestRowAsync()
+    {
+        if (!User.IsInRole("DataEntry"))
+            return Forbid();
+
+        await LoadReadonlyPageAsync();
+        await LoadOrInitializeDraftStateAsync();
+
+        if (string.IsNullOrWhiteSpace(EditTestType))
+            ModelState.AddModelError(nameof(EditTestType), "Select a test type.");
+
+        if (!ModelState.IsValid)
+        {
+            ReopenEditTestId = EditingTestId;
+            return Page();
+        }
+
+        var test = StagedTests.FirstOrDefault(t => t.Id == EditingTestId);
+        if (test is null)
+            return RedirectToPage(new { rbse = Rbse });
+
+        test.TestType = EditTestType;
+        test.TestResult = EditTestResult;
+        await SaveDraftStateAsync();
+        return RedirectToPage(new { rbse = Rbse });
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
         if (!User.IsInRole("DataEntry"))
             return Forbid();
+
+        ApplyLegacyDefraPermissions();
+
+        var persistedRecord = await caseService.GetCaseAsync(Rbse);
+        if (persistedRecord is null)
+        {
+            Case.Rbse = Rbse;
+            var batchTask = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
+            SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+            var caseWork = await caseWorkRepository.GetByRbseAsync(Rbse);
+            HasCaseWorkLink = caseWork is not null
+                              || await caseWorkRepository.GetEntryByRbseAsync(Rbse) is not null;
+            await LoadLookupsAsync();
+            await LoadOrInitializeDraftStateAsync();
+            BatchNumbers = (await batchTask).ToList().AsReadOnly();
+            TempData["Warning"] = $"Case '{Rbse}' is not saved yet. Complete Farm first.";
+            return Page();
+        }
+
+        IsNonGbCase = persistedRecord.IsNonGbCase;
+
+        // Legacy CaseEntryDEFRA behavior: Form A date is read-only for non-GB cases.
+        if (IsNonGbCase)
+            Case.FormADate = persistedRecord.FormADate;
+
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadLookupsAsync();
+        await LoadOrInitializeDraftStateAsync();
+
+        ApplyLegacyPreSaveNormalizations();
+        ValidateLegacyParityRules();
+
         if (!ModelState.IsValid)
             return Page();
 
@@ -158,8 +307,132 @@ public class EditModel(
             await caseWorkRepository.EditAsync(cwCommand);
         }
 
+        await PersistStagedTestsAsync();
+        await caseEditDraftState.ClearAsync(Rbse);
+
         TempData["Success"] = $"Case {Rbse} has been updated.";
         return RedirectToPage(new { rbse = Rbse });
+    }
+
+    private void ApplyLegacyPreSaveNormalizations()
+    {
+        if (!Case.BirthDate.HasValue)
+        {
+            Case.BirthDateSource = null;
+            Case.IsBirthDateEst = false;
+        }
+
+        // Legacy behavior: when Form B is entered and Slaughter Date is empty,
+        // Slaughter Date is set to Form B Date during save mapping.
+        if (!Case.SlaughterDate.HasValue && Case.FormBDate.HasValue)
+            Case.SlaughterDate = Case.FormBDate;
+    }
+
+    private void ValidateLegacyParityRules()
+    {
+        var today = DateTime.Today;
+
+        if (string.IsNullOrWhiteSpace(Case.EartagCountry)
+            && string.IsNullOrWhiteSpace(Case.EartagHerdmark)
+            && string.IsNullOrWhiteSpace(Case.Eartag))
+        {
+            ModelState.AddModelError("Case.EartagCountry", "Enter an eartag.");
+        }
+
+        if (!IsNonGbCase && !Case.FormADate.HasValue)
+        {
+            ModelState.AddModelError("Case.FormADate", "Enter a Form A date.");
+        }
+
+        if (Case.Bse1ReceivedDate.HasValue && Case.Bse1ReceivedDate.Value.Date > today)
+            ModelState.AddModelError("Case.Bse1ReceivedDate", "You must enter a past date.");
+
+        if (Case.FormADate.HasValue)
+        {
+            var latest = Case.SlaughterDate?.Date ?? today;
+            var formA = Case.FormADate.Value.Date;
+            if (formA > latest)
+            {
+                var message = Case.SlaughterDate.HasValue
+                    ? "You must enter a date before the Slaughter Date."
+                    : "You must enter a past date.";
+                ModelState.AddModelError("Case.FormADate", message);
+            }
+        }
+
+        if (Case.FormAResubmittedDate.HasValue)
+        {
+            if (!Case.FormADate.HasValue)
+            {
+                ModelState.AddModelError("Case.FormAResubmittedDate", "You must enter a Form A Date first.");
+            }
+            else
+            {
+                var value = Case.FormAResubmittedDate.Value.Date;
+                var min = Case.FormADate.Value.Date;
+                if (value < min || value > today)
+                    ModelState.AddModelError("Case.FormAResubmittedDate", "You must enter a date in the past but after the Form A Date.");
+            }
+        }
+
+        if (Case.FormBDate.HasValue)
+        {
+            if (!Case.FormADate.HasValue)
+            {
+                ModelState.AddModelError("Case.FormBDate", "You must enter a Form A Date first.");
+            }
+            else
+            {
+                var value = Case.FormBDate.Value.Date;
+                var min = Case.FormADate.Value.Date;
+                if (value < min || value > today)
+                    ModelState.AddModelError("Case.FormBDate", "You must enter a date in the past but after the Form A Date.");
+            }
+        }
+
+        if (Case.FormCDate.HasValue && !Case.FormBDate.HasValue)
+            ModelState.AddModelError("Case.FormCDate", "You must enter a Form B Date first.");
+
+        if (Case.FormBDate.HasValue && string.IsNullOrWhiteSpace(Case.Fate))
+            ModelState.AddModelError("Case.Fate", "Select a fate.");
+
+        if (Case.BirthDate.HasValue)
+        {
+            var birthDate = Case.BirthDate.Value.Date;
+            if (birthDate < new DateTime(1970, 1, 1))
+                ModelState.AddModelError("Case.BirthDate", "Date of Birth must be on or after 01/01/1970.");
+
+            var latestForFormA = Case.FormADate?.Date ?? today;
+            if (birthDate > latestForFormA)
+                ModelState.AddModelError("Case.BirthDate", "Date of Birth must be before the Form A Date");
+
+            if (Case.OnsetDate.HasValue && birthDate > Case.OnsetDate.Value.Date)
+                ModelState.AddModelError("Case.BirthDate", "Date of Birth must be before the Onset Date");
+        }
+
+        if (Case.HasCaseWork && Case.RbseDate.HasValue)
+        {
+            var min = Case.RbseDate.Value.Date.AddDays(1);
+            var max = today;
+            var message = $"You must enter a date in the past but after the RBSE Date ({Case.RbseDate.Value:dd/MM/yyyy})";
+
+            ValidateOptionalRange(Case.PurchaserBse1ReceivedDate, "Case.PurchaserBse1ReceivedDate", min, max, message);
+            ValidateOptionalRange(Case.BreederBse1ReceivedDate, "Case.BreederBse1ReceivedDate", min, max, message);
+            ValidateOptionalRange(Case.Vendor1Bse1ReceivedDate, "Case.Vendor1Bse1ReceivedDate", min, max, message);
+            ValidateOptionalRange(Case.HomebredBse1ReceivedDate, "Case.HomebredBse1ReceivedDate", min, max, message);
+            ValidateOptionalRange(Case.SummarySheetReceivedDate, "Case.SummarySheetReceivedDate", min, max, message);
+            ValidateOptionalRange(Case.PaperworkCompleteDate, "Case.PaperworkCompleteDate", min, max, message);
+        }
+    }
+
+    private void ValidateOptionalRange(DateTime? value, string modelKey, DateTime min, DateTime max, string message)
+    {
+        if (!value.HasValue)
+            return;
+
+        var date = value.Value.Date;
+        if (date < min || date > max)
+            ModelState.AddModelError(modelKey, message);
     }
 
     private async Task LoadLookupsAsync()
@@ -188,7 +461,16 @@ public class EditModel(
 
     private async Task LoadTestsAsync()
     {
-        var all = (await testRepository.GetByRbseAsync(Rbse)).ToList();
+        var all = StagedTests.Select(t => new CaseTestRecord(
+            Id: t.Id ?? 0,
+            Rbse: Rbse,
+            TestType: t.TestType,
+            TestTypeDescription: t.TestTypeDescription,
+            TestResult: t.TestResult,
+            TestResultDescription: t.TestResultDescription,
+            RowStamp: string.IsNullOrWhiteSpace(t.RowStampBase64) ? [] : Convert.FromBase64String(t.RowStampBase64)))
+            .ToList();
+
         TestsTotalCount = all.Count;
         TestsTotalPages = Math.Max(1, (int)Math.Ceiling(all.Count / (double)TestsPageSize));
         TPage = Math.Clamp(TPage, 1, TestsTotalPages);
@@ -200,53 +482,153 @@ public class EditModel(
         Tests = sorted.Skip((TPage - 1) * TestsPageSize).Take(TestsPageSize).ToList().AsReadOnly();
     }
 
-    public async Task<IActionResult> OnPostAddTestAsync()
+    private async Task LoadReadonlyPageAsync()
     {
-        if (!User.IsInRole("DataEntry"))
-            return Forbid();
-        if (string.IsNullOrWhiteSpace(NewTestType))
-        {
-            ModelState.AddModelError(nameof(NewTestType), "Select a test type.");
-            var record = await caseService.GetCaseAsync(Rbse);
-            if (record is not null) { Case = CaseEditViewModel.FromRecord(record); var cw = await caseWorkRepository.GetByRbseAsync(Rbse); if (cw is not null) Case.ApplyCaseWork(cw); }
-            SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
-            var batchTask = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
-            await Task.WhenAll(LoadLookupsAsync(), LoadTestsAsync(), batchTask);
-            BatchNumbers = (await batchTask).ToList().AsReadOnly();
-            return Page();
-        }
-        await testRepository.AddAsync(new AddTestCommand(Rbse.Replace("/", ""), NewTestType, NewTestResult));
-        TempData["Success"] = "Test record added.";
-        return RedirectToPage(new { rbse = Rbse });
+        ApplyLegacyDefraPermissions();
+
+        var record = await caseService.GetCaseAsync(Rbse);
+        if (record is null)
+            return;
+
+        Case = CaseEditViewModel.FromRecord(record);
+        IsNonGbCase = record.IsNonGbCase;
+        var caseWork = await caseWorkRepository.GetByRbseAsync(Rbse);
+        if (caseWork is not null)
+            Case.ApplyCaseWork(caseWork);
+
+        HasCaseWorkLink = caseWork is not null
+                          || await caseWorkRepository.GetEntryByRbseAsync(Rbse) is not null;
+
+        var batchTask = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
+        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+
+        await Task.WhenAll(LoadLookupsAsync(), batchTask, LoadTestsAsync());
+        BatchNumbers = (await batchTask).ToList().AsReadOnly();
     }
 
-    public async Task<IActionResult> OnPostEditTestAsync()
+    private void ApplyLegacyDefraPermissions()
     {
-        if (!User.IsInRole("DataEntry"))
-            return Forbid();
-        if (string.IsNullOrWhiteSpace(EditTestType))
-        {
-            ModelState.AddModelError(nameof(EditTestType), "Select a test type.");
-            var record = await caseService.GetCaseAsync(Rbse);
-            if (record is not null) { Case = CaseEditViewModel.FromRecord(record); var cw = await caseWorkRepository.GetByRbseAsync(Rbse); if (cw is not null) Case.ApplyCaseWork(cw); }
-            SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
-            var batchTask = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
-            await Task.WhenAll(LoadLookupsAsync(), LoadTestsAsync(), batchTask);
-            BatchNumbers = (await batchTask).ToList().AsReadOnly();
-            return Page();
-        }
-        var rowStamp = Convert.FromBase64String(EditTestRowStampBase64 ?? string.Empty);
-        await testRepository.EditAsync(new EditTestCommand(EditTestId, Rbse.Replace("/", ""), EditTestType, EditTestResult, rowStamp));
-        TempData["Success"] = "Test record updated.";
-        return RedirectToPage(new { rbse = Rbse });
+        CanEditDefraNotes = User.IsInRole("DataEntry");
     }
 
-    public async Task<IActionResult> OnPostDeleteTestAsync(int id, string rowStampBase64)
+    private async Task<CaseEditDraftState> LoadOrInitializeDraftStateAsync()
+    {
+        var draft = await caseEditDraftState.GetAsync(Rbse);
+        if (draft is null)
+        {
+            var persistedTests = (await testRepository.GetByRbseAsync(Rbse)).ToList();
+            draft = new CaseEditDraftState
+            {
+                Rbse = Rbse,
+                Tests = persistedTests.Select(t => new CaseEditDraftTestItem
+                {
+                    Id = t.Id,
+                    TestType = t.TestType,
+                    TestTypeDescription = t.TestTypeDescription,
+                    TestResult = t.TestResult,
+                    TestResultDescription = t.TestResultDescription,
+                    RowStampBase64 = t.RowStamp is null ? string.Empty : Convert.ToBase64String(t.RowStamp)
+                }).ToList(),
+                HasPendingChanges = false
+            };
+
+            await caseEditDraftState.SetAsync(draft);
+        }
+
+        StagedTests = draft.Tests.Select(t => new StagedTestItem
+        {
+            ClientKey = t.ClientKey,
+            Id = t.Id,
+            TestType = t.TestType,
+            TestTypeDescription = t.TestTypeDescription,
+            TestResult = t.TestResult,
+            TestResultDescription = t.TestResultDescription,
+            RowStampBase64 = t.RowStampBase64
+        }).ToList();
+
+        HasUnsavedChanges = draft.HasPendingChanges;
+        await LoadTestsAsync();
+        return draft;
+    }
+
+    private async Task SaveDraftStateAsync(bool hasPendingChanges = true)
+    {
+        var testTypeByCode = (await lookups.GetLookupAsync(LookupTableId.TestType)).ToDictionary(x => x.Code, x => x.Description, StringComparer.OrdinalIgnoreCase);
+        var testResultByCode = (await lookups.GetLookupAsync(LookupTableId.TestResult)).ToDictionary(x => x.Code, x => x.Description, StringComparer.OrdinalIgnoreCase);
+
+        var draft = new CaseEditDraftState
+        {
+            Rbse = Rbse,
+            HasPendingChanges = hasPendingChanges,
+            Tests = StagedTests.Select(t => new CaseEditDraftTestItem
+            {
+                ClientKey = t.ClientKey,
+                Id = t.Id,
+                TestType = t.TestType,
+                TestTypeDescription = testTypeByCode.GetValueOrDefault(t.TestType),
+                TestResult = t.TestResult,
+                TestResultDescription = string.IsNullOrWhiteSpace(t.TestResult) ? null : testResultByCode.GetValueOrDefault(t.TestResult),
+                RowStampBase64 = t.RowStampBase64
+            }).ToList()
+        };
+
+        await caseEditDraftState.SetAsync(draft);
+        HasUnsavedChanges = hasPendingChanges;
+    }
+
+    private async Task PersistStagedTestsAsync()
+    {
+        var persisted = (await testRepository.GetByRbseAsync(Rbse)).ToList();
+        var persistedById = persisted.ToDictionary(t => t.Id);
+        var stagedByExistingId = StagedTests.Where(t => t.Id is > 0).ToDictionary(t => t.Id!.Value);
+
+        foreach (var removed in persisted.Where(p => !stagedByExistingId.ContainsKey(p.Id)))
+        {
+            if (removed.RowStamp is null)
+                continue;
+
+            await testRepository.DeleteAsync(removed.Id, removed.RowStamp);
+        }
+
+        foreach (var staged in StagedTests)
+        {
+            if (staged.Id is null || staged.Id <= 0)
+            {
+                await testRepository.AddAsync(new AddTestCommand(Rbse.Replace("/", ""), staged.TestType, staged.TestResult));
+                continue;
+            }
+
+            if (!persistedById.TryGetValue(staged.Id.Value, out var current))
+                continue;
+
+            var changed = !string.Equals(current.TestType, staged.TestType, StringComparison.OrdinalIgnoreCase)
+                          || !string.Equals(current.TestResult ?? string.Empty, staged.TestResult ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+            if (!changed)
+                continue;
+
+            var rowStamp = string.IsNullOrWhiteSpace(staged.RowStampBase64)
+                ? current.RowStamp ?? []
+                : Convert.FromBase64String(staged.RowStampBase64);
+
+            await testRepository.EditAsync(new EditTestCommand(staged.Id.Value, Rbse.Replace("/", ""), staged.TestType, staged.TestResult, rowStamp));
+        }
+    }
+
+    public async Task<IActionResult> OnPostDeleteTestAsync(int id, string? rowStampBase64)
     {
         if (!User.IsInRole("DataEntry"))
             return Forbid();
-        await testRepository.DeleteAsync(id, Convert.FromBase64String(rowStampBase64));
-        TempData["Success"] = "Test record deleted.";
+
+        await LoadReadonlyPageAsync();
+        await LoadOrInitializeDraftStateAsync();
+
+        var item = StagedTests.FirstOrDefault(t => t.Id == id);
+        if (item is not null)
+        {
+            StagedTests.Remove(item);
+            await SaveDraftStateAsync();
+        }
+
         return RedirectToPage(new { rbse = Rbse });
     }
 
@@ -258,4 +640,21 @@ public class EditModel(
 
     public string TestsPageUrl(int page) =>
         $"?rbse={Uri.EscapeDataString(Rbse)}&TPage={page}&TSort={TSort}&TDir={TDir}";
+
+    public sealed class StagedTestItem
+    {
+        public string ClientKey { get; set; } = Guid.NewGuid().ToString("N");
+        public int? Id { get; set; }
+        public string TestType { get; set; } = string.Empty;
+        public string? TestTypeDescription { get; set; }
+        public string? TestResult { get; set; }
+        public string? TestResultDescription { get; set; }
+        public string RowStampBase64 { get; set; } = string.Empty;
+    }
+
+    private int NextTemporaryTestId()
+    {
+        var minExistingId = StagedTests.Where(t => t.Id.HasValue).Select(t => t.Id!.Value).DefaultIfEmpty(0).Min();
+        return minExistingId <= 0 ? minExistingId - 1 : -1;
+    }
 }

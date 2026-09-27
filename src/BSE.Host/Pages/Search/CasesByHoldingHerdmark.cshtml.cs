@@ -5,6 +5,7 @@ using ClosedXML.Excel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using BSE.SharedKernel;
 
 namespace BSE.Host.Pages.Search;
 
@@ -12,12 +13,13 @@ namespace BSE.Host.Pages.Search;
 public class CasesByHoldingHerdmarkModel : PageModel
 {
     private readonly ICaseSearchService _search;
-    private const int PageSize = 50;
+    private const int PageSize = 10;
 
     public CasesByHoldingHerdmarkModel(ICaseSearchService search) => _search = search;
 
     [BindProperty(SupportsGet = true)]
-    [RegularExpression("^(?:\\d{2}(/)?\\d{3}(/)?\\d{4}(/)?\\d{2})?$", ErrorMessage = "Enter CPHH in the format NN/NNN/NNNN/NN or digits only.")]
+    // Legacy searched by CPHH prefix (LIKE @CPHH + '%'), so a partial value such as "01" is valid.
+    [RegularExpression(@"^(\d{2}(/)?(\d{0,3}(/)?(\d{0,4}(/)?\d{0,2})?)?)?$", ErrorMessage = "Enter CPHH as digits in the format NN[/]NNN[/]NNNN[/NN], or a shorter prefix such as the first 2 digits.")]
     public string? Cphh { get; set; }
 
     [BindProperty(SupportsGet = true)]
@@ -34,6 +36,10 @@ public class CasesByHoldingHerdmarkModel : PageModel
 
     public IReadOnlyList<CaseDetailSearchResult> Results { get; private set; } = [];
     public bool HasSearched { get; private set; }
+
+    public const string NoCriteriaMessage = "Please provide one or more search criteria";
+
+    public bool NoCriteria { get; private set; }
     public int TotalCount => Results.Count;
     public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
     public IReadOnlyList<CaseDetailSearchResult> PagedResults =>
@@ -50,7 +56,7 @@ public class CasesByHoldingHerdmarkModel : PageModel
         if (!string.IsNullOrWhiteSpace(Cphh) || !string.IsNullOrWhiteSpace(Herdmark) || !string.IsNullOrWhiteSpace(NumericHerdmark))
         {
             var results = await _search.GetCasesByCphhAsync(
-                (Cphh ?? "").Trim(),
+                CphhNormalizer.Normalize(Cphh),
                 (Herdmark ?? "").Trim(),
                 (NumericHerdmark ?? "").Trim(),
                 IncludeNonGb);
@@ -59,14 +65,18 @@ public class CasesByHoldingHerdmarkModel : PageModel
             if (PageNumber < 1) PageNumber = 1;
             if (PageNumber > TotalPages) PageNumber = TotalPages;
         }
+        else
+        {
+            NoCriteria = Request.Query.Count > 0;
+        }
     }
 
     public async Task<IActionResult> OnGetExportAsync()
     {
         if (!HasAnyFilter()) return RedirectToPage();
         var results = await _search.GetCasesByCphhAsync(
-            (Cphh ?? "").Trim(), (Herdmark ?? "").Trim(), (NumericHerdmark ?? "").Trim(), IncludeNonGb);
-        return BuildExcel(results, $"CasesByHoldingHerdmark_{DateTime.Today:yyyyMMdd}.xlsx");
+            CphhNormalizer.Normalize(Cphh), (Herdmark ?? "").Trim(), (NumericHerdmark ?? "").Trim(), IncludeNonGb);
+        return BuildExcel(results, "casebycphhsearchresults.xlsx");
     }
 
     private bool HasAnyFilter() =>
@@ -76,11 +86,17 @@ public class CasesByHoldingHerdmarkModel : PageModel
     {
         using var wb = new XLWorkbook();
         var ws = wb.Worksheets.Add("Results");
-        string[] headers = ["RBSE", "CPHH", "Sex", "Eartag", "Birth Date", "Origin",
-            "Date Purchased", "Age at Purchase", "Date Onset", "Form A Date",
-            "Slaughter Date", "Final Result Date", "Age at Onset",
-            "Fate", "Final Result", "Survey", "Case Status", "Time Elapsed"];
-        for (var c = 1; c <= headers.Length; c++) { ws.Cell(1, c).Value = headers[c - 1]; ws.Cell(1, c).Style.Font.Bold = true; }
+        // Legacy's HTML export had no gridlines outside the bordered table; match that here.
+        ws.ShowGridLines = false;
+        // Legacy exported the raw result-set column names, not the on-screen captions.
+        // Legacy's DataGrid export bound to the whole result set, so it also included the
+        // hidden DaysElapsed sort value alongside the on-screen TimeElapsed column.
+        string[] headers = ["RBSE", "CPHH", "Sex", "Eartag", "BirthDate", "Origin",
+            "PurchaseDate", "PurchaseAgeInMonths", "OnsetDate", "FormADate",
+            "SlaughterDate", "FinalResultDate", "OnsetAgeInMonths",
+            "Fate", "FinalResult", "Survey", "CaseStatus", "TimeElapsed", "DaysElapsed"];
+        // Legacy's exported header row was plain text, not bold.
+        for (var c = 1; c <= headers.Length; c++) { ws.Cell(1, c).Value = headers[c - 1]; }
         var row = 2;
         foreach (var r in rows)
         {
@@ -88,22 +104,27 @@ public class CasesByHoldingHerdmarkModel : PageModel
             ws.Cell(row, 2).Value = r.Cphh;
             ws.Cell(row, 3).Value = r.Sex;
             ws.Cell(row, 4).Value = r.Eartag;
-            ws.Cell(row, 5).Value = r.BirthDate?.ToString("dd/MM/yyyy");
+            ws.Cell(row, 5).Value = r.BirthDate?.ToString("dd/MM/yyyy HH:mm:ss");
             ws.Cell(row, 6).Value = r.Origin;
-            ws.Cell(row, 7).Value = r.PurchaseDate?.ToString("dd/MM/yyyy");
+            ws.Cell(row, 7).Value = r.PurchaseDate?.ToString("dd/MM/yyyy HH:mm:ss");
             ws.Cell(row, 8).Value = r.PurchaseAgeInMonths?.ToString();
-            ws.Cell(row, 9).Value = r.OnsetDate?.ToString("dd/MM/yyyy");
-            ws.Cell(row, 10).Value = r.FormADate?.ToString("dd/MM/yyyy");
-            ws.Cell(row, 11).Value = r.SlaughterDate?.ToString("dd/MM/yyyy");
-            ws.Cell(row, 12).Value = r.FinalResultDate?.ToString("dd/MM/yyyy");
+            ws.Cell(row, 9).Value = r.OnsetDate?.ToString("dd/MM/yyyy HH:mm:ss");
+            ws.Cell(row, 10).Value = r.FormADate?.ToString("dd/MM/yyyy HH:mm:ss");
+            ws.Cell(row, 11).Value = r.SlaughterDate?.ToString("dd/MM/yyyy HH:mm:ss");
+            ws.Cell(row, 12).Value = r.FinalResultDate?.ToString("dd/MM/yyyy HH:mm:ss");
             ws.Cell(row, 13).Value = r.OnsetAgeInMonths?.ToString();
             ws.Cell(row, 14).Value = r.Fate;
             ws.Cell(row, 15).Value = r.FinalResult;
             ws.Cell(row, 16).Value = r.Survey;
             ws.Cell(row, 17).Value = r.CaseStatus;
             ws.Cell(row, 18).Value = r.TimeElapsed;
+            ws.Cell(row, 19).Value = r.DaysElapsed?.ToString();
             row++;
         }
+        // Legacy rendered the exported grid with all borders around the record area only.
+        var recordRange = ws.Range(1, 1, row - 1, headers.Length);
+        recordRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        recordRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
         ws.Columns().AdjustToContents();
         using var ms = new MemoryStream();
         wb.SaveAs(ms);

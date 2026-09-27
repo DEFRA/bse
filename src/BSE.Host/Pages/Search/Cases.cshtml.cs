@@ -31,21 +31,28 @@ public class CasesModel : PageModel
     public IReadOnlyList<LookupItem> FateOptions { get; private set; } = [];
     public IReadOnlyList<LookupItem> FinalResultOptions { get; private set; } = [];
 
+    public const string NoCriteriaMessage = "Please provide one or more search criteria";
+
+    public bool NoCriteria { get; private set; }
+
     public async Task OnGetAsync()
     {
+        // GetSearchCase filters on the lookup Code (not the numeric Id), so dropdown values must carry Code.
         SexOptions = (await _lookups.GetSexesAsync())
-            .Select(x => new LookupItem(x.Id, x.Description))
+            .Select(x => new LookupItem(x.Id, x.Code, x.Description))
             .ToList();
         SurveyOptions = (await _lookups.GetLookupAsync(LookupTableId.Survey)).ToList();
         FateOptions = (await _lookups.GetCaseFatesAsync())
-            .Select(x => new LookupItem(x.Id, x.Description))
+            .Select(x => new LookupItem(x.Id, x.Code, x.Description))
             .ToList();
         FinalResultOptions = (await _lookups.GetTestResultsAsync())
-            .Select(x => new LookupItem(x.Id, x.Description))
+            .Select(x => new LookupItem(x.Id, x.Code, x.Description))
             .ToList();
 
         if (HasAnyFilter())
         {
+            if (!Filter.ValidateDates()) return;
+
             var query = Filter.ToQuery();
             var results = await _search.SearchCasesAsync(query);
             Filter.Results = results.ToList().AsReadOnly();
@@ -53,28 +60,35 @@ public class CasesModel : PageModel
             if (Filter.PageNumber < 1) Filter.PageNumber = 1;
             if (Filter.PageNumber > Filter.TotalPages) Filter.PageNumber = Filter.TotalPages;
         }
+        else
+        {
+            NoCriteria = Request.Query.Count > 0;
+        }
     }
 
     public async Task<IActionResult> OnGetExportAsync()
     {
-        if (!HasAnyFilter()) return RedirectToPage();
+        if (!HasAnyFilter() || !Filter.ValidateDates()) return RedirectToPage();
 
         var results = await _search.SearchCasesAsync(Filter.ToQuery());
 
         using var workbook = new XLWorkbook();
         var ws = workbook.Worksheets.Add("Case Search Results");
+        // Legacy's HTML export had no gridlines outside the bordered table; match that here.
+        ws.ShowGridLines = false;
 
+        // Legacy exported the raw result-set column names, not the on-screen captions.
         string[] headers =
         [
-            "RBSE", "CPHH", "Sex", "Survey", "Eartag", "Birth Date", "Birth Date Est",
-            "Form A Date", "Fate", "Final Result", "Final Result Date",
-            "DBSE", "Notes", "BAB Notes", "Origin", "Valuation Age"
+            "RBSE", "CPHH", "Sex", "Survey", "Eartag", "BirthDate", "IsBirthDateEst",
+            "FormADate", "Fate", "FinalResult", "FinalResultDate",
+            "DBSE", "Notes", "BabNotes", "Origin", "ValuationAge"
         ];
 
+        // Legacy's exported header row was plain text, not bold.
         for (var col = 1; col <= headers.Length; col++)
         {
             ws.Cell(1, col).Value = headers[col - 1];
-            ws.Cell(1, col).Style.Font.Bold = true;
         }
 
         var row = 2;
@@ -85,12 +99,12 @@ public class CasesModel : PageModel
             ws.Cell(row, 3).Value = r.Sex;
             ws.Cell(row, 4).Value = r.Survey;
             ws.Cell(row, 5).Value = r.Eartag;
-            ws.Cell(row, 6).Value = r.BirthDate.HasValue ? r.BirthDate.Value.ToString("dd/MM/yyyy") : "";
+            ws.Cell(row, 6).Value = r.BirthDate.HasValue ? r.BirthDate.Value.ToString("dd/MM/yyyy HH:mm:ss") : "";
             ws.Cell(row, 7).Value = r.IsBirthDateEst;
-            ws.Cell(row, 8).Value = r.FormADate.HasValue ? r.FormADate.Value.ToString("dd/MM/yyyy") : "";
+            ws.Cell(row, 8).Value = r.FormADate.HasValue ? r.FormADate.Value.ToString("dd/MM/yyyy HH:mm:ss") : "";
             ws.Cell(row, 9).Value = r.Fate;
             ws.Cell(row, 10).Value = r.FinalResult;
-            ws.Cell(row, 11).Value = r.FinalResultDate.HasValue ? r.FinalResultDate.Value.ToString("dd/MM/yyyy") : "";
+            ws.Cell(row, 11).Value = r.FinalResultDate.HasValue ? r.FinalResultDate.Value.ToString("dd/MM/yyyy HH:mm:ss") : "";
             ws.Cell(row, 12).Value = r.Dbse;
             ws.Cell(row, 13).Value = r.Notes;
             ws.Cell(row, 14).Value = r.BabNotes;
@@ -99,6 +113,10 @@ public class CasesModel : PageModel
             row++;
         }
 
+        // Legacy rendered the exported grid with all borders around the record area only.
+        var recordRange = ws.Range(1, 1, row - 1, headers.Length);
+        recordRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        recordRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
         ws.Columns().AdjustToContents();
 
         using var stream = new MemoryStream();
@@ -108,8 +126,11 @@ public class CasesModel : PageModel
         return File(
             stream.ToArray(),
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            $"CaseSearch_{DateTime.Today:yyyyMMdd}.xlsx");
+            "casesearchresults.xlsx");
     }
+    // Business rule: ticking "Include Non-GB Cases?" alone is not a search criterion —
+    // at least one other field must also be provided (mirrors the Farm Search "Include
+    // Non-GB Farms?" rule).
     private bool HasAnyFilter() =>
         !string.IsNullOrWhiteSpace(Filter.Rbse) ||
         !string.IsNullOrWhiteSpace(Filter.Eartag) ||
@@ -126,6 +147,5 @@ public class CasesModel : PageModel
         !string.IsNullOrWhiteSpace(Filter.EarliestBirthDate) ||
         !string.IsNullOrWhiteSpace(Filter.LatestBirthDate) ||
         !string.IsNullOrWhiteSpace(Filter.PassiveActive) ||
-        Filter.IsImportedCase ||
-        Filter.IncludeNonGb;
+        Filter.IsImportedCase;
 }

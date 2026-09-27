@@ -33,7 +33,8 @@ CREATE PROCEDURE [dbo].[GetBSESSCheckByRBSE]
 		@Survey = [luSurvey].[Description],
 		@BSEFinalResult = [luTestResult].[Description]
 	FROM
-		[Case] LEFT JOIN [luSurvey] ON [Case].[Survey] = [luSurvey].[Code]
+		[Case]
+		LEFT JOIN [luSurvey] ON [Case].[Survey] = [luSurvey].[Code]
 		LEFT JOIN [luTestResult] ON [Case].[FinalResult] = [luTestResult].[Code]
 	WHERE
 		[Case].[RBSE] = @RBSE

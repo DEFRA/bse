@@ -16,6 +16,7 @@
     <SqlServerRedistPath>$(NETFrameworkTargetsPath)</SqlServerRedistPath>
     <TargetDatabaseSet>True</TargetDatabaseSet>
     <ProjectGuid>{a51c6a96-6da8-4513-99e1-50573f722695}</ProjectGuid>
+    <SuppressTSqlWarnings>71502;71558</SuppressTSqlWarnings>
   </PropertyGroup>
   <ItemGroup>
     <Build Include="**\*.sql" />

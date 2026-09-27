@@ -18,27 +18,36 @@ public class OutstandingModel : PageModel
     [Microsoft.AspNetCore.Mvc.BindProperty(SupportsGet = true)]
     public OutstandingSearchViewModel Filter { get; set; } = new();
 
+    public const string NoOptionMessage = "Please select one of these three options";
+
+    public bool NoOptionSelected { get; private set; }
+
     public async Task OnGetAsync()
     {
-        if (Filter.EarliestFormADate.HasValue || Filter.LatestFormADate.HasValue)
+        // Legacy required one of the three options; the date range is optional.
+        // Validate dates even when the type is missing so the user can see both issues
+        // in a single submission instead of a generic no-option error hiding the real date problem.
+        NoOptionSelected = Request.Query.Count > 0 && !IsKnownSearchType();
+        if (!Filter.ValidateDates() || !IsKnownSearchType()) return;
+
+        var query = Filter.ToQuery();
+        var results = Filter.SearchType switch
         {
-            var query = Filter.ToQuery();
-            var results = Filter.SearchType switch
-            {
-                "Fates" => await _search.GetOutstandingFatesAsync(query),
-                "Results" => await _search.GetOutstandingResultsAsync(query),
-                _ => await _search.GetOutstandingBse1sAsync(query)
-            };
-            Filter.Results = results.ToList().AsReadOnly();
-            Filter.HasSearched = true;
-            if (Filter.PageNumber < 1) Filter.PageNumber = 1;
-            if (Filter.PageNumber > Filter.TotalPages) Filter.PageNumber = Filter.TotalPages;
-        }
+            "Fates" => await _search.GetOutstandingFatesAsync(query),
+            "Results" => await _search.GetOutstandingResultsAsync(query),
+            _ => await _search.GetOutstandingBse1sAsync(query)
+        };
+        Filter.Results = results.ToList().AsReadOnly();
+        Filter.HasSearched = true;
+        if (Filter.PageNumber < 1) Filter.PageNumber = 1;
+        if (Filter.PageNumber > Filter.TotalPages) Filter.PageNumber = Filter.TotalPages;
     }
 
     public async Task<IActionResult> OnGetExportAsync()
     {
-        if (!Filter.EarliestFormADate.HasValue && !Filter.LatestFormADate.HasValue) return RedirectToPage();
+        var hasValidSearchType = IsKnownSearchType();
+        var datesAreValid = Filter.ValidateDates();
+        if (!hasValidSearchType || !datesAreValid) return RedirectToPage();
         var query = Filter.ToQuery();
         var rows = Filter.SearchType switch
         {
@@ -46,28 +55,39 @@ public class OutstandingModel : PageModel
             "Results" => await _search.GetOutstandingResultsAsync(query),
             _ => await _search.GetOutstandingBse1sAsync(query)
         };
-        var label = Filter.SearchType switch { "Fates" => "Fates", "Results" => "Results", _ => "BSE1s" };
-        return BuildExcel(rows, $"Outstanding{label}_{DateTime.Today:yyyyMMdd}.xlsx");
+        // Legacy exported all three outstanding-data variants under the same fixed file name.
+        return BuildExcel(rows, "outstandingdatasearchresults.xlsx");
     }
+
+    private bool IsKnownSearchType() =>
+        Filter.SearchType is "BSE1" or "Fates" or "Results";
 
     private static FileContentResult BuildExcel(IEnumerable<OutstandingCaseResult> rows, string filename)
     {
         using var wb = new XLWorkbook();
         var ws = wb.Worksheets.Add("Results");
-        string[] headers = ["RBSE", "CPHH", "Eartag", "Form A Date", "Birth Date", "Fate", "Final Result"];
-        for (var c = 1; c <= headers.Length; c++) { ws.Cell(1, c).Value = headers[c - 1]; ws.Cell(1, c).Style.Font.Bold = true; }
+        // Legacy's HTML export had no gridlines outside the bordered table; match that here.
+        ws.ShowGridLines = false;
+        // Legacy exported the raw result-set column names, not the on-screen captions.
+        string[] headers = ["RBSE", "CPHH", "Eartag", "FormADate", "BirthDate", "Fate", "FinalResult"];
+        // Legacy's exported header row was plain text, not bold.
+        for (var c = 1; c <= headers.Length; c++) { ws.Cell(1, c).Value = headers[c - 1]; }
         var row = 2;
         foreach (var r in rows)
         {
             ws.Cell(row, 1).Value = r.Rbse;
             ws.Cell(row, 2).Value = r.Cphh;
             ws.Cell(row, 3).Value = r.Eartag;
-            ws.Cell(row, 4).Value = r.FormADate?.ToString("dd/MM/yyyy");
-            ws.Cell(row, 5).Value = r.BirthDate?.ToString("dd/MM/yyyy");
+            ws.Cell(row, 4).Value = r.FormADate?.ToString("dd/MM/yyyy HH:mm:ss");
+            ws.Cell(row, 5).Value = r.BirthDate?.ToString("dd/MM/yyyy HH:mm:ss");
             ws.Cell(row, 6).Value = r.Fate;
             ws.Cell(row, 7).Value = r.FinalResult;
             row++;
         }
+        // Legacy rendered the exported grid with all borders around the record area only.
+        var recordRange = ws.Range(1, 1, row - 1, headers.Length);
+        recordRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        recordRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
         ws.Columns().AdjustToContents();
         using var ms = new MemoryStream();
         wb.SaveAs(ms);

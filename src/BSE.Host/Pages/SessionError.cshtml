@@ -1,0 +1,21 @@
+@page
+@model BSE.Host.Pages.SessionErrorModel
+@{
+    ViewData["Title"] = "Application Error";
+    Layout = "_Layout";
+}
+
+<h1 class="govuk-heading-l">There is a problem</h1>
+
+<div class="govuk-error-summary" data-module="govuk-error-summary">
+    <div role="alert">
+        <h2 class="govuk-error-summary__title">Application Error</h2>
+        <div class="govuk-error-summary__body">
+            <ul class="govuk-list govuk-error-summary__list">
+                <li>Your session has expired or required session information is no longer available. Please return to home and continue.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<a asp-page="/Home" class="govuk-button">Return to home</a>

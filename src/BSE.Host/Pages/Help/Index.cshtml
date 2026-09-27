@@ -52,8 +52,8 @@
     <h2 class="govuk-heading-l">1. General information</h2>
 
     <h3 class="govuk-heading-m" id="General_Header">The page header</h3>
-    <p class="govuk-body">A navigation bar is displayed at the top of every page. It shows the service name <strong>BSE system</strong> and links to the main areas of the system available to you based on your user group.</p>
-    <p class="govuk-body">Your name and user group are displayed in the header. Selecting the <strong>BSE system</strong> link in the navigation bar returns you to the home page from anywhere in the system.</p>
+    <p class="govuk-body">A navigation bar is displayed at the top of every page. It shows the service name <strong>BSE Database System</strong> and links to the main areas of the system available to you based on your user group.</p>
+    <p class="govuk-body">Your name and user group are displayed in the header. Selecting the <strong>BSE Database System</strong> link in the navigation bar returns you to the home page from anywhere in the system.</p>
 
     <h3 class="govuk-heading-m" id="General_DateControls">Date entry</h3>
     <p class="govuk-body">Date fields use the browser's built-in date picker in place of the calendar popup used in the previous system.</p>
@@ -81,12 +81,12 @@
 @* ── 2. Home page ───────────────────────────────────────────────────────── *@
 <section id="home-page">
     <h2 class="govuk-heading-l">2. Home page</h2>
-    <p class="govuk-body">The home page provides quick access to all areas of the system available to your user group. Selecting the <strong>BSE system</strong> link in the navigation bar returns you to the home page at any time.</p>
+    <p class="govuk-body">The home page provides quick access to all areas of the system available to your user group. Selecting the <strong>BSE Database System</strong> link in the navigation bar returns you to the home page at any time.</p>
 
     @if (isVLAAccess)
     {
         <h3 class="govuk-heading-m" id="BatchNumber">Batch number</h3>
-        <p class="govuk-body">If you are a VLA user working with a batch of case details, the batch number panel is where you specify the batch you wish to work with. Any cases you enter while the batch number is displayed will be added to that batch.</p>
+        <p class="govuk-body">If you are a APHA user working with a batch of case details, the batch number panel is where you specify the batch you wish to work with. Any cases you enter while the batch number is displayed will be added to that batch.</p>
         <p class="govuk-body">The batch number is in the format <samp>yyyy/nnnnnn</samp> — where <samp>yyyy</samp> is a four-digit year and <samp>nnnnnn</samp> is an integer up to six digits in length (for example, <samp>2026/000001</samp>). Note that only the last 3 digits of the batch number are used in the OSS export.</p>
         <h4 class="govuk-heading-s">Looking up an existing batch</h4>
         <p class="govuk-body">Enter the batch year in the <strong>Year</strong> field and the batch number in the <strong>Number</strong> field, then select <strong>Go</strong>. If the batch is found, you are taken to the new case page with that batch pre-selected. If the batch is not found, an error is shown — check the year and number and try again.</p>
@@ -115,12 +115,12 @@
     <ul class="govuk-list govuk-list--bullet">
         <li><strong>Search</strong> — links to all case and farm search pages, available to all users.</li>
         <li><strong>Casework and reports</strong> — links to the audit log and BSESS check, available to all users.
-            @if (isVLAMaintenance) { <text>VLA Maintenance users also see a link to the casework menu.</text> }
-            @if (isVLAAccess) { <text>VLA users also see a link to print batch.</text> }
+            @if (isVLAMaintenance) { <text>APHA Maintenance users also see a link to the casework menu.</text> }
+            @if (isVLAAccess) { <text>APHA users also see a link to print batch.</text> }
         </li>
         @if (isDEFRAMaintenance)
         {
-            <li><strong>Exports</strong> — links to the ADNS export (DEFRA Maintenance) and OSS export (VLA users).</li>
+            <li><strong>Exports</strong> — links to the ADNS export (DEFRA Maintenance) and OSS export (APHA users).</li>
         }
         else if (isVLAAccess)
         {
@@ -128,7 +128,7 @@
         }
         @if (isVLAMaintenance)
         {
-            <li><strong>Administration</strong> — links to manage users (VLA Maintenance) and manage pick lists (Pick List Access).</li>
+            <li><strong>Administration</strong> — links to manage users (APHA Maintenance) and manage pick lists (Pick List Access).</li>
         }
         else if (isPickListAccess)
         {
@@ -177,9 +177,31 @@
     <p class="govuk-body">A Year From, Year To, Ration Type and Supplier are all required before a feed record can be saved. Suppliers must be validated before they can be added — enter a supplier name and select <strong>Validate supplier</strong>. If no exact match is found, similar names are displayed for selection. If the supplier is not in the list, you can add them as a new supplier.</p>
 
     <h3 class="govuk-heading-m" id="CaseEntryRelations">Relations</h3>
-    <p class="govuk-body">The Relations section records animals related to the case, covering the Case Herdbook, Sire Details, Dam Details and Other Relations.</p>
-    <p class="govuk-body"><strong>Sire and Dam:</strong> Enter one or more identifying fields (Eartag, Name, RBSE or Herdbook) and select <strong>Look up</strong>. If a unique match is found, that animal is recorded as the sire or dam. Otherwise, a list of possible matches is shown — select the correct animal or select <strong>New</strong> to create a new sire or dam record.</p>
-    <p class="govuk-body"><strong>Other Relations:</strong> Enter relation details and select <strong>Add new</strong> to add to the table. You must select a Relation Type for each entry. If the related animal is also a case, enter the RBSE number — the remaining details are populated from the case record and cannot be edited directly.</p>
+    <p class="govuk-body">The Relations section records animals related to the case, in four parts: Case Herdbook, Dam, Sire, and Related Animals.</p>
+
+    <h4 class="govuk-heading-s">Case Herdbook</h4>
+    <p class="govuk-body">The Case Herdbook field holds the case animal's own herdbook number. Select <strong>Save</strong> to update it.</p>
+
+    <h4 class="govuk-heading-s">Dam and Sire</h4>
+    <p class="govuk-body">If no dam or sire is recorded, enter one or more of Eartag, Name, RBSE or Herdbook and select <strong>Look Up</strong>. If you enter an RBSE, only the RBSE is used in the search.</p>
+    <p class="govuk-body">If a single match is found, that animal is recorded immediately. Otherwise you are taken to a page listing possible matches — select one and choose <strong>Use Selected</strong>, or select <strong>New</strong> to record an unlinked dam or sire using the Eartag, Name and Herdbook you entered.</p>
+    <p class="govuk-body">Once a dam or sire is recorded, their Eartag, Name, Herdbook and offspring count are shown. If the dam or sire is not itself a case, the Eartag, Herdbook and an approximate birth date (year alone, or month and year) can still be entered or corrected. If the dam or sire is a case, only the Name can be changed here — Eartag, Herdbook and birth date come from that case and must be changed on its own Relations tab.</p>
+    <div class="govuk-warning-text">
+        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+        <strong class="govuk-warning-text__text">
+            <span class="govuk-warning-text__assistive">Warning</span>
+            Because a dam or sire animal can be shared by more than one case, editing its Eartag, Herdbook or birth date changes it for every case that records the same animal as dam or sire. The offspring count shown alongside its details is how many other cases may be affected.
+        </strong>
+    </div>
+    <p class="govuk-body">Select <strong>Remove Dam</strong> or <strong>Remove Sire</strong> to disassociate the animal from this case without deleting the animal's own record. If the dam or sire is itself a case, select <strong>View Dam's Relations</strong> or <strong>View Sire's Relations</strong> to see the relations recorded against that case — this lets you check that a dam/offspring or sire/offspring pair is recorded consistently on both cases.</p>
+    <p class="govuk-body">Select <strong>Save</strong> to record your changes to the Case Herdbook, Dam and Sire sections.</p>
+
+    <h4 class="govuk-heading-s">Related Animals</h4>
+    <p class="govuk-body">This table records the case's other relations — chiefly offspring, but also twins and full sisters.</p>
+    <p class="govuk-body">To add a relation, select <strong>Add As New</strong>, enter the details and save. You must select a Relation Type. If the related animal is also a case, enter its RBSE — the remaining details are taken from that case and cannot be edited directly. Otherwise, enter the Sex, Fate, Eartag, birth date, date left and sire name yourself.</p>
+    <p class="govuk-body">Select <strong>Change</strong> on a row to edit it, or <strong>Delete</strong> to remove it. If a relation is itself a case, select <strong>View Dam's Relations</strong> or <strong>View Sire's Relations</strong> from that animal's own Relations tab to check both sides of the relationship are recorded consistently.</p>
+
+    <p class="govuk-body">See also: <a class="govuk-link" href="#General_DateControls">Date entry controls</a>, <a class="govuk-link" href="#General_FieldErrors">Field error messages</a>, <a class="govuk-link" href="#General_Grids">Data tables</a></p>
 
     <p class="govuk-body govuk-!-margin-top-4"><a class="govuk-link" href="#">Back to top</a></p>
 </section>
@@ -231,25 +253,38 @@
 <section id="search">
     <h2 class="govuk-heading-l">6. Search</h2>
     <p class="govuk-body">The Search pages enable you to perform searches on farm and case data. Enter criteria in one or more fields — only records matching all entered criteria are shown. Partial values are accepted for Name and Address fields; a CPH (without individual holding identifier) may be entered instead of a full CPHH.</p>
-    <p class="govuk-body">All search results can be exported to a spreadsheet using the <strong>Export to Excel</strong> link at the bottom of the results page.</p>
+    <p class="govuk-body">If you select <strong>Search</strong> without entering any criteria, an error is shown asking you to provide one or more search criteria.</p>
+    <p class="govuk-body">Results are shown in a sortable, paginated table below the search form. Select a column heading to sort by that column; select it again to reverse the order. Use the pagination links below the table to move between pages.</p>
+    <p class="govuk-body">Each search page provides an <strong>Export to Excel</strong> link with the results. Selecting it downloads the complete result set as an Excel spreadsheet — every matching record is included, not just the page currently displayed.</p>
+    <p class="govuk-body">See also: <a class="govuk-link" href="#General_Grids">Data tables</a></p>
 
     <h3 class="govuk-heading-m" id="SearchFarm">Farm search</h3>
-    <p class="govuk-body">The Farm Search page allows searches on information recorded for a farm. Enter criteria in at least one field — results are displayed in the table below the search form.</p>
+    <p class="govuk-body">The Farm Search page allows searches on information recorded for a farm. You can search on CPH(H), owner name, address, herdmark, numeric herdmark, county, dealer status and Animal Health Office, and choose whether to include non-GB farms.</p>
+    <p class="govuk-body">Enter criteria in at least one field — results are displayed in the table below the search form.</p>
+    <p class="govuk-body">See also: <a class="govuk-link" href="#General_Grids">Data tables</a></p>
 
     <h3 class="govuk-heading-m" id="SearchCase">Case search</h3>
-    <p class="govuk-body">The Case Search page allows searches on information recorded for a case. Enter criteria in at least one field — results are displayed in the table below the search form.</p>
+    <p class="govuk-body">The Case Search page allows searches on information recorded for a case, including RBSE, eartag, DBSE, fate, final result, sex, survey, passive or active status, and date ranges for Form A, final result and birth dates.</p>
+    <p class="govuk-body">Enter criteria in at least one field — results are displayed in the table below the search form. In the <strong>Notes</strong> field, and other text fields, the <samp>%</samp> character can be used as a wildcard.</p>
+    <p class="govuk-body">See also: <a class="govuk-link" href="#General_Grids">Data tables</a></p>
 
     <h3 class="govuk-heading-m" id="SearchCaseByHerdMark">Cases by herdmark</h3>
-    <p class="govuk-body">The Cases By Herdmark page searches for all cases — including animals sold off — that match a given herdmark. All results containing the entered herdmark text are returned.</p>
+    <p class="govuk-body">The Cases By Herdmark page searches for all cases — including animals sold off — that match a given herdmark. All results containing the entered herdmark text are returned. You can also choose whether to include non-GB cases.</p>
+    <p class="govuk-body">See also: <a class="govuk-link" href="#General_Grids">Data tables</a></p>
 
     <h3 class="govuk-heading-m" id="SearchRelatedAnimal">Related animals search</h3>
-    <p class="govuk-body">The Related Animals Search finds animals related to a case, or cases related to a given animal. Enter criteria in at least one field — results are displayed in the table below.</p>
+    <p class="govuk-body">The Related Animals Search finds animals related to a case, or cases related to a given animal. You can search on the RBSE of the case, the eartag, name or RBSE of the related animal, and the relation type. The relation type list includes <strong>Dam</strong> and <strong>Sire</strong> in addition to the recorded relation types.</p>
+    <p class="govuk-body">Enter criteria in at least one field — results are displayed in the table below the search form.</p>
+    <p class="govuk-body">See also: <a class="govuk-link" href="#General_Grids">Data tables</a></p>
 
     <h3 class="govuk-heading-m" id="SearchOutstandingData">Outstanding data list</h3>
-    <p class="govuk-body">The Outstanding Data List searches for cases that have incomplete paperwork. Choose to view cases where the final result, fate, or BSE-1 questionnaire date is outstanding. Optionally specify a date range and whether to include non-GB cases.</p>
+    <p class="govuk-body">The Outstanding Data List searches for cases that have incomplete paperwork. You must select one of the three options — outstanding results, fate, or BSE1 questionnaire dates. If no option is selected, an error is shown asking you to select one of these three options.</p>
+    <p class="govuk-body">You can then optionally specify a Form A date range and whether to include non-GB cases. Leave the dates blank to search all dates.</p>
+    <p class="govuk-body">See also: <a class="govuk-link" href="#General_Grids">Data tables</a></p>
 
     <h3 class="govuk-heading-m" id="SearchCPHH">Cases by holding/herdmark</h3>
-    <p class="govuk-body">This search (designed for organic farmer checks) finds all cases that occurred on a specific farm. Enter at least one field — a CPHH or part thereof — and results are shown in the table below.</p>
+    <p class="govuk-body">This search (designed for organic farmer checks) finds all cases that occurred on a specific farm. Enter at least one of CPH(H), herdmark or numeric herdmark, and choose whether to include non-GB cases. Results are shown in the table below the search form.</p>
+    <p class="govuk-body">See also: <a class="govuk-link" href="#General_Grids">Data tables</a></p>
 
     <p class="govuk-body govuk-!-margin-top-4"><a class="govuk-link" href="#">Back to top</a></p>
 </section>
@@ -356,16 +391,193 @@
         @if (isPickListAccess || isVLAMaintenance)
         {
             <h3 class="govuk-heading-m" id="PickListMaintenance">Pick list maintenance</h3>
-            <p class="govuk-body">The Pick List Maintenance page manages the values shown in drop-down lists throughout the system. Use the drop-down at the top of the page to select the list you want to maintain. Add, edit or remove rows using the action links in the table.</p>
-            <p class="govuk-body">You cannot delete a pick list value that is already referenced by a case record. The following pick lists are available:</p>
+            <p class="govuk-body">The Pick List Maintenance page enables you to maintain the values which are displayed in drop-down lists throughout the system.</p>
+            <p class="govuk-body">Use the <strong>Select a Table</strong> drop-down at the top of the page to navigate through the tables. See the section on <a class="govuk-link" href="#General_Grids">Data tables</a> for information on how to add, edit and remove rows. If data for a case has been entered using a value in the table then you will not be allowed to delete that row.</p>
+            @if (isVLAMaintenance)
+            {
+                <p class="govuk-body">If you enter a string longer than the database allows then it will be truncated, so check the field sizes listed below before entering data. Each code must be unique within its table — if you enter a code that already exists you will see the message "The Code you have selected is already used".</p>
+                <p class="govuk-body">Read this section before adding any new codes, as some lists affect the behaviour of other parts of the system.</p>
+            }
+            else
+            {
+                <p class="govuk-body">You have read-only access to pick lists, so you can view and sort the records but cannot add, edit or delete them. Only APHA Maintenance users can change pick list values.</p>
+            }
+
+            <h4 class="govuk-heading-s">Tables and their main function</h4>
+
+            <p class="govuk-body" id="PickListMaintenanceAHO"><strong>AHO</strong> — list of Animal Health Offices.</p>
             <ul class="govuk-list govuk-list--bullet">
-                <li><strong>AHO</strong> — Animal Health Offices (code, name, BSE region ID)</li>
-                <li><strong>Animal Origin List</strong> — possible origins for an animal (code, description)</li>
-                <li><strong>Animal Status</strong> — states for the animal (code, description)</li>
-                <li><strong>Birth Date Source</strong> — source of birth date information (code, description)</li>
-                <li><strong>Breed</strong> — animal breed values</li>
-                <li>Other reference data lists used throughout the system</li>
+                <li>Code — char(2)</li>
+                <li>Name — varchar(50)</li>
+                <li>BSE Region — selected from the list of BSE regions</li>
             </ul>
+
+            <p class="govuk-body"><strong>AHRO</strong> — list of Animal Health Regional Offices.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Name — varchar(50)</li>
+            </ul>
+
+            <p class="govuk-body"><strong>Animal Origin List</strong> — list of possible origins for an animal.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — char(1)</li>
+                <li>Description — varchar(10)</li>
+            </ul>
+
+            <p class="govuk-body"><strong>Animal Status</strong> — list of states for the animal.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(9)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+            <p class="govuk-body">Adding codes to this list could affect the status recorded for the dam on the expRelation table.</p>
+
+            <p class="govuk-body"><strong>Birth Date Source</strong> — source of information that provided the birth date.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(5)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+
+            <p class="govuk-body" id="PickListMaintenanceBreed"><strong>Breed</strong> — list of breeds for the animal.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(20)</li>
+                <li>Full Name — varchar(50)</li>
+                <li>Amalgamated Name — varchar(50)</li>
+            </ul>
+
+            <p class="govuk-body" id="PickListMaintenanceBSECounty"><strong>BSE County</strong> — list of counties for BSE reporting.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>ID — char(2)</li>
+                <li>Code — varchar(15)</li>
+                <li>Description — varchar(50)</li>
+                <li>BSE Region — selected from the list of BSE regions</li>
+            </ul>
+            <p class="govuk-body">Codes added to this list will not be linked to the parish table.</p>
+
+            <p class="govuk-body"><strong>Case Fate</strong> — list of possible fates for an animal that is a case.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(4)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+            <p class="govuk-body">Adding codes to this list may affect the status recorded for the animal and farm on the expCase and expFarm tables.</p>
+
+            <p class="govuk-body"><strong>Document Type</strong> — the type of document, related to batch number.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(5)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+            <p class="govuk-body">Codes added to this list will not be available for producing files for the Optical Storage System (OSS).</p>
+
+            <p class="govuk-body"><strong>Feed Risk</strong> — risk associated with the type of feed.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(10)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+
+            <p class="govuk-body"><strong>Herd Type</strong> — type of herd on the farm.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — char(1)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+
+            <p class="govuk-body"><strong>Horizontal Risk</strong> — risk of horizontal transmission between the case and another animal.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(10)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+
+            <p class="govuk-body"><strong>Maternal Risk</strong> — risk of transmission between the case and its maternal parent.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(10)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+
+            <p class="govuk-body"><strong>Owner Type</strong> — category of the other owners of an animal.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(10)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+
+            <p class="govuk-body"><strong>Pedigree Type</strong> — the pedigree status of the herd.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — char(2)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+
+            <p class="govuk-body"><strong>Ration Type</strong> — the type of ration fed to the animal.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(2)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+
+            <p class="govuk-body" id="PickListMaintenanceRelationFate"><strong>Relation Fate</strong> — the fate of animals related to the case.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(12)</li>
+                <li>Description — varchar(50)</li>
+                <li>Is Active — yes or no</li>
+            </ul>
+            <p class="govuk-body">Adding codes to this list could affect the status recorded for offspring on the expRelation table.</p>
+
+            <p class="govuk-body"><strong>Relation Type</strong> — the relationship between the case and its relation.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(11)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+
+            <p class="govuk-body"><strong>Reported Location</strong> — location of the case when BSE was first reported.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(5)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+
+            <p class="govuk-body"><strong>Sex</strong> — sex of the animal.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — char(1)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+            <p class="govuk-body">If codes are added to this table, animals with the new code will not be considered male or female. This will mean, for example, that they will not be allowed to be dams or sires.</p>
+
+            <p class="govuk-body" id="PickListMaintenanceSupplier"><strong>Supplier</strong> — details of feed suppliers.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Name — varchar(30)</li>
+                <li>Details — varchar(60)</li>
+            </ul>
+            <p class="govuk-body">The supplier ID is allocated automatically by the system.</p>
+
+            <p class="govuk-body"><strong>Survey</strong> — categorisation of cases found as a result of active surveillance.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(4)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+            <p class="govuk-body">Codes added to this list will not be matched up to the testing group recorded on the BSE Surveillance System (BSESS).</p>
+
+            <p class="govuk-body"><strong>Test Result</strong> — list of possible test results.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(5)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+            <p class="govuk-body">Codes added to this list could affect the logic and validation of data based on the result, for example printing confirmation memos, and automatic allocation of DBSE No. for positives.</p>
+
+            <p class="govuk-body" id="PickListMaintenanceTestType"><strong>Test Type</strong> — list of possible tests.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — varchar(10)</li>
+                <li>Description — varchar(50)</li>
+                <li>Is Active — yes or no</li>
+            </ul>
+
+            <p class="govuk-body" id="PickListMaintenanceTSETestingSite"><strong>TSE Testing Site</strong> — list of sites where TSE testing is carried out.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>CPH</li>
+                <li>Name</li>
+                <li>Address</li>
+                <li>AHO</li>
+            </ul>
+
+            <p class="govuk-body"><strong>Valuation Age</strong> — age of the animal for valuation purposes.</p>
+            <ul class="govuk-list govuk-list--bullet">
+                <li>Code — char(1)</li>
+                <li>Description — varchar(50)</li>
+            </ul>
+
+            <p class="govuk-body">See also: <a class="govuk-link" href="#General_Grids">Data tables</a></p>
         }
 
         @if (isVLAMaintenance)
@@ -376,8 +588,9 @@
             <h3 class="govuk-heading-m" id="DeleteCase">Delete case</h3>
             <p class="govuk-body">The Delete Case page permanently removes a case from the system. Enter the RBSE of the case to look it up, review the case details displayed, then select <strong>Confirm delete</strong>. This action cannot be undone. Cases with linked records (feeds, clinical data, batch assignments) cannot be deleted.</p>
 
-            <h3 class="govuk-heading-m" id="UserMaintenance">User maintenance</h3>
-            <p class="govuk-body">The User Maintenance page manages system users. Use it to view, create, edit and deactivate user accounts and assign users to the correct user group. Each user must be assigned to exactly one group.</p>
+            <h3 class="govuk-heading-m" id="UserMaintenance">User Maintenance</h3>
+            <p class="govuk-body">This page enables you to add and remove users from the system. APHA Maintenance users are the only users with access to this page.</p>
+            <p class="govuk-body">You cannot delete a user from the database as this will affect the Audit Log. However, you can make the user inactive. The e-mail address is used for the ADNS export.</p>
         }
 
         <p class="govuk-body govuk-!-margin-top-4"><a class="govuk-link" href="#">Back to top</a></p>
@@ -391,7 +604,7 @@
     <h2 class="govuk-heading-l">Application error</h2>
     <p class="govuk-body">If the system encounters an unexpected problem, an application error page is displayed. Details of the error are shown on screen and recorded in the system log.</p>
     <p class="govuk-body">You can record additional information about what you were doing when the error occurred in the text area provided. Select <strong>Save</strong> to add your notes to the system log for later analysis.</p>
-    <p class="govuk-body">After an error, use the <strong>BSE system</strong> link in the navigation bar to return to the home page. If the error occurred before your data was saved, that data will have been lost and must be re-entered.</p>
+    <p class="govuk-body">After an error, use the <strong>BSE Database System</strong> link in the navigation bar to return to the home page. If the error occurred before your data was saved, that data will have been lost and must be re-entered.</p>
 
     <p class="govuk-body govuk-!-margin-top-4"><a class="govuk-link" href="#">Back to top</a></p>
 </section>

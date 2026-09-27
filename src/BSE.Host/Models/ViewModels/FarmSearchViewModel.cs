@@ -1,11 +1,17 @@
 using System.ComponentModel.DataAnnotations;
 using BSE.Modules.Search.Models;
+using BSE.SharedKernel;
 
 namespace BSE.Host.Models.ViewModels;
 
 public class FarmSearchViewModel : SearchViewModelBase<FarmSearchResult>
 {
-    [RegularExpression("^(?:\\d{2}(/)?\\d{3}(/)?\\d{4}(/)?\\d{2})?$", ErrorMessage = "Enter CPHH in the format NN/NNN/NNNN/NN or digits only.")]
+    // Legacy CPHH.ascx format is NN[/]NNN[/]NNNN[/NN] (CPHH.ascx.vb revCPHH ValidationExpression);
+    // legacy's search pages only made the trailing 2-digit herd number optional. Business has
+    // asked for a shorter prefix (e.g. "01") to work too, so every segment past the first is
+    // optional here, while still rejecting malformed input like a lone digit or stray letters.
+    [RegularExpression(@"^(\d{2}(/)?(\d{0,3}(/)?(\d{0,4}(/)?\d{0,2})?)?)?$",
+        ErrorMessage = "Enter CPHH as digits in the format NN[/]NNN[/]NNNN[/NN], or a shorter prefix such as the first 2 digits.")]
     public string? Cphh { get; set; }
     public string? OwnerName { get; set; }
     public string? Address { get; set; }
@@ -22,6 +28,8 @@ public class FarmSearchViewModel : SearchViewModelBase<FarmSearchResult>
     protected override IEnumerable<FarmSearchResult> ApplySorting(IReadOnlyList<FarmSearchResult> source) =>
         (SortColumn?.ToLowerInvariant(), SortDesc) switch
         {
+            ("cphh",                  false) => source.OrderBy(r => r.Cphh),
+            ("cphh",                  true)  => source.OrderByDescending(r => r.Cphh),
             ("ownername",             false) => source.OrderBy(r => r.OwnerName),
             ("ownername",             true)  => source.OrderByDescending(r => r.OwnerName),
             ("address",               false) => source.OrderBy(r => r.Address),
@@ -48,7 +56,7 @@ public class FarmSearchViewModel : SearchViewModelBase<FarmSearchResult>
         };
 
     public FarmSearchQuery ToQuery() => new(
-        Cphh: Cphh ?? "",
+        Cphh: CphhNormalizer.Normalize(Cphh),
         OwnerName: OwnerName ?? "",
         Address: Address ?? "",
         County: County ?? "",

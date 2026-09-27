@@ -201,4 +201,44 @@ public sealed class FarmServiceTests
 
         result.Should().Be(ChangeCphhResult.ErrorUpdatingCase);
     }
+
+    [Fact]
+    public async Task ChangeCphhAsync_NormalizesOldAndNewCphh_BeforeRepositoryCall()
+    {
+        _farmRepo.ChangeCphhAsync("14351011901", "14351011902", 99)
+            .Returns(ChangeCphhResult.Success);
+
+        _ = await _sut.ChangeCphhAsync("14/351/0119/01", "14/351/0119/02", 99);
+
+        await _farmRepo.Received(1).ChangeCphhAsync("14351011901", "14351011902", 99);
+    }
+
+    [Fact]
+    public async Task AddAsync_NormalizesCphh_BeforeRepositoryCall()
+    {
+        var command = new AddFarmCommand(
+            "14/351/0119/01", "Owner", "Addr1", null, null, "SW1A 1AA",
+            "Parish", "District", "Glos", null, null, null, null,
+            null, null, null, null, null, null, "GL", "D", "PB", false, 1);
+
+        await _sut.AddAsync(command, userId: 42);
+
+        await _farmRepo.Received(1).AddAsync(
+            Arg.Is<AddFarmCommand>(c => c.CPHH == "14351011901"), 42);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_NormalizesCphh_BeforeRepositoryCall()
+    {
+        var command = new UpdateFarmCommand(
+            "14/351/0119/01", "Owner Updated", "Addr1", null, null, "SW1A 1AA",
+            "Parish", "District", "Glos", null, null, null, null,
+            null, null, null, null, null, null, "GL", "D", "PB", false, 1,
+            RowStamp: new byte[] { 0x01, 0x02 });
+
+        await _sut.UpdateAsync(command, userId: 42);
+
+        await _farmRepo.Received(1).UpdateAsync(
+            Arg.Is<UpdateFarmCommand>(c => c.CPHH == "14351011901"), 42);
+    }
 }

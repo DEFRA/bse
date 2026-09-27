@@ -10,7 +10,7 @@ public interface IFeedRepository
     Task<IReadOnlyList<CaseFeedRecord>> GetByRbseAsync(string rbse);
     Task AddAsync(AddFeedCommand command, IDbConnection connection, IDbTransaction transaction);
     Task EditAsync(EditFeedCommand command, IDbConnection connection, IDbTransaction transaction);
-    Task DeleteAsync(int id, IDbConnection connection, IDbTransaction transaction);
+    Task DeleteAsync(int id, byte[] rowStamp, IDbConnection connection, IDbTransaction transaction);
 }
 
 public sealed class FeedRepository : DapperRepository, IFeedRepository
@@ -31,12 +31,12 @@ public sealed class FeedRepository : DapperRepository, IFeedRepository
     public Task EditAsync(EditFeedCommand c, IDbConnection conn, IDbTransaction tx)
         => ExecuteAsync("EditCaseFeed", new
         {
-            ID = c.Id, RBSE = c.Rbse, YearFrom = c.YearFrom, YearTo = c.YearTo,
+            ID = c.Id, YearFrom = c.YearFrom, YearTo = c.YearTo,
             RationType = c.RationType, SupplierID = c.SupplierId,
             RationName = c.RationName, IsPrePurchase = c.IsPrePurchase,
             RowStamp = c.RowStamp
         }, conn, tx);
 
-    public Task DeleteAsync(int id, IDbConnection conn, IDbTransaction tx)
-        => ExecuteAsync("DeleteCaseFeed", new { ID = id }, conn, tx);
+    public Task DeleteAsync(int id, byte[] rowStamp, IDbConnection conn, IDbTransaction tx)
+        => ExecuteAsync("DeleteCaseFeed", new { ID = id, RowStamp = rowStamp }, conn, tx);
 }

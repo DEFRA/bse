@@ -1,3 +1,4 @@
+using BSE.Host.Services;
 using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Services;
 using BSE.Modules.CaseManagement.Repositories;
@@ -9,7 +10,10 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace BSE.Host.Pages;
 
 [Authorize]
-public class HomeModel(IBatchService batchService, ICaseRepository caseRepository) : PageModel
+public class HomeModel(
+    IBatchService batchService,
+    ICaseRepository caseRepository,
+    ICaseWizardStateService wizardState) : PageModel
 {
     // ── Batch Number panel (VLAAccess role) ──────────────────────────────────
 
@@ -23,7 +27,6 @@ public class HomeModel(IBatchService batchService, ICaseRepository caseRepositor
     /// <summary>Batch number entered in the lookup form (e.g. 1).</summary>
     [BindProperty(SupportsGet = true)]
     public int? BatchNumber { get; set; }
-
     /// <summary>True when a batch lookup was attempted but the batch was not found.</summary>
     public bool BatchNotFound { get; private set; }
 
@@ -57,7 +60,7 @@ public class HomeModel(IBatchService batchService, ICaseRepository caseRepositor
         if (User.IsInRole("VLAAccess"))
             tasks.Add(LoadBatchDataAsync());
 
-        if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess"))
+        if (User.IsInRole("DEFRAAccess") || User.IsInRole("VLAAccess") || User.IsInRole("DEFRAMaintenance") || User.IsInRole("VLAMaintenance"))
             tasks.Add(LoadRbseDataAsync(currentYear, previousYear));
 
         await Task.WhenAll(tasks);
@@ -120,17 +123,105 @@ public class HomeModel(IBatchService batchService, ICaseRepository caseRepositor
         return RedirectToPage("/Case/New", new { batchYear = BatchYear, batchNumber = BatchNumber });
     }
 
-    /// <summary>Validates, zero-pads (e.g. "9/87" → "000900087"), and redirects to the case lookup page; shows an inline error if the field is empty.</summary>
+    /// <summary>
+    /// Legacy Home.aspx had a single Go button that took the batch number and the RBSE
+    /// together: the batch was validated, held in session, and the case opened in case entry.
+    /// Mirrors legacy btnGo_Click's full branching: existing GB/non-GB case, new GB/non-GB
+    /// case, and the per-group restrictions on each path.
+    /// </summary>
     public async Task<IActionResult> OnPostRbseLookupAsync()
     {
         if (string.IsNullOrWhiteSpace(LookupRbse))
         {
-            ModelState.AddModelError(nameof(LookupRbse), "Enter an RBSE number.");
+            ModelState.AddModelError(nameof(LookupRbse), "You must enter a RBSE number");
             await OnGetAsync();
             return Page();
         }
+
         var normalized = RbseHelper.ParseToRaw(LookupRbse);
-        return RedirectToPage("/Case/Farm", new { Rbse = normalized });
+
+        // A batch is optional. When one is supplied it must exist before the case is opened.
+        if (BatchYear.HasValue || BatchNumber.HasValue)
+        {
+            if (BatchYear is null || BatchNumber is null)
+            {
+                ModelState.AddModelError(nameof(BatchYear), "Enter both a batch year and a batch number.");
+                await OnGetAsync();
+                return Page();
+            }
+
+            var batchId = await batchService.GetBatchIdAsync(BatchYear.Value, BatchNumber.Value);
+            if (batchId is null)
+            {
+                BatchNotFound = true;
+                ModelState.AddModelError(nameof(BatchYear), $"Batch {BatchYear}/{BatchNumber} was not found.");
+                await OnGetAsync();
+                return Page();
+            }
+
+            await wizardState.SetAsync(new CaseWizardState(
+                RbseNumber: normalized,
+                BatchNumber: $"{BatchYear}/{BatchNumber}",
+                BatchId: batchId.Value));
+        }
+        else
+        {
+            await wizardState.ClearAsync();
+        }
+
+        var isVlaMaintenance = User.IsInRole("VLAMaintenance");
+        var isVlaDataEntry = User.IsInRole("VLAAccess") && !isVlaMaintenance;
+        var isDefraViewer = User.IsInRole("DEFRAAccess") && !User.IsInRole("DataEntry");
+
+        var existing = await caseRepository.GetCaseByRbseAsync(normalized);
+
+        if (existing is not null)
+        {
+            // Legacy: an existing non-GB case can only be opened by the VLA groups.
+            if (existing.IsNonGbCase && !isVlaMaintenance && !isVlaDataEntry)
+            {
+                ModelState.AddModelError(nameof(LookupRbse), "This is not a GB case");
+                await OnGetAsync();
+                return Page();
+            }
+
+            return RedirectToPage("/Case/Farm", new { Rbse = normalized });
+        }
+
+        // Case doesn't exist — legacy's non-GB reference block is "63/00" or "23/00".
+        var isNonGbReference = normalized.StartsWith("6300", StringComparison.Ordinal)
+            || normalized.StartsWith("2300", StringComparison.Ordinal);
+
+        if (isNonGbReference)
+        {
+            if (isVlaMaintenance)
+                return RedirectToPage("/Case/NewNonGb", new { rbse = normalized });
+
+            ModelState.AddModelError(nameof(LookupRbse), isVlaDataEntry
+                ? "This case does not exist"
+                : "This is not a GB case");
+            await OnGetAsync();
+            return Page();
+        }
+
+        // New GB case — DEFRA Viewer and VLA Data Entry cannot create new GB cases.
+        if (isDefraViewer || isVlaDataEntry)
+        {
+            ModelState.AddModelError(nameof(LookupRbse), "This case does not exist");
+            await OnGetAsync();
+            return Page();
+        }
+
+        // Legacy: the RBSE year part (raw positions 2-3) must not contain 'X'.
+        if (normalized.Length >= 4 && (normalized[2] is 'X' or 'x' || normalized[3] is 'X' or 'x'))
+        {
+            ModelState.AddModelError(nameof(LookupRbse), "This RBSE is not valid for a new case");
+            await OnGetAsync();
+            return Page();
+        }
+
+        // Legacy redirects a brand-new GB case straight to CaseEntryFarm.aspx, not a separate page.
+        return RedirectToPage("/Case/Farm", new { rbse = normalized });
     }
 
     /// <summary>Batch fields are pre-filled via redirect so the user sees the assigned number — matches legacy behaviour.</summary>

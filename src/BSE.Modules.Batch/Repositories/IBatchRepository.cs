@@ -25,8 +25,17 @@ public interface IBatchRepository
     /// </summary>
     Task AddBatchNumberLinkAsync(int batchId, string rbse, string document, IDbConnection connection, IDbTransaction? transaction);
 
+    /// <summary>
+    /// Calls AddBatchNumberLink and returns the SP RETURN code so callers can distinguish
+    /// a duplicate link from a failure.
+    /// </summary>
+    Task<BatchAssignmentResult> AssignCaseToBatchAsync(int batchId, string rbse, string document);
+
+    /// <summary>As above, enlisted in a caller-supplied connection and transaction.</summary>
+    Task<BatchAssignmentResult> AssignCaseToBatchAsync(int batchId, string rbse, string document, IDbConnection connection, IDbTransaction? transaction);
+
     /// <summary>Calls GetBatchIDForBatch — resolves BatchId from year + number. Returns null if not found.</summary>
-    Task<int?> GetBatchIdAsync(short batchYear, int batchNumber);
+    Task<int?> GetBatchIdAsync(short? batchYear, int batchNumber);
 
     /// <summary>Calls GetBatchNumberByRBSE — all batch links for a given RBSE.</summary>
     Task<IReadOnlyList<BatchNumberEntry>> GetBatchNumbersByRbseAsync(string rbse);
@@ -42,4 +51,7 @@ public interface IBatchRepository
 
     /// <summary>Calls GetCPHHRBSEForBatchID — full display-formatted RBSE/CPHH list for a batch.</summary>
     Task<IReadOnlyList<BatchCaseRecord>> GetCaseDetailsByBatchIdAsync(int batchId);
+    
+    // Legacy print-batch report support (reuses existing SPs).
+    Task<IReadOnlyList<IDictionary<string, object?>>> GetReportRowsAsync(string storedProcedure, int batchId);
 }

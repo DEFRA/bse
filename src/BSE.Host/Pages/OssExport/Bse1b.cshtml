@@ -1,0 +1,114 @@
+﻿@page
+@model OssExportBse1bModel
+@{
+    ViewData["Title"] = "OSS Export : BSE1b";
+}
+
+<h1 class="govuk-heading-l">OSS Export : BSE1b</h1>
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/OssExport/Menu">OSS export</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">BSE1b</li>
+    </ol>
+</nav>
+
+@* Batch Number Display *@
+<div class="govuk-inset-text">
+    <strong>Batch Number: @(Model.BatchResult is not null ? $"{Model.BatchResult.BatchYear}/{Model.BatchResult.BatchNumber}" : "Not yet generated")</strong>
+</div>
+
+@* Validation Messages *@
+@if (!string.IsNullOrEmpty(Model.ValidationMessage))
+{
+    <div class="govuk-error-message" role="alert">
+        <span class="govuk-visually-hidden">Error: </span>@Model.ValidationMessage
+    </div>
+}
+
+@* RBSE Input Form *@
+<form method="post" asp-page-handler="AddToGrid" novalidate>
+    <div class="govuk-form-group">
+        <label asp-for="RbseInput" class="govuk-label">
+            <strong>RBSE</strong>
+        </label>
+        <input asp-for="RbseInput" class="govuk-input govuk-input--width-10" autocomplete="off" />
+    </div>
+    <button type="submit" class="govuk-button" data-module="govuk-button">Add to grid</button>
+</form>
+
+@* Grid Display *@
+<h3 class="govuk-heading-s govuk-!-margin-top-6">RBSE records in batch</h3>
+<table class="govuk-table">
+    <thead class="govuk-table__head">
+        <tr class="govuk-table__row">
+            <th class="govuk-table__header">RBSE</th>
+            <th class="govuk-table__header">CPHH</th>
+            <th class="govuk-table__header">Owner</th>
+            <th class="govuk-table__header">Address</th>
+            <th class="govuk-table__header"><span class="govuk-visually-hidden">Action</span></th>
+        </tr>
+    </thead>
+    <tbody class="govuk-table__body">
+        @if (Model.GridEntries.Count > 0)
+        {
+            @foreach (var entry in Model.PagedGridEntries)
+            {
+                <tr class="govuk-table__row">
+                    <td class="govuk-table__cell">@BSE.SharedKernel.RbseHelper.Format(entry.Rbse)</td>
+                    <td class="govuk-table__cell">@entry.Cphh</td>
+                    <td class="govuk-table__cell">@entry.OwnerName</td>
+                    <td class="govuk-table__cell">@entry.Address1</td>
+                    <td class="govuk-table__cell" style="text-align: right;">
+                        <form method="post" asp-page-handler="Delete" style="display: inline;">
+                            <input type="hidden" name="id" value="@entry.Id" />
+                            <input type="hidden" name="PageNumber" value="@Model.PageNumber" />
+                            <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0" data-module="govuk-button" onclick="return confirm('Are you sure you want to delete this RBSE record?');">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr class="govuk-table__row">
+                <td class="govuk-table__cell" colspan="5">No RBSE records added yet.</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@if (Model.TotalPages > 1)
+{
+    <nav class="govuk-pagination" role="navigation" aria-label="RBSE records pagination">
+        <ul class="govuk-pagination__list">
+            @for (var p = 1; p <= Model.TotalPages; p++)
+            {
+                var isCurrent = p == Model.PageNumber;
+                <li class="govuk-pagination__item @(isCurrent ? "govuk-pagination__item--current" : "")">
+                    <form method="post" asp-page-handler="Page" style="display: inline;">
+                        <input type="hidden" name="PageNumber" value="@p" />
+                        @if (isCurrent)
+                        {
+                            <button type="submit" class="govuk-link govuk-pagination__link" style="border:none;background:none;cursor:pointer;" aria-label="Page @p" aria-current="page">@p</button>
+                        }
+                        else
+                        {
+                            <button type="submit" class="govuk-link govuk-pagination__link" style="border:none;background:none;cursor:pointer;" aria-label="Page @p">@p</button>
+                        }
+                    </form>
+                </li>
+            }
+        </ul>
+    </nav>
+}
+
+@* Export Button - Always shown, disabled when grid is empty *@
+<form method="post" asp-page-handler="Export" novalidate style="margin-top: 2rem;">
+    <div class="govuk-button-group">
+        <button type="submit" class="govuk-button" @(Model.GridEntries.Count == 0 ? "disabled" : "") data-module="govuk-button">
+            Export to OSS
+        </button>
+        <a asp-page="/OssExport/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button">OSS Menu</a>
+    </div>
+</form>

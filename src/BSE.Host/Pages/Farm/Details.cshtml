@@ -17,11 +17,19 @@
     return;
 }
 
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Search/Farms">Farm Search</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Farm: @BseFormat.FormatCphh(Model.Farm.CPHH)</li>
+    </ol>
+</nav>
+
 <h1 class="govuk-heading-l">Farm: <span class="bse-rbse">@BseFormat.FormatCphh(Model.Farm.CPHH)</span></h1>
 
 <div class="govuk-button-group">
-    <a asp-page="/Farm/Edit" asp-route-cphh="@Model.Farm.CPHH" class="govuk-button">Edit</a>
-    <a asp-page="/Farm/CphhChange" asp-route-cphh="@Model.Farm.CPHH" class="govuk-link">Change CPHH</a>
+    <a asp-page="/Farm/Edit" asp-route-cphh="@Model.Farm.CPHH" class="govuk-button">Change</a>
+    <a asp-page="/Farm/CphhChange" asp-route-OldCphh="@Model.Farm.CPHH" class="govuk-link">Change CPHH</a>
     <a asp-page="/Case/New" asp-route-cphh="@Model.Farm.CPHH" class="govuk-link">Create case for this farm</a>
 </div>
 

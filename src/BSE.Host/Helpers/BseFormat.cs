@@ -22,4 +22,17 @@ public static class BseFormat
         value is { Length: 11 }
             ? $"{value[..2]}/{value[2..5]}/{value[5..9]}/{value[9..]}"
             : value ?? string.Empty;
+
+    /// <summary>
+    /// Formats a partial birth date as legacy's FormatPartialDate: day and month are only
+    /// appended (with a trailing slash) when present, so an all-blank date renders as "".
+    /// </summary>
+    public static string FormatPartialDate(int? day, int? month, int? year)
+    {
+        var sb = new System.Text.StringBuilder();
+        if (day is > 0) sb.Append(day).Append('/');
+        if (month is > 0) sb.Append(month).Append('/');
+        if (year is > 0) sb.Append(year);
+        return sb.ToString();
+    }
 }

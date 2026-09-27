@@ -16,12 +16,15 @@ public sealed class AdnsExportServiceTests
     private readonly IDbConnectionFactory _connectionFactory = Substitute.For<IDbConnectionFactory>();
     private readonly IDbConnection _connection = Substitute.For<IDbConnection>();
     private readonly IDbTransaction _transaction = Substitute.For<IDbTransaction>();
-    private readonly ISmtpClient _smtp = Substitute.For<ISmtpClient>();
+    private readonly IMSGraphMailClient _msGraphMail = Substitute.For<IMSGraphMailClient>();
     private readonly AdnsExportService _sut;
 
-    private static readonly AdnsSmtpOptions SmtpOpts = new()
+    private static readonly AdnsMsGraphOptions MsGraphOpts = new()
     {
-        Host = "smtp.test", Port = 25,
+        MsGraphTenantId = "tenant-id",
+        MsGraphClientId = "client-id",
+        MsGraphClientSecret = "client-secret",
+        MsGraphSenderUserId = "adns-svc@test.com",
         FromAddress = "from@test.com",
         ToAddress = "brussels@adns.int"
     };
@@ -31,8 +34,8 @@ public sealed class AdnsExportServiceTests
         _connectionFactory.CreateConnection().Returns(_connection);
         _connection.BeginTransaction().Returns(_transaction);
         _sut = new AdnsExportService(
-            _repo, _connectionFactory, _smtp,
-            Options.Create(SmtpOpts));
+            _repo, _connectionFactory, _msGraphMail,
+            Options.Create(MsGraphOpts));
     }
 
     // ── PreviewGbExportAsync ──────────────────────────────────────────────────
@@ -158,13 +161,47 @@ public sealed class AdnsExportServiceTests
     public async Task DispatchAsync_SaveAdnsDataFalse_DoesNotCallEditCaseAdns()
     {
         var cases = new[] { MakeCase(1, "2024/00001") };
-        var cmd = new DispatchAdnsCommand("GB", "DBSE2024/00001", cases, "user@test.com", SaveAdnsData: false);
+        var cmd = new DispatchAdnsCommand("GB", "DBSE2024/00001", cases, "user@test.com", SaveAdnsData: false, Message: "custom message");
 
         await _sut.DispatchAsync(cmd);
 
         await _repo.DidNotReceive().EditCaseAdnsAsync(Arg.Any<string>(), Arg.Any<DateTime>(),
             Arg.Any<int>(), Arg.Any<short>(), Arg.Any<int>(), Arg.Any<byte[]>(),
             Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>());
+    }
+
+    [Fact]
+    public async Task DispatchAsync_MessageExplicitlyBlank_SendsBlankBody()
+    {
+        var cases = new[] { MakeCase(1, "2024/00001") };
+        _repo.EditCaseAdnsAsync(Arg.Any<string>(), Arg.Any<DateTime>(), Arg.Any<int>(),
+            Arg.Any<short>(), Arg.Any<int>(), Arg.Any<byte[]>(),
+            Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>())
+            .Returns(0);
+
+        // Legacy parity: the user cleared the body on purpose before clicking send —
+        // it must not be silently regenerated.
+        var cmd = new DispatchAdnsCommand("GB", "DBSE2024/00001", cases, "user@test.com", SaveAdnsData: true, Message: string.Empty);
+        await _sut.DispatchAsync(cmd);
+
+        await _msGraphMail.Received(1).SendAsync("from@test.com", "user@test.com", Arg.Any<string>(), string.Empty);
+        await _msGraphMail.Received(1).SendAsync("from@test.com", "brussels@adns.int", Arg.Any<string>(), string.Empty);
+    }
+
+    [Fact]
+    public async Task DispatchAsync_MessageNotSupplied_GeneratesBody()
+    {
+        var cases = new[] { MakeCase(1, "2024/00001") };
+        _repo.EditCaseAdnsAsync(Arg.Any<string>(), Arg.Any<DateTime>(), Arg.Any<int>(),
+            Arg.Any<short>(), Arg.Any<int>(), Arg.Any<byte[]>(),
+            Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>())
+            .Returns(0);
+
+        var cmd = new DispatchAdnsCommand("GB", "DBSE2024/00001", cases, "user@test.com", SaveAdnsData: true);
+        await _sut.DispatchAsync(cmd);
+
+        await _msGraphMail.Received(1).SendAsync("from@test.com", "user@test.com", Arg.Any<string>(),
+            Arg.Is<string>(b => b.Contains("<I>CVETUNK1")));
     }
 
     [Fact]
@@ -179,8 +216,8 @@ public sealed class AdnsExportServiceTests
         var cmd = new DispatchAdnsCommand("GB", "DBSE2024/00001", cases, "user@test.com", SaveAdnsData: true);
         await _sut.DispatchAsync(cmd);
 
-        await _smtp.Received(1).SendAsync("from@test.com", "user@test.com", Arg.Any<string>(), Arg.Any<string>());
-        await _smtp.Received(1).SendAsync("from@test.com", "brussels@adns.int", Arg.Any<string>(), Arg.Any<string>());
+        await _msGraphMail.Received(1).SendAsync("from@test.com", "user@test.com", Arg.Any<string>(), Arg.Any<string>());
+        await _msGraphMail.Received(1).SendAsync("from@test.com", "brussels@adns.int", Arg.Any<string>(), Arg.Any<string>());
     }
 
     [Fact]
@@ -219,15 +256,15 @@ public sealed class AdnsExportServiceTests
     }
 
     [Fact]
-    public async Task DispatchAsync_SmtpThrows_RollsBackTransaction()
+    public async Task DispatchAsync_SendThrows_RollsBackTransaction()
     {
         var cases = new[] { MakeCase(1, "2024/00001") };
         _repo.EditCaseAdnsAsync(Arg.Any<string>(), Arg.Any<DateTime>(), Arg.Any<int>(),
             Arg.Any<short>(), Arg.Any<int>(), Arg.Any<byte[]>(),
             Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>())
             .Returns(0);
-        _smtp.SendAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
-             .Returns<Task>(_ => throw new InvalidOperationException("SMTP failure"));
+        _msGraphMail.SendAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+             .Returns<Task>(_ => throw new InvalidOperationException("Mail send failure"));
 
         var cmd = new DispatchAdnsCommand("GB", "DBSE2024/00001", cases, "user@test.com", SaveAdnsData: true);
         var act = async () => await _sut.DispatchAsync(cmd);

@@ -2,9 +2,18 @@
 @model BSE.Host.Pages.CaseWork.ClosedCasesModel
 @{
     ViewData["Title"] = "View all closed cases";
+
+    var sortBaseParams = ViewContext.HttpContext.Request.Query
+        .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
+                 && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase)
+                 && !string.Equals(k.Key, "PageNumber", StringComparison.OrdinalIgnoreCase))
+        .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}")
+        .ToList();
+
+    var sortBaseUrl = "?" + string.Join("&", sortBaseParams);
 }
 
-<h1 class="govuk-heading-l">View all closed cases</h1>
+<h1 class="govuk-heading-l bse-wide-page">View all closed cases</h1>
 
 <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
     <ol class="govuk-breadcrumbs__list">
@@ -14,10 +23,101 @@
     </ol>
 </nav>
 
-<div class="govuk-inset-text">
-    This report is not yet available in the migrated application. To access casework for a specific case, look up the case by RBSE and navigate to its casework record.
-</div>
-
 <p class="govuk-body">
-    <a asp-page="/Case/Lookup" class="govuk-link">Look up a case by RBSE</a>
+    <a asp-page="/CaseWork/OpenCases" class="govuk-link">See open cases</a>
+</p>
+
+@if (Model.Cases.Any())
+{
+    <p class="govuk-body">Total closed cases: <strong>@Model.TotalCount</strong></p>
+
+    <div id="closed-cases-results" class="bse-case-search-table-wrap">
+        <table class="govuk-table bse-closed-cases-table govuk-table--small-text-until-tablet">
+            <caption class="govuk-visually-hidden">Closed cases</caption>
+            <thead class="govuk-table__head">
+                <tr class="govuk-table__row">
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "RBSE", ["Column"] = "Rbse", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "closed-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Survey", ["Column"] = "Survey", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "closed-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Barcode", ["Column"] = "Barcode", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "closed-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "AHF Reference", ["Column"] = "AhfReference", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "closed-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Form A Date", ["Column"] = "FormADate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "closed-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "RBSE Date", ["Column"] = "RbseDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "closed-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Slaughter Date", ["Column"] = "SlaughterDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "closed-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Fate", ["Column"] = "Fate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "closed-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Active Memo Date", ["Column"] = "ActiveMemoDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "closed-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Annex A Date", ["Column"] = "AnnexADate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "closed-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Annex B Date", ["Column"] = "AnnexBDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "closed-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Paperwork Complete Date", ["Column"] = "PaperworkCompleteDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "closed-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Annex C Date", ["Column"] = "AnnexCDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "closed-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Annex D Date", ["Column"] = "AnnexDDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "closed-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Regional Lab", ["Column"] = "RegionalLab", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "closed-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Regional Lab Received Date", ["Column"] = "ReceivedByRegionalLabDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "closed-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Initial Received Date", ["Column"] = "InitialReceivedDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "closed-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Final Received Date", ["Column"] = "FinalReceivedDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "closed-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Final Sent Date", ["Column"] = "FinalSentDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "closed-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Lab Chased Date", ["Column"] = "LabChasedDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "closed-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Final Result", ["Column"] = "FinalResult", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "closed-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Final Result Date", ["Column"] = "FinalResultDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "closed-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Birth Date", ["Column"] = "BirthDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "closed-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Post 2000 Sent Date", ["Column"] = "Post2000SentDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "closed-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Barb Minute Sent Date", ["Column"] = "BarbMinuteSentDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "closed-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "Data Complete Date", ["Column"] = "DataCompleteDate", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "closed-cases-results" })
+                    @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"] = "CaseWorkNotes", ["Column"] = "CaseWorkNotes", ["SortColumn"] = Model.SortColumn, ["SortDesc"] = Model.SortDesc, ["BaseUrl"] = sortBaseUrl, ["Fragment"] = "closed-cases-results" })
+                </tr>
+            </thead>
+            <tbody class="govuk-table__body">
+                @foreach (var caseRecord in Model.PagedCases)
+                {
+                    <tr class="govuk-table__row">
+                        <th scope="row" class="govuk-table__header">
+                            <a asp-page="/CaseWork/Entry" asp-route-rbse="@caseRecord.Rbse" class="govuk-link">@BseFormat.FormatRbse(caseRecord.Rbse)</a>
+                        </th>
+                        <td class="govuk-table__cell">@(caseRecord.Survey ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.Barcode ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.AhfReference ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.FormADate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.RbseDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.SlaughterDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.Fate ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.ActiveMemoDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.AnnexADate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.AnnexBDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.PaperworkCompleteDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.AnnexCDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.AnnexDDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.RegionalLab ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.ReceivedByRegionalLabDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.InitialReceivedDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.FinalReceivedDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.FinalSentDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.LabChasedDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.FinalResult ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.FinalResultDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.BirthDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.Post2000SentDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.BarbMinuteSentDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.DataCompleteDate?.ToString("dd/MM/yyyy") ?? "—")</td>
+                        <td class="govuk-table__cell">@(caseRecord.CaseWorkNotes ?? "—")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData)
+    {
+        ["CurrentPage"] = Model.PageNumber,
+        ["TotalPages"] = Model.TotalPages,
+        ["Fragment"] = "closed-cases-results"
+    })
+}
+else
+{
+    <div class="govuk-inset-text">
+        <p class="govuk-body">No closed cases found.</p>
+    </div>
+}
+
+<p class="govuk-body govuk-!-margin-top-6">
+    <a asp-page="/CaseWork/Menu" class="govuk-link">Back to casework menu</a>
 </p>

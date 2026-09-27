@@ -1,5 +1,6 @@
 using System.Data;
 using BSE.Infrastructure;
+using BSE.Modules.Batch.Repositories;
 using BSE.Modules.CaseManagement.Commands;
 using BSE.Modules.CaseManagement.Enums;
 using BSE.Modules.CaseManagement.Models;
@@ -21,6 +22,7 @@ public sealed class CaseServiceTests
     private readonly ITestRepository _testRepo = Substitute.For<ITestRepository>();
     private readonly IOtherOwnerRepository _otherOwnerRepo = Substitute.For<IOtherOwnerRepository>();
     private readonly IPedigreeRepository _pedigreeRepo = Substitute.For<IPedigreeRepository>();
+    private readonly IBatchRepository _batchRepo = Substitute.For<IBatchRepository>();
     private readonly CaseService _sut;
 
     public CaseServiceTests()
@@ -29,7 +31,7 @@ public sealed class CaseServiceTests
         _connection.BeginTransaction().Returns(_transaction);
         _sut = new CaseService(
             _connectionFactory, _caseRepo, _clinicalRepo, _babRepo,
-            _feedRepo, _testRepo, _otherOwnerRepo, _pedigreeRepo);
+            _feedRepo, _testRepo, _otherOwnerRepo, _pedigreeRepo, _batchRepo);
     }
 
     private static AddCaseCommand MakeCase(string rbse = "010000001") => new(

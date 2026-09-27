@@ -16,8 +16,14 @@ public interface IBatchService
     /// <summary>Links a case document to a batch. Standalone (own transaction).</summary>
     Task AddBatchNumberLinkAsync(int batchId, string rbse, string document);
 
+    /// <summary>
+    /// Assigns a case to a batch. Returns <see cref="BatchAssignmentResult.AlreadyAssigned"/>
+    /// rather than creating a duplicate when the link already exists.
+    /// </summary>
+    Task<BatchAssignmentResult> AssignCaseToBatchAsync(int batchId, string rbse, string document);
+
     /// <summary>Resolves BatchId from batch year and number. Returns null if not found.</summary>
-    Task<int?> GetBatchIdAsync(short batchYear, int batchNumber);
+    Task<int?> GetBatchIdAsync(short? batchYear, int batchNumber);
 
     /// <summary>Returns all batch links for a given RBSE number.</summary>
     Task<IReadOnlyList<BatchNumberEntry>> GetBatchNumbersByRbseAsync(string rbse);
@@ -33,4 +39,6 @@ public interface IBatchService
 
     /// <summary>Returns the display-formatted RBSE/CPHH list for a given batch ID.</summary>
     Task<IReadOnlyList<BatchCaseRecord>> GetCaseDetailsByBatchIdAsync(int batchId);
+
+    Task<IReadOnlyList<IDictionary<string, object?>>> GetReportRowsAsync(string storedProcedure, int batchId);
 }

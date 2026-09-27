@@ -1,70 +1,181 @@
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
+using BSE.Modules.AdnsExport.Configuration;
 using BSE.Modules.AdnsExport.Models;
 using BSE.Modules.AdnsExport.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using System.ComponentModel.DataAnnotations;
+using Microsoft.Extensions.Options;
 
 namespace BSE.Host.Pages.AdnsExport;
 
 [Authorize(Policy = "DEFRAMaintenance")]
-public class CiModel(IAdnsExportService adnsExportService) : PageModel
+public class CiModel(
+    IAdnsExportService adnsExportService,
+    IOptions<AdnsMsGraphOptions> msGraphOptions) : PageModel
 {
-    [BindProperty] [Required] public string EmailReference { get; set; } = string.Empty;
-    [BindProperty] public int AdnsYear { get; set; } = DateTime.Today.Year;
-    [BindProperty] public int StartAdnsNumber { get; set; } = 1;
-    [BindProperty] public int JerseyCases { get; set; }
-    [BindProperty] public int GuernseyCases { get; set; }
-    [BindProperty] public int IsleOfManCases { get; set; }
-    [BindProperty] public DateTime ConfirmationDate { get; set; } = DateTime.Today;
-    [BindProperty] public string UserEmailAddress { get; set; } = string.Empty;
+    private const string PreviewTempDataKey = "AdnsCiPreview";
+    private readonly AdnsMsGraphOptions _msGraphOptions = msGraphOptions.Value;
+
+    [BindProperty]
+    [Required(ErrorMessage = "Enter an email reference.")]
+    [StringLength(50, ErrorMessage = "Email reference must be 50 characters or fewer.")]
+    public string EmailReference { get; set; } = string.Empty;
+
+    [BindProperty]
+    [Range(2000, 2100, ErrorMessage = "ADNS year must be between 2000 and 2100.")]
+    public int AdnsYear { get; set; } = DateTime.Today.Year;
+
+    [BindProperty]
+    [Range(1, 99999, ErrorMessage = "Start ADNS number must be between 1 and 99999.")]
+    public int StartAdnsNumber { get; set; } = 1;
+
+    [BindProperty]
+    [Range(0, 9999, ErrorMessage = "Jersey cases must be 0 or more.")]
+    public int JerseyCases { get; set; }
+
+    [BindProperty]
+    [Range(0, 9999, ErrorMessage = "Guernsey cases must be 0 or more.")]
+    public int GuernseyCases { get; set; }
+
+    [BindProperty]
+    [Range(0, 9999, ErrorMessage = "Isle of Man cases must be 0 or more.")]
+    public int IsleOfManCases { get; set; }
+
+    [BindProperty]
+    [Required(ErrorMessage = "Enter a confirmation date.")]
+    public DateTime? ConfirmationDate { get; set; } = DateTime.Today;
+
+    [BindProperty]
+    public string UserEmailAddress { get; set; } = string.Empty;
+
+    [BindProperty]
+    public string Message { get; set; } = string.Empty;
+
+    // CI must remain false (no persisted Case rows for manual CI entries).
+    [BindProperty]
+    public bool SaveAdnsData { get; set; } = false;
 
     public AdnsExportPreview? Preview { get; private set; }
     public string? ErrorMessage { get; private set; }
 
-    public IActionResult OnGet() => Page();
+    public string FromEmailAddress => _msGraphOptions.FromAddress;
+    public string DefaultToEmailAddress => _msGraphOptions.ToAddress;
 
-    public IActionResult OnPostPreview()
+    public async Task<IActionResult> OnGetAsync()
     {
-        if (!ModelState.IsValid) return Page();
+        // A fresh visit to this page (e.g. via the breadcrumb or menu) always starts clean —
+        // a previously generated report must not resurface just because TempData hadn't expired yet.
+        TempData.Remove(PreviewTempDataKey);
 
-        Preview = adnsExportService.PreviewCiExport(
-            EmailReference, AdnsYear, StartAdnsNumber,
-            JerseyCases, GuernseyCases, IsleOfManCases, ConfirmationDate);
+        var lastReference = await adnsExportService.GetLastReferenceAsync("CI");
+        if (lastReference is not null)
+        {
+            AdnsYear = lastReference.LastAdnsReferenceYear ?? DateTime.Today.Year;
+            StartAdnsNumber = (lastReference.LastAdnsReferenceNumber ?? 0) + 1;
+            EmailReference = $"DBSE{StartAdnsNumber:00000}";
+        }
 
-        TempData["AdnsCiPreviewCases"] = System.Text.Json.JsonSerializer.Serialize(Preview.Cases);
+        return Page();
+    }
+
+    public IActionResult OnPostGenerateReport()
+    {
+        // Generate report should not require recipient email.
+        ModelState.Remove(nameof(UserEmailAddress));
+
+        if (!ModelState.IsValid)
+        {
+            if (string.IsNullOrWhiteSpace(UserEmailAddress))
+                UserEmailAddress = DefaultToEmailAddress;
+
+            return Page();
+        }
+
+        try
+        {
+            Preview = adnsExportService.PreviewCiExport(
+                EmailReference,
+                AdnsYear,
+                StartAdnsNumber,
+                JerseyCases,
+                GuernseyCases,
+                IsleOfManCases,
+                ConfirmationDate!.Value);
+
+            Message = Preview.EmailBody;
+            TempData[PreviewTempDataKey] = JsonSerializer.Serialize(Preview);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Report generation failed: {ex.Message}";
+        }
+
+        if (string.IsNullOrWhiteSpace(UserEmailAddress))
+            UserEmailAddress = DefaultToEmailAddress;
+
         return Page();
     }
 
     public async Task<IActionResult> OnPostDispatchAsync()
     {
+        if (!TryLoadPreview(out var preview))
+        {
+            ErrorMessage = "Session expired — please generate the report again.";
+            return Page();
+        }
+
+        // Keep the preview available in case validation below fails and we re-render this same form.
+        TempData.Keep(PreviewTempDataKey);
+
+        Preview = preview;
+
+        // Dispatch only needs the recipient address — the report fields (e.g. ConfirmationDate)
+        // aren't posted from this form and their stale Required errors must not block sending.
+        ModelState.Clear();
+
         if (string.IsNullOrWhiteSpace(UserEmailAddress))
         {
-            ModelState.AddModelError(nameof(UserEmailAddress), "Email address is required.");
+            ModelState.AddModelError(nameof(UserEmailAddress), "Enter your email address.");
             return Page();
         }
 
-        var casesJson = TempData["AdnsCiPreviewCases"]?.ToString();
-        if (string.IsNullOrEmpty(casesJson))
+        if (!new EmailAddressAttribute().IsValid(UserEmailAddress))
         {
-            ErrorMessage = "Session expired — please regenerate the preview.";
+            ModelState.AddModelError(nameof(UserEmailAddress), "Enter an email address in the correct format, like name@example.com.");
             return Page();
         }
 
-        var cases = System.Text.Json.JsonSerializer.Deserialize<List<AdnsCaseRecord>>(casesJson) ?? [];
-
-        var command = new DispatchAdnsCommand("CI", EmailReference, cases, UserEmailAddress, false);
+        var command = new DispatchAdnsCommand(
+            Area: "CI",
+            EmailReference: EmailReference,
+            Cases: preview!.Cases.ToList(),
+            UserEmailAddress: UserEmailAddress,
+            SaveAdnsData: SaveAdnsData,
+            Message: Message.Trim());
 
         try
         {
             await adnsExportService.DispatchAsync(command);
-            TempData["Success"] = "CI ADNS export dispatched successfully.";
-            return RedirectToPage("/AdnsExport/Menu");
+            TempData.Remove(PreviewTempDataKey);
+            TempData["SuccessMessage"] = "The message has been successfully sent. You should receive a confirmation e-mail shortly.";
+            return RedirectToPage();
         }
         catch (Exception ex)
         {
             ErrorMessage = $"Dispatch failed: {ex.Message}";
             return Page();
         }
+    }
+
+    private bool TryLoadPreview(out AdnsExportPreview? preview)
+    {
+        var json = TempData[PreviewTempDataKey]?.ToString();
+        preview = string.IsNullOrWhiteSpace(json)
+            ? null
+            : JsonSerializer.Deserialize<AdnsExportPreview>(json);
+
+        return preview is not null;
     }
 }

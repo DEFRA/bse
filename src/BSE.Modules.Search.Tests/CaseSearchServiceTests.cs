@@ -58,11 +58,23 @@ public sealed class CaseSearchServiceTests
                 Fate = "Slaughter", FinalResult = "Neg", Survey = "Passive", Origin = "UK Bred"
             }
         };
-        _repo.GetCasesByCphhAsync("12/345/6789/01", "", "", false, default).Returns(detail);
+        _repo.GetCasesByCphhAsync("12345678901", "", "", false, default).Returns(detail);
 
         var result = await _sut.GetCasesByCphhAsync("12/345/6789/01", "", "", false);
 
         result.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task GetCasesByCphhAsync_CphhWithSlashes_NormalizesBeforeRepositoryCall()
+    {
+        _repo.GetCasesByCphhAsync("14351011901", "", "", false, default)
+            .Returns(Array.Empty<CaseDetailSearchResult>());
+
+        await _sut.GetCasesByCphhAsync("14/351/0119/01", "", "", false);
+
+        await _repo.Received(1)
+            .GetCasesByCphhAsync("14351011901", "", "", false, default);
     }
 
     [Fact]

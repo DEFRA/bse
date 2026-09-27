@@ -3,8 +3,6 @@
 @{
     ViewData["Title"] = $"Edit BAB — {Model.Rbse}";
     string rbseNoSlash = Model.Rbse.Replace("/", "");
-    string Desc(IEnumerable<BSE.SharedKernel.ILookupItem> opts, string? code) =>
-        opts.FirstOrDefault(o => o.Code == code)?.Description ?? code ?? "—";
 }
 
 <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
@@ -15,9 +13,7 @@
     </ol>
 </nav>
 
-<h1 class="govuk-heading-l">RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Rbse)</span></h1>
-
-@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("BAB", Model.Rbse))
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("BAB", Model.Rbse, Model.BatchNumbers))
 
 @if (TempData["Success"] is string successMsg)
 {
@@ -86,7 +82,6 @@
 
     <div class="govuk-form-group">
         <label class="govuk-label" for="bab-natal-cphh">Traced CPHH</label>
-        <div class="govuk-hint">The CPHH of the farm where the animal was born (11 digits).</div>
         <input id="bab-natal-cphh" name="Bab.NatalCphh" class="govuk-input govuk-!-width-one-half"
                value="@Model.Bab?.NatalCphh" maxlength="11" inputmode="numeric" />
     </div>
@@ -202,7 +197,7 @@
             var msgs = [];
             if (hasTracedData())
                 msgs.push('Trace data has been entered on this Case.  If you click Save then this data will be lost.');
-            msgs.push('Purchase data entered on the Case (VLA) tab will also be cleared.');
+            msgs.push('Purchase data entered on the Case (APHA) tab will also be cleared.');
             alert(msgs.join('\n\n'));
             clearTracedFields();
         }

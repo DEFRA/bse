@@ -11,6 +11,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\BSE.Infrastructure\BSE.Infrastructure.csproj" />
+    <ProjectReference Include="..\BSE.Modules.Batch\BSE.Modules.Batch.csproj" />
     <ProjectReference Include="..\BSE.SharedKernel\BSE.SharedKernel.csproj" />
   </ItemGroup>
 </Project>

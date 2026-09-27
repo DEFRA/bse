@@ -1,93 +1,208 @@
-@page "{rbse?}"
+@page
+@using BSE.Host.Helpers
 @model DeleteModel
 @{
     ViewData["Title"] = "Delete case";
+
+    var errors = new List<(string Anchor, string Message)>();
+    if (Model.RbseError is not null) { errors.Add(("rbse", Model.RbseError)); }
+    if (Model.ErrorMessage is not null) { errors.Add(("rbse", Model.ErrorMessage)); }
 }
 
-<div>
-    <h1 class="govuk-heading-l">Delete case</h1>
+<h1 class="govuk-heading-l">Delete Case</h1>
 
-    @* ── Step 1: lookup (navigated from home page without a known RBSE) ── *@
-    @if (string.IsNullOrEmpty(Model.Rbse))
-    {
-        <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
-            <ol class="govuk-breadcrumbs__list">
-                <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-                <li class="govuk-breadcrumbs__list-item" aria-current="page">Delete case</li>
-            </ol>
-        </nav>
-        <form method="get" novalidate>
-            <div class="govuk-form-group">
-                <label class="govuk-label" for="rbse-lookup">Enter RBSE of case to delete</label>
-                <div class="govuk-hint">Enter 9 digits with no slashes — for example, 002600001.</div>
-                <input id="rbse-lookup" name="Rbse" type="text" class="govuk-input govuk-input--width-10" autocomplete="off" />
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">Delete case</li>
+    </ol>
+</nav>
+
+@if (errors.Count > 0)
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var error in errors)
+                    {
+                        <li><a href="#@error.Anchor">@error.Message</a></li>
+                    }
+                </ul>
             </div>
-            <button type="submit" class="govuk-button govuk-button--secondary" data-module="govuk-button">Look up</button>
-        </form>
-    }
-    else if (Model.CaseRecord is not null)
-    {
-        <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
-            <ol class="govuk-breadcrumbs__list">
-                <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-                <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Case/Details" asp-route-rbse="@Model.Rbse">Case @Model.Rbse</a></li>
-                <li class="govuk-breadcrumbs__list-item" aria-current="page">Delete</li>
-            </ol>
-        </nav>
-
-        <div class="govuk-warning-text">
-            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
-            <strong class="govuk-warning-text__text">
-                <span class="govuk-warning-text__assistive">Warning</span>
-                This action cannot be undone.
-            </strong>
         </div>
+    </div>
+}
 
-        <h2 class="govuk-heading-m">Case @Model.CaseRecord.Rbse</h2>
-        <dl class="govuk-summary-list">
-            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">RBSE</dt><dd class="govuk-summary-list__value">@RbseHelper.Format(Model.CaseRecord.Rbse)</dd></div>
-            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">CPHH</dt><dd class="govuk-summary-list__value">@Model.CaseRecord.Cphh</dd></div>
-            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Eartag</dt><dd class="govuk-summary-list__value">@Model.CaseRecord.EartagHerdmark / @Model.CaseRecord.Eartag</dd></div>
-            <div class="govuk-summary-list__row"><dt class="govuk-summary-list__key">Fate</dt><dd class="govuk-summary-list__value">@Model.CaseRecord.Fate</dd></div>
-        </dl>
-
-        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+@* ── Step 1: look up the case to be deleted ─────────────────────────────── *@
+<form method="post" asp-page-handler="LookUp" novalidate class="bse-legacy-inline-form">
+    <div class="govuk-form-group @(Model.RbseError is not null ? "govuk-form-group--error" : "")">
+        <label class="govuk-label" for="rbse">RBSE</label>
+        @if (Model.RbseError is not null)
         {
-            <div class="govuk-error-summary" data-module="govuk-error-summary">
-                <div role="alert">
-                    <h2 class="govuk-error-summary__title">There is a problem</h2>
-                    <div class="govuk-error-summary__body">
-                        <ul class="govuk-list govuk-error-summary__list">
-                            <li>@Model.ErrorMessage</li>
-                        </ul>
-                    </div>
+            <p id="rbse-error" class="govuk-error-message">
+                <span class="govuk-visually-hidden">Error:</span>@Model.RbseError
+            </p>
+        }
+        <input id="rbse-hidden" name="Rbse" type="hidden" value="@Model.Rbse" />
+        <input id="rbse" name="RbseInput" value="@Model.Rbse" type="text" maxlength="11" autocomplete="off" list="rbse-suggestions"
+               data-no-global-autosuggest="true"
+               aria-describedby="rbse-hint @(Model.RbseError is not null ? "rbse-error" : "")"
+               class="govuk-input govuk-input--width-10 @(Model.RbseError is not null ? "govuk-input--error" : "")" />
+        <datalist id="rbse-suggestions"></datalist>
+    </div>
+    <button type="submit" class="govuk-button" data-module="govuk-button">Look Up</button>
+</form>
+
+<script>
+(function () {
+    var form = document.querySelector('form[asp-page-handler="LookUp"], form[action*="handler=LookUp"]') || document.querySelector('.bse-legacy-inline-form');
+    var input = document.getElementById('rbse');
+    var hidden = document.getElementById('rbse-hidden');
+    var list = document.getElementById('rbse-suggestions');
+    if (!form || !input || !hidden || !list) return;
+
+    var storageKey = 'bse.recent.rbse';
+
+    function normalize(v) { return (v || '').replace(/\D/g, '').trim(); }
+    function format(v) {
+        var d = normalize(v);
+        if (d.length !== 9) return (v || '').trim();
+        return d.substring(0,2) + '/' + d.substring(2,4) + '/' + d.substring(4);
+    }
+    function readRecent() {
+        try {
+            var p = JSON.parse(localStorage.getItem(storageKey) || '[]');
+            return Array.isArray(p) ? p : [];
+        } catch { return []; }
+    }
+    function writeRecent(values) { localStorage.setItem(storageKey, JSON.stringify(values.slice(0, 10))); }
+    function mergeUnique(values) {
+        var seen = new Set();
+        var out = [];
+        values.forEach(function (v) {
+            var n = normalize(v);
+            if (n.length === 9 && !seen.has(n)) { seen.add(n); out.push(n); }
+        });
+        return out;
+    }
+    function syncHidden() { hidden.value = format(input.value); }
+    function render(values) {
+        list.innerHTML = '';
+        values.forEach(function (raw) {
+            var option = document.createElement('option');
+            option.value = format(raw);
+            list.appendChild(option);
+        });
+    }
+
+    async function load() {
+        var recent = readRecent();
+        var remote = [];
+        try {
+            var res = await fetch('/Api/Suggestions?field=rbse&query=' + encodeURIComponent(input.value || '') + '&limit=20', { headers: { 'Accept': 'application/json' } });
+            if (res.ok) {
+                var json = await res.json();
+                remote = Array.isArray(json.values) ? json.values : [];
+            }
+        } catch { }
+        render(mergeUnique(recent.concat(remote)));
+    }
+
+    input.addEventListener('focus', function () { void load(); });
+    input.addEventListener('click', function () { void load(); });
+    input.addEventListener('input', function () { syncHidden(); void load(); });
+    input.addEventListener('change', function () { syncHidden(); });
+
+    form.addEventListener('submit', function () {
+        syncHidden();
+        var n = normalize(input.value);
+        if (n.length === 9) {
+            var merged = mergeUnique([n].concat(readRecent()));
+            writeRecent(merged);
+        }
+    });
+
+    syncHidden();
+})();
+</script>
+
+@if (Model.CaseFound)
+{
+    <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
+
+    <div class="bse-rbse-summary-grid">
+        <div class="bse-rbse-summary-row">
+            <div class="bse-rbse-summary-item">
+                <span class="bse-rbse-summary-label">Owner Name</span>
+                <span class="bse-rbse-summary-value">@Model.Farm?.OwnerName</span>
+            </div>
+            <div class="bse-rbse-summary-item bse-rbse-summary-item--wide-label">
+                <span class="bse-rbse-summary-label">CPHH</span>
+                <span class="bse-rbse-summary-value">@BseFormat.FormatCphh(Model.CaseRecord.Cphh)</span>
+            </div>
+        </div>
+        <div class="bse-rbse-summary-row">
+            <div class="bse-rbse-summary-item">
+                <span class="bse-rbse-summary-label">Address</span>
+                <span class="bse-rbse-summary-value">
+                    @Model.Farm?.Address1<br>
+                    @Model.Farm?.Address2<br>
+                    @Model.Farm?.Address3<br>
+                    @Model.Farm?.Postcode
+                </span>
+            </div>
+            <div class="bse-rbse-summary-item bse-rbse-summary-item--wide-label">
+                <span class="bse-rbse-summary-label">No. of cases with same CPHH</span>
+                <span class="bse-rbse-summary-value">@Model.NumberOfCasesOnFarm</span>
+            </div>
+        </div>
+        @if (Model.FarmWillBeDeleted)
+        {
+            <div class="bse-rbse-summary-row">
+                <div class="bse-rbse-summary-item bse-rbse-summary-item--empty"></div>
+                <div class="bse-rbse-summary-item bse-rbse-summary-item--wide-label">
+                    <span class="bse-farm-delete-message">@DeleteModel.FarmDeleteMessage</span>
+                    <span class="bse-rbse-summary-value"></span>
                 </div>
             </div>
         }
+    </div>
 
-        <form method="post">
-            <input type="hidden" asp-for="Rbse" />
-            <div class="govuk-button-group">
-                <button type="submit" class="govuk-button govuk-button--warning" data-module="govuk-button">Confirm delete</button>
-                <a asp-page="/Case/Details" asp-route-rbse="@Model.Rbse" class="govuk-link">Cancel</a>
-            </div>
-        </form>
-    }
-    else
+    @if (Model.HasVlaData)
     {
-        <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
-            <ol class="govuk-breadcrumbs__list">
-                <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-                <li class="govuk-breadcrumbs__list-item" aria-current="page">Delete case</li>
-            </ol>
-        </nav>
+        <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
+
         <div class="govuk-warning-text">
             <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
             <strong class="govuk-warning-text__text">
                 <span class="govuk-warning-text__assistive">Warning</span>
-                No case found for RBSE @Model.Rbse.
+                @DeleteModel.VlaDataMessage
             </strong>
         </div>
-        <a asp-page="/Case/Delete" class="govuk-link">Look up another case</a>
+        <div class="govuk-button-group bse-rbse-action-group">
+            <button type="button" class="govuk-button" data-module="govuk-button" disabled>OK</button>
+            <a asp-page="/Home" class="govuk-link">Cancel</a>
+        </div>
     }
-</div>
+    else
+    {
+        <div class="govuk-warning-text">
+            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+            <strong class="govuk-warning-text__text">
+                <span class="govuk-warning-text__assistive">Warning</span>
+                Deleting this case cannot be undone.
+            </strong>
+        </div>
+
+        <form method="post" asp-page-handler="Delete">
+            <input type="hidden" name="Rbse" value="@Model.Rbse" />
+            <div class="govuk-button-group bse-rbse-action-group">
+                <button type="submit" class="govuk-button" data-module="govuk-button"
+                        onclick="return confirm('Click OK to delete case');">OK</button>
+                <a asp-page="/Home" class="govuk-link">Cancel</a>
+            </div>
+        </form>
+    }
+}

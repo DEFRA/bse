@@ -1,8 +1,10 @@
 ﻿using BSE.Host.Cache;
 using BSE.Host.Authentication;
 using BSE.Host.HealthChecks;
+using BSE.Host.Middleware;
 using BSE.Infrastructure;
 using BSE.Infrastructure.Cache;
+using BSE.SharedKernel;
 using BSE.Modules.AuditLog;
 using BSE.Modules.Batch;
 using BSE.Modules.AdnsExport;
@@ -16,6 +18,7 @@ using BSE.Modules.ReferenceData;
 using BSE.Modules.Search;
 using BSE.Modules.UserManagement;
 using BSE.Modules.UserManagement.Identity;
+using BSE.Host.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -28,6 +31,7 @@ using Sustainsys.Saml2.Metadata;
 using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Json;
+using Serilog.Sinks.ApplicationInsights.TelemetryConverters;
 
 // Bootstrap logger captures startup errors before full Serilog is configured.
 Log.Logger = new LoggerConfiguration()
@@ -40,13 +44,24 @@ try
     var builder = WebApplication.CreateBuilder(args);
 
     // ── Structured logging ──────────────────────────────────────────────────
-    builder.Host.UseSerilog((context, config) =>
+    builder.Host.UseSerilog((context, _, config) =>
     {
+        var appInsightsConnectionString = context.Configuration["ApplicationInsights:ConnectionString"];
+
         config
             .MinimumLevel.Information()
             .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
             .ReadFrom.Configuration(context.Configuration)   // ← picks up Serilog:MinimumLevel:Override from appsettings
             .Enrich.FromLogContext();
+
+        var isNonProduction = !context.HostingEnvironment.IsProduction();
+        var hasAppInsights = !string.IsNullOrWhiteSpace(appInsightsConnectionString);
+
+        if (isNonProduction && hasAppInsights)
+        {
+            config.WriteTo.ApplicationInsights(appInsightsConnectionString!, TelemetryConverter.Traces);
+            return;
+        }
 
         // Structured JSON in non-Development environments; plain text locally.
         if (context.HostingEnvironment.IsDevelopment())
@@ -59,7 +74,12 @@ try
 
     // ── Data access infrastructure ──────────────────────────────────────────
     builder.Services.AddSingleton<IDbConnectionFactory, SqlConnectionFactory>();
-    builder.Services.AddScoped<IDbRepository, DapperRepository>();
+    builder.Services.AddScoped<DapperRepository>();
+    builder.Services.AddScoped<IDbRepository>(sp =>
+        new LoggingDbRepositoryDecorator(
+            sp.GetRequiredService<DapperRepository>(),
+            sp.GetRequiredService<ILogger<LoggingDbRepositoryDecorator>>(),
+            sp.GetRequiredService<IConfiguration>()));
 
     // ── Distributed cache (Redis primary / MemoryCache fallback) ────────────
     // When Redis__ConnectionString is set the app runs in distributed mode;
@@ -187,6 +207,13 @@ try
                 options.Events.OnRedirectToLogin = async ctx =>
 
                 {
+                    var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>()
+                        .CreateLogger("AuthSecurity");
+                    logger.LogWarning(
+                        "Authentication challenge redirect for {Path}. ReturnUrl={ReturnUrl}",
+                        ctx.Request.Path.Value,
+                        ctx.Request.Query["ReturnUrl"].ToString());
+
                     await ctx.HttpContext.ChallengeAsync(
                         Saml2Defaults.Scheme,
                         new AuthenticationProperties
@@ -197,6 +224,13 @@ try
                 // Redirect authenticated users with insufficient permissions to Home, not a 403.
                 options.Events.OnRedirectToAccessDenied = ctx =>
                 {
+                    var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>()
+                        .CreateLogger("AuthSecurity");
+                    logger.LogWarning(
+                        "Access denied redirect for {Path} (User={User})",
+                        ctx.Request.Path.Value,
+                        ctx.HttpContext.User.Identity?.Name ?? "unknown");
+
                     ctx.Response.Redirect("/Home");
                     return Task.CompletedTask;
                 };
@@ -280,7 +314,7 @@ try
     // dev-bse.azure.defra.cloud terminates TLS and forwards to the App Service's
     // default hostname. Without this, Request.Scheme/Request.Host reflect the
     // raw azurewebsites.net origin, causing absolute redirects to leak that hostname.
-    // Azure's edge proxy IPs are not fixed, so KnownNetworks/KnownProxies are cleared
+    // Azure's edge proxy IPs are not fixed, so KnownIPNetworks/KnownProxies are cleared
     // to trust forwarded headers regardless of hop address — safe because the
     // azurewebsites.net endpoint is access-restricted to Front Door / App Gateway only.
     builder.Services.Configure<ForwardedHeadersOptions>(options =>
@@ -288,7 +322,7 @@ try
         options.ForwardedHeaders = ForwardedHeaders.XForwardedFor
                                  | ForwardedHeaders.XForwardedProto
                                  | ForwardedHeaders.XForwardedHost;
-        options.KnownNetworks.Clear();
+        options.KnownIPNetworks.Clear();
         options.KnownProxies.Clear();
     });
 
@@ -331,9 +365,23 @@ try
         // behaviour — all search filter fields are optional. Suppress to match legacy.
         o.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true) ;
 
+    // ── Session support (for grid state persistence in OSS Export and other pages) ──
+    builder.Services.AddSession(options =>
+    {
+        options.IdleTimeout = TimeSpan.FromMinutes(20);
+        options.Cookie.HttpOnly = true;
+        options.Cookie.IsEssential = true; // Required for app to function
+    });
+
     // ── Host services ──────────────────────────────────────────────────────────
     builder.Services.AddScoped<BSE.Host.Services.ICurrentUserService, BSE.Host.Services.CurrentUserService>();
     builder.Services.AddScoped<BSE.Host.Services.IGeoLookupService, BSE.Host.Services.GeoLookupService>();
+    builder.Services.AddScoped<BSE.Host.Services.ICaseWizardStateService, BSE.Host.Services.CaseWizardStateService>();
+    builder.Services.AddScoped<BSE.Host.Services.ICaseEditDraftStateService, BSE.Host.Services.CaseEditDraftStateService>();
+    builder.Services.AddScoped<BSE.Host.Services.ICaseFarmDraftStateService, BSE.Host.Services.CaseFarmDraftStateService>();
+    builder.Services.AddScoped<BSE.Host.Services.ICaseClinicalDraftStateService, BSE.Host.Services.CaseClinicalDraftStateService>();
+    builder.Services.AddScoped<BSE.Host.Services.ICaseFeedsDraftStateService, BSE.Host.Services.CaseFeedsDraftStateService>();
+    builder.Services.AddScoped<BSE.Host.Services.ICaseRelationsDraftStateService, BSE.Host.Services.CaseRelationsDraftStateService>();
 
     // -- Authorisation policies
     // Each policy requires exactly its own name as a role claim.
@@ -390,9 +438,34 @@ try
 
     app.UseForwardedHeaders(); // options registered via builder.Services.Configure<ForwardedHeadersOptions> above
 
+    app.UseMiddleware<UnhandledExceptionLoggingMiddleware>();
     app.UseExceptionHandler("/Error");
-    app.UseSerilogRequestLogging();
+
+    var slowRequestThresholdMs = builder.Configuration.GetValue<int?>("Serilog:SlowRequestThresholdMs") ?? 1000;
+    app.UseSerilogRequestLogging(options =>
+    {
+        options.EnrichDiagnosticContext = (diag, http) =>
+        {
+            diag.Set("RequestHost", http.Request.Host.Value);
+            diag.Set("RequestScheme", http.Request.Scheme);
+            diag.Set("UserAgent", http.Request.Headers.UserAgent.ToString());
+            diag.Set("User", http.User.Identity?.Name ?? "anonymous");
+        };
+
+        options.GetLevel = (http, elapsed, ex) =>
+        {
+            if (ex is not null || http.Response.StatusCode >= 500)
+                return LogEventLevel.Error;
+
+            if (elapsed >= slowRequestThresholdMs)
+                return LogEventLevel.Warning;
+
+            return LogEventLevel.Information;
+        };
+    });
+
     app.UseAuthentication();
+    app.UseSession(); // Session middleware must come after Authentication
     app.UseAuthorization();
 
     // Liveness: always returns 200 — no health checks evaluated.
@@ -409,6 +482,46 @@ try
     }).AllowAnonymous();
 
     app.UseStaticFiles();
+    app.UseMiddleware<UserActivityLoggingMiddleware>();
+
+    app.MapGet("/case/{rbse}/unsaved-status", async (
+        string rbse,
+        ICaseEditDraftStateService caseEditDraftState,
+        ICaseFarmDraftStateService caseFarmDraftState,
+        ICaseClinicalDraftStateService caseClinicalDraftState,
+        ICaseFeedsDraftStateService caseFeedsDraftState,
+        ICaseRelationsDraftStateService caseRelationsDraftState) =>
+    {
+        var normalizedRbse = RbseHelper.ParseToRaw(rbse);
+
+        var hasUnsavedChanges = (await caseEditDraftState.GetAsync(normalizedRbse))?.HasPendingChanges == true
+                                || (await caseFarmDraftState.GetAsync(normalizedRbse))?.HasPendingChanges == true
+                                || (await caseClinicalDraftState.GetAsync(normalizedRbse))?.HasPendingChanges == true
+                                || (await caseFeedsDraftState.GetAsync(normalizedRbse))?.HasPendingChanges == true
+                                || (await caseRelationsDraftState.GetAsync(normalizedRbse))?.HasPendingChanges == true;
+
+        return Results.Json(new { hasUnsavedChanges });
+    }).RequireAuthorization();
+
+    app.MapPost("/case/{rbse}/discard-unsaved", async (
+        string rbse,
+        ICaseEditDraftStateService caseEditDraftState,
+        ICaseFarmDraftStateService caseFarmDraftState,
+        ICaseClinicalDraftStateService caseClinicalDraftState,
+        ICaseFeedsDraftStateService caseFeedsDraftState,
+        ICaseRelationsDraftStateService caseRelationsDraftState) =>
+    {
+        var normalizedRbse = RbseHelper.ParseToRaw(rbse);
+
+        await caseEditDraftState.ClearAsync(normalizedRbse);
+        await caseFarmDraftState.ClearAsync(normalizedRbse);
+        await caseClinicalDraftState.ClearAsync(normalizedRbse);
+        await caseFeedsDraftState.ClearAsync(normalizedRbse);
+        await caseRelationsDraftState.ClearAsync(normalizedRbse);
+
+        return Results.Ok(new { cleared = true });
+    }).RequireAuthorization();
+
     app.MapGet("/", () => Results.Redirect("/Home"));
     app.MapRazorPages();
 
