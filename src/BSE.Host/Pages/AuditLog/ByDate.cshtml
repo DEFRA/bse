@@ -31,12 +31,14 @@
     <form method="get" novalidate class="govuk-!-margin-bottom-6">
         <div class="bse-date-search-row">
             <div class="govuk-form-group @(Model.LogDateError is not null ? "govuk-form-group--error" : "")">
-                <label asp-for="LogDate" class="govuk-label">Log Entries On</label>
+                <label class="govuk-label" for="LogDate">Log Entries On</label>
                 @if (Model.LogDateError is not null)
                 {
                     <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.LogDateError</p>
                 }
-                <input asp-for="LogDate" type="date" class="govuk-input govuk-input--width-10 @(Model.LogDateError is not null ? "govuk-input--error" : "")" />
+                <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                    <input id="LogDate" name="LogDate" type="text" class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(Model.LogDateError is not null ? "govuk-input--error" : "")" autocomplete="off" value="@(Model.LogDate?.ToString("dd/MM/yyyy") ?? "")" />
+                </div>
             </div>
             <div class="govuk-button-group">
                 <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>

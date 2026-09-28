@@ -238,8 +238,10 @@
                     {
                         <td class="govuk-table__cell">
                             <label class="govuk-visually-hidden" for="edit-visit-date-@v.ClientKey">Visit date</label>
-                            <input id="edit-visit-date-@v.ClientKey" name="EditVisitDate" type="date" value="@(Model.EditVisitDate?.ToString("yyyy-MM-dd"))"
-                                   class="govuk-input govuk-input--width-10" />
+                            <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                                <input id="edit-visit-date-@v.ClientKey" name="EditVisitDate" type="text" value="@(Model.EditVisitDate?.ToString("dd/MM/yyyy"))"
+                                       class="govuk-input govuk-input--width-10 moj-js-datepicker-input" autocomplete="off" />
+                            </div>
                         </td>
                         <td class="govuk-table__cell">
                             <input type="hidden" name="EditingClientKey" value="@v.ClientKey" />
@@ -278,8 +280,10 @@
                 <td class="govuk-table__cell">
                     <div class="govuk-form-group govuk-!-margin-bottom-0">
                         <label class="govuk-visually-hidden" for="new-visit-date">Visit date</label>
-                        <input id="new-visit-date" name="NewVisitDate" type="date" value="@(Model.NewVisitDate?.ToString("yyyy-MM-dd"))"
-                               class="govuk-input govuk-input--width-10" />
+                        <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                            <input id="new-visit-date" name="NewVisitDate" type="text" value="@(Model.NewVisitDate?.ToString("dd/MM/yyyy"))"
+                                   class="govuk-input govuk-input--width-10 moj-js-datepicker-input" autocomplete="off" />
+                        </div>
                     </div>
                 </td>
                 <td class="govuk-table__cell">
@@ -444,7 +448,7 @@
             cancelAddBtn.addEventListener('click', function () {
                 addRow.hidden = true;
                 showAddBtn.hidden = false;
-                var input = addRow.querySelector('input[type="date"]');
+                var input = addRow.querySelector('input.moj-js-datepicker-input');
                 if (input) { input.value = ''; }
                 showAddBtn.focus();
                 announce('Add clinical visit row cancelled.');
@@ -472,7 +476,7 @@
             var visitRow = document.querySelector('.bse-clinical-visit-row[data-client-key="' + reopenVisitClientKey + '"]');
             if (visitRow) {
                 visitRow.scrollIntoView({ behavior: 'auto', block: 'center' });
-                var visitInput = visitRow.querySelector('input[type="date"]');
+                var visitInput = visitRow.querySelector('input.moj-js-datepicker-input');
                 if (visitInput) { visitInput.focus(); }
             }
         }

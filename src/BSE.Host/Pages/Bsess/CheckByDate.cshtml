@@ -48,13 +48,17 @@
                     <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewContext.ModelState["EndDate"]!.Errors[0].ErrorMessage</p>
                 }
                 <div class="bse-date-range-input-wrapper">
-                    <input id="audit-start-date" name="StartDate" type="date"
-                           class="govuk-input govuk-input--width-10"
-                           value="@Model.StartDate?.ToString("yyyy-MM-dd")" />
+                    <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                        <input id="audit-start-date" name="StartDate" type="text"
+                               class="govuk-input govuk-input--width-10 moj-js-datepicker-input" autocomplete="off"
+                               value="@Model.StartDate?.ToString("dd/MM/yyyy")" />
+                    </div>
                     <span class="bse-date-range-separator govuk-label">and</span>
-                    <input id="audit-end-date" name="EndDate" type="date"
-                           class="govuk-input govuk-input--width-10"
-                           value="@Model.EndDate?.ToString("yyyy-MM-dd")" />
+                    <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                        <input id="audit-end-date" name="EndDate" type="text"
+                               class="govuk-input govuk-input--width-10 moj-js-datepicker-input" autocomplete="off"
+                               value="@Model.EndDate?.ToString("dd/MM/yyyy")" />
+                    </div>
                 </div>
             </div>
             <div class="govuk-button-group bse-rbse-action-group">
@@ -66,10 +70,10 @@
 
     @if (Model.Discrepancies.Any())
     {
-        var sortBase = $"?StartDate={Uri.EscapeDataString(Model.StartDate?.ToString("yyyy-MM-dd") ?? string.Empty)}&EndDate={Uri.EscapeDataString(Model.EndDate?.ToString("yyyy-MM-dd") ?? string.Empty)}";
+        var sortBase = $"?StartDate={Uri.EscapeDataString(Model.StartDate?.ToString("dd/MM/yyyy") ?? string.Empty)}&EndDate={Uri.EscapeDataString(Model.EndDate?.ToString("dd/MM/yyyy") ?? string.Empty)}";
 
         <p class="govuk-body">
-            <a href="@($"?StartDate={Uri.EscapeDataString(Model.StartDate?.ToString("yyyy-MM-dd") ?? string.Empty)}&EndDate={Uri.EscapeDataString(Model.EndDate?.ToString("yyyy-MM-dd") ?? string.Empty)}&handler=Export")" class="govuk-link">Export to Excel</a>
+            <a href="@($"?StartDate={Uri.EscapeDataString(Model.StartDate?.ToString("dd/MM/yyyy") ?? string.Empty)}&EndDate={Uri.EscapeDataString(Model.EndDate?.ToString("dd/MM/yyyy") ?? string.Empty)}&handler=Export")" class="govuk-link">Export to Excel</a>
         </p>
 
         <table class="govuk-table">

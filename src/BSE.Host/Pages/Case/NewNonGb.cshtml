@@ -95,8 +95,10 @@
             <div class="govuk-form-group @(ViewContext.ModelState[nameof(Model.FinalResultDate)]?.Errors.Any() == true ? "govuk-form-group--error" : "")">
                 <label asp-for="FinalResultDate" class="govuk-label">Final Result Date</label>
                 <span asp-validation-for="FinalResultDate" class="govuk-error-message"></span>
-                <input asp-for="FinalResultDate" type="date" class="govuk-input bse-farm-legacy__input"
-                       value="@Model.FinalResultDate?.ToString("yyyy-MM-dd")" />
+                <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                    <input asp-for="FinalResultDate" type="text" class="govuk-input bse-farm-legacy__input moj-js-datepicker-input" autocomplete="off"
+                           value="@Model.FinalResultDate?.ToString("dd/MM/yyyy")" />
+                </div>
             </div>
                 </div>
             </div>
@@ -106,8 +108,10 @@
             <div class="govuk-form-group @(ViewContext.ModelState[nameof(Model.SlaughterDate)]?.Errors.Any() == true ? "govuk-form-group--error" : "")">
                 <label asp-for="SlaughterDate" class="govuk-label">Slaughter Date</label>
                 <span asp-validation-for="SlaughterDate" class="govuk-error-message"></span>
-                <input asp-for="SlaughterDate" type="date" class="govuk-input bse-farm-legacy__input"
-                       value="@Model.SlaughterDate?.ToString("yyyy-MM-dd")" />
+                <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                    <input asp-for="SlaughterDate" type="text" class="govuk-input bse-farm-legacy__input moj-js-datepicker-input" autocomplete="off"
+                           value="@Model.SlaughterDate?.ToString("dd/MM/yyyy")" />
+                </div>
             </div>
                 </div>
                 <div class="bse-farm-legacy__field bse-farm-legacy__field--continuation">
