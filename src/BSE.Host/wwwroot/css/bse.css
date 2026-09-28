@@ -1220,18 +1220,18 @@
     vertical-align: top;
 }
 
-.bse-case-search-table .moj-sortable-table__button,
-.bse-farm-search-table .moj-sortable-table__button,
-.bse-outstanding-search-table .moj-sortable-table__button,
-.bse-holding-herdmark-search-table .moj-sortable-table__button,
-.bse-herdmark-search-table .moj-sortable-table__button {
+.bse-case-search-table .bse-sortable-table__button,
+.bse-farm-search-table .bse-sortable-table__button,
+.bse-outstanding-search-table .bse-sortable-table__button,
+.bse-holding-herdmark-search-table .bse-sortable-table__button,
+.bse-herdmark-search-table .bse-sortable-table__button {
     white-space: normal;
     align-items: flex-start;
     line-height: 1.2;
 }
 
-.bse-open-cases-table .moj-sortable-table__button,
-.bse-closed-cases-table .moj-sortable-table__button {
+.bse-open-cases-table .bse-sortable-table__button,
+.bse-closed-cases-table .bse-sortable-table__button {
     justify-content: flex-start;
     text-align: left;
     white-space: normal;
@@ -1382,9 +1382,9 @@
 .bse-casework-entry-minutes-table tbody .govuk-table__cell:nth-child(3) { min-width: 6ch; }
 .bse-casework-entry-minutes-table tbody .govuk-table__cell:nth-child(4) { min-width: 9ch; white-space: nowrap; }
 
-.bse-outstanding-search-table .moj-sortable-table__button,
-.bse-holding-herdmark-search-table .moj-sortable-table__button,
-.bse-herdmark-search-table .moj-sortable-table__button {
+.bse-outstanding-search-table .bse-sortable-table__button,
+.bse-holding-herdmark-search-table .bse-sortable-table__button,
+.bse-herdmark-search-table .bse-sortable-table__button {
     justify-content: flex-start;
     text-align: left;
 }
@@ -1506,7 +1506,7 @@
     overflow-wrap: anywhere;
 }
 
-.bse-case-search-table .moj-sortable-table__button {
+.bse-case-search-table .bse-sortable-table__button {
     justify-content: flex-start;
     text-align: left;
 }
@@ -1622,7 +1622,7 @@
     text-align: left;
 }
 
-.bse-farm-search-table .moj-sortable-table__button {
+.bse-farm-search-table .bse-sortable-table__button {
     justify-content: flex-start;
     align-items: flex-start;
     text-align: left;
@@ -1709,7 +1709,7 @@
     vertical-align: top;
 }
 
-.bse-related-animals-search-table .moj-sortable-table__button {
+.bse-related-animals-search-table .bse-sortable-table__button {
     white-space: normal;
     align-items: flex-start;
     line-height: 1.2;
@@ -2638,11 +2638,11 @@
 }
 
 /* Sortable table header links (MOJ sortable-table pattern style) */
-.moj-sortable-table__heading {
+.bse-sortable-table__heading {
     vertical-align: top;
 }
 
-.moj-sortable-table__button {
+.bse-sortable-table__button {
     position: relative;
     display: inline-flex;
     align-items: center;
@@ -2653,12 +2653,12 @@
     white-space: nowrap;
 }
 
-.moj-sortable-table__button:hover {
+.bse-sortable-table__button:hover {
     color: #003078;
     text-decoration: underline;
 }
 
-.moj-sortable-table__button:focus {
+.bse-sortable-table__button:focus {
     outline: 3px solid transparent;
     color: #0b0c0c;
     background-color: #ffdd00;
@@ -2666,7 +2666,7 @@
     text-decoration: none;
 }
 
-.moj-sortable-table__button:focus:not(:focus-visible) {
+.bse-sortable-table__button:focus:not(:focus-visible) {
     outline: none;
     background-color: transparent;
     box-shadow: none;
@@ -2682,33 +2682,33 @@
 }
 
 /* Stacked up/down triangle icons, mirroring the MOJ sortable-table pattern */
-.moj-sortable-table__icons {
+.bse-sortable-table__icons {
     display: inline-flex;
     flex-direction: column;
     justify-content: center;
     gap: 3px;
 }
 
-.moj-sortable-table__icon {
+.bse-sortable-table__icon {
     width: 0;
     height: 0;
     border-left: 5px solid transparent;
     border-right: 5px solid transparent;
 }
 
-.moj-sortable-table__icon--up {
+.bse-sortable-table__icon--up {
     border-bottom: 5px solid #b1b4b6;
 }
 
-.moj-sortable-table__icon--down {
+.bse-sortable-table__icon--down {
     border-top: 5px solid #b1b4b6;
 }
 
-.govuk-table__header[aria-sort="ascending"] .moj-sortable-table__icon--up {
+.govuk-table__header[aria-sort="ascending"] .bse-sortable-table__icon--up {
     border-bottom-color: #0b0c0c;
 }
 
-.govuk-table__header[aria-sort="descending"] .moj-sortable-table__icon--down {
+.govuk-table__header[aria-sort="descending"] .bse-sortable-table__icon--down {
     border-top-color: #0b0c0c;
 }
 
@@ -3202,7 +3202,7 @@
     line-height: 1.2;
 }
 
-.bse-audit-table th.bse-batch-header .moj-sortable-table__button {
+.bse-audit-table th.bse-batch-header .bse-sortable-table__button {
     display: block;
     width: 100%;
     max-width: 100%;
