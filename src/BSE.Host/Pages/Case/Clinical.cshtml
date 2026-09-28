@@ -4,6 +4,8 @@
     ViewData["Title"] = $"Clinical signs and visits — {Model.Rbse}";
     string rbseNoSlash = Model.Rbse.Replace("/", "");
     var viewDocsUrl = string.IsNullOrWhiteSpace(Model.SpolSiteUrl) ? null : $"{Model.SpolSiteUrl}{rbseNoSlash}";
+    var canSaveClinical = User.IsInRole("DataEntry");
+    var canEditClinical = canSaveClinical && User.IsInRole("VLAAccess");
     var s = Model.Signs;
     var checkedSigns = new List<string>();
     if (s.Apprehension) checkedSigns.Add("Apprehension");
@@ -90,63 +92,34 @@
     </div>
 }
 
-@if (!User.IsInRole("DataEntry"))
-{
-   
-    @if (checkedSigns.Count > 0)
-    {
-        <ul class="govuk-list govuk-list--bullet">
-            @foreach (var sign in checkedSigns)
-            {
-                <li>@sign</li>
-            }
-        </ul>
-    }
-    else
-    {
-        <p class="govuk-body">No clinical signs recorded.</p>
-    }
-
-    <h2 class="govuk-heading-m govuk-!-margin-top-6">Clinical visit dates</h2>
-    <table class="govuk-table">
-        <caption class="govuk-visually-hidden">Clinical visits for @BseFormat.FormatRbse(Model.Rbse)</caption>
-        <thead class="govuk-table__head">
-            <tr class="govuk-table__row"><th scope="col" class="govuk-table__header">Visit date</th></tr>
-        </thead>
-        <tbody class="govuk-table__body">
-            @if (Model.VisitsTotalCount > 0)
-            {
-                @foreach (var v in Model.Visits)
-                {
-                    <tr class="govuk-table__row"><td class="govuk-table__cell">@v.VisitDate?.ToString("dd/MM/yyyy")</td></tr>
-                }
-            }
-            else
-            {
-                <tr class="govuk-table__row"><td class="govuk-table__cell">No clinical visits recorded.</td></tr>
-            }
-        </tbody>
-    </table>
-
-    <p class="govuk-body">You can view clinical details but cannot edit this page.</p>
-    return;
-}
-
 <form method="post" novalidate id="case-clinical-inline-form">
     <input type="hidden" asp-for="Rbse" />
     <input type="hidden" asp-for="ClinicalRowStampBase64" />
 
-    <div id="case-clinical-unsaved-banner"
-         class="govuk-inset-text bse-unsaved-banner"
-         role="status"
-         hidden="@(!Model.HasUnsavedChanges)">
-        <strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.
-    </div>
+    @if (!canEditClinical)
+    {
+        <p class="govuk-body">You can view clinical details but cannot edit this page.</p>
+    }
 
-    <div class="govuk-button-group govuk-!-margin-bottom-4">
-        <button type="submit" asp-page-handler="SaveSigns" class="govuk-button" data-module="govuk-button">Save</button>
-        <a asp-page="/Case/Clinical" asp-page-handler="CancelClinicalEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
-    </div>
+    @if (canSaveClinical)
+    {
+        @if (canEditClinical)
+        {
+            <div id="case-clinical-unsaved-banner"
+                 class="govuk-inset-text bse-unsaved-banner"
+                 role="status"
+                 hidden="@(!Model.HasUnsavedChanges)">
+                <strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.
+            </div>
+        }
+
+        <div class="govuk-button-group govuk-!-margin-bottom-4">
+            <button type="submit" asp-page-handler="SaveSigns" class="govuk-button" data-module="govuk-button">Save</button>
+            <a asp-page="/Case/Clinical" asp-page-handler="CancelClinicalEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
+        </div>
+    }
+
+    <fieldset class="bse-form-fieldset-reset" disabled="@(!canEditClinical ? "disabled" : null)">
 
 
     <div class="bse-clinical-grid bse-clinical-grid--18">
@@ -232,14 +205,16 @@
 
             @foreach (var v in Model.Visits)
             {
-                var isEditing = Model.ReopenEditClientKey == v.ClientKey;
+                var isEditing = canEditClinical && Model.ReopenEditClientKey == v.ClientKey;
                 <tr class="govuk-table__row bse-clinical-visit-row @(v.IsUnsaved ? "bse-clinical-visit-row--unsaved" : "")" data-client-key="@v.ClientKey">
                     @if (isEditing)
                     {
                         <td class="govuk-table__cell">
                             <label class="govuk-visually-hidden" for="edit-visit-date-@v.ClientKey">Visit date</label>
-                            <input id="edit-visit-date-@v.ClientKey" name="EditVisitDate" type="date" value="@(Model.EditVisitDate?.ToString("yyyy-MM-dd"))"
-                                   class="govuk-input govuk-input--width-10" />
+                            <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                                <input id="edit-visit-date-@v.ClientKey" name="EditVisitDate" type="text" value="@(Model.EditVisitDate?.ToString("dd/MM/yyyy"))"
+                                       class="govuk-input govuk-input--width-10 moj-js-datepicker-input" autocomplete="off" />
+                            </div>
                         </td>
                         <td class="govuk-table__cell">
                             <input type="hidden" name="EditingClientKey" value="@v.ClientKey" />
@@ -259,27 +234,32 @@
                             }
                         </td>
                         <td class="govuk-table__cell">
-                            <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
-                                <button type="submit" asp-page-handler="BeginEditVisitRow" asp-route-clientKey="@v.ClientKey"
-                                        class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">
-                                    Change<span class="govuk-visually-hidden"> visit dated @v.VisitDate?.ToString("dd/MM/yyyy")</span>
-                                </button>
-                                <button type="submit" asp-page-handler="DeleteVisit" asp-route-clientKey="@v.ClientKey"
-                                        class="govuk-button govuk-button--warning govuk-!-margin-bottom-0" data-module="govuk-button">
-                                    Remove<span class="govuk-visually-hidden"> visit dated @v.VisitDate?.ToString("dd/MM/yyyy")</span>
-                                </button>
-                            </div>
+                            @if (canEditClinical)
+                            {
+                                <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
+                                    <button type="submit" asp-page-handler="BeginEditVisitRow" asp-route-clientKey="@v.ClientKey"
+                                            class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">
+                                        Change<span class="govuk-visually-hidden"> visit dated @v.VisitDate?.ToString("dd/MM/yyyy")</span>
+                                    </button>
+                                    <button type="submit" asp-page-handler="DeleteVisit" asp-route-clientKey="@v.ClientKey"
+                                            class="govuk-button govuk-button--warning govuk-!-margin-bottom-0" data-module="govuk-button">
+                                        Remove<span class="govuk-visually-hidden"> visit dated @v.VisitDate?.ToString("dd/MM/yyyy")</span>
+                                    </button>
+                                </div>
+                            }
                         </td>
                     }
                 </tr>
             }
 
-            <tr id="add-visit-row-inline" class="govuk-table__row bse-clinical-visit-row--unsaved" hidden="@(!Model.ShowAddVisitRow)">
+            <tr id="add-visit-row-inline" class="govuk-table__row bse-clinical-visit-row--unsaved" hidden="@(!Model.ShowAddVisitRow || !canEditClinical)">
                 <td class="govuk-table__cell">
                     <div class="govuk-form-group govuk-!-margin-bottom-0">
                         <label class="govuk-visually-hidden" for="new-visit-date">Visit date</label>
-                        <input id="new-visit-date" name="NewVisitDate" type="date" value="@(Model.NewVisitDate?.ToString("yyyy-MM-dd"))"
-                               class="govuk-input govuk-input--width-10" />
+                        <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                            <input id="new-visit-date" name="NewVisitDate" type="text" value="@(Model.NewVisitDate?.ToString("dd/MM/yyyy"))"
+                                   class="govuk-input govuk-input--width-10 moj-js-datepicker-input" autocomplete="off" />
+                        </div>
                     </div>
                 </td>
                 <td class="govuk-table__cell">
@@ -331,16 +311,14 @@
                 }
             </nav>
         }
-    <div class="govuk-button-group govuk-!-margin-bottom-6">
-        <button type="button" id="show-add-visit-row" class="govuk-button govuk-button--secondary" data-module="govuk-button">Add a clinical visit</button>
-    </div>
+    @if (canEditClinical)
+    {
+        <div class="govuk-button-group govuk-!-margin-bottom-6">
+            <button type="button" id="show-add-visit-row" class="govuk-button govuk-button--secondary" data-module="govuk-button">Add a clinical visit</button>
+        </div>
+    }
 
     <div aria-live="polite" role="status" class="govuk-visually-hidden" id="visit-live-region"></div>
-
-    <div class="govuk-button-group govuk-!-margin-top-4">
-        <button type="submit" asp-page-handler="SaveSigns" class="govuk-button" data-module="govuk-button">Save</button>
-        <button type="submit" asp-page-handler="CancelClinicalEdit" class="govuk-button govuk-button--secondary bse-cancel-button" data-module="govuk-button">Cancel</button>
-    </div>
 
     <div class="govuk-!-margin-top-6">
         <ul class="govuk-list">
@@ -354,9 +332,17 @@
             }
         </ul>
     </div>
+    </fieldset>
 </form>
 
 <style>
+    .bse-form-fieldset-reset {
+        border: 0;
+        margin: 0;
+        padding: 0;
+        min-width: 0;
+    }
+
     .bse-clinical-grid {
         display: grid;
         gap: 4px 32px;
@@ -444,7 +430,7 @@
             cancelAddBtn.addEventListener('click', function () {
                 addRow.hidden = true;
                 showAddBtn.hidden = false;
-                var input = addRow.querySelector('input[type="date"]');
+                var input = addRow.querySelector('input.moj-js-datepicker-input');
                 if (input) { input.value = ''; }
                 showAddBtn.focus();
                 announce('Add clinical visit row cancelled.');
@@ -472,7 +458,7 @@
             var visitRow = document.querySelector('.bse-clinical-visit-row[data-client-key="' + reopenVisitClientKey + '"]');
             if (visitRow) {
                 visitRow.scrollIntoView({ behavior: 'auto', block: 'center' });
-                var visitInput = visitRow.querySelector('input[type="date"]');
+                var visitInput = visitRow.querySelector('input.moj-js-datepicker-input');
                 if (visitInput) { visitInput.focus(); }
             }
         }

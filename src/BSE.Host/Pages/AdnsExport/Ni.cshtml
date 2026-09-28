@@ -76,10 +76,12 @@
             </div>
 
             <div class="bse-adns-form-row">
-                <div class="govuk-form-group bse-adns-field @(ViewContext.ModelState["InputConfirmationDate"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
-                    <label asp-for="InputConfirmationDate" class="govuk-label">Confirmation date</label>
-                    <input asp-for="InputConfirmationDate" type="date" class="govuk-input govuk-input--width-10" />
-                    <span asp-validation-for="InputConfirmationDate" class="govuk-error-message"></span>
+                <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                    <div class="govuk-form-group bse-adns-field @(ViewContext.ModelState["InputConfirmationDate"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
+                        <label asp-for="InputConfirmationDate" class="govuk-label">Confirmation date</label>
+                        <span asp-validation-for="InputConfirmationDate" class="govuk-error-message"></span>
+                        <input asp-for="InputConfirmationDate" type="text" class="govuk-input moj-js-datepicker-input" autocomplete="off" />
+                    </div>
                 </div>
             </div>
 

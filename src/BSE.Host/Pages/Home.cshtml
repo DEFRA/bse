@@ -120,12 +120,10 @@
                         @rbseError
                     </p>
                 }
-                <input id="rbse-lookup" name="LookupRbse" type="hidden" value="@Model.LookupRbse" />
-
                 <div class="bse-home-rbse-combobox">
-                    <input id="rbse-lookup-input" name="Filter.Rbse" type="text"
+                    <input id="rbse-lookup-input" name="LookupRbse" type="text"
                            class="govuk-input bse-home-rbse-input @(rbseError is not null ? "govuk-input--error" : "")"
-                           value="@Model.LookupRbse" autocomplete="on" data-bse-disable-click-open="true" spellcheck="false" autocapitalize="off"
+                           value="@Model.LookupRbse" autocomplete="on" data-no-global-autosuggest="true" title="RBSE Format: NN/NN/NNNNN" spellcheck="false" autocapitalize="off"
                            aria-describedby="@(rbseError is not null ? "rbse-error" : "")" />
                 </div>
 
@@ -133,30 +131,6 @@
                         data-module="govuk-button">Go</button>
             </div>
 
-<script>
-    (function () {
-        var form = document.getElementById('case-entry-form');
-        var hidden = document.getElementById('rbse-lookup');
-        var input = document.getElementById('rbse-lookup-input');
-        if (!form || !hidden || !input) return;
-
-        if (!input.value && hidden.value) {
-            input.value = hidden.value;
-        }
-
-        input.addEventListener('input', function () {
-            hidden.value = input.value || '';
-        });
-
-        input.addEventListener('change', function () {
-            hidden.value = input.value || '';
-        });
-
-        form.addEventListener('submit', function () {
-            hidden.value = input.value || '';
-        });
-    })();
-</script>
         </form>
 
         <table class="govuk-table govuk-!-font-size-16 bse-home-rbse-table">

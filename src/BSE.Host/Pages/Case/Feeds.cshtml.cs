@@ -98,7 +98,7 @@ public class FeedsModel(
     /// <summary>Adds a feed record to the draft only. Not persisted until Save.</summary>
     public async Task<IActionResult> OnPostAddFeedRowAsync()
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
             return Forbid();
 
         Rbse = RbseHelper.ParseToRaw(Rbse);
@@ -135,7 +135,7 @@ public class FeedsModel(
     /// <summary>Populates the shared field panel from a staged row for editing (no changes saved yet).</summary>
     public async Task<IActionResult> OnPostBeginEditFeedRowAsync(string clientKey)
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
             return Forbid();
 
         Rbse = RbseHelper.ParseToRaw(Rbse);
@@ -174,7 +174,7 @@ public class FeedsModel(
     /// <summary>Updates the currently selected staged row from the shared field panel. Not persisted until Save.</summary>
     public async Task<IActionResult> OnPostUpdateFeedRowAsync()
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
             return Forbid();
 
         Rbse = RbseHelper.ParseToRaw(Rbse);
@@ -223,7 +223,7 @@ public class FeedsModel(
     /// <summary>Removes a staged feed row (mirrors legacy "Delete Selected"). Not persisted until Save.</summary>
     public async Task<IActionResult> OnPostDeleteFeedRowAsync(string clientKey)
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
             return Forbid();
 
         Rbse = RbseHelper.ParseToRaw(Rbse);

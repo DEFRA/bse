@@ -7,6 +7,7 @@
     var MAX_LOCAL_VALUES = 20;
     var MAX_RBSE_LOCAL_VALUES = 10;
     var MAX_RENDER = 20;
+    var LEGACY_RBSE_HINT = 'RBSE Format: NN/NN/NNNNN';
 
     function normalizeValue(field, value) {
         if (!value) return '';
@@ -103,7 +104,24 @@
         if (!(type === 'text' || type === 'search' || type === '')) return false;
         if (input.disabled || input.readOnly) return false;
         if (input.closest('#rbse-combobox')) return false;
-        return inferField(input) !== null;
+        var field = inferField(input);
+        if (field === 'rbse') return false;
+        return field !== null;
+    }
+
+    function applyLegacyRbseInputBehavior(input) {
+        if (!input || input.tagName !== 'INPUT') return;
+        var type = (input.type || 'text').toLowerCase();
+        if (!(type === 'text' || type === 'search' || type === '')) return;
+
+        if (!input.getAttribute('title')) {
+            input.setAttribute('title', LEGACY_RBSE_HINT);
+        }
+
+        var ac = (input.getAttribute('autocomplete') || '').toLowerCase();
+        if (!input.hasAttribute('autocomplete') || ac === 'off') {
+            input.setAttribute('autocomplete', 'on');
+        }
     }
 
     function unique(values) {
@@ -218,11 +236,13 @@
         // Defensive cleanup: remove stale floating UI already associated with this input.
         document.querySelectorAll('[data-bse-owner="' + ownerId + '"]').forEach(function (el) { el.remove(); });
 
-        var useSavedPanel = field === 'rbse' || field === 'cphh';
+        var disableSavedInfo = input.dataset.bseDisableSavedInfo === 'true';
+        var supportsHint = field === 'rbse' || field === 'cphh';
+        var useSavedPanel = supportsHint && !disableSavedInfo;
         var panelBundle = useSavedPanel ? createSavedPanel(field, ownerId) : null;
         var popup = panelBundle ? panelBundle.panel : createListBox(ownerId, field);
         var list = panelBundle ? panelBundle.list : popup;
-        var formatHint = useSavedPanel ? createFormatHint(field, ownerId) : null;
+        var formatHint = supportsHint ? createFormatHint(field, ownerId) : null;
         var items = [];
         var activeIndex = -1;
         var hideTimeout = null;
@@ -311,6 +331,11 @@
         }
 
         function loadAndShow() {
+            if (disableSavedInfo && supportsHint) {
+                hide();
+                return;
+            }
+
             var local = unique(readLocal(field));
             var q = String(input.value || '').trim().toLowerCase();
             var filtered = q
@@ -319,7 +344,14 @@
             render(filtered);
         }
 
-        if (useSavedPanel) {
+        if (disableSavedInfo && supportsHint) {
+            input.addEventListener('mouseenter', function () {
+                showHintOnly();
+            });
+            input.addEventListener('mouseleave', function () {
+                if (popup.hidden && formatHint) formatHint.hidden = true;
+            });
+        } else if (useSavedPanel) {
             input.addEventListener('mouseenter', function () {
                 if (popup.hidden) showHintOnly();
             });
@@ -401,6 +433,11 @@
             .forEach(function (el) { el.remove(); });
 
         var inputs = Array.from(document.querySelectorAll('input'));
+        inputs.forEach(function (input) {
+            if (inferField(input) === 'rbse') {
+                applyLegacyRbseInputBehavior(input);
+            }
+        });
         inputs.filter(isEligible).forEach(attachAutosuggest);
     }
 

@@ -41,7 +41,9 @@
         {
             <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @visitDateError</p>
         }
-        <input id="visit-date" asp-for="VisitDate" type="date" class="govuk-input govuk-input--width-10 @(visitDateError is not null ? "govuk-input--error" : "")" />
+        <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+            <input id="visit-date" asp-for="VisitDate" type="text" class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(visitDateError is not null ? "govuk-input--error" : "")" autocomplete="off" value="@(Model.VisitDate?.ToString("dd/MM/yyyy") ?? "")" />
+        </div>
     </div>
 
     <div class="govuk-button-group">

@@ -149,9 +149,11 @@
                 <span class="govuk-visually-hidden">Error:</span>@leftDateError
             </p>
         }
-        <input id="left-date" asp-for="LeftDate" type="date"
-               aria-describedby="@(Err("LeftDate") is not null ? "left-date-error" : null)"
-               class="govuk-input govuk-input--width-10 @(Err("LeftDate") is not null ? "govuk-input--error" : "")" />
+        <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+            <input id="left-date" asp-for="LeftDate" type="text"
+                   aria-describedby="@(Err("LeftDate") is not null ? "left-date-error" : null)"
+                   class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(Err("LeftDate") is not null ? "govuk-input--error" : "")" autocomplete="off" value="@(Model.LeftDate?.ToString("dd/MM/yyyy") ?? "")" />
+        </div>
     </div>
 
     <div class="govuk-form-group">

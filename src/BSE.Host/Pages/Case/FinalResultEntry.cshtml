@@ -1,4 +1,4 @@
-﻿@page
+@page
 @using BSE.Host.Helpers
 @model BSE.Host.Pages.Case.FinalResultEntryModel
 @{
@@ -36,7 +36,7 @@
     </div>
 }
 
-@* ── Step 1: look up the case ───────────────────────────────────────────── *@
+@* -- Step 1: look up the case --------------------------------------------- *@
 <form method="post" asp-page-handler="LookUp" novalidate class="bse-fre-lookup-row">
     <div class="govuk-form-group @(Model.RbseError is not null ? "govuk-form-group--error" : "")">
         <label class="govuk-label" for="rbse">RBSE</label>
@@ -119,21 +119,21 @@
                 <tr class="govuk-table__row">
                     @{ var testTypeDesc = Model.TestSortColumn == "TestType" && !Model.TestSortDesc; }
                     @{ var testResultDesc = Model.TestSortColumn == "TestResult" && !Model.TestSortDesc; }
-                    <th scope="col" class="govuk-table__header moj-sortable-table__heading" aria-sort="@(Model.TestSortColumn == "TestType" ? (Model.TestSortDesc ? "descending" : "ascending") : "none")">
-                        <a class="moj-sortable-table__button" href="@Model.TestsPageUrl(1, "TestType", testTypeDesc)">
+                    <th scope="col" class="govuk-table__header bse-sortable-table__heading" aria-sort="@(Model.TestSortColumn == "TestType" ? (Model.TestSortDesc ? "descending" : "ascending") : "none")">
+                        <a class="bse-sortable-table__button" href="@Model.TestsPageUrl(1, "TestType", testTypeDesc)">
                             Test Type
-                            <span class="moj-sortable-table__icons" aria-hidden="true">
-                                <span class="moj-sortable-table__icon moj-sortable-table__icon--up"></span>
-                                <span class="moj-sortable-table__icon moj-sortable-table__icon--down"></span>
+                            <span class="bse-sortable-table__icons" aria-hidden="true">
+                                <span class="bse-sortable-table__icon bse-sortable-table__icon--up"></span>
+                                <span class="bse-sortable-table__icon bse-sortable-table__icon--down"></span>
                             </span>
                         </a>
                     </th>
-                    <th scope="col" class="govuk-table__header moj-sortable-table__heading" aria-sort="@(Model.TestSortColumn == "TestResult" ? (Model.TestSortDesc ? "descending" : "ascending") : "none")">
-                        <a class="moj-sortable-table__button" href="@Model.TestsPageUrl(1, "TestResult", testResultDesc)">
+                    <th scope="col" class="govuk-table__header bse-sortable-table__heading" aria-sort="@(Model.TestSortColumn == "TestResult" ? (Model.TestSortDesc ? "descending" : "ascending") : "none")">
+                        <a class="bse-sortable-table__button" href="@Model.TestsPageUrl(1, "TestResult", testResultDesc)">
                             Test Result
-                            <span class="moj-sortable-table__icons" aria-hidden="true">
-                                <span class="moj-sortable-table__icon moj-sortable-table__icon--up"></span>
-                                <span class="moj-sortable-table__icon moj-sortable-table__icon--down"></span>
+                            <span class="bse-sortable-table__icons" aria-hidden="true">
+                                <span class="bse-sortable-table__icon bse-sortable-table__icon--up"></span>
+                                <span class="bse-sortable-table__icon bse-sortable-table__icon--down"></span>
                             </span>
                         </a>
                     </th>
@@ -292,8 +292,10 @@
         <div class="bse-fre-form-row">
             <div class="govuk-form-group">
                 <label class="govuk-label" for="retro-date">Retrospective Date</label>
-                <input id="retro-date" name="RetrospectiveResultDate" type="date" class="govuk-input"
-                       value="@Model.RetrospectiveResultDate?.ToString("yyyy-MM-dd")" />
+                <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                    <input id="retro-date" name="RetrospectiveResultDate" type="text" class="govuk-input moj-js-datepicker-input" autocomplete="off"
+                           value="@(Model.RetrospectiveResultDate?.ToString("dd/MM/yyyy") ?? "")" />
+                </div>
             </div>
 
             <div class="govuk-form-group"></div>
