@@ -139,12 +139,10 @@
         <div class="defra-legacy-grid defra-legacy-grid--tight defra-legacy-grid--id">
             <div class="defra-legacy-field @(eBse1Date is not null ? "govuk-form-group--error" : "")">
                 <label asp-for="Case.Bse1ReceivedDate" class="govuk-label">BSE1 Date Received</label>
-                <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                    <input asp-for="Case.Bse1ReceivedDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input" autocomplete="off" value="@DateVal(Model.Case.Bse1ReceivedDate)" />
-                </div>
-            </div>
                 @if (eBse1Date is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eBse1Date</p> }
-                <input asp-for="Case.Bse1ReceivedDate" type="date" class="govuk-input defra-legacy-date @(eBse1Date is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.Bse1ReceivedDate)" />
+                <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                    <input asp-for="Case.Bse1ReceivedDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eBse1Date is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.Bse1ReceivedDate)" />
+                </div>
             </div>
             <div class="defra-legacy-field"></div>
         </div>
@@ -202,12 +200,10 @@
                         <strong class="govuk-warning-text__text"><span class="govuk-warning-text__assistive">Warning</span> Form C date differs from Form B date — please check.</strong>
                     </p>
                 }
-                <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                    <input asp-for="Case.FormCDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eFormC is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.FormCDate)" />
-                </div>
-            </div>
                 <div class="defra-formc-input-wrap">
-                    <input asp-for="Case.FormCDate" type="date" class="govuk-input defra-legacy-date @(eFormC is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.FormCDate)" />
+                    <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                        <input asp-for="Case.FormCDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eFormC is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.FormCDate)" />
+                    </div>
                     @if (eFormC is null && Model.Case.FormCDate.HasValue && Model.Case.FormBDate.HasValue && Model.Case.FormCDate.Value.Date != Model.Case.FormBDate.Value.Date)
                     {
                         <button type="button"

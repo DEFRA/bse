@@ -239,8 +239,17 @@
                 <div class="defra-legacy-field @(eFormC is not null ? "govuk-form-group--error" : "")">
                     <label asp-for="Case.FormCDate" class="govuk-label">Form C Date</label>
                     @if (eFormC is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eFormC</p> }
+                    @if (showFormCDateWarning)
+                    {
+                        <p class="govuk-warning-text govuk-!-margin-bottom-0 govuk-!-font-size-16">
+                            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
+                            <strong class="govuk-warning-text__text"><span class="govuk-warning-text__assistive">Warning</span> Form C date differs from Form B date — please check.</strong>
+                        </p>
+                    }
                     <div class="defra-formc-input-wrap">
-                        <input asp-for="Case.FormCDate" type="date" class="govuk-input defra-legacy-date @(eFormC is not null ? "govuk-input--error" : "")" value="@DateVal(Model.Case.FormCDate)" disabled="@(!hasFormB)" />
+                        <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                            <input asp-for="Case.FormCDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eFormC is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.FormCDate)" disabled="@(!hasFormB)" />
+                        </div>
                         <button type="button"
                                 id="case-formc-warning-trigger"
                                 class="bse-eartag-help__icon bse-eartag-help__icon--small defra-formc-warning-icon"
@@ -255,18 +264,6 @@
                             Are you sure the Form C Date isn't the same as the Form B Date?
                         </span>
                     </div>
-                    @if (eFormC is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eFormC</p> }
-                    @if (showFormCDateWarning)
-                    {
-                        <p class="govuk-warning-text govuk-!-margin-bottom-0 govuk-!-font-size-16">
-                            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
-                            <strong class="govuk-warning-text__text"><span class="govuk-warning-text__assistive">Warning</span> Form C date differs from Form B date — please check.</strong>
-                        </p>
-                    }
-                    <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input asp-for="Case.FormCDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eFormC is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.FormCDate)" disabled="@(!hasFormB)" />
-                    </div>
-                </div>
                 </div>
                 <div class="defra-legacy-field"></div>
             </div>
