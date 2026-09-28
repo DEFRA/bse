@@ -84,13 +84,14 @@
     </div>
 }
 
-@if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
-{
-    <p class="govuk-body">You can view case details but cannot edit this page.</p>
-}
-else
-{
-    <form id="edit-vla-form" method="post" novalidate>
+<form id="edit-vla-form" method="post" novalidate>
+    @if (!Model.CanEditMainCase)
+    {
+        <p class="govuk-body">You can view case details but cannot edit this page.</p>
+    }
+
+    @if (Model.CanEditMainCase)
+    {
         <input type="hidden" name="Rbse" value="@Model.Rbse" />
         <input type="hidden" asp-for="OSort" />
         <input type="hidden" asp-for="ODir" />
@@ -107,6 +108,7 @@ else
             <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
             <a asp-page="/Case/Vla" asp-page-handler="CancelVlaEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
         </div>
+    }
 
         <input type="hidden" asp-for="Case.Rbse" />
         <input type="hidden" asp-for="Case.EartagCountry" />
@@ -404,20 +406,23 @@ else
                     <th scope="col" class="govuk-table__header" aria-sort="@(Model.OSort=="cphh" ? (Model.ODir=="asc" ? "ascending" : "descending") : "none")">
                         <a class="govuk-link govuk-link--no-visited-state" href="@Model.OwnersSortUrl("cphh")">CPHH</a>
                     </th>
-                    <th scope="col" class="govuk-table__header">Action</th>
+                    @if (Model.CanEditMainCase)
+                    {
+                        <th scope="col" class="govuk-table__header">Action</th>
+                    }
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
                 @if (!Model.OtherOwners.Any())
                 {
                     <tr class="govuk-table__row">
-                        <td class="govuk-table__cell" colspan="4">No owner records.</td>
+                        <td class="govuk-table__cell" colspan="@(Model.CanEditMainCase ? 4 : 3)">No owner records.</td>
                     </tr>
                 }
 
                 @foreach (var o in Model.OtherOwners)
                 {
-                    var editing = Model.ReopenEditOwnerId == o.Id;
+                    var editing = Model.CanEditMainCase && Model.ReopenEditOwnerId == o.Id;
                     <tr class="govuk-table__row">
                         @if (editing)
                         {
@@ -434,7 +439,7 @@ else
                                 <input name="EditOwnerName" class="govuk-input govuk-!-width-two-thirds" maxlength="255" value="@Model.EditOwnerName" />
                             </td>
                             <td class="govuk-table__cell">
-                                <input name="EditOwnerCphh" class="govuk-input govuk-!-width-one-half" maxlength="11" value="@Model.EditOwnerCphh" />
+                                <input name="EditOwnerCphh" class="govuk-input vla-owner-cphh-input" maxlength="14" value="@Model.EditOwnerCphh" autocomplete="off" />
                             </td>
                             <td class="govuk-table__cell">
                                 <input type="hidden" name="EditingOwnerId" value="@o.Id" />
@@ -450,17 +455,20 @@ else
                             <td class="govuk-table__cell">@(Model.OwnerTypeOptions.FirstOrDefault(t => t.Code == o.Type)?.Description ?? o.Type)</td>
                             <td class="govuk-table__cell">@(o.Name ?? "—")</td>
                             <td class="govuk-table__cell">@BseFormat.FormatCphh(o.Cphh)</td>
-                            <td class="govuk-table__cell">
-                                <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
-                                    <button type="submit" asp-page-handler="BeginEditOwnerRow" asp-route-ownerId="@o.Id" formnovalidate class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">Change</button>
-                                    <button type="submit" asp-page-handler="DeleteOwner" asp-route-ownerId="@o.Id" asp-route-rowStampBase64="@(Convert.ToBase64String(o.RowStamp ?? []))" formnovalidate class="govuk-button govuk-button--warning govuk-!-margin-bottom-0" onclick="return confirm('Delete this owner record?')">Delete</button>
-                                </div>
-                            </td>
+                            @if (Model.CanEditMainCase)
+                            {
+                                <td class="govuk-table__cell">
+                                    <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
+                                        <button type="submit" asp-page-handler="BeginEditOwnerRow" asp-route-ownerId="@o.Id" formnovalidate class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">Change</button>
+                                        <button type="submit" asp-page-handler="DeleteOwner" asp-route-ownerId="@o.Id" asp-route-rowStampBase64="@(Convert.ToBase64String(o.RowStamp ?? []))" formnovalidate class="govuk-button govuk-button--warning govuk-!-margin-bottom-0" onclick="return confirm('Delete this owner record?')">Delete</button>
+                                    </div>
+                                </td>
+                            }
                         }
                     </tr>
                 }
 
-                <tr id="add-owner-row-inline" class="govuk-table__row bse-herd-row--unsaved" hidden="@(!Model.ShowAddOwnerRow)">
+                <tr id="add-owner-row-inline" class="govuk-table__row bse-herd-row--unsaved" hidden="@(!Model.CanEditMainCase || !Model.ShowAddOwnerRow)">
                     <td class="govuk-table__cell">
                         <select name="NewOwnerType" class="govuk-select govuk-!-width-one-half">
                             <option value="">-- Select --</option>
@@ -474,7 +482,7 @@ else
                         <input name="NewOwnerName" class="govuk-input govuk-!-width-two-thirds" maxlength="255" value="@Model.NewOwnerName" />
                     </td>
                     <td class="govuk-table__cell">
-                        <input name="NewOwnerCphh" class="govuk-input govuk-!-width-one-half" maxlength="11" value="@Model.NewOwnerCphh" />
+                        <input name="NewOwnerCphh" class="govuk-input vla-owner-cphh-input" maxlength="14" value="@Model.NewOwnerCphh" autocomplete="off" />
                     </td>
                     <td class="govuk-table__cell">
                         <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
@@ -526,14 +534,17 @@ else
             </nav>
         }
 
-        <div class="govuk-button-group govuk-!-margin-bottom-4">
-            <button type="button" id="show-add-owner-row" class="govuk-button govuk-button--secondary" data-module="govuk-button">Add previous owner</button>
-        </div>
+        @if (Model.CanEditMainCase)
+        {
+            <div class="govuk-button-group govuk-!-margin-bottom-4">
+                <button type="button" id="show-add-owner-row" class="govuk-button govuk-button--secondary" data-module="govuk-button">Add previous owner</button>
+            </div>
 
-        <div class="govuk-button-group govuk-!-margin-top-4">
-            <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
-            <a asp-page="/Case/Vla" asp-page-handler="CancelVlaEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
-        </div>
+            <div class="govuk-button-group govuk-!-margin-top-4">
+                <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+                <a asp-page="/Case/Vla" asp-page-handler="CancelVlaEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
+            </div>
+        }
         </fieldset>
 
         <div class="govuk-!-margin-top-6">
@@ -551,8 +562,7 @@ else
                 }
             </ul>
         </div>
-    </form>
-}
+</form>
 
 <style>
     .bse-form-fieldset-reset {
@@ -627,6 +637,12 @@ else
     .vla-legacy-mini-input {
         width: 64px;
         max-width: 64px;
+        margin-bottom: 0;
+    }
+
+    .vla-owner-cphh-input {
+        width: 12rem;
+        max-width: 12rem;
         margin-bottom: 0;
     }
 
@@ -855,6 +871,29 @@ else
         document.getElementById('btn-calc-onset-age')?.addEventListener('click', function () {
             calculate('Case_BirthDate', 'Case_OnsetDate', 'onset-age-years', 'Case_OnsetAgeInMonths');
         });
+
+        function autoCalculateOnsetAgeFromDates() {
+            var birth = document.getElementById('Case_BirthDate')?.value;
+            var onset = document.getElementById('Case_OnsetDate')?.value;
+            var years = document.getElementById('onset-age-years');
+            var total = document.getElementById('Case_OnsetAgeInMonths');
+
+            if (!(birth && onset) || !total) {
+                return;
+            }
+
+            total.value = Math.max(0, monthsBetween(birth, onset));
+            if (years) years.value = '';
+            updateOnsetWarning();
+        }
+
+        ['Case_OnsetDate', 'Case_BirthDate'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener('change', autoCalculateOnsetAgeFromDates);
+            el.addEventListener('input', autoCalculateOnsetAgeFromDates);
+        });
+
         document.getElementById('Case_OnsetAgeInMonths')?.addEventListener('change', updateOnsetWarning);
         updateOnsetWarning();
 

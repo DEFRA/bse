@@ -51,6 +51,8 @@ public class CasesByHerdmarkModel : PageModel
         if (PageNumber > TotalPages) PageNumber = TotalPages;
     }
 
+    public Task OnPostAsync() => OnGetAsync();
+
     public async Task<IActionResult> OnGetExportAsync()
     {
         var results = await _search.GetCasesByEartagHerdmarkAsync((Herdmark ?? "").Trim(), IncludeNonGb);

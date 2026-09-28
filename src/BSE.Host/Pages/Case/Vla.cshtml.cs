@@ -427,6 +427,19 @@ public class VlaModel(
             };
             await caseEditDraftState.SetAsync(draft);
         }
+        else if (!draft.HasPendingChanges && (draft.OtherOwners is null || draft.OtherOwners.Count == 0))
+        {
+            var owners = (await ownerRepository.GetByRbseAsync(caseRbse)).ToList();
+            draft.OtherOwners = owners.Select(o => new CaseEditDraftOtherOwnerItem
+            {
+                Id = o.Id,
+                Type = o.Type ?? string.Empty,
+                Name = o.Name,
+                Cphh = o.Cphh,
+                RowStampBase64 = Convert.ToBase64String(o.RowStamp ?? [])
+            }).ToList();
+            await caseEditDraftState.SetAsync(draft);
+        }
 
         draft.OtherOwners ??= [];
         return draft;

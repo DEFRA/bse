@@ -16,7 +16,7 @@
                       || !string.IsNullOrWhiteSpace(Model.Bab?.TracedPostcode);
     string Desc(IEnumerable<BSE.SharedKernel.ILookupItem> opts, string? code) =>
         opts.FirstOrDefault(o => o.Code == code)?.Description ?? code ?? "—";
-    var babReadOnly = User.IsInRole("DataEntry") && !Model.CanEditBabControls;
+    var babReadOnly = !Model.CanEditBabControls;
     var tracedReadOnly = babReadOnly || !IsPurchasedOrigin(Model.Origin);
 }
 
@@ -73,20 +73,22 @@
     </div>
 }
 
-@if (User.IsInRole("DataEntry"))
-{
-    <form method="post" asp-page-handler="SaveBab" novalidate id="case-bab-inline-form">
+<form method="post" asp-page-handler="SaveBab" novalidate id="case-bab-inline-form">
         <input type="hidden" asp-for="Rbse" />
         @if (Model.RowStampBase64 is not null)
         {
             <input type="hidden" name="RowStampBase64" value="@Model.RowStampBase64" />
         }
 
-        <div class="govuk-button-group govuk-!-margin-bottom-4">
-            <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
-            <a asp-page="/Case/Bab" asp-page-handler="CancelBabEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
-        </div>
+        @if (Model.CanEditBabControls)
+        {
+            <div class="govuk-button-group govuk-!-margin-bottom-4">
+                <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+                <a asp-page="/Case/Bab" asp-page-handler="CancelBabEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
+            </div>
+        }
 
+        <fieldset class="bse-form-fieldset-reset" disabled="@(babReadOnly ? "disabled" : null)">
         <div class="bab-legacy-notes">
             <label class="govuk-label" for="bab-notes">Notes</label>
             <textarea id="bab-notes" name="Bab.Notes" class="govuk-textarea" rows="3" maxlength="500" disabled="@(babReadOnly ? "disabled" : null)">@Model.Bab?.Notes</textarea>
@@ -214,10 +216,14 @@
             <div class="bab-legacy-field"></div>
         </div>
 
-        <div class="govuk-button-group govuk-!-margin-top-4">
-            <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
-            <a asp-page="/Case/Bab" asp-page-handler="CancelBabEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
-        </div>
+        @if (Model.CanEditBabControls)
+        {
+            <div class="govuk-button-group govuk-!-margin-top-4">
+                <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+                <a asp-page="/Case/Bab" asp-page-handler="CancelBabEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
+            </div>
+        }
+        </fieldset>
 
         <div class="govuk-!-margin-top-6">
             <ul class="govuk-list">
@@ -232,88 +238,15 @@
             </ul>
         </div>
     </form>
-}
-else
-{
-    <h2 class="govuk-heading-m">Born-After-Ban details</h2>
-    <dl class="govuk-summary-list">
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Notes</dt>
-            <dd class="govuk-summary-list__value">@(Model.Bab?.Notes ?? "—")</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Origin</dt>
-            <dd class="govuk-summary-list__value">@Desc(Model.AnimalOrigins, Model.Origin)</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Traced CPHH</dt>
-            <dd class="govuk-summary-list__value">@BseFormat.FormatCphh(Model.Bab?.NatalCphh)</dd>
-        </div>
-    </dl>
-
-    <h2 class="govuk-heading-m">Traced origin farm</h2>
-    <dl class="govuk-summary-list">
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Traced Name</dt>
-            <dd class="govuk-summary-list__value">@(Model.Bab?.TracedName)</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Traced Address</dt>
-            <dd class="govuk-summary-list__value">
-                @{
-                    var addrParts = new[] { Model.Bab?.TracedAddress1, Model.Bab?.TracedAddress2, Model.Bab?.TracedAddress3 }
-                        .Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
-                }
-                @if (addrParts.Count > 0)
-                {
-                    foreach (var line in addrParts)
-                    {
-                        <span>@line<br /></span>
-                    }
-                }
-                else
-                {
-                    <span>—</span>
-                }
-            </dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Traced Postcode</dt>
-            <dd class="govuk-summary-list__value">@(Model.Bab?.TracedPostcode ?? "—")</dd>
-        </div>
-    </dl>
-
-    <h2 class="govuk-heading-m">Risk factors</h2>
-    <dl class="govuk-summary-list">
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Feed Risk</dt>
-            <dd class="govuk-summary-list__value">@Desc(Model.FeedRisks, Model.Bab?.FeedRisk)</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Horizontal Risk</dt>
-            <dd class="govuk-summary-list__value">@Desc(Model.HorizontalRisks, Model.Bab?.HorizontalRisk)</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Maternal Risk</dt>
-            <dd class="govuk-summary-list__value">@Desc(Model.MaternalRisks, Model.Bab?.MaternalRisk)</dd>
-        </div>
-    </dl>
-
-    <div class="govuk-!-margin-top-6">
-        <ul class="govuk-list">
-            @if (!string.IsNullOrWhiteSpace(viewDocsUrl))
-            {
-                <li>
-                    <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" class="govuk-link">
-                        View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
-                    </a>
-                </li>
-            }
-        </ul>
-    </div>
-}
 
 <style>
+    .bse-form-fieldset-reset {
+        border: 0;
+        margin: 0;
+        padding: 0;
+        min-width: 0;
+    }
+
     .bab-legacy-notes {
         margin-bottom: 1rem;
     }

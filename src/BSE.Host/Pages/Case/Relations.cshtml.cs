@@ -141,6 +141,9 @@ public class RelationsModel(
     /// <summary>Legacy btnSireLookUp_Click.</summary>
     public async Task<IActionResult> OnPostLookUpSireAsync()
     {
+        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
+            return Forbid();
+
         await LoadAsync();
         await LoadOrInitializeRelationsDraftAsync();
         await LookUpAsync(isDam: false);
@@ -201,7 +204,7 @@ public class RelationsModel(
     /// <summary>Legacy RemoveSire: disassociates the sire without touching the dam.</summary>
     public async Task<IActionResult> OnPostRemoveSireAsync()
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
             return Forbid();
         await LoadAsync();
         var draft = await LoadOrInitializeRelationsDraftAsync();
@@ -612,7 +615,7 @@ public class RelationsModel(
     /// <summary>Adds a related-animal row to the draft only. Not persisted until Save.</summary>
     public async Task<IActionResult> OnPostAddRelationRowAsync()
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
             return Forbid();
 
         await LoadAsync();
@@ -657,7 +660,7 @@ public class RelationsModel(
     /// <summary>Populates the shared field panel from a staged row for editing (no changes saved yet).</summary>
     public async Task<IActionResult> OnPostBeginEditRelationRowAsync(string clientKey)
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
             return Forbid();
 
         await LoadAsync();
@@ -690,7 +693,7 @@ public class RelationsModel(
     /// <summary>Updates the currently selected staged row from the shared field panel. Not persisted until Save.</summary>
     public async Task<IActionResult> OnPostUpdateRelationRowAsync()
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
             return Forbid();
 
         var clientKey = EditingClientKey;
@@ -739,7 +742,7 @@ public class RelationsModel(
     /// <summary>Removes a staged related-animal row. Not persisted until Save.</summary>
     public async Task<IActionResult> OnPostDeleteRelationRowAsync(string clientKey)
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
             return Forbid();
 
         await LoadAsync();

@@ -2,7 +2,12 @@
    Usage: @await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Farm", rbse))
 *@
 @model BSE.Host.Models.CaseTabsViewModel
+@inject BSE.SharedKernel.IUserContext UserContext
 @{
+    var showConfidentialData = !User.IsInRole("DataEntry")
+        && (string.Equals(Model.ActiveTab, "Farm", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(Model.ActiveTab, "Feeds", StringComparison.OrdinalIgnoreCase));
+
     var tabs = new[]
     {
         new { Label = "Farm",        Page = "/Case/Farm"     },
@@ -19,7 +24,14 @@
    mirroring legacy's RBSE number / BatchNumberDisplay1 header row. *@
 <div class="govuk-grid-row govuk-!-margin-bottom-2">
     <div class="govuk-grid-column-two-thirds">
-        <h1 class="govuk-heading-l">RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Rbse)</span></h1>
+        <h1 class="govuk-heading-l govuk-!-margin-bottom-2">Case Details</h1>
+        <p class="govuk-body bse-case-header-meta govuk-!-margin-bottom-0">
+            <strong>RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Rbse)</span></strong>
+            @if (showConfidentialData)
+            {
+                <span class="bse-case-header-confidential govuk-!-margin-left-4">CONFIDENTIAL DATA</span>
+            }
+        </p>
     </div>
 
 <script>
@@ -282,13 +294,16 @@
                 return;
             }
 
+            // Keep parity with tab navigation: persist current tab edits before leaving.
+            persistCurrentTabDraft();
+
             var unsaved = await hasUnsavedChangesAcrossTabs();
             if (!unsaved) {
                 return;
             }
 
             event.preventDefault();
-            var confirmed = window.confirm('If you leave now, any unsaved changes will be lost.');
+            var confirmed = window.confirm('You have unsaved changes. Click OK to discard them and leave, or Cancel to go back and save.');
             if (confirmed) {
                 await clearUnsavedChangesAcrossTabs();
                 window.location.href = link.href;
@@ -298,9 +313,12 @@
 </script>
     <div class="govuk-grid-column-one-third">
         <div class="bse-batch-docs-row">
-            <div class="bse-batch-docs-row__batch">
-                @await Html.PartialAsync("_BatchNumbersPanel", new BSE.Host.Models.BatchNumbersPanelViewModel(Model.Rbse, Model.BatchNumbers ?? []))
-            </div>
+            @if (User.IsInRole("VLAAccess"))
+            {
+                <div class="bse-batch-docs-row__batch">
+                    @await Html.PartialAsync("_BatchNumbersPanel", new BSE.Host.Models.BatchNumbersPanelViewModel(Model.Rbse, Model.BatchNumbers ?? []))
+                </div>
+            }
             @if (!string.IsNullOrWhiteSpace(Model.ViewDocsUrl))
             {
                 <div class="bse-batch-docs-row__docs">
@@ -314,6 +332,19 @@
 </div>
 
 <style>
+    .bse-case-header-meta {
+        font-size: 1.1875rem;
+        line-height: 1.3157894737;
+    }
+
+    .bse-case-header-confidential {
+        display: inline-block;
+        color: #d4351c;
+        font-weight: 700;
+        font-size: 1.1875rem;
+        line-height: 1.3157894737;
+    }
+
     .bse-batch-docs-row {
         display: flex;
         align-items: flex-start;

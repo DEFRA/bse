@@ -11,6 +11,7 @@
     var hasFormA = Model.Case.FormADate.HasValue;
     var hasFormB = Model.Case.FormBDate.HasValue;
     var hasBirthDate = Model.Case.BirthDate.HasValue;
+    var isDefraDataEntry = User.IsInRole("DataEntry") && !User.IsInRole("VLAAccess");
 
     string? eEartag       = ViewData.ModelState["Case.EartagCountry"]?.Errors.FirstOrDefault()?.ErrorMessage;
     string? eFormA         = ViewData.ModelState["Case.FormADate"]?.Errors.FirstOrDefault()?.ErrorMessage;
@@ -29,7 +30,7 @@
     var showFormCDateWarning = eFormC is null
         && Model.Case.FormCDate.HasValue
         && Model.Case.FormBDate.HasValue
-        && Model.Case.FormCDate != Model.Case.FormBDate;
+        && Model.Case.FormCDate.Value.Date != Model.Case.FormBDate.Value.Date;
 
     var showHerdEntryDateWarning = false;
     if (Model.Case.HerdEntryDate.HasValue && Model.Case.BirthDate.HasValue)
@@ -102,24 +103,25 @@
     </div>
 }
 
-@if (!User.IsInRole("DataEntry"))
-{
-    <p class="govuk-body">You can view case details but cannot edit this page.</p>
-}
-else
-{
-    <form method="post" novalidate id="case-edit-inline-form">
+<form method="post" novalidate id="case-edit-inline-form">
+    <fieldset class="bse-form-fieldset-reset" disabled="@(!User.IsInRole("DataEntry") ? "disabled" : null)">
+        @if (!User.IsInRole("DataEntry"))
+        {
+            <p class="govuk-body">You can view case details but cannot edit this page.</p>
+        }
+        else
+        {
+            <div id="case-edit-unsaved-banner" class="govuk-inset-text bse-unsaved-banner" role="status" hidden="@(!Model.HasUnsavedChanges)">
+                <strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.
+            </div>
+
+            <div class="govuk-button-group govuk-!-margin-bottom-4">
+                <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+                <a asp-page="/Case/Edit" asp-page-handler="CancelEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
+            </div>
+        }
+
         <input type="hidden" name="Rbse" value="@Model.Rbse" />
-
-        <div id="case-edit-unsaved-banner" class="govuk-inset-text bse-unsaved-banner" role="status" hidden="@(!Model.HasUnsavedChanges)">
-            <strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.
-        </div>
-
-        <div class="govuk-button-group govuk-!-margin-bottom-4">
-            <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
-            <a asp-page="/Case/Edit" asp-page-handler="CancelEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
-        </div>
-
         <input type="hidden" asp-for="Case.Rbse" />
         <input type="hidden" asp-for="Case.HasCaseWork" />
         <input type="hidden" asp-for="Case.RbseDate" />
@@ -235,23 +237,7 @@ else
 
             <div class="defra-legacy-grid">
                 <div class="defra-legacy-field @(eFormC is not null ? "govuk-form-group--error" : "")">
-                    <div class="bse-eartag-help-inline">
-                        <label asp-for="Case.FormCDate" class="govuk-label">Form C Date</label>
-                        @if (showFormCDateWarning)
-                        {
-                            <button type="button"
-                                    class="bse-eartag-help__icon bse-eartag-help__icon--small"
-                                    data-bse-tooltip-trigger
-                                    aria-label="Form C date warning"
-                                    aria-controls="case-formc-warning-tooltip"
-                                    aria-expanded="false">
-                                <span aria-hidden="true">*</span>
-                            </button>
-                            <span id="case-formc-warning-tooltip" class="bse-eartag-help__tooltip" role="tooltip" hidden>
-                                Are you sure the Form C Date isn't the same as the Form B Date?
-                            </span>
-                        }
-                    </div>
+                    <label asp-for="Case.FormCDate" class="govuk-label">Form C Date</label>
                     @if (eFormC is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eFormC</p> }
                     @if (showFormCDateWarning)
                     {
@@ -260,8 +246,23 @@ else
                             <strong class="govuk-warning-text__text"><span class="govuk-warning-text__assistive">Warning</span> Form C date differs from Form B date — please check.</strong>
                         </p>
                     }
-                    <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input asp-for="Case.FormCDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eFormC is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.FormCDate)" disabled="@(!hasFormB)" />
+                    <div class="defra-formc-input-wrap">
+                        <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                            <input asp-for="Case.FormCDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eFormC is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.FormCDate)" disabled="@(!hasFormB)" />
+                        </div>
+                        <button type="button"
+                                id="case-formc-warning-trigger"
+                                class="bse-eartag-help__icon bse-eartag-help__icon--small defra-formc-warning-icon"
+                                data-bse-tooltip-trigger
+                                aria-label="Form C date warning"
+                                aria-controls="case-formc-warning-tooltip"
+                                aria-expanded="false"
+                                hidden="@(!showFormCDateWarning)">
+                            <span aria-hidden="true">*</span>
+                        </button>
+                        <span id="case-formc-warning-tooltip" class="bse-eartag-help__tooltip defra-formc-warning-tooltip" role="tooltip" hidden>
+                            Are you sure the Form C Date isn't the same as the Form B Date?
+                        </span>
                     </div>
                 </div>
                 <div class="defra-legacy-field"></div>
@@ -324,7 +325,7 @@ else
                                 <td class="govuk-table__cell">@(t.TestResultDescription ?? t.TestResult)</td>
                             }
                             <td class="govuk-table__cell">
-                                @if (isEditingTest)
+                                @if (isEditingTest && User.IsInRole("DataEntry"))
                                 {
                                     <input type="hidden" name="EditingTestId" value="@t.Id" />
                                     <input type="hidden" name="EditTestRowStampBase64" value="@(t.RowStamp is not null ? Convert.ToBase64String(t.RowStamp) : "")" />
@@ -335,16 +336,19 @@ else
                                 }
                                 else
                                 {
-                                    <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
-                                        <button type="submit" asp-page-handler="BeginEditTestRow" asp-route-id="@t.Id" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">Change</button>
-                                        <button type="submit" asp-page-handler="DeleteTest" asp-route-id="@t.Id" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0" onclick="return confirm('Delete this test record?')">Delete</button>
-                                    </div>
+                                    @if (User.IsInRole("DataEntry"))
+                                    {
+                                        <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
+                                            <button type="submit" asp-page-handler="BeginEditTestRow" asp-route-id="@t.Id" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">Change</button>
+                                            <button type="submit" asp-page-handler="DeleteTest" asp-route-id="@t.Id" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0" onclick="return confirm('Delete this test record?')">Delete</button>
+                                        </div>
+                                    }
                                 }
                             </td>
                         </tr>
                     }
 
-                    <tr id="add-test-row-inline" class="govuk-table__row bse-herd-row--unsaved" hidden="@(!Model.ShowAddTestRow)">
+                    <tr id="add-test-row-inline" class="govuk-table__row bse-herd-row--unsaved" hidden="@(!Model.ShowAddTestRow || !User.IsInRole("DataEntry"))">
                         <td class="govuk-table__cell">
                             <label class="govuk-visually-hidden" for="new-test-type">Test type</label>
                             <select id="new-test-type" name="NewTestType" class="govuk-select govuk-!-width-one-half">
@@ -530,7 +534,7 @@ else
                     @if (Model.Case.HasCaseWork)
                     {
                         <label asp-for="Case.Barcode" class="govuk-label">Barcode</label>
-                        <input asp-for="Case.Barcode" class="govuk-input defra-legacy-input--sm" maxlength="20" />
+                        <input asp-for="Case.Barcode" class="govuk-input defra-legacy-input--sm" maxlength="20" readonly="@(isDefraDataEntry ? "readonly" : null)" />
                     }
                 </div>
             </div>
@@ -541,7 +545,7 @@ else
                     @if (Model.Case.HasCaseWork)
                     {
                         <label asp-for="Case.AhfReference" class="govuk-label">AHF reference</label>
-                        <input asp-for="Case.AhfReference" class="govuk-input defra-legacy-input--sm" maxlength="40" />
+                        <input asp-for="Case.AhfReference" class="govuk-input defra-legacy-input--sm" maxlength="40" readonly="@(isDefraDataEntry ? "readonly" : null)" />
                     }
                 </div>
             </div>
@@ -601,10 +605,13 @@ else
             </div>
         </section>
 
-        <div class="govuk-button-group govuk-!-margin-top-4">
-            <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
-            <a asp-page="/Case/Edit" asp-page-handler="CancelEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
-        </div>
+        @if (User.IsInRole("DataEntry"))
+        {
+            <div class="govuk-button-group govuk-!-margin-top-4">
+                <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+                <a asp-page="/Case/Edit" asp-page-handler="CancelEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
+            </div>
+        }
 
         <div class="govuk-!-margin-top-6">
             <ul class="govuk-list">
@@ -627,10 +634,17 @@ else
                 }
             </ul>
         </div>
-    </form>
-}
+    </fieldset>
+</form>
 
 <style>
+    .bse-form-fieldset-reset {
+        border: 0;
+        margin: 0;
+        padding: 0;
+        min-width: 0;
+    }
+
     .defra-legacy-panel {
         max-width: 1160px;
     }
@@ -833,6 +847,10 @@ else
         padding: 0 1px;
     }
 
+    .bse-eartag-help__icon[hidden] {
+        display: none !important;
+    }
+
     .bse-eartag-help__icon:focus {
         outline: 3px solid #ffdd00;
         outline-offset: 2px;
@@ -851,6 +869,24 @@ else
         padding: 0.5rem 0.65rem;
         font-size: 0.95rem;
         line-height: 1.3;
+    }
+
+    .defra-formc-input-wrap {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        position: relative;
+    }
+
+    .defra-formc-warning-icon {
+        color: #00703c;
+    }
+
+    .defra-formc-warning-tooltip {
+        min-width: 18rem;
+        width: max-content;
+        max-width: 24rem;
+        word-break: normal;
     }
 
     @@media (max-width: 768px) {
@@ -885,6 +921,9 @@ else
         var eartagCountryInput = document.getElementById('Case_EartagCountry');
         var eartagHerdmarkInput = document.getElementById('Case_EartagHerdmark');
         var eartagAnimalInput = document.getElementById('Case_Eartag');
+        var formBDateInput = document.getElementById('Case_FormBDate');
+        var formCDateInput = document.getElementById('Case_FormCDate');
+        var formCWarningTrigger = document.getElementById('case-formc-warning-trigger');
 
         function getTooltipForTrigger(trigger) {
             if (!trigger) {
@@ -1014,9 +1053,26 @@ else
             eartagTooltip.textContent = resolveEartagHintText(country, herdmark, animal);
         }
 
+        function updateFormCWarningVisibility() {
+            if (!formCWarningTrigger) {
+                return;
+            }
+
+            var formB = formBDateInput ? formBDateInput.value : '';
+            var formC = formCDateInput ? formCDateInput.value : '';
+            var show = !!formB && !!formC && formB !== formC;
+
+            formCWarningTrigger.hidden = !show;
+            if (!show) {
+                hideTooltipFor(formCWarningTrigger);
+            }
+        }
+
         if (eartagTooltipTrigger && eartagTooltip) {
             updateEartagTooltipText();
         }
+
+        updateFormCWarningVisibility();
 
         if (tooltipTriggers.length) {
             tooltipTriggers.forEach(function (trigger) {
@@ -1047,6 +1103,13 @@ else
                 if (el) {
                     el.addEventListener('input', updateEartagTooltipText);
                     el.addEventListener('change', updateEartagTooltipText);
+                }
+            });
+
+            [formBDateInput, formCDateInput].forEach(function (el) {
+                if (el) {
+                    el.addEventListener('input', updateFormCWarningVisibility);
+                    el.addEventListener('change', updateFormCWarningVisibility);
                 }
             });
 
