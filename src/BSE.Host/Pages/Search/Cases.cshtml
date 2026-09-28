@@ -77,7 +77,9 @@
     </div>
 }
 
-<form method="get" novalidate>
+<form method="post" novalidate data-bse-post-search>
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="Searched" value="true" />
     <div class="bse-farm-legacy bse-case-legacy">
         <div class="bse-farm-legacy__row">
             <div class="bse-farm-legacy__field">

@@ -17,6 +17,15 @@
         ? null
         : $"{Model.SpolSiteUrl}{Model.Rbse.Replace("/", "")}";
     var createReadOnly = !Model.CanEditCreateMode;
+    var createDetailsLocked = !createReadOnly
+        && !Model.RequireFarmDetails
+        && string.IsNullOrWhiteSpace(Model.SelectedCphh)
+        && string.IsNullOrWhiteSpace(Model.EditableFarm?.OwnerName)
+        && string.IsNullOrWhiteSpace(Model.EditableFarm?.Address1)
+        && string.IsNullOrWhiteSpace(Model.EditableFarm?.Parish)
+        && string.IsNullOrWhiteSpace(Model.EditableFarm?.County)
+        && string.IsNullOrWhiteSpace(Model.EditableFarm?.AHO)
+        && Model.EditableFarm?.ADNSRegionID is null;
     @await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Farm", Model.Rbse, Model.BatchNumbers, createModeViewDocsUrl))
 
     @if (!ViewContext.ModelState.IsValid)
@@ -50,7 +59,7 @@
         <div class="bse-farm-legacy-top">
             <div class="bse-farm-legacy-top__row bse-farm-legacy-top__row--lookup">
                 <label class="govuk-label" for="create-farm-cphh">CPHH</label>
-                <input id="create-farm-cphh" asp-for="EditableFarm!.CPHH" class="govuk-input bse-farm-legacy-top__input" readonly="@(createReadOnly ? "readonly" : null)" />
+                <input id="create-farm-cphh" asp-for="EditableFarm!.CPHH" class="govuk-input bse-farm-legacy-top__input @(!createReadOnly ? "bse-farm-legacy-top__input--editable" : null)" readonly="@(createReadOnly ? "readonly" : null)" />
                 @if (!createReadOnly)
                 {
                     <button type="submit" asp-page-handler="LookupNewCase" class="govuk-button govuk-button--secondary bse-farm-legacy-top__lookup" data-module="govuk-button">Look Up</button>
@@ -58,7 +67,7 @@
             </div>
         </div>
 
-        <fieldset class="bse-form-fieldset-reset" disabled="@(createReadOnly ? "disabled" : null)" style="border:0;margin:0;padding:0;">
+        <fieldset class="bse-form-fieldset-reset" disabled="@((createReadOnly || createDetailsLocked) ? "disabled" : null)" style="border:0;margin:0;padding:0;">
 
         @await Html.PartialAsync("~/Pages/Farm/_FarmFormFields.cshtml", Model.EditableFarm!, new ViewDataDictionary(ViewData)
         {
@@ -237,9 +246,17 @@
 
                     @foreach (var h in Model.SortedStagedHerdSizes)
                     {
+                        var yearRepeated = Model.SortedStagedHerdSizes.Count(x => x.HerdYear == h.HerdYear) > 1;
                         <tr class="govuk-table__row bse-herd-row @(h.IsUnsaved ? "bse-herd-row--unsaved" : "")" data-client-key="@h.ClientKey">
                             <td class="govuk-table__cell">
                                 @h.HerdYear
+                                @if (yearRepeated)
+                                {
+                                    <span class="bse-mismatch-warning" title="You have entered more than one row for this year.">
+                                        <span aria-hidden="true">*</span>
+                                        <span class="govuk-visually-hidden">Warning: You have entered more than one row for this year.</span>
+                                    </span>
+                                }
                                 @if (h.IsUnsaved)
                                 {
                                     <strong class="govuk-tag govuk-tag--yellow govuk-!-margin-left-2">Unsaved</strong>
@@ -615,6 +632,7 @@
                     {
                         var isEditing = Model.ReopenEditClientKey == h.ClientKey;
                         var editRow = isEditing ? Model.EditHerdRow : null;
+                        var yearRepeated = Model.SortedStagedHerdSizes.Count(x => x.HerdYear == h.HerdYear) > 1;
 
                         <tr class="govuk-table__row bse-herd-row @(h.IsUnsaved ? "bse-herd-row--unsaved" : "")" data-client-key="@h.ClientKey">
                             @if (isEditing)
@@ -655,6 +673,13 @@
                             {
                                 <td class="govuk-table__cell">
                                     @h.HerdYear
+                                    @if (yearRepeated)
+                                    {
+                                        <span class="bse-mismatch-warning" title="You have entered more than one row for this year.">
+                                            <span aria-hidden="true">*</span>
+                                            <span class="govuk-visually-hidden">Warning: You have entered more than one row for this year.</span>
+                                        </span>
+                                    }
                                     @if (h.IsUnsaved)
                                     {
                                         <strong class="govuk-tag govuk-tag--yellow govuk-!-margin-left-2">Unsaved</strong>
@@ -888,6 +913,12 @@ else
     .bse-inline-row-button--confirm:hover {
         background: #005a30;
         border-color: #005a30;
+    }
+
+    .bse-farm-legacy-top__input.bse-farm-legacy-top__input--editable {
+        background: #ffffff !important;
+        color: #0b0c0c;
+        cursor: text;
     }
 </style>
 

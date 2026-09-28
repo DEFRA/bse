@@ -424,7 +424,7 @@ else
                                 <input name="EditOwnerName" class="govuk-input govuk-!-width-two-thirds" maxlength="255" value="@Model.EditOwnerName" />
                             </td>
                             <td class="govuk-table__cell">
-                                <input name="EditOwnerCphh" class="govuk-input govuk-!-width-one-half" maxlength="11" value="@Model.EditOwnerCphh" />
+                                <input name="EditOwnerCphh" class="govuk-input vla-owner-cphh-input" maxlength="14" value="@Model.EditOwnerCphh" autocomplete="off" />
                             </td>
                             <td class="govuk-table__cell">
                                 <input type="hidden" name="EditingOwnerId" value="@o.Id" />
@@ -464,7 +464,7 @@ else
                         <input name="NewOwnerName" class="govuk-input govuk-!-width-two-thirds" maxlength="255" value="@Model.NewOwnerName" />
                     </td>
                     <td class="govuk-table__cell">
-                        <input name="NewOwnerCphh" class="govuk-input govuk-!-width-one-half" maxlength="11" value="@Model.NewOwnerCphh" />
+                        <input name="NewOwnerCphh" class="govuk-input vla-owner-cphh-input" maxlength="14" value="@Model.NewOwnerCphh" autocomplete="off" />
                     </td>
                     <td class="govuk-table__cell">
                         <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
@@ -616,6 +616,12 @@ else
     .vla-legacy-mini-input {
         width: 64px;
         max-width: 64px;
+        margin-bottom: 0;
+    }
+
+    .vla-owner-cphh-input {
+        width: 12rem;
+        max-width: 12rem;
         margin-bottom: 0;
     }
 
@@ -844,6 +850,29 @@ else
         document.getElementById('btn-calc-onset-age')?.addEventListener('click', function () {
             calculate('Case_BirthDate', 'Case_OnsetDate', 'onset-age-years', 'Case_OnsetAgeInMonths');
         });
+
+        function autoCalculateOnsetAgeFromDates() {
+            var birth = document.getElementById('Case_BirthDate')?.value;
+            var onset = document.getElementById('Case_OnsetDate')?.value;
+            var years = document.getElementById('onset-age-years');
+            var total = document.getElementById('Case_OnsetAgeInMonths');
+
+            if (!(birth && onset) || !total) {
+                return;
+            }
+
+            total.value = Math.max(0, monthsBetween(birth, onset));
+            if (years) years.value = '';
+            updateOnsetWarning();
+        }
+
+        ['Case_OnsetDate', 'Case_BirthDate'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener('change', autoCalculateOnsetAgeFromDates);
+            el.addEventListener('input', autoCalculateOnsetAgeFromDates);
+        });
+
         document.getElementById('Case_OnsetAgeInMonths')?.addEventListener('change', updateOnsetWarning);
         updateOnsetWarning();
 

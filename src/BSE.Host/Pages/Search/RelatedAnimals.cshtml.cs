@@ -36,6 +36,7 @@ public class RelatedAnimalsModel : PageModel
     public string? RelationRbse { get; set; }
 
     [BindProperty(SupportsGet = true)] public string? RelationType { get; set; }
+    [BindProperty(SupportsGet = true)] public bool Searched { get; set; }
     [BindProperty(SupportsGet = true)] public int PageNumber { get; set; } = 1;
     [BindProperty(SupportsGet = true)] public string SortColumn { get; set; } = "";
     [BindProperty(SupportsGet = true)] public bool SortDesc { get; set; }
@@ -97,9 +98,11 @@ public class RelatedAnimalsModel : PageModel
         }
         else
         {
-            NoCriteria = Request.Query.Count > 0;
+            NoCriteria = Searched || Request.Query.Count > 0;
         }
     }
+
+    public Task OnPostAsync() => OnGetAsync();
 
     public async Task<IActionResult> OnGetExportAsync()
     {

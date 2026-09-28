@@ -14,7 +14,8 @@
     </ol>
 </nav>
 
-<form method="get" novalidate>
+<form method="post" novalidate data-bse-post-search>
+    @Html.AntiForgeryToken()
     <input type="hidden" name="Searched" value="true" />
     <div class="bse-farm-legacy">
         <div class="bse-farm-legacy__row">

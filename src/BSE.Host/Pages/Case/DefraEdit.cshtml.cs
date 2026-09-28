@@ -216,6 +216,9 @@ public class DefraEditModel(
 
         var today = DateTime.Today;
 
+        if (Case.Bse1ReceivedDate.HasValue && Case.Bse1ReceivedDate.Value.Date > today)
+            ModelState.AddModelError("Case.Bse1ReceivedDate", "Invalid Date");
+
         // Form A Date: must be ≤ SlaughterDate (if set) else ≤ today
         if (Case.FormADate.HasValue)
         {
@@ -255,8 +258,8 @@ public class DefraEditModel(
                     "Form B date must be a past date.");
         }
 
-        // Fate required when Form B Date is filled
-        if (Case.FormBDate.HasValue && string.IsNullOrWhiteSpace(Case.Fate))
+        // Fate required when Form B Date is filled (legacy treats "-1" as unselected)
+        if (Case.FormBDate.HasValue && (string.IsNullOrWhiteSpace(Case.Fate) || Case.Fate == "-1"))
             ModelState.AddModelError("Case.Fate",
                 "Fate (Form B reason) is required when a Form B date is entered.");
 
@@ -264,6 +267,9 @@ public class DefraEditModel(
         if (Case.FormCDate.HasValue && !Case.FormBDate.HasValue)
             ModelState.AddModelError("Case.FormCDate",
                 "Form C date requires a Form B date to be set.");
+
+        if (Case.FormCDate.HasValue && Case.FormCDate.Value.Date > today)
+            ModelState.AddModelError("Case.FormCDate", "Invalid Date");
 
         // Date of Birth: after 1 Jan 1970, before Form A date (or today), PurchaseDate, OnsetDate
         if (Case.BirthDate.HasValue)

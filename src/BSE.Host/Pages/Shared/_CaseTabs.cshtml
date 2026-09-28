@@ -282,13 +282,16 @@
                 return;
             }
 
+            // Keep parity with tab navigation: persist current tab edits before leaving.
+            persistCurrentTabDraft();
+
             var unsaved = await hasUnsavedChangesAcrossTabs();
             if (!unsaved) {
                 return;
             }
 
             event.preventDefault();
-            var confirmed = window.confirm('If you leave now, any unsaved changes will be lost.');
+            var confirmed = window.confirm('You have unsaved changes. Click OK to discard them and leave, or Cancel to go back and save.');
             if (confirmed) {
                 await clearUnsavedChangesAcrossTabs();
                 window.location.href = link.href;
