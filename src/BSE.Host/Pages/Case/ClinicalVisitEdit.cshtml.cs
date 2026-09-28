@@ -17,7 +17,7 @@ public class ClinicalVisitEditModel(
     [BindProperty(SupportsGet = true)] public string Rbse { get; set; } = string.Empty;
     [BindProperty(SupportsGet = true)] public int Id { get; set; }
 
-    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? VisitDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? VisitDate { get; set; }
     [BindProperty] public string RowStampBase64 { get; set; } = string.Empty;
 
     public async Task<IActionResult> OnGetAsync()

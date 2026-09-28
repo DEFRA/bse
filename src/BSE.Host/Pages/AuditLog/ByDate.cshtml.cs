@@ -14,7 +14,7 @@ public class ByDateModel(IAuditLogService auditLogService) : PageModel
     private const int PageSize = 10;
 
     [BindProperty(SupportsGet = true)]
-    [ModelBinder(BinderType = typeof(MojDateModelBinder))]
+    [ModelBinder(BinderType = typeof(DatePickerModelBinder))]
     public DateTime? LogDate { get; set; }
     [BindProperty(SupportsGet = true)] public string SortColumn { get; set; } = string.Empty;
     [BindProperty(SupportsGet = true)] public bool SortDesc { get; set; }

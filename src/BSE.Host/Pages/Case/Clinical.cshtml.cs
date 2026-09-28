@@ -42,8 +42,8 @@ public class ClinicalModel(
 
     // ── Inline "add/edit clinical visit" row state (GDS editable-grid pattern, matches /Case/Farm) ──
     [BindProperty] public List<StagedVisitItem> StagedVisits { get; set; } = [];
-    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? NewVisitDate { get; set; }
-    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? EditVisitDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? NewVisitDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? EditVisitDate { get; set; }
     [BindProperty] public string? EditingClientKey { get; set; }
     public bool ShowAddVisitRow { get; private set; }
     public string? ReopenEditClientKey { get; private set; }

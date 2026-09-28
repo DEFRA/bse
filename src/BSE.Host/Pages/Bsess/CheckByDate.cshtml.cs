@@ -12,8 +12,8 @@ namespace BSE.Host.Pages.Bsess;
 [Authorize(Policy = "AuditAccess")]
 public class CheckByDateModel(IBsessCheckService bsessCheckService) : PageModel
 {
-    [BindProperty(SupportsGet = true), ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? StartDate { get; set; }
-    [BindProperty(SupportsGet = true), ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? EndDate { get; set; }
+    [BindProperty(SupportsGet = true), ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? StartDate { get; set; }
+    [BindProperty(SupportsGet = true), ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? EndDate { get; set; }
     [BindProperty(SupportsGet = true)] public string SortColumn { get; set; } = "Rbse";
     [BindProperty(SupportsGet = true)] public bool SortDesc { get; set; }
     [BindProperty(SupportsGet = true)] public int PageNumber { get; set; } = 1;

@@ -16,10 +16,10 @@ public class ByUserModel(IAuditLogService auditLogService, IUserManagementServic
     private const int PageSize = 10;
 
     [BindProperty(SupportsGet = true)]
-    [ModelBinder(BinderType = typeof(MojDateModelBinder))]
+    [ModelBinder(BinderType = typeof(DatePickerModelBinder))]
     public DateTime? StartDate { get; set; }
     [BindProperty(SupportsGet = true)]
-    [ModelBinder(BinderType = typeof(MojDateModelBinder))]
+    [ModelBinder(BinderType = typeof(DatePickerModelBinder))]
     public DateTime? EndDate { get; set; }
     [BindProperty(SupportsGet = true)]
     public int UserId { get; set; }

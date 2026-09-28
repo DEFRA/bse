@@ -6,9 +6,9 @@ namespace BSE.Host.ModelBinding;
 /// <summary>
 /// Binds a MOJ date-picker free-text field (d/M/yyyy or dd/MM/yyyy) to <see cref="DateTime"/> /
 /// <see cref="Nullable{DateTime}"/> properties, independent of server locale. Apply via
-/// <c>[ModelBinder(BinderType = typeof(MojDateModelBinder))]</c> on the bound property.
+/// <c>[ModelBinder(BinderType = typeof(DatePickerModelBinder))]</c> on the bound property.
 /// </summary>
-public sealed class MojDateModelBinder : IModelBinder
+public sealed class DatePickerModelBinder : IModelBinder
 {
     public const string InvalidFormatMessage = "Enter a date in the format 17/05/2024.";
 

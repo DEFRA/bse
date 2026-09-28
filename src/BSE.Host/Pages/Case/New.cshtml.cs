@@ -1,4 +1,4 @@
-﻿using BSE.Host.Services;
+using BSE.Host.Services;
 using BSE.Host.ModelBinding;
 using BSE.Modules.Batch.Services;
 using BSE.Modules.CaseManagement.Commands;
@@ -45,15 +45,15 @@ public class NewModel : PageModel
     [BindProperty] public string? EartagCountry { get; set; }
     [BindProperty] public string? EartagHerdmark { get; set; }
     [BindProperty] public string? Eartag { get; set; }
-    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? BirthDate { get; set; }
-    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? FormADate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? BirthDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? FormADate { get; set; }
     [BindProperty] public string? Fate { get; set; }
     [BindProperty] public string? Origin { get; set; }
     [BindProperty] public string? Notes { get; set; }
     [BindProperty] public string? CaseType { get; set; }
 
-    // ── Farm details — only required when the CPHH has no existing farm record
-    // (legacy CaseEntryFarm.aspx -> PickFarm.aspx -> NewFarm.aspx chain) ────────
+    // -- Farm details � only required when the CPHH has no existing farm record
+    // (legacy CaseEntryFarm.aspx -> PickFarm.aspx -> NewFarm.aspx chain) --------
     [BindProperty] public string? OwnerName { get; set; }
     [BindProperty] public string? Address1 { get; set; }
     [BindProperty] public string? Address2 { get; set; }
@@ -64,7 +64,7 @@ public class NewModel : PageModel
     [BindProperty] public string? Aho { get; set; }
     [BindProperty] public int? AdnsRegionId { get; set; }
 
-    /// <summary>True once a Farm lookup has confirmed the CPHH has no existing farm — shows the farm fields.</summary>
+    /// <summary>True once a Farm lookup has confirmed the CPHH has no existing farm � shows the farm fields.</summary>
     public bool RequireFarmDetails { get; private set; }
 
     public IReadOnlyList<LookupItem> CountyOptions { get; private set; } = [];

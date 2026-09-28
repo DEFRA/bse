@@ -54,22 +54,22 @@ public class CaseWorkEntryModel(
     [BindProperty] public string? Barcode { get; set; }
     [BindProperty] public string? AhfReference { get; set; }
     [BindProperty] public string? RegionalLab { get; set; }
-    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? ReceivedByRegionalLabDate { get; set; }
-    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? InitialReceivedDate { get; set; }
-    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? FinalReceivedDate { get; set; }
-    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? FinalSentDate { get; set; }
-    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? PurchaserBse1ReceivedDate { get; set; }
-    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? BreederBse1ReceivedDate { get; set; }
-    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? Vendor1Bse1ReceivedDate { get; set; }
-    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? HomebredBse1ReceivedDate { get; set; }
-    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? SummarySheetReceivedDate { get; set; }
-    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? PaperworkCompleteDate { get; set; }
-    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? DataCompleteDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? ReceivedByRegionalLabDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? InitialReceivedDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? FinalReceivedDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? FinalSentDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? PurchaserBse1ReceivedDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? BreederBse1ReceivedDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? Vendor1Bse1ReceivedDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? HomebredBse1ReceivedDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? SummarySheetReceivedDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? PaperworkCompleteDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? DataCompleteDate { get; set; }
     [BindProperty] public string? TseTestingSite { get; set; }
     [BindProperty, ModelBinder(BinderType = typeof(SamplingDateModelBinder))] public DateTime? SamplingDate { get; set; }
-    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? LabChasedDate { get; set; }
-    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? BarbMinuteSentDate { get; set; }
-    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? Post2000SentDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? LabChasedDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? BarbMinuteSentDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? Post2000SentDate { get; set; }
     [BindProperty] public string? CaseWorkNotes { get; set; }
     [BindProperty] public int? AhroId { get; set; }
 

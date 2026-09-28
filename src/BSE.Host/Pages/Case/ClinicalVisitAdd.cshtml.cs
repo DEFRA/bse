@@ -15,7 +15,7 @@ public class ClinicalVisitAddModel(
     IDbConnectionFactory connectionFactory) : PageModel
 {
     [BindProperty(SupportsGet = true)] public string Rbse { get; set; } = string.Empty;
-    [BindProperty, ModelBinder(BinderType = typeof(MojDateModelBinder))] public DateTime? VisitDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? VisitDate { get; set; }
 
     public async Task<IActionResult> OnGetAsync()
     {
