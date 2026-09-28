@@ -32,7 +32,4 @@
     <ProjectReference Include="..\BSE.Modules.OssExport\BSE.Modules.OssExport.csproj" />
     <ProjectReference Include="..\BSE.Modules.BsessIntegration\BSE.Modules.BsessIntegration.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Pages\Api\" />
-  </ItemGroup>
 </Project>
