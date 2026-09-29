@@ -152,7 +152,7 @@
             <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState[nameof(Model.LeftDate)]!.Errors[0].ErrorMessage</p>
         }
         <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-            <input id="left-date" asp-for="LeftDate" type="text" class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(ViewData.ModelState[nameof(Model.LeftDate)]?.Errors.Count > 0 ? "govuk-input--error" : "")" autocomplete="off" value="@(Model.LeftDate?.ToString("dd/MM/yyyy") ?? "")" />
+            <input id="left-date" asp-for="LeftDate" type="text" class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(ViewData.ModelState[nameof(Model.LeftDate)]?.Errors.Count > 0 ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@(Model.LeftDate?.ToString("dd/MM/yyyy") ?? "")" />
         </div>
     </div>
 

@@ -97,6 +97,7 @@
                 <span asp-validation-for="FinalResultDate" class="govuk-error-message"></span>
                 <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
                     <input asp-for="FinalResultDate" type="text" class="govuk-input bse-farm-legacy__input moj-js-datepicker-input" autocomplete="off"
+                           placeholder="dd/mm/yyyy"
                            value="@Model.FinalResultDate?.ToString("dd/MM/yyyy")" />
                 </div>
             </div>
@@ -110,6 +111,7 @@
                 <span asp-validation-for="SlaughterDate" class="govuk-error-message"></span>
                 <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
                     <input asp-for="SlaughterDate" type="text" class="govuk-input bse-farm-legacy__input moj-js-datepicker-input" autocomplete="off"
+                           placeholder="dd/mm/yyyy"
                            value="@Model.SlaughterDate?.ToString("dd/MM/yyyy")" />
                 </div>
             </div>

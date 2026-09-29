@@ -187,7 +187,7 @@
                 <div class="defra-legacy-field">
                     <label asp-for="Case.Bse1ReceivedDate" class="govuk-label">BSE1 Date Received</label>
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input asp-for="Case.Bse1ReceivedDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input" autocomplete="off" value="@DateVal(Model.Case.Bse1ReceivedDate)" />
+                        <input asp-for="Case.Bse1ReceivedDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.Bse1ReceivedDate)" />
                     </div>
                 </div>
                 <div class="defra-legacy-field"></div>
@@ -198,7 +198,7 @@
                     <label asp-for="Case.FormADate" class="govuk-label">Form A Date</label>
                     @if (eFormA is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eFormA</p> }
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input asp-for="Case.FormADate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eFormA is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.FormADate)" disabled="@(Model.IsNonGbCase ? "disabled" : null)" />
+                        <input asp-for="Case.FormADate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eFormA is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.FormADate)" disabled="@(Model.IsNonGbCase ? "disabled" : null)" />
                     </div>
                     @if (Model.IsNonGbCase)
                     {
@@ -209,7 +209,7 @@
                     <label asp-for="Case.FormAResubmittedDate" class="govuk-label">Form A Resubmitted Date</label>
                     @if (eFormAResub is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eFormAResub</p> }
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input asp-for="Case.FormAResubmittedDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eFormAResub is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.FormAResubmittedDate)" disabled="@(!hasFormA)" />
+                        <input asp-for="Case.FormAResubmittedDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eFormAResub is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.FormAResubmittedDate)" disabled="@(!hasFormA)" />
                     </div>
                 </div>
             </div>
@@ -219,7 +219,7 @@
                     <label asp-for="Case.FormBDate" class="govuk-label">Form B Date</label>
                     @if (eFormB is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eFormB</p> }
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input asp-for="Case.FormBDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eFormB is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.FormBDate)" disabled="@(!hasFormA)" />
+                        <input asp-for="Case.FormBDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eFormB is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.FormBDate)" disabled="@(!hasFormA)" />
                     </div>
                 </div>
                 <div class="defra-legacy-field @(eFate is not null ? "govuk-form-group--error" : "")">
@@ -248,7 +248,7 @@
                     }
                     <div class="defra-formc-input-wrap">
                         <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                            <input asp-for="Case.FormCDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eFormC is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.FormCDate)" disabled="@(!hasFormB)" />
+                            <input asp-for="Case.FormCDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eFormC is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.FormCDate)" disabled="@(!hasFormB)" />
                         </div>
                         <button type="button"
                                 id="case-formc-warning-trigger"
@@ -470,7 +470,7 @@
                     </div>
                     @if (eBirth is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eBirth</p> }
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input asp-for="Case.BirthDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eBirth is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.BirthDate)" />
+                        <input asp-for="Case.BirthDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eBirth is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.BirthDate)" />
                     </div>
                 </div>
                 <div class="defra-legacy-field">
@@ -564,42 +564,42 @@
                     <label for="Case_IsPurchaserBse1Received" class="govuk-label defra-legacy-receipt-label">Is Purchaser BSE1 Received?</label>
                     <input asp-for="Case.IsPurchaserBse1Received" id="Case_IsPurchaserBse1Received" type="checkbox" class="defra-legacy-receipt-check" />
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input asp-for="Case.PurchaserBse1ReceivedDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(ePurchaserBse1 is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.PurchaserBse1ReceivedDate)" aria-label="Purchaser BSE1 received date" disabled="@(!Model.Case.HasCaseWork)" />
+                        <input asp-for="Case.PurchaserBse1ReceivedDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(ePurchaserBse1 is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.PurchaserBse1ReceivedDate)" aria-label="Purchaser BSE1 received date" disabled="@(!Model.Case.HasCaseWork)" />
                     </div>
                 </div>
                 <div class="defra-legacy-receipt-row">
                     <label for="Case_IsBreederBse1Received" class="govuk-label defra-legacy-receipt-label">Is Breeder BSE1 Received?</label>
                     <input asp-for="Case.IsBreederBse1Received" id="Case_IsBreederBse1Received" type="checkbox" class="defra-legacy-receipt-check" />
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input asp-for="Case.BreederBse1ReceivedDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eBreederBse1 is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.BreederBse1ReceivedDate)" aria-label="Breeder BSE1 received date" disabled="@(!Model.Case.HasCaseWork)" />
+                        <input asp-for="Case.BreederBse1ReceivedDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eBreederBse1 is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.BreederBse1ReceivedDate)" aria-label="Breeder BSE1 received date" disabled="@(!Model.Case.HasCaseWork)" />
                     </div>
                 </div>
                 <div class="defra-legacy-receipt-row">
                     <label for="Case_IsVendor1Bse1Received" class="govuk-label defra-legacy-receipt-label">Is Vendor 1 BSE1 Received?</label>
                     <input asp-for="Case.IsVendor1Bse1Received" id="Case_IsVendor1Bse1Received" type="checkbox" class="defra-legacy-receipt-check" />
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input asp-for="Case.Vendor1Bse1ReceivedDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eVendor1Bse1 is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.Vendor1Bse1ReceivedDate)" aria-label="Vendor 1 BSE1 received date" disabled="@(!Model.Case.HasCaseWork)" />
+                        <input asp-for="Case.Vendor1Bse1ReceivedDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eVendor1Bse1 is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.Vendor1Bse1ReceivedDate)" aria-label="Vendor 1 BSE1 received date" disabled="@(!Model.Case.HasCaseWork)" />
                     </div>
                 </div>
                 <div class="defra-legacy-receipt-row">
                     <label for="Case_IsHomebredBse1Received" class="govuk-label defra-legacy-receipt-label">Is Homebred BSE1 Received?</label>
                     <input asp-for="Case.IsHomebredBse1Received" id="Case_IsHomebredBse1Received" type="checkbox" class="defra-legacy-receipt-check" />
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input asp-for="Case.HomebredBse1ReceivedDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eHomebredBse1 is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.HomebredBse1ReceivedDate)" aria-label="Homebred BSE1 received date" disabled="@(!Model.Case.HasCaseWork)" />
+                        <input asp-for="Case.HomebredBse1ReceivedDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eHomebredBse1 is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.HomebredBse1ReceivedDate)" aria-label="Homebred BSE1 received date" disabled="@(!Model.Case.HasCaseWork)" />
                     </div>
                 </div>
                 <div class="defra-legacy-receipt-row">
                     <label for="Case_IsSummarySheetReceived" class="govuk-label defra-legacy-receipt-label">Is Summary Sheet Received?</label>
                     <input asp-for="Case.IsSummarySheetReceived" id="Case_IsSummarySheetReceived" type="checkbox" class="defra-legacy-receipt-check" />
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input asp-for="Case.SummarySheetReceivedDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eSummarySheet is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.SummarySheetReceivedDate)" aria-label="Summary sheet received date" disabled="@(!Model.Case.HasCaseWork)" />
+                        <input asp-for="Case.SummarySheetReceivedDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eSummarySheet is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.SummarySheetReceivedDate)" aria-label="Summary sheet received date" disabled="@(!Model.Case.HasCaseWork)" />
                     </div>
                 </div>
                 <div class="defra-legacy-receipt-row">
                     <label for="Case_IsPaperworkComplete" class="govuk-label defra-legacy-receipt-label">Is Paperwork Complete?</label>
                     <input asp-for="Case.IsPaperworkComplete" id="Case_IsPaperworkComplete" type="checkbox" class="defra-legacy-receipt-check" />
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input asp-for="Case.PaperworkCompleteDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(ePaperwork is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.PaperworkCompleteDate)" aria-label="Paperwork complete date" disabled="@(!Model.Case.HasCaseWork)" />
+                        <input asp-for="Case.PaperworkCompleteDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(ePaperwork is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.PaperworkCompleteDate)" aria-label="Paperwork complete date" disabled="@(!Model.Case.HasCaseWork)" />
                     </div>
                 </div>
             </div>

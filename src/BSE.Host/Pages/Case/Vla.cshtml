@@ -159,7 +159,7 @@
                 <div>
                     @if (E("Case.BirthDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.BirthDate")</p> }
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input asp-for="Case.BirthDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.BirthDate") is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.BirthDate)" />
+                        <input asp-for="Case.BirthDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.BirthDate") is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.BirthDate)" />
                     </div>
                 </div>
             </div>
@@ -232,7 +232,7 @@
                     <div>
                         @if (E("Case.PurchaseDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.PurchaseDate")</p> }
                         <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                            <input asp-for="Case.PurchaseDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.PurchaseDate") is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.PurchaseDate)" />
+                            <input asp-for="Case.PurchaseDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.PurchaseDate") is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.PurchaseDate)" />
                         </div>
                     </div>
                 </div>
@@ -294,7 +294,7 @@
                 <div>
                     @if (E("Case.HerdEntryDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.HerdEntryDate")</p> }
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input asp-for="Case.HerdEntryDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.HerdEntryDate") is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.HerdEntryDate)" />
+                        <input asp-for="Case.HerdEntryDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.HerdEntryDate") is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.HerdEntryDate)" />
                     </div>
                 </div>
             </div>
@@ -319,7 +319,7 @@
                 <div>
                     @if (E("Case.OnsetDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.OnsetDate")</p> }
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input asp-for="Case.OnsetDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.OnsetDate") is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.OnsetDate)" />
+                        <input asp-for="Case.OnsetDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.OnsetDate") is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.OnsetDate)" />
                     </div>
                 </div>
             </div>
@@ -371,7 +371,7 @@
                 <div>
                     @if (E("Case.SlaughterDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.SlaughterDate")</p> }
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input asp-for="Case.SlaughterDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.SlaughterDate") is not null ? "govuk-input--error" : "")" autocomplete="off" value="@DateVal(Model.Case.SlaughterDate)" />
+                        <input asp-for="Case.SlaughterDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.SlaughterDate") is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.SlaughterDate)" />
                     </div>
                 </div>
             </div>

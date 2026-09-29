@@ -294,6 +294,7 @@
                 <label class="govuk-label" for="retro-date">Retrospective Date</label>
                 <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
                     <input id="retro-date" name="RetrospectiveResultDate" type="text" class="govuk-input moj-js-datepicker-input" autocomplete="off"
+                           placeholder="dd/mm/yyyy"
                            value="@(Model.RetrospectiveResultDate?.ToString("dd/MM/yyyy") ?? "")" />
                 </div>
             </div>

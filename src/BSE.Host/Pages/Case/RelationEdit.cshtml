@@ -152,7 +152,7 @@
         <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
             <input id="left-date" asp-for="LeftDate" type="text"
                    aria-describedby="@(Err("LeftDate") is not null ? "left-date-error" : null)"
-                   class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(Err("LeftDate") is not null ? "govuk-input--error" : "")" autocomplete="off" value="@(Model.LeftDate?.ToString("dd/MM/yyyy") ?? "")" />
+                   class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(Err("LeftDate") is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@(Model.LeftDate?.ToString("dd/MM/yyyy") ?? "")" />
         </div>
     </div>
 

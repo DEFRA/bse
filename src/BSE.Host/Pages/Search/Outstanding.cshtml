@@ -77,7 +77,7 @@
                             <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.EarliestFormADateError</p>
                         }
                         <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                            <input asp-for="Filter.EarliestFormADate" type="text" class="govuk-input bse-outstanding-legacy__date-input moj-js-datepicker-input @(Model.Filter.EarliestFormADateError is not null ? "govuk-input--error" : "")" autocomplete="off" />
+                            <input asp-for="Filter.EarliestFormADate" type="text" class="govuk-input bse-outstanding-legacy__date-input moj-js-datepicker-input @(Model.Filter.EarliestFormADateError is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" />
                         </div>
                     </div>
                     <span class="bse-outstanding-legacy__and">and</span>
@@ -88,7 +88,7 @@
                             <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.LatestFormADateError</p>
                         }
                         <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                            <input asp-for="Filter.LatestFormADate" type="text" class="govuk-input bse-outstanding-legacy__date-input moj-js-datepicker-input @(Model.Filter.LatestFormADateError is not null ? "govuk-input--error" : "")" autocomplete="off" />
+                            <input asp-for="Filter.LatestFormADate" type="text" class="govuk-input bse-outstanding-legacy__date-input moj-js-datepicker-input @(Model.Filter.LatestFormADateError is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" />
                         </div>
                     </div>
                 </div>

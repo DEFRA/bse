@@ -96,7 +96,7 @@
         }
         <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
             <input asp-for="Case.BirthDate" type="text" class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(ViewData.ModelState["Case.BirthDate"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
-                   autocomplete="off" value="@DateVal(Model.Case.BirthDate)" />
+                   autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.BirthDate)" />
         </div>
     </div>
     <div class="govuk-form-group @(ViewData.ModelState["Case.BirthDateSource"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
@@ -165,7 +165,7 @@
         }
         <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
             <input asp-for="Case.PurchaseDate" type="text" class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(ViewData.ModelState["Case.PurchaseDate"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
-                   autocomplete="off" value="@DateVal(Model.Case.PurchaseDate)" />
+                   autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.PurchaseDate)" />
         </div>
     </div>
     <div class="govuk-form-group @(ViewData.ModelState["Case.PurchaseAgeInMonths"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
@@ -223,7 +223,7 @@
         }
         <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
             <input asp-for="Case.HerdEntryDate" type="text" class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(ViewData.ModelState["Case.HerdEntryDate"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
-                   autocomplete="off" value="@DateVal(Model.Case.HerdEntryDate)" />
+                   autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.HerdEntryDate)" />
         </div>
     </div>
     <div class="govuk-form-group @(ViewData.ModelState["Case.OnsetDate"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
@@ -234,7 +234,7 @@
         }
         <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
             <input asp-for="Case.OnsetDate" type="text" class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(ViewData.ModelState["Case.OnsetDate"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
-                   autocomplete="off" value="@DateVal(Model.Case.OnsetDate)" />
+                   autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.OnsetDate)" />
         </div>
     </div>
     <div class="govuk-form-group">
@@ -304,7 +304,7 @@
         <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
             <input asp-for="Case.SlaughterDate" type="text"
                    class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(ViewData.ModelState["Case.SlaughterDate"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
-                   autocomplete="off" value="@DateVal(Model.Case.SlaughterDate)" />
+                   autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.SlaughterDate)" />
         </div>
     </div>
 

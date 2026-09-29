@@ -37,7 +37,7 @@
                     <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.LogDateError</p>
                 }
                 <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                    <input id="LogDate" name="LogDate" type="text" class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(Model.LogDateError is not null ? "govuk-input--error" : "")" autocomplete="off" value="@(Model.LogDate?.ToString("dd/MM/yyyy") ?? "")" />
+                    <input id="LogDate" name="LogDate" type="text" class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(Model.LogDateError is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@(Model.LogDate?.ToString("dd/MM/yyyy") ?? "")" />
                 </div>
             </div>
             <div class="govuk-button-group">

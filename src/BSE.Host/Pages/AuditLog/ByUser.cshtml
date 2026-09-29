@@ -59,6 +59,7 @@
                         <input id="StartDate" name="StartDate" type="text"
                                class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(Model.StartDateError is not null ? "govuk-input--error" : "")"
                                autocomplete="off"
+                            placeholder="dd/mm/yyyy"
                                value="@(Model.StartDate?.ToString("dd/MM/yyyy"))" />
                     </div>
                     <span class="bse-date-range-separator govuk-label">and</span>
@@ -66,6 +67,7 @@
                         <input id="EndDate" name="EndDate" type="text"
                                class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(Model.EndDateError is not null ? "govuk-input--error" : "")"
                                autocomplete="off"
+                            placeholder="dd/mm/yyyy"
                                value="@(Model.EndDate?.ToString("dd/MM/yyyy"))" />
                     </div>
                 </div>
