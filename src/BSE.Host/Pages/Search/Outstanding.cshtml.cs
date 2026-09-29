@@ -46,8 +46,6 @@ public class OutstandingModel : PageModel
         if (Filter.PageNumber > Filter.TotalPages) Filter.PageNumber = Filter.TotalPages;
     }
 
-    public Task OnPostAsync() => OnGetAsync();
-
     public async Task<IActionResult> OnGetExportAsync()
     {
         var hasValidSearchType = IsKnownSearchType();

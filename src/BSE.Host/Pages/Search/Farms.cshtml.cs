@@ -57,8 +57,6 @@ public class FarmsModel : PageModel
         }
     }
 
-    public Task OnPostAsync() => OnGetAsync();
-
     public async Task<IActionResult> OnGetExportAsync()
     {
         if (!HasAnyFilter()) return RedirectToPage();
