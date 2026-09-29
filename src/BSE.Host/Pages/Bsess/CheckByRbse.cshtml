@@ -40,7 +40,7 @@
                     {
                         <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewContext.ModelState["Rbse"]!.Errors[0].ErrorMessage</p>
                     }
-                    <input asp-for="Rbse" class="govuk-input bse-rbse-input" />
+                    <input asp-for="Rbse" class="govuk-input bse-rbse-input" title="RBSE Format: NN/NN/NNNNN" spellcheck="false" autocapitalize="off" />
                 </div>
             </div>
             <div class="govuk-button-group bse-rbse-action-group">

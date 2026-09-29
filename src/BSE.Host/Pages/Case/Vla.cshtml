@@ -439,7 +439,8 @@
                                 <input name="EditOwnerName" class="govuk-input govuk-!-width-two-thirds" maxlength="255" value="@Model.EditOwnerName" />
                             </td>
                             <td class="govuk-table__cell">
-                                <input name="EditOwnerCphh" class="govuk-input vla-owner-cphh-input" maxlength="14" value="@Model.EditOwnerCphh" autocomplete="off" />
+                                <input name="EditOwnerCphh" class="govuk-input vla-owner-cphh-input" maxlength="14" value="@Model.EditOwnerCphh" autocomplete="off"
+                                       title="CPHH Format: NN[/]NNN[/]NNNN[/NN]" spellcheck="false" autocapitalize="off" />
                             </td>
                             <td class="govuk-table__cell">
                                 <input type="hidden" name="EditingOwnerId" value="@o.Id" />
@@ -482,7 +483,8 @@
                         <input name="NewOwnerName" class="govuk-input govuk-!-width-two-thirds" maxlength="255" value="@Model.NewOwnerName" />
                     </td>
                     <td class="govuk-table__cell">
-                        <input name="NewOwnerCphh" class="govuk-input vla-owner-cphh-input" maxlength="14" value="@Model.NewOwnerCphh" autocomplete="off" />
+                        <input name="NewOwnerCphh" class="govuk-input vla-owner-cphh-input" maxlength="14" value="@Model.NewOwnerCphh" autocomplete="off"
+                               title="CPHH Format: NN[/]NNN[/]NNNN[/NN]" spellcheck="false" autocapitalize="off" />
                     </td>
                     <td class="govuk-table__cell">
                         <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">

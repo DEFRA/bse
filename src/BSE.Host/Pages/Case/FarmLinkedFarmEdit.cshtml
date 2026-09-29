@@ -43,7 +43,8 @@
         {
             <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @cphhError</p>
         }
-        <input id="related-cphh" asp-for="RelatedCphh" class="govuk-input govuk-!-width-one-half @(cphhError is not null ? "govuk-input--error" : "")" spellcheck="false" autocomplete="off" />
+        <input id="related-cphh" asp-for="RelatedCphh" class="govuk-input govuk-!-width-one-half @(cphhError is not null ? "govuk-input--error" : "")" spellcheck="false" autocomplete="off"
+               title="CPHH Format: NN[/]NNN[/]NNNN[/NN]" autocapitalize="off" />
     </div>
 
     <div class="govuk-button-group">

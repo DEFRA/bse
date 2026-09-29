@@ -128,7 +128,8 @@
                 <label asp-for="Cphh" class="govuk-label">CPHH</label>
                 <span asp-validation-for="Cphh" class="govuk-error-message"></span>
                 <div class="bse-non-gb-case-form__lookup-row">
-                    <input asp-for="Cphh" class="govuk-input bse-farm-legacy__input" />
+                    <input asp-for="Cphh" class="govuk-input bse-farm-legacy__input" 
+                           title="CPHH Format: NN[/]NNN[/]NNNN[/NN]" spellcheck="false" autocapitalize="off" />
                     <button type="submit" asp-page-handler="Lookup" class="govuk-button govuk-button--secondary bse-non-gb-case-form__lookup-btn" data-module="govuk-button">Look Up</button>
                 </div>
             </div>

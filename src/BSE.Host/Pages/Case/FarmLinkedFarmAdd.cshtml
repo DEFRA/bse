@@ -41,7 +41,8 @@
         {
             <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @cphhError</p>
         }
-        <input id="related-cphh" asp-for="RelatedCphh" class="govuk-input govuk-!-width-one-third @(cphhError is not null ? "govuk-input--error" : "")" autocomplete="off" spellcheck="false" data-lf-lookup />
+        <input id="related-cphh" asp-for="RelatedCphh" class="govuk-input govuk-!-width-one-third @(cphhError is not null ? "govuk-input--error" : "")" autocomplete="off" spellcheck="false" data-lf-lookup
+               title="CPHH Format: NN[/]NNN[/]NNNN[/NN]" autocapitalize="off" />
         <p class="govuk-hint lf-lookup-status" style="display:none"></p>
     </div>
 

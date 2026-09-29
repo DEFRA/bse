@@ -28,15 +28,15 @@
     </div>
 }
 
-<form method="post" novalidate data-bse-post-search>
-    @Html.AntiForgeryToken()
+<form method="get" novalidate data-bse-post-search>
     <input type="hidden" name="Searched" value="true" />
     <div class="bse-farm-legacy">
         <div class="bse-farm-legacy__row">
             <div class="bse-farm-legacy__field">
                 <label asp-for="Cphh" class="govuk-label">CPH(H)</label>
                 <div class="govuk-form-group">
-                    <input asp-for="Cphh" class="govuk-input bse-farm-legacy__input" />
+                    <input asp-for="Cphh" class="govuk-input bse-farm-legacy__input"
+                           title="CPHH Format: NN[/]NNN[/]NNNN[/NN]" spellcheck="false" autocapitalize="off" />
                     <span asp-validation-for="Cphh" class="govuk-error-message"></span>
                 </div>
             </div>

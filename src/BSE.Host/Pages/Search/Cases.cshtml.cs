@@ -69,8 +69,6 @@ public class CasesModel : PageModel
         }
     }
 
-    public Task OnPostAsync() => OnGetAsync();
-
     public async Task<IActionResult> OnGetExportAsync()
     {
         if (!HasAnyFilter() || !Filter.ValidateDates()) return RedirectToPage();

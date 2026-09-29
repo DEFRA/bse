@@ -94,7 +94,10 @@
                    id="farm-cphh"
                    class="govuk-input govuk-input--width-20 @(ViewData.ModelState.ContainsKey("Farm.CPHH") && ViewData.ModelState["Farm.CPHH"]!.Errors.Count > 0 ? "govuk-input--error" : "")"
                    autocomplete="off"
-                   maxlength="14" />
+                   maxlength="14"
+                   title="CPHH Format: NN[/]NNN[/]NNNN[/NN]"
+                   spellcheck="false"
+                   autocapitalize="off" />
         </div>
     }
 
