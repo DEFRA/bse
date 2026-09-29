@@ -35,7 +35,8 @@
             <div class="bse-farm-legacy__field">
                 <label asp-for="Rbse" class="govuk-label">RBSE Of Case</label>
                 <div class="govuk-form-group">
-                    <input asp-for="Rbse" class="govuk-input bse-farm-legacy__input" maxlength="11" />
+                    <input asp-for="Rbse" class="govuk-input bse-farm-legacy__input" maxlength="11"
+                           title="RBSE Format: NN/NN/NNNNN" spellcheck="false" autocapitalize="off" />
                     <span asp-validation-for="Rbse" class="govuk-error-message"></span>
                 </div>
             </div>
@@ -51,7 +52,8 @@
             <div class="bse-farm-legacy__field">
                 <label asp-for="RelationRbse" class="govuk-label">RBSE of Related Animal</label>
                 <div class="govuk-form-group">
-                    <input asp-for="RelationRbse" class="govuk-input bse-farm-legacy__input" maxlength="11" />
+                    <input asp-for="RelationRbse" class="govuk-input bse-farm-legacy__input" maxlength="11"
+                           title="RBSE Format: NN/NN/NNNNN" spellcheck="false" autocapitalize="off" />
                     <span asp-validation-for="RelationRbse" class="govuk-error-message"></span>
                 </div>
             </div>

@@ -47,7 +47,7 @@
             </p>
         }
         <input id="rbse" name="Rbse" value="@Model.Rbse" type="text" maxlength="11" autocomplete="off"
-               aria-describedby="rbse-hint @(Model.RbseError is not null ? "rbse-error" : "")"
+               title="RBSE Format: NN/NN/NNNNN" spellcheck="false" autocapitalize="off"
                class="govuk-input govuk-input--width-10 @(Model.RbseError is not null ? "govuk-input--error" : "")" />
     </div>
     <button type="submit" class="govuk-button" data-module="govuk-button">Look Up</button>
@@ -108,7 +108,7 @@
                 </p>
             }
             <input id="new-cphh" name="NewCphh" value="@Model.NewCphh" type="text" inputmode="numeric" autocomplete="off"
-                   aria-describedby="new-cphh-hint @(Model.CphhError is not null ? "new-cphh-error" : "")"
+                   title="CPHH Format: NN[/]NNN[/]NNNN[/NN]" spellcheck="false" autocapitalize="off"
                    class="govuk-input govuk-input--width-20 @(Model.CphhError is not null ? "govuk-input--error" : "")" />
         </div>
         <button type="submit" class="govuk-button" data-module="govuk-button">Check</button>

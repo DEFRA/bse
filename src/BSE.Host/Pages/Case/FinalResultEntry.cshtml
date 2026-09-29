@@ -41,7 +41,7 @@
     <div class="govuk-form-group @(Model.RbseError is not null ? "govuk-form-group--error" : "")">
         <label class="govuk-label" for="rbse">RBSE</label>
         <input id="rbse" name="Rbse" value="@BseFormat.FormatRbse(Model.Rbse)" type="text" maxlength="11" autocomplete="off"
-               aria-describedby="rbse-hint @(Model.RbseError is not null ? "rbse-error" : "")"
+               title="RBSE Format: NN/NN/NNNNN" spellcheck="false" autocapitalize="off"
                class="govuk-input govuk-input--width-10 @(Model.RbseError is not null ? "govuk-input--error" : "")" />
         @if (Model.RbseError is not null)
         {
