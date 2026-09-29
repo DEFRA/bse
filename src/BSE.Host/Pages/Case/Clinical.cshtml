@@ -213,7 +213,7 @@
                             <label class="govuk-visually-hidden" for="edit-visit-date-@v.ClientKey">Visit date</label>
                             <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
                                 <input id="edit-visit-date-@v.ClientKey" name="EditVisitDate" type="text" value="@(Model.EditVisitDate?.ToString("dd/MM/yyyy"))"
-                                       class="govuk-input govuk-input--width-10 moj-js-datepicker-input" autocomplete="off" />
+                                       class="govuk-input govuk-input--width-10 moj-js-datepicker-input" autocomplete="off" placeholder="dd/mm/yyyy" />
                             </div>
                         </td>
                         <td class="govuk-table__cell">
@@ -258,7 +258,7 @@
                         <label class="govuk-visually-hidden" for="new-visit-date">Visit date</label>
                         <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
                             <input id="new-visit-date" name="NewVisitDate" type="text" value="@(Model.NewVisitDate?.ToString("dd/MM/yyyy"))"
-                                   class="govuk-input govuk-input--width-10 moj-js-datepicker-input" autocomplete="off" />
+                                   class="govuk-input govuk-input--width-10 moj-js-datepicker-input" autocomplete="off" placeholder="dd/mm/yyyy" />
                         </div>
                     </div>
                 </td>

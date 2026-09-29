@@ -50,13 +50,13 @@
                 <div class="bse-date-range-input-wrapper">
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
                         <input id="audit-start-date" name="StartDate" type="text"
-                               class="govuk-input govuk-input--width-10 moj-js-datepicker-input" autocomplete="off"
+                               class="govuk-input govuk-input--width-10 moj-js-datepicker-input" autocomplete="off" placeholder="dd/mm/yyyy"
                                value="@Model.StartDate?.ToString("dd/MM/yyyy")" />
                     </div>
                     <span class="bse-date-range-separator govuk-label">and</span>
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
                         <input id="audit-end-date" name="EndDate" type="text"
-                               class="govuk-input govuk-input--width-10 moj-js-datepicker-input" autocomplete="off"
+                               class="govuk-input govuk-input--width-10 moj-js-datepicker-input" autocomplete="off" placeholder="dd/mm/yyyy"
                                value="@Model.EndDate?.ToString("dd/MM/yyyy")" />
                     </div>
                 </div>
