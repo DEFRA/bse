@@ -49,7 +49,7 @@
                     </p>
                 }
                 <input id="old-rbse" name="OldRbse" value="@Model.OldRbse" type="text" maxlength="11" autocomplete="off"
-                       aria-describedby="old-rbse-hint @(Model.OldRbseError is not null ? "old-rbse-error" : "")"
+                       title="RBSE Format: NN/NN/NNNNN" spellcheck="false" autocapitalize="off"
                        class="govuk-input govuk-input--width-10 @(Model.OldRbseError is not null ? "govuk-input--error" : "")" />
             </div>
         </div>
@@ -105,7 +105,7 @@
                         </p>
                     }
                     <input id="new-rbse" name="NewRbse" value="@Model.NewRbse" type="text" maxlength="11" autocomplete="off"
-                           aria-describedby="new-rbse-hint @(Model.NewRbseError is not null ? "new-rbse-error" : "")"
+                           title="RBSE Format: NN/NN/NNNNN" spellcheck="false" autocapitalize="off"
                            class="govuk-input govuk-input--width-10 @(Model.NewRbseError is not null ? "govuk-input--error" : "")" />
                 </div>
             </div>

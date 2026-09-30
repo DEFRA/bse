@@ -49,7 +49,7 @@
                     </p>
                 }
                 <input id="old-cphh" name="OldCphh" value="@Model.OldCphh" type="text" inputmode="numeric" autocomplete="off"
-                       aria-describedby="old-cphh-hint @(Model.OldCphhError is not null ? "old-cphh-error" : "")"
+                       title="CPHH Format: NN[/]NNN[/]NNNN[/NN]" spellcheck="false" autocapitalize="off"
                        class="govuk-input govuk-input--width-20 @(Model.OldCphhError is not null ? "govuk-input--error" : "")" />
             </div>
         </div>
@@ -99,7 +99,7 @@
                         </p>
                     }
                     <input id="new-cphh" name="NewCphh" value="@Model.NewCphh" type="text" inputmode="numeric" autocomplete="off"
-                           aria-describedby="new-cphh-hint @(Model.NewCphhError is not null ? "new-cphh-error" : "")"
+                           title="CPHH Format: NN[/]NNN[/]NNNN[/NN]" spellcheck="false" autocapitalize="off"
                            class="govuk-input govuk-input--width-20 @(Model.NewCphhError is not null ? "govuk-input--error" : "")" />
                 </div>
             </div>

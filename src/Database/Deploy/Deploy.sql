@@ -7,6 +7,7 @@
 -- Deployment checklist:
 --   1. Run against target environment (DEV / STAGING / PROD)
 --   2. Verify no errors in deployment log
+--   3. Verify database state after deployment (optional but recommended)
 --   4. Tag the commit after successful run (optional but recommended)
 --
 -- ============================================================================
@@ -15,6 +16,8 @@
 -- Step 1: Load stored procedures
 PRINT '--- Deploying stored procedures ---';
 :r ../StoredProcedures/GetUserByEmail.sql
+:r ../StoredProcedures/GetBatchIDForBatch.sql
+:r ../StoredProcedures/GetSearchRelatedAnimals.sql
 GO
 
 -- Step 2: Deployment script to used to alter/create tables, columns etc

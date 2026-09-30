@@ -1,15 +1,15 @@
 @page
 @model CheckByRbseModel
 @{
-    ViewData["Title"] = "TSES Check : Compare Details By RBSE";
+    ViewData["Title"] = "TSESS Check : Compare Details By RBSE";
 }
 
 <div>
-    <h1 class="govuk-heading-l">TSES Check : Compare Details By RBSE</h1>
+    <h1 class="govuk-heading-l">TSESS Check : Compare Details By RBSE</h1>
     <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
         <ol class="govuk-breadcrumbs__list">
             <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Bsess/Menu">TSES Check Menu</a></li>
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Bsess/Menu">TSESS Check Menu</a></li>
             <li class="govuk-breadcrumbs__list-item" aria-current="page">By RBSE</li>
         </ol>
     </nav>
@@ -40,22 +40,22 @@
                     {
                         <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewContext.ModelState["Rbse"]!.Errors[0].ErrorMessage</p>
                     }
-                    <input asp-for="Rbse" class="govuk-input bse-rbse-input" />
+                    <input asp-for="Rbse" class="govuk-input bse-rbse-input" title="RBSE Format: NN/NN/NNNNN" spellcheck="false" autocapitalize="off" />
                 </div>
             </div>
             <div class="govuk-button-group bse-rbse-action-group">
                 <button type="submit" class="govuk-button" data-module="govuk-button">Look Up</button>
-                <a asp-page="/Bsess/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button" role="button" draggable="false">TSES Menu</a>
+                <a asp-page="/Bsess/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button" role="button" draggable="false">TSESS Menu</a>
             </div>
         </div>
     </form>
 
     <table class="govuk-table bse-check-by-rbse-table" style="max-width: 1000px;">
-        <caption class="govuk-visually-hidden">TSES comparison details</caption>
+        <caption class="govuk-visually-hidden">TSESS comparison details</caption>
         <thead class="govuk-table__head">
             <tr class="govuk-table__row">
                 <th scope="col" class="govuk-table__header"></th>
-                <th scope="col" class="govuk-table__header" style="text-align:left; padding: 0.8rem 1rem;">TSES</th>
+                <th scope="col" class="govuk-table__header" style="text-align:left; padding: 0.8rem 1rem;">TSESS</th>
                 <th scope="col" class="govuk-table__header"></th>
                 <th scope="col" class="govuk-table__header" style="text-align:left; padding: 0.8rem 1rem;">BSE</th>
             </tr>
@@ -75,7 +75,7 @@
     {
         <div class="govuk-warning-text">
             <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
-            <strong class="govuk-warning-text__text"><span class="govuk-warning-text__assistive">Warning</span>No TSES record found for @BseFormat.FormatRbse(Model.Rbse).</strong>
+            <strong class="govuk-warning-text__text"><span class="govuk-warning-text__assistive">Warning</span>No TSESS record found for @BseFormat.FormatRbse(Model.Rbse).</strong>
         </div>
     }
 </div>

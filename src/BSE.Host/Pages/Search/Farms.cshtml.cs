@@ -26,6 +26,9 @@ public class FarmsModel : PageModel
     [Microsoft.AspNetCore.Mvc.BindProperty(SupportsGet = true)]
     public FarmSearchViewModel Filter { get; set; } = new();
 
+    [BindProperty(SupportsGet = true)]
+    public bool Searched { get; set; }
+
     public IReadOnlyList<LookupItem> CountyOptions { get; private set; } = [];
     public IReadOnlyList<LookupItem> AhoOptions { get; private set; } = [];
 
@@ -50,7 +53,7 @@ public class FarmsModel : PageModel
         }
         else
         {
-            NoCriteria = Request.Query.Count > 0;
+            NoCriteria = Searched || Request.Query.Count > 0;
         }
     }
 

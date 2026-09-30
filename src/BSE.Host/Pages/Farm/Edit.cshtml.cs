@@ -5,6 +5,7 @@ using BSE.Modules.ReferenceData.Models;
 using BSE.Modules.ReferenceData.Services;
 using IGeoLookupService = BSE.Host.Services.IGeoLookupService;
 using BSE.SharedKernel;
+using Microsoft.Data.SqlClient;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -77,7 +78,16 @@ public class EditModel : PageModel
         var rowStamp = rowStampBase64 != null ? Convert.FromBase64String(rowStampBase64) : null;
 
         var userId = await _currentUser.GetUserIdAsync();
-        await _farm.UpdateAsync(Farm.ToUpdateCommand(rowStamp), userId);
+        try
+        {
+            await _farm.UpdateAsync(Farm.ToUpdateCommand(rowStamp), userId);
+        }
+        catch (SqlException ex) when (ex.Number == 547 && ex.Message.Contains("CK_Farm_ADNSRegionID", StringComparison.OrdinalIgnoreCase))
+        {
+            ModelState.AddModelError("Farm.ADNSRegionID", "ADNS Region is required for GB farms.");
+            TempData["FarmRowStamp"] = rowStampBase64;
+            return Page();
+        }
 
         TempData["Success"] = "Farm updated successfully.";
         return RedirectToPage("/Case/Farm", new { rbse = Rbse });

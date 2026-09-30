@@ -26,6 +26,9 @@ public class CasesModel : PageModel
     [Microsoft.AspNetCore.Mvc.BindProperty(SupportsGet = true)]
     public CaseSearchViewModel Filter { get; set; } = new();
 
+    [BindProperty(SupportsGet = true)]
+    public bool Searched { get; set; }
+
     public IReadOnlyList<LookupItem> SexOptions { get; private set; } = [];
     public IReadOnlyList<LookupItem> SurveyOptions { get; private set; } = [];
     public IReadOnlyList<LookupItem> FateOptions { get; private set; } = [];
@@ -62,7 +65,7 @@ public class CasesModel : PageModel
         }
         else
         {
-            NoCriteria = Request.Query.Count > 0;
+            NoCriteria = Searched || Request.Query.Count > 0;
         }
     }
 

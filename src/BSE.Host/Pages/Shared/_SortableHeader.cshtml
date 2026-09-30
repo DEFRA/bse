@@ -40,8 +40,8 @@
             : $"Sorted ascending. Activate to sort {label} descending.")
         : $"Not sorted. Activate to sort {label} ascending.";
 }
-<th scope="col" class="govuk-table__header moj-sortable-table__heading @headerClass" aria-sort="@ariaSort">
-    <a class="moj-sortable-table__button" href="@href">
+<th scope="col" class="govuk-table__header bse-sortable-table__heading @headerClass" aria-sort="@ariaSort">
+    <a class="bse-sortable-table__button" href="@href">
         @if (!string.IsNullOrWhiteSpace(labelMarkup))
         {
             @Html.Raw(labelMarkup)
@@ -55,9 +55,9 @@
         {
             @label
         }
-        <span class="moj-sortable-table__icons" aria-hidden="true">
-            <span class="moj-sortable-table__icon moj-sortable-table__icon--up"></span>
-            <span class="moj-sortable-table__icon moj-sortable-table__icon--down"></span>
+        <span class="bse-sortable-table__icons" aria-hidden="true">
+            <span class="bse-sortable-table__icon bse-sortable-table__icon--up"></span>
+            <span class="bse-sortable-table__icon bse-sortable-table__icon--down"></span>
         </span>
         <span class="govuk-visually-hidden">@screenReaderText</span>
     </a>

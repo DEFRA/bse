@@ -5,6 +5,8 @@
     string rbseNoSlash = Model.Rbse.Replace("/", "");
     var viewDocsUrl = string.IsNullOrWhiteSpace(Model.SpolSiteUrl) ? null : $"{Model.SpolSiteUrl}{rbseNoSlash}";
     bool isEditing = !string.IsNullOrEmpty(Model.EditingClientKey);
+    var canSaveFeeds = User.IsInRole("DataEntry");
+    var canEditFeeds = canSaveFeeds && User.IsInRole("VLAAccess");
 }
 
 <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
@@ -63,62 +65,32 @@
     </div>
 }
 
-@if (!User.IsInRole("DataEntry"))
-{
-    @* -- Read-only feed records -------------------------------------------------- *@
-    <table class="govuk-table">
-        <caption class="govuk-visually-hidden">Feed history for @Model.Rbse</caption>
-        <thead class="govuk-table__head">
-            <tr class="govuk-table__row">
-                <th scope="col" class="govuk-table__header">Year From</th>
-                <th scope="col" class="govuk-table__header">Year To</th>
-                <th scope="col" class="govuk-table__header">Ration Type</th>
-                <th scope="col" class="govuk-table__header">Supplier</th>
-                <th scope="col" class="govuk-table__header">Ration Name</th>
-                <th scope="col" class="govuk-table__header">Is Pre-purchase?</th>
-            </tr>
-        </thead>
-        <tbody class="govuk-table__body">
-            @if (Model.Feeds.Count > 0)
-            {
-                @foreach (var f in Model.Feeds)
-                {
-                    <tr class="govuk-table__row">
-                        <td class="govuk-table__cell">@f.YearFrom</td>
-                        <td class="govuk-table__cell">@f.YearTo</td>
-                        <td class="govuk-table__cell">@(f.RationDescription ?? f.RationType)</td>
-                        <td class="govuk-table__cell">@f.SupplierName</td>
-                        <td class="govuk-table__cell">@f.RationName</td>
-                        <td class="govuk-table__cell">@(f.IsPrePurchase ? "Yes" : "No")</td>
-                    </tr>
-                }
-            }
-            else
-            {
-                <tr class="govuk-table__row">
-                    <td class="govuk-table__cell" colspan="6">No feed records.</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-
-    <p class="govuk-body">You can view feed details but cannot edit this page.</p>
-    return;
-}
-
 <form method="post" novalidate id="case-feeds-inline-form">
     <input type="hidden" asp-for="Rbse" />
     <input type="hidden" asp-for="EditingClientKey" />
     <input type="hidden" asp-for="EditingFeedId" />
 
-    <div id="case-feeds-unsaved-banner" class="govuk-inset-text bse-unsaved-banner" role="status" hidden="@(!Model.HasUnsavedChanges)">
-        <strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.
-    </div>
+    @if (!canEditFeeds)
+    {
+        <p class="govuk-body">You can view feed details but cannot edit this page.</p>
+    }
 
-    <div class="govuk-button-group govuk-!-margin-bottom-4">
-        <button type="submit" asp-page-handler="SaveFeeds" class="govuk-button" data-module="govuk-button">Save</button>
-        <button type="submit" asp-page-handler="CancelFeedsEdit" class="govuk-button govuk-button--secondary bse-cancel-button" data-module="govuk-button">Cancel</button>
-    </div>
+    <fieldset class="bse-form-fieldset-reset" disabled="@(!canEditFeeds ? "disabled" : null)">
+
+    @if (canSaveFeeds)
+    {
+        @if (canEditFeeds)
+        {
+            <div id="case-feeds-unsaved-banner" class="govuk-inset-text bse-unsaved-banner" role="status" hidden="@(!Model.HasUnsavedChanges)">
+                <strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.
+            </div>
+        }
+
+        <div class="govuk-button-group govuk-!-margin-bottom-4">
+            <button type="submit" asp-page-handler="SaveFeeds" class="govuk-button" data-module="govuk-button">Save</button>
+            <button type="submit" asp-page-handler="CancelFeedsEdit" class="govuk-button govuk-button--secondary bse-cancel-button" data-module="govuk-button">Cancel</button>
+        </div>
+    }
 
     @* -- Existing feed records -------------------------------------------------- *@
     <table class="govuk-table">
@@ -134,14 +106,17 @@
                 @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Supplier", ["Column"]="SupplierName", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=feedsBase })
                 @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Ration Name", ["Column"]="RationName", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=feedsBase })
                 @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Is Pre-purchase?", ["Column"]="IsPrePurchase", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=feedsBase })
-                <th scope="col" class="govuk-table__header"><span class="govuk-visually-hidden">Actions</span></th>
+                @if (canEditFeeds)
+                {
+                    <th scope="col" class="govuk-table__header"><span class="govuk-visually-hidden">Actions</span></th>
+                }
             </tr>
         </thead>
         <tbody class="govuk-table__body">
             @if (Model.Feeds.Count == 0)
             {
                 <tr class="govuk-table__row">
-                    <td class="govuk-table__cell" colspan="7">No feed records.</td>
+                    <td class="govuk-table__cell" colspan="@(canEditFeeds ? 7 : 6)">No feed records.</td>
                 </tr>
             }
 
@@ -160,18 +135,21 @@
                             <strong class="govuk-tag govuk-tag--yellow govuk-!-margin-left-2">Unsaved</strong>
                         }
                     </td>
-                    <td class="govuk-table__cell">
-                        <div class="bse-row-actions">
-                            <button type="submit" asp-page-handler="BeginEditFeedRow" asp-route-clientKey="@f.ClientKey"
-                                    class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">
-                                Change<span class="govuk-visually-hidden"> feed record @f.YearFrom to @f.YearTo</span>
-                            </button>
-                            <button type="submit" asp-page-handler="DeleteFeedRow" asp-route-clientKey="@f.ClientKey"
-                                    class="govuk-button govuk-button--warning govuk-!-margin-bottom-0" data-module="govuk-button">
-                                Remove<span class="govuk-visually-hidden"> feed record @f.YearFrom to @f.YearTo</span>
-                            </button>
-                        </div>
-                    </td>
+                    @if (canEditFeeds)
+                    {
+                        <td class="govuk-table__cell">
+                            <div class="bse-row-actions">
+                                <button type="submit" asp-page-handler="BeginEditFeedRow" asp-route-clientKey="@f.ClientKey"
+                                        class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">
+                                    Change<span class="govuk-visually-hidden"> feed record @f.YearFrom to @f.YearTo</span>
+                                </button>
+                                <button type="submit" asp-page-handler="DeleteFeedRow" asp-route-clientKey="@f.ClientKey"
+                                        class="govuk-button govuk-button--warning govuk-!-margin-bottom-0" data-module="govuk-button">
+                                    Remove<span class="govuk-visually-hidden"> feed record @f.YearFrom to @f.YearTo</span>
+                                </button>
+                            </div>
+                        </td>
+                    }
                 </tr>
             }
         </tbody>
@@ -219,14 +197,17 @@
                 </div>
             </div>
 
-            <div class="govuk-button-group govuk-!-margin-top-2 govuk-!-margin-bottom-0">
-                <button type="submit" asp-page-handler="AddFeedRow" class="govuk-button govuk-button--secondary" data-module="govuk-button">Add As New</button>
-                @if (isEditing)
-                {
-                    <button type="submit" asp-page-handler="UpdateFeedRow" class="govuk-button govuk-button--secondary" data-module="govuk-button">Update Selected</button>
-                    <button type="submit" asp-page-handler="DeleteFeedRow" asp-route-clientKey="@Model.EditingClientKey" class="govuk-button govuk-button--warning" data-module="govuk-button">Delete Selected</button>
-                }
-            </div>
+            @if (canEditFeeds)
+            {
+                <div class="govuk-button-group govuk-!-margin-top-2 govuk-!-margin-bottom-0">
+                    <button type="submit" asp-page-handler="AddFeedRow" class="govuk-button govuk-button--secondary" data-module="govuk-button">Add As New</button>
+                    @if (isEditing)
+                    {
+                        <button type="submit" asp-page-handler="UpdateFeedRow" class="govuk-button govuk-button--secondary" data-module="govuk-button">Update Selected</button>
+                        <button type="submit" asp-page-handler="DeleteFeedRow" asp-route-clientKey="@Model.EditingClientKey" class="govuk-button govuk-button--warning" data-module="govuk-button">Delete Selected</button>
+                    }
+                </div>
+            }
         </div>
         <div class="bse-feeds-right-column">
             <div class="govuk-form-group govuk-!-margin-bottom-2">
@@ -246,11 +227,6 @@
         </div>
     </div>
 
-    <div class="govuk-button-group govuk-!-margin-top-4">
-        <button type="submit" asp-page-handler="SaveFeeds" class="govuk-button" data-module="govuk-button">Save</button>
-        <button type="submit" asp-page-handler="CancelFeedsEdit" class="govuk-button govuk-button--secondary bse-cancel-button" data-module="govuk-button">Cancel</button>
-    </div>
-
     @if (viewDocsUrl is not null)
     {
         <div class="govuk-button-group govuk-!-margin-top-4">
@@ -259,9 +235,17 @@
             </a>
         </div>
     }
+    </fieldset>
 </form>
 
 <style>
+    .bse-form-fieldset-reset {
+        border: 0;
+        margin: 0;
+        padding: 0;
+        min-width: 0;
+    }
+
     .bse-unsaved-banner {
         border-left-color: #1d70b8;
     }

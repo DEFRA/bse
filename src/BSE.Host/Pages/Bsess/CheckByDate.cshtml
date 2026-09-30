@@ -1,15 +1,15 @@
 @page
 @model CheckByDateModel
 @{
-    ViewData["Title"] = "TSES Check : Cases Within A Date Range";
+    ViewData["Title"] = "TSESS Check : Cases Within A Date Range";
 }
 
 <div>
-    <h1 class="govuk-heading-l">TSES Check : Cases Within A Date Range</h1>
+    <h1 class="govuk-heading-l">TSESS Check : Cases Within A Date Range</h1>
     <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
         <ol class="govuk-breadcrumbs__list">
             <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Bsess/Menu">TSES Check Menu</a></li>
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Bsess/Menu">TSESS Check Menu</a></li>
             <li class="govuk-breadcrumbs__list-item" aria-current="page">By Date Range</li>
         </ol>
     </nav>
@@ -48,45 +48,49 @@
                     <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewContext.ModelState["EndDate"]!.Errors[0].ErrorMessage</p>
                 }
                 <div class="bse-date-range-input-wrapper">
-                    <input id="audit-start-date" name="StartDate" type="date"
-                           class="govuk-input govuk-input--width-10"
-                           value="@Model.StartDate?.ToString("yyyy-MM-dd")" />
+                    <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                        <input id="audit-start-date" name="StartDate" type="text"
+                               class="govuk-input govuk-input--width-10 moj-js-datepicker-input" autocomplete="off" placeholder="dd/mm/yyyy"
+                               value="@Model.StartDate?.ToString("dd/MM/yyyy")" />
+                    </div>
                     <span class="bse-date-range-separator govuk-label">and</span>
-                    <input id="audit-end-date" name="EndDate" type="date"
-                           class="govuk-input govuk-input--width-10"
-                           value="@Model.EndDate?.ToString("yyyy-MM-dd")" />
+                    <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                        <input id="audit-end-date" name="EndDate" type="text"
+                               class="govuk-input govuk-input--width-10 moj-js-datepicker-input" autocomplete="off" placeholder="dd/mm/yyyy"
+                               value="@Model.EndDate?.ToString("dd/MM/yyyy")" />
+                    </div>
                 </div>
             </div>
             <div class="govuk-button-group bse-rbse-action-group">
                 <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
-                <a asp-page="/Bsess/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button" role="button" draggable="false">TSES Menu</a>
+                <a asp-page="/Bsess/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button" role="button" draggable="false">TSESS Menu</a>
             </div>
         </div>
     </form>
 
     @if (Model.Discrepancies.Any())
     {
-        var sortBase = $"?StartDate={Uri.EscapeDataString(Model.StartDate?.ToString("yyyy-MM-dd") ?? string.Empty)}&EndDate={Uri.EscapeDataString(Model.EndDate?.ToString("yyyy-MM-dd") ?? string.Empty)}";
+        var sortBase = $"?StartDate={Uri.EscapeDataString(Model.StartDate?.ToString("dd/MM/yyyy") ?? string.Empty)}&EndDate={Uri.EscapeDataString(Model.EndDate?.ToString("dd/MM/yyyy") ?? string.Empty)}";
 
         <p class="govuk-body">
-            <a href="@($"?StartDate={Uri.EscapeDataString(Model.StartDate?.ToString("yyyy-MM-dd") ?? string.Empty)}&EndDate={Uri.EscapeDataString(Model.EndDate?.ToString("yyyy-MM-dd") ?? string.Empty)}&handler=Export")" class="govuk-link">Export to Excel</a>
+            <a href="@($"?StartDate={Uri.EscapeDataString(Model.StartDate?.ToString("dd/MM/yyyy") ?? string.Empty)}&EndDate={Uri.EscapeDataString(Model.EndDate?.ToString("dd/MM/yyyy") ?? string.Empty)}&handler=Export")" class="govuk-link">Export to Excel</a>
         </p>
 
         <table class="govuk-table">
-            <caption class="govuk-visually-hidden">TSES discrepancies by date</caption>
+            <caption class="govuk-visually-hidden">TSESS discrepancies by date</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
                     @{ ViewData["Label"] = "RBSE"; ViewData["Column"] = "Rbse"; ViewData["SortColumn"] = Model.SortColumn; ViewData["SortDesc"] = Model.SortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "bsess-date-results"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "TSES Birth Date"; ViewData["Column"] = "BsessBirthDate"; ViewData["SortColumn"] = Model.SortColumn; ViewData["SortDesc"] = Model.SortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "bsess-date-results"; }
+                    @{ ViewData["Label"] = "TSESS Birth Date"; ViewData["Column"] = "BsessBirthDate"; ViewData["SortColumn"] = Model.SortColumn; ViewData["SortDesc"] = Model.SortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "bsess-date-results"; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "BSE Birth Date"; ViewData["Column"] = "BseBirthDate"; ViewData["SortColumn"] = Model.SortColumn; ViewData["SortDesc"] = Model.SortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "bsess-date-results"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "TSES Eartag"; ViewData["Column"] = "BsessEartag"; ViewData["SortColumn"] = Model.SortColumn; ViewData["SortDesc"] = Model.SortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "bsess-date-results"; }
+                    @{ ViewData["Label"] = "TSESS Eartag"; ViewData["Column"] = "BsessEartag"; ViewData["SortColumn"] = Model.SortColumn; ViewData["SortDesc"] = Model.SortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "bsess-date-results"; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "BSE Eartag"; ViewData["Column"] = "BseEartag"; ViewData["SortColumn"] = Model.SortColumn; ViewData["SortDesc"] = Model.SortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "bsess-date-results"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "TSES Test Group"; ViewData["Column"] = "BsessTestGroup"; ViewData["SortColumn"] = Model.SortColumn; ViewData["SortDesc"] = Model.SortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "bsess-date-results"; }
+                    @{ ViewData["Label"] = "TSESS Test Group"; ViewData["Column"] = "BsessTestGroup"; ViewData["SortColumn"] = Model.SortColumn; ViewData["SortDesc"] = Model.SortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "bsess-date-results"; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "BSE Test Group"; ViewData["Column"] = "BseTestGroup"; ViewData["SortColumn"] = Model.SortColumn; ViewData["SortDesc"] = Model.SortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "bsess-date-results"; }
                     <partial name="_SortableHeader" />

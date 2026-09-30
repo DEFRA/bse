@@ -14,13 +14,17 @@
     </ol>
 </nav>
 
-@if (Model.Filter.EarliestFormADateError is not null || Model.Filter.LatestFormADateError is not null)
+@if (Model.NoOptionSelected || Model.Filter.EarliestFormADateError is not null || Model.Filter.LatestFormADateError is not null)
 {
     <div class="govuk-error-summary" data-module="govuk-error-summary">
         <div role="alert">
             <h2 class="govuk-error-summary__title">There is a problem</h2>
             <div class="govuk-error-summary__body">
                 <ul class="govuk-list govuk-error-summary__list">
+                    @if (Model.NoOptionSelected)
+                    {
+                        <li><a href="#search-type-results">@OutstandingModel.NoOptionMessage</a></li>
+                    }
                     @if (Model.Filter.EarliestFormADateError is not null)
                     {
                         <li><a href="#Filter_EarliestFormADate">@Model.Filter.EarliestFormADateError</a></li>
@@ -35,11 +39,16 @@
     </div>
 }
 
-<form method="get" novalidate>
+<form method="get" novalidate data-bse-post-search>
+    <input type="hidden" name="Searched" value="true" />
     <div class="bse-farm-legacy">
         <div class="bse-farm-legacy__row">
-            <div class="bse-farm-legacy__field bse-outstanding-legacy__field--wide">
+            <div class="bse-farm-legacy__field bse-outstanding-legacy__field--wide @(Model.NoOptionSelected ? "govuk-form-group--error" : "")">
                 <label class="govuk-visually-hidden" for="search-type-results">Outstanding data type</label>
+                @if (Model.NoOptionSelected)
+                {
+                    <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @OutstandingModel.NoOptionMessage</p>
+                }
                 <div class="govuk-radios govuk-radios--inline" data-module="govuk-radios">
                     <div class="govuk-radios__item">
                         <input asp-for="Filter.SearchType" class="govuk-radios__input" id="search-type-results" type="radio" value="Results" />
@@ -67,7 +76,9 @@
                         {
                             <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.EarliestFormADateError</p>
                         }
-                        <input asp-for="Filter.EarliestFormADate" type="date" class="govuk-input bse-outstanding-legacy__date-input @(Model.Filter.EarliestFormADateError is not null ? "govuk-input--error" : "")" />
+                        <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                            <input asp-for="Filter.EarliestFormADate" type="text" class="govuk-input bse-outstanding-legacy__date-input moj-js-datepicker-input @(Model.Filter.EarliestFormADateError is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" />
+                        </div>
                     </div>
                     <span class="bse-outstanding-legacy__and">and</span>
                     <div class="govuk-form-group @(Model.Filter.LatestFormADateError is not null ? "govuk-form-group--error" : "")">
@@ -76,7 +87,9 @@
                         {
                             <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Model.Filter.LatestFormADateError</p>
                         }
-                        <input asp-for="Filter.LatestFormADate" type="date" class="govuk-input bse-outstanding-legacy__date-input @(Model.Filter.LatestFormADateError is not null ? "govuk-input--error" : "")" />
+                        <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                            <input asp-for="Filter.LatestFormADate" type="text" class="govuk-input bse-outstanding-legacy__date-input moj-js-datepicker-input @(Model.Filter.LatestFormADateError is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" />
+                        </div>
                     </div>
                 </div>
             </div>

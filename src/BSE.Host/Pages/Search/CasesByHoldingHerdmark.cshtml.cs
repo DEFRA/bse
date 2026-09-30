@@ -30,6 +30,7 @@ public class CasesByHoldingHerdmarkModel : PageModel
     [RegularExpression("^(?:\\d{6})?$", ErrorMessage = "Numeric herdmark must be 6 digits.")]
     public string? NumericHerdmark { get; set; }
     [BindProperty(SupportsGet = true)] public bool IncludeNonGb { get; set; }
+    [BindProperty(SupportsGet = true)] public bool Searched { get; set; }
     [BindProperty(SupportsGet = true)] public int PageNumber { get; set; } = 1;
     [BindProperty(SupportsGet = true)] public string SortColumn { get; set; } = "";
     [BindProperty(SupportsGet = true)] public bool SortDesc { get; set; }
@@ -67,7 +68,7 @@ public class CasesByHoldingHerdmarkModel : PageModel
         }
         else
         {
-            NoCriteria = Request.Query.Count > 0;
+            NoCriteria = Searched || Request.Query.Count > 0;
         }
     }
 

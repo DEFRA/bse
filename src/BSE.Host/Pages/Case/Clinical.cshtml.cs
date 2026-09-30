@@ -1,5 +1,6 @@
 using BSE.Infrastructure;
 using BSE.Host.Services;
+using BSE.Host.ModelBinding;
 using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Repositories;
 using BSE.Modules.CaseManagement.Commands;
@@ -41,8 +42,8 @@ public class ClinicalModel(
 
     // ── Inline "add/edit clinical visit" row state (GDS editable-grid pattern, matches /Case/Farm) ──
     [BindProperty] public List<StagedVisitItem> StagedVisits { get; set; } = [];
-    [BindProperty] public DateTime? NewVisitDate { get; set; }
-    [BindProperty] public DateTime? EditVisitDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? NewVisitDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? EditVisitDate { get; set; }
     [BindProperty] public string? EditingClientKey { get; set; }
     public bool ShowAddVisitRow { get; private set; }
     public string? ReopenEditClientKey { get; private set; }
@@ -148,7 +149,7 @@ public class ClinicalModel(
     /// <summary>Adds a clinical visit to the draft only. Not persisted until Save.</summary>
     public async Task<IActionResult> OnPostAddVisitRowAsync()
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
             return Forbid();
 
         var postedDate = NewVisitDate;
@@ -185,7 +186,7 @@ public class ClinicalModel(
     /// <summary>Opens the inline edit view for one staged clinical visit row (no changes saved yet).</summary>
     public async Task<IActionResult> OnPostBeginEditVisitRowAsync(string clientKey)
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
             return Forbid();
 
         await LoadAsync();
@@ -205,7 +206,7 @@ public class ClinicalModel(
     /// <summary>Updates a staged clinical visit row in the draft only. Not persisted until Save.</summary>
     public async Task<IActionResult> OnPostUpdateVisitRowAsync()
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
             return Forbid();
 
         var clientKey = EditingClientKey;
@@ -245,7 +246,7 @@ public class ClinicalModel(
     /// <summary>Removes a staged clinical visit row from the draft only. Not persisted until Save.</summary>
     public async Task<IActionResult> OnPostDeleteVisitAsync(string clientKey)
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
             return Forbid();
 
         await LoadAsync();

@@ -1,4 +1,4 @@
-﻿using BSE.Host.Services;
+using BSE.Host.Services;
 using BSE.Modules.CaseManagement.Commands;
 using BSE.Modules.CaseManagement.Enums;
 using BSE.Modules.CaseManagement.Models;
@@ -6,6 +6,7 @@ using BSE.Modules.CaseManagement.Repositories;
 using BSE.Modules.CaseManagement.Services;
 using BSE.Modules.ReferenceData.Models;
 using BSE.Modules.ReferenceData.Services;
+using BSE.Host.ModelBinding;
 using BSE.SharedKernel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -40,7 +41,7 @@ public class FinalResultEntryModel(
     [BindProperty] public string? FinalResult { get; set; }
     [BindProperty] public string? RetrospectiveTestType { get; set; }
     [BindProperty] public string? RetrospectiveResult { get; set; }
-    [BindProperty] public DateTime? RetrospectiveResultDate { get; set; }
+    [BindProperty, ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? RetrospectiveResultDate { get; set; }
     [BindProperty] public string? RetrospectiveComment { get; set; }
     [BindProperty] public string? LabComment { get; set; }
 
@@ -70,7 +71,7 @@ public class FinalResultEntryModel(
     public bool TestsContainPositive =>
         Tests.Any(t => string.Equals(t.TestResult, PositiveCode, StringComparison.OrdinalIgnoreCase));
 
-    // ── Legacy ddlFinalResult_SelectedIndexChanged warnings ──────────────────
+    // -- Legacy ddlFinalResult_SelectedIndexChanged warnings ------------------
 
     public bool ShowDnaMismatch =>
         ShowPositiveWithoutPositiveTest || ShowNegativeWithPositiveTest;

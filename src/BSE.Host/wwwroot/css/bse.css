@@ -1,5 +1,28 @@
 /* BSE custom additions on top of GOV.UK Frontend */
 
+/* MOJ date-picker wraps its text input in a div; keep it transparent to layout everywhere
+   it's used so surrounding flex/grid rules keep treating the input as a direct child, matching
+   the layout in place before the wrapper was introduced. */
+.moj-datepicker {
+    display: contents;
+}
+
+/* MOJ's calendar toggle button sits beside the input inside a flex wrapper, adding its own
+   width on top of the input's — without this the whole widget is wider than the plain date
+   input it replaced. Cap the widget (input + button) to that original width instead, and let
+   the input shrink to share it with the button, so every row that used a date input keeps
+   its original footprint. Per-field width overrides (e.g. CaseWork) target this same wrapper. */
+.moj-datepicker__wrapper {
+    max-width: 11.5em; /* matches govuk-input--width-10 / MOJ's own default input width */
+}
+
+.moj-datepicker__wrapper .moj-js-datepicker-input {
+    flex: 1 1 auto;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+}
+
 /* Global RBSE/CPHH autosuggest list */
 .bse-autosuggest-list {
     position: absolute;
@@ -204,7 +227,8 @@
 
 .bse-date-search-row {
     display: flex;
-    align-items: flex-end;
+    align-items: center;
+    flex-wrap: wrap;
     gap: 1rem;
     max-width: 1100px;
     margin-bottom: 1rem;
@@ -232,7 +256,7 @@
 
 .bse-date-search-row .govuk-button-group {
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     gap: 1rem;
     margin: 0;
 }
@@ -240,7 +264,7 @@
 .bse-date-search-row .govuk-button-group .govuk-button,
 .bse-date-search-row .govuk-button-group a {
     margin-bottom: 0;
-    align-self: flex-end;
+    align-self: center;
 }
 
 .bse-rbse-summary-grid {
@@ -1196,18 +1220,18 @@
     vertical-align: top;
 }
 
-.bse-case-search-table .moj-sortable-table__button,
-.bse-farm-search-table .moj-sortable-table__button,
-.bse-outstanding-search-table .moj-sortable-table__button,
-.bse-holding-herdmark-search-table .moj-sortable-table__button,
-.bse-herdmark-search-table .moj-sortable-table__button {
+.bse-case-search-table .bse-sortable-table__button,
+.bse-farm-search-table .bse-sortable-table__button,
+.bse-outstanding-search-table .bse-sortable-table__button,
+.bse-holding-herdmark-search-table .bse-sortable-table__button,
+.bse-herdmark-search-table .bse-sortable-table__button {
     white-space: normal;
     align-items: flex-start;
     line-height: 1.2;
 }
 
-.bse-open-cases-table .moj-sortable-table__button,
-.bse-closed-cases-table .moj-sortable-table__button {
+.bse-open-cases-table .bse-sortable-table__button,
+.bse-closed-cases-table .bse-sortable-table__button {
     justify-content: flex-start;
     text-align: left;
     white-space: normal;
@@ -1358,9 +1382,9 @@
 .bse-casework-entry-minutes-table tbody .govuk-table__cell:nth-child(3) { min-width: 6ch; }
 .bse-casework-entry-minutes-table tbody .govuk-table__cell:nth-child(4) { min-width: 9ch; white-space: nowrap; }
 
-.bse-outstanding-search-table .moj-sortable-table__button,
-.bse-holding-herdmark-search-table .moj-sortable-table__button,
-.bse-herdmark-search-table .moj-sortable-table__button {
+.bse-outstanding-search-table .bse-sortable-table__button,
+.bse-holding-herdmark-search-table .bse-sortable-table__button,
+.bse-herdmark-search-table .bse-sortable-table__button {
     justify-content: flex-start;
     text-align: left;
 }
@@ -1482,7 +1506,7 @@
     overflow-wrap: anywhere;
 }
 
-.bse-case-search-table .moj-sortable-table__button {
+.bse-case-search-table .bse-sortable-table__button {
     justify-content: flex-start;
     text-align: left;
 }
@@ -1598,7 +1622,7 @@
     text-align: left;
 }
 
-.bse-farm-search-table .moj-sortable-table__button {
+.bse-farm-search-table .bse-sortable-table__button {
     justify-content: flex-start;
     align-items: flex-start;
     text-align: left;
@@ -1685,7 +1709,7 @@
     vertical-align: top;
 }
 
-.bse-related-animals-search-table .moj-sortable-table__button {
+.bse-related-animals-search-table .bse-sortable-table__button {
     white-space: normal;
     align-items: flex-start;
     line-height: 1.2;
@@ -1918,7 +1942,8 @@
     font-weight: 400;
 }
 
-.bse-case-search-page .bse-case-legacy__date-input {
+.bse-case-search-page .bse-case-legacy__date-input,
+.bse-case-search-page .moj-datepicker__wrapper {
     width: 216px;
     max-width: 216px;
 }
@@ -2158,7 +2183,8 @@
     margin: 0;
 }
 
-.bse-outstanding-search-page .bse-outstanding-legacy__date-input {
+.bse-outstanding-search-page .bse-outstanding-legacy__date-input,
+.bse-outstanding-search-page .moj-datepicker__wrapper {
     width: 161px;
     max-width: 161px;
 }
@@ -2248,7 +2274,8 @@
         row-gap: 8px;
     }
 
-    .bse-outstanding-search-page .bse-outstanding-legacy__date-input {
+    .bse-outstanding-search-page .bse-outstanding-legacy__date-input,
+    .bse-outstanding-search-page .moj-datepicker__wrapper {
         width: 100%;
         max-width: 100%;
     }
@@ -2286,6 +2313,7 @@
     }
 
     .bse-case-search-page .bse-case-legacy__date-input,
+    .bse-case-search-page .moj-datepicker__wrapper,
     .bse-case-search-page .bse-case-legacy__notes,
     .bse-case-search-page .bse-farm-legacy__input {
         width: 100% !important;
@@ -2404,7 +2432,8 @@
     margin-bottom: 0;
 }
 
-.bse-farm-legacy__input {
+.bse-farm-legacy__input,
+.bse-non-gb-case-page .moj-datepicker__wrapper {
     width: 252px !important;
     max-width: 252px !important;
 }
@@ -2609,11 +2638,11 @@
 }
 
 /* Sortable table header links (MOJ sortable-table pattern style) */
-.moj-sortable-table__heading {
+.bse-sortable-table__heading {
     vertical-align: top;
 }
 
-.moj-sortable-table__button {
+.bse-sortable-table__button {
     position: relative;
     display: inline-flex;
     align-items: center;
@@ -2624,12 +2653,12 @@
     white-space: nowrap;
 }
 
-.moj-sortable-table__button:hover {
+.bse-sortable-table__button:hover {
     color: #003078;
     text-decoration: underline;
 }
 
-.moj-sortable-table__button:focus {
+.bse-sortable-table__button:focus {
     outline: 3px solid transparent;
     color: #0b0c0c;
     background-color: #ffdd00;
@@ -2637,7 +2666,7 @@
     text-decoration: none;
 }
 
-.moj-sortable-table__button:focus:not(:focus-visible) {
+.bse-sortable-table__button:focus:not(:focus-visible) {
     outline: none;
     background-color: transparent;
     box-shadow: none;
@@ -2653,33 +2682,33 @@
 }
 
 /* Stacked up/down triangle icons, mirroring the MOJ sortable-table pattern */
-.moj-sortable-table__icons {
+.bse-sortable-table__icons {
     display: inline-flex;
     flex-direction: column;
     justify-content: center;
     gap: 3px;
 }
 
-.moj-sortable-table__icon {
+.bse-sortable-table__icon {
     width: 0;
     height: 0;
     border-left: 5px solid transparent;
     border-right: 5px solid transparent;
 }
 
-.moj-sortable-table__icon--up {
+.bse-sortable-table__icon--up {
     border-bottom: 5px solid #b1b4b6;
 }
 
-.moj-sortable-table__icon--down {
+.bse-sortable-table__icon--down {
     border-top: 5px solid #b1b4b6;
 }
 
-.govuk-table__header[aria-sort="ascending"] .moj-sortable-table__icon--up {
+.govuk-table__header[aria-sort="ascending"] .bse-sortable-table__icon--up {
     border-bottom-color: #0b0c0c;
 }
 
-.govuk-table__header[aria-sort="descending"] .moj-sortable-table__icon--down {
+.govuk-table__header[aria-sort="descending"] .bse-sortable-table__icon--down {
     border-top-color: #0b0c0c;
 }
 
@@ -3173,7 +3202,7 @@
     line-height: 1.2;
 }
 
-.bse-audit-table th.bse-batch-header .moj-sortable-table__button {
+.bse-audit-table th.bse-batch-header .bse-sortable-table__button {
     display: block;
     width: 100%;
     max-width: 100%;
@@ -3276,7 +3305,8 @@
 /* Line up the start of every input box across rows, regardless of each row's label length
    (Email reference/ADNS Reference/Number of cases in:/Confirmation date are all different widths). */
 .bse-adns-form-row > .govuk-form-group > .govuk-label,
-.bse-adns-form-row > .bse-adns-group > .govuk-label {
+.bse-adns-form-row > .bse-adns-group > .govuk-label,
+.bse-adns-form-row > .moj-datepicker > .govuk-form-group > .govuk-label {
     min-width: 170px;
 }
 

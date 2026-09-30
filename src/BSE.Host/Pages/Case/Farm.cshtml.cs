@@ -288,7 +288,7 @@ public class FarmModel(
             && EditableFarm.CPHH.Length >= 5
             && !await MapReferenceWithinParishAsync(EditableFarm.CPHH, mapRef))
         {
-            ModelState.AddModelError("EditableFarm.MapRef1", "Map reference does not lie within the parish boundaries for this CPHH.");
+            TempData["Warning"] = "Map reference does not lie within the parish boundaries for this CPHH.";
         }
 
         if (!IsAdnsCompatibleWithAuthoritySelection(EditableFarm))
@@ -461,7 +461,7 @@ public class FarmModel(
             Id = 0,
             RelatedCphh = normalisedCphh,
             RowStampBase64 = string.Empty,
-            Status = string.Empty
+            Status = await GetLinkedFarmStatusAsync(normalisedCphh)
         });
 
         draft.HasPendingChanges = true;
@@ -506,6 +506,36 @@ public class FarmModel(
             if (!await MapReferenceWithinParishAsync(EditableFarm.CPHH, mapRef))
                 ModelState.AddModelError("EditableFarm.MapRef1",
                     "Map reference does not lie within the parish boundaries for this CPHH.");
+        }
+
+        if (EditableFarm is not null
+            && !IsNonGbFarmCphh(EditableFarm.CPHH)
+            && EditableFarm.ADNSRegionID is null)
+        {
+            ModelState.AddModelError("EditableFarm.ADNSRegionID", "Select an ADNS region for the farm.");
+        }
+
+        if (EditableFarm is not null)
+        {
+            if (string.IsNullOrWhiteSpace(EditableFarm.CPHH))
+                ModelState.AddModelError("EditableFarm.CPHH", "Enter a CPHH.");
+
+            if (string.IsNullOrWhiteSpace(EditableFarm.OwnerName))
+                ModelState.AddModelError("EditableFarm.OwnerName", "Enter an owner name for the farm.");
+
+            if (string.IsNullOrWhiteSpace(EditableFarm.Address1))
+                ModelState.AddModelError("EditableFarm.Address1", "Enter the first line of the farm address.");
+
+            var isNonGbFarm = IsNonGbFarmCphh(EditableFarm.CPHH);
+
+            if (!isNonGbFarm && string.IsNullOrWhiteSpace(EditableFarm.Parish))
+                ModelState.AddModelError("EditableFarm.Parish", "Enter a parish for the farm.");
+
+            if (string.IsNullOrWhiteSpace(EditableFarm.County))
+                ModelState.AddModelError("EditableFarm.County", "Select a county for the farm.");
+
+            if (!isNonGbFarm && string.IsNullOrWhiteSpace(EditableFarm.AHO))
+                ModelState.AddModelError("EditableFarm.AHO", "Select an AHO for the farm.");
         }
 
         if (!ModelState.IsValid || EditableFarm is null)
@@ -623,6 +653,7 @@ public class FarmModel(
         }
 
         item.RelatedCphh = normalisedCphh;
+        item.Status = await GetLinkedFarmStatusAsync(normalisedCphh);
         draft.HasPendingChanges = true;
         await farmDraftState.SetAsync(draft);
 
@@ -825,8 +856,6 @@ public class FarmModel(
             ModelState.AddModelError($"{prefix}.HerdYear", "Enter a year");
         else if (row.HerdYear < MinHerdYear || row.HerdYear > maxHerdYear)
             ModelState.AddModelError($"{prefix}.HerdYear", $"Enter a year between {MinHerdYear} and {maxHerdYear}");
-        else if (existingRows.Any(x => x.HerdYear == row.HerdYear && x.ClientKey != excludeClientKey))
-            ModelState.AddModelError($"{prefix}.HerdYear", $"A herd size row for {row.HerdYear} already exists");
 
         if (row.TotalSize is null)
             ModelState.AddModelError($"{prefix}.TotalSize", "Enter a total herd size");
@@ -839,15 +868,8 @@ public class FarmModel(
                 ModelState.AddModelError($"{prefix}.{label}", $"Lactation {label switch { "Lactation10PlusSize" => "10+", _ => label.Replace("Lactation", "").Replace("Size", "") }} must be between {MinLactationSize} and {MaxLactationSize}");
         }
 
-        if (row.TotalSize is not null)
-        {
-            var lactationTotal = LactationValues(row).Sum(x => x.Value ?? 0);
-            if (lactationTotal != row.TotalSize)
-            {
-                ModelState.AddModelError($"{prefix}.TotalSize",
-                    $"Lactation total ({lactationTotal}) must equal herd size ({row.TotalSize}).");
-            }
-        }
+        // Legacy parity: lactation-total mismatch is shown as a warning marker in the grid,
+        // not a blocking validation error.
     }
 
     private static IEnumerable<(string PropertyName, int? Value)> LactationValues(HerdSizeRowInput row)
@@ -880,7 +902,7 @@ public class FarmModel(
         yield return (nameof(row.Lactation10PlusSize), row.Lactation10PlusSize);
     }
 
-    /// <summary>Retained for existing view warnings; mismatches are now blocking at validation time.</summary>
+    /// <summary>Legacy warning text: lactation-total mismatch is informational, not blocking.</summary>
     private static string? LactationSumMismatchWarning(HerdSizeRowInput row)
     {
         var sum = LactationValues(row).Sum(x => x.Value ?? 0);
@@ -978,12 +1000,17 @@ public class FarmModel(
         if (normalised.Length == 0 || normalised.Length > 11)
             return new JsonResult(new { status = (string?)null });
 
-        var farm = await farmService.GetByCphhAsync(normalised);
-        var status = !string.IsNullOrWhiteSpace(farm?.OwnerName)
-            ? $"{farm.OwnerName}, {farm.Address1}"
-            : "BSE Free";
+        var status = await GetLinkedFarmStatusAsync(normalised);
 
         return new JsonResult(new { status });
+    }
+
+    private async Task<string> GetLinkedFarmStatusAsync(string cphh)
+    {
+        var farm = await farmService.GetByCphhAsync(cphh);
+        return !string.IsNullOrWhiteSpace(farm?.OwnerName)
+            ? $"{farm.OwnerName}, {farm.Address1}"
+            : "BSE Free";
     }
 
     public async Task<IActionResult> OnGetAuthoritiesAsync(int? authorityCountyId)
@@ -1403,11 +1430,7 @@ public class FarmModel(
                 hasHerdErrors = true;
             }
 
-            if (!seenYears.Add(item.HerdYear))
-            {
-                ModelState.AddModelError("", $"Herd size year {item.HerdYear} is duplicated.");
-                hasHerdErrors = true;
-            }
+            seenYears.Add(item.HerdYear);
 
             if (LactationValues(item).Any(x => x.Value < MinLactationSize || x.Value > MaxLactationSize))
             {

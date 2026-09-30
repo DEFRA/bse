@@ -18,6 +18,9 @@ public class OutstandingModel : PageModel
     [Microsoft.AspNetCore.Mvc.BindProperty(SupportsGet = true)]
     public OutstandingSearchViewModel Filter { get; set; } = new();
 
+    [Microsoft.AspNetCore.Mvc.BindProperty(SupportsGet = true)]
+    public bool Searched { get; set; }
+
     public const string NoOptionMessage = "Please select one of these three options";
 
     public bool NoOptionSelected { get; private set; }
@@ -27,7 +30,7 @@ public class OutstandingModel : PageModel
         // Legacy required one of the three options; the date range is optional.
         // Validate dates even when the type is missing so the user can see both issues
         // in a single submission instead of a generic no-option error hiding the real date problem.
-        NoOptionSelected = Request.Query.Count > 0 && !IsKnownSearchType();
+        NoOptionSelected = (Searched || Request.Query.Count > 0) && !IsKnownSearchType();
         if (!Filter.ValidateDates() || !IsKnownSearchType()) return;
 
         var query = Filter.ToQuery();

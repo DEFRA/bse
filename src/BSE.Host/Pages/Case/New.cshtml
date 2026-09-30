@@ -33,12 +33,14 @@
 <form method="post" novalidate>
     <div class="govuk-form-group">
         <label asp-for="Rbse" class="govuk-label">RBSE</label>
-        <input asp-for="Rbse" class="govuk-input govuk-!-width-one-half" />
+        <input asp-for="Rbse" class="govuk-input govuk-!-width-one-half"
+               title="RBSE Format: NN/NN/NNNNN" spellcheck="false" autocapitalize="off" />
         <span asp-validation-for="Rbse" class="govuk-error-message"></span>
     </div>
     <div class="govuk-form-group">
         <label asp-for="Cphh" class="govuk-label">CPHH</label>
-        <input asp-for="Cphh" class="govuk-input govuk-!-width-one-half" aria-describedby="cphh-hint" />
+        <input asp-for="Cphh" class="govuk-input govuk-!-width-one-half"
+               title="CPHH Format: NN[/]NNN[/]NNNN[/NN]" spellcheck="false" autocapitalize="off" />
         <span asp-validation-for="Cphh" class="govuk-error-message"></span>
     </div>
 
@@ -134,11 +136,15 @@
     </div>
     <div class="govuk-form-group">
         <label asp-for="BirthDate" class="govuk-label">Birth date</label>
-        <input asp-for="BirthDate" type="date" class="govuk-input govuk-input--width-10" />
+        <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+            <input asp-for="BirthDate" type="text" class="govuk-input govuk-input--width-10 moj-js-datepicker-input" autocomplete="off" placeholder="dd/mm/yyyy" value="@(Model.BirthDate?.ToString("dd/MM/yyyy") ?? "")" />
+        </div>
     </div>
     <div class="govuk-form-group">
         <label asp-for="FormADate" class="govuk-label">Form A date</label>
-        <input asp-for="FormADate" type="date" class="govuk-input govuk-input--width-10" />
+        <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+            <input asp-for="FormADate" type="text" class="govuk-input govuk-input--width-10 moj-js-datepicker-input" autocomplete="off" placeholder="dd/mm/yyyy" value="@(Model.FormADate?.ToString("dd/MM/yyyy") ?? "")" />
+        </div>
         <span asp-validation-for="FormADate" class="govuk-error-message"></span>
     </div>
     <div class="govuk-form-group">

@@ -1,4 +1,5 @@
 using System.Globalization;
+using BSE.Host.ModelBinding;
 using BSE.Modules.BsessIntegration.Models;
 using BSE.Modules.BsessIntegration.Services;
 using ClosedXML.Excel;
@@ -11,8 +12,8 @@ namespace BSE.Host.Pages.Bsess;
 [Authorize(Policy = "AuditAccess")]
 public class CheckByDateModel(IBsessCheckService bsessCheckService) : PageModel
 {
-    [BindProperty(SupportsGet = true)] public DateTime? StartDate { get; set; }
-    [BindProperty(SupportsGet = true)] public DateTime? EndDate { get; set; }
+    [BindProperty(SupportsGet = true), ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? StartDate { get; set; }
+    [BindProperty(SupportsGet = true), ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? EndDate { get; set; }
     [BindProperty(SupportsGet = true)] public string SortColumn { get; set; } = "Rbse";
     [BindProperty(SupportsGet = true)] public bool SortDesc { get; set; }
     [BindProperty(SupportsGet = true)] public int PageNumber { get; set; } = 1;
@@ -53,10 +54,10 @@ public class CheckByDateModel(IBsessCheckService bsessCheckService) : PageModel
         var ordered = ApplySort(discrepancies);
 
         using var workbook = new XLWorkbook();
-        var ws = workbook.Worksheets.Add("TSES Check Results");
+        var ws = workbook.Worksheets.Add("TSESS Check Results");
         ws.ShowGridLines = false;
 
-        string[] headers = ["RBSE", "TSES Birth Date", "BSE Birth Date", "TSES Eartag", "BSE Eartag", "TSES Test Group", "BSE Test Group"];
+        string[] headers = ["RBSE", "TSESS Birth Date", "BSE Birth Date", "TSESS Eartag", "BSE Eartag", "TSESS Test Group", "BSE Test Group"];
         for (var col = 1; col <= headers.Length; col++)
             ws.Cell(1, col).Value = headers[col - 1];
 
@@ -82,7 +83,7 @@ public class CheckByDateModel(IBsessCheckService bsessCheckService) : PageModel
         workbook.SaveAs(stream);
         stream.Position = 0;
 
-        return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "tses-check-by-date.xlsx");
+        return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "tsess-check-by-date.xlsx");
     }
 
     private void ApplySortAndPaging()
