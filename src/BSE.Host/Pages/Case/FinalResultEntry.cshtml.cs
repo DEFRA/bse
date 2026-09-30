@@ -190,6 +190,10 @@ public class FinalResultEntryModel(
             return;
         }
 
+        // Mirrors legacy RBSE.ascx auto-padding on postback: redisplay the short form
+        // entered (e.g. "16/01") as the full zero-padded value.
+        Rbse = rbse;
+
         try
         {
             Result = await cases.GetFinalResultAsync(rbse);
