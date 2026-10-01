@@ -5,6 +5,8 @@ using BSE.Modules.CaseManagement.Enums;
 using BSE.Modules.CaseManagement.Exceptions;
 using BSE.Modules.CaseManagement.Models;
 using BSE.Modules.CaseManagement.Repositories;
+using BSE.Modules.CaseWork.Commands;
+using BSE.Modules.CaseWork.Repositories;
 
 namespace BSE.Modules.CaseManagement.Services;
 
@@ -31,6 +33,7 @@ public sealed class CaseService : ICaseService
     private readonly IOtherOwnerRepository _otherOwnerRepository;
     private readonly IPedigreeRepository _pedigreeRepository;
     private readonly IBatchRepository _batchRepository;
+    private readonly ICaseWorkRepository _caseWorkRepository;
 
     public CaseService(
         IDbConnectionFactory connectionFactory,
@@ -41,7 +44,8 @@ public sealed class CaseService : ICaseService
         ITestRepository testRepository,
         IOtherOwnerRepository otherOwnerRepository,
         IPedigreeRepository pedigreeRepository,
-        IBatchRepository batchRepository)
+        IBatchRepository batchRepository,
+        ICaseWorkRepository caseWorkRepository)
     {
         _connectionFactory = connectionFactory;
         _caseRepository = caseRepository;
@@ -52,6 +56,7 @@ public sealed class CaseService : ICaseService
         _otherOwnerRepository = otherOwnerRepository;
         _pedigreeRepository = pedigreeRepository;
         _batchRepository = batchRepository;
+        _caseWorkRepository = caseWorkRepository;
     }
 
     public Task<CaseDetailRecord?> GetCaseDetailsAsync(string rbse)
@@ -79,35 +84,43 @@ public sealed class CaseService : ICaseService
 
             var rbse = command.Case.Rbse;
 
-            // ── 2. Clinical signs ────────────────────────────────────────
+            // ── 2. Casework row ──────────────────────────────────────────
+            // Legacy (Common.vb AddEmptyRow for CASEWORK_TABLE) always created this row at the
+            // start of a new case, with RBSEDate defaulted to today; without it the case never
+            // appears on the Open/Closed Casework screens (both queries require a CaseWork match).
+            await _caseWorkRepository.AddAsync(
+                new AddCaseWorkCommand(rbse, DateTime.Today, null, null, null, null, null, null, null, null),
+                connection, transaction);
+
+            // ── 3. Clinical signs ────────────────────────────────────────
             if (command.Clinical is not null)
                 await _clinicalRepository.AddAsync(command.Clinical, connection, transaction);
 
-            // ── 3. BAB data ──────────────────────────────────────────────
+            // ── 4. BAB data ──────────────────────────────────────────────
             if (command.Bab is not null)
                 await _babRepository.AddAsync(command.Bab, null, connection, transaction);
 
-            // ── 4. Feed history ──────────────────────────────────────────
+            // ── 5. Feed history ──────────────────────────────────────────
             foreach (var feed in command.Feeds)
                 await _feedRepository.AddAsync(feed, connection, transaction);
 
-            // ── 5. Tests ─────────────────────────────────────────────────
+            // ── 6. Tests ─────────────────────────────────────────────────
             foreach (var test in command.Tests)
                 await _testRepository.AddAsync(test, connection, transaction);
 
-            // ── 6. Other owners ──────────────────────────────────────────
+            // ── 7. Other owners ──────────────────────────────────────────
             foreach (var owner in command.OtherOwners)
                 await _otherOwnerRepository.AddAsync(owner, connection, transaction);
 
-            // ── 7. Dam/Sire pedigree ─────────────────────────────────────
+            // ── 8. Dam/Sire pedigree ─────────────────────────────────────
             if (command.DamSire is not null)
                 await _pedigreeRepository.AddEditDamSireAsync(command.DamSire, connection, transaction);
 
-            // ── 8. Clinical visits ───────────────────────────────────────
+            // ── 9. Clinical visits ───────────────────────────────────────
             foreach (var visit in command.ClinicalVisits)
                 await _clinicalRepository.AddVisitAsync(visit, connection, transaction);
 
-            // ── 9. Batch link ────────────────────────────────────────────
+            // ── 10. Batch link ───────────────────────────────────────────
             // Legacy clsCase.UpdateCaseDetails created the BSE1 link in this same
             // transaction whenever a batch was in context. A duplicate link is a no-op.
             if (command.BatchId is > 0)
