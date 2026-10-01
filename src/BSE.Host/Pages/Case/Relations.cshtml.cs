@@ -222,7 +222,11 @@ public class RelationsModel(
     private async Task LookUpAsync(bool isDam)
     {
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
-        var searchRbse = RbseHelper.Normalize(isDam ? DamSire.DamSearchRbse : DamSire.SireSearchRbse);
+        // Mirrors legacy RBSE.ascx auto-padding on postback: a short form like "16/01"
+        // becomes the full zero-padded value before being used to look up the dam/sire.
+        var searchRbse = RbseHelper.ParseToRaw(isDam ? DamSire.DamSearchRbse : DamSire.SireSearchRbse);
+        if (isDam) DamSire.DamSearchRbse = RbseHelper.Format(searchRbse); else DamSire.SireSearchRbse = RbseHelper.Format(searchRbse);
+        ModelState.Remove(isDam ? "DamSire.DamSearchRbse" : "DamSire.SireSearchRbse");
         var searchEartag = isDam ? DamSire.DamSearchEartag : DamSire.SireSearchEartag;
         var searchName = isDam ? DamSire.DamSearchName : DamSire.SireSearchName;
         var searchHerdbook = isDam ? DamSire.DamSearchHerdbook : DamSire.SireSearchHerdbook;
@@ -290,7 +294,7 @@ public class RelationsModel(
             var eartag = isDam ? DamSire.DamSearchEartag : DamSire.SireSearchEartag;
             var name = isDam ? DamSire.DamSearchName : DamSire.SireSearchName;
             var herdbook = isDam ? DamSire.DamSearchHerdbook : DamSire.SireSearchHerdbook;
-            var searchRbse = RbseHelper.Normalize(isDam ? DamSire.DamSearchRbse : DamSire.SireSearchRbse);
+            var searchRbse = RbseHelper.ParseToRaw(isDam ? DamSire.DamSearchRbse : DamSire.SireSearchRbse);
 
             TempData[PickSireDamContextKeys.Rbse] = Rbse;
             TempData[PickSireDamContextKeys.ReturnTo] = "Relations";
@@ -635,7 +639,7 @@ public class RelationsModel(
             Id = null,
             RelationType = RelationType!,
             RelationTypeDesc = RelationTypes.FirstOrDefault(t => t.Code == RelationType)?.Description,
-            RelationRbse = NullIfBlank(RbseHelper.Normalize(RelationRbse)),
+            RelationRbse = NullIfBlank(RbseHelper.ParseToRaw(RelationRbse)),
             Sex = Sex,
             SexDesc = Sexes.FirstOrDefault(s => s.Code == Sex)?.Description,
             BirthDay = BirthDay,
@@ -719,7 +723,7 @@ public class RelationsModel(
 
         item.RelationType = RelationType!;
         item.RelationTypeDesc = RelationTypes.FirstOrDefault(t => t.Code == RelationType)?.Description;
-        item.RelationRbse = NullIfBlank(RbseHelper.Normalize(RelationRbse));
+        item.RelationRbse = NullIfBlank(RbseHelper.ParseToRaw(RelationRbse));
         item.Sex = Sex;
         item.SexDesc = Sexes.FirstOrDefault(s => s.Code == Sex)?.Description;
         item.BirthDay = BirthDay;
@@ -1071,6 +1075,11 @@ public class RelationsModel(
         BirthMonth = BirthDate?.Month;
         BirthYear = BirthDate?.Year;
 
+        // Mirrors legacy RBSE.ascx auto-padding on postback: redisplay the short form
+        // entered (e.g. "16/01") as the full zero-padded value.
+        RelationRbse = RbseHelper.Format(RbseHelper.ParseToRaw(RelationRbse));
+        ModelState.Remove(nameof(RelationRbse));
+
         var otherRelationRbses = _stagedRelations
             .Where(r => r.ClientKey != excludeClientKey)
             .Select(r => r.RelationRbse);
@@ -1087,7 +1096,7 @@ public class RelationsModel(
         if (RelationFieldErrors.Count > 0)
             return;
 
-        var normalizedRbse = RbseHelper.Normalize(RelationRbse);
+        var normalizedRbse = RbseHelper.ParseToRaw(RelationRbse);
         if (normalizedRbse.Length > 0)
         {
             var related = await relationsRepository.GetRelationDetailsOfRelatedCaseAsync(normalizedRbse);

@@ -10,7 +10,7 @@ public class CaseSearchViewModel : SearchViewModelBase<CaseSearchResult>
     // --- Filter inputs ---
     // Legacy RBSE.ascx format is NN/NN/NNNNN; the search proc does a prefix match
     // (LIKE @RBSE + '%'), so business wants a partial prefix such as the first 2 digits to work.
-    [RegularExpression(@"^(\d{2}(/)?(\d{0,2}(/)?\d{0,5})?)?$", ErrorMessage = "Enter RBSE as digits in the format NN/NN/NNNNN, or a shorter prefix such as the first 2 digits.")]
+    [RegularExpression(@"^([0-9]{0,2}/?[0-9]{0,2}/[0-9]{0,5}|[0-9]{0,9})$", ErrorMessage = "Enter RBSE as digits in the format NN/NN/NNNNN, or a shorter prefix such as the first 2 digits.")]
     public string Rbse { get; set; } = "";
 
     public string Eartag { get; set; } = "";
@@ -121,7 +121,9 @@ public class CaseSearchViewModel : SearchViewModelBase<CaseSearchResult>
         };
 
     public CaseSearchQuery ToQuery() => new(
-        Rbse: (Rbse ?? "").Replace("/", ""),
+        // Mirrors legacy RBSE.ascx auto-padding on postback: a short form like "16/01"
+        // becomes the full zero-padded value before being used as the search prefix.
+        Rbse: BSE.SharedKernel.RbseHelper.ParseToRaw(Rbse),
         Eartag: Eartag ?? "",
         // DBSE is stored without a slash (YYNNNNN); legacy stripped "/" before searching (SearchCase.aspx.vb).
         Dbse: (Dbse ?? "").Replace("/", ""),

@@ -33,14 +33,17 @@ public class CheckByRbseModel(IBsessCheckService bsessCheckService) : PageModel
                 }
                 else
                 {
-                    Rbse = rawRbse;
+                    // Mirrors legacy RBSE.ascx auto-padding on postback: redisplay the short form
+                    // entered (e.g. "16/01") as the full zero-padded value.
+                    Rbse = RbseHelper.Format(rawRbse) ?? rawRbse;
+                    ModelState.Remove(nameof(Rbse));
                 }
-            }
 
-            if (ModelState.IsValid)
-            {
-                HasSearched = true;
-                Result = await bsessCheckService.GetCheckByRbseAsync(Rbse);
+                if (ModelState.IsValid)
+                {
+                    HasSearched = true;
+                    Result = await bsessCheckService.GetCheckByRbseAsync(rawRbse);
+                }
             }
         }
         return Page();

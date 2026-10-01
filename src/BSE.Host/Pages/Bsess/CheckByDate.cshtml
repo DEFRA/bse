@@ -1,15 +1,15 @@
 @page
 @model CheckByDateModel
 @{
-    ViewData["Title"] = "TSES Check : Cases Within A Date Range";
+    ViewData["Title"] = "TSESS Check : Cases Within A Date Range";
 }
 
 <div>
-    <h1 class="govuk-heading-l">TSES Check : Cases Within A Date Range</h1>
+    <h1 class="govuk-heading-l">TSESS Check : Cases Within A Date Range</h1>
     <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
         <ol class="govuk-breadcrumbs__list">
             <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Bsess/Menu">TSES Check Menu</a></li>
+            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Bsess/Menu">TSESS Check Menu</a></li>
             <li class="govuk-breadcrumbs__list-item" aria-current="page">By Date Range</li>
         </ol>
     </nav>
@@ -63,7 +63,7 @@
             </div>
             <div class="govuk-button-group bse-rbse-action-group">
                 <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
-                <a asp-page="/Bsess/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button" role="button" draggable="false">TSES Menu</a>
+                <a asp-page="/Bsess/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button" role="button" draggable="false">TSESS Menu</a>
             </div>
         </div>
     </form>
@@ -77,20 +77,20 @@
         </p>
 
         <table class="govuk-table">
-            <caption class="govuk-visually-hidden">TSES discrepancies by date</caption>
+            <caption class="govuk-visually-hidden">TSESS discrepancies by date</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
                     @{ ViewData["Label"] = "RBSE"; ViewData["Column"] = "Rbse"; ViewData["SortColumn"] = Model.SortColumn; ViewData["SortDesc"] = Model.SortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "bsess-date-results"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "TSES Birth Date"; ViewData["Column"] = "BsessBirthDate"; ViewData["SortColumn"] = Model.SortColumn; ViewData["SortDesc"] = Model.SortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "bsess-date-results"; }
+                    @{ ViewData["Label"] = "TSESS Birth Date"; ViewData["Column"] = "BsessBirthDate"; ViewData["SortColumn"] = Model.SortColumn; ViewData["SortDesc"] = Model.SortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "bsess-date-results"; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "BSE Birth Date"; ViewData["Column"] = "BseBirthDate"; ViewData["SortColumn"] = Model.SortColumn; ViewData["SortDesc"] = Model.SortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "bsess-date-results"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "TSES Eartag"; ViewData["Column"] = "BsessEartag"; ViewData["SortColumn"] = Model.SortColumn; ViewData["SortDesc"] = Model.SortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "bsess-date-results"; }
+                    @{ ViewData["Label"] = "TSESS Eartag"; ViewData["Column"] = "BsessEartag"; ViewData["SortColumn"] = Model.SortColumn; ViewData["SortDesc"] = Model.SortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "bsess-date-results"; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "BSE Eartag"; ViewData["Column"] = "BseEartag"; ViewData["SortColumn"] = Model.SortColumn; ViewData["SortDesc"] = Model.SortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "bsess-date-results"; }
                     <partial name="_SortableHeader" />
-                    @{ ViewData["Label"] = "TSES Test Group"; ViewData["Column"] = "BsessTestGroup"; ViewData["SortColumn"] = Model.SortColumn; ViewData["SortDesc"] = Model.SortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "bsess-date-results"; }
+                    @{ ViewData["Label"] = "TSESS Test Group"; ViewData["Column"] = "BsessTestGroup"; ViewData["SortColumn"] = Model.SortColumn; ViewData["SortDesc"] = Model.SortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "bsess-date-results"; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "BSE Test Group"; ViewData["Column"] = "BseTestGroup"; ViewData["SortColumn"] = Model.SortColumn; ViewData["SortDesc"] = Model.SortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Fragment"] = "bsess-date-results"; }
                     <partial name="_SortableHeader" />

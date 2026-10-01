@@ -20,6 +20,11 @@ public sealed class DevelopmentAuthOptions : AuthenticationSchemeOptions
     public string NtLogin { get; set; } = "dev-user";
 
     /// <summary>
+    /// Email/UPN used for database user lookup in local bypass mode.
+    /// </summary>
+    public string Email { get; set; } = "dev-user@defra.gov.uk";
+
+    /// <summary>
     /// When true (default) the handler automatically reads the current Windows
     /// session identity (DOMAIN\username) and strips the domain prefix to derive
     /// the NT login — no need to set NtLogin in config manually.
@@ -50,14 +55,16 @@ public sealed class DevelopmentAuthHandler : AuthenticationHandler<DevelopmentAu
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         var ntLogin = ResolveNtLogin();
+        var email = ResolveEmail(Options.Email);
 
-        Logger.LogDebug("DevBypass: signing in as NT login '{NtLogin}'", ntLogin);
+        Logger.LogDebug("DevBypass: signing in as NT login '{NtLogin}' with email '{Email}'", ntLogin, email);
 
         var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, ntLogin),
-            new Claim(ClaimTypes.Name,           ntLogin),
-            new Claim("preferred_username",      ntLogin),
+            new Claim(ClaimTypes.NameIdentifier, email),
+            new Claim(ClaimTypes.Name,           email),
+            new Claim(ClaimTypes.Email,          email),
+            new Claim("preferred_username",      email),
         };
 
         var identity  = new ClaimsIdentity(claims, SchemeName);
@@ -97,5 +104,16 @@ public sealed class DevelopmentAuthHandler : AuthenticationHandler<DevelopmentAu
         }
 
         return Options.NtLogin;
+    }
+
+    private string ResolveEmail(string ntLogin)
+    {
+        if (!string.IsNullOrWhiteSpace(Options.Email))
+            return Options.Email;
+
+        if (ntLogin.Contains('@'))
+            return ntLogin;
+
+        return $"{ntLogin}@defra.gov.uk";
     }
 }

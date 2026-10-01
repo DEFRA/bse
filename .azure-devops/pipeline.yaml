@@ -2,6 +2,7 @@ trigger:
   branches:
     include:
       - develop
+      - main
 
 parameters:
   - name: deployToDev
@@ -151,7 +152,12 @@ stages:
 - stage: DEV
   displayName: DEV
   dependsOn: Build
-  condition: and(in(dependencies.Build.result, 'Succeeded'), eq('${{ parameters.deployToDev }}', true))
+  condition: >-
+    and(
+      in(dependencies.Build.result, 'Succeeded'),
+      eq('${{ parameters.deployToDev }}', true),
+      eq(variables['Build.SourceBranchName'], 'develop')
+    )
   variables:
     - name: appName
       value: 'DEVBSEWEBAW1401'
@@ -241,7 +247,12 @@ stages:
 - stage: TST
   displayName: TST
   dependsOn: DEV
-  condition: and(in(dependencies.DEV.result, 'Succeeded', 'Skipped'), eq('${{ parameters.deployToTest }}', true))
+  condition: >-
+    and(
+      in(dependencies.DEV.result, 'Succeeded', 'Skipped'),
+      eq('${{ parameters.deployToTest }}', true),
+      eq(variables['Build.SourceBranchName'], 'develop')
+    )
   variables:
     - name: appName
       value: 'TSTBSEWEBAW1401'
@@ -329,6 +340,12 @@ stages:
                 -AdnsMsGraph__MsGraphSenderUserId "$(msGraphSenderUserId)"
                 -AdnsMsGraph__FromAddress "$(msGraphFromAddress)"
 
+# -------------------------------------------------------------------------
+# PRE deploys only require a manual approval before the deployment job runs.
+# Manual approval is not expressible in YAML - it must be configured once on
+# the 'PRE' Environment resource: Pipelines > Environments > PRE > Approvals
+# and checks > Approvals > add approver sabari.katari@defra.gov.uk.
+# -------------------------------------------------------------------------
 - stage: PRE
   displayName: PRE
   dependsOn:
@@ -338,7 +355,8 @@ stages:
     and(
       eq(dependencies.Build.result, 'Succeeded'),
       in(dependencies.TST.result, 'Succeeded', 'Skipped'),
-      eq('${{ parameters.deployToPreProd }}', true)
+      eq('${{ parameters.deployToPreProd }}', true),
+      eq(variables['Build.SourceBranchName'], 'main')
     )
   variables:
     - name: appName
@@ -451,10 +469,16 @@ stages:
                 -Authentication__BypassEnabled "false"
                 -ConnectionStrings__BSE "Server=tcp:$(sqlServer);Database=$(dbName);Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Managed Identity;"
                 
+# -------------------------------------------------------------------------
+# PROD deploys only require a manual approval before the deployment job runs.
+# Manual approval is not expressible in YAML - it must be configured once on
+# the 'PROD' Environment resource: Pipelines > Environments > PROD > Approvals
+# and checks > Approvals > add approver sabari.katari@defra.gov.uk.
+# -------------------------------------------------------------------------
 # - stage: PROD
 #   displayName: PROD
 #   dependsOn: Build
-#   condition: and(succeeded(), eq('${{ parameters.deployToProd }}', true))
+#   condition: and(succeeded(), eq('${{ parameters.deployToProd }}', true), eq(variables['Build.SourceBranchName'], 'main'))
 #   variables:
 #     - name: appName
 #       value: 'PRDBSEWEBAW1401'

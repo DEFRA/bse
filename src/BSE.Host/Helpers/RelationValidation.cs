@@ -51,7 +51,9 @@ public static class RelationValidation
             errors["RelationType"] = RelationTypeRequired;
         }
 
-        var relationRbse = RbseHelper.Normalize(input.RelationRbse);
+        // Mirrors legacy RBSE.ascx auto-padding on postback: a short form like "16/01"
+        // becomes the full zero-padded value before being validated/compared.
+        var relationRbse = RbseHelper.ParseToRaw(input.RelationRbse);
 
         // Legacy only required Sex when the RBSE box was empty (ddlRelationSex.Enabled);
         // once an RBSE is supplied, Sex is auto-derived from that case and locked.
