@@ -19,7 +19,7 @@ public class MinuteModel(ICaseWorkService caseWorkService) : PageModel
     private static readonly Dictionary<string, string> Labels = new(StringComparer.OrdinalIgnoreCase)
     {
         ["ActiveMemo"] = "Active Memo",
-        ["AMFS"] = "Active Memo (Fallen Stock)",
+        ["AMFS"] = "Active Memo",
         ["AnnexA"] = "Annex A",
         ["AnnexB"] = "Annex B",
         ["AnnexC"] = "Annex C",

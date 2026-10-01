@@ -373,7 +373,7 @@
                         <td class="govuk-table__cell">@r.Fate</td>
                         <td class="govuk-table__cell">@r.FinalResult</td>
                         <td class="govuk-table__cell">@r.FinalResultDate?.ToString("dd/MM/yyyy")</td>
-                        <td class="govuk-table__cell">@r.Dbse</td>
+                        <td class="govuk-table__cell">@BSE.SharedKernel.RbseHelper.FormatDbse(r.Dbse)</td>
                         <td class="govuk-table__cell">@r.ValuationAge</td>
                         <td class="govuk-table__cell">@r.Notes</td>
                         <td class="govuk-table__cell">@r.BabNotes</td>

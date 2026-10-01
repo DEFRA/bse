@@ -121,7 +121,9 @@ public class CaseWorkEntryModel(
         var closedAfterEdit = await SaveAsync();
 
         TempData["Success"] = $"Case work entry for {Rbse} has been updated.";
-        return RedirectToPage(closedAfterEdit ? "/CaseWork/ClosedCases" : "/CaseWork/OpenCases");
+        return RedirectToPage(
+            closedAfterEdit ? "/CaseWork/ClosedCases" : "/CaseWork/OpenCases",
+            new { rbse = Rbse });
     }
 
     public async Task<IActionResult> OnPostSendMinuteAsync(string minuteType)
@@ -130,14 +132,6 @@ public class CaseWorkEntryModel(
 
         await LoadAsync();
         if (Entry is null) return NotFound();
-
-        // Enforce the same minute rules server-side (legacy parity).
-        var blockedReason = GetMinuteDisabledReason(minuteType);
-        if (blockedReason is not null)
-        {
-            ModelState.AddModelError(string.Empty, blockedReason);
-            return Page();
-        }
 
         Validate();
         if (!ModelState.IsValid) return Page();
@@ -184,8 +178,12 @@ public class CaseWorkEntryModel(
 
         if (!ShowTseFields) return;
 
-        if (string.IsNullOrWhiteSpace(TseTestingSite))
-            ModelState.AddModelError(nameof(TseTestingSite), "You must select a TSE testing site.");
+        if (string.IsNullOrWhiteSpace(TseTestingSite)
+            || !TseTestingSiteOptions.Any(o =>
+                string.Equals(o.Value?.Trim(), TseTestingSite.Trim(), StringComparison.OrdinalIgnoreCase)))
+        {
+            ModelState.AddModelError(nameof(TseTestingSite), "Please enter a valid TSE Testing Site.");
+        }
 
         if (!SamplingDate.HasValue)
             ModelState.AddModelError(nameof(SamplingDate), "You must enter a sampling date.");
@@ -201,7 +199,9 @@ public class CaseWorkEntryModel(
     public async Task<IActionResult> OnPostCancelAsync()
     {
         var record = await caseWorkService.GetCaseWorkEntryAsync(Rbse);
-        return RedirectToPage(record?.IsCaseClosed == true ? "/CaseWork/ClosedCases" : "/CaseWork/OpenCases");
+        return RedirectToPage(
+            record?.IsCaseClosed == true ? "/CaseWork/ClosedCases" : "/CaseWork/OpenCases",
+            new { rbse = Rbse });
     }
 
     private async Task<bool> SaveAsync()

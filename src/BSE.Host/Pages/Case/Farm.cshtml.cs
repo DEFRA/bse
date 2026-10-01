@@ -18,7 +18,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Configuration;
-using System.Text.RegularExpressions;
 using IGeoLookupService = BSE.Host.Services.IGeoLookupService;
 
 namespace BSE.Host.Pages.Case;
@@ -1103,7 +1102,6 @@ public class FarmModel(
             EditableFarmRowStampBase64 = Farm.RowStamp is null ? string.Empty : Convert.ToBase64String(Farm.RowStamp);
             await LoadLookupsForEditAsync();
 
-        ValidateLegacyFarmParityRules();
         }
     }
 
@@ -1287,37 +1285,6 @@ public class FarmModel(
             EditableFarm.AuthorityID = null;
             EditableFarm.ADNSRegionID = null;
         }
-    }
-
-    private void ValidateLegacyFarmParityRules()
-    {
-        if (EditableFarm is null)
-            return;
-
-        ValidateHerdmarkFormat("EditableFarm.Herdmark1", EditableFarm.Herdmark1);
-        ValidateHerdmarkFormat("EditableFarm.Herdmark2", EditableFarm.Herdmark2);
-        ValidateHerdmarkFormat("EditableFarm.Herdmark3", EditableFarm.Herdmark3);
-
-        ValidateNumericHerdmarkFormat("EditableFarm.NumericHerdmark1", EditableFarm.NumericHerdmark1);
-        ValidateNumericHerdmarkFormat("EditableFarm.NumericHerdmark2", EditableFarm.NumericHerdmark2);
-    }
-
-    private void ValidateHerdmarkFormat(string key, string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-            return;
-
-        if (!Regex.IsMatch(value.Trim(), @"^[A-Za-z]{0,4}[0-9]{0,4}$"))
-            ModelState.AddModelError(key, "Herdmark must be up to 4 letters followed by up to 4 numbers.");
-    }
-
-    private void ValidateNumericHerdmarkFormat(string key, string? value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-            return;
-
-        if (!Regex.IsMatch(value.Trim(), @"^[0-9]{6}$"))
-            ModelState.AddModelError(key, "Numeric herdmark must be 6 digits.");
     }
 
     private static bool IsNonGbFarmCphh(string? cphh)

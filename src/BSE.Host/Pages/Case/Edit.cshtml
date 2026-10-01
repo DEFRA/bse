@@ -11,6 +11,9 @@
     var hasFormA = Model.Case.FormADate.HasValue;
     var hasFormB = Model.Case.FormBDate.HasValue;
     var hasBirthDate = Model.Case.BirthDate.HasValue;
+    var eartagHintText = string.IsNullOrWhiteSpace(Model.Case.EartagCountry)
+        ? (string.IsNullOrWhiteSpace(Model.Case.EartagHerdmark) ? "Free format" : "PRE-Barimo")
+        : "Country-coded";
     var isDefraDataEntry = User.IsInRole("DataEntry") && !User.IsInRole("VLAAccess");
 
     string? eEartag       = ViewData.ModelState["Case.EartagCountry"]?.Errors.FirstOrDefault()?.ErrorMessage;
@@ -171,7 +174,7 @@
                                     <span aria-hidden="true">*</span>
                                 </button>
                                 <span id="case-eartag-help-tooltip" class="bse-eartag-help__tooltip" role="tooltip" hidden>
-                                    Enter the animal eartag in parts: country, herdmark and animal number.
+                                    @eartagHintText
                                 </span>
                             </span>
                         </div>
@@ -488,7 +491,7 @@
             <div class="defra-legacy-grid">
                 <div class="defra-legacy-field">
                     <label asp-for="Case.BirthDateSource" class="govuk-label">Date Of Birth Source</label>
-                    <select asp-for="Case.BirthDateSource" class="govuk-select defra-legacy-input--sm">
+                    <select asp-for="Case.BirthDateSource" class="govuk-select defra-legacy-input--sm" disabled="@(!hasBirthDate)">
                         <option value="">-- Select --</option>
                         @foreach (var o in Model.BirthDateSourceOptions)
                         {
@@ -498,14 +501,14 @@
                 </div>
                 <div class="defra-legacy-field defra-legacy-field--inline">
                     <label class="govuk-label">DBSE</label>
-                    <input type="text" class="govuk-input defra-legacy-status-input" value="@(Model.Case.Dbse ?? "")" disabled />
+                    <input type="text" class="govuk-input defra-legacy-status-input" value="@(BSE.SharedKernel.RbseHelper.FormatDbse(Model.Case.Dbse) ?? "")" disabled />
                 </div>
             </div>
 
             <div class="defra-legacy-grid">
                 <div class="defra-legacy-field defra-legacy-field--checkbox-inline">
                     <label asp-for="Case.IsBirthDateEst" class="govuk-label">Is Date Of Birth Estimated?</label>
-                    <input asp-for="Case.IsBirthDateEst" type="checkbox" class="defra-legacy-receipt-check defra-legacy-inline-checkbox" />
+                    <input asp-for="Case.IsBirthDateEst" type="checkbox" class="defra-legacy-receipt-check defra-legacy-inline-checkbox" disabled="@(!hasBirthDate)" />
                 </div>
                 <div class="defra-legacy-field">
                     <label asp-for="Case.Survey" class="govuk-label">Survey</label>
@@ -1007,6 +1010,14 @@
                 return 'Enter the animal eartag in parts: country, herdmark and animal number.';
             }
 
+            if (!country) {
+                if (herdmark) {
+                    return 'PRE-Barimo';
+                }
+
+                return 'Free format';
+            }
+
             if (country.length > 2) {
                 if (country && hasDigitsOnly(country.charAt(0)) && !/^\d{3}[012_ ]?$/.test(country)) {
                     return 'Country component is invalid.';
@@ -1033,10 +1044,6 @@
                     return 'EC eartag: animal component should be 1 to 12 uppercase letters or digits.';
                 }
                 return 'EC non-UK';
-            }
-
-            if (!country && (herdmark || animal)) {
-                return 'No-country / legacy format';
             }
 
             return 'Unknown format';

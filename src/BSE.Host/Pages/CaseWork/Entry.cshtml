@@ -69,7 +69,7 @@
                         <div class="govuk-summary-list__row">
                             <dt class="govuk-summary-list__key">RBSE</dt>
                             <dd class="govuk-summary-list__value">
-                                <a asp-page="/Case/DefraEdit" asp-route-rbse="@Model.Rbse" class="govuk-link">@BseFormat.FormatRbse(Model.Entry.Rbse)</a>
+                                <a asp-page="/Case/Edit" asp-route-rbse="@Model.Rbse" class="govuk-link">@BseFormat.FormatRbse(Model.Entry.Rbse)</a>
                             </dd>
                         </div>
                         <div class="govuk-summary-list__row">
@@ -157,7 +157,7 @@
                         </div>
                         <div class="govuk-summary-list__row">
                             <dt class="govuk-summary-list__key">DBSE</dt>
-                            <dd class="govuk-summary-list__value">@Model.Entry.Dbse</dd>
+                            <dd class="govuk-summary-list__value">@BSE.SharedKernel.RbseHelper.FormatDbse(Model.Entry.Dbse)</dd>
                         </div>
                         <div class="govuk-summary-list__row">
                             <dt class="govuk-summary-list__key">Alternate Diagnosis</dt>
@@ -244,9 +244,7 @@
                                 <div class="govuk-form-group @(Err("TseTestingSite") is not null ? "govuk-form-group--error" : "")">
                                     <label class="govuk-label" for="TseTestingSite">TSE Testing Site</label>
                                     @if (Err("TseTestingSite") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("TseTestingSite")</p> }
-                                    <select id="TseTestingSite" asp-for="TseTestingSite" asp-items="Model.TseTestingSiteOptions" class="govuk-select">
-                                        <option value=""></option>
-                                    </select>
+                                    <input id="TseTestingSite" asp-for="TseTestingSite" class="govuk-input" autocomplete="off" />
                                 </div>
                                 <div class="govuk-form-group @(Err("SamplingDate") is not null ? "govuk-form-group--error" : "")">
                                     <label class="govuk-label" for="SamplingDate">Sampling Date</label>
@@ -303,7 +301,6 @@
                                                     }
                                                 }
                                             </td>
-                                            <td class="govuk-table__cell">@(m.Sent?.ToString("dd/MM/yyyy"))</td>
                                             <td class="govuk-table__cell">
                                                 <button type="submit" asp-page-handler="SendMinute" name="minuteType" value="@m.Type"
                                                         class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0"
@@ -313,6 +310,7 @@
                                                     Send
                                                 </button>
                                             </td>
+                                            <td class="govuk-table__cell">@(m.Sent?.ToString("dd/MM/yyyy"))</td>
                                         </tr>
                                     }
                                 </tbody>
@@ -320,10 +318,18 @@
 
                             <div class="govuk-form-group bse-casework-entry-minute-sent-row @(Err("LabChasedDate") is not null ? "govuk-form-group--error" : "")">
                                 <span class="govuk-body bse-minute-name">Chase lab results</span>
-                                <span class="bse-minute-status">
-                                    @if (Model.Entry.LabChaseDueDate is not null)
+                                <span class="govuk-body bse-minute-status">
+                                    @if (Model.Entry.LabChasedDate is null && Model.Entry.LabChaseDueDate is not null)
                                     {
-                                        <strong class="govuk-tag govuk-tag--red">@Model.Entry.LabChaseDueDate?.ToString("dd/MM/yyyy")</strong>
+                                        var isOverdue = Model.Entry.LabChaseDueDate <= DateTime.Today && Model.Entry.ActiveMemoDate is null;
+                                        if (isOverdue)
+                                        {
+                                            <span class="bse-overdue-date">@Model.Entry.LabChaseDueDate?.ToString("dd/MM/yyyy")</span>
+                                        }
+                                        else
+                                        {
+                                            @Model.Entry.LabChaseDueDate?.ToString("dd/MM/yyyy")
+                                        }
                                     }
                                 </span>
                                 <label class="govuk-label bse-minute-sent-on-label" for="LabChasedDate">Chased on</label>
@@ -335,7 +341,7 @@
 
                             <div class="govuk-form-group bse-casework-entry-minute-sent-row @(Err("BarbMinuteSentDate") is not null ? "govuk-form-group--error" : "")">
                                 <span class="govuk-body bse-minute-name">BARB Minute</span>
-                                <span class="bse-minute-status">
+                                <span class="govuk-body bse-minute-status">
                                     @if (string.Equals(Model.Entry.BarbMemoDue, "Yes", StringComparison.OrdinalIgnoreCase))
                                     {
                                         <strong class="govuk-tag govuk-tag--red">Yes</strong>
@@ -363,7 +369,7 @@
                                     </div>
                                 </div>
                                 <label class="govuk-label govuk-label--m bse-casework-entry-comments-label" for="CaseWorkNotes">Casework Comments</label>
-                                <textarea id="CaseWorkNotes" asp-for="CaseWorkNotes" maxlength="500" class="govuk-textarea" rows="5"></textarea>
+                                <textarea id="CaseWorkNotes" asp-for="CaseWorkNotes" class="govuk-textarea" rows="5"></textarea>
                             </div>
                         </div>
                     </div>
@@ -389,42 +395,6 @@
         </form>
     }
 </div>
-
-<script>
-(function () {
-    var form = document.getElementById('casework-entry-form');
-    if (!form) return;
-
-    var dirty = false;
-    var submitting = false;
-    var cancelButtons = form.querySelectorAll('button[formnovalidate][type="submit"]');
-
-    function markDirty() { dirty = true; }
-
-    form.addEventListener('change', markDirty);
-    form.addEventListener('input', markDirty);
-    form.addEventListener('submit', function () { submitting = true; });
-
-    cancelButtons.forEach(function (button) {
-        button.addEventListener('click', function (e) {
-            if (dirty) {
-                e.preventDefault();
-                if (window.confirm('You have unsaved changes. Click OK to discard them and leave, or Cancel to go back and save.')) {
-                    submitting = true;
-                    button.form.submit();
-                }
-            }
-        });
-    });
-
-    window.addEventListener('beforeunload', function (e) {
-        if (dirty && !submitting) {
-            e.preventDefault();
-            e.returnValue = '';
-        }
-    });
-}());
-</script>
 
 <style>
     /* Page width/gutter handled globally by .bse-wide-page (see bse.css) via the <h1> above */
@@ -671,13 +641,13 @@
     }
 
     .bse-casework-entry-middle #TseTestingSite {
-        width: 15rem;
+        width: 23rem;
         min-width: 0;
     }
 
     .bse-casework-entry-middle #AhroId {
-        width: 23rem;
-        max-width: 23rem;
+        width: 26rem;
+        max-width: 26rem;
         min-width: 0;
     }
 
@@ -749,12 +719,15 @@
     .bse-casework-entry-middle .bse-casework-entry-minute-sent-row {
         column-gap: 0.5rem;
         flex-wrap: nowrap;
+        align-items: center;
     }
 
     .bse-casework-entry-middle .bse-minute-name {
         flex: 0 0 11rem;
         min-width: 0;
         overflow-wrap: break-word;
+        margin-bottom: 0;
+        line-height: 1.25;
     }
 
     /* Fixed (not content-hugging) so the empty placeholder in the DEFRA informed on row
@@ -762,10 +735,23 @@
     .bse-casework-entry-middle .bse-minute-status {
         flex: 0 0 7.5rem;
         min-width: 0;
+        margin-bottom: 0;
+        line-height: 1.25;
+        display: flex;
+        align-items: center;
+        font-size: 1.1875rem;
     }
 
     .bse-casework-entry-middle .bse-minute-status .govuk-tag {
         white-space: nowrap;
+    }
+
+    .bse-casework-entry-middle .bse-overdue-date {
+        color: #d4351c;
+        font-style: italic;
+        font-size: inherit;
+        font-family: inherit;
+        font-weight: 400;
     }
 
     /* Fixed width (not content-hugging) so "Chased on" / "Sent on" / "DEFRA informed on"
