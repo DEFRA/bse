@@ -17,9 +17,10 @@ public static class RelationValidation
     public const string AlreadyARelation = "This RBSE is already a relation";
     public const string LeftDateFuture = "Must be today or earlier";
     public const string RbseNotFound = "RBSE number not found";
+    private const string RelationRbseField = "RelationRbse";
 
     /// <summary>Legacy rejected birth dates before this date.</summary>
-    public static readonly DateTime EarliestBirthDate = new(1970, 1, 1);
+    public static readonly DateTime EarliestBirthDate = DateTime.UnixEpoch;
 
     public sealed record Input(
         string CaseRbse,
@@ -69,19 +70,19 @@ public static class RelationValidation
         {
             if (relationRbse == RbseHelper.Normalize(input.CaseRbse))
             {
-                errors["RelationRbse"] = SameAsCaseRbse;
+                errors[RelationRbseField] = SameAsCaseRbse;
             }
             else if (relationRbse == RbseHelper.Normalize(damRbse))
             {
-                errors["RelationRbse"] = SameAsDamRbse;
+                errors[RelationRbseField] = SameAsDamRbse;
             }
             else if (relationRbse == RbseHelper.Normalize(sireRbse))
             {
-                errors["RelationRbse"] = SameAsSireRbse;
+                errors[RelationRbseField] = SameAsSireRbse;
             }
             else if (existingRelationRbses.Any(r => RbseHelper.Normalize(r) == relationRbse))
             {
-                errors["RelationRbse"] = AlreadyARelation;
+                errors[RelationRbseField] = AlreadyARelation;
             }
         }
 

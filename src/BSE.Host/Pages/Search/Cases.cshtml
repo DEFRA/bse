@@ -195,7 +195,7 @@
         <div class="bse-farm-legacy__row">
             <div class="bse-farm-legacy__field bse-case-legacy__field--date bse-case-legacy__field--wide">
                 <label for="Filter_EarliestFormADate" class="govuk-label">Form A Date Between</label>
-                <div class="bse-case-legacy__date-range" role="group" aria-labelledby="Filter_EarliestFormADate">
+                <fieldset class="bse-case-legacy__date-range" aria-labelledby="Filter_EarliestFormADate">
                     <div class="govuk-form-group @(Model.Filter.EarliestFormADateError is not null ? "govuk-form-group--error" : "")">
                         <label asp-for="Filter.EarliestFormADate" class="govuk-visually-hidden">Form A date from</label>
                         @if (Model.Filter.EarliestFormADateError is not null)
@@ -217,14 +217,14 @@
                             <input asp-for="Filter.LatestFormADate" type="text" class="govuk-input govuk-input--width-10 bse-case-legacy__date-input moj-js-datepicker-input @(Model.Filter.LatestFormADateError is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" />
                         </div>
                     </div>
-                </div>
+                </fieldset>
             </div>
         </div>
 
         <div class="bse-farm-legacy__row">
             <div class="bse-farm-legacy__field bse-case-legacy__field--date bse-case-legacy__field--wide">
                 <label for="Filter_EarliestFinalResultDate" class="govuk-label">Final Result Date Between</label>
-                <div class="bse-case-legacy__date-range" role="group" aria-labelledby="Filter_EarliestFinalResultDate">
+                <fieldset class="bse-case-legacy__date-range" aria-labelledby="Filter_EarliestFinalResultDate">
                     <div class="govuk-form-group @(Model.Filter.EarliestFinalResultDateError is not null ? "govuk-form-group--error" : "")">
                         <label asp-for="Filter.EarliestFinalResultDate" class="govuk-visually-hidden">Final result date from</label>
                         @if (Model.Filter.EarliestFinalResultDateError is not null)
@@ -246,14 +246,14 @@
                             <input asp-for="Filter.LatestFinalResultDate" type="text" class="govuk-input govuk-input--width-10 bse-case-legacy__date-input moj-js-datepicker-input @(Model.Filter.LatestFinalResultDateError is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" />
                         </div>
                     </div>
-                </div>
+                </fieldset>
             </div>
         </div>
 
         <div class="bse-farm-legacy__row">
             <div class="bse-farm-legacy__field bse-case-legacy__field--date bse-case-legacy__field--wide">
                 <label for="Filter_EarliestBirthDate" class="govuk-label">Birth Date Between</label>
-                <div class="bse-case-legacy__date-range" role="group" aria-labelledby="Filter_EarliestBirthDate">
+                <fieldset class="bse-case-legacy__date-range" aria-labelledby="Filter_EarliestBirthDate">
                     <div class="govuk-form-group @(Model.Filter.EarliestBirthDateError is not null ? "govuk-form-group--error" : "")">
                         <label asp-for="Filter.EarliestBirthDate" class="govuk-visually-hidden">Birth date from</label>
                         @if (Model.Filter.EarliestBirthDateError is not null)
@@ -275,7 +275,7 @@
                             <input asp-for="Filter.LatestBirthDate" type="text" class="govuk-input govuk-input--width-10 bse-case-legacy__date-input moj-js-datepicker-input @(Model.Filter.LatestBirthDateError is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" />
                         </div>
                     </div>
-                </div>
+                </fieldset>
             </div>
         </div>
 

@@ -42,7 +42,10 @@
 
     if (maxPageLinks > 0)
     {
+        // Clamp currentPage-derived bounds so the page-link loop below can never iterate
+        // more than maxPageLinks times, regardless of unsanitized page-number input.
         blockStart = ((currentPage - 1) / maxPageLinks) * maxPageLinks + 1;
+        blockStart = Math.Max(1, Math.Min(blockStart, totalPages));
         blockEnd = Math.Min(totalPages, blockStart + maxPageLinks - 1);
     }
 }

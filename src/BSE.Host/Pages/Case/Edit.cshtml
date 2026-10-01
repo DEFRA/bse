@@ -11,9 +11,15 @@
     var hasFormA = Model.Case.FormADate.HasValue;
     var hasFormB = Model.Case.FormBDate.HasValue;
     var hasBirthDate = Model.Case.BirthDate.HasValue;
-    var eartagHintText = string.IsNullOrWhiteSpace(Model.Case.EartagCountry)
-        ? (string.IsNullOrWhiteSpace(Model.Case.EartagHerdmark) ? "Free format" : "PRE-Barimo")
-        : "Country-coded";
+    string eartagHintText;
+    if (string.IsNullOrWhiteSpace(Model.Case.EartagCountry))
+    {
+        eartagHintText = string.IsNullOrWhiteSpace(Model.Case.EartagHerdmark) ? "Free format" : "PRE-Barimo";
+    }
+    else
+    {
+        eartagHintText = "Country-coded";
+    }
     var isDefraDataEntry = User.IsInRole("DataEntry") && !User.IsInRole("VLAAccess");
 
     string? eEartag       = ViewData.ModelState["Case.EartagCountry"]?.Errors.FirstOrDefault()?.ErrorMessage;
@@ -40,7 +46,7 @@
     {
         var latestBirthDate = Model.Case.HerdEntryDate.Value.Date.AddMonths(-18);
         var birthDate = Model.Case.BirthDate.Value.Date;
-        showHerdEntryDateWarning = !(birthDate >= new DateTime(1970, 1, 1) && birthDate <= latestBirthDate);
+        showHerdEntryDateWarning = !(birthDate >= DateTime.UnixEpoch && birthDate <= latestBirthDate);
     }
 }
 
@@ -67,7 +73,7 @@
 
 @if (TempData["Warning"] is string warningMsg)
 {
-    <div class="govuk-notification-banner" role="region"
+    <section class="govuk-notification-banner"
          aria-labelledby="defra-warning-title" data-module="govuk-notification-banner">
         <div class="govuk-notification-banner__header">
             <h2 class="govuk-notification-banner__title" id="defra-warning-title">Important</h2>
@@ -75,7 +81,7 @@
         <div class="govuk-notification-banner__content">
             <p class="govuk-body">@warningMsg</p>
         </div>
-    </div>
+    </section>
 }
 
 @if (!ViewContext.ModelState.IsValid)
@@ -114,9 +120,9 @@
         }
         else
         {
-            <div id="case-edit-unsaved-banner" class="govuk-inset-text bse-unsaved-banner" role="status" hidden="@(!Model.HasUnsavedChanges)">
+            <output id="case-edit-unsaved-banner" class="govuk-inset-text bse-unsaved-banner" hidden="@(!Model.HasUnsavedChanges)">
                 <strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.
-            </div>
+            </output>
 
             <div class="govuk-button-group govuk-!-margin-bottom-4">
                 <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
@@ -424,12 +430,12 @@
             <h2 class="govuk-visually-hidden">Case status</h2>
             <div class="defra-legacy-grid defra-legacy-grid--toprow">
                 <div class="defra-legacy-field defra-legacy-field--inline">
-                    <label class="govuk-label">Final result date</label>
-                    <input type="text" class="govuk-input defra-legacy-status-input" value="@(Model.Case.FinalResultDate?.ToString("dd/MM/yyyy") ?? "")" readonly />
+                    <label class="govuk-label" for="editFinalResultDate">Final result date</label>
+                    <input id="editFinalResultDate" type="text" class="govuk-input defra-legacy-status-input" value="@(Model.Case.FinalResultDate?.ToString("dd/MM/yyyy") ?? "")" readonly />
                 </div>
                 <div class="defra-legacy-field defra-legacy-field--inline">
-                    <label class="govuk-label">Final result</label>
-                    <input type="text" class="govuk-input defra-legacy-status-input" value="@(Model.Case.FinalResult ?? "")" readonly />
+                    <label class="govuk-label" for="editFinalResult">Final result</label>
+                    <input id="editFinalResult" type="text" class="govuk-input defra-legacy-status-input" value="@(Model.Case.FinalResult ?? "")" readonly />
                 </div>
             </div>
 
@@ -500,8 +506,8 @@
                     </select>
                 </div>
                 <div class="defra-legacy-field defra-legacy-field--inline">
-                    <label class="govuk-label">DBSE</label>
-                    <input type="text" class="govuk-input defra-legacy-status-input" value="@(BSE.SharedKernel.RbseHelper.FormatDbse(Model.Case.Dbse) ?? "")" disabled />
+                    <label class="govuk-label" for="editDbse">DBSE</label>
+                    <input id="editDbse" type="text" class="govuk-input defra-legacy-status-input" value="@(BSE.SharedKernel.RbseHelper.FormatDbse(Model.Case.Dbse) ?? "")" disabled />
                 </div>
             </div>
 
