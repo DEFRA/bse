@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Authorization.Policy;
 namespace BSE.Host.Authentication;
 
 /// <summary>
-/// Redirects authenticated users who lack the required role to the Home page
+/// Redirects authenticated users who lack the required role to the Unauthorized page
 /// instead of returning a bare 403 Forbidden response.
 /// Registered as the <see cref="IAuthorizationMiddlewareResultHandler"/> in Program.cs
 /// so it applies regardless of whether the bypass or SAML auth path is active.
@@ -19,10 +19,10 @@ public sealed class HomeRedirectAuthorizationHandler : IAuthorizationMiddlewareR
         AuthorizationPolicy policy,
         PolicyAuthorizationResult authorizeResult)
     {
-        // Authenticated but forbidden (wrong role) → redirect to Home.
+        // Authenticated but forbidden (wrong role) → redirect to Unauthorized.
         if (authorizeResult.Forbidden && context.User.Identity?.IsAuthenticated == true)
         {
-            context.Response.Redirect("/Home");
+            context.Response.Redirect("/Unauthorized");
             return;
         }
 

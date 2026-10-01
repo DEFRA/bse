@@ -103,7 +103,7 @@ public sealed class UserManagementWebFactory : WebApplicationFactory<Program>
     {
         builder.UseSetting("Authentication:BypassEnabled", "false");
         builder.UseSetting("Authentication:UseWindowsIdentity", "false");
-        builder.UseSetting("Authentication:DevUserNtLogin", "testuser@placeholder.domain");
+        builder.UseSetting("Authentication:DevUserEmail", "testuser@placeholder.domain");
 
         builder.ConfigureTestServices(services =>
         {
