@@ -8,5 +8,6 @@ public class UnauthorizedModel : PageModel
 {
     public void OnGet()
     {
+        // No model setup required; the page is static content.
     }
 }

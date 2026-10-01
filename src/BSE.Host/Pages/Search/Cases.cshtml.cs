@@ -59,7 +59,7 @@ public class CasesModel : PageModel
             var query = Filter.ToQuery();
             // Mirrors legacy RBSE.ascx auto-padding on postback: redisplay the short form entered
             // (e.g. "16/01") as the full zero-padded value once the search has run.
-            Filter.Rbse = RbseHelper.Format(query.Rbse);
+            Filter.Rbse = RbseHelper.Format(query.Rbse) ?? string.Empty;
             ModelState.Remove("Filter.Rbse");
             var results = await _search.SearchCasesAsync(query);
             Filter.Results = results.ToList().AsReadOnly();

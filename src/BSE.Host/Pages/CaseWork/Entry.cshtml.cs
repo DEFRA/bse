@@ -21,6 +21,11 @@ public class CaseWorkEntryModel(
 {
     private const string SurveyFallenStock = "fallen stock";
     private const string SurveySurveillanceCohort = "surveillance cohort";
+    private const string MinuteActiveMemo = "ActiveMemo";
+    private const string MinuteAnnexA = "AnnexA";
+    private const string MinuteAnnexB = "AnnexB";
+    private const string MinuteAnnexC = "AnnexC";
+    private const string MinuteAnnexD = "AnnexD";
 
     [BindProperty(SupportsGet = true)]
     public string Rbse { get; set; } = string.Empty;
@@ -143,7 +148,7 @@ public class CaseWorkEntryModel(
         if (!alreadySent)
             await caseWorkService.SetMinuteSentDateAsync(Rbse, minuteType);
 
-        var routedType = minuteType == "ActiveMemo" && ShowTseFields ? "AMFS" : minuteType;
+        var routedType = minuteType == MinuteActiveMemo && ShowTseFields ? "AMFS" : minuteType;
         return RedirectToPage("/CaseWork/Minute", new { rbse = Rbse, type = routedType });
     }
 
@@ -249,16 +254,16 @@ public class CaseWorkEntryModel(
 
     private DateTime? SentDateFor(string minuteType) => minuteType switch
     {
-        "ActiveMemo" => Entry?.ActiveMemoDate,
-        "AnnexA" => Entry?.AnnexADate,
-        "AnnexB" => Entry?.AnnexBDate,
-        "AnnexC" => Entry?.AnnexCDate,
-        "AnnexD" => Entry?.AnnexDDate,
+        MinuteActiveMemo => Entry?.ActiveMemoDate,
+        MinuteAnnexA => Entry?.AnnexADate,
+        MinuteAnnexB => Entry?.AnnexBDate,
+        MinuteAnnexC => Entry?.AnnexCDate,
+        MinuteAnnexD => Entry?.AnnexDDate,
         _ => null,
     };
 
     private static bool IsSendableMinuteType(string minuteType) =>
-        minuteType is "ActiveMemo" or "AnnexA" or "AnnexB" or "AnnexC" or "AnnexD";
+        minuteType is MinuteActiveMemo or MinuteAnnexA or MinuteAnnexB or MinuteAnnexC or MinuteAnnexD;
 
     private async Task LoadAsync()
     {
@@ -304,15 +309,15 @@ public class CaseWorkEntryModel(
 
     private void SetMinuteSendRules()
     {
-        AnnexADisabledReason = GetMinuteDisabledReason("AnnexA");
-        AnnexBDisabledReason = GetMinuteDisabledReason("AnnexB");
-        AnnexCDisabledReason = GetMinuteDisabledReason("AnnexC");
-        AnnexDDisabledReason = GetMinuteDisabledReason("AnnexD");
+        AnnexADisabledReason = GetMinuteDisabledReason(MinuteAnnexA);
+        AnnexBDisabledReason = GetMinuteDisabledReason(MinuteAnnexB);
+        AnnexCDisabledReason = GetMinuteDisabledReason(MinuteAnnexC);
+        AnnexDDisabledReason = GetMinuteDisabledReason(MinuteAnnexD);
     }
 
     private async Task SetPost2000WarningAsync()
     {
-        if (Entry?.BirthDate is null || Entry.BirthDate <= new DateTime(2000, 12, 31)) return;
+        if (Entry?.BirthDate is null || Entry.BirthDate <= new DateTime(2000, 12, 31, 0, 0, 0, DateTimeKind.Unspecified)) return;
 
         var fate = Entry.Fate?.Trim();
         if (!string.Equals(fate, "DIED", StringComparison.OrdinalIgnoreCase)
@@ -332,15 +337,15 @@ public class CaseWorkEntryModel(
         if (Entry is null) return "Case work entry was not found.";
 
         if (Entry.RbseDate is not null && Entry.RbseDate >= DateTime.Today
-            && minuteType is "AnnexA" or "AnnexB" or "AnnexC" or "AnnexD")
+            && minuteType is MinuteAnnexA or MinuteAnnexB or MinuteAnnexC or MinuteAnnexD)
         {
             return $"{GetMinuteLabel(minuteType)} cannot be sent until after the RBSE Date";
         }
 
-        if (minuteType == "AnnexB" && Entry.AnnexADate is null)
+        if (minuteType == MinuteAnnexB && Entry.AnnexADate is null)
             return "Annex B cannot be sent before Annex A";
 
-        if (minuteType == "AnnexD" && Entry.AnnexCDate is null)
+        if (minuteType == MinuteAnnexD && Entry.AnnexCDate is null)
             return "Annex D cannot be sent before Annex C";
 
         return null;
@@ -348,11 +353,11 @@ public class CaseWorkEntryModel(
 
     private static string GetMinuteLabel(string minuteType) => minuteType switch
     {
-        "ActiveMemo" => "Active Memo",
-        "AnnexA" => "Annex A",
-        "AnnexB" => "Annex B",
-        "AnnexC" => "Annex C",
-        "AnnexD" => "Annex D",
+        MinuteActiveMemo => "Active Memo",
+        MinuteAnnexA => "Annex A",
+        MinuteAnnexB => "Annex B",
+        MinuteAnnexC => "Annex C",
+        MinuteAnnexD => "Annex D",
         _ => minuteType
     };
 }

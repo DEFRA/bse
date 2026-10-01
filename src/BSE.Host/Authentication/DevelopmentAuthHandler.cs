@@ -81,7 +81,7 @@ public sealed class DevelopmentAuthHandler : AuthenticationHandler<DevelopmentAu
     /// </summary>
     private string ResolveNtLogin()
     {
-        if (Options.UseWindowsIdentity)
+        if (Options.UseWindowsIdentity && OperatingSystem.IsWindows())
         {
             try
             {

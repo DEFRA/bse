@@ -41,6 +41,8 @@ Log.Logger = new LoggerConfiguration()
 
 try
 {
+    const string UnauthorizedPath = "/Unauthorized";
+
     var builder = WebApplication.CreateBuilder(args);
 
     // ── Structured logging ──────────────────────────────────────────────────
@@ -231,7 +233,7 @@ try
                         ctx.Request.Path.Value,
                         ctx.HttpContext.User.Identity?.Name ?? "unknown");
 
-                    ctx.Response.Redirect("/Unauthorized");
+                    ctx.Response.Redirect(UnauthorizedPath);
                     return Task.CompletedTask;
                 };
             })
@@ -246,12 +248,8 @@ try
 
                 // SP signing certificate — placeholder; wire Key Vault reference before production deploy.
                 // Leaving ServiceCertificates empty is acceptable for local SAML testing only.
-                // Add the certificate here when the thumbprint is provisioned:
-                // if (!string.IsNullOrEmpty(saml2Config.SPCertificateThumbprint))
-                // {
-                //     var cert = GetCertificateByThumbprint(saml2Config.SPCertificateThumbprint);
-                //     options.SPOptions.ServiceCertificates.Add(cert);
-                // }
+                // TODO (production): when saml2Config.SPCertificateThumbprint is provisioned, resolve the
+                // certificate from the certificate store/Key Vault and add it to options.SPOptions.ServiceCertificates.
 
                 var idp = new IdentityProvider(
                     new EntityId(saml2Config.IdPEntityId),
@@ -358,7 +356,7 @@ try
         options.Conventions.AuthorizeFolder("/");
         options.Conventions.AllowAnonymousToPage("/Error");
         options.Conventions.AllowAnonymousToPage("/SessionError");
-        options.Conventions.AllowAnonymousToPage("/Unauthorized");
+        options.Conventions.AllowAnonymousToPage(UnauthorizedPath);
     })
      .AddMvcOptions(o =>
         // ASP.NET Core 6+ treats non-nullable string properties as implicitly [Required]
@@ -472,7 +470,7 @@ try
     {
         var path = context.Request.Path;
         var isExcludedPath =
-            path.StartsWithSegments("/Unauthorized", StringComparison.OrdinalIgnoreCase)
+            path.StartsWithSegments(UnauthorizedPath, StringComparison.OrdinalIgnoreCase)
             || path.StartsWithSegments("/Error", StringComparison.OrdinalIgnoreCase)
             || path.StartsWithSegments("/SessionError", StringComparison.OrdinalIgnoreCase)
             || path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase)
@@ -487,7 +485,7 @@ try
             && context.User.Identity?.IsAuthenticated == true
             && !context.User.HasClaim(c => c.Type == ClaimsUserContext.BseGroupIdClaimType))
         {
-            context.Response.Redirect("/Unauthorized");
+            context.Response.Redirect(UnauthorizedPath);
             return;
         }
 

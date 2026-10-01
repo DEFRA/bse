@@ -91,7 +91,7 @@ public class RelationAddModel(
                     BirthDay = related.BirthDay;
                     BirthMonth = related.BirthMonth;
                     BirthYear = related.BirthYear;
-                    LeftDate = DateTime.TryParse(related.LeftDate, out var leftDate) ? leftDate : null;
+                    LeftDate = DateTime.TryParse(related.LeftDate, System.Globalization.CultureInfo.InvariantCulture, out var leftDate) ? leftDate : null;
                     Sire = related.Name;
                 }
             }
