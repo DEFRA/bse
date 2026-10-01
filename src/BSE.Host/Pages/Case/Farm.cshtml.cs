@@ -190,59 +190,73 @@ public class FarmModel(
         await LoadAsync();
 
         if (Case is null)
-        {
-            CanEditCreateMode = CanEditCreateModeForCurrentUser();
-            ApplyLegacyEditPermissions();
-            EditableFarm ??= new FarmEditViewModel();
-
-            if (string.IsNullOrWhiteSpace(EditableFarm.CPHH))
-            {
-                var existingDraft = await farmDraftState.GetAsync(Rbse);
-                if (!string.IsNullOrWhiteSpace(existingDraft?.Cphh))
-                    EditableFarm.CPHH = CphhNormalizer.Normalize(existingDraft.Cphh);
-            }
-
-            if (string.IsNullOrWhiteSpace(EditableFarm.CPHH) && !string.IsNullOrWhiteSpace(NewCphh))
-                EditableFarm.CPHH = CphhNormalizer.Normalize(NewCphh);
-
-            if (!string.IsNullOrWhiteSpace(SelectedCphh))
-            {
-                var selectedFarm = await farmService.GetByCphhAsync(CphhNormalizer.Normalize(SelectedCphh));
-                if (selectedFarm is not null)
-                {
-                    EditableFarm = FarmEditViewModel.FromRecord(selectedFarm);
-                    RequireFarmDetails = false;
-                }
-            }
-            else if (ForceNewFarmDetails && !string.IsNullOrWhiteSpace(NewCphh))
-            {
-                EditableFarm.CPHH = CphhNormalizer.Normalize(NewCphh);
-                EditableFarm.Parish = SeedParish;
-                EditableFarm.County = SeedCounty;
-                EditableFarm.ADNSRegionID = SeedAdnsRegionId;
-                EditableFarm.AuthorityID = SeedAuthorityId;
-                EditableFarm.AuthorityCountyID = SeedAuthorityCountyId;
-                EditableFarm.Herdmark1 = SeedHerdmark1;
-                EditableFarm.NumericHerdmark1 = SeedNumericHerdmark1;
-                RequireFarmDetails = true;
-            }
-            else if (!string.IsNullOrWhiteSpace(EditableFarm.CPHH))
-            {
-                EditableFarm.CPHH = CphhNormalizer.Normalize(EditableFarm.CPHH);
-            }
-
-            if (Farm is null && !string.IsNullOrWhiteSpace(EditableFarm.CPHH))
-                await LoadFromFarmCphhAsync(EditableFarm.CPHH);
-
-            if (Farm is not null)
-                await LoadOrInitializeDraftStateAsync();
-
-            await LoadLookupsForEditAsync();
-            return Page();
-        }
+            return await InitializeNewCaseFarmEditAsync();
 
         await LoadOrInitializeDraftStateAsync();
         return Page();
+    }
+
+    /// <summary>Prepares EditableFarm for a brand-new case (no Case/Farm persisted yet).</summary>
+    private async Task<IActionResult> InitializeNewCaseFarmEditAsync()
+    {
+        CanEditCreateMode = CanEditCreateModeForCurrentUser();
+        ApplyLegacyEditPermissions();
+        EditableFarm ??= new FarmEditViewModel();
+
+        await ResolveInitialCphhAsync();
+        await ApplySelectedOrSeedFarmDetailsAsync();
+
+        if (Farm is null && !string.IsNullOrWhiteSpace(EditableFarm.CPHH))
+            await LoadFromFarmCphhAsync(EditableFarm.CPHH);
+
+        if (Farm is not null)
+            await LoadOrInitializeDraftStateAsync();
+
+        await LoadLookupsForEditAsync();
+        return Page();
+    }
+
+    /// <summary>Resolves EditableFarm.CPHH from the farm draft, falling back to the posted NewCphh.</summary>
+    private async Task ResolveInitialCphhAsync()
+    {
+        if (string.IsNullOrWhiteSpace(EditableFarm!.CPHH))
+        {
+            var existingDraft = await farmDraftState.GetAsync(Rbse);
+            if (!string.IsNullOrWhiteSpace(existingDraft?.Cphh))
+                EditableFarm.CPHH = CphhNormalizer.Normalize(existingDraft.Cphh);
+        }
+
+        if (string.IsNullOrWhiteSpace(EditableFarm.CPHH) && !string.IsNullOrWhiteSpace(NewCphh))
+            EditableFarm.CPHH = CphhNormalizer.Normalize(NewCphh);
+    }
+
+    private async Task ApplySelectedOrSeedFarmDetailsAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(SelectedCphh))
+        {
+            var selectedFarm = await farmService.GetByCphhAsync(CphhNormalizer.Normalize(SelectedCphh));
+            if (selectedFarm is not null)
+            {
+                EditableFarm = FarmEditViewModel.FromRecord(selectedFarm);
+                RequireFarmDetails = false;
+            }
+        }
+        else if (ForceNewFarmDetails && !string.IsNullOrWhiteSpace(NewCphh))
+        {
+            EditableFarm!.CPHH = CphhNormalizer.Normalize(NewCphh);
+            EditableFarm.Parish = SeedParish;
+            EditableFarm.County = SeedCounty;
+            EditableFarm.ADNSRegionID = SeedAdnsRegionId;
+            EditableFarm.AuthorityID = SeedAuthorityId;
+            EditableFarm.AuthorityCountyID = SeedAuthorityCountyId;
+            EditableFarm.Herdmark1 = SeedHerdmark1;
+            EditableFarm.NumericHerdmark1 = SeedNumericHerdmark1;
+            RequireFarmDetails = true;
+        }
+        else if (!string.IsNullOrWhiteSpace(EditableFarm!.CPHH))
+        {
+            EditableFarm.CPHH = CphhNormalizer.Normalize(EditableFarm.CPHH);
+        }
     }
 
     /// <summary>Creates the case (and its farm, if the CPHH has none yet) for a brand-new GB case
@@ -941,9 +955,10 @@ public class FarmModel(
         var userId = await currentUser.GetUserIdAsync();
         var result = await batchService.AssignCaseToBatchAsync(pending.BatchId, Rbse, Bse1Document);
 
-        logger.LogInformation(
-            "Batch assignment {Result}: user {UserId} assigned RBSE {Rbse} to batch {BatchId} ({BatchNumber}) for document {Document}",
-            result, userId, Rbse, pending.BatchId, pending.BatchNumber, Bse1Document);
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation(
+                "Batch assignment {Result}: user {UserId} assigned RBSE {Rbse} to batch {BatchId} ({BatchNumber}) for document {Document}",
+                result, userId, Rbse, pending.BatchId, pending.BatchNumber, Bse1Document);
 
         await wizardState.ClearAsync();
 
@@ -1638,7 +1653,7 @@ public class FarmModel(
     public string HerdSizesPageUrl(int page) =>
         $"?HPage={page}&HSort={HSort}&HDir={HDir}&LPage={LPage}&LSort={LSort}&LDir={LDir}";
 
-    public IReadOnlyList<StagedHerdSizeItem> SortedStagedHerdSizes =>
+    public IReadOnlyList<StagedHerdSizeItem> GetSortedStagedHerdSizes() =>
         (HSort, HDir) switch
         {
             ("total", "asc") => StagedHerdSizes.OrderBy(h => h.TotalSize).ToList(),

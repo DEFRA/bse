@@ -154,19 +154,11 @@ public class RelationsModel(
     }
 
     /// <summary>Legacy btnSave_Click (Dam/Sire section): persists whatever is currently populated.</summary>
-    public async Task<IActionResult> OnPostSaveDamSireAsync()
-    {
-        if (!User.IsInRole(DataEntryRole))
-            return Forbid();
-        await LoadAsync();
-        var draft = await LoadOrInitializeRelationsDraftAsync();
-        draft.HasPendingChanges = true;
-        await relationsDraftState.SetAsync(draft);
-        TempData.Remove(SuccessKey);
-        return RedirectToPage(new { rbse = Rbse });
-    }
+    public async Task<IActionResult> OnPostSaveDamSireAsync() => await MarkDraftPendingAndRedirectAsync();
 
-    public async Task<IActionResult> OnPostSaveCaseHerdbookAsync()
+    public async Task<IActionResult> OnPostSaveCaseHerdbookAsync() => await MarkDraftPendingAndRedirectAsync();
+
+    private async Task<IActionResult> MarkDraftPendingAndRedirectAsync()
     {
         if (!User.IsInRole(DataEntryRole))
             return Forbid();
@@ -1128,13 +1120,11 @@ public class RelationsModel(
     }
 
     /// <summary>Discards all staged related-animal changes without persisting them.</summary>
-    public async Task<IActionResult> OnPostCancelRelationsEditAsync()
-    {
-        await relationsDraftState.ClearAsync(RbseHelper.ParseToRaw(Rbse));
-        return RedirectToPage("/Home");
-    }
+    public async Task<IActionResult> OnPostCancelRelationsEditAsync() => await CancelRelationsEditAsync();
 
-    public async Task<IActionResult> OnGetCancelRelationsEditAsync()
+    public async Task<IActionResult> OnGetCancelRelationsEditAsync() => await CancelRelationsEditAsync();
+
+    private async Task<IActionResult> CancelRelationsEditAsync()
     {
         await relationsDraftState.ClearAsync(RbseHelper.ParseToRaw(Rbse));
         return RedirectToPage("/Home");
