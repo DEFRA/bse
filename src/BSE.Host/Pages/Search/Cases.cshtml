@@ -396,7 +396,7 @@
                 .Where(k => !string.Equals(k.Key, "Filter.PageNumber", StringComparison.OrdinalIgnoreCase))
                 .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}")
                 .Append("handler=Export")))"
-               class="govuk-link">Export to CSV</a>
+               class="govuk-link">Export to Excel</a>
         </p>
     }
 }
