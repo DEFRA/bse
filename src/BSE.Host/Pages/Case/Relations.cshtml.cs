@@ -778,6 +778,62 @@ public class RelationsModel(
         await LoadAsync();
         var draft = await LoadOrInitializeRelationsDraftAsync();
 
+        ApplyPendingParentRemovals(draft);
+
+        var caseRbse = RbseHelper.ParseToRaw(Rbse);
+        var caseRecord = await caseService.GetCaseAsync(caseRbse);
+
+        if (caseRecord is null)
+        {
+            TempData["Warning"] = $"Case '{caseRbse}' is not saved yet. Complete Farm first.";
+            return RedirectToPage(new { rbse = Rbse });
+        }
+
+        InferHasDamSireFromStagedInputs();
+
+        var validationResult = ValidateDamSireInputs(caseRbse);
+        if (validationResult is not null)
+            return validationResult;
+
+        var lookupResult = await ResolveLinkedParentsFromRbseLookupAsync();
+        if (lookupResult is not null)
+            return lookupResult;
+
+        await RefreshMissingParentRowStampsAsync();
+
+        var rowStampResult = ValidateParentRowStampsPresent();
+        if (rowStampResult is not null)
+            return rowStampResult;
+
+        var damStatusResult = await UpdateCaseDamStatusAsync(caseRecord);
+        if (damStatusResult is not null)
+            return damStatusResult;
+
+        caseRecord = await caseService.GetCaseAsync(caseRbse);
+        CaseHerdbook = string.IsNullOrWhiteSpace(CaseHerdbook) ? caseRecord?.Herdbook : CaseHerdbook;
+
+        await RefreshLinkedParentDetailsFromPedigreeAsync();
+
+        var herdbookResult = await SaveHerdbookAsync(caseRbse, caseRecord);
+        if (herdbookResult is not null)
+            return herdbookResult;
+
+        var relationsError = await PersistStagedRelationsAsync();
+        if (relationsError is not null)
+        {
+            TempData[RelationsWarningKey] = relationsError;
+            return RedirectToPage(new { rbse = Rbse });
+        }
+
+        await relationsDraftState.ClearAsync(RbseHelper.ParseToRaw(Rbse));
+
+        TempData.Remove(RelationsWarningKey);
+        TempData[SuccessKey] = "Related animal changes saved.";
+        return RedirectToPage(new { rbse = Rbse });
+    }
+
+    private void ApplyPendingParentRemovals(CaseRelationsDraftState draft)
+    {
         if (draft.RemoveDamPending && !HasDamInputStaged())
         {
             DamSire.HasDam = false;
@@ -810,22 +866,19 @@ public class RelationsModel(
             DamSire.SireFate = null;
             DamSire.SireChildCount = null;
         }
+    }
 
-        var caseRbse = RbseHelper.ParseToRaw(Rbse);
-        var caseRecord = await caseService.GetCaseAsync(caseRbse);
-
-        if (caseRecord is null)
-        {
-            TempData["Warning"] = $"Case '{caseRbse}' is not saved yet. Complete Farm first.";
-            return RedirectToPage(new { rbse = Rbse });
-        }
-
-        // Keep explicit parent intent even if HasDam/HasSire hidden flags are stale in the post.
+    /// <summary>Keep explicit parent intent even if HasDam/HasSire hidden flags are stale in the post.</summary>
+    private void InferHasDamSireFromStagedInputs()
+    {
         if (!DamSire.HasDam && (DamSire.DamId > 0 || !string.IsNullOrWhiteSpace(DamSire.DamRbse)))
             DamSire.HasDam = true;
         if (!DamSire.HasSire && (DamSire.SireId > 0 || !string.IsNullOrWhiteSpace(DamSire.SireRbse)))
             DamSire.HasSire = true;
+    }
 
+    private IActionResult? ValidateDamSireInputs(string caseRbse)
+    {
         if (!string.IsNullOrWhiteSpace(DamSire.DamRbse)
             && RbseHelper.Normalize(DamSire.DamRbse) == caseRbse)
         {
@@ -852,6 +905,12 @@ public class RelationsModel(
             return Page();
         }
 
+        return null;
+    }
+
+    /// <summary>Resolves a dam/sire selected by RBSE (rather than explicit Look Up) into full details.</summary>
+    private async Task<IActionResult?> ResolveLinkedParentsFromRbseLookupAsync()
+    {
         if (!string.IsNullOrWhiteSpace(DamSire.DamRbse)
             && (DamSire.DamId <= 0 || string.IsNullOrWhiteSpace(DamSire.DamRowStamp)))
         {
@@ -904,8 +963,15 @@ public class RelationsModel(
             }
         }
 
-        // If a looked-up/linked parent is selected but the posted RowStamp is missing,
-        // reload it before calling AddEditDamSireDetails to avoid false concurrency failures.
+        return null;
+    }
+
+    /// <summary>
+    /// If a looked-up/linked parent is selected but the posted RowStamp is missing,
+    /// reload it before calling AddEditDamSireDetails to avoid false concurrency failures.
+    /// </summary>
+    private async Task RefreshMissingParentRowStampsAsync()
+    {
         if (DamSire.HasDam && DamSire.DamId > 0 && string.IsNullOrWhiteSpace(DamSire.DamRowStamp) && !string.IsNullOrWhiteSpace(DamSire.DamRbse))
         {
             var damMatches = await relationsRepository.GetDamSireDetailsMatchesAsync(
@@ -923,7 +989,10 @@ public class RelationsModel(
             if (exactSire?.RowStamp is { Length: > 0 })
                 DamSire.SireRowStamp = ToBase64(exactSire.RowStamp);
         }
+    }
 
+    private IActionResult? ValidateParentRowStampsPresent()
+    {
         if (DamSire.HasDam && DamSire.DamId > 0 && string.IsNullOrWhiteSpace(DamSire.DamRowStamp))
         {
             DamError = "Dam details could not be refreshed. Please look up and select the dam again.";
@@ -936,29 +1005,35 @@ public class RelationsModel(
             return Page();
         }
 
-        if (caseRecord is not null)
+        return null;
+    }
+
+    private async Task<IActionResult?> UpdateCaseDamStatusAsync(BSE.Modules.CaseManagement.Models.CaseRecord caseRecord)
+    {
+        var editVm = BSE.Host.Models.ViewModels.CaseEditViewModel.FromRecord(caseRecord);
+        editVm.DamStatus = DamSire.DamStatus;
+        var editCommand = new EditCaseDetailsCommand(
+            Case: editVm.ToEditCommand(caseRecord.RowStamp ?? []),
+            Clinical: null,
+            Bab: null,
+            DamSire: null);
+        var userId = await currentUser.GetUserIdAsync();
+        var result = await caseService.EditCaseAsync(editCommand, userId);
+        if (result != EditCaseResult.Success)
         {
-            var editVm = BSE.Host.Models.ViewModels.CaseEditViewModel.FromRecord(caseRecord);
-            editVm.DamStatus = DamSire.DamStatus;
-            var editCommand = new EditCaseDetailsCommand(
-                Case: editVm.ToEditCommand(caseRecord.RowStamp ?? []),
-                Clinical: null,
-                Bab: null,
-                DamSire: null);
-            var userId = await currentUser.GetUserIdAsync();
-            var result = await caseService.EditCaseAsync(editCommand, userId);
-            if (result != EditCaseResult.Success)
-            {
-                TempData[RelationsWarningKey] = "Dam details were saved, but the status could not be updated — the case may have changed. Please try again.";
-                return RedirectToPage(new { rbse = Rbse });
-            }
+            TempData[RelationsWarningKey] = "Dam details were saved, but the status could not be updated — the case may have changed. Please try again.";
+            return RedirectToPage(new { rbse = Rbse });
         }
 
-        caseRecord = await caseService.GetCaseAsync(caseRbse);
-        CaseHerdbook = string.IsNullOrWhiteSpace(CaseHerdbook) ? caseRecord?.Herdbook : CaseHerdbook;
+        return null;
+    }
 
-        // For linked case parents (RBSE present), ignore editable posted fields and refresh
-        // from DB so final save only updates the case linkage, not the linked pedigree row.
+    /// <summary>
+    /// For linked case parents (RBSE present), ignore editable posted fields and refresh
+    /// from DB so final save only updates the case linkage, not the linked pedigree row.
+    /// </summary>
+    private async Task RefreshLinkedParentDetailsFromPedigreeAsync()
+    {
         if (DamSire.HasDam && DamSire.DamId > 0 && !string.IsNullOrWhiteSpace(DamSire.DamRbse))
         {
             var linkedDam = await GetPedigreeSnapshotByIdAsync(DamSire.DamId);
@@ -988,7 +1063,10 @@ public class RelationsModel(
                 DamSire.SireRowStamp = ToBase64(linkedSire.RowStamp);
             }
         }
+    }
 
+    private async Task<IActionResult?> SaveHerdbookAsync(string caseRbse, BSE.Modules.CaseManagement.Models.CaseRecord? caseRecord)
+    {
         var herdbookCommand = new AddEditDamSireCommand(
             Rbse: caseRbse,
             DamId: DamSire.HasDam ? DamSire.DamId : null, DamRbse: NullIfBlank(RbseHelper.Normalize(DamSire.DamRbse)),
@@ -1040,18 +1118,7 @@ public class RelationsModel(
             return RedirectToPage(new { rbse = Rbse });
         }
 
-        var relationsError = await PersistStagedRelationsAsync();
-        if (relationsError is not null)
-        {
-            TempData[RelationsWarningKey] = relationsError;
-            return RedirectToPage(new { rbse = Rbse });
-        }
-
-        await relationsDraftState.ClearAsync(RbseHelper.ParseToRaw(Rbse));
-
-        TempData.Remove(RelationsWarningKey);
-        TempData[SuccessKey] = "Related animal changes saved.";
-        return RedirectToPage(new { rbse = Rbse });
+        return null;
     }
 
     /// <summary>Discards all staged related-animal changes without persisting them.</summary>
