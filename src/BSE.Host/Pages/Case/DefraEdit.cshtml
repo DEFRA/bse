@@ -289,7 +289,7 @@
             </div>
             <div class="defra-legacy-field defra-legacy-field--inline">
                 <label class="govuk-label">DBSE</label>
-                <input type="text" class="govuk-input defra-legacy-status-input" value="@(Model.Case.Dbse ?? "")" disabled />
+                <input type="text" class="govuk-input defra-legacy-status-input" value="@(BSE.SharedKernel.RbseHelper.FormatDbse(Model.Case.Dbse) ?? "")" disabled />
             </div>
         </div>
 
