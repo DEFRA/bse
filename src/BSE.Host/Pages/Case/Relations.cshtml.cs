@@ -234,26 +234,8 @@ public class RelationsModel(
         var searchName = isDam ? DamSire.DamSearchName : DamSire.SireSearchName;
         var searchHerdbook = isDam ? DamSire.DamSearchHerdbook : DamSire.SireSearchHerdbook;
 
-        if (searchRbse.Length > 0)
-        {
-            if (searchRbse == caseRbse)
-            {
-                SetError(isDam, SameAsCaseRbse);
-                return;
-            }
-
-            var otherParentRbse = isDam ? Details?.Sire?.Rbse : Details?.Dam?.Rbse;
-            // Checked against the staged relations list (not just the DB-persisted one) so a
-            // relation added but not yet saved is still caught — matches legacy's RBSEIsRelation,
-            // which checked the session-held working table rather than the database.
-            var alreadyRelation = searchRbse == RbseHelper.Normalize(otherParentRbse)
-                || _stagedRelations.Any(r => RbseHelper.Normalize(r.RelationRbse) == searchRbse);
-            if (alreadyRelation)
-            {
-                SetError(isDam, AlreadyARelation);
-                return;
-            }
-        }
+        if (searchRbse.Length > 0 && IsSearchRbseRejected(isDam, searchRbse, caseRbse))
+            return;
 
         // Legacy navigation behavior: if RBSE is not supplied, open PickSireDam.aspx
         // (even when exactly one candidate exists) rather than auto-selecting.
@@ -282,6 +264,30 @@ public class RelationsModel(
         {
             SetError(isDam, isDam ? DamNotFound : SireNotFound);
         }
+    }
+
+    /// <summary>Returns true (and sets the field error) if the searched RBSE cannot be used as a parent.</summary>
+    private bool IsSearchRbseRejected(bool isDam, string searchRbse, string caseRbse)
+    {
+        if (searchRbse == caseRbse)
+        {
+            SetError(isDam, SameAsCaseRbse);
+            return true;
+        }
+
+        var otherParentRbse = isDam ? Details?.Sire?.Rbse : Details?.Dam?.Rbse;
+        // Checked against the staged relations list (not just the DB-persisted one) so a
+        // relation added but not yet saved is still caught — matches legacy's RBSEIsRelation,
+        // which checked the session-held working table rather than the database.
+        var alreadyRelation = searchRbse == RbseHelper.Normalize(otherParentRbse)
+            || _stagedRelations.Any(r => RbseHelper.Normalize(r.RelationRbse) == searchRbse);
+        if (alreadyRelation)
+        {
+            SetError(isDam, AlreadyARelation);
+            return true;
+        }
+
+        return false;
     }
 
     private bool DamShouldOpenPicker { get; set; }
@@ -1340,21 +1346,21 @@ public class RelationsModel(
     /// <summary>Sorts on every legacy grid column (RelationType, RBSE, Sex, Birth Date, Fate, Date Left, Eartag, Sire).</summary>
     private IReadOnlyList<StagedRelationItem> SortStagedRelations(IReadOnlyList<StagedRelationItem> relations)
     {
-        IEnumerable<StagedRelationItem> q = relations;
-        q = SortColumn switch
+        Func<StagedRelationItem, IComparable?> keySelector = SortColumn switch
         {
-            "RelationType" => SortDesc ? q.OrderByDescending(r => r.RelationTypeDesc ?? r.RelationType) : q.OrderBy(r => r.RelationTypeDesc ?? r.RelationType),
-            "RelationRbse" => SortDesc ? q.OrderByDescending(r => r.RelationRbse)                        : q.OrderBy(r => r.RelationRbse),
-            "Sex"          => SortDesc ? q.OrderByDescending(r => r.SexDesc ?? r.Sex)                     : q.OrderBy(r => r.SexDesc ?? r.Sex),
-            "BirthDate"    => SortDesc ? q.OrderByDescending(r => r.BirthYear).ThenByDescending(r => r.BirthMonth).ThenByDescending(r => r.BirthDay)
-                                       : q.OrderBy(r => r.BirthYear).ThenBy(r => r.BirthMonth).ThenBy(r => r.BirthDay),
-            "RelationFate" => SortDesc ? q.OrderByDescending(r => r.RelationFateDesc ?? r.RelationFate)   : q.OrderBy(r => r.RelationFateDesc ?? r.RelationFate),
-            "LeftDate"     => SortDesc ? q.OrderByDescending(r => r.LeftDate)                             : q.OrderBy(r => r.LeftDate),
-            "Eartag"       => SortDesc ? q.OrderByDescending(r => r.Eartag)                               : q.OrderBy(r => r.Eartag),
-            "Sire"         => SortDesc ? q.OrderByDescending(r => r.Sire)                                 : q.OrderBy(r => r.Sire),
-            _              => q
+            "RelationType" => r => r.RelationTypeDesc ?? r.RelationType,
+            "RelationRbse" => r => r.RelationRbse,
+            "Sex" => r => r.SexDesc ?? r.Sex,
+            "BirthDate" => r => (r.BirthYear, r.BirthMonth, r.BirthDay),
+            "RelationFate" => r => r.RelationFateDesc ?? r.RelationFate,
+            "LeftDate" => r => r.LeftDate,
+            "Eartag" => r => r.Eartag,
+            "Sire" => r => r.Sire,
+            _ => _ => null
         };
-        return q.ToList();
+
+        var sorted = SortDesc ? relations.OrderByDescending(keySelector) : relations.OrderBy(keySelector);
+        return sorted.ToList();
     }
 
     private static string? NullIfBlank(string? s) => string.IsNullOrWhiteSpace(s) ? null : s;
