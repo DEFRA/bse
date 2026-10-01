@@ -55,7 +55,8 @@ public sealed class GroupClaimsTransformation : IClaimsTransformation
                   ?? principal.FindFirstValue("preferred_username")   // DevBypass emits "DS000104@dev.local"
                   ?? principal.FindFirstValue(ClaimTypes.Upn);
 
-        _logger.LogDebug("GroupClaimsTransformation: resolved UPN '{Upn}'", upn);
+        if (_logger.IsEnabled(LogLevel.Debug))
+            _logger.LogDebug("GroupClaimsTransformation: resolved UPN '{Upn}'", upn);
 
         if (string.IsNullOrWhiteSpace(upn))
             return principal;
@@ -64,7 +65,8 @@ public sealed class GroupClaimsTransformation : IClaimsTransformation
         {
             var user = await _userRepository.GetByEmailAsync(upn);
 
-            _logger.LogDebug("user from DB : resolved user '{user}'", user);
+            if (_logger.IsEnabled(LogLevel.Debug))
+                _logger.LogDebug("user from DB : resolved user '{user}'", user);
 
             if (user is null)
                 return principal;

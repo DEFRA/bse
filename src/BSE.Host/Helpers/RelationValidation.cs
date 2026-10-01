@@ -63,29 +63,46 @@ public static class RelationValidation
             errors["Sex"] = SexRequired;
         }
 
-        // Legacy never required an RBSE or eartag to add/update a relation — only
-        // ctlRelationRBSE.IsMarkedValid was checked, which defaults to true when the RBSE
-        // box is left empty (lblInvalid is only shown by an explicit failed check).
-        if (relationRbse.Length > 0)
-        {
-            if (relationRbse == RbseHelper.Normalize(input.CaseRbse))
-            {
-                errors[RelationRbseField] = SameAsCaseRbse;
-            }
-            else if (relationRbse == RbseHelper.Normalize(damRbse))
-            {
-                errors[RelationRbseField] = SameAsDamRbse;
-            }
-            else if (relationRbse == RbseHelper.Normalize(sireRbse))
-            {
-                errors[RelationRbseField] = SameAsSireRbse;
-            }
-            else if (existingRelationRbses.Any(r => RbseHelper.Normalize(r) == relationRbse))
-            {
-                errors[RelationRbseField] = AlreadyARelation;
-            }
-        }
+        ValidateRelationRbse(errors, relationRbse, input.CaseRbse, damRbse, sireRbse, existingRelationRbses);
+        ValidateBirthFields(errors, input);
 
+        return errors;
+    }
+
+    // Legacy never required an RBSE or eartag to add/update a relation — only
+    // ctlRelationRBSE.IsMarkedValid was checked, which defaults to true when the RBSE
+    // box is left empty (lblInvalid is only shown by an explicit failed check).
+    private static void ValidateRelationRbse(
+        IDictionary<string, string> errors,
+        string relationRbse,
+        string caseRbse,
+        string? damRbse,
+        string? sireRbse,
+        IEnumerable<string?> existingRelationRbses)
+    {
+        if (relationRbse.Length == 0)
+            return;
+
+        if (relationRbse == RbseHelper.Normalize(caseRbse))
+        {
+            errors[RelationRbseField] = SameAsCaseRbse;
+        }
+        else if (relationRbse == RbseHelper.Normalize(damRbse))
+        {
+            errors[RelationRbseField] = SameAsDamRbse;
+        }
+        else if (relationRbse == RbseHelper.Normalize(sireRbse))
+        {
+            errors[RelationRbseField] = SameAsSireRbse;
+        }
+        else if (existingRelationRbses.Any(r => RbseHelper.Normalize(r) == relationRbse))
+        {
+            errors[RelationRbseField] = AlreadyARelation;
+        }
+    }
+
+    private static void ValidateBirthFields(IDictionary<string, string> errors, Input input)
+    {
         if (input.BirthDay is { } day && (day < 1 || day > 31))
         {
             errors["BirthDay"] = "Birth day must be between 1 and 31.";
@@ -110,7 +127,5 @@ public static class RelationValidation
             errors["BirthYear"] =
                 $"Please enter a birth date between {EarliestBirthDate:dd/MM/yyyy} and {latestBirth:dd/MM/yyyy}";
         }
-
-        return errors;
     }
 }
