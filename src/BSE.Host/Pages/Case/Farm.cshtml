@@ -769,23 +769,23 @@
                     <tr id="add-herd-row-inline" class="govuk-table__row bse-herd-row--unsaved" hidden="@(!Model.ShowAddHerdRow)">
                         <td class="govuk-table__cell">
                             <label class="govuk-visually-hidden" for="new-herd-year">Year</label>
-                            <input id="new-herd-year" name="NewHerdRow.HerdYear" type="number" min="1975" max="@DateTime.UtcNow.Year" value="@(Model.NewHerdRow.HerdYear == 0 ? "" : Model.NewHerdRow.HerdYear)" class="govuk-input govuk-input--width-4" />
+                            <input id="new-herd-year" name="NewHerdRow.HerdYear" type="number" min="1975" max="@DateTime.UtcNow.Year" value="@BSE.SharedKernel.InputValueFormatter.ToInputValue(Model.NewHerdRow.HerdYear)" class="govuk-input govuk-input--width-4" />
                         </td>
                         <td class="govuk-table__cell">
                             <label class="govuk-visually-hidden" for="new-herd-total">Size</label>
-                            <input id="new-herd-total" name="NewHerdRow.TotalSize" type="number" min="1" max="2000" value="@(Model.NewHerdRow.TotalSize == 0 ? "" : Model.NewHerdRow.TotalSize)" class="govuk-input govuk-input--width-4" />
+                            <input id="new-herd-total" name="NewHerdRow.TotalSize" type="number" min="1" max="2000" value="@BSE.SharedKernel.InputValueFormatter.ToInputValue(Model.NewHerdRow.TotalSize)" class="govuk-input govuk-input--width-4" />
                         </td>
                         @for (var lac = 1; lac <= 10; lac++)
                         {
                             var lacValue = (int)(typeof(BSE.Host.Pages.Case.FarmModel.HerdSizeRowInput).GetProperty($"Lactation{lac}Size")!.GetValue(Model.NewHerdRow) ?? 0);
                             <td class="govuk-table__cell">
                                 <label class="govuk-visually-hidden" for="new-herd-lac@(lac)">Lactation @lac</label>
-                                <input id="new-herd-lac@(lac)" name="NewHerdRow.Lactation@(lac)Size" type="number" min="0" max="999" value="@(lacValue == 0 ? "" : lacValue)" class="govuk-input govuk-input--width-3" />
+                                <input id="new-herd-lac@(lac)" name="NewHerdRow.Lactation@(lac)Size" type="number" min="0" max="999" value="@BSE.SharedKernel.InputValueFormatter.ToInputValue(lacValue)" class="govuk-input govuk-input--width-3" />
                             </td>
                         }
                         <td class="govuk-table__cell">
                             <label class="govuk-visually-hidden" for="new-herd-lac10p">Lactation 10+</label>
-                            <input id="new-herd-lac10p" name="NewHerdRow.Lactation10PlusSize" type="number" min="0" max="999" value="@(Model.NewHerdRow.Lactation10PlusSize == 0 ? "" : Model.NewHerdRow.Lactation10PlusSize)" class="govuk-input govuk-input--width-3" />
+                            <input id="new-herd-lac10p" name="NewHerdRow.Lactation10PlusSize" type="number" min="0" max="999" value="@BSE.SharedKernel.InputValueFormatter.ToInputValue(Model.NewHerdRow.Lactation10PlusSize)" class="govuk-input govuk-input--width-3" />
                         </td>
                         <td class="govuk-table__cell">
                             <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
