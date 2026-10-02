@@ -1,4 +1,4 @@
-@page "{rbse}"
+﻿@page "{rbse}"
 @model BSE.Host.Pages.Case.FarmModel
 @{
     ViewData["Title"] = Model.Case is null ? "Case" : $"RBSE Number: {Model.Rbse}";
@@ -653,15 +653,15 @@
                                 </td>
                                 @for (var lac = 1; lac <= 10; lac++)
                                 {
-                                    var lacValue = (int)(typeof(BSE.Host.Pages.Case.FarmModel.HerdSizeRowInput).GetProperty($"Lactation{lac}Size")!.GetValue(editRow) ?? 0);
+                                    var lacValue = (int?)typeof(BSE.Host.Pages.Case.FarmModel.HerdSizeRowInput).GetProperty($"Lactation{lac}Size")!.GetValue(editRow);
                                     <td class="govuk-table__cell">
                                         <label class="govuk-visually-hidden" for="edit-herd-lac@(lac)-@h.ClientKey">Lactation @lac</label>
-                                        <input id="edit-herd-lac@(lac)-@h.ClientKey" name="EditHerdRow.Lactation@(lac)Size" type="number" min="0" max="999" value="@lacValue" class="govuk-input govuk-input--width-3" />
+                                        <input id="edit-herd-lac@(lac)-@h.ClientKey" name="EditHerdRow.Lactation@(lac)Size" type="number" min="0" max="999" value="@BSE.SharedKernel.InputValueFormatter.ToInputValue(lacValue)" class="govuk-input govuk-input--width-3" />
                                     </td>
                                 }
                                 <td class="govuk-table__cell">
                                     <label class="govuk-visually-hidden" for="edit-herd-lac10p-@h.ClientKey">Lactation 10+</label>
-                                    <input id="edit-herd-lac10p-@h.ClientKey" name="EditHerdRow.Lactation10PlusSize" type="number" min="0" max="999" value="@editRow.Lactation10PlusSize" class="govuk-input govuk-input--width-3" />
+                                    <input id="edit-herd-lac10p-@h.ClientKey" name="EditHerdRow.Lactation10PlusSize" type="number" min="0" max="999" value="@BSE.SharedKernel.InputValueFormatter.ToInputValue(editRow.Lactation10PlusSize)" class="govuk-input govuk-input--width-3" />
                                 </td>
                                 <td class="govuk-table__cell">
                                     <input type="hidden" name="EditingClientKey" value="@h.ClientKey" />
@@ -747,7 +747,7 @@
                         </td>
                         @for (var lac = 1; lac <= 10; lac++)
                         {
-                            var lacValue = (int)(typeof(BSE.Host.Pages.Case.FarmModel.HerdSizeRowInput).GetProperty($"Lactation{lac}Size")!.GetValue(Model.NewHerdRow) ?? 0);
+                            var lacValue = (int?)typeof(BSE.Host.Pages.Case.FarmModel.HerdSizeRowInput).GetProperty($"Lactation{lac}Size")!.GetValue(Model.NewHerdRow);
                             <td class="govuk-table__cell">
                                 <label class="govuk-visually-hidden" for="new-herd-lac@(lac)">Lactation @lac</label>
                                 <input id="new-herd-lac@(lac)" name="NewHerdRow.Lactation@(lac)Size" type="number" min="0" max="999" value="@BSE.SharedKernel.InputValueFormatter.ToInputValue(lacValue)" class="govuk-input govuk-input--width-3" />
