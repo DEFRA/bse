@@ -198,21 +198,24 @@
 
         <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
 
-        <div id="purchase-section" @(Model.Case.Origin != "P" ? "style=\"display:none\"" : "")>
+        @{
+            var purchaseFieldsDisabled = Model.Case.Origin != "P";
+        }
+        <div id="purchase-section">
             <div class="vla-legacy-grid">
                 <div class="vla-legacy-field @(E("Case.PurchaseDate") is not null ? "govuk-form-group--error" : "")">
                     <label asp-for="Case.PurchaseDate" class="govuk-label">Date Purchased <span id="purchase-date-star" class="bse-vla-star-red" hidden="@(E("Case.PurchaseDate") is null)" title="@(E("Case.PurchaseDate") ?? "Please enter a valid date")">*</span></label>
                     <div>
                         @if (E("Case.PurchaseDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.PurchaseDate")</p> }
                         <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                            <input asp-for="Case.PurchaseDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.PurchaseDate") is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateDisplay("Case.PurchaseDate", Model.Case.PurchaseDate)" />
+                            <input asp-for="Case.PurchaseDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.PurchaseDate") is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateDisplay("Case.PurchaseDate", Model.Case.PurchaseDate)" disabled="@(purchaseFieldsDisabled ? "disabled" : null)" />
                         </div>
                     </div>
                 </div>
                 <div class="vla-legacy-field">
                     <label class="govuk-label">Age Purchased</label>
                     <div class="vla-legacy-age-group vla-legacy-age-group--header">
-                        <button type="button" id="btn-calc-age-purchased" class="govuk-button govuk-button--secondary vla-legacy-calc-button">Calculate</button>
+                        <button type="button" id="btn-calc-age-purchased" class="govuk-button govuk-button--secondary vla-legacy-calc-button" disabled="@(purchaseFieldsDisabled ? "disabled" : null)">Calculate</button>
                     </div>
                 </div>
 
@@ -220,7 +223,7 @@
                     <label asp-for="Case.PurchasedCounty" class="govuk-label">Purchased County</label>
                     <div>
                         @if (E("Case.PurchasedCounty") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.PurchasedCounty")</p> }
-                        <select asp-for="Case.PurchasedCounty" class="govuk-select vla-legacy-input @(E("Case.PurchasedCounty") is not null ? "govuk-select--error" : "")">
+                        <select asp-for="Case.PurchasedCounty" class="govuk-select vla-legacy-input @(E("Case.PurchasedCounty") is not null ? "govuk-select--error" : "")" disabled="@(purchaseFieldsDisabled ? "disabled" : null)">
                             <option value="">-- Select --</option>
                             @foreach (var o in Model.PurchasedCountyOptions)
                             {
@@ -234,9 +237,9 @@
                     <div class="vla-legacy-age-group">
                         @if (E("Case.PurchaseAgeInMonths") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.PurchaseAgeInMonths")</p> }
                         <div class="vla-legacy-inline-parts">
-                            <input class="govuk-input vla-legacy-mini-input" id="age-purchased-years" type="number" min="0" max="99" />
+                            <input class="govuk-input vla-legacy-mini-input" id="age-purchased-years" type="number" min="0" max="99" disabled="@(purchaseFieldsDisabled ? "disabled" : null)" />
                             <label class="govuk-label" for="Case_PurchaseAgeInMonths">Months:</label>
-                            <input asp-for="Case.PurchaseAgeInMonths" class="govuk-input vla-legacy-mini-input @(E("Case.PurchaseAgeInMonths") is not null ? "govuk-input--error" : "")" type="number" min="0" />
+                            <input asp-for="Case.PurchaseAgeInMonths" class="govuk-input vla-legacy-mini-input @(E("Case.PurchaseAgeInMonths") is not null ? "govuk-input--error" : "")" type="number" min="0" disabled="@(purchaseFieldsDisabled ? "disabled" : null)" />
                         </div>
                     </div>
                 </div>
@@ -688,7 +691,12 @@
 
         function applyPurchaseVisibility() {
             if (!purchaseSection || !originSel) return;
-            purchaseSection.style.display = (originSel.value === 'P') ? '' : 'none';
+            var isPurchased = originSel.value === 'P';
+            var purchaseControlIds = ['Case_PurchaseDate', 'btn-calc-age-purchased', 'Case_PurchasedCounty', 'age-purchased-years', 'Case_PurchaseAgeInMonths'];
+            purchaseControlIds.forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el) el.disabled = !isPurchased;
+            });
         }
 
         if (originSel) {

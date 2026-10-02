@@ -13,7 +13,15 @@
      ViewData["AlwaysShow"]    — bool (optional, default: false) legacy's DataGridPager
                                  always displayed its page bar, even with a single page
                                  (e.g. Pick List Maintenance). Set true to keep that parity;
-                                 other callers keep the default of hiding a single-page control. *@
+                                 other callers keep the default of hiding a single-page control.
+
+   Every caller of this partial gets, unconditionally, full parity with legacy's
+   DataGridPager (e.g. UserMaintenance.aspx): First («) / Last (») links either side
+   of Previous/Next so a sliding page window can jump straight to the first or last
+   block, and a "Page X of Y" indicator above the nav so users can see how many pages
+   exist in total (the GOV.UK Design System's pagination component has no built-in
+   total-page count, so this is rendered as plain GDS body text, matching the
+   documented GDS pattern for showing result context alongside pagination). *@
 @{
     int currentPage = (int)(ViewData["CurrentPage"] ?? 1);
     int totalPages  = (int)(ViewData["TotalPages"]  ?? 1);
@@ -51,7 +59,18 @@
     }
 }
 
-<nav class="govuk-pagination" aria-label="Pagination">
+<p class="govuk-body govuk-!-margin-bottom-2 bse-pagination__count">Page @currentPage of @totalPages</p>
+
+<nav class="govuk-pagination bse-pagination" aria-label="Pagination">
+    @if (currentPage > 1)
+    {
+        <div class="govuk-pagination__prev bse-pagination__first">
+            <a class="govuk-link govuk-pagination__link" href="@PageUrl(1)" rel="first">
+                <span class="govuk-pagination__link-title" aria-hidden="true">&laquo;</span>
+                <span class="govuk-visually-hidden">First page</span>
+            </a>
+        </div>
+    }
     @if (currentPage > 1)
     {
         <div class="govuk-pagination__prev">
@@ -113,6 +132,15 @@
                 <svg class="govuk-pagination__icon govuk-pagination__icon--next" xmlns="http://www.w3.org/2000/svg" height="13" width="15" focusable="false" aria-hidden="true" viewBox="0 0 15 13">
                     <path d="m8.107-0.0078125-1.4136 1.414 4.2926 4.293h-12.986v2h12.896l-4.1855 3.9766 1.377 1.4492 6.7441-6.4062-6.7246-6.7246z" />
                 </svg>
+            </a>
+        </div>
+    }
+    @if (currentPage < totalPages)
+    {
+        <div class="govuk-pagination__next bse-pagination__last">
+            <a class="govuk-link govuk-pagination__link" href="@PageUrl(totalPages)" rel="last">
+                <span class="govuk-visually-hidden">Last page</span>
+                <span class="govuk-pagination__link-title" aria-hidden="true">&raquo;</span>
             </a>
         </div>
     }

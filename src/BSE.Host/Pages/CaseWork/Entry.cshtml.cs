@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Data.SqlClient;
 
 namespace BSE.Host.Pages.CaseWork;
 
@@ -146,7 +147,19 @@ public class CaseWorkEntryModel(
         await SaveAsync();
 
         if (!alreadySent)
-            await caseWorkService.SetMinuteSentDateAsync(Rbse, minuteType);
+        {
+            try
+            {
+                await caseWorkService.SetMinuteSentDateAsync(Rbse, minuteType);
+            }
+            catch (SqlException ex) when (ex.Message.Contains("CK_CaseWork_Annex", StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["ErrorMessage"] =
+                    $"{GetMinuteLabel(minuteType)} cannot be sent on the same day as the preceding annex. " +
+                    "Please try again tomorrow.";
+                return RedirectToPage("/CaseWork/Entry", new { rbse = Rbse });
+            }
+        }
 
         var routedType = minuteType == MinuteActiveMemo && ShowTseFields ? "AMFS" : minuteType;
         return RedirectToPage("/CaseWork/Minute", new { rbse = Rbse, type = routedType });
