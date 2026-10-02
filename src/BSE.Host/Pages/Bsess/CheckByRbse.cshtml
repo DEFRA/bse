@@ -71,11 +71,4 @@
         </tbody>
     </table>
 
-    @if (Model.HasSearched && Model.Result is null)
-    {
-        <div class="govuk-warning-text">
-            <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
-            <strong class="govuk-warning-text__text"><span class="govuk-warning-text__assistive">Warning</span>No TSESS record found for @BseFormat.FormatRbse(Model.Rbse).</strong>
-        </div>
-    }
 </div>
