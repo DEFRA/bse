@@ -749,23 +749,25 @@ public class FarmModel(
             return Page();
         }
 
+        postedRow.Normalize();
+
         draft.HerdSizes.Add(new CaseFarmDraftHerdSizeItem
         {
             ClientKey = Guid.NewGuid().ToString("N"),
             Id = null,
             HerdYear = postedRow.HerdYear!.Value,
             TotalSize = postedRow.TotalSize!.Value,
-            Lactation1Size = postedRow.Lactation1Size ?? 0,
-            Lactation2Size = postedRow.Lactation2Size ?? 0,
-            Lactation3Size = postedRow.Lactation3Size ?? 0,
-            Lactation4Size = postedRow.Lactation4Size ?? 0,
-            Lactation5Size = postedRow.Lactation5Size ?? 0,
-            Lactation6Size = postedRow.Lactation6Size ?? 0,
-            Lactation7Size = postedRow.Lactation7Size ?? 0,
-            Lactation8Size = postedRow.Lactation8Size ?? 0,
-            Lactation9Size = postedRow.Lactation9Size ?? 0,
-            Lactation10Size = postedRow.Lactation10Size ?? 0,
-            Lactation10PlusSize = postedRow.Lactation10PlusSize ?? 0
+            Lactation1Size = postedRow.Lactation1Size,
+            Lactation2Size = postedRow.Lactation2Size,
+            Lactation3Size = postedRow.Lactation3Size,
+            Lactation4Size = postedRow.Lactation4Size,
+            Lactation5Size = postedRow.Lactation5Size,
+            Lactation6Size = postedRow.Lactation6Size,
+            Lactation7Size = postedRow.Lactation7Size,
+            Lactation8Size = postedRow.Lactation8Size,
+            Lactation9Size = postedRow.Lactation9Size,
+            Lactation10Size = postedRow.Lactation10Size,
+            Lactation10PlusSize = postedRow.Lactation10PlusSize
         });
         draft.HasPendingChanges = true;
         await farmDraftState.SetAsync(draft);
@@ -804,17 +806,18 @@ public class FarmModel(
 
         item.HerdYear = postedRow.HerdYear!.Value;
         item.TotalSize = postedRow.TotalSize!.Value;
-        item.Lactation1Size = postedRow.Lactation1Size ?? 0;
-        item.Lactation2Size = postedRow.Lactation2Size ?? 0;
-        item.Lactation3Size = postedRow.Lactation3Size ?? 0;
-        item.Lactation4Size = postedRow.Lactation4Size ?? 0;
-        item.Lactation5Size = postedRow.Lactation5Size ?? 0;
-        item.Lactation6Size = postedRow.Lactation6Size ?? 0;
-        item.Lactation7Size = postedRow.Lactation7Size ?? 0;
-        item.Lactation8Size = postedRow.Lactation8Size ?? 0;
-        item.Lactation9Size = postedRow.Lactation9Size ?? 0;
-        item.Lactation10Size = postedRow.Lactation10Size ?? 0;
-        item.Lactation10PlusSize = postedRow.Lactation10PlusSize ?? 0;
+        postedRow.Normalize();
+        item.Lactation1Size = postedRow.Lactation1Size;
+        item.Lactation2Size = postedRow.Lactation2Size;
+        item.Lactation3Size = postedRow.Lactation3Size;
+        item.Lactation4Size = postedRow.Lactation4Size;
+        item.Lactation5Size = postedRow.Lactation5Size;
+        item.Lactation6Size = postedRow.Lactation6Size;
+        item.Lactation7Size = postedRow.Lactation7Size;
+        item.Lactation8Size = postedRow.Lactation8Size;
+        item.Lactation9Size = postedRow.Lactation9Size;
+        item.Lactation10Size = postedRow.Lactation10Size;
+        item.Lactation10PlusSize = postedRow.Lactation10PlusSize;
         draft.HasPendingChanges = true;
         await farmDraftState.SetAsync(draft);
 
@@ -890,7 +893,7 @@ public class FarmModel(
         yield return (nameof(row.Lactation10PlusSize), row.Lactation10PlusSize);
     }
 
-    private static IEnumerable<(string PropertyName, int Value)> LactationValues(HerdSizeFormViewModel row)
+    private static IEnumerable<(string PropertyName, int? Value)> LactationValues(HerdSizeFormViewModel row)
     {
         yield return (nameof(row.Lactation1Size), row.Lactation1Size);
         yield return (nameof(row.Lactation2Size), row.Lactation2Size);
@@ -1541,17 +1544,17 @@ public class FarmModel(
                     Farm.CPHH,
                     (short)staged.HerdYear,
                     (short)staged.TotalSize,
-                    (short)staged.Lactation1Size,
-                    (short)staged.Lactation2Size,
-                    (short)staged.Lactation3Size,
-                    (short)staged.Lactation4Size,
-                    (short)staged.Lactation5Size,
-                    (short)staged.Lactation6Size,
-                    (short)staged.Lactation7Size,
-                    (short)staged.Lactation8Size,
-                    (short)staged.Lactation9Size,
-                    (short)staged.Lactation10Size,
-                    (short)staged.Lactation10PlusSize));
+                    (short?)staged.Lactation1Size,
+                    (short?)staged.Lactation2Size,
+                    (short?)staged.Lactation3Size,
+                    (short?)staged.Lactation4Size,
+                    (short?)staged.Lactation5Size,
+                    (short?)staged.Lactation6Size,
+                    (short?)staged.Lactation7Size,
+                    (short?)staged.Lactation8Size,
+                    (short?)staged.Lactation9Size,
+                    (short?)staged.Lactation10Size,
+                    (short?)staged.Lactation10PlusSize));
                 continue;
             }
 
@@ -1572,17 +1575,17 @@ public class FarmModel(
                 staged.Id.Value,
                 (short)staged.HerdYear,
                 (short)staged.TotalSize,
-                (short)staged.Lactation1Size,
-                (short)staged.Lactation2Size,
-                (short)staged.Lactation3Size,
-                (short)staged.Lactation4Size,
-                (short)staged.Lactation5Size,
-                (short)staged.Lactation6Size,
-                (short)staged.Lactation7Size,
-                (short)staged.Lactation8Size,
-                (short)staged.Lactation9Size,
-                (short)staged.Lactation10Size,
-                (short)staged.Lactation10PlusSize,
+                (short?)staged.Lactation1Size,
+                (short?)staged.Lactation2Size,
+                (short?)staged.Lactation3Size,
+                (short?)staged.Lactation4Size,
+                (short?)staged.Lactation5Size,
+                (short?)staged.Lactation6Size,
+                (short?)staged.Lactation7Size,
+                (short?)staged.Lactation8Size,
+                (short?)staged.Lactation9Size,
+                (short?)staged.Lactation10Size,
+                (short?)staged.Lactation10PlusSize,
                 rowStamp));
         }
     }
@@ -1709,9 +1712,7 @@ public class FarmModel(
         {
             get
             {
-                var lactationTotal = Lactation1Size + Lactation2Size + Lactation3Size + Lactation4Size + Lactation5Size
-                                  + Lactation6Size + Lactation7Size + Lactation8Size + Lactation9Size + Lactation10Size
-                                  + Lactation10PlusSize;
+                var lactationTotal = this.Total();
 
                 return lactationTotal > 0 && lactationTotal != TotalSize
                     ? $"the lactation total ({lactationTotal}) does not equal the total herd size ({TotalSize})."
@@ -1723,21 +1724,21 @@ public class FarmModel(
         public bool IsUnsaved => Id is null or <= 0;
     }
 
-    public class HerdSizeFormViewModel
+    public class HerdSizeFormViewModel : ILactationSizes
     {
         public int HerdYear { get; set; }
         public int TotalSize { get; set; }
-        public int Lactation1Size { get; set; }
-        public int Lactation2Size { get; set; }
-        public int Lactation3Size { get; set; }
-        public int Lactation4Size { get; set; }
-        public int Lactation5Size { get; set; }
-        public int Lactation6Size { get; set; }
-        public int Lactation7Size { get; set; }
-        public int Lactation8Size { get; set; }
-        public int Lactation9Size { get; set; }
-        public int Lactation10Size { get; set; }
-        public int Lactation10PlusSize { get; set; }
+        public int? Lactation1Size { get; set; }
+        public int? Lactation2Size { get; set; }
+        public int? Lactation3Size { get; set; }
+        public int? Lactation4Size { get; set; }
+        public int? Lactation5Size { get; set; }
+        public int? Lactation6Size { get; set; }
+        public int? Lactation7Size { get; set; }
+        public int? Lactation8Size { get; set; }
+        public int? Lactation9Size { get; set; }
+        public int? Lactation10Size { get; set; }
+        public int? Lactation10PlusSize { get; set; }
     }
 
     /// <summary>
@@ -1745,7 +1746,7 @@ public class FarmModel(
     /// blank optional lactation inputs bind to null instead of tripping ASP.NET Core's
     /// implicit "value must not be null" error for non-nullable value types.
     /// </summary>
-    public class HerdSizeRowInput
+    public class HerdSizeRowInput : ILactationSizes
     {
         public int? HerdYear { get; set; }
         public int? TotalSize { get; set; }
