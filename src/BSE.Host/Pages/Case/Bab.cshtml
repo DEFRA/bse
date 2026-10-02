@@ -14,8 +14,6 @@
                       || !string.IsNullOrWhiteSpace(Model.Bab?.TracedAddress2)
                       || !string.IsNullOrWhiteSpace(Model.Bab?.TracedAddress3)
                       || !string.IsNullOrWhiteSpace(Model.Bab?.TracedPostcode);
-    string Desc(IEnumerable<BSE.SharedKernel.ILookupItem> opts, string? code) =>
-        opts.FirstOrDefault(o => o.Code == code)?.Description ?? code ?? "—";
     var babReadOnly = !Model.CanEditBabControls;
     var tracedReadOnly = babReadOnly || !IsPurchasedOrigin(Model.Origin);
 }

@@ -39,13 +39,13 @@ public static class RelationValidation
     /// Returns field-keyed messages; empty means valid. <paramref name="existingRelationRbses"/>
     /// excludes the row being edited so a record can be saved without changing its RBSE.
     /// </summary>
-    public static IDictionary<string, string> Validate(
+    public static Dictionary<string, string> Validate(
         Input input,
         IEnumerable<string?> existingRelationRbses,
         string? damRbse,
         string? sireRbse)
     {
-        var errors = new Dictionary<string, string>();
+        var errors = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         if (string.IsNullOrWhiteSpace(input.RelationType))
         {
@@ -73,7 +73,7 @@ public static class RelationValidation
     // ctlRelationRBSE.IsMarkedValid was checked, which defaults to true when the RBSE
     // box is left empty (lblInvalid is only shown by an explicit failed check).
     private static void ValidateRelationRbse(
-        IDictionary<string, string> errors,
+        Dictionary<string, string> errors,
         string relationRbse,
         string caseRbse,
         string? damRbse,
@@ -101,7 +101,7 @@ public static class RelationValidation
         }
     }
 
-    private static void ValidateBirthFields(IDictionary<string, string> errors, Input input)
+    private static void ValidateBirthFields(Dictionary<string, string> errors, Input input)
     {
         if (input.BirthDay is { } day && (day < 1 || day > 31))
         {

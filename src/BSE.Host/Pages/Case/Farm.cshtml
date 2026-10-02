@@ -1,4 +1,4 @@
-@page "{rbse}"
+﻿@page "{rbse}"
 @model BSE.Host.Pages.Case.FarmModel
 @{
     ViewData["Title"] = Model.Case is null ? "Case" : $"RBSE Number: {Model.Rbse}";
@@ -204,47 +204,47 @@
                 </colgroup>
                 <thead class="govuk-table__head">
                     <tr class="govuk-table__row">
-                        <th colspan="2" class="govuk-table__header case-farm-herd-table__group-left">Herd size</th>
-                        <th colspan="11" class="govuk-table__header case-farm-herd-table__group-mid">Lactation</th>
+                        <th scope="col" colspan="2" class="govuk-table__header case-farm-herd-table__group-left">Herd size</th>
+                        <th scope="col" colspan="11" class="govuk-table__header case-farm-herd-table__group-mid">Lactation</th>
                     </tr>
                     <tr class="govuk-table__row">
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="year" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("year")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("year")">Year</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="total" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("total")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("total")">Size</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac1" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac1")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac1")">1</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac2" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac2")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac2")">2</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac3" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac3")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac3")">3</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac4" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac4")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac4")">4</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac5" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac5")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac5")">5</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac6" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac6")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac6")">6</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac7" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac7")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac7")">7</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac8" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac8")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac8")">8</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac9" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac9")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac9")">9</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac10" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac10")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac10")">10</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac10p" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac10p")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac10p")">10+</a>
                         </th>
                     </tr>
@@ -451,12 +451,11 @@
 
         @if (canEditFarm)
         {
-            <div id="case-farm-unsaved-banner"
+            <output id="case-farm-unsaved-banner"
                  class="govuk-inset-text bse-unsaved-banner"
-                 role="status"
                  hidden="@(!Model.HasUnsavedChanges)">
                 <strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.
-            </div>
+            </output>
 
             <div class="govuk-button-group govuk-!-margin-bottom-4">
                 <button type="submit" asp-page-handler="SaveFarm" class="govuk-button" data-module="govuk-button">Save</button>
@@ -607,51 +606,51 @@
                 </colgroup>
                 <thead class="govuk-table__head">
                     <tr class="govuk-table__row">
-                        <th colspan="2" class="govuk-table__header case-farm-herd-table__group-left">Herd size</th>
-                        <th colspan="11" class="govuk-table__header case-farm-herd-table__group-mid">Lactation</th>
-                        <th class="govuk-table__header case-farm-herd-table__group-right">Action</th>
+                        <th scope="col" colspan="2" class="govuk-table__header case-farm-herd-table__group-left">Herd size</th>
+                        <th scope="col" colspan="11" class="govuk-table__header case-farm-herd-table__group-mid">Lactation</th>
+                        <th scope="col" class="govuk-table__header case-farm-herd-table__group-right">Action</th>
                     </tr>
                     <tr class="govuk-table__row">
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="year" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("year")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("year")">Year</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="total" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("total")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("total")">Size</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac1" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac1")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac1")">1</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac2" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac2")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac2")">2</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac3" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac3")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac3")">3</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac4" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac4")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac4")">4</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac5" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac5")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac5")">5</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac6" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac6")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac6")">6</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac7" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac7")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac7")">7</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac8" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac8")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac8")">8</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac9" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac9")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac9")">9</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac10" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac10")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac10")">10</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac10p" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac10p")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac10p")">10+</a>
                         </th>
-                        <th class="govuk-table__header">
+                        <th scope="col" class="govuk-table__header">
                             <span class="govuk-visually-hidden">Actions</span>
                         </th>
                     </tr>
@@ -818,7 +817,7 @@
 
         </fieldset>
 
-        <div aria-live="polite" role="status" class="govuk-visually-hidden" id="herd-live-region"></div>
+        <output aria-live="polite" class="govuk-visually-hidden" id="herd-live-region"></output>
 
         @if (canEditFarm)
         {
@@ -902,6 +901,8 @@
     }
 
     .bse-unsaved-banner {
+        /* <output> defaults to display:inline, which collapses govuk-inset-text's block layout. */
+        display: block;
         border-left-color: #1d70b8;
     }
 

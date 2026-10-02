@@ -875,7 +875,7 @@ public class RelationsModel(
             DamSire.HasSire = true;
     }
 
-    private IActionResult? ValidateDamSireInputs(string caseRbse)
+    private PageResult? ValidateDamSireInputs(string caseRbse)
     {
         if (!string.IsNullOrWhiteSpace(DamSire.DamRbse)
             && RbseHelper.Normalize(DamSire.DamRbse) == caseRbse)
@@ -920,7 +920,7 @@ public class RelationsModel(
                 return Page();
             }
 
-            var linkedDam = damMatches.FirstOrDefault();
+            var linkedDam = damMatches.Count > 0 ? damMatches[0] : null;
             if (linkedDam is not null)
             {
                 DamSire.HasDam = true;
@@ -946,7 +946,7 @@ public class RelationsModel(
                 return Page();
             }
 
-            var linkedSire = sireMatches.FirstOrDefault();
+            var linkedSire = sireMatches.Count > 0 ? sireMatches[0] : null;
             if (linkedSire is not null)
             {
                 DamSire.HasSire = true;
@@ -974,7 +974,7 @@ public class RelationsModel(
         {
             var damMatches = await relationsRepository.GetDamSireDetailsMatchesAsync(
                 null, null, RbseHelper.Normalize(DamSire.DamRbse), null, "F");
-            var exactDam = damMatches.FirstOrDefault(m => m.Id == DamSire.DamId) ?? damMatches.FirstOrDefault();
+            var exactDam = damMatches.FirstOrDefault(m => m.Id == DamSire.DamId) ?? (damMatches.Count > 0 ? damMatches[0] : null);
             if (exactDam?.RowStamp is { Length: > 0 })
                 DamSire.DamRowStamp = ToBase64(exactDam.RowStamp);
         }
@@ -983,13 +983,13 @@ public class RelationsModel(
         {
             var sireMatches = await relationsRepository.GetDamSireDetailsMatchesAsync(
                 null, null, RbseHelper.Normalize(DamSire.SireRbse), null, "M");
-            var exactSire = sireMatches.FirstOrDefault(m => m.Id == DamSire.SireId) ?? sireMatches.FirstOrDefault();
+            var exactSire = sireMatches.FirstOrDefault(m => m.Id == DamSire.SireId) ?? (sireMatches.Count > 0 ? sireMatches[0] : null);
             if (exactSire?.RowStamp is { Length: > 0 })
                 DamSire.SireRowStamp = ToBase64(exactSire.RowStamp);
         }
     }
 
-    private IActionResult? ValidateParentRowStampsPresent()
+    private PageResult? ValidateParentRowStampsPresent()
     {
         if (DamSire.HasDam && DamSire.DamId > 0 && string.IsNullOrWhiteSpace(DamSire.DamRowStamp))
         {
@@ -1334,7 +1334,7 @@ public class RelationsModel(
     }
 
     /// <summary>Sorts on every legacy grid column (RelationType, RBSE, Sex, Birth Date, Fate, Date Left, Eartag, Sire).</summary>
-    private IReadOnlyList<StagedRelationItem> SortStagedRelations(IReadOnlyList<StagedRelationItem> relations)
+    private List<StagedRelationItem> SortStagedRelations(IReadOnlyList<StagedRelationItem> relations)
     {
         Func<StagedRelationItem, IComparable?> keySelector = SortColumn switch
         {

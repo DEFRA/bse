@@ -1,6 +1,7 @@
 ﻿@model BSE.Host.Models.ViewModels.FarmEditViewModel
 @using BSE.Modules.ReferenceData.Models
 @{
+    var farm = Model ?? new BSE.Host.Models.ViewModels.FarmEditViewModel();
     var countyOptions      = ViewData["CountyOptions"]           as IEnumerable<BSE.SharedKernel.ILookupItem> ?? Enumerable.Empty<BSE.SharedKernel.ILookupItem>();
     var ahoOptions         = ViewData["AhoOptions"]              as IEnumerable<BSE.SharedKernel.ILookupItem> ?? Enumerable.Empty<BSE.SharedKernel.ILookupItem>();
     var herdTypeOptions    = ViewData["HerdTypeOptions"]         as IEnumerable<LuHerdType>                   ?? Enumerable.Empty<LuHerdType>();
@@ -8,7 +9,7 @@
     var authCountyOptions  = ViewData["AuthorityCountyOptions"]  as IEnumerable<BSE.SharedKernel.ILookupItem> ?? Enumerable.Empty<BSE.SharedKernel.ILookupItem>();
     var authorityOptions   = ViewData["AuthorityOptions"]        as IEnumerable<LuAuthority>                  ?? Enumerable.Empty<LuAuthority>();
     var adnsOptions        = ViewData["AdnsOptions"]             as IEnumerable<LuADNSRegion>                 ?? Enumerable.Empty<LuADNSRegion>();
-    var isNonGbFarm = !string.IsNullOrWhiteSpace(Model?.CPHH) && BSE.SharedKernel.CphhNormalizer.Normalize(Model.CPHH).StartsWith("00", StringComparison.Ordinal);
+    var isNonGbFarm = !string.IsNullOrWhiteSpace(farm.CPHH) && BSE.SharedKernel.CphhNormalizer.Normalize(farm.CPHH).StartsWith("00", StringComparison.Ordinal);
     var canEditJointControls = ViewData["CanEditJointControls"] as bool? ?? true;
     var canEditVlaControls = ViewData["CanEditVlaControls"] as bool? ?? true;
     var canEditDefraControls = ViewData["CanEditDefraControls"] as bool? ?? true;
@@ -50,7 +51,7 @@
                     <option value="">-- Select --</option>
                     @foreach (var c in countyOptions)
                     {
-                        <option value="@c.Code" selected="@(c.Code == Model.County ? "selected" : null)">@c.Description</option>
+                        <option value="@c.Code" selected="@(c.Code == farm.County ? "selected" : null)">@c.Description</option>
                     }
                 </select>
             </div>
@@ -67,7 +68,7 @@
                     <option value="">-- Select --</option>
                     @foreach (var a in ahoOptions)
                     {
-                        <option value="@a.Code" selected="@(a.Code == Model.AHO ? "selected" : null)">@a.Description</option>
+                        <option value="@a.Code" selected="@(a.Code == farm.AHO ? "selected" : null)">@a.Description</option>
                     }
                 </select>
             </div>
@@ -115,7 +116,7 @@
                     <option value="">-- Select --</option>
                     @foreach (var ac in authCountyOptions)
                     {
-                        <option value="@ac.Id" selected="@(ac.Id == Model.AuthorityCountyID ? "selected" : null)">@ac.Description</option>
+                        <option value="@ac.Id" selected="@(ac.Id == farm.AuthorityCountyID ? "selected" : null)">@ac.Description</option>
                     }
                 </select>
             </div>
@@ -132,7 +133,7 @@
                     <option value="">-- Select --</option>
                     @foreach (var a in authorityOptions)
                     {
-                        <option value="@a.Id" selected="@(a.Id == Model.AuthorityID ? "selected" : null)">@a.Name</option>
+                        <option value="@a.Id" selected="@(a.Id == farm.AuthorityID ? "selected" : null)">@a.Name</option>
                     }
                 </select>
             </div>
@@ -149,7 +150,7 @@
                     <option value="">-- Select --</option>
                     @foreach (var r in adnsOptions)
                     {
-                        <option value="@r.Id" selected="@(r.Id == Model.ADNSRegionID ? "selected" : null)">@r.Name</option>
+                        <option value="@r.Id" selected="@(r.Id == farm.ADNSRegionID ? "selected" : null)">@r.Name</option>
                     }
                 </select>
             </div>
@@ -198,7 +199,7 @@
                     <option value="">-- Select --</option>
                     @foreach (var h in herdTypeOptions)
                     {
-                        <option value="@h.Code" selected="@(h.Code == Model.HerdType ? "selected" : null)">@h.Description</option>
+                        <option value="@h.Code" selected="@(h.Code == farm.HerdType ? "selected" : null)">@h.Description</option>
                     }
                 </select>
                 @if (!canEditVlaControls)
@@ -215,7 +216,7 @@
                     <option value="">-- Select --</option>
                     @foreach (var p in pedigreeOptions)
                     {
-                        <option value="@p.Code" selected="@(p.Code == Model.PedigreeType ? "selected" : null)">@p.Description</option>
+                        <option value="@p.Code" selected="@(p.Code == farm.PedigreeType ? "selected" : null)">@p.Description</option>
                     }
                 </select>
                 @if (!canEditVlaControls)
