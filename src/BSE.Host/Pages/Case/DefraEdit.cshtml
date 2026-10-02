@@ -228,12 +228,12 @@
         <h2 class="govuk-visually-hidden">Case status</h2>
         <div class="defra-legacy-grid defra-legacy-grid--toprow">
             <div class="defra-legacy-field defra-legacy-field--inline">
-                <label class="govuk-label">Final result date</label>
-                <input type="text" class="govuk-input defra-legacy-status-input" value="@(Model.Case.FinalResultDate?.ToString("dd/MM/yyyy") ?? "")" disabled />
+                <label class="govuk-label" for="defraEditFinalResultDate">Final result date</label>
+                <input id="defraEditFinalResultDate" type="text" class="govuk-input defra-legacy-status-input" value="@(Model.Case.FinalResultDate?.ToString("dd/MM/yyyy") ?? "")" disabled />
             </div>
             <div class="defra-legacy-field defra-legacy-field--inline">
-                <label class="govuk-label">Final result</label>
-                <input type="text" class="govuk-input defra-legacy-status-input" value="@(Model.Case.FinalResult ?? "")" disabled />
+                <label class="govuk-label" for="defraEditFinalResult">Final result</label>
+                <input id="defraEditFinalResult" type="text" class="govuk-input defra-legacy-status-input" value="@(Model.Case.FinalResult ?? "")" disabled />
             </div>
         </div>
 
@@ -288,8 +288,8 @@
                 </select>
             </div>
             <div class="defra-legacy-field defra-legacy-field--inline">
-                <label class="govuk-label">DBSE</label>
-                <input type="text" class="govuk-input defra-legacy-status-input" value="@(Model.Case.Dbse ?? "")" disabled />
+                <label class="govuk-label" for="defraEditDbse">DBSE</label>
+                <input id="defraEditDbse" type="text" class="govuk-input defra-legacy-status-input" value="@(BSE.SharedKernel.RbseHelper.FormatDbse(Model.Case.Dbse) ?? "")" disabled />
             </div>
         </div>
 

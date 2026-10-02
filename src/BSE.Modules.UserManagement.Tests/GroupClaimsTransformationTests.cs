@@ -103,7 +103,7 @@ public sealed class GroupClaimsTransformationTests
     }
 
     [Fact]
-    public async Task UpnLookup_Fails_FallsBackToNtLogin_UsingLocalPart()
+    public async Task UpnLookup_Fails_DoesNotFallbackToNtLogin()
     {
         const string upn = "bob.smith@test.domain";
         var user = MakeUser(UserGroup.Admin);
@@ -114,11 +114,11 @@ public sealed class GroupClaimsTransformationTests
         var principal = AuthenticatedPrincipal(new Claim("preferred_username", upn));
         var result = await _sut.TransformAsync(principal);
 
-        result.FindFirst(ClaimsUserContext.BseGroupClaimType)!.Value
-              .Should().Be("Admin");
-        result.FindFirst(ClaimsUserContext.BseGroupIdClaimType)!.Value
-              .Should().Be(((int)UserGroup.Admin).ToString());
-        await _repo.Received(1).GetByNtLoginAsync("bob.smith");
+        result.HasClaim(c => c.Type == ClaimsUserContext.BseGroupClaimType)
+              .Should().BeFalse();
+        result.HasClaim(c => c.Type == ClaimsUserContext.BseGroupIdClaimType)
+              .Should().BeFalse();
+        await _repo.DidNotReceive().GetByNtLoginAsync(Arg.Any<string>());
     }
 
     [Fact]

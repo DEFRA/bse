@@ -1,4 +1,4 @@
-@page "{rbse}"
+﻿@page "{rbse}"
 @model BSE.Host.Pages.Case.FarmModel
 @{
     ViewData["Title"] = Model.Case is null ? "Case" : $"RBSE Number: {Model.Rbse}";
@@ -84,13 +84,17 @@
         <table class="govuk-table">
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header">CPHH</th>
-                    <th scope="col" class="govuk-table__header">Status</th>
+                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.LSort=="cphh" ? (Model.LDir=="asc" ? "ascending" : "descending") : "none")">
+                        <a class="govuk-link govuk-link--no-visited-state" href="@Model.LinkedFarmsSortUrl("cphh")">CPHH</a>
+                    </th>
+                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.LSort=="status" ? (Model.LDir=="asc" ? "ascending" : "descending") : "none")">
+                        <a class="govuk-link govuk-link--no-visited-state" href="@Model.LinkedFarmsSortUrl("status")">Status</a>
+                    </th>
                     <th scope="col" class="govuk-table__header">Action</th>
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
-                @if (!Model.StagedLinkedFarms.Any())
+                @if (!Model.SortedStagedLinkedFarms.Any())
                 {
                     <tr class="govuk-table__row">
                         <td class="govuk-table__cell" colspan="3">No linked farms recorded.</td>
@@ -114,7 +118,7 @@
                     </td>
                 </tr>
 
-                @foreach (var lf in Model.StagedLinkedFarms)
+                @foreach (var lf in Model.PagedStagedLinkedFarms)
                 {
                     var isEditingLinked = canEditFarm && Model.ReopenLinkedEditClientKey == lf.ClientKey;
                     var linkedError = isEditingLinked
@@ -175,6 +179,14 @@
             </tbody>
         </table>
 
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData)
+        {
+            ["CurrentPage"] = Model.LinkedFarmsCurrentPage,
+            ["TotalPages"] = Model.LinkedFarmsTotalPages,
+            ["PageNumberKey"] = "LPage",
+            ["Fragment"] = "linked-farms-section"
+        })
+
         @if (Model.CanEditDefraControls)
         {
             <div class="govuk-button-group govuk-!-margin-bottom-6">
@@ -192,47 +204,47 @@
                 </colgroup>
                 <thead class="govuk-table__head">
                     <tr class="govuk-table__row">
-                        <th colspan="2" class="govuk-table__header case-farm-herd-table__group-left">Herd size</th>
-                        <th colspan="11" class="govuk-table__header case-farm-herd-table__group-mid">Lactation</th>
+                        <th scope="col" colspan="2" class="govuk-table__header case-farm-herd-table__group-left">Herd size</th>
+                        <th scope="col" colspan="11" class="govuk-table__header case-farm-herd-table__group-mid">Lactation</th>
                     </tr>
                     <tr class="govuk-table__row">
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="year" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("year")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("year")">Year</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="total" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("total")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("total")">Size</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac1" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac1")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac1")">1</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac2" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac2")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac2")">2</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac3" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac3")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac3")">3</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac4" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac4")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac4")">4</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac5" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac5")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac5")">5</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac6" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac6")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac6")">6</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac7" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac7")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac7")">7</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac8" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac8")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac8")">8</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac9" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac9")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac9")">9</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac10" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac10")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac10")">10</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac10p" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac10p")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac10p")">10+</a>
                         </th>
                     </tr>
@@ -245,7 +257,7 @@
                         </tr>
                     }
 
-                    @foreach (var h in Model.SortedStagedHerdSizes)
+                    @foreach (var h in Model.PagedSortedStagedHerdSizes)
                     {
                         var yearRepeated = Model.SortedStagedHerdSizes.Count(x => x.HerdYear == h.HerdYear) > 1;
                         <tr class="govuk-table__row bse-herd-row @(h.IsUnsaved ? "bse-herd-row--unsaved" : "")" data-client-key="@h.ClientKey">
@@ -288,6 +300,14 @@
                     }
                 </tbody>
         </table>
+
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData)
+        {
+            ["CurrentPage"] = Model.HerdSizesCurrentPage,
+            ["TotalPages"] = Model.HerdSizesTotalPages,
+            ["PageNumberKey"] = "HPage",
+            ["Fragment"] = "herd-size-section"
+        })
 
         </fieldset>
 
@@ -431,12 +451,11 @@
 
         @if (canEditFarm)
         {
-            <div id="case-farm-unsaved-banner"
+            <output id="case-farm-unsaved-banner"
                  class="govuk-inset-text bse-unsaved-banner"
-                 role="status"
                  hidden="@(!Model.HasUnsavedChanges)">
                 <strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.
-            </div>
+            </output>
 
             <div class="govuk-button-group govuk-!-margin-bottom-4">
                 <button type="submit" asp-page-handler="SaveFarm" class="govuk-button" data-module="govuk-button">Save</button>
@@ -466,13 +485,17 @@
         <table class="govuk-table">
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header">CPHH</th>
-                    <th scope="col" class="govuk-table__header">Status</th>
+                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.LSort=="cphh" ? (Model.LDir=="asc" ? "ascending" : "descending") : "none")">
+                        <a class="govuk-link govuk-link--no-visited-state" href="@Model.LinkedFarmsSortUrl("cphh")">CPHH</a>
+                    </th>
+                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.LSort=="status" ? (Model.LDir=="asc" ? "ascending" : "descending") : "none")">
+                        <a class="govuk-link govuk-link--no-visited-state" href="@Model.LinkedFarmsSortUrl("status")">Status</a>
+                    </th>
                     <th scope="col" class="govuk-table__header">Action</th>
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
-                @if (!Model.StagedLinkedFarms.Any())
+                @if (!Model.SortedStagedLinkedFarms.Any())
                 {
                     <tr class="govuk-table__row">
                         <td class="govuk-table__cell" colspan="3">No linked farms recorded.</td>
@@ -496,7 +519,7 @@
                     </td>
                 </tr>
 
-                @foreach (var lf in Model.StagedLinkedFarms)
+                @foreach (var lf in Model.PagedStagedLinkedFarms)
                 {
                     var isEditingLinked = Model.ReopenLinkedEditClientKey == lf.ClientKey;
                     var linkedError = isEditingLinked
@@ -557,6 +580,14 @@
             </tbody>
         </table>
 
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData)
+        {
+            ["CurrentPage"] = Model.LinkedFarmsCurrentPage,
+            ["TotalPages"] = Model.LinkedFarmsTotalPages,
+            ["PageNumberKey"] = "LPage",
+            ["Fragment"] = "linked-farms-section"
+        })
+
         @if (Model.CanEditDefraControls)
         {
             <div class="govuk-button-group govuk-!-margin-bottom-6">
@@ -575,51 +606,51 @@
                 </colgroup>
                 <thead class="govuk-table__head">
                     <tr class="govuk-table__row">
-                        <th colspan="2" class="govuk-table__header case-farm-herd-table__group-left">Herd size</th>
-                        <th colspan="11" class="govuk-table__header case-farm-herd-table__group-mid">Lactation</th>
-                        <th class="govuk-table__header case-farm-herd-table__group-right">Action</th>
+                        <th scope="col" colspan="2" class="govuk-table__header case-farm-herd-table__group-left">Herd size</th>
+                        <th scope="col" colspan="11" class="govuk-table__header case-farm-herd-table__group-mid">Lactation</th>
+                        <th scope="col" class="govuk-table__header case-farm-herd-table__group-right">Action</th>
                     </tr>
                     <tr class="govuk-table__row">
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="year" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("year")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("year")">Year</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="total" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("total")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("total")">Size</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac1" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac1")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac1")">1</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac2" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac2")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac2")">2</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac3" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac3")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac3")">3</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac4" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac4")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac4")">4</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac5" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac5")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac5")">5</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac6" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac6")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac6")">6</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac7" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac7")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac7")">7</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac8" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac8")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac8")">8</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac9" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac9")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac9")">9</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac10" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac10")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac10")">10</a>
                         </th>
-                        <th class="govuk-table__header" aria-sort="@(Model.HSort=="lac10p" ? (Model.HDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac10p")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac10p")">10+</a>
                         </th>
-                        <th class="govuk-table__header">
+                        <th scope="col" class="govuk-table__header">
                             <span class="govuk-visually-hidden">Actions</span>
                         </th>
                     </tr>
@@ -632,7 +663,7 @@
                         </tr>
                     }
 
-                    @foreach (var h in Model.SortedStagedHerdSizes)
+                    @foreach (var h in Model.PagedSortedStagedHerdSizes)
                     {
                         var isEditing = canEditFarm && Model.ReopenEditClientKey == h.ClientKey;
                         var editRow = isEditing ? Model.EditHerdRow : null;
@@ -737,23 +768,23 @@
                     <tr id="add-herd-row-inline" class="govuk-table__row bse-herd-row--unsaved" hidden="@(!Model.ShowAddHerdRow)">
                         <td class="govuk-table__cell">
                             <label class="govuk-visually-hidden" for="new-herd-year">Year</label>
-                            <input id="new-herd-year" name="NewHerdRow.HerdYear" type="number" min="1975" max="@DateTime.UtcNow.Year" value="@(Model.NewHerdRow.HerdYear == 0 ? "" : Model.NewHerdRow.HerdYear)" class="govuk-input govuk-input--width-4" />
+                            <input id="new-herd-year" name="NewHerdRow.HerdYear" type="number" min="1975" max="@DateTime.UtcNow.Year" value="@BSE.SharedKernel.InputValueFormatter.ToInputValue(Model.NewHerdRow.HerdYear)" class="govuk-input govuk-input--width-4" />
                         </td>
                         <td class="govuk-table__cell">
                             <label class="govuk-visually-hidden" for="new-herd-total">Size</label>
-                            <input id="new-herd-total" name="NewHerdRow.TotalSize" type="number" min="1" max="2000" value="@(Model.NewHerdRow.TotalSize == 0 ? "" : Model.NewHerdRow.TotalSize)" class="govuk-input govuk-input--width-4" />
+                            <input id="new-herd-total" name="NewHerdRow.TotalSize" type="number" min="1" max="2000" value="@BSE.SharedKernel.InputValueFormatter.ToInputValue(Model.NewHerdRow.TotalSize)" class="govuk-input govuk-input--width-4" />
                         </td>
                         @for (var lac = 1; lac <= 10; lac++)
                         {
                             var lacValue = (int)(typeof(BSE.Host.Pages.Case.FarmModel.HerdSizeRowInput).GetProperty($"Lactation{lac}Size")!.GetValue(Model.NewHerdRow) ?? 0);
                             <td class="govuk-table__cell">
                                 <label class="govuk-visually-hidden" for="new-herd-lac@(lac)">Lactation @lac</label>
-                                <input id="new-herd-lac@(lac)" name="NewHerdRow.Lactation@(lac)Size" type="number" min="0" max="999" value="@(lacValue == 0 ? "" : lacValue)" class="govuk-input govuk-input--width-3" />
+                                <input id="new-herd-lac@(lac)" name="NewHerdRow.Lactation@(lac)Size" type="number" min="0" max="999" value="@BSE.SharedKernel.InputValueFormatter.ToInputValue(lacValue)" class="govuk-input govuk-input--width-3" />
                             </td>
                         }
                         <td class="govuk-table__cell">
                             <label class="govuk-visually-hidden" for="new-herd-lac10p">Lactation 10+</label>
-                            <input id="new-herd-lac10p" name="NewHerdRow.Lactation10PlusSize" type="number" min="0" max="999" value="@(Model.NewHerdRow.Lactation10PlusSize == 0 ? "" : Model.NewHerdRow.Lactation10PlusSize)" class="govuk-input govuk-input--width-3" />
+                            <input id="new-herd-lac10p" name="NewHerdRow.Lactation10PlusSize" type="number" min="0" max="999" value="@BSE.SharedKernel.InputValueFormatter.ToInputValue(Model.NewHerdRow.Lactation10PlusSize)" class="govuk-input govuk-input--width-3" />
                         </td>
                         <td class="govuk-table__cell">
                             <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
@@ -769,6 +800,14 @@
                 </tbody>
         </table>
 
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData)
+        {
+            ["CurrentPage"] = Model.HerdSizesCurrentPage,
+            ["TotalPages"] = Model.HerdSizesTotalPages,
+            ["PageNumberKey"] = "HPage",
+            ["Fragment"] = "herd-size-section"
+        })
+
         @if (canEditFarm)
         {
             <div class="govuk-button-group govuk-!-margin-bottom-6">
@@ -778,7 +817,7 @@
 
         </fieldset>
 
-        <div aria-live="polite" role="status" class="govuk-visually-hidden" id="herd-live-region"></div>
+        <output aria-live="polite" class="govuk-visually-hidden" id="herd-live-region"></output>
 
         @if (canEditFarm)
         {
@@ -862,6 +901,8 @@
     }
 
     .bse-unsaved-banner {
+        /* <output> defaults to display:inline, which collapses govuk-inset-text's block layout. */
+        display: block;
         border-left-color: #1d70b8;
     }
 

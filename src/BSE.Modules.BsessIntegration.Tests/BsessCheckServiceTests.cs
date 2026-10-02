@@ -42,6 +42,44 @@ public class BsessCheckServiceTests
     }
 
     [Fact]
+    public void HasAnyValues_WhenBseValuesPresent_ReturnsTrue()
+    {
+        var hasAnyValues = BsessCheckByRbseResult.HasAnyValues(
+            notificationDate: null,
+            bsessEartag: null,
+            bsessBirthDate: null,
+            testGroupName: null,
+            bsessFinalResult: null,
+            barcode: null,
+            formADate: "10/03/2019",
+            bseEartag: "UK520276700022",
+            bseBirthDate: "03/10/2014",
+            survey: "FS",
+            bseFinalResult: "Positive");
+
+        hasAnyValues.Should().BeTrue();
+    }
+
+    [Fact]
+    public void HasAnyValues_WhenAllValuesBlank_ReturnsFalse()
+    {
+        var hasAnyValues = BsessCheckByRbseResult.HasAnyValues(
+            notificationDate: null,
+            bsessEartag: null,
+            bsessBirthDate: null,
+            testGroupName: null,
+            bsessFinalResult: null,
+            barcode: null,
+            formADate: null,
+            bseEartag: null,
+            bseBirthDate: null,
+            survey: null,
+            bseFinalResult: null);
+
+        hasAnyValues.Should().BeFalse();
+    }
+
+    [Fact]
     public async Task GetCheckByDateAsync_DelegatesToRepository()
     {
         var start = new DateTime(2024, 1, 1);

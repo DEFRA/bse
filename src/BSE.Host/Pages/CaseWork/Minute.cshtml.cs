@@ -15,15 +15,21 @@ public class MinuteModel(ICaseWorkService caseWorkService) : PageModel
     private const string SessionVendor = "CaseWork.OutstandingForms.Vendor";
     private const string SessionSummarySheet = "CaseWork.OutstandingForms.SummarySheet";
     private const string SessionAllPaperwork = "CaseWork.OutstandingForms.AllPaperwork";
+    private const string MinuteActiveMemo = "ActiveMemo";
+    private const string MinuteAmfs = "AMFS";
+    private const string MinuteAnnexA = "AnnexA";
+    private const string MinuteAnnexB = "AnnexB";
+    private const string MinuteAnnexC = "AnnexC";
+    private const string MinuteAnnexD = "AnnexD";
 
     private static readonly Dictionary<string, string> Labels = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["ActiveMemo"] = "Active Memo",
-        ["AMFS"] = "Active Memo (Fallen Stock)",
-        ["AnnexA"] = "Annex A",
-        ["AnnexB"] = "Annex B",
-        ["AnnexC"] = "Annex C",
-        ["AnnexD"] = "Annex D"
+        [MinuteActiveMemo] = "Active Memo",
+        [MinuteAmfs] = "Active Memo",
+        [MinuteAnnexA] = "Annex A",
+        [MinuteAnnexB] = "Annex B",
+        [MinuteAnnexC] = "Annex C",
+        [MinuteAnnexD] = "Annex D"
     };
 
     [BindProperty(SupportsGet = true)] public string Rbse { get; set; } = string.Empty;
@@ -153,27 +159,27 @@ public class MinuteModel(ICaseWorkService caseWorkService) : PageModel
         var m = (minuteType ?? string.Empty).Trim();
         return m switch
         {
-            "ActiveMemoFS" => "AMFS",
-            "Annex C" => "AnnexC",
-            "Annex D" => "AnnexD",
+            "ActiveMemoFS" => MinuteAmfs,
+            "Annex C" => MinuteAnnexC,
+            "Annex D" => MinuteAnnexD,
             _ => m
         };
     }
 
     private static bool IsSupportedMinuteType(string minuteType) =>
-        minuteType is "ActiveMemo" or "AMFS" or "AnnexA" or "AnnexB" or "AnnexC" or "AnnexD";
+        minuteType is MinuteActiveMemo or MinuteAmfs or MinuteAnnexA or MinuteAnnexB or MinuteAnnexC or MinuteAnnexD;
 
     private static bool IsAnnexCorD(string minuteType) =>
-        string.Equals(minuteType, "AnnexC", StringComparison.OrdinalIgnoreCase) ||
-        string.Equals(minuteType, "AnnexD", StringComparison.OrdinalIgnoreCase);
+        string.Equals(minuteType, MinuteAnnexC, StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(minuteType, MinuteAnnexD, StringComparison.OrdinalIgnoreCase);
 
     private static DateTime? GetMinuteDate(MinuteDetailsRecord d, string type) => type switch
     {
-        "ActiveMemo" or "AMFS" => d.ActiveMemoDate,
-        "AnnexA" => d.AnnexADate,
-        "AnnexB" => d.AnnexBDate,
-        "AnnexC" => d.AnnexCDate,
-        "AnnexD" => d.AnnexDDate,
+        MinuteActiveMemo or MinuteAmfs => d.ActiveMemoDate,
+        MinuteAnnexA => d.AnnexADate,
+        MinuteAnnexB => d.AnnexBDate,
+        MinuteAnnexC => d.AnnexCDate,
+        MinuteAnnexD => d.AnnexDDate,
         _ => null
     };
 }

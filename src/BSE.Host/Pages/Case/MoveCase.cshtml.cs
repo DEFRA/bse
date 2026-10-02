@@ -143,6 +143,10 @@ public class MoveCaseModel(
             return;
         }
 
+        // Mirrors legacy RBSE.ascx auto-padding on postback: redisplay the short form
+        // entered (e.g. "16/01") as the full zero-padded value.
+        Rbse = RbseHelper.Format(rbse) ?? rbse;
+
         try
         {
             CaseRecord = await caseService.GetCaseAsync(rbse);

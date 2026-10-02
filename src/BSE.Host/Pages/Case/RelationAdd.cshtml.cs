@@ -54,6 +54,11 @@ public class RelationAddModel(
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
         var details = await relationsRepository.GetRelationsDetailsByRbseAsync(caseRbse);
 
+        // Mirrors legacy RBSE.ascx auto-padding on postback: redisplay the short form
+        // entered (e.g. "16/01") as the full zero-padded value.
+        RelationRbse = RbseHelper.Format(RbseHelper.ParseToRaw(RelationRbse));
+        ModelState.Remove(nameof(RelationRbse));
+
         FieldErrors = RelationValidation.Validate(
             new RelationValidation.Input(
                 caseRbse, RelationRbse, RelationType, Sex,
@@ -68,7 +73,7 @@ public class RelationAddModel(
             // Legacy ctlRelationRBSE_RBSEChanged: once a relation RBSE is supplied, Sex, Fate,
             // Eartag, birth date, left date and Sire are always taken live from that case —
             // the corresponding form fields are disabled there and must not be trusted here.
-            var normalizedRbse = RbseHelper.Normalize(RelationRbse);
+            var normalizedRbse = RbseHelper.ParseToRaw(RelationRbse);
             if (normalizedRbse.Length > 0)
             {
                 var related = await relationsRepository.GetRelationDetailsOfRelatedCaseAsync(normalizedRbse);
@@ -86,7 +91,7 @@ public class RelationAddModel(
                     BirthDay = related.BirthDay;
                     BirthMonth = related.BirthMonth;
                     BirthYear = related.BirthYear;
-                    LeftDate = DateTime.TryParse(related.LeftDate, out var leftDate) ? leftDate : null;
+                    LeftDate = DateTime.TryParse(related.LeftDate, System.Globalization.CultureInfo.InvariantCulture, out var leftDate) ? leftDate : null;
                     Sire = related.Name;
                 }
             }
@@ -105,7 +110,7 @@ public class RelationAddModel(
         var command = new AddCaseRelationCommand(
             caseRbse,
             RelationType!,
-            NullIfBlank(RbseHelper.Normalize(RelationRbse)),
+            NullIfBlank(RbseHelper.ParseToRaw(RelationRbse)),
             NullIfBlank(Sex),
             ToByte(BirthDay),
             ToByte(BirthMonth),

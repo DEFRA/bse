@@ -60,11 +60,11 @@ public class FinalResultEntryModel(
 
     /// <summary>Legacy allocated the final result date automatically; it is never keyed in.</summary>
     public DateTime? DisplayFinalResultDate =>
-        Result?.FinalResult is null ? DateTime.Today : Result?.FinalResultDate;
+        Result?.FinalResult is null ? DateTime.Today : Result.FinalResultDate;
 
     /// <summary>Legacy showed "TBC" until the stored procedure allocated a DBSE for a positive.</summary>
     public string DisplayDbse =>
-        Result?.FinalResult is null ? "TBC" : RbseHelper.FormatDbse(Result?.Dbse) ?? "TBC";
+        Result?.FinalResult is null ? "TBC" : RbseHelper.FormatDbse(Result.Dbse) ?? "TBC";
 
     public bool HasFinalResult => !string.IsNullOrWhiteSpace(Result?.FinalResult);
 
@@ -189,6 +189,10 @@ public class FinalResultEntryModel(
             RbseError = RbseRequiredMessage;
             return;
         }
+
+        // Mirrors legacy RBSE.ascx auto-padding on postback: redisplay the short form
+        // entered (e.g. "16/01") as the full zero-padded value.
+        Rbse = rbse;
 
         try
         {

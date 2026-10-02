@@ -25,14 +25,14 @@ public class RelatedAnimalsModel : PageModel
 
     [BindProperty(SupportsGet = true)]
     // Legacy searched by RBSE prefix (LIKE @RBSE + '%'), so a partial value such as "01" is valid.
-    [System.ComponentModel.DataAnnotations.RegularExpression(@"^(\d{2}(/)?(\d{0,2}(/)?\d{0,5})?)?$", ErrorMessage = "Enter RBSE as digits in the format NN/NN/NNNNN, or a shorter prefix such as the first 2 digits.")]
+    [System.ComponentModel.DataAnnotations.RegularExpression(@"^([0-9]{0,2}/?[0-9]{0,2}/[0-9]{0,5}|[0-9]{0,9})$", ErrorMessage = "Enter RBSE as digits in the format NN/NN/NNNNN, or a shorter prefix such as the first 2 digits.")]
     public string? Rbse { get; set; }
 
     [BindProperty(SupportsGet = true)] public string? Name { get; set; }
     [BindProperty(SupportsGet = true)] public string? Eartag { get; set; }
 
     [BindProperty(SupportsGet = true)]
-    [System.ComponentModel.DataAnnotations.RegularExpression(@"^(\d{2}(/)?(\d{0,2}(/)?\d{0,5})?)?$", ErrorMessage = "Enter RBSE as digits in the format NN/NN/NNNNN, or a shorter prefix such as the first 2 digits.")]
+    [System.ComponentModel.DataAnnotations.RegularExpression(@"^([0-9]{0,2}/?[0-9]{0,2}/[0-9]{0,5}|[0-9]{0,9})$", ErrorMessage = "Enter RBSE as digits in the format NN/NN/NNNNN, or a shorter prefix such as the first 2 digits.")]
     public string? RelationRbse { get; set; }
 
     [BindProperty(SupportsGet = true)] public string? RelationType { get; set; }
@@ -89,8 +89,17 @@ public class RelatedAnimalsModel : PageModel
 
         if (HasAnyFilter())
         {
+            // Mirrors legacy RBSE.ascx auto-padding on postback: a short form like "16/01"
+            // becomes the full zero-padded value before being used as the search prefix.
+            var rawRbse = RbseHelper.ParseToRaw(Rbse);
+            var rawRelationRbse = RbseHelper.ParseToRaw(RelationRbse);
+            Rbse = RbseHelper.Format(rawRbse);
+            RelationRbse = RbseHelper.Format(rawRelationRbse);
+            ModelState.Remove(nameof(Rbse));
+            ModelState.Remove(nameof(RelationRbse));
+
             var results = await _search.GetRelatedAnimalsAsync(
-                (Rbse ?? "").Replace("/", ""), Name ?? "", Eartag ?? "", (RelationRbse ?? "").Replace("/", ""), RelationType ?? "");
+                rawRbse, Name ?? "", Eartag ?? "", rawRelationRbse, RelationType ?? "");
             Results = results.ToList().AsReadOnly();
             HasSearched = true;
             if (PageNumber < 1) PageNumber = 1;
@@ -106,7 +115,7 @@ public class RelatedAnimalsModel : PageModel
     {
         if (!HasAnyFilter()) return RedirectToPage();
         var rows = await _search.GetRelatedAnimalsAsync(
-            (Rbse ?? "").Replace("/", ""), Name ?? "", Eartag ?? "", (RelationRbse ?? "").Replace("/", ""), RelationType ?? "");
+            RbseHelper.ParseToRaw(Rbse), Name ?? "", Eartag ?? "", RbseHelper.ParseToRaw(RelationRbse), RelationType ?? "");
 
         using var wb = new XLWorkbook();
         var ws = wb.Worksheets.Add("Results");

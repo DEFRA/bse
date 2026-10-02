@@ -63,9 +63,9 @@ public sealed class UserManagementIntegrationTests : IClassFixture<UserManagemen
     }
 
     [Fact]
-    public async Task AuthenticatedUser_NtLoginFallback_ResolvesGroup()
+    public async Task AuthenticatedUser_EmailOnlyLookup_NoNtLoginFallback()
     {
-        // Arrange: UPN lookup fails, NTLogin fallback succeeds for DevBypass identity.
+        // Arrange: email lookup fails and no NTLogin fallback is used.
         const string upn = "testuser@placeholder.domain";
         const string ntLogin = "testuser";
         var user = new User(2, ntLogin, null, "Bob Legacy", null, true, (int)UserGroup.ReadOnly, UserGroup.ReadOnly,
@@ -82,7 +82,10 @@ public sealed class UserManagementIntegrationTests : IClassFixture<UserManagemen
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadAsStringAsync();
-        body.Should().Be("DEFRA Viewer");
+        body.ToLowerInvariant().Should().Contain("not authorized");
+
+        await _factory.MockUserRepository.Received().GetByEmailAsync(upn);
+        await _factory.MockUserRepository.DidNotReceive().GetByNtLoginAsync(Arg.Any<string>());
     }
 }
 
@@ -103,7 +106,7 @@ public sealed class UserManagementWebFactory : WebApplicationFactory<Program>
     {
         builder.UseSetting("Authentication:BypassEnabled", "false");
         builder.UseSetting("Authentication:UseWindowsIdentity", "false");
-        builder.UseSetting("Authentication:DevUserNtLogin", "testuser@placeholder.domain");
+        builder.UseSetting("Authentication:DevUserEmail", "testuser@placeholder.domain");
 
         builder.ConfigureTestServices(services =>
         {

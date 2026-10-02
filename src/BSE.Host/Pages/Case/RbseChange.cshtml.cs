@@ -72,6 +72,10 @@ public class RbseChangeModel(
         var oldRbse = RbseHelper.ParseToRaw(OldRbse);
         var newRbse = RbseHelper.ParseToRaw(NewRbse);
 
+        // Mirrors legacy RBSE.ascx auto-padding on postback: redisplay the short form
+        // entered (e.g. "16/01") as the full zero-padded value.
+        NewRbse = RbseHelper.Format(newRbse) ?? newRbse;
+
         if (newRbse.Length == 0)
         {
             NewRbseError = NewRbseRequiredMessage;
@@ -136,13 +140,18 @@ public class RbseChangeModel(
             return;
         }
 
+        // Mirrors legacy RBSE.ascx auto-padding on postback: redisplay the short form
+        // entered (e.g. "16/01") as the full zero-padded value.
+        OldRbse = RbseHelper.Format(rbse) ?? rbse;
+
         try
         {
             Case = await caseService.GetCaseAsync(rbse);
             if (Case is null)
             {
-                logger.LogInformation(
-                    "No case found for RBSE change lookup ({Length} characters supplied)", rbse.Length);
+                if (logger.IsEnabled(LogLevel.Information))
+                    logger.LogInformation(
+                        "No case found for RBSE change lookup ({Length} characters supplied)", rbse.Length);
                 OldRbseError = CaseNotFoundMessage;
                 return;
             }

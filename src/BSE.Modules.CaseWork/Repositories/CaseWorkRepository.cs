@@ -17,8 +17,11 @@ public sealed class CaseWorkRepository : DapperRepository, ICaseWorkRepository
     public Task<CaseWorkEntryRecord?> GetEntryByRbseAsync(string rbse)
         => QuerySingleOrDefaultAsync<CaseWorkEntryRecord>("GetCaseWorkEntryByRBSE", new { RBSE = rbse });
 
-    public Task<MinuteDetailsRecord?> GetMinuteDetailsAsync(string rbse, string minuteType)
-        => QuerySingleOrDefaultAsync<MinuteDetailsRecord>("GetMinuteDetails", new { RBSE = rbse, MinuteType = minuteType });
+    public async Task<MinuteDetailsRecord?> GetMinuteDetailsAsync(string rbse, string minuteType)
+    {
+        var rows = await QueryAsync<MinuteDetailsRecord>("GetMinuteDetails", new { RBSE = rbse, MinuteType = minuteType });
+        return rows.FirstOrDefault();
+    }
 
     // ── Updates ────────────────────────────────────────────────────────────────
 

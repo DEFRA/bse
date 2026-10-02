@@ -28,7 +28,6 @@ public class RelationsModel(
     IAnimalRelationsRepository relationsRepository,
     IPedigreeRepository pedigreeRepository,
     ICaseService caseService,
-    IFeedRepository feedRepository,
     ILookupDataService lookups,
     IBatchRepository batchRepository,
     ICaseRelationsDraftStateService relationsDraftState,
@@ -41,6 +40,10 @@ public class RelationsModel(
     public const string AlreadyARelation = "This RBSE is already a twin, sister or offspring";
     public const string DamNotFound = "This RBSE does not exist or is not a female animal";
     public const string SireNotFound = "This RBSE does not exist or is not a male animal";
+    private const string DataEntryRole = "DataEntry";
+    private const string VlaAccessRole = "VLAAccess";
+    private const string SuccessKey = "Success";
+    private const string RelationsWarningKey = "RelationsWarning";
 
     [BindProperty(SupportsGet = true)]
     public string Rbse { get; set; } = string.Empty;
@@ -141,7 +144,7 @@ public class RelationsModel(
     /// <summary>Legacy btnSireLookUp_Click.</summary>
     public async Task<IActionResult> OnPostLookUpSireAsync()
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         await LoadAsync();
@@ -151,28 +154,20 @@ public class RelationsModel(
     }
 
     /// <summary>Legacy btnSave_Click (Dam/Sire section): persists whatever is currently populated.</summary>
-    public async Task<IActionResult> OnPostSaveDamSireAsync()
-    {
-        if (!User.IsInRole("DataEntry"))
-            return Forbid();
-        await LoadAsync();
-        var draft = await LoadOrInitializeRelationsDraftAsync();
-        draft.HasPendingChanges = true;
-        await relationsDraftState.SetAsync(draft);
-        TempData.Remove("Success");
-        return RedirectToPage(new { rbse = Rbse });
-    }
+    public async Task<IActionResult> OnPostSaveDamSireAsync() => await MarkDraftPendingAndRedirectAsync();
 
-    public async Task<IActionResult> OnPostSaveCaseHerdbookAsync()
+    public async Task<IActionResult> OnPostSaveCaseHerdbookAsync() => await MarkDraftPendingAndRedirectAsync();
+
+    private async Task<IActionResult> MarkDraftPendingAndRedirectAsync()
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole(DataEntryRole))
             return Forbid();
 
         await LoadAsync();
         var draft = await LoadOrInitializeRelationsDraftAsync();
         draft.HasPendingChanges = true;
         await relationsDraftState.SetAsync(draft);
-        TempData.Remove("Success");
+        TempData.Remove(SuccessKey);
         return RedirectToPage(new { rbse = Rbse });
     }
 
@@ -186,7 +181,7 @@ public class RelationsModel(
     /// <summary>Legacy RemoveDam: disassociates the dam without touching the sire.</summary>
     public async Task<IActionResult> OnPostRemoveDamAsync()
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole(DataEntryRole))
             return Forbid();
         await LoadAsync();
         var draft = await LoadOrInitializeRelationsDraftAsync();
@@ -196,7 +191,7 @@ public class RelationsModel(
         draft.HasPendingChanges = true;
         await relationsDraftState.SetAsync(draft);
 
-        TempData.Remove("Success");
+        TempData.Remove(SuccessKey);
         TempData.Remove(PendingDamSireKeys.Dam);
         return RedirectToPage(new { rbse = Rbse });
     }
@@ -204,7 +199,7 @@ public class RelationsModel(
     /// <summary>Legacy RemoveSire: disassociates the sire without touching the dam.</summary>
     public async Task<IActionResult> OnPostRemoveSireAsync()
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
         await LoadAsync();
         var draft = await LoadOrInitializeRelationsDraftAsync();
@@ -214,7 +209,7 @@ public class RelationsModel(
         draft.HasPendingChanges = true;
         await relationsDraftState.SetAsync(draft);
 
-        TempData.Remove("Success");
+        TempData.Remove(SuccessKey);
         TempData.Remove(PendingDamSireKeys.Sire);
         return RedirectToPage(new { rbse = Rbse });
     }
@@ -222,31 +217,17 @@ public class RelationsModel(
     private async Task LookUpAsync(bool isDam)
     {
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
-        var searchRbse = RbseHelper.Normalize(isDam ? DamSire.DamSearchRbse : DamSire.SireSearchRbse);
+        // Mirrors legacy RBSE.ascx auto-padding on postback: a short form like "16/01"
+        // becomes the full zero-padded value before being used to look up the dam/sire.
+        var searchRbse = RbseHelper.ParseToRaw(isDam ? DamSire.DamSearchRbse : DamSire.SireSearchRbse);
+        if (isDam) DamSire.DamSearchRbse = RbseHelper.Format(searchRbse); else DamSire.SireSearchRbse = RbseHelper.Format(searchRbse);
+        ModelState.Remove(isDam ? "DamSire.DamSearchRbse" : "DamSire.SireSearchRbse");
         var searchEartag = isDam ? DamSire.DamSearchEartag : DamSire.SireSearchEartag;
         var searchName = isDam ? DamSire.DamSearchName : DamSire.SireSearchName;
         var searchHerdbook = isDam ? DamSire.DamSearchHerdbook : DamSire.SireSearchHerdbook;
 
-        if (searchRbse.Length > 0)
-        {
-            if (searchRbse == caseRbse)
-            {
-                SetError(isDam, SameAsCaseRbse);
-                return;
-            }
-
-            var otherParentRbse = isDam ? Details?.Sire?.Rbse : Details?.Dam?.Rbse;
-            // Checked against the staged relations list (not just the DB-persisted one) so a
-            // relation added but not yet saved is still caught — matches legacy's RBSEIsRelation,
-            // which checked the session-held working table rather than the database.
-            var alreadyRelation = searchRbse == RbseHelper.Normalize(otherParentRbse)
-                || _stagedRelations.Any(r => RbseHelper.Normalize(r.RelationRbse) == searchRbse);
-            if (alreadyRelation)
-            {
-                SetError(isDam, AlreadyARelation);
-                return;
-            }
-        }
+        if (searchRbse.Length > 0 && IsSearchRbseRejected(isDam, searchRbse, caseRbse))
+            return;
 
         // Legacy navigation behavior: if RBSE is not supplied, open PickSireDam.aspx
         // (even when exactly one candidate exists) rather than auto-selecting.
@@ -277,6 +258,30 @@ public class RelationsModel(
         }
     }
 
+    /// <summary>Returns true (and sets the field error) if the searched RBSE cannot be used as a parent.</summary>
+    private bool IsSearchRbseRejected(bool isDam, string searchRbse, string caseRbse)
+    {
+        if (searchRbse == caseRbse)
+        {
+            SetError(isDam, SameAsCaseRbse);
+            return true;
+        }
+
+        var otherParentRbse = isDam ? Details?.Sire?.Rbse : Details?.Dam?.Rbse;
+        // Checked against the staged relations list (not just the DB-persisted one) so a
+        // relation added but not yet saved is still caught — matches legacy's RBSEIsRelation,
+        // which checked the session-held working table rather than the database.
+        var alreadyRelation = searchRbse == RbseHelper.Normalize(otherParentRbse)
+            || _stagedRelations.Any(r => RbseHelper.Normalize(r.RelationRbse) == searchRbse);
+        if (alreadyRelation)
+        {
+            SetError(isDam, AlreadyARelation);
+            return true;
+        }
+
+        return false;
+    }
+
     private bool DamShouldOpenPicker { get; set; }
     private bool SireShouldOpenPicker { get; set; }
     private bool RemoveDamPending { get; set; }
@@ -290,7 +295,7 @@ public class RelationsModel(
             var eartag = isDam ? DamSire.DamSearchEartag : DamSire.SireSearchEartag;
             var name = isDam ? DamSire.DamSearchName : DamSire.SireSearchName;
             var herdbook = isDam ? DamSire.DamSearchHerdbook : DamSire.SireSearchHerdbook;
-            var searchRbse = RbseHelper.Normalize(isDam ? DamSire.DamSearchRbse : DamSire.SireSearchRbse);
+            var searchRbse = RbseHelper.ParseToRaw(isDam ? DamSire.DamSearchRbse : DamSire.SireSearchRbse);
 
             TempData[PickSireDamContextKeys.Rbse] = Rbse;
             TempData[PickSireDamContextKeys.ReturnTo] = "Relations";
@@ -615,7 +620,7 @@ public class RelationsModel(
     /// <summary>Adds a related-animal row to the draft only. Not persisted until Save.</summary>
     public async Task<IActionResult> OnPostAddRelationRowAsync()
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         await LoadAsync();
@@ -635,7 +640,7 @@ public class RelationsModel(
             Id = null,
             RelationType = RelationType!,
             RelationTypeDesc = RelationTypes.FirstOrDefault(t => t.Code == RelationType)?.Description,
-            RelationRbse = NullIfBlank(RbseHelper.Normalize(RelationRbse)),
+            RelationRbse = NullIfBlank(RbseHelper.ParseToRaw(RelationRbse)),
             Sex = Sex,
             SexDesc = Sexes.FirstOrDefault(s => s.Code == Sex)?.Description,
             BirthDay = BirthDay,
@@ -652,7 +657,7 @@ public class RelationsModel(
         });
         draft.HasPendingChanges = true;
         await relationsDraftState.SetAsync(draft);
-        TempData.Remove("Success");
+        TempData.Remove(SuccessKey);
 
         return RedirectToPage(new { rbse = Rbse });
     }
@@ -660,7 +665,7 @@ public class RelationsModel(
     /// <summary>Populates the shared field panel from a staged row for editing (no changes saved yet).</summary>
     public async Task<IActionResult> OnPostBeginEditRelationRowAsync(string clientKey)
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         await LoadAsync();
@@ -677,7 +682,7 @@ public class RelationsModel(
             BirthMonth = item.BirthMonth;
             BirthYear = item.BirthYear;
             BirthDate = item.BirthDay > 0 && item.BirthMonth > 0 && item.BirthYear > 0
-                ? new DateTime(item.BirthYear.Value, item.BirthMonth.Value, item.BirthDay.Value)
+                ? new DateTime(item.BirthYear.Value, item.BirthMonth.Value, item.BirthDay.Value, 0, 0, 0, DateTimeKind.Unspecified)
                 : null;
             RelationFate = item.RelationFate;
             LeftDate = item.LeftDate;
@@ -693,7 +698,7 @@ public class RelationsModel(
     /// <summary>Updates the currently selected staged row from the shared field panel. Not persisted until Save.</summary>
     public async Task<IActionResult> OnPostUpdateRelationRowAsync()
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         var clientKey = EditingClientKey;
@@ -719,7 +724,7 @@ public class RelationsModel(
 
         item.RelationType = RelationType!;
         item.RelationTypeDesc = RelationTypes.FirstOrDefault(t => t.Code == RelationType)?.Description;
-        item.RelationRbse = NullIfBlank(RbseHelper.Normalize(RelationRbse));
+        item.RelationRbse = NullIfBlank(RbseHelper.ParseToRaw(RelationRbse));
         item.Sex = Sex;
         item.SexDesc = Sexes.FirstOrDefault(s => s.Code == Sex)?.Description;
         item.BirthDay = BirthDay;
@@ -734,7 +739,7 @@ public class RelationsModel(
         item.Sire = Sire;
         draft.HasPendingChanges = true;
         await relationsDraftState.SetAsync(draft);
-        TempData.Remove("Success");
+        TempData.Remove(SuccessKey);
 
         return RedirectToPage(new { rbse = Rbse });
     }
@@ -742,7 +747,7 @@ public class RelationsModel(
     /// <summary>Removes a staged related-animal row. Not persisted until Save.</summary>
     public async Task<IActionResult> OnPostDeleteRelationRowAsync(string clientKey)
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         await LoadAsync();
@@ -754,7 +759,7 @@ public class RelationsModel(
             draft.Relations.Remove(item);
             draft.HasPendingChanges = true;
             await relationsDraftState.SetAsync(draft);
-            TempData.Remove("Success");
+            TempData.Remove(SuccessKey);
         }
 
         return RedirectToPage(new { rbse = Rbse });
@@ -763,14 +768,70 @@ public class RelationsModel(
     /// <summary>Commits all staged related-animal changes to the database in one transaction.</summary>
     public async Task<IActionResult> OnPostSaveRelationsAsync()
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole(DataEntryRole))
             return Forbid();
 
-        TempData.Remove("RelationsWarning");
+        TempData.Remove(RelationsWarningKey);
 
         await LoadAsync();
         var draft = await LoadOrInitializeRelationsDraftAsync();
 
+        ApplyPendingParentRemovals(draft);
+
+        var caseRbse = RbseHelper.ParseToRaw(Rbse);
+        var caseRecord = await caseService.GetCaseAsync(caseRbse);
+
+        if (caseRecord is null)
+        {
+            TempData["Warning"] = $"Case '{caseRbse}' is not saved yet. Complete Farm first.";
+            return RedirectToPage(new { rbse = Rbse });
+        }
+
+        InferHasDamSireFromStagedInputs();
+
+        var validationResult = ValidateDamSireInputs(caseRbse);
+        if (validationResult is not null)
+            return validationResult;
+
+        var lookupResult = await ResolveLinkedParentsFromRbseLookupAsync();
+        if (lookupResult is not null)
+            return lookupResult;
+
+        await RefreshMissingParentRowStampsAsync();
+
+        var rowStampResult = ValidateParentRowStampsPresent();
+        if (rowStampResult is not null)
+            return rowStampResult;
+
+        var damStatusResult = await UpdateCaseDamStatusAsync(caseRecord);
+        if (damStatusResult is not null)
+            return damStatusResult;
+
+        caseRecord = await caseService.GetCaseAsync(caseRbse);
+        CaseHerdbook = string.IsNullOrWhiteSpace(CaseHerdbook) ? caseRecord?.Herdbook : CaseHerdbook;
+
+        await RefreshLinkedParentDetailsFromPedigreeAsync();
+
+        var herdbookResult = await SaveHerdbookAsync(caseRbse, caseRecord);
+        if (herdbookResult is not null)
+            return herdbookResult;
+
+        var relationsError = await PersistStagedRelationsAsync();
+        if (relationsError is not null)
+        {
+            TempData[RelationsWarningKey] = relationsError;
+            return RedirectToPage(new { rbse = Rbse });
+        }
+
+        await relationsDraftState.ClearAsync(RbseHelper.ParseToRaw(Rbse));
+
+        TempData.Remove(RelationsWarningKey);
+        TempData[SuccessKey] = "Related animal changes saved.";
+        return RedirectToPage(new { rbse = Rbse });
+    }
+
+    private void ApplyPendingParentRemovals(CaseRelationsDraftState draft)
+    {
         if (draft.RemoveDamPending && !HasDamInputStaged())
         {
             DamSire.HasDam = false;
@@ -803,22 +864,19 @@ public class RelationsModel(
             DamSire.SireFate = null;
             DamSire.SireChildCount = null;
         }
+    }
 
-        var caseRbse = RbseHelper.ParseToRaw(Rbse);
-        var caseRecord = await caseService.GetCaseAsync(caseRbse);
-
-        if (caseRecord is null)
-        {
-            TempData["Warning"] = $"Case '{caseRbse}' is not saved yet. Complete Farm first.";
-            return RedirectToPage(new { rbse = Rbse });
-        }
-
-        // Keep explicit parent intent even if HasDam/HasSire hidden flags are stale in the post.
+    /// <summary>Keep explicit parent intent even if HasDam/HasSire hidden flags are stale in the post.</summary>
+    private void InferHasDamSireFromStagedInputs()
+    {
         if (!DamSire.HasDam && (DamSire.DamId > 0 || !string.IsNullOrWhiteSpace(DamSire.DamRbse)))
             DamSire.HasDam = true;
         if (!DamSire.HasSire && (DamSire.SireId > 0 || !string.IsNullOrWhiteSpace(DamSire.SireRbse)))
             DamSire.HasSire = true;
+    }
 
+    private PageResult? ValidateDamSireInputs(string caseRbse)
+    {
         if (!string.IsNullOrWhiteSpace(DamSire.DamRbse)
             && RbseHelper.Normalize(DamSire.DamRbse) == caseRbse)
         {
@@ -845,6 +903,12 @@ public class RelationsModel(
             return Page();
         }
 
+        return null;
+    }
+
+    /// <summary>Resolves a dam/sire selected by RBSE (rather than explicit Look Up) into full details.</summary>
+    private async Task<IActionResult?> ResolveLinkedParentsFromRbseLookupAsync()
+    {
         if (!string.IsNullOrWhiteSpace(DamSire.DamRbse)
             && (DamSire.DamId <= 0 || string.IsNullOrWhiteSpace(DamSire.DamRowStamp)))
         {
@@ -856,7 +920,7 @@ public class RelationsModel(
                 return Page();
             }
 
-            var linkedDam = damMatches.FirstOrDefault();
+            var linkedDam = damMatches.Count > 0 ? damMatches[0] : null;
             if (linkedDam is not null)
             {
                 DamSire.HasDam = true;
@@ -882,7 +946,7 @@ public class RelationsModel(
                 return Page();
             }
 
-            var linkedSire = sireMatches.FirstOrDefault();
+            var linkedSire = sireMatches.Count > 0 ? sireMatches[0] : null;
             if (linkedSire is not null)
             {
                 DamSire.HasSire = true;
@@ -897,13 +961,20 @@ public class RelationsModel(
             }
         }
 
-        // If a looked-up/linked parent is selected but the posted RowStamp is missing,
-        // reload it before calling AddEditDamSireDetails to avoid false concurrency failures.
+        return null;
+    }
+
+    /// <summary>
+    /// If a looked-up/linked parent is selected but the posted RowStamp is missing,
+    /// reload it before calling AddEditDamSireDetails to avoid false concurrency failures.
+    /// </summary>
+    private async Task RefreshMissingParentRowStampsAsync()
+    {
         if (DamSire.HasDam && DamSire.DamId > 0 && string.IsNullOrWhiteSpace(DamSire.DamRowStamp) && !string.IsNullOrWhiteSpace(DamSire.DamRbse))
         {
             var damMatches = await relationsRepository.GetDamSireDetailsMatchesAsync(
                 null, null, RbseHelper.Normalize(DamSire.DamRbse), null, "F");
-            var exactDam = damMatches.FirstOrDefault(m => m.Id == DamSire.DamId) ?? damMatches.FirstOrDefault();
+            var exactDam = damMatches.FirstOrDefault(m => m.Id == DamSire.DamId) ?? (damMatches.Count > 0 ? damMatches[0] : null);
             if (exactDam?.RowStamp is { Length: > 0 })
                 DamSire.DamRowStamp = ToBase64(exactDam.RowStamp);
         }
@@ -912,11 +983,14 @@ public class RelationsModel(
         {
             var sireMatches = await relationsRepository.GetDamSireDetailsMatchesAsync(
                 null, null, RbseHelper.Normalize(DamSire.SireRbse), null, "M");
-            var exactSire = sireMatches.FirstOrDefault(m => m.Id == DamSire.SireId) ?? sireMatches.FirstOrDefault();
+            var exactSire = sireMatches.FirstOrDefault(m => m.Id == DamSire.SireId) ?? (sireMatches.Count > 0 ? sireMatches[0] : null);
             if (exactSire?.RowStamp is { Length: > 0 })
                 DamSire.SireRowStamp = ToBase64(exactSire.RowStamp);
         }
+    }
 
+    private PageResult? ValidateParentRowStampsPresent()
+    {
         if (DamSire.HasDam && DamSire.DamId > 0 && string.IsNullOrWhiteSpace(DamSire.DamRowStamp))
         {
             DamError = "Dam details could not be refreshed. Please look up and select the dam again.";
@@ -929,29 +1003,35 @@ public class RelationsModel(
             return Page();
         }
 
-        if (caseRecord is not null)
+        return null;
+    }
+
+    private async Task<IActionResult?> UpdateCaseDamStatusAsync(BSE.Modules.CaseManagement.Models.CaseRecord caseRecord)
+    {
+        var editVm = BSE.Host.Models.ViewModels.CaseEditViewModel.FromRecord(caseRecord);
+        editVm.DamStatus = DamSire.DamStatus;
+        var editCommand = new EditCaseDetailsCommand(
+            Case: editVm.ToEditCommand(caseRecord.RowStamp ?? []),
+            Clinical: null,
+            Bab: null,
+            DamSire: null);
+        var userId = await currentUser.GetUserIdAsync();
+        var result = await caseService.EditCaseAsync(editCommand, userId);
+        if (result != EditCaseResult.Success)
         {
-            var editVm = BSE.Host.Models.ViewModels.CaseEditViewModel.FromRecord(caseRecord);
-            editVm.DamStatus = DamSire.DamStatus;
-            var editCommand = new EditCaseDetailsCommand(
-                Case: editVm.ToEditCommand(caseRecord.RowStamp ?? []),
-                Clinical: null,
-                Bab: null,
-                DamSire: null);
-            var userId = await currentUser.GetUserIdAsync();
-            var result = await caseService.EditCaseAsync(editCommand, userId);
-            if (result != EditCaseResult.Success)
-            {
-                TempData["RelationsWarning"] = "Dam details were saved, but the status could not be updated — the case may have changed. Please try again.";
-                return RedirectToPage(new { rbse = Rbse });
-            }
+            TempData[RelationsWarningKey] = "Dam details were saved, but the status could not be updated — the case may have changed. Please try again.";
+            return RedirectToPage(new { rbse = Rbse });
         }
 
-        caseRecord = await caseService.GetCaseAsync(caseRbse);
-        CaseHerdbook = string.IsNullOrWhiteSpace(CaseHerdbook) ? caseRecord?.Herdbook : CaseHerdbook;
+        return null;
+    }
 
-        // For linked case parents (RBSE present), ignore editable posted fields and refresh
-        // from DB so final save only updates the case linkage, not the linked pedigree row.
+    /// <summary>
+    /// For linked case parents (RBSE present), ignore editable posted fields and refresh
+    /// from DB so final save only updates the case linkage, not the linked pedigree row.
+    /// </summary>
+    private async Task RefreshLinkedParentDetailsFromPedigreeAsync()
+    {
         if (DamSire.HasDam && DamSire.DamId > 0 && !string.IsNullOrWhiteSpace(DamSire.DamRbse))
         {
             var linkedDam = await GetPedigreeSnapshotByIdAsync(DamSire.DamId);
@@ -981,7 +1061,10 @@ public class RelationsModel(
                 DamSire.SireRowStamp = ToBase64(linkedSire.RowStamp);
             }
         }
+    }
 
+    private async Task<IActionResult?> SaveHerdbookAsync(string caseRbse, BSE.Modules.CaseManagement.Models.CaseRecord? caseRecord)
+    {
         var herdbookCommand = new AddEditDamSireCommand(
             Rbse: caseRbse,
             DamId: DamSire.HasDam ? DamSire.DamId : null, DamRbse: NullIfBlank(RbseHelper.Normalize(DamSire.DamRbse)),
@@ -1020,7 +1103,7 @@ public class RelationsModel(
 
             // Legacy UpdateDamSireRecords mapped the SP's return code to one of these four
             // specific messages instead of a single generic one.
-            TempData["RelationsWarning"] = TryGetDamSireReturnCode(ex, out var returnCode)
+            TempData[RelationsWarningKey] = TryGetDamSireReturnCode(ex, out var returnCode)
                 ? returnCode switch
                 {
                     1 => "Failed to create or update a dam record. The record may have been changed by another user.",
@@ -1033,28 +1116,15 @@ public class RelationsModel(
             return RedirectToPage(new { rbse = Rbse });
         }
 
-        var relationsError = await PersistStagedRelationsAsync();
-        if (relationsError is not null)
-        {
-            TempData["RelationsWarning"] = relationsError;
-            return RedirectToPage(new { rbse = Rbse });
-        }
-
-        await relationsDraftState.ClearAsync(RbseHelper.ParseToRaw(Rbse));
-
-        TempData.Remove("RelationsWarning");
-        TempData["Success"] = "Related animal changes saved.";
-        return RedirectToPage(new { rbse = Rbse });
+        return null;
     }
 
     /// <summary>Discards all staged related-animal changes without persisting them.</summary>
-    public async Task<IActionResult> OnPostCancelRelationsEditAsync()
-    {
-        await relationsDraftState.ClearAsync(RbseHelper.ParseToRaw(Rbse));
-        return RedirectToPage("/Home");
-    }
+    public async Task<IActionResult> OnPostCancelRelationsEditAsync() => await CancelRelationsEditAsync();
 
-    public async Task<IActionResult> OnGetCancelRelationsEditAsync()
+    public async Task<IActionResult> OnGetCancelRelationsEditAsync() => await CancelRelationsEditAsync();
+
+    private async Task<IActionResult> CancelRelationsEditAsync()
     {
         await relationsDraftState.ClearAsync(RbseHelper.ParseToRaw(Rbse));
         return RedirectToPage("/Home");
@@ -1070,6 +1140,11 @@ public class RelationsModel(
         BirthDay = BirthDate?.Day;
         BirthMonth = BirthDate?.Month;
         BirthYear = BirthDate?.Year;
+
+        // Mirrors legacy RBSE.ascx auto-padding on postback: redisplay the short form
+        // entered (e.g. "16/01") as the full zero-padded value.
+        RelationRbse = RbseHelper.Format(RbseHelper.ParseToRaw(RelationRbse));
+        ModelState.Remove(nameof(RelationRbse));
 
         var otherRelationRbses = _stagedRelations
             .Where(r => r.ClientKey != excludeClientKey)
@@ -1087,7 +1162,7 @@ public class RelationsModel(
         if (RelationFieldErrors.Count > 0)
             return;
 
-        var normalizedRbse = RbseHelper.Normalize(RelationRbse);
+        var normalizedRbse = RbseHelper.ParseToRaw(RelationRbse);
         if (normalizedRbse.Length > 0)
         {
             var related = await relationsRepository.GetRelationDetailsOfRelatedCaseAsync(normalizedRbse);
@@ -1106,9 +1181,9 @@ public class RelationsModel(
             BirthMonth = related.BirthMonth;
             BirthYear = related.BirthYear;
             BirthDate = related.BirthDay > 0 && related.BirthMonth > 0 && related.BirthYear > 0
-                ? new DateTime(related.BirthYear.Value, related.BirthMonth.Value, related.BirthDay.Value)
+                ? new DateTime(related.BirthYear.Value, related.BirthMonth.Value, related.BirthDay.Value, 0, 0, 0, DateTimeKind.Unspecified)
                 : null;
-            LeftDate = DateTime.TryParse(related.LeftDate, out var leftDate) ? leftDate : null;
+            LeftDate = DateTime.TryParse(related.LeftDate, System.Globalization.CultureInfo.InvariantCulture, out var leftDate) ? leftDate : null;
             Sire = related.Name;
         }
     }
@@ -1219,7 +1294,7 @@ public class RelationsModel(
         }
 
         return await conn.QuerySingleOrDefaultAsync<PedigreeSnapshot>(
-            @"SELECT [ID] AS [Id], [RBSE], [Eartag], [Name], [Herdbook], [BirthDay], [BirthMonth], [BirthYear], [RowStamp]
+            @"SELECT [Eartag], [Name], [Herdbook], [BirthDay], [BirthMonth], [BirthYear], [RowStamp]
               FROM [Pedigree]
               WHERE [ID] = @ID",
             new { ID = pedigreeId });
@@ -1227,8 +1302,6 @@ public class RelationsModel(
 
     private sealed record PedigreeSnapshot
     {
-        public int Id { get; init; }
-        public string? Rbse { get; init; }
         public string? Eartag { get; init; }
         public string? Name { get; init; }
         public string? Herdbook { get; init; }
@@ -1261,23 +1334,23 @@ public class RelationsModel(
     }
 
     /// <summary>Sorts on every legacy grid column (RelationType, RBSE, Sex, Birth Date, Fate, Date Left, Eartag, Sire).</summary>
-    private IReadOnlyList<StagedRelationItem> SortStagedRelations(IReadOnlyList<StagedRelationItem> relations)
+    private List<StagedRelationItem> SortStagedRelations(IReadOnlyList<StagedRelationItem> relations)
     {
-        IEnumerable<StagedRelationItem> q = relations;
-        q = SortColumn switch
+        Func<StagedRelationItem, IComparable?> keySelector = SortColumn switch
         {
-            "RelationType" => SortDesc ? q.OrderByDescending(r => r.RelationTypeDesc ?? r.RelationType) : q.OrderBy(r => r.RelationTypeDesc ?? r.RelationType),
-            "RelationRbse" => SortDesc ? q.OrderByDescending(r => r.RelationRbse)                        : q.OrderBy(r => r.RelationRbse),
-            "Sex"          => SortDesc ? q.OrderByDescending(r => r.SexDesc ?? r.Sex)                     : q.OrderBy(r => r.SexDesc ?? r.Sex),
-            "BirthDate"    => SortDesc ? q.OrderByDescending(r => r.BirthYear).ThenByDescending(r => r.BirthMonth).ThenByDescending(r => r.BirthDay)
-                                       : q.OrderBy(r => r.BirthYear).ThenBy(r => r.BirthMonth).ThenBy(r => r.BirthDay),
-            "RelationFate" => SortDesc ? q.OrderByDescending(r => r.RelationFateDesc ?? r.RelationFate)   : q.OrderBy(r => r.RelationFateDesc ?? r.RelationFate),
-            "LeftDate"     => SortDesc ? q.OrderByDescending(r => r.LeftDate)                             : q.OrderBy(r => r.LeftDate),
-            "Eartag"       => SortDesc ? q.OrderByDescending(r => r.Eartag)                               : q.OrderBy(r => r.Eartag),
-            "Sire"         => SortDesc ? q.OrderByDescending(r => r.Sire)                                 : q.OrderBy(r => r.Sire),
-            _              => q
+            "RelationType" => r => r.RelationTypeDesc ?? r.RelationType,
+            "RelationRbse" => r => r.RelationRbse,
+            "Sex" => r => r.SexDesc ?? r.Sex,
+            "BirthDate" => r => (r.BirthYear, r.BirthMonth, r.BirthDay),
+            "RelationFate" => r => r.RelationFateDesc ?? r.RelationFate,
+            "LeftDate" => r => r.LeftDate,
+            "Eartag" => r => r.Eartag,
+            "Sire" => r => r.Sire,
+            _ => _ => null
         };
-        return q.ToList();
+
+        var sorted = SortDesc ? relations.OrderByDescending(keySelector) : relations.OrderBy(keySelector);
+        return sorted.ToList();
     }
 
     private static string? NullIfBlank(string? s) => string.IsNullOrWhiteSpace(s) ? null : s;

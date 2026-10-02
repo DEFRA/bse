@@ -41,6 +41,8 @@ Log.Logger = new LoggerConfiguration()
 
 try
 {
+    const string UnauthorizedPath = "/Unauthorized";
+
     var builder = WebApplication.CreateBuilder(args);
 
     // ── Structured logging ──────────────────────────────────────────────────
@@ -185,7 +187,7 @@ try
                 DevelopmentAuthHandler.SchemeName,
                 opts =>
                 {
-                    opts.NtLogin            = builder.Configuration["Authentication:DevUserNtLogin"] ?? "dev-user";
+                    opts.Email              = builder.Configuration["Authentication:DevUserEmail"] ?? "dev-user@defra.gov.uk";
                     opts.UseWindowsIdentity = builder.Configuration.GetValue<bool>("Authentication:UseWindowsIdentity", defaultValue: true);
                 });
     }
@@ -221,7 +223,7 @@ try
                             RedirectUri = "/Home"
                         });
                 };
-                // Redirect authenticated users with insufficient permissions to Home, not a 403.
+                // Redirect authenticated users with insufficient permissions to Unauthorized, not a 403.
                 options.Events.OnRedirectToAccessDenied = ctx =>
                 {
                     var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>()
@@ -231,7 +233,7 @@ try
                         ctx.Request.Path.Value,
                         ctx.HttpContext.User.Identity?.Name ?? "unknown");
 
-                    ctx.Response.Redirect("/Home");
+                    ctx.Response.Redirect(UnauthorizedPath);
                     return Task.CompletedTask;
                 };
             })
@@ -246,12 +248,8 @@ try
 
                 // SP signing certificate — placeholder; wire Key Vault reference before production deploy.
                 // Leaving ServiceCertificates empty is acceptable for local SAML testing only.
-                // Add the certificate here when the thumbprint is provisioned:
-                // if (!string.IsNullOrEmpty(saml2Config.SPCertificateThumbprint))
-                // {
-                //     var cert = GetCertificateByThumbprint(saml2Config.SPCertificateThumbprint);
-                //     options.SPOptions.ServiceCertificates.Add(cert);
-                // }
+                // Production tracking item: once saml2Config.SPCertificateThumbprint is provisioned, resolve the
+                // certificate from the certificate store/Key Vault and add it to options.SPOptions.ServiceCertificates.
 
                 var idp = new IdentityProvider(
                     new EntityId(saml2Config.IdPEntityId),
@@ -358,6 +356,7 @@ try
         options.Conventions.AuthorizeFolder("/");
         options.Conventions.AllowAnonymousToPage("/Error");
         options.Conventions.AllowAnonymousToPage("/SessionError");
+        options.Conventions.AllowAnonymousToPage(UnauthorizedPath);
     })
      .AddMvcOptions(o =>
         // ASP.NET Core 6+ treats non-nullable string properties as implicitly [Required]
@@ -391,48 +390,18 @@ try
     // Applies to both the dev-bypass path and the SAML path.
     builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, HomeRedirectAuthorizationHandler>();
 
-    builder.Services.AddAuthorization(options =>
-    {
-        // All authenticated users - search, audit log, BSESS, case/farm detail views.
-        options.AddPolicy("Authenticated",
-            p => p.RequireAuthenticatedUser());
+    var authorizationBuilder = builder.Services.AddAuthorizationBuilder();
 
-        // All five recognised groups - read-only view access.
-        options.AddPolicy("ReadOnly",
-            p => p.RequireRole("ReadOnly"));
-
-        // DEFRA Data Entry, DEFRA Maintenance, VLA Data Entry, VLA Maintenance.
-        options.AddPolicy("DataEntry",
-            p => p.RequireRole("DataEntry"));
-
-        // DEFRA Maintenance, VLA Maintenance - ADNS Export, MoveCase, DeleteCase, RbseChange, CphhChange.
-        options.AddPolicy("DEFRAMaintenance",
-            p => p.RequireRole("DEFRAMaintenance"));
-
-        // DEFRA Viewer, DEFRA Data Entry, DEFRA Maintenance - RBSE lookup on Home page.
-        options.AddPolicy("DEFRAAccess",
-            p => p.RequireRole("DEFRAAccess"));
-
-        // VLA Data Entry, VLA Maintenance - OSS Export, Print Batch.
-        options.AddPolicy("VLAAccess",
-            p => p.RequireRole("VLAAccess"));
-
-        // VLA Maintenance only - CaseWork, User Maintenance.
-        options.AddPolicy("VLAMaintenance",
-            p => p.RequireRole("VLAMaintenance"));
-
-        // DEFRA Maintenance, VLA Data Entry, VLA Maintenance - Pick List Maintenance.
-        options.AddPolicy("PickListAccess",
-            p => p.RequireRole("PickListAccess"));
-
-        // DEFRA Data Entry, DEFRA Maintenance, VLA Maintenance - Farm creation (not VLA Data Entry).
-        options.AddPolicy("FarmCreation",
-            p => p.RequireRole("FarmCreation"));
-
-        // All original 5 groups - audit log and BSESS check access; excludes search-only groups (DEFRA AHO User, DEFRA AI Wales Scotland).
-        options.AddPolicy("AuditAccess",
-            p => p.RequireRole("DEFRAAccess", "VLAAccess"));
-    });
+    authorizationBuilder.AddPolicy("Authenticated", p => p.RequireAuthenticatedUser());
+    authorizationBuilder.AddPolicy("ReadOnly", p => p.RequireRole("ReadOnly"));
+    authorizationBuilder.AddPolicy("DataEntry", p => p.RequireRole("DataEntry"));
+    authorizationBuilder.AddPolicy("DEFRAMaintenance", p => p.RequireRole("DEFRAMaintenance"));
+    authorizationBuilder.AddPolicy("DEFRAAccess", p => p.RequireRole("DEFRAAccess"));
+    authorizationBuilder.AddPolicy("VLAAccess", p => p.RequireRole("VLAAccess"));
+    authorizationBuilder.AddPolicy("VLAMaintenance", p => p.RequireRole("VLAMaintenance"));
+    authorizationBuilder.AddPolicy("PickListAccess", p => p.RequireRole("PickListAccess"));
+    authorizationBuilder.AddPolicy("FarmCreation", p => p.RequireRole("FarmCreation"));
+    authorizationBuilder.AddPolicy("AuditAccess", p => p.RequireRole("DEFRAAccess", "VLAAccess"));
 
     var app = builder.Build();
 
@@ -466,6 +435,33 @@ try
 
     app.UseAuthentication();
     app.UseSession(); // Session middleware must come after Authentication
+
+    app.Use(async (context, next) =>
+    {
+        var path = context.Request.Path;
+        var isExcludedPath =
+            path.StartsWithSegments(UnauthorizedPath, StringComparison.OrdinalIgnoreCase)
+            || path.StartsWithSegments("/Error", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWithSegments("/SessionError", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWithSegments("/Saml2", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWithSegments("/signin", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWithSegments("/signout", StringComparison.OrdinalIgnoreCase);
+
+        var isStaticAssetRequest = System.IO.Path.HasExtension(path.Value);
+
+        if (!isExcludedPath
+            && !isStaticAssetRequest
+            && context.User.Identity?.IsAuthenticated == true
+            && !context.User.HasClaim(c => c.Type == ClaimsUserContext.BseGroupIdClaimType))
+        {
+            context.Response.Redirect(UnauthorizedPath);
+            return;
+        }
+
+        await next();
+    });
+
     app.UseAuthorization();
 
     // Liveness: always returns 200 — no health checks evaluated.

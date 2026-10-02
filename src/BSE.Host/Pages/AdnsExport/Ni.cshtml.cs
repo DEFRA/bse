@@ -81,6 +81,11 @@ public class NiModel(
 
     public async Task<IActionResult> OnGetAsync()
     {
+        if (TryRestoreStateForGridNavigation())
+        {
+            return Page();
+        }
+
         // A fresh visit to this page (e.g. via the breadcrumb or menu) always starts clean —
         // neither the staged cases grid nor a previously generated report should resurface
         // just because TempData hadn't expired yet.
@@ -104,6 +109,29 @@ public class NiModel(
             UserEmailAddress = DefaultToEmailAddress;
 
         return Page();
+    }
+
+    private bool TryRestoreStateForGridNavigation()
+    {
+        var isNavigationRequest = Request.Query.Keys.Any(k =>
+            string.Equals(k, nameof(PageNumber), StringComparison.OrdinalIgnoreCase)
+            || string.Equals(k, nameof(SortColumn), StringComparison.OrdinalIgnoreCase)
+            || string.Equals(k, nameof(SortDesc), StringComparison.OrdinalIgnoreCase));
+
+        if (!isNavigationRequest)
+            return false;
+
+        RestoreContext();
+        LoadDraftCases();
+        LoadPreview();
+
+        if (string.IsNullOrWhiteSpace(UserEmailAddress))
+            UserEmailAddress = DefaultToEmailAddress;
+
+        if (string.IsNullOrWhiteSpace(InputConfirmationDate))
+            InputConfirmationDate = DateTime.Today.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
+
+        return true;
     }
 
     public IActionResult OnPostAddToGrid()

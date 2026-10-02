@@ -66,7 +66,7 @@
     <input type="hidden" asp-for="Case.Eartag" />
     <input type="hidden" asp-for="Case.PreviousEartag" />
     <input type="hidden" asp-for="Case.Bse1ReceivedDate" />
-    <input type="hidden" asp-for="Case.FormADate" />
+    <input type="hidden" id="Case_FormADate" name="Case.FormADate" value="@DateVal(Model.Case.FormADate)" />
     <input type="hidden" asp-for="Case.FormAResubmittedDate" />
     <input type="hidden" asp-for="Case.FormBDate" />
     <input type="hidden" asp-for="Case.Fate" />
@@ -96,8 +96,9 @@
         }
         <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
             <input asp-for="Case.BirthDate" type="text" class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(ViewData.ModelState["Case.BirthDate"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
-                   autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.BirthDate)" />
+                   autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.BirthDate)" data-original-value="@DateVal(Model.Case.BirthDate)" />
         </div>
+        <span id="birth-date-inform-defra" class="bse-star-warning" title="DEFRA may need informing if you change the Date Of Birth" style="display:none">*</span>
     </div>
     <div class="govuk-form-group @(ViewData.ModelState["Case.BirthDateSource"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
         <label asp-for="Case.BirthDateSource" class="govuk-label">Date of birth source</label>
@@ -181,6 +182,7 @@
                         <label class="govuk-label govuk-date-input__label" for="age-purchased-years">Years</label>
                         <input class="govuk-input govuk-date-input__input govuk-input--width-3"
                                id="age-purchased-years" type="number" min="0" max="99" />
+                        <span id="age-purchased-years-error-star" class="bse-star-error" title="This must be an integer" style="display:none">*</span>
                     </div>
                 </div>
                 <div class="govuk-date-input__item">
@@ -189,6 +191,7 @@
                         <input asp-for="Case.PurchaseAgeInMonths"
                                class="govuk-input govuk-date-input__input govuk-input--width-4 @(ViewData.ModelState["Case.PurchaseAgeInMonths"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
                                type="number" min="0" />
+                        <span id="age-purchased-months-error-star" class="bse-star-error" title="This must be an integer" style="display:none">*</span>
                     </div>
                 </div>
             </div>
@@ -225,6 +228,7 @@
             <input asp-for="Case.HerdEntryDate" type="text" class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(ViewData.ModelState["Case.HerdEntryDate"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
                    autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.HerdEntryDate)" />
         </div>
+        <span id="herd-entry-date-warning-star" class="bse-star-warning" title="Are you usre the Herd Entry is less than 18 months after the Date of Birth" style="display:none">*</span>
     </div>
     <div class="govuk-form-group @(ViewData.ModelState["Case.OnsetDate"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
         <label asp-for="Case.OnsetDate" class="govuk-label">Onset date</label>
@@ -236,6 +240,7 @@
             <input asp-for="Case.OnsetDate" type="text" class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(ViewData.ModelState["Case.OnsetDate"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
                    autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.OnsetDate)" />
         </div>
+        <span id="onset-date-warning-star" class="bse-star-warning" title="Are you sure that the onset date was more than 3 months before the Form A Date?" style="display:none">*</span>
     </div>
     <div class="govuk-form-group">
         <div class="govuk-checkboxes" data-module="govuk-checkboxes">
@@ -252,6 +257,8 @@
             <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["Case.MonthsPregnant"]!.Errors[0].ErrorMessage</p>
         }
         <input asp-for="Case.MonthsPregnant" type="number" class="govuk-input govuk-input--width-5 @(ViewData.ModelState["Case.MonthsPregnant"]?.Errors.Count > 0 ? "govuk-input--error" : "")" min="1" max="9" />
+        <span id="pregnant-range-error-star" class="bse-star-error" title="This must be a value between 1 and 9" style="display:none">*</span>
+        <span id="pregnant-error-star" class="bse-star-error" title="You cannot enter a value for Month's Post Calving and Months Pregnant" style="display:none">*</span>
     </div>
     <div class="govuk-form-group @(ViewData.ModelState["Case.MonthsPostCalving"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
         <label asp-for="Case.MonthsPostCalving" class="govuk-label">Months post calving</label>
@@ -260,6 +267,8 @@
             <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState["Case.MonthsPostCalving"]!.Errors[0].ErrorMessage</p>
         }
         <input asp-for="Case.MonthsPostCalving" type="number" class="govuk-input govuk-input--width-5 @(ViewData.ModelState["Case.MonthsPostCalving"]?.Errors.Count > 0 ? "govuk-input--error" : "")" min="1" max="3" />
+        <span id="calving-range-error-star" class="bse-star-error" title="This must be a value between 1 and 3" style="display:none">*</span>
+        <span id="calving-error-star" class="bse-star-error" title="You cannot enter a value for Month's Post Calving and Months Pregnant" style="display:none">*</span>
     </div>
     <div class="govuk-form-group @(ViewData.ModelState["Case.OnsetAgeInMonths"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
         <fieldset class="govuk-fieldset">
@@ -274,6 +283,7 @@
                         <label class="govuk-label govuk-date-input__label" for="onset-age-years">Years</label>
                         <input class="govuk-input govuk-date-input__input govuk-input--width-3"
                                id="onset-age-years" type="number" min="0" max="99" />
+                        <span id="onset-age-years-error-star" class="bse-star-error" title="This must be an integer" style="display:none">*</span>
                     </div>
                 </div>
                 <div class="govuk-date-input__item">
@@ -282,6 +292,7 @@
                         <input asp-for="Case.OnsetAgeInMonths"
                                class="govuk-input govuk-date-input__input govuk-input--width-4 @(ViewData.ModelState["Case.OnsetAgeInMonths"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
                                type="number" min="0" />
+                        <span id="onset-age-months-error-star" class="bse-star-error" title="This must be an integer" style="display:none">*</span>
                     </div>
                 </div>
             </div>
@@ -289,10 +300,7 @@
         <button type="button" id="btn-calc-onset-age"
                 class="govuk-button govuk-button--secondary govuk-!-margin-top-2 govuk-!-margin-bottom-0"
                 title="Calculate from Date of birth and Onset date">Calculate</button>
-    </div>
-    <div id="onset-age-warning" class="govuk-warning-text govuk-!-margin-bottom-2" style="@(Model.Case.OnsetAgeInMonths.HasValue && Model.Case.OnsetAgeInMonths.Value < 18 ? "" : "display:none")">
-        <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
-        <strong class="govuk-warning-text__text"><span class="govuk-warning-text__assistive">Warning</span> Onset age appears to be less than 18 months &mdash; please check.</strong>
+        <span id="onset-age-warning" class="bse-star-warning" title="Are you sure that the onset age is less than 18 months?" style="@(Model.Case.OnsetAgeInMonths.HasValue && Model.Case.OnsetAgeInMonths.Value < 18 ? "" : "display:none")">*</span>
     </div>
 
     <div class="govuk-form-group @(ViewData.ModelState["Case.SlaughterDate"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
@@ -306,6 +314,8 @@
                    class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(ViewData.ModelState["Case.SlaughterDate"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
                    autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.SlaughterDate)" />
         </div>
+        <p id="slaughter-date-error-message" class="govuk-error-message" style="display:none"><span class="govuk-visually-hidden">Error:</span> <span id="slaughter-date-error-text"></span></p>
+        <span id="slaughter-date-error-star" class="bse-star-error" title="Slaughter date must be after the birth date (or Form A date) and not in the future" style="display:none">*</span>
     </div>
 
     <div class="govuk-button-group">
@@ -403,6 +413,156 @@
             });
             document.getElementById('Case_OnsetAgeInMonths')?.addEventListener('change', updateOnsetWarning);
             updateOnsetWarning();
+        }());
+
+        // Legacy-style immediate green/red star indicators; mirrors legacy CaseEntryVLA.aspx.vb
+        // (lblInformDEFRA, lblOnsetDateWarning, lblHerdDateWarning, lblPregnantError), which showed
+        // these on postback triggered by AutoPostBack date controls. Here they update instantly as
+        // the user edits the field, without waiting for Save.
+        (function () {
+            function parseDmy(value) {
+                if (!value) return null;
+                var parts = value.split('/');
+                if (parts.length === 3) {
+                    var yearPart = parts[2].trim().split(/\s/)[0];
+                    var d = new Date(Number(yearPart), Number(parts[1]) - 1, Number(parts[0]));
+                    if (!isNaN(d.getTime())) return d;
+                }
+                // Fallback for non-dd/mm/yyyy values (e.g. hidden pass-through fields rendered
+                // in the server's default DateTime format, such as Case_FormADate).
+                var fallback = new Date(value);
+                return isNaN(fallback.getTime()) ? null : fallback;
+            }
+            function addMonths(date, months) {
+                var d = new Date(date.getTime());
+                d.setMonth(d.getMonth() + months);
+                return d;
+            }
+
+            // Date of birth: mirrors legacy ctlDateOfBirth_DateChanged / lblInformDEFRA
+            var birthDateInput = document.getElementById('Case_BirthDate');
+            var informDefraStar = document.getElementById('birth-date-inform-defra');
+            if (birthDateInput && informDefraStar) {
+                birthDateInput.addEventListener('change', function () {
+                    var hadOriginalValue = !!birthDateInput.getAttribute('data-original-value');
+                    informDefraStar.style.display = hadOriginalValue ? '' : 'none';
+                });
+            }
+
+            // Onset date vs Form A date: mirrors legacy CheckOnsetDate / lblOnsetDateWarning
+            var onsetDateInput = document.getElementById('Case_OnsetDate');
+            var onsetDateWarningStar = document.getElementById('onset-date-warning-star');
+            var formADateInput = document.getElementById('Case_FormADate');
+            function updateOnsetDateWarning() {
+                if (!onsetDateInput || !onsetDateWarningStar) return;
+                var onsetDate = parseDmy(onsetDateInput.value);
+                var formADate = formADateInput ? parseDmy(formADateInput.value) : null;
+                var show = false;
+                if (onsetDate && formADate) {
+                    show = onsetDate < addMonths(formADate, -3);
+                }
+                onsetDateWarningStar.style.display = show ? '' : 'none';
+            }
+            if (onsetDateInput) onsetDateInput.addEventListener('change', updateOnsetDateWarning);
+            updateOnsetDateWarning();
+
+            // Herd entry date vs Date of birth + 18 months: mirrors legacy CheckHerdEntryDate / lblHerdDateWarning
+            var herdEntryDateInput = document.getElementById('Case_HerdEntryDate');
+            var herdDateWarningStar = document.getElementById('herd-entry-date-warning-star');
+            function updateHerdEntryDateWarning() {
+                if (!herdEntryDateInput || !herdDateWarningStar) return;
+                var herdEntryDate = parseDmy(herdEntryDateInput.value);
+                var birthDate = birthDateInput ? parseDmy(birthDateInput.value) : null;
+                var show = false;
+                if (herdEntryDate && birthDate) {
+                    show = herdEntryDate < addMonths(birthDate, 18);
+                }
+                herdDateWarningStar.style.display = show ? '' : 'none';
+            }
+            if (herdEntryDateInput) herdEntryDateInput.addEventListener('change', updateHerdEntryDateWarning);
+            if (birthDateInput) birthDateInput.addEventListener('change', updateHerdEntryDateWarning);
+            updateHerdEntryDateWarning();
+
+            // Slaughter date vs birth date / Form A date / today: mirrors legacy CheckSlaughterDate server rules,
+            // shown live instead of waiting for the Save postback.
+            var slaughterDateInput = document.getElementById('Case_SlaughterDate');
+            var slaughterDateErrorStar = document.getElementById('slaughter-date-error-star');
+            var slaughterDateErrorMessage = document.getElementById('slaughter-date-error-message');
+            var slaughterDateErrorText = document.getElementById('slaughter-date-error-text');
+            var slaughterDateFormGroup = slaughterDateInput ? slaughterDateInput.closest('.govuk-form-group') : null;
+            function updateSlaughterDateWarning() {
+                if (!slaughterDateInput || !slaughterDateErrorStar) return;
+                var slaughterDate = parseDmy(slaughterDateInput.value);
+                var formADate = formADateInput ? parseDmy(formADateInput.value) : null;
+                var birthDate = birthDateInput ? parseDmy(birthDateInput.value) : null;
+                var message = '';
+
+                if (slaughterDate) {
+                    var today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    if (slaughterDate > today) {
+                        message = 'Slaughter date must not be in the future.';
+                    } else if (formADate && slaughterDate < formADate) {
+                        message = 'Slaughter date must be after the Form A date.';
+                    } else if (!formADate && birthDate && slaughterDate < birthDate) {
+                        message = 'Slaughter date must be after the birth date.';
+                    }
+                }
+
+                var show = message !== '';
+                slaughterDateErrorStar.style.display = show ? '' : 'none';
+                if (slaughterDateErrorMessage && slaughterDateErrorText) {
+                    slaughterDateErrorText.textContent = message;
+                    slaughterDateErrorMessage.style.display = show ? '' : 'none';
+                }
+                if (slaughterDateFormGroup) {
+                    slaughterDateFormGroup.classList.toggle('govuk-form-group--error', show);
+                }
+                if (slaughterDateInput) {
+                    slaughterDateInput.classList.toggle('govuk-input--error', show);
+                }
+            }
+            if (slaughterDateInput) slaughterDateInput.addEventListener('change', updateSlaughterDateWarning);
+            if (formADateInput) formADateInput.addEventListener('change', updateSlaughterDateWarning);
+            if (birthDateInput) birthDateInput.addEventListener('change', updateSlaughterDateWarning);
+            updateSlaughterDateWarning();
+
+            // Months pregnant / Months post calving mutual exclusion: mirrors legacy lblPregnantError
+            var monthsPregnantInput = document.getElementById('Case_MonthsPregnant');
+            var monthsPostCalvingInput = document.getElementById('Case_MonthsPostCalving');
+            var pregnantErrorStar = document.getElementById('pregnant-error-star');
+            var calvingErrorStar = document.getElementById('calving-error-star');
+            function updatePregnantCalvingError() {
+                var show = !!(monthsPregnantInput && monthsPregnantInput.value && monthsPostCalvingInput && monthsPostCalvingInput.value);
+                if (pregnantErrorStar) pregnantErrorStar.style.display = show ? '' : 'none';
+                if (calvingErrorStar) calvingErrorStar.style.display = show ? '' : 'none';
+            }
+            if (monthsPregnantInput) monthsPregnantInput.addEventListener('input', updatePregnantCalvingError);
+            if (monthsPostCalvingInput) monthsPostCalvingInput.addEventListener('input', updatePregnantCalvingError);
+            updatePregnantCalvingError();
+
+            // Instant numeric-format/range checks: mirrors legacy RegularExpressionValidators
+            // (revMonthsPregnant, revMonthsPostCalving, revAgePurchasedYears, revAgePurchasedMonths,
+            // revOnsetAgeYears, revOnsetAgeMonths) which validated purely client-side on blur/change.
+            function wireIntegerCheck(inputId, starId, regex) {
+                var input = document.getElementById(inputId);
+                var star = document.getElementById(starId);
+                if (!input || !star) return;
+                function check() {
+                    var value = input.value;
+                    var show = value !== '' && !regex.test(value);
+                    star.style.display = show ? '' : 'none';
+                }
+                input.addEventListener('input', check);
+                input.addEventListener('blur', check);
+                check();
+            }
+            wireIntegerCheck('Case_MonthsPregnant', 'pregnant-range-error-star', /^[1-9]$/);
+            wireIntegerCheck('Case_MonthsPostCalving', 'calving-range-error-star', /^[1-3]$/);
+            wireIntegerCheck('age-purchased-years', 'age-purchased-years-error-star', /^[0-9]{1,2}$/);
+            wireIntegerCheck('Case_PurchaseAgeInMonths', 'age-purchased-months-error-star', /^[0-9]{1,4}$/);
+            wireIntegerCheck('onset-age-years', 'onset-age-years-error-star', /^[0-9]{1,2}$/);
+            wireIntegerCheck('Case_OnsetAgeInMonths', 'onset-age-months-error-star', /^[0-9]{1,4}$/);
         }());
 
         // Unsaved-changes prompt

@@ -11,6 +11,15 @@
     var hasFormA = Model.Case.FormADate.HasValue;
     var hasFormB = Model.Case.FormBDate.HasValue;
     var hasBirthDate = Model.Case.BirthDate.HasValue;
+    string eartagHintText;
+    if (string.IsNullOrWhiteSpace(Model.Case.EartagCountry))
+    {
+        eartagHintText = string.IsNullOrWhiteSpace(Model.Case.EartagHerdmark) ? "Free format" : "PRE-Barimo";
+    }
+    else
+    {
+        eartagHintText = "Country-coded";
+    }
     var isDefraDataEntry = User.IsInRole("DataEntry") && !User.IsInRole("VLAAccess");
 
     string? eEartag       = ViewData.ModelState["Case.EartagCountry"]?.Errors.FirstOrDefault()?.ErrorMessage;
@@ -37,7 +46,7 @@
     {
         var latestBirthDate = Model.Case.HerdEntryDate.Value.Date.AddMonths(-18);
         var birthDate = Model.Case.BirthDate.Value.Date;
-        showHerdEntryDateWarning = !(birthDate >= new DateTime(1970, 1, 1) && birthDate <= latestBirthDate);
+        showHerdEntryDateWarning = !(birthDate >= DateTime.UnixEpoch && birthDate <= latestBirthDate);
     }
 }
 
@@ -64,7 +73,7 @@
 
 @if (TempData["Warning"] is string warningMsg)
 {
-    <div class="govuk-notification-banner" role="region"
+    <section class="govuk-notification-banner"
          aria-labelledby="defra-warning-title" data-module="govuk-notification-banner">
         <div class="govuk-notification-banner__header">
             <h2 class="govuk-notification-banner__title" id="defra-warning-title">Important</h2>
@@ -72,7 +81,7 @@
         <div class="govuk-notification-banner__content">
             <p class="govuk-body">@warningMsg</p>
         </div>
-    </div>
+    </section>
 }
 
 @if (!ViewContext.ModelState.IsValid)
@@ -111,9 +120,9 @@
         }
         else
         {
-            <div id="case-edit-unsaved-banner" class="govuk-inset-text bse-unsaved-banner" role="status" hidden="@(!Model.HasUnsavedChanges)">
+            <output id="case-edit-unsaved-banner" class="govuk-inset-text bse-unsaved-banner" hidden="@(!Model.HasUnsavedChanges)">
                 <strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.
-            </div>
+            </output>
 
             <div class="govuk-button-group govuk-!-margin-bottom-4">
                 <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
@@ -171,7 +180,7 @@
                                     <span aria-hidden="true">*</span>
                                 </button>
                                 <span id="case-eartag-help-tooltip" class="bse-eartag-help__tooltip" role="tooltip" hidden>
-                                    Enter the animal eartag in parts: country, herdmark and animal number.
+                                    @eartagHintText
                                 </span>
                             </span>
                         </div>
@@ -379,38 +388,12 @@
                 </tbody>
             </table>
 
-            @if (Model.TestsTotalPages > 1)
+            @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData)
             {
-                <nav class="govuk-pagination" role="navigation" aria-label="Test records pagination">
-                    @if (Model.TPage > 1)
-                    {
-                        <div class="govuk-pagination__prev">
-                            <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(Model.TPage - 1)" rel="prev">
-                                <span class="govuk-pagination__link-title">Previous<span class="govuk-visually-hidden"> page</span></span>
-                            </a>
-                        </div>
-                    }
-                    <ul class="govuk-pagination__list">
-                        @{ int tStart = Math.Max(1, Model.TPage - 4); int tEnd = Math.Min(Model.TestsTotalPages, tStart + 9); if (tEnd - tStart < 9) tStart = Math.Max(1, tEnd - 9); }
-                        @for (int p = tStart; p <= tEnd; p++)
-                        {
-                            bool tCur = p == Model.TPage;
-                            <li class="govuk-pagination__item @(tCur ? "govuk-pagination__item--current" : "")">
-                                @if (tCur) { <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(p)" aria-label="Page @p" aria-current="page">@p</a> }
-                                else       { <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(p)" aria-label="Page @p">@p</a> }
-                            </li>
-                        }
-                    </ul>
-                    @if (Model.TPage < Model.TestsTotalPages)
-                    {
-                        <div class="govuk-pagination__next">
-                            <a class="govuk-link govuk-pagination__link" href="@Model.TestsPageUrl(Model.TPage + 1)" rel="next">
-                                <span class="govuk-pagination__link-title">Next<span class="govuk-visually-hidden"> page</span></span>
-                            </a>
-                        </div>
-                    }
-                </nav>
-            }
+                ["CurrentPage"] = Model.TPage,
+                ["TotalPages"] = Model.TestsTotalPages,
+                ["PageNumberKey"] = "TPage"
+            })
 
             <div class="govuk-button-group govuk-!-margin-bottom-4">
                 <button type="button" id="show-add-test-row" class="govuk-button govuk-button--secondary" data-module="govuk-button">Add test record</button>
@@ -421,12 +404,12 @@
             <h2 class="govuk-visually-hidden">Case status</h2>
             <div class="defra-legacy-grid defra-legacy-grid--toprow">
                 <div class="defra-legacy-field defra-legacy-field--inline">
-                    <label class="govuk-label">Final result date</label>
-                    <input type="text" class="govuk-input defra-legacy-status-input" value="@(Model.Case.FinalResultDate?.ToString("dd/MM/yyyy") ?? "")" readonly />
+                    <label class="govuk-label" for="editFinalResultDate">Final result date</label>
+                    <input id="editFinalResultDate" type="text" class="govuk-input defra-legacy-status-input" value="@(Model.Case.FinalResultDate?.ToString("dd/MM/yyyy") ?? "")" readonly />
                 </div>
                 <div class="defra-legacy-field defra-legacy-field--inline">
-                    <label class="govuk-label">Final result</label>
-                    <input type="text" class="govuk-input defra-legacy-status-input" value="@(Model.Case.FinalResult ?? "")" readonly />
+                    <label class="govuk-label" for="editFinalResult">Final result</label>
+                    <input id="editFinalResult" type="text" class="govuk-input defra-legacy-status-input" value="@(Model.Case.FinalResult ?? "")" readonly />
                 </div>
             </div>
 
@@ -488,7 +471,7 @@
             <div class="defra-legacy-grid">
                 <div class="defra-legacy-field">
                     <label asp-for="Case.BirthDateSource" class="govuk-label">Date Of Birth Source</label>
-                    <select asp-for="Case.BirthDateSource" class="govuk-select defra-legacy-input--sm">
+                    <select asp-for="Case.BirthDateSource" class="govuk-select defra-legacy-input--sm" disabled="@(!hasBirthDate)">
                         <option value="">-- Select --</option>
                         @foreach (var o in Model.BirthDateSourceOptions)
                         {
@@ -497,15 +480,15 @@
                     </select>
                 </div>
                 <div class="defra-legacy-field defra-legacy-field--inline">
-                    <label class="govuk-label">DBSE</label>
-                    <input type="text" class="govuk-input defra-legacy-status-input" value="@(Model.Case.Dbse ?? "")" disabled />
+                    <label class="govuk-label" for="editDbse">DBSE</label>
+                    <input id="editDbse" type="text" class="govuk-input defra-legacy-status-input" value="@(BSE.SharedKernel.RbseHelper.FormatDbse(Model.Case.Dbse) ?? "")" disabled />
                 </div>
             </div>
 
             <div class="defra-legacy-grid">
                 <div class="defra-legacy-field defra-legacy-field--checkbox-inline">
                     <label asp-for="Case.IsBirthDateEst" class="govuk-label">Is Date Of Birth Estimated?</label>
-                    <input asp-for="Case.IsBirthDateEst" type="checkbox" class="defra-legacy-receipt-check defra-legacy-inline-checkbox" />
+                    <input asp-for="Case.IsBirthDateEst" type="checkbox" class="defra-legacy-receipt-check defra-legacy-inline-checkbox" disabled="@(!hasBirthDate)" />
                 </div>
                 <div class="defra-legacy-field">
                     <label asp-for="Case.Survey" class="govuk-label">Survey</label>
@@ -773,6 +756,8 @@
     }
 
     .bse-unsaved-banner {
+        /* <output> defaults to display:inline, which collapses govuk-inset-text's block layout. */
+        display: block;
         border-left-color: #1d70b8;
     }
 
@@ -1007,6 +992,14 @@
                 return 'Enter the animal eartag in parts: country, herdmark and animal number.';
             }
 
+            if (!country) {
+                if (herdmark) {
+                    return 'PRE-Barimo';
+                }
+
+                return 'Free format';
+            }
+
             if (country.length > 2) {
                 if (country && hasDigitsOnly(country.charAt(0)) && !/^\d{3}[012_ ]?$/.test(country)) {
                     return 'Country component is invalid.';
@@ -1033,10 +1026,6 @@
                     return 'EC eartag: animal component should be 1 to 12 uppercase letters or digits.';
                 }
                 return 'EC non-UK';
-            }
-
-            if (!country && (herdmark || animal)) {
-                return 'No-country / legacy format';
             }
 
             return 'Unknown format';

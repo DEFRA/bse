@@ -15,4 +15,29 @@ public sealed record BsessCheckByRbseResult(
     string? BseEartag,
     string? BseBirthDate,
     string? Survey,
-    string? BseFinalResult);
+    string? BseFinalResult)
+{
+    public static bool HasAnyValues(
+        string? notificationDate,
+        string? bsessEartag,
+        string? bsessBirthDate,
+        string? testGroupName,
+        string? bsessFinalResult,
+        string? barcode,
+        string? formADate,
+        string? bseEartag,
+        string? bseBirthDate,
+        string? survey,
+        string? bseFinalResult)
+        => !string.IsNullOrWhiteSpace(notificationDate)
+            || !string.IsNullOrWhiteSpace(bsessEartag)
+            || !string.IsNullOrWhiteSpace(bsessBirthDate)
+            || !string.IsNullOrWhiteSpace(testGroupName)
+            || !string.IsNullOrWhiteSpace(bsessFinalResult)
+            || !string.IsNullOrWhiteSpace(barcode)
+            || !string.IsNullOrWhiteSpace(formADate)
+            || !string.IsNullOrWhiteSpace(bseEartag)
+            || !string.IsNullOrWhiteSpace(bseBirthDate)
+            || !string.IsNullOrWhiteSpace(survey)
+            || !string.IsNullOrWhiteSpace(bseFinalResult);
+}

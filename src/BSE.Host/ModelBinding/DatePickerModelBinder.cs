@@ -34,7 +34,9 @@ public sealed class DatePickerModelBinder : IModelBinder
             return Task.CompletedTask;
         }
 
-        if (DateTime.TryParseExact(raw.Trim(), Formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
+        var trimmed = raw.Trim();
+
+        if (DateTime.TryParseExact(trimmed, Formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
         {
             bindingContext.Result = ModelBindingResult.Success(date);
         }
