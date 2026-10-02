@@ -9,13 +9,17 @@
 
     string? E(string key) => ViewData.ModelState[key]?.Errors.FirstOrDefault()?.ErrorMessage;
     string DateVal(DateTime? d) => d?.ToString("dd/MM/yyyy") ?? string.Empty;
+    // Prefer the raw text the user typed (preserved on failed/invalid binding) so it is
+    // redisplayed unchanged after Save, matching legacy CalendarDate behaviour; otherwise
+    // fall back to formatting the successfully bound value.
+    string DateDisplay(string key, DateTime? d) =>
+        ViewData.ModelState[key]?.AttemptedValue ?? DateVal(d);
     var vlaReadOnly = !Model.CanEditMainCase;
 
     var showInformDefraWarning = Model.Case.BirthDate.HasValue;
     var showOnsetDateWarning = Model.Case.OnsetDate.HasValue
         && Model.Case.FormADate.HasValue
         && Model.Case.OnsetDate.Value.Date < Model.Case.FormADate.Value.Date.AddMonths(-3);
-    var showOnsetAgeWarning = Model.Case.OnsetAgeInMonths.HasValue && Model.Case.OnsetAgeInMonths.Value < 18;
     var showHerdDateWarning = Model.Case.HerdEntryDate.HasValue
         && Model.Case.BirthDate.HasValue
         && Model.Case.HerdEntryDate.Value.Date < Model.Case.BirthDate.Value.Date.AddMonths(18);
@@ -52,23 +56,6 @@
         </div>
         <div class="govuk-notification-banner__content">
             <p class="govuk-body">@warningMsg</p>
-        </div>
-    </div>
-}
-
-@if (!ViewContext.ModelState.IsValid)
-{
-    <div class="govuk-error-summary" data-module="govuk-error-summary">
-        <div role="alert">
-            <h2 class="govuk-error-summary__title">There is a problem</h2>
-            <div class="govuk-error-summary__body">
-                <ul class="govuk-list govuk-error-summary__list">
-                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
-                    {
-                        <li>@e.ErrorMessage</li>
-                    }
-                </ul>
-            </div>
         </div>
     </div>
 }
@@ -116,7 +103,7 @@
         <input type="hidden" asp-for="Case.Eartag" />
         <input type="hidden" asp-for="Case.PreviousEartag" />
         <input type="hidden" asp-for="Case.Bse1ReceivedDate" />
-        <input type="hidden" asp-for="Case.FormADate" />
+        <input type="hidden" asp-for="Case.FormADate" value="@DateVal(Model.Case.FormADate)" />
         <input type="hidden" asp-for="Case.FormAResubmittedDate" />
         <input type="hidden" asp-for="Case.FormBDate" />
         <input type="hidden" asp-for="Case.Fate" />
@@ -140,26 +127,12 @@
         <div class="vla-legacy-grid">
             <div class="vla-legacy-field @(E("Case.BirthDate") is not null ? "govuk-form-group--error" : "")">
                 <div class="bse-vla-help-inline">
-                    <label asp-for="Case.BirthDate" class="govuk-label">Date Of Birth</label>
-                    @if (showInformDefraWarning)
-                    {
-                        <button type="button"
-                                class="bse-vla-help__icon"
-                                data-bse-tooltip-trigger
-                                aria-label="Date of birth warning"
-                                aria-controls="vla-inform-defra-tooltip"
-                                aria-expanded="false">
-                            <span aria-hidden="true">*</span>
-                        </button>
-                        <span id="vla-inform-defra-tooltip" class="bse-vla-help__tooltip" role="tooltip" hidden>
-                            DEFRA may need informing if you change the Date Of Birth
-                        </span>
-                    }
+                    <label asp-for="Case.BirthDate" class="govuk-label">Date Of Birth <span id="birth-date-star" class="bse-vla-star-red" hidden="@(E("Case.BirthDate") is null)" title="@(E("Case.BirthDate") ?? "Please enter a valid date")">*</span> <span id="vla-inform-defra-star" class="bse-vla-star-green" hidden="@(!showInformDefraWarning)" title="DEFRA may need informing if you change the Date Of Birth">*</span></label>
                 </div>
                 <div>
                     @if (E("Case.BirthDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.BirthDate")</p> }
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input asp-for="Case.BirthDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.BirthDate") is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.BirthDate)" />
+                        <input asp-for="Case.BirthDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.BirthDate") is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateDisplay("Case.BirthDate", Model.Case.BirthDate)" />
                     </div>
                 </div>
             </div>
@@ -228,11 +201,11 @@
         <div id="purchase-section" @(Model.Case.Origin != "P" ? "style=\"display:none\"" : "")>
             <div class="vla-legacy-grid">
                 <div class="vla-legacy-field @(E("Case.PurchaseDate") is not null ? "govuk-form-group--error" : "")">
-                    <label asp-for="Case.PurchaseDate" class="govuk-label">Date Purchased</label>
+                    <label asp-for="Case.PurchaseDate" class="govuk-label">Date Purchased <span id="purchase-date-star" class="bse-vla-star-red" hidden="@(E("Case.PurchaseDate") is null)" title="@(E("Case.PurchaseDate") ?? "Please enter a valid date")">*</span></label>
                     <div>
                         @if (E("Case.PurchaseDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.PurchaseDate")</p> }
                         <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                            <input asp-for="Case.PurchaseDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.PurchaseDate") is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.PurchaseDate)" />
+                            <input asp-for="Case.PurchaseDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.PurchaseDate") is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateDisplay("Case.PurchaseDate", Model.Case.PurchaseDate)" />
                         </div>
                     </div>
                 </div>
@@ -275,51 +248,23 @@
         <div class="vla-legacy-grid">
             <div class="vla-legacy-field @(E("Case.HerdEntryDate") is not null ? "govuk-form-group--error" : "")">
                 <div class="bse-vla-help-inline">
-                    <label asp-for="Case.HerdEntryDate" class="govuk-label">Herd Entry Date</label>
-                    @if (showHerdDateWarning)
-                    {
-                        <button type="button"
-                                class="bse-vla-help__icon"
-                                data-bse-tooltip-trigger
-                                aria-label="Herd entry warning"
-                                aria-controls="vla-herd-date-tooltip"
-                                aria-expanded="false">
-                            <span aria-hidden="true">*</span>
-                        </button>
-                        <span id="vla-herd-date-tooltip" class="bse-vla-help__tooltip" role="tooltip" hidden>
-                            Are you sure the Herd Entry is less than 18 months after the Date of Birth
-                        </span>
-                    }
+                    <label asp-for="Case.HerdEntryDate" class="govuk-label">Herd Entry Date <span id="herd-entry-date-star" class="bse-vla-star-red" hidden="@(E("Case.HerdEntryDate") is null)" title="@(E("Case.HerdEntryDate") ?? "Please enter a valid date")">*</span> <span id="vla-herd-date-warning-star" class="bse-vla-star-green" hidden title="Are you sure the Herd Entry is less than 18 months after the Date of Birth">*</span></label>
                 </div>
                 <div>
                     @if (E("Case.HerdEntryDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.HerdEntryDate")</p> }
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input asp-for="Case.HerdEntryDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.HerdEntryDate") is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.HerdEntryDate)" />
+                        <input asp-for="Case.HerdEntryDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.HerdEntryDate") is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateDisplay("Case.HerdEntryDate", Model.Case.HerdEntryDate)" />
                     </div>
                 </div>
             </div>
             <div class="vla-legacy-field @(E("Case.OnsetDate") is not null ? "govuk-form-group--error" : "")">
                 <div class="bse-vla-help-inline">
-                    <label asp-for="Case.OnsetDate" class="govuk-label">Onset Date</label>
-                    @if (showOnsetDateWarning)
-                    {
-                        <button type="button"
-                                class="bse-vla-help__icon"
-                                data-bse-tooltip-trigger
-                                aria-label="Onset date warning"
-                                aria-controls="vla-onset-date-tooltip"
-                                aria-expanded="false">
-                            <span aria-hidden="true">*</span>
-                        </button>
-                        <span id="vla-onset-date-tooltip" class="bse-vla-help__tooltip" role="tooltip" hidden>
-                            Are you sure that the onset date was more than 3 months before the Form A Date?
-                        </span>
-                    }
+                    <label asp-for="Case.OnsetDate" class="govuk-label">Onset Date <span id="onset-date-star" class="bse-vla-star-red" hidden="@(E("Case.OnsetDate") is null)" title="@(E("Case.OnsetDate") ?? "Please enter a valid date")">*</span> <span id="vla-onset-date-warning-star" class="bse-vla-star-green" hidden title="Are you sure that the onset date was more than 3 months before the Form A Date?">*</span></label>
                 </div>
                 <div>
                     @if (E("Case.OnsetDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.OnsetDate")</p> }
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input asp-for="Case.OnsetDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.OnsetDate") is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.OnsetDate)" />
+                        <input asp-for="Case.OnsetDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.OnsetDate") is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateDisplay("Case.OnsetDate", Model.Case.OnsetDate)" />
                     </div>
                 </div>
             </div>
@@ -329,7 +274,7 @@
                 <div><input asp-for="Case.IsOnsetDateEst" type="checkbox" class="vla-legacy-checkbox" /></div>
             </div>
             <div class="vla-legacy-field @(E("Case.MonthsPregnant") is not null ? "govuk-form-group--error" : "")">
-                <label asp-for="Case.MonthsPregnant" class="govuk-label">Months Pregnant</label>
+                <label asp-for="Case.MonthsPregnant" class="govuk-label">Months Pregnant <span id="months-pregnant-star" class="bse-vla-star-red" hidden title="This must be a value between 1 and 9">*</span></label>
                 <div>
                     @if (E("Case.MonthsPregnant") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.MonthsPregnant")</p> }
                     <input asp-for="Case.MonthsPregnant" type="number" class="govuk-input vla-legacy-input @(E("Case.MonthsPregnant") is not null ? "govuk-input--error" : "")" min="1" max="9" />
@@ -337,7 +282,7 @@
             </div>
 
             <div class="vla-legacy-field @(E("Case.MonthsPostCalving") is not null ? "govuk-form-group--error" : "")">
-                <label asp-for="Case.MonthsPostCalving" class="govuk-label">Months Post Calving</label>
+                <label asp-for="Case.MonthsPostCalving" class="govuk-label">Months Post Calving <span id="months-post-calving-star" class="bse-vla-star-red" hidden title="This must be a value between 1 and 3">*</span> <span id="months-pregnant-error-star" class="bse-vla-star-red" hidden title="You cannot enter a value for Month's Post Calving and Months Pregnant">*</span></label>
                 <div>
                     @if (E("Case.MonthsPostCalving") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.MonthsPostCalving")</p> }
                     <input asp-for="Case.MonthsPostCalving" type="number" class="govuk-input vla-legacy-input @(E("Case.MonthsPostCalving") is not null ? "govuk-input--error" : "")" min="1" max="3" />
@@ -345,21 +290,7 @@
             </div>
             <div class="vla-legacy-field">
                 <div class="bse-vla-help-inline">
-                    <label class="govuk-label">Onset Age</label>
-                    @if (showOnsetAgeWarning)
-                    {
-                        <button type="button"
-                                class="bse-vla-help__icon"
-                                data-bse-tooltip-trigger
-                                aria-label="Onset age warning"
-                                aria-controls="vla-onset-age-tooltip"
-                                aria-expanded="false">
-                            <span aria-hidden="true">*</span>
-                        </button>
-                        <span id="vla-onset-age-tooltip" class="bse-vla-help__tooltip" role="tooltip" hidden>
-                            Are you sure that the onset age is less than 18 months?
-                        </span>
-                    }
+                    <label class="govuk-label">Onset Age <span id="vla-onset-age-warning-star" class="bse-vla-star-green" hidden title="Are you sure that the onset age is less than 18 months?">*</span></label>
                 </div>
                 <div class="vla-legacy-age-group vla-legacy-age-group--header">
                     <button type="button" id="btn-calc-onset-age" class="govuk-button govuk-button--secondary vla-legacy-calc-button">Calculate</button>
@@ -367,9 +298,10 @@
             </div>
 
             <div class="vla-legacy-field @(E("Case.SlaughterDate") is not null ? "govuk-form-group--error" : "")">
-                <label asp-for="Case.SlaughterDate" class="govuk-label">Slaughter Date</label>
+                <label asp-for="Case.SlaughterDate" class="govuk-label">Slaughter Date <span id="slaughter-date-star" class="bse-vla-star-red" hidden title="Please enter a valid date">*</span></label>
                 <div>
                     @if (E("Case.SlaughterDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.SlaughterDate")</p> }
+                    <p id="slaughter-date-error-message" class="govuk-error-message" hidden><span class="govuk-visually-hidden">Error:</span> <span id="slaughter-date-error-text"></span></p>
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
                         <input asp-for="Case.SlaughterDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.SlaughterDate") is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.SlaughterDate)" />
                     </div>
@@ -387,8 +319,6 @@
                 </div>
             </div>
         </div>
-
-        <div id="onset-age-warning" class="govuk-visually-hidden" style="display:none"></div>
 
         <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
 
@@ -434,9 +364,17 @@
                                         <option value="@t.Code" selected="@(string.Equals(Model.EditOwnerType, t.Code, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@t.Description</option>
                                     }
                                 </select>
+                                @if (E("EditOwnerType") is not null)
+                                {
+                                    <span class="bse-vla-star-red" title="@E("EditOwnerType")">*</span>
+                                }
                             </td>
                             <td class="govuk-table__cell">
                                 <input name="EditOwnerName" class="govuk-input govuk-!-width-two-thirds" maxlength="255" value="@Model.EditOwnerName" />
+                                @if (E("EditOwnerName") is not null)
+                                {
+                                    <span class="bse-vla-star-red" title="@E("EditOwnerName")">*</span>
+                                }
                             </td>
                             <td class="govuk-table__cell">
                                 <input name="EditOwnerCphh" class="govuk-input vla-owner-cphh-input" maxlength="14" value="@Model.EditOwnerCphh" autocomplete="off"
@@ -478,9 +416,17 @@
                                 <option value="@t.Code" selected="@(string.Equals(Model.NewOwnerType, t.Code, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@t.Description</option>
                             }
                         </select>
+                        @if (E("NewOwnerType") is not null)
+                        {
+                            <span class="bse-vla-star-red" title="@E("NewOwnerType")">*</span>
+                        }
                     </td>
                     <td class="govuk-table__cell">
                         <input name="NewOwnerName" class="govuk-input govuk-!-width-two-thirds" maxlength="255" value="@Model.NewOwnerName" />
+                        @if (E("NewOwnerName") is not null)
+                        {
+                            <span class="bse-vla-star-red" title="@E("NewOwnerName")">*</span>
+                        }
                     </td>
                     <td class="govuk-table__cell">
                         <input name="NewOwnerCphh" class="govuk-input vla-owner-cphh-input" maxlength="14" value="@Model.NewOwnerCphh" autocomplete="off"
@@ -690,40 +636,6 @@
         position: relative;
     }
 
-    .bse-vla-help__icon {
-        border: 0;
-        background: transparent;
-        color: #00703c;
-        font-size: 1.35rem;
-        line-height: 1;
-        font-weight: 700;
-        padding: 0 2px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        cursor: help;
-    }
-
-    .bse-vla-help__icon:focus {
-        outline: 3px solid #ffdd00;
-        outline-offset: 2px;
-    }
-
-    .bse-vla-help__tooltip {
-        position: absolute;
-        left: calc(100% + 0.35rem);
-        top: 50%;
-        transform: translateY(-50%);
-        z-index: 20;
-        max-width: 24rem;
-        background: #ffffff;
-        border: 1px solid #b1b4b6;
-        box-shadow: 0 2px 6px rgba(11, 12, 12, 0.15);
-        padding: 0.5rem 0.65rem;
-        font-size: 0.95rem;
-        line-height: 1.3;
-    }
-
     @@media (max-width: 768px) {
         .vla-legacy-grid {
             grid-template-columns: 1fr;
@@ -739,68 +651,20 @@
             flex-wrap: wrap;
         }
     }
+
+    .bse-vla-star-red {
+        color: #FF0000;
+        font-weight: 700;
+    }
+
+    .bse-vla-star-green {
+        color: #00703c;
+        font-weight: 700;
+    }
 </style>
 
 <script>
     (function () {
-        var tooltipTriggers = Array.prototype.slice.call(document.querySelectorAll('[data-bse-tooltip-trigger]'));
-
-        function getTooltipForTrigger(trigger) {
-            var id = trigger ? trigger.getAttribute('aria-controls') : null;
-            return id ? document.getElementById(id) : null;
-        }
-
-        function hideTooltipFor(trigger) {
-            var tooltip = getTooltipForTrigger(trigger);
-            if (!trigger || !tooltip) return;
-            tooltip.hidden = true;
-            trigger.setAttribute('aria-expanded', 'false');
-        }
-
-        function hideAllTooltips(exceptTrigger) {
-            tooltipTriggers.forEach(function (trigger) {
-                if (exceptTrigger && trigger === exceptTrigger) return;
-                hideTooltipFor(trigger);
-            });
-        }
-
-        function showTooltipFor(trigger) {
-            var tooltip = getTooltipForTrigger(trigger);
-            if (!trigger || !tooltip) return;
-            hideAllTooltips(trigger);
-            tooltip.hidden = false;
-            trigger.setAttribute('aria-expanded', 'true');
-        }
-
-        tooltipTriggers.forEach(function (trigger) {
-            var tooltip = getTooltipForTrigger(trigger);
-            if (!tooltip) return;
-
-            trigger.addEventListener('mouseenter', function () { showTooltipFor(trigger); });
-            trigger.addEventListener('mouseleave', function () { hideTooltipFor(trigger); });
-            trigger.addEventListener('focus', function () { showTooltipFor(trigger); });
-            trigger.addEventListener('blur', function () { hideTooltipFor(trigger); });
-            trigger.addEventListener('click', function (e) {
-                e.preventDefault();
-                if (tooltip.hidden) showTooltipFor(trigger); else hideTooltipFor(trigger);
-            });
-
-            tooltip.addEventListener('mouseenter', function () { showTooltipFor(trigger); });
-            tooltip.addEventListener('mouseleave', function () { hideTooltipFor(trigger); });
-        });
-
-        document.addEventListener('click', function (e) {
-            var clickedInside = tooltipTriggers.some(function (trigger) {
-                var tooltip = getTooltipForTrigger(trigger);
-                return trigger.contains(e.target) || (tooltip && tooltip.contains(e.target));
-            });
-            if (!clickedInside) hideAllTooltips();
-        });
-
-        document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') hideAllTooltips();
-        });
-
         var originSel = document.getElementById('Case_Origin');
         var purchaseSection = document.getElementById('purchase-section');
         var hasTracedBabDataOnLoad = @Html.Raw(Model.HasTracedBabData ? "true" : "false");
@@ -837,67 +701,379 @@
         }
         applyPurchaseVisibility();
 
-        function monthsBetween(dateStr1, dateStr2) {
-            var d1 = new Date(dateStr1), d2 = new Date(dateStr2);
-            return (d2.getFullYear() - d1.getFullYear()) * 12 + (d2.getMonth() - d1.getMonth());
+        var sexSel = document.getElementById('Case_Sex');
+        var monthsPregnantEl = document.getElementById('Case_MonthsPregnant');
+        var monthsPostCalvingEl = document.getElementById('Case_MonthsPostCalving');
+
+        function applyPregnancyFieldAvailability() {
+            if (!sexSel) return;
+            var isFemale = sexSel.value === 'F';
+            if (monthsPregnantEl) {
+                monthsPregnantEl.disabled = !isFemale;
+                if (!isFemale) monthsPregnantEl.value = '';
+            }
+            if (monthsPostCalvingEl) {
+                monthsPostCalvingEl.disabled = !isFemale;
+                if (!isFemale) monthsPostCalvingEl.value = '';
+            }
+            updateMonthsPregnantIndicators();
+        }
+
+        if (sexSel) {
+            sexSel.addEventListener('change', applyPregnancyFieldAvailability);
+        }
+
+        function parseUkDate(value) {
+            var text = (value || '').trim();
+            if (!text) return null;
+
+            var parts = text.split('/');
+            if (parts.length === 3) {
+                // Require a 4-digit year (matching the dd/mm/yyyy datepicker format) so that
+                // incomplete/truncated years (e.g. "202") aren't silently accepted as valid dates.
+                if (!/^\d{4}$/.test(parts[2])) return null;
+                var day = parseInt(parts[0], 10);
+                var month = parseInt(parts[1], 10);
+                var year = parseInt(parts[2], 10);
+                if (!day || !month || !year) return null;
+                var ukDate = new Date(year, month - 1, day);
+                if (ukDate.getFullYear() !== year || ukDate.getMonth() !== month - 1 || ukDate.getDate() !== day) return null;
+                return ukDate;
+            }
+
+            return null;
+        }
+
+        // -- Instant range-validation red asterisk,
+        //    *DateValid() functions which call CalendarDate.ascx's Validate(dDate, earliest, latest, message)
+        //    overloads on AutoPostBack, setting the field-specific business-rule message as the tooltip. --
+        function getBirthDate() {
+            return parseUkDate((document.getElementById('Case_BirthDate') || {}).value);
+        }
+        function getFormADateOrNow() {
+            var formADate = parseUkDate((document.getElementById('Case_FormADate') || {}).value);
+            if (formADate) return formADate;
+            var now = new Date();
+            return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        }
+
+        function checkDateStar(inputId, starId, rangeCheck, invalidMessage) {
+            var input = document.getElementById(inputId);
+            var star = document.getElementById(starId);
+            if (!input || !star) return;
+            var value = input.value.trim();
+            if (value === '') {
+                star.hidden = true;
+                return;
+            }
+            var date = parseUkDate(value);
+            if (!date) {
+                star.title = invalidMessage;
+                star.hidden = false;
+                return;
+            }
+            var message = rangeCheck ? rangeCheck(date) : null;
+            if (message) {
+                star.title = message;
+                star.hidden = false;
+            } else {
+                star.title = invalidMessage;
+                star.hidden = true;
+            }
+        }
+
+        function birthDateRangeCheck(date) {
+            var earliest = new Date(1970, 0, 1);
+            var latest = getFormADateOrNow();
+            if (date < earliest || date > latest) {
+                return 'Birth Date must be after 31/12/1969 and before the Form A Date';
+            }
+            return null;
+        }
+
+        function purchaseDateRangeCheck(date) {
+            var birthDate = getBirthDate();
+            if (!birthDate) return null;
+            var latest = getFormADateOrNow();
+            if (date < birthDate || date > latest) {
+                return 'Purchase Date must be after the birth date and before the Form A Date';
+            }
+            return null;
+        }
+
+        function herdEntryDateRangeCheck(date) {
+            var birthDate = getBirthDate();
+            if (!birthDate) return null;
+            var latest = getFormADateOrNow();
+            if (date > latest) {
+                return 'The Herd Entry Date must be before the Form A Date.';
+            }
+            return null;
+        }
+
+        function onsetDateRangeCheck(date) {
+            var birthDate = getBirthDate();
+            var latest = getFormADateOrNow();
+            if (birthDate) {
+                if (date < birthDate || date > latest) {
+                    return 'Onset Date must be after the Date Of Birth and before the Form A Date';
+                }
+                return null;
+            }
+            if (date > latest) {
+                return 'Onset Date must be before the Form A Date';
+            }
+            return null;
+        }
+
+        function slaughterDateRangeCheck(date) {
+            var today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (date > today) {
+                return 'Slaughter date must not be in the future.';
+            }
+            var formADate = parseUkDate((document.getElementById('Case_FormADate') || {}).value);
+            if (formADate) {
+                if (date < formADate) {
+                    return 'Slaughter date must be after the Form A date.';
+                }
+                return null;
+            }
+            var birthDate = getBirthDate();
+            if (birthDate && date < birthDate) {
+                return 'Slaughter date must be after the birth date.';
+            }
+            return null;
+        }
+
+        function updateSlaughterDateMessage() {
+            var input = document.getElementById('Case_SlaughterDate');
+            var messageBox = document.getElementById('slaughter-date-error-message');
+            var messageText = document.getElementById('slaughter-date-error-text');
+            if (!input || !messageBox || !messageText) return;
+            var value = input.value.trim();
+            var message = null;
+            if (value !== '') {
+                var date = parseUkDate(value);
+                message = date ? slaughterDateRangeCheck(date) : 'Please enter a valid date';
+            }
+            messageText.textContent = message || '';
+            messageBox.hidden = !message;
+            input.classList.toggle('govuk-input--error', !!message);
+        }
+
+        var vlaDateStarFields = [
+            ['Case_BirthDate', 'birth-date-star', birthDateRangeCheck, 'Please enter a valid date'],
+            ['Case_PurchaseDate', 'purchase-date-star', purchaseDateRangeCheck, 'Please enter a valid date'],
+            ['Case_HerdEntryDate', 'herd-entry-date-star', herdEntryDateRangeCheck, 'Please enter a valid date'],
+            ['Case_OnsetDate', 'onset-date-star', onsetDateRangeCheck, 'Please enter a valid date'],
+            ['Case_SlaughterDate', 'slaughter-date-star', slaughterDateRangeCheck, 'Please enter a valid date']
+        ];
+
+        function refreshAllVlaDateStars() {
+            vlaDateStarFields.forEach(function (entry) {
+                checkDateStar(entry[0], entry[1], entry[2], entry[3]);
+            });
+            updateSlaughterDateMessage();
+        }
+
+        vlaDateStarFields.forEach(function (pair) {
+            var input = document.getElementById(pair[0]);
+            if (!input) return;
+            var check = function () { checkDateStar(pair[0], pair[1], pair[2], pair[3]); };
+            input.addEventListener('blur', check);
+            input.addEventListener('change', check);
+            check();
+        });
+        updateSlaughterDateMessage();
+
+        // Birth Date and Form A Date affect other fields' range bounds, so re-validate all on change.
+        ['Case_BirthDate', 'Case_FormADate'].forEach(function (id) {
+            var input = document.getElementById(id);
+            if (!input) return;
+            input.addEventListener('blur', refreshAllVlaDateStars);
+            input.addEventListener('change', refreshAllVlaDateStars);
+        });
+
+        document.getElementById('Case_SlaughterDate')?.addEventListener('blur', updateSlaughterDateMessage);
+        document.getElementById('Case_SlaughterDate')?.addEventListener('change', updateSlaughterDateMessage);
+
+        function addMonthsSafe(sourceDate, monthsToAdd) {
+            var year = sourceDate.getFullYear();
+            var month = sourceDate.getMonth() + monthsToAdd;
+            var day = sourceDate.getDate();
+            var firstDay = new Date(year, month, 1);
+            var lastDayOfTargetMonth = new Date(firstDay.getFullYear(), firstDay.getMonth() + 1, 0).getDate();
+            return new Date(firstDay.getFullYear(), firstDay.getMonth(), Math.min(day, lastDayOfTargetMonth));
+        }
+
+        function setWarningVisibility(starId, shouldShow) {
+            var star = document.getElementById(starId);
+            if (star) {
+                star.hidden = !shouldShow;
+            }
+        }
+
+        function updateDateWarningIndicators() {
+            var birthDate = parseUkDate(document.getElementById('Case_BirthDate')?.value);
+            var herdEntryDate = parseUkDate(document.getElementById('Case_HerdEntryDate')?.value);
+            var onsetDate = parseUkDate(document.getElementById('Case_OnsetDate')?.value);
+            var formADate = parseUkDate(document.getElementById('Case_FormADate')?.value);
+
+            var showHerdWarning = !!(birthDate && herdEntryDate && herdEntryDate < addMonthsSafe(birthDate, 18));
+            var showOnsetWarning = !!(onsetDate && formADate && onsetDate < addMonthsSafe(formADate, -3));
+
+            setWarningVisibility('vla-herd-date-warning-star', herdWarningArmed && showHerdWarning);
+            setWarningVisibility('vla-onset-date-warning-star', onsetWarningArmed && showOnsetWarning);
+        }
+
+        function clearDateWarningIndicators() {
+            setWarningVisibility('vla-herd-date-warning-star', false);
+            setWarningVisibility('vla-onset-date-warning-star', false);
+        }
+
+        function completeMonthsBetween(fromDate, toDate) {
+            var months = (toDate.getFullYear() - fromDate.getFullYear()) * 12 + (toDate.getMonth() - fromDate.getMonth());
+            if (toDate.getDate() < fromDate.getDate()) months -= 1;
+            return Math.max(0, months);
         }
 
         function updateOnsetWarning() {
-            var total = parseInt(document.getElementById('Case_OnsetAgeInMonths')?.value || '');
-            var warn = document.getElementById('onset-age-warning');
-            if (warn) warn.style.display = (!isNaN(total) && total < 18) ? '' : 'none';
+            var total = parseInt(document.getElementById('Case_OnsetAgeInMonths')?.value || '', 10);
+            setWarningVisibility('vla-onset-age-warning-star', onsetAgeWarningArmed && !isNaN(total) && total < 18);
         }
 
-        function calculate(birthId, refDateId, yearsId, totalId) {
-            var birth = document.getElementById(birthId)?.value;
-            var ref = document.getElementById(refDateId)?.value;
-            var yrs = document.getElementById(yearsId);
-            var tot = document.getElementById(totalId);
-            if (birth && ref) {
-                var m = monthsBetween(birth, ref);
-                if (tot) tot.value = Math.max(0, m);
-            } else {
-                var years = parseInt(yrs?.value || '0') || 0;
-                var months = parseInt(tot?.value || '0') || 0;
-                if (years > 0 && tot) {
-                    tot.value = years * 12 + months;
-                }
-            }
-            if (yrs) yrs.value = '';
-            updateOnsetWarning();
+        function updateMonthsPregnantIndicators() {
+            var pregnantEl = document.getElementById('Case_MonthsPregnant');
+            var postCalvingEl = document.getElementById('Case_MonthsPostCalving');
+            var pregnantStar = document.getElementById('months-pregnant-star');
+            var postCalvingStar = document.getElementById('months-post-calving-star');
+            var mutualExclusivityStar = document.getElementById('months-pregnant-error-star');
+
+            var pregnantValue = parseInt(pregnantEl?.value || '', 10);
+            var postCalvingValue = parseInt(postCalvingEl?.value || '', 10);
+            var hasPregnant = !isNaN(pregnantValue) && pregnantEl.value.trim() !== '';
+            var hasPostCalving = !isNaN(postCalvingValue) && postCalvingEl.value.trim() !== '';
+
+            if (pregnantStar) pregnantStar.hidden = !(hasPregnant && (pregnantValue < 1 || pregnantValue > 9));
+            if (postCalvingStar) postCalvingStar.hidden = !(hasPostCalving && (postCalvingValue < 1 || postCalvingValue > 3));
+            if (mutualExclusivityStar) mutualExclusivityStar.hidden = !(hasPregnant && hasPostCalving);
         }
 
-        document.getElementById('btn-calc-age-purchased')?.addEventListener('click', function () {
-            calculate('Case_BirthDate', 'Case_PurchaseDate', 'age-purchased-years', 'Case_PurchaseAgeInMonths');
-        });
-        document.getElementById('btn-calc-onset-age')?.addEventListener('click', function () {
-            calculate('Case_BirthDate', 'Case_OnsetDate', 'onset-age-years', 'Case_OnsetAgeInMonths');
-        });
+        function calendarMonthsBetween(fromDate, toDate) {
+            return (toDate.getFullYear() - fromDate.getFullYear()) * 12 + (toDate.getMonth() - fromDate.getMonth());
+        }
 
-        function autoCalculateOnsetAgeFromDates() {
-            var birth = document.getElementById('Case_BirthDate')?.value;
-            var onset = document.getElementById('Case_OnsetDate')?.value;
-            var years = document.getElementById('onset-age-years');
-            var total = document.getElementById('Case_OnsetAgeInMonths');
+        function calculatePurchasedAge() {
+            var birth = parseUkDate(document.getElementById('Case_BirthDate')?.value);
+            var purchase = parseUkDate(document.getElementById('Case_PurchaseDate')?.value);
+            var yearsEl = document.getElementById('age-purchased-years');
+            var totalEl = document.getElementById('Case_PurchaseAgeInMonths');
+            if (!totalEl) return;
 
-            if (!(birth && onset) || !total) {
+            if (birth && purchase) {
+                // Mirrors legacy CalculateAgePurchased: plain DateDiff(Month, ...) with
+                // no day-of-month adjustment (unlike CalculateOnsetAge, which does adjust).
+                totalEl.value = calendarMonthsBetween(birth, purchase);
+                if (yearsEl) yearsEl.value = '';
                 return;
             }
 
-            total.value = Math.max(0, monthsBetween(birth, onset));
-            if (years) years.value = '';
+            var years = parseInt(yearsEl?.value || '0', 10);
+            var months = parseInt(totalEl.value || '0', 10);
+            if (!isNaN(years) && years > 0) {
+                if (isNaN(months) || months < 0) months = 0;
+                totalEl.value = years * 12 + months;
+                yearsEl.value = '';
+            }
+        }
+
+        function calculateOnsetAge() {
+            var birth = parseUkDate(document.getElementById('Case_BirthDate')?.value);
+            var onset = parseUkDate(document.getElementById('Case_OnsetDate')?.value);
+            var yearsEl = document.getElementById('onset-age-years');
+            var totalEl = document.getElementById('Case_OnsetAgeInMonths');
+            if (!totalEl) return;
+
+            if (birth && onset) {
+                totalEl.value = completeMonthsBetween(birth, onset);
+                if (yearsEl) yearsEl.value = '';
+                onsetAgeWarningArmed = true;
+                updateOnsetWarning();
+                return;
+            }
+
+            var years = parseInt(yearsEl?.value || '0', 10);
+            var months = parseInt(totalEl.value || '0', 10);
+            if (!isNaN(years) && years > 0) {
+                if (isNaN(months) || months < 0) months = 0;
+                totalEl.value = years * 12 + months;
+                yearsEl.value = '';
+            }
+
+            onsetAgeWarningArmed = true;
             updateOnsetWarning();
         }
 
-        ['Case_OnsetDate', 'Case_BirthDate'].forEach(function (id) {
+        document.getElementById('btn-calc-age-purchased')?.addEventListener('click', calculatePurchasedAge);
+        document.getElementById('btn-calc-onset-age')?.addEventListener('click', calculateOnsetAge);
+
+        // Mirrors legacy: Age Purchased / Onset Age recalculate automatically whenever
+        // Date of Birth, Purchase Date, or Onset Date change (not only on button click).
+        ['Case_BirthDate', 'Case_PurchaseDate'].forEach(function (id) {
             var el = document.getElementById(id);
             if (!el) return;
-            el.addEventListener('change', autoCalculateOnsetAgeFromDates);
-            el.addEventListener('input', autoCalculateOnsetAgeFromDates);
+            el.addEventListener('change', calculatePurchasedAge);
+            el.addEventListener('input', calculatePurchasedAge);
         });
 
-        document.getElementById('Case_OnsetAgeInMonths')?.addEventListener('change', updateOnsetWarning);
+        ['Case_BirthDate', 'Case_OnsetDate'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener('change', calculateOnsetAge);
+            el.addEventListener('input', calculateOnsetAge);
+        });
+
+        var herdWarningArmed = @(showHerdDateWarning ? "true" : "false");
+        var onsetWarningArmed = @(showOnsetDateWarning ? "true" : "false");
+
+        ['Case_BirthDate', 'Case_HerdEntryDate'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            var armAndUpdate = function () {
+                herdWarningArmed = true;
+                updateDateWarningIndicators();
+            };
+            el.addEventListener('change', armAndUpdate);
+            el.addEventListener('input', armAndUpdate);
+        });
+
+        ['Case_OnsetDate', 'Case_FormADate'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            var armAndUpdate = function () {
+                onsetWarningArmed = true;
+                updateDateWarningIndicators();
+            };
+            el.addEventListener('change', armAndUpdate);
+            el.addEventListener('input', armAndUpdate);
+        });
+
+        var onsetAgeWarningArmed = false;
+        document.getElementById('Case_OnsetAgeInMonths')?.addEventListener('change', function () { onsetAgeWarningArmed = true; updateOnsetWarning(); });
+        document.getElementById('Case_OnsetAgeInMonths')?.addEventListener('input', function () { onsetAgeWarningArmed = true; updateOnsetWarning(); });
+
+        ['Case_MonthsPregnant', 'Case_MonthsPostCalving'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener('blur', updateMonthsPregnantIndicators);
+            el.addEventListener('change', updateMonthsPregnantIndicators);
+            el.addEventListener('input', updateMonthsPregnantIndicators);
+        });
+
+        updateDateWarningIndicators();
         updateOnsetWarning();
+        applyPregnancyFieldAvailability();
 
         var showAddOwnerBtn = document.getElementById('show-add-owner-row');
         var addOwnerRow = document.getElementById('add-owner-row-inline');
@@ -932,7 +1108,12 @@
         if (form) {
             form.addEventListener('change', function () { dirty = true; });
             form.addEventListener('input', function () { dirty = true; });
-            form.addEventListener('submit', function () { submitting = true; });
+            form.addEventListener('submit', function () {
+                herdWarningArmed = false;
+                onsetWarningArmed = false;
+                clearDateWarningIndicators();
+                submitting = true;
+            });
         }
 
         document.querySelectorAll('.bse-cancel-link').forEach(function (lnk) {

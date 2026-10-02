@@ -27,7 +27,8 @@
     // Strip BOTH possible page-number keys so neither leaks into generated links.
     var qs = ViewContext.HttpContext.Request.Query
         .Where(k => !string.Equals(k.Key, "pageNumber",        StringComparison.OrdinalIgnoreCase)
-                 && !string.Equals(k.Key, "Filter.PageNumber", StringComparison.OrdinalIgnoreCase))
+                 && !string.Equals(k.Key, "Filter.PageNumber", StringComparison.OrdinalIgnoreCase)
+                 && !string.Equals(k.Key, pageKey,               StringComparison.OrdinalIgnoreCase))
         .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}")
         .ToList();
 

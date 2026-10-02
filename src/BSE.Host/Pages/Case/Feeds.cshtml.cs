@@ -46,7 +46,15 @@ public class FeedsModel(
     [BindProperty(SupportsGet = true)]
     public bool SortDesc { get; set; }
 
+    [BindProperty(SupportsGet = true)]
+    public int PageNumber { get; set; } = 1;
+
     public IReadOnlyList<StagedFeedItem> Feeds { get; private set; } = [];
+    public const int PageSize = 10;
+    public int TotalPages => Math.Max(1, (int)Math.Ceiling(Feeds.Count / (double)PageSize));
+    public int CurrentPage => Math.Clamp(PageNumber, 1, TotalPages);
+    public IReadOnlyList<StagedFeedItem> PagedFeeds =>
+        Feeds.Skip((CurrentPage - 1) * PageSize).Take(PageSize).ToList();
     public IEnumerable<LookupItem> RationTypes { get; private set; } = [];
     public string SpolSiteUrl { get; private set; } = string.Empty;
     public IReadOnlyList<BatchNumberEntry> BatchNumbers { get; private set; } = [];
@@ -62,6 +70,10 @@ public class FeedsModel(
     [BindProperty] public bool IsPrePurchase { get; set; }
     [BindProperty] public string? SupplierName { get; set; }
     [BindProperty] public int? SupplierId { get; set; }
+    [BindProperty] public string? SupplierLookupName { get; set; }
+    [BindProperty(SupportsGet = true)] public int? PickedSupplierId { get; set; }
+    [BindProperty(SupportsGet = true)] public string? PickedSupplierName { get; set; }
+    [BindProperty(SupportsGet = true)] public bool ResetSupplier { get; set; }
 
     public IDictionary<string, string> FieldErrors { get; private set; } = new Dictionary<string, string>();
 
@@ -74,25 +86,39 @@ public class FeedsModel(
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadAsync();
         await LoadOrInitializeDraftStateAsync();
+
+        if (ResetSupplier)
+        {
+            SupplierId = null;
+            SupplierName = string.Empty;
+        }
+
+        if (PickedSupplierId.HasValue && !string.IsNullOrWhiteSpace(PickedSupplierName))
+        {
+            SupplierId = PickedSupplierId;
+            SupplierName = PickedSupplierName;
+        }
+
         return Page();
     }
 
     /// <summary>AJAX: "Validate Supplier" — exact match auto-fills; otherwise returns close matches to pick from.</summary>
     public async Task<IActionResult> OnGetValidateSupplierAsync(string? name)
     {
+        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
+            return new JsonResult(new { found = false, matches = Array.Empty<object>() });
+
         var trimmed = (name ?? string.Empty).Trim();
         if (trimmed.Length == 0)
             return new JsonResult(new { found = false, matches = Array.Empty<object>() });
 
+        var pickUrl = Url.Page("/Case/PickSupplier", new { rbse = Rbse, name = trimmed });
+
         var exact = await lookupRepository.GetSupplierByNameAsync(trimmed.ToUpperInvariant());
         if (exact is not null)
-            return new JsonResult(new { found = true, id = exact.Id, name = exact.Name });
+            return new JsonResult(new { found = true, id = exact.Id, name = exact.Name, pick = true, url = pickUrl });
 
-        var possible = (await lookupRepository.GetPossibleSuppliersAsync(trimmed.ToUpperInvariant()))
-            .Select(s => new { id = s.Id, name = s.Name })
-            .ToList();
-
-        return new JsonResult(new { found = false, matches = possible });
+        return new JsonResult(new { found = false, pick = true, url = pickUrl });
     }
 
     /// <summary>Adds a feed record to the draft only. Not persisted until Save.</summary>
@@ -275,6 +301,18 @@ public class FeedsModel(
         return RedirectToPage(new { rbse = Rbse });
     }
 
+    public async Task<IActionResult> OnPostValidateSupplierNavigateAsync()
+    {
+        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
+            return Forbid();
+
+        Rbse = RbseHelper.ParseToRaw(Rbse);
+        var postedLookupName = Request.Form[nameof(SupplierLookupName)].ToString();
+        var supplierName = (SupplierLookupName ?? postedLookupName ?? SupplierName ?? string.Empty).Trim();
+
+        return RedirectToPage("/Case/PickSupplier", new { rbse = Rbse, name = supplierName });
+    }
+
     private async Task LoadAsync()
     {
         var rbse = RbseHelper.ParseToRaw(Rbse);
@@ -333,6 +371,7 @@ public class FeedsModel(
         });
 
         Feeds = SortFeeds(staged.ToList());
+        PageNumber = Math.Clamp(PageNumber, 1, TotalPages);
         HasUnsavedChanges = draft.HasPendingChanges;
 
         return draft;

@@ -148,14 +148,16 @@ public class FarmModel(
     [BindProperty(SupportsGet = true)] public int    LPage { get; set; } = 1;
     [BindProperty(SupportsGet = true)] public string LSort { get; set; } = "cphh";
     [BindProperty(SupportsGet = true)] public string LDir  { get; set; } = "asc";
-    public int LinkedFarmsTotalPages { get; private set; } = 1;
-    public int LinkedFarmsTotalCount { get; private set; }
+    public int LinkedFarmsTotalPages => Math.Max(1, (int)Math.Ceiling(SortedStagedLinkedFarms.Count / (double)PageSize));
+    public int LinkedFarmsTotalCount => SortedStagedLinkedFarms.Count;
+    public int LinkedFarmsCurrentPage => Math.Clamp(LPage, 1, LinkedFarmsTotalPages);
 
     [BindProperty(SupportsGet = true)] public int    HPage { get; set; } = 1;
     [BindProperty(SupportsGet = true)] public string HSort { get; set; } = "year";
     [BindProperty(SupportsGet = true)] public string HDir  { get; set; } = "desc";
-    public int HerdSizesTotalPages { get; private set; } = 1;
-    public int HerdSizesTotalCount { get; private set; }
+    public int HerdSizesTotalPages => Math.Max(1, (int)Math.Ceiling(SortedStagedHerdSizes.Count / (double)PageSize));
+    public int HerdSizesTotalCount => SortedStagedHerdSizes.Count;
+    public int HerdSizesCurrentPage => Math.Clamp(HPage, 1, HerdSizesTotalPages);
 
     public string SpolSiteUrl { get; private set; } = string.Empty;
 
@@ -190,73 +192,59 @@ public class FarmModel(
         await LoadAsync();
 
         if (Case is null)
-            return await InitializeNewCaseFarmEditAsync();
+        {
+            CanEditCreateMode = CanEditCreateModeForCurrentUser();
+            ApplyLegacyEditPermissions();
+            EditableFarm ??= new FarmEditViewModel();
+
+            if (string.IsNullOrWhiteSpace(EditableFarm.CPHH))
+            {
+                var existingDraft = await farmDraftState.GetAsync(Rbse);
+                if (!string.IsNullOrWhiteSpace(existingDraft?.Cphh))
+                    EditableFarm.CPHH = CphhNormalizer.Normalize(existingDraft.Cphh);
+            }
+
+            if (string.IsNullOrWhiteSpace(EditableFarm.CPHH) && !string.IsNullOrWhiteSpace(NewCphh))
+                EditableFarm.CPHH = CphhNormalizer.Normalize(NewCphh);
+
+            if (!string.IsNullOrWhiteSpace(SelectedCphh))
+            {
+                var selectedFarm = await farmService.GetByCphhAsync(CphhNormalizer.Normalize(SelectedCphh));
+                if (selectedFarm is not null)
+                {
+                    EditableFarm = FarmEditViewModel.FromRecord(selectedFarm);
+                    RequireFarmDetails = false;
+                }
+            }
+            else if (ForceNewFarmDetails && !string.IsNullOrWhiteSpace(NewCphh))
+            {
+                EditableFarm.CPHH = CphhNormalizer.Normalize(NewCphh);
+                EditableFarm.Parish = SeedParish;
+                EditableFarm.County = SeedCounty;
+                EditableFarm.ADNSRegionID = SeedAdnsRegionId;
+                EditableFarm.AuthorityID = SeedAuthorityId;
+                EditableFarm.AuthorityCountyID = SeedAuthorityCountyId;
+                EditableFarm.Herdmark1 = SeedHerdmark1;
+                EditableFarm.NumericHerdmark1 = SeedNumericHerdmark1;
+                RequireFarmDetails = true;
+            }
+            else if (!string.IsNullOrWhiteSpace(EditableFarm.CPHH))
+            {
+                EditableFarm.CPHH = CphhNormalizer.Normalize(EditableFarm.CPHH);
+            }
+
+            if (Farm is null && !string.IsNullOrWhiteSpace(EditableFarm.CPHH))
+                await LoadFromFarmCphhAsync(EditableFarm.CPHH);
+
+            if (Farm is not null)
+                await LoadOrInitializeDraftStateAsync();
+
+            await LoadLookupsForEditAsync();
+            return Page();
+        }
 
         await LoadOrInitializeDraftStateAsync();
         return Page();
-    }
-
-    /// <summary>Prepares EditableFarm for a brand-new case (no Case/Farm persisted yet).</summary>
-    private async Task<IActionResult> InitializeNewCaseFarmEditAsync()
-    {
-        CanEditCreateMode = CanEditCreateModeForCurrentUser();
-        ApplyLegacyEditPermissions();
-        EditableFarm ??= new FarmEditViewModel();
-
-        await ResolveInitialCphhAsync();
-        await ApplySelectedOrSeedFarmDetailsAsync();
-
-        if (Farm is null && !string.IsNullOrWhiteSpace(EditableFarm.CPHH))
-            await LoadFromFarmCphhAsync(EditableFarm.CPHH);
-
-        if (Farm is not null)
-            await LoadOrInitializeDraftStateAsync();
-
-        await LoadLookupsForEditAsync();
-        return Page();
-    }
-
-    /// <summary>Resolves EditableFarm.CPHH from the farm draft, falling back to the posted NewCphh.</summary>
-    private async Task ResolveInitialCphhAsync()
-    {
-        if (string.IsNullOrWhiteSpace(EditableFarm!.CPHH))
-        {
-            var existingDraft = await farmDraftState.GetAsync(Rbse);
-            if (!string.IsNullOrWhiteSpace(existingDraft?.Cphh))
-                EditableFarm.CPHH = CphhNormalizer.Normalize(existingDraft.Cphh);
-        }
-
-        if (string.IsNullOrWhiteSpace(EditableFarm.CPHH) && !string.IsNullOrWhiteSpace(NewCphh))
-            EditableFarm.CPHH = CphhNormalizer.Normalize(NewCphh);
-    }
-
-    private async Task ApplySelectedOrSeedFarmDetailsAsync()
-    {
-        if (!string.IsNullOrWhiteSpace(SelectedCphh))
-        {
-            var selectedFarm = await farmService.GetByCphhAsync(CphhNormalizer.Normalize(SelectedCphh));
-            if (selectedFarm is not null)
-            {
-                EditableFarm = FarmEditViewModel.FromRecord(selectedFarm);
-                RequireFarmDetails = false;
-            }
-        }
-        else if (ForceNewFarmDetails && !string.IsNullOrWhiteSpace(NewCphh))
-        {
-            EditableFarm!.CPHH = CphhNormalizer.Normalize(NewCphh);
-            EditableFarm.Parish = SeedParish;
-            EditableFarm.County = SeedCounty;
-            EditableFarm.ADNSRegionID = SeedAdnsRegionId;
-            EditableFarm.AuthorityID = SeedAuthorityId;
-            EditableFarm.AuthorityCountyID = SeedAuthorityCountyId;
-            EditableFarm.Herdmark1 = SeedHerdmark1;
-            EditableFarm.NumericHerdmark1 = SeedNumericHerdmark1;
-            RequireFarmDetails = true;
-        }
-        else if (!string.IsNullOrWhiteSpace(EditableFarm!.CPHH))
-        {
-            EditableFarm.CPHH = CphhNormalizer.Normalize(EditableFarm.CPHH);
-        }
     }
 
     /// <summary>Creates the case (and its farm, if the CPHH has none yet) for a brand-new GB case
@@ -288,7 +276,33 @@ public class FarmModel(
         EditableFarm ??= new FarmEditViewModel();
         EditableFarm.CPHH = normalisedCphh;
 
-        await ValidateNewFarmDetailsAsync(EditableFarm);
+        if (RequireFarmDetails)
+        {
+            if (string.IsNullOrWhiteSpace(EditableFarm.OwnerName))
+                ModelState.AddModelError("EditableFarm.OwnerName", "Enter an owner name for the farm.");
+            if (string.IsNullOrWhiteSpace(EditableFarm.Address1))
+                ModelState.AddModelError("EditableFarm.Address1", "Enter the first line of the farm address.");
+            if (string.IsNullOrWhiteSpace(EditableFarm.Parish))
+                ModelState.AddModelError("EditableFarm.Parish", "Enter a parish for the farm.");
+            if (string.IsNullOrWhiteSpace(EditableFarm.County))
+                ModelState.AddModelError("EditableFarm.County", "Specify a county for the farm.");
+            if (string.IsNullOrWhiteSpace(EditableFarm.AHO))
+                ModelState.AddModelError("EditableFarm.AHO", "Specify an AHO for the farm.");
+            if (EditableFarm.ADNSRegionID is null)
+                ModelState.AddModelError(AdnsRegionField, "Specify an ADNS region for the farm.");
+        }
+
+        if (EditableFarm.MapReference is { Length: >= 8 } mapRef
+            && EditableFarm.CPHH.Length >= 5
+            && !await MapReferenceWithinParishAsync(EditableFarm.CPHH, mapRef))
+        {
+            TempData["Warning"] = "Map reference does not lie within the parish boundaries for this CPHH.";
+        }
+
+        if (!IsAdnsCompatibleWithAuthoritySelection(EditableFarm))
+        {
+            ModelState.AddModelError(AdnsRegionField, "ADNS region does not match the selected local authority. Please select ADNS region again.");
+        }
 
         if (!ModelState.IsValid)
         {
@@ -308,7 +322,17 @@ public class FarmModel(
         }
 
         // Legacy validated the batch on the Home page before redirecting to CaseEntryFarm.aspx.
-        var batchId = await ResolveBatchIdForNewCaseAsync();
+        var pendingBatch = await wizardState.GetAsync();
+        int batchId;
+        if (pendingBatch is not null && string.Equals(pendingBatch.RbseNumber, Rbse, StringComparison.OrdinalIgnoreCase))
+        {
+            batchId = pendingBatch.BatchId;
+        }
+        else
+        {
+            var batch = await batchService.GetOrCreateBatchNumberAsync();
+            batchId = batch.BatchId;
+        }
 
         var addCase = new AddCaseCommand(
             Rbse: Rbse.Trim(), Cphh: normalisedCphh,
@@ -352,47 +376,6 @@ public class FarmModel(
         await farmDraftState.ClearAsync(Rbse);
         TempData["SuccessMessage"] = $"Case {Rbse} created successfully.";
         return RedirectToPage("/Case/Farm", new { rbse = Rbse.Trim() });
-    }
-
-    private async Task ValidateNewFarmDetailsAsync(FarmEditViewModel editableFarm)
-    {
-        if (RequireFarmDetails)
-        {
-            if (string.IsNullOrWhiteSpace(editableFarm.OwnerName))
-                ModelState.AddModelError("EditableFarm.OwnerName", "Enter an owner name for the farm.");
-            if (string.IsNullOrWhiteSpace(editableFarm.Address1))
-                ModelState.AddModelError("EditableFarm.Address1", "Enter the first line of the farm address.");
-            if (string.IsNullOrWhiteSpace(editableFarm.Parish))
-                ModelState.AddModelError("EditableFarm.Parish", "Enter a parish for the farm.");
-            if (string.IsNullOrWhiteSpace(editableFarm.County))
-                ModelState.AddModelError("EditableFarm.County", "Specify a county for the farm.");
-            if (string.IsNullOrWhiteSpace(editableFarm.AHO))
-                ModelState.AddModelError("EditableFarm.AHO", "Specify an AHO for the farm.");
-            if (editableFarm.ADNSRegionID is null)
-                ModelState.AddModelError(AdnsRegionField, "Specify an ADNS region for the farm.");
-        }
-
-        if (editableFarm.MapReference is { Length: >= 8 } mapRef
-            && editableFarm.CPHH.Length >= 5
-            && !await MapReferenceWithinParishAsync(editableFarm.CPHH, mapRef))
-        {
-            TempData["Warning"] = "Map reference does not lie within the parish boundaries for this CPHH.";
-        }
-
-        if (!IsAdnsCompatibleWithAuthoritySelection(editableFarm))
-        {
-            ModelState.AddModelError(AdnsRegionField, "ADNS region does not match the selected local authority. Please select ADNS region again.");
-        }
-    }
-
-    private async Task<int> ResolveBatchIdForNewCaseAsync()
-    {
-        var pendingBatch = await wizardState.GetAsync();
-        if (pendingBatch is not null && string.Equals(pendingBatch.RbseNumber, Rbse, StringComparison.OrdinalIgnoreCase))
-            return pendingBatch.BatchId;
-
-        var batch = await batchService.GetOrCreateBatchNumberAsync();
-        return batch.BatchId;
     }
 
     public async Task<IActionResult> OnPostLookupNewCaseAsync()
@@ -517,11 +500,52 @@ public class FarmModel(
 
         await LoadLookupsForEditAsync();
 
-        if (EditableFarm is not null)
-            await ValidateMapReferenceAndAdnsRegionAsync(EditableFarm);
+        if (EditableFarm is not null
+            && EditableFarm.MapReference is { Length: >= 8 } mapRef
+            && EditableFarm.CPHH.Length >= 5)
+        {
+            if (!await MapReferenceWithinParishAsync(EditableFarm.CPHH, mapRef))
+                ModelState.AddModelError("EditableFarm.MapRef1",
+                    "Map reference does not lie within the parish boundaries for this CPHH.");
+        }
+
+        if (EditableFarm is not null
+            && !IsNonGbFarmCphh(EditableFarm.CPHH)
+            && EditableFarm.ADNSRegionID is null)
+        {
+            ModelState.AddModelError(AdnsRegionField, "Select an ADNS region for the farm.");
+        }
 
         if (EditableFarm is not null)
-            ValidateRequiredFarmFields(EditableFarm);
+        {
+            if (string.IsNullOrWhiteSpace(EditableFarm.CPHH))
+                ModelState.AddModelError("EditableFarm.CPHH", EnterCphhMessage);
+
+            if (string.IsNullOrWhiteSpace(EditableFarm.OwnerName))
+                ModelState.AddModelError("EditableFarm.OwnerName", "Enter an owner name for the farm.");
+
+            if (string.IsNullOrWhiteSpace(EditableFarm.Address1))
+                ModelState.AddModelError("EditableFarm.Address1", "Enter the first line of the farm address.");
+
+            var isNonGbFarm = IsNonGbFarmCphh(EditableFarm.CPHH);
+
+            if (!isNonGbFarm && string.IsNullOrWhiteSpace(EditableFarm.Parish))
+                ModelState.AddModelError("EditableFarm.Parish", "Enter a parish for the farm.");
+
+            if (string.IsNullOrWhiteSpace(EditableFarm.County))
+                ModelState.AddModelError("EditableFarm.County", "Select a county for the farm.");
+
+            if (!isNonGbFarm && string.IsNullOrWhiteSpace(EditableFarm.AHO))
+                ModelState.AddModelError("EditableFarm.AHO", "Select an AHO for the farm.");
+
+            if (!string.IsNullOrWhiteSpace(EditableFarm.NumericHerdmark1)
+                && !IsValidNumericHerdmark(EditableFarm.NumericHerdmark1))
+                ModelState.AddModelError("EditableFarm.NumericHerdmark1", "Numeric herdmark 1 must be 6 digits.");
+
+            if (!string.IsNullOrWhiteSpace(EditableFarm.NumericHerdmark2)
+                && !IsValidNumericHerdmark(EditableFarm.NumericHerdmark2))
+                ModelState.AddModelError("EditableFarm.NumericHerdmark2", "Numeric herdmark 2 must be 6 digits.");
+        }
 
         if (!ModelState.IsValid || EditableFarm is null)
         {
@@ -551,45 +575,6 @@ public class FarmModel(
 
         TempData["Success"] = "Farm updated successfully.";
         return RedirectToPage(new { rbse = Rbse });
-    }
-
-    private async Task ValidateMapReferenceAndAdnsRegionAsync(FarmEditViewModel editableFarm)
-    {
-        if (editableFarm.MapReference is { Length: >= 8 } mapRef
-            && editableFarm.CPHH.Length >= 5
-            && !await MapReferenceWithinParishAsync(editableFarm.CPHH, mapRef))
-        {
-            ModelState.AddModelError("EditableFarm.MapRef1",
-                "Map reference does not lie within the parish boundaries for this CPHH.");
-        }
-
-        if (!IsNonGbFarmCphh(editableFarm.CPHH) && editableFarm.ADNSRegionID is null)
-        {
-            ModelState.AddModelError(AdnsRegionField, "Select an ADNS region for the farm.");
-        }
-    }
-
-    private void ValidateRequiredFarmFields(FarmEditViewModel editableFarm)
-    {
-        if (string.IsNullOrWhiteSpace(editableFarm.CPHH))
-            ModelState.AddModelError("EditableFarm.CPHH", EnterCphhMessage);
-
-        if (string.IsNullOrWhiteSpace(editableFarm.OwnerName))
-            ModelState.AddModelError("EditableFarm.OwnerName", "Enter an owner name for the farm.");
-
-        if (string.IsNullOrWhiteSpace(editableFarm.Address1))
-            ModelState.AddModelError("EditableFarm.Address1", "Enter the first line of the farm address.");
-
-        var isNonGbFarm = IsNonGbFarmCphh(editableFarm.CPHH);
-
-        if (!isNonGbFarm && string.IsNullOrWhiteSpace(editableFarm.Parish))
-            ModelState.AddModelError("EditableFarm.Parish", "Enter a parish for the farm.");
-
-        if (string.IsNullOrWhiteSpace(editableFarm.County))
-            ModelState.AddModelError("EditableFarm.County", "Select a county for the farm.");
-
-        if (!isNonGbFarm && string.IsNullOrWhiteSpace(editableFarm.AHO))
-            ModelState.AddModelError("EditableFarm.AHO", "Select an AHO for the farm.");
     }
 
     public async Task<IActionResult> OnPostCancelFarmEditAsync() => await CancelFarmEditAsync();
@@ -955,10 +940,9 @@ public class FarmModel(
         var userId = await currentUser.GetUserIdAsync();
         var result = await batchService.AssignCaseToBatchAsync(pending.BatchId, Rbse, Bse1Document);
 
-        if (logger.IsEnabled(LogLevel.Information))
-            logger.LogInformation(
-                "Batch assignment {Result}: user {UserId} assigned RBSE {Rbse} to batch {BatchId} ({BatchNumber}) for document {Document}",
-                result, userId, Rbse, pending.BatchId, pending.BatchNumber, Bse1Document);
+        logger.LogInformation(
+            "Batch assignment {Result}: user {UserId} assigned RBSE {Rbse} to batch {BatchId} ({BatchNumber}) for document {Document}",
+            result, userId, Rbse, pending.BatchId, pending.BatchNumber, Bse1Document);
 
         await wizardState.ClearAsync();
 
@@ -1201,94 +1185,66 @@ public class FarmModel(
 
         Farm              = await farmTask;
         ConfirmedCaseCount = await confirmedTask;
-
         var allLinked = (await linkedTask).ToList();
         PersistedLinkedFarms = allLinked;
-        LinkedFarmsTotalCount = allLinked.Count;
-        LinkedFarmsTotalPages = Math.Max(1, (int)Math.Ceiling(allLinked.Count / (double)PageSize));
-        var sortedLinked = SortLinkedFarms(allLinked, LSort, LDir);
-        LPage = Math.Clamp(LPage, 1, LinkedFarmsTotalPages);
+        IEnumerable<FarmRelationRecord> sortedLinked = LSort == "status"
+            ? (LDir == "desc" ? allLinked.OrderByDescending(f => f.Status) : allLinked.OrderBy(f => f.Status))
+            : (LDir == "desc" ? allLinked.OrderByDescending(f => f.RelatedCPHH) : allLinked.OrderBy(f => f.RelatedCPHH));
+        LPage = Math.Clamp(LPage, 1, Math.Max(1, (int)Math.Ceiling(allLinked.Count / (double)PageSize)));
         LinkedFarms = sortedLinked.Skip((LPage - 1) * PageSize).Take(PageSize).ToList().AsReadOnly();
 
         var allHerd = (await herdTask).ToList();
         PersistedHerdSizes = allHerd;
-        HerdSizesTotalCount = allHerd.Count;
-        HerdSizesTotalPages = Math.Max(1, (int)Math.Ceiling(allHerd.Count / (double)PageSize));
-        var sortedHerd = SortHerdSizes(allHerd, HSort, HDir);
-        HPage = Math.Clamp(HPage, 1, HerdSizesTotalPages);
+        IEnumerable<HerdSizeRecord> sortedHerd = HSort switch
+        {
+            "total"  => HDir == "asc" ? allHerd.OrderBy(h => h.TotalSize)            : allHerd.OrderByDescending(h => h.TotalSize),
+            "lac1"   => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation1Size)       : allHerd.OrderByDescending(h => h.Lactation1Size),
+            "lac2"   => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation2Size)       : allHerd.OrderByDescending(h => h.Lactation2Size),
+            "lac3"   => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation3Size)       : allHerd.OrderByDescending(h => h.Lactation3Size),
+            "lac4"   => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation4Size)       : allHerd.OrderByDescending(h => h.Lactation4Size),
+            "lac5"   => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation5Size)       : allHerd.OrderByDescending(h => h.Lactation5Size),
+            "lac6"   => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation6Size)       : allHerd.OrderByDescending(h => h.Lactation6Size),
+            "lac7"   => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation7Size)       : allHerd.OrderByDescending(h => h.Lactation7Size),
+            "lac8"   => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation8Size)       : allHerd.OrderByDescending(h => h.Lactation8Size),
+            "lac9"   => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation9Size)       : allHerd.OrderByDescending(h => h.Lactation9Size),
+            "lac10"  => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation10Size)      : allHerd.OrderByDescending(h => h.Lactation10Size),
+            "lac10p" => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation10PlusSize)  : allHerd.OrderByDescending(h => h.Lactation10PlusSize),
+            _        => HDir == "asc" ? allHerd.OrderBy(h => h.HerdYear)             : allHerd.OrderByDescending(h => h.HerdYear)
+        };
+        HPage = Math.Clamp(HPage, 1, Math.Max(1, (int)Math.Ceiling(allHerd.Count / (double)PageSize)));
         HerdSizes = sortedHerd.Skip((HPage - 1) * PageSize).Take(PageSize).ToList().AsReadOnly();
 
         if (Farm is null) return;
 
-        await ResolveFarmLookupNamesAsync(Farm, adnsTask, countyTask, ahoTask, herdTypeTask, pedigreeTask, authCountyTask);
-    }
-
-    private static IEnumerable<FarmRelationRecord> SortLinkedFarms(IEnumerable<FarmRelationRecord> source, string? sort, string? dir)
-    {
-        Func<FarmRelationRecord, IComparable?> keySelector = sort == "status" ? f => f.Status : f => f.RelatedCPHH;
-        return dir == "desc" ? source.OrderByDescending(keySelector) : source.OrderBy(keySelector);
-    }
-
-    private static IEnumerable<HerdSizeRecord> SortHerdSizes(IEnumerable<HerdSizeRecord> source, string? sort, string? dir)
-    {
-        Func<HerdSizeRecord, IComparable> keySelector = sort switch
-        {
-            "total" => h => h.TotalSize,
-            "lac1" => h => h.Lactation1Size,
-            "lac2" => h => h.Lactation2Size,
-            "lac3" => h => h.Lactation3Size,
-            "lac4" => h => h.Lactation4Size,
-            "lac5" => h => h.Lactation5Size,
-            "lac6" => h => h.Lactation6Size,
-            "lac7" => h => h.Lactation7Size,
-            "lac8" => h => h.Lactation8Size,
-            "lac9" => h => h.Lactation9Size,
-            "lac10" => h => h.Lactation10Size,
-            "lac10p" => h => h.Lactation10PlusSize,
-            _ => h => h.HerdYear
-        };
-
-        return dir == "asc" ? source.OrderBy(keySelector) : source.OrderByDescending(keySelector);
-    }
-
-    private async Task ResolveFarmLookupNamesAsync(
-        FarmRecord farm,
-        Task<IEnumerable<LuADNSRegion>> adnsTask,
-        Task<IEnumerable<LookupItem>> countyTask,
-        Task<IEnumerable<LookupItem>> ahoTask,
-        Task<IEnumerable<LuHerdType>> herdTypeTask,
-        Task<IEnumerable<LookupItem>> pedigreeTask,
-        Task<IEnumerable<LookupItem>> authCountyTask)
-    {
         // Resolve ADNS region name
-        if (farm.ADNSRegionID.HasValue)
-            ADNSRegionName = (await adnsTask).FirstOrDefault(r => r.Id == farm.ADNSRegionID.Value)?.Name;
+        if (Farm.ADNSRegionID.HasValue)
+            ADNSRegionName = (await adnsTask).FirstOrDefault(r => r.Id == Farm.ADNSRegionID.Value)?.Name;
 
         // Resolve County code → description  (Farm.County FK → luBSECounty.Code)
-        if (!string.IsNullOrWhiteSpace(farm.County))
-            CountyName = (await countyTask).FirstOrDefault(c => c.Code == farm.County.Trim())?.Description;
+        if (!string.IsNullOrWhiteSpace(Farm.County))
+            CountyName = (await countyTask).FirstOrDefault(c => c.Code == Farm.County.Trim())?.Description;
 
         // Resolve AHO code → name  (Farm.AHO FK → luAHO.Code)
-        if (!string.IsNullOrWhiteSpace(farm.AHO))
-            AHOName = (await ahoTask).FirstOrDefault(a => a.Code == farm.AHO.Trim())?.Description;
+        if (!string.IsNullOrWhiteSpace(Farm.AHO))
+            AHOName = (await ahoTask).FirstOrDefault(a => a.Code == Farm.AHO.Trim())?.Description;
 
         // Resolve HerdType code → description  (Farm.HerdType FK → luHerdType.Code)
-        if (!string.IsNullOrWhiteSpace(farm.HerdType))
-            HerdTypeName = (await herdTypeTask).FirstOrDefault(h => h.Code == farm.HerdType.Trim())?.Description;
+        if (!string.IsNullOrWhiteSpace(Farm.HerdType))
+            HerdTypeName = (await herdTypeTask).FirstOrDefault(h => h.Code == Farm.HerdType.Trim())?.Description;
 
         // Resolve PedigreeType code → description  (Farm.PedigreeType FK → luPedigreeType.Code)
-        if (!string.IsNullOrWhiteSpace(farm.PedigreeType))
-            PedigreeTypeName = (await pedigreeTask).FirstOrDefault(p => p.Code == farm.PedigreeType.Trim())?.Description;
+        if (!string.IsNullOrWhiteSpace(Farm.PedigreeType))
+            PedigreeTypeName = (await pedigreeTask).FirstOrDefault(p => p.Code == Farm.PedigreeType.Trim())?.Description;
 
         // Resolve AuthorityCounty ID → county name
-        if (farm.AuthorityCountyID.HasValue)
-            AuthorityCountyName = (await authCountyTask).FirstOrDefault(a => a.Id == farm.AuthorityCountyID.Value)?.Description;
+        if (Farm.AuthorityCountyID.HasValue)
+            AuthorityCountyName = (await authCountyTask).FirstOrDefault(a => a.Id == Farm.AuthorityCountyID.Value)?.Description;
 
         // Resolve LocalAuthority ID → name (filter by county so the SP is called with the right county)
-        if (farm.AuthorityID.HasValue && farm.AuthorityCountyID.HasValue)
+        if (Farm.AuthorityID.HasValue && Farm.AuthorityCountyID.HasValue)
         {
-            var authorities = await lookups.GetAuthoritiesByCountyAsync(farm.AuthorityCountyID.Value);
-            LocalAuthorityName = authorities.FirstOrDefault(a => a.Id == farm.AuthorityID.Value)?.Name;
+            var authorities = await lookups.GetAuthoritiesByCountyAsync(Farm.AuthorityCountyID.Value);
+            LocalAuthorityName = authorities.FirstOrDefault(a => a.Id == Farm.AuthorityID.Value)?.Name;
         }
     }
 
@@ -1313,6 +1269,12 @@ public class FarmModel(
     {
         var normalised = CphhNormalizer.Normalize(cphh);
         return normalised.StartsWith("00", StringComparison.Ordinal);
+    }
+
+    private static bool IsValidNumericHerdmark(string value)
+    {
+        var trimmed = value.Trim();
+        return trimmed.Length == 6 && trimmed.All(char.IsDigit);
     }
 
     private async Task LoadLookupsForEditAsync()
@@ -1653,7 +1615,28 @@ public class FarmModel(
     public string HerdSizesPageUrl(int page) =>
         $"?HPage={page}&HSort={HSort}&HDir={HDir}&LPage={LPage}&LSort={LSort}&LDir={LDir}";
 
-    public IReadOnlyList<StagedHerdSizeItem> GetSortedStagedHerdSizes() =>
+    public IReadOnlyList<StagedLinkedFarmItem> SortedStagedLinkedFarms =>
+        (LSort, LDir) switch
+        {
+            ("status", "desc") => StagedLinkedFarms.OrderByDescending(x => x.Status).ToList(),
+            ("status", _) => StagedLinkedFarms.OrderBy(x => x.Status).ToList(),
+            (_, "desc") => StagedLinkedFarms.OrderByDescending(x => x.RelatedCphh).ToList(),
+            _ => StagedLinkedFarms.OrderBy(x => x.RelatedCphh).ToList()
+        };
+
+    public IReadOnlyList<StagedLinkedFarmItem> PagedStagedLinkedFarms =>
+        SortedStagedLinkedFarms
+            .Skip((LinkedFarmsCurrentPage - 1) * PageSize)
+            .Take(PageSize)
+            .ToList();
+
+    public IReadOnlyList<StagedHerdSizeItem> PagedSortedStagedHerdSizes =>
+        SortedStagedHerdSizes
+            .Skip((HerdSizesCurrentPage - 1) * PageSize)
+            .Take(PageSize)
+            .ToList();
+
+    public IReadOnlyList<StagedHerdSizeItem> SortedStagedHerdSizes =>
         (HSort, HDir) switch
         {
             ("total", "asc") => StagedHerdSizes.OrderBy(h => h.TotalSize).ToList(),

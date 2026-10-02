@@ -281,15 +281,66 @@
             return href === '/Home' || href === '/' || /\/Home(?:\?|$)/i.test(href);
         }
 
+        function isCaseAuditLogLink(anchor) {
+            if (!anchor) {
+                return false;
+            }
+
+            var href = anchor.getAttribute('href') || '';
+            return /\/AuditLog\/ByCase(?:\?|$)/i.test(href);
+        }
+
+        // Mirrors legacy behaviour: a tab with outstanding red-star validation errors
+        // (live client-side warning/error stars) cannot be navigated away from until
+        // the problem is fixed. Currently only the Case (APHA)/Vla tab implements the
+        // red-star/green-star live validation, so the blocker only applies to that form.
+        function isStarVisible(star) {
+            if (star.hidden) {
+                return false;
+            }
+
+            if (star.style.display === 'none') {
+                return false;
+            }
+
+            return true;
+        }
+
+        function hasVisibleValidationErrors() {
+            var form = getCurrentCaseForm();
+            if (!form || form.id !== 'edit-vla-form') {
+                return false;
+            }
+
+            var stars = form.querySelectorAll('.bse-star-error, .bse-vla-star-red');
+            for (var i = 0; i < stars.length; i++) {
+                if (isStarVisible(stars[i])) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         document.addEventListener('click', async function (event) {
             var tabLink = event.target.closest('a.bse-case-tabs__link');
             if (tabLink) {
+                if (hasVisibleValidationErrors()) {
+                    event.preventDefault();
+                    return;
+                }
                 window.__bseCaseTabNavigationInProgress = true;
                 persistCurrentTabDraft();
                 return;
             }
 
             var link = event.target.closest('a');
+
+            if (isCaseAuditLogLink(link) && hasVisibleValidationErrors()) {
+                event.preventDefault();
+                return;
+            }
+
             if (!isHomeLink(link)) {
                 return;
             }

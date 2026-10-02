@@ -19,7 +19,7 @@ public class OssExportBse1bModel(IOssExportService ossExportService) : PageModel
     [BindProperty]
     public string RbseInput { get; set; } = string.Empty;
 
-    [BindProperty]
+    [BindProperty(SupportsGet = true)]
     public int PageNumber { get; set; } = 1;
 
     public List<OssExportBatchEntryRecord> GridEntries { get; private set; } = new();
@@ -32,6 +32,14 @@ public class OssExportBse1bModel(IOssExportService ossExportService) : PageModel
 
     public Task<IActionResult> OnGetAsync()
     {
+        if (Request.Query.Keys.Any(k => string.Equals(k, nameof(PageNumber), StringComparison.OrdinalIgnoreCase)))
+        {
+            LoadGridState();
+            if (PageNumber < 1) PageNumber = 1;
+            if (PageNumber > TotalPages && TotalPages > 0) PageNumber = TotalPages;
+            return Task.FromResult<IActionResult>(Page());
+        }
+
         // A fresh GET (e.g. navigating away to the menu and back) starts a new blank grid,
         // matching legacy PrepareGrid() which resets state whenever the page is not a postback.
         HttpContext.Session.Remove(GridEntriesSessionKey);
