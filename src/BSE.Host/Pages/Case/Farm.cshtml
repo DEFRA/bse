@@ -250,16 +250,17 @@
                     </tr>
                 </thead>
                 <tbody class="govuk-table__body" id="herd-size-tbody">
-                    @if (!Model.SortedStagedHerdSizes.Any())
+                    @{ var sortedHerdSizes = Model.GetSortedStagedHerdSizes(); }
+                    @if (!sortedHerdSizes.Any())
                     {
                         <tr class="govuk-table__row">
                             <td class="govuk-table__cell" colspan="13">No herd size records for this farm.</td>
                         </tr>
                     }
 
-                    @foreach (var h in Model.PagedSortedStagedHerdSizes)
+                    @foreach (var h in sortedHerdSizes)
                     {
-                        var yearRepeated = Model.SortedStagedHerdSizes.Count(x => x.HerdYear == h.HerdYear) > 1;
+                        var yearRepeated = sortedHerdSizes.Count(x => x.HerdYear == h.HerdYear) > 1;
                         <tr class="govuk-table__row bse-herd-row @(h.IsUnsaved ? "bse-herd-row--unsaved" : "")" data-client-key="@h.ClientKey">
                             <td class="govuk-table__cell">
                                 @h.HerdYear
@@ -657,18 +658,19 @@
                     </tr>
                 </thead>
                 <tbody class="govuk-table__body" id="herd-size-tbody">
-                    @if (!Model.SortedStagedHerdSizes.Any())
+                    @{ var sortedHerdSizes = Model.GetSortedStagedHerdSizes(); }
+                    @if (!sortedHerdSizes.Any())
                     {
                         <tr class="govuk-table__row">
                             <td class="govuk-table__cell" colspan="14">No herd size records for this farm.</td>
                         </tr>
                     }
 
-                    @foreach (var h in Model.PagedSortedStagedHerdSizes)
+                    @foreach (var h in sortedHerdSizes)
                     {
                         var isEditing = canEditFarm && Model.ReopenEditClientKey == h.ClientKey;
                         var editRow = isEditing ? Model.EditHerdRow : null;
-                        var yearRepeated = Model.SortedStagedHerdSizes.Count(x => x.HerdYear == h.HerdYear) > 1;
+                        var yearRepeated = sortedHerdSizes.Count(x => x.HerdYear == h.HerdYear) > 1;
 
                         <tr class="govuk-table__row bse-herd-row @(h.IsUnsaved ? "bse-herd-row--unsaved" : "")" data-client-key="@h.ClientKey">
                             @if (isEditing)

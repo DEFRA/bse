@@ -248,7 +248,7 @@ try
 
                 // SP signing certificate — placeholder; wire Key Vault reference before production deploy.
                 // Leaving ServiceCertificates empty is acceptable for local SAML testing only.
-                // TODO (production): when saml2Config.SPCertificateThumbprint is provisioned, resolve the
+                // Production tracking item: once saml2Config.SPCertificateThumbprint is provisioned, resolve the
                 // certificate from the certificate store/Key Vault and add it to options.SPOptions.ServiceCertificates.
 
                 var idp = new IdentityProvider(

@@ -57,7 +57,8 @@ public sealed class DevelopmentAuthHandler : AuthenticationHandler<DevelopmentAu
         var ntLogin = ResolveNtLogin();
         var email = ResolveEmail(Options.Email);
 
-        Logger.LogDebug("DevBypass: signing in as NT login '{NtLogin}' with email '{Email}'", ntLogin, email);
+        if (Logger.IsEnabled(LogLevel.Debug))
+            Logger.LogDebug("DevBypass: signing in as NT login '{NtLogin}' with email '{Email}'", ntLogin, email);
 
         var claims = new[]
         {
