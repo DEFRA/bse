@@ -281,15 +281,59 @@
             return href === '/Home' || href === '/' || /\/Home(?:\?|$)/i.test(href);
         }
 
+        function isCaseAuditLogLink(anchor) {
+            if (!anchor) {
+                return false;
+            }
+
+            var href = anchor.getAttribute('href') || '';
+            return /\/AuditLog\/ByCase(?:\?|$)/i.test(href);
+        }
+
+        // Mirrors legacy behaviour: a tab with outstanding red-star validation errors
+        // (server-rendered error messages, or live client-side warning/error stars)
+        // cannot be navigated away from until the problem is fixed.
+        function hasVisibleValidationErrors() {
+            var form = getCurrentCaseForm();
+            if (!form) {
+                return false;
+            }
+
+            if (form.querySelector('.govuk-form-group--error, .govuk-error-message')) {
+                return true;
+            }
+
+            var stars = form.querySelectorAll('.bse-star-error');
+            for (var i = 0; i < stars.length; i++) {
+                if (stars[i].style.display !== 'none') {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         document.addEventListener('click', async function (event) {
             var tabLink = event.target.closest('a.bse-case-tabs__link');
             if (tabLink) {
+                if (hasVisibleValidationErrors()) {
+                    event.preventDefault();
+                    alert('Please fix the validation errors on this tab before moving to another tab.');
+                    return;
+                }
                 window.__bseCaseTabNavigationInProgress = true;
                 persistCurrentTabDraft();
                 return;
             }
 
             var link = event.target.closest('a');
+
+            if (isCaseAuditLogLink(link) && hasVisibleValidationErrors()) {
+                event.preventDefault();
+                alert('Please fix the validation errors on this tab before opening the case audit log.');
+                return;
+            }
+
             if (!isHomeLink(link)) {
                 return;
             }

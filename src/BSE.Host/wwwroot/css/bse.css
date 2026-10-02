@@ -23,6 +23,26 @@
     max-width: none;
 }
 
+/* Legacy-style immediate inline validation indicators: a bold asterisk shown next to a field
+   as soon as the user changes it, without waiting for Save. Green (#9CCE00) mirrors the legacy
+   "are you sure?" advisories; red mirrors the legacy hard validation errors. The message itself
+   is carried in the title attribute, exactly as the legacy ASP.NET Label's ToolTip was. */
+.bse-star-warning,
+.bse-star-error {
+    font-weight: 700;
+    font-size: 125%;
+    margin-left: 4px;
+    cursor: help;
+}
+
+.bse-star-warning {
+    color: #9CCE00;
+}
+
+.bse-star-error {
+    color: #FF0000;
+}
+
 /* Global RBSE/CPHH autosuggest list */
 .bse-autosuggest-list {
     position: absolute;

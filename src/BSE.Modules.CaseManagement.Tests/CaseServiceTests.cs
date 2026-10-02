@@ -6,6 +6,7 @@ using BSE.Modules.CaseManagement.Enums;
 using BSE.Modules.CaseManagement.Models;
 using BSE.Modules.CaseManagement.Repositories;
 using BSE.Modules.CaseManagement.Services;
+using BSE.Modules.CaseWork.Repositories;
 
 namespace BSE.Modules.CaseManagement.Tests;
 
@@ -23,6 +24,7 @@ public sealed class CaseServiceTests
     private readonly IOtherOwnerRepository _otherOwnerRepo = Substitute.For<IOtherOwnerRepository>();
     private readonly IPedigreeRepository _pedigreeRepo = Substitute.For<IPedigreeRepository>();
     private readonly IBatchRepository _batchRepo = Substitute.For<IBatchRepository>();
+    private readonly ICaseWorkRepository _caseWorkRepo = Substitute.For<ICaseWorkRepository>();
     private readonly CaseService _sut;
 
     public CaseServiceTests()
@@ -31,7 +33,7 @@ public sealed class CaseServiceTests
         _connection.BeginTransaction().Returns(_transaction);
         _sut = new CaseService(
             _connectionFactory, _caseRepo, _clinicalRepo, _babRepo,
-            _feedRepo, _testRepo, _otherOwnerRepo, _pedigreeRepo, _batchRepo);
+            _feedRepo, _testRepo, _otherOwnerRepo, _pedigreeRepo, _batchRepo, _caseWorkRepo);
     }
 
     private static AddCaseCommand MakeCase(string rbse = "010000001") => new(
@@ -91,6 +93,23 @@ public sealed class CaseServiceTests
     }
 
     [Fact]
+    public async Task CreateCaseAsync_Success_CreatesCaseWorkRow()
+    {
+        var cmd = new UpdateCaseDetailsCommand(MakeCase(), null, null, null,
+            Array.Empty<AddFeedCommand>(), Array.Empty<AddTestCommand>(),
+            Array.Empty<AddOtherOwnerCommand>(), null,
+            Array.Empty<AddClinicalVisitCommand>());
+        _caseRepo.AddCaseAsync(cmd.Case, 1, _connection, _transaction)
+                 .Returns(AddCaseResult.Success);
+
+        await _sut.CreateCaseAsync(cmd, 1);
+
+        await _caseWorkRepo.Received(1).AddAsync(
+            Arg.Is<BSE.Modules.CaseWork.Commands.AddCaseWorkCommand>(c => c.Rbse == "010000001"),
+            _connection, _transaction);
+    }
+
+    [Fact]
     public async Task CreateCaseAsync_DuplicateRbse_ReturnsWithoutChildCalls()
     {
         var cmd = new UpdateCaseDetailsCommand(MakeCase(), null, null, null,
@@ -104,6 +123,8 @@ public sealed class CaseServiceTests
 
         result.Should().Be(AddCaseResult.DuplicateRbse);
         await _clinicalRepo.DidNotReceive().AddAsync(Arg.Any<AddCaseClinicalCommand>(), Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>());
+        await _caseWorkRepo.DidNotReceive().AddAsync(
+            Arg.Any<BSE.Modules.CaseWork.Commands.AddCaseWorkCommand>(), Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>());
     }
 
     /// <summary>

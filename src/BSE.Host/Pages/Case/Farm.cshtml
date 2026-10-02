@@ -84,13 +84,17 @@
         <table class="govuk-table">
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header">CPHH</th>
-                    <th scope="col" class="govuk-table__header">Status</th>
+                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.LSort=="cphh" ? (Model.LDir=="asc" ? "ascending" : "descending") : "none")">
+                        <a class="govuk-link govuk-link--no-visited-state" href="@Model.LinkedFarmsSortUrl("cphh")">CPHH</a>
+                    </th>
+                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.LSort=="status" ? (Model.LDir=="asc" ? "ascending" : "descending") : "none")">
+                        <a class="govuk-link govuk-link--no-visited-state" href="@Model.LinkedFarmsSortUrl("status")">Status</a>
+                    </th>
                     <th scope="col" class="govuk-table__header">Action</th>
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
-                @if (!Model.StagedLinkedFarms.Any())
+                @if (!Model.SortedStagedLinkedFarms.Any())
                 {
                     <tr class="govuk-table__row">
                         <td class="govuk-table__cell" colspan="3">No linked farms recorded.</td>
@@ -114,7 +118,7 @@
                     </td>
                 </tr>
 
-                @foreach (var lf in Model.StagedLinkedFarms)
+                @foreach (var lf in Model.PagedStagedLinkedFarms)
                 {
                     var isEditingLinked = canEditFarm && Model.ReopenLinkedEditClientKey == lf.ClientKey;
                     var linkedError = isEditingLinked
@@ -174,6 +178,14 @@
                 }
             </tbody>
         </table>
+
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData)
+        {
+            ["CurrentPage"] = Model.LinkedFarmsCurrentPage,
+            ["TotalPages"] = Model.LinkedFarmsTotalPages,
+            ["PageNumberKey"] = "LPage",
+            ["Fragment"] = "linked-farms-section"
+        })
 
         @if (Model.CanEditDefraControls)
         {
@@ -245,7 +257,7 @@
                         </tr>
                     }
 
-                    @foreach (var h in Model.SortedStagedHerdSizes)
+                    @foreach (var h in Model.PagedSortedStagedHerdSizes)
                     {
                         var yearRepeated = Model.SortedStagedHerdSizes.Count(x => x.HerdYear == h.HerdYear) > 1;
                         <tr class="govuk-table__row bse-herd-row @(h.IsUnsaved ? "bse-herd-row--unsaved" : "")" data-client-key="@h.ClientKey">
@@ -288,6 +300,14 @@
                     }
                 </tbody>
         </table>
+
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData)
+        {
+            ["CurrentPage"] = Model.HerdSizesCurrentPage,
+            ["TotalPages"] = Model.HerdSizesTotalPages,
+            ["PageNumberKey"] = "HPage",
+            ["Fragment"] = "herd-size-section"
+        })
 
         </fieldset>
 
@@ -466,13 +486,17 @@
         <table class="govuk-table">
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header">CPHH</th>
-                    <th scope="col" class="govuk-table__header">Status</th>
+                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.LSort=="cphh" ? (Model.LDir=="asc" ? "ascending" : "descending") : "none")">
+                        <a class="govuk-link govuk-link--no-visited-state" href="@Model.LinkedFarmsSortUrl("cphh")">CPHH</a>
+                    </th>
+                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.LSort=="status" ? (Model.LDir=="asc" ? "ascending" : "descending") : "none")">
+                        <a class="govuk-link govuk-link--no-visited-state" href="@Model.LinkedFarmsSortUrl("status")">Status</a>
+                    </th>
                     <th scope="col" class="govuk-table__header">Action</th>
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
-                @if (!Model.StagedLinkedFarms.Any())
+                @if (!Model.SortedStagedLinkedFarms.Any())
                 {
                     <tr class="govuk-table__row">
                         <td class="govuk-table__cell" colspan="3">No linked farms recorded.</td>
@@ -496,7 +520,7 @@
                     </td>
                 </tr>
 
-                @foreach (var lf in Model.StagedLinkedFarms)
+                @foreach (var lf in Model.PagedStagedLinkedFarms)
                 {
                     var isEditingLinked = Model.ReopenLinkedEditClientKey == lf.ClientKey;
                     var linkedError = isEditingLinked
@@ -556,6 +580,14 @@
                 }
             </tbody>
         </table>
+
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData)
+        {
+            ["CurrentPage"] = Model.LinkedFarmsCurrentPage,
+            ["TotalPages"] = Model.LinkedFarmsTotalPages,
+            ["PageNumberKey"] = "LPage",
+            ["Fragment"] = "linked-farms-section"
+        })
 
         @if (Model.CanEditDefraControls)
         {
@@ -632,7 +664,7 @@
                         </tr>
                     }
 
-                    @foreach (var h in Model.SortedStagedHerdSizes)
+                    @foreach (var h in Model.PagedSortedStagedHerdSizes)
                     {
                         var isEditing = canEditFarm && Model.ReopenEditClientKey == h.ClientKey;
                         var editRow = isEditing ? Model.EditHerdRow : null;
@@ -768,6 +800,14 @@
                     </tr>
                 </tbody>
         </table>
+
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData)
+        {
+            ["CurrentPage"] = Model.HerdSizesCurrentPage,
+            ["TotalPages"] = Model.HerdSizesTotalPages,
+            ["PageNumberKey"] = "HPage",
+            ["Fragment"] = "herd-size-section"
+        })
 
         @if (canEditFarm)
         {

@@ -15,14 +15,11 @@ namespace BSE.Modules.UserManagement.Identity;
 /// </list>
 /// </summary>
 /// <remarks>
-/// Lookup strategy (email-first with NTLogin fallback):
+/// Lookup strategy (email-only):
 /// <list type="number">
 ///   <item>Read email from <c>emailaddress</c> claim (added by AcsCommandResultCreated from Entra SAML assertion),
 ///         falling back to <c>ClaimTypes.Email</c>, <c>preferred_username</c>, then <c>ClaimTypes.Upn</c>.</item>
-///   <item>Call <see cref="IUserRepository.GetByEmailAsync"/>. Returns a match once the UPN column
-///         is populated (after <c>AddUserUpnColumn.sql</c> + SP update).</item>
-///   <item>If not found, derive NTLogin from the email local part (before '@') and call
-///         <see cref="IUserRepository.GetByNtLoginAsync"/>.</item>
+///   <item>Call <see cref="IUserRepository.GetByEmailAsync"/>.</item>
 /// </list>
 /// If the database is unreachable a <see cref="SqlException"/> is caught and logged;
 /// the untransformed principal is returned so the /Error page can still render without
@@ -65,8 +62,7 @@ public sealed class GroupClaimsTransformation : IClaimsTransformation
 
         try
         {
-            var user = await _userRepository.GetByEmailAsync(upn)
-                       ?? await _userRepository.GetByNtLoginAsync(DeriveNtLoginFromUpn(upn));
+            var user = await _userRepository.GetByEmailAsync(upn);
 
             _logger.LogDebug("user from DB : resolved user '{user}'", user);
 
@@ -142,14 +138,4 @@ public sealed class GroupClaimsTransformation : IClaimsTransformation
             _                           => []
         };
 
-    /// <summary>
-    /// During the OIDC transition period, attempts to map a UPN to an NT login by
-    /// extracting the local part before '@'.
-    /// Example: "john.smith@defra.gov.uk" -> "john.smith"
-    /// </summary>
-    private static string DeriveNtLoginFromUpn(string upn)
-    {
-        var at = upn.IndexOf('@');
-        return at > 0 ? upn[..at] : upn;
-    }
 }

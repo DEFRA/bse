@@ -1,4 +1,4 @@
-﻿using BSE.Host.Models.ViewModels;
+﻿git merge --abortusing BSE.Host.Models.ViewModels;
 using BSE.Host.Services;
 using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Repositories;
@@ -187,7 +187,7 @@ public class VlaEditModel(
         // MonthsPregnant and MonthsPostCalving: cannot both have values
         if (Case.MonthsPregnant.HasValue && Case.MonthsPostCalving.HasValue)
             ModelState.AddModelError("Case.MonthsPostCalving",
-                "You cannot enter values for both months pregnant and months post calving.");
+                "You cannot enter a value for Month's Post Calving and Months Pregnant");
 
         // MonthsPregnant: 1–9; MonthsPostCalving: 1–3
         if (Case.MonthsPregnant.HasValue && (Case.MonthsPregnant.Value < 1 || Case.MonthsPregnant.Value > 9))

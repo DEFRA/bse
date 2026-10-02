@@ -5,6 +5,9 @@
      ViewData["PageNumberKey"] — string (optional, default: "pageNumber")
                                  Pass "Filter.PageNumber" for pages that bind
                                  PageNumber inside a Filter view-model (Farms, Outstanding).
+     ViewData["MaxPageLinks"]  — int (optional)
+                                 When set (>0), renders a fixed-size numeric page block
+                                 (e.g. 1..10, then 11..20), instead of compact/ellipsis mode.
      ViewData["Fragment"]      — string (optional) anchor id to jump back to the results
                                  table instead of the top of the page.
      ViewData["AlwaysShow"]    — bool (optional, default: false) legacy's DataGridPager
@@ -15,6 +18,7 @@
     int currentPage = (int)(ViewData["CurrentPage"] ?? 1);
     int totalPages  = (int)(ViewData["TotalPages"]  ?? 1);
     string pageKey  = (string?)ViewData["PageNumberKey"] ?? "pageNumber";
+    int maxPageLinks = (int?)ViewData["MaxPageLinks"] ?? 10;
     string fragment = (string?)ViewData["Fragment"] ?? "";
     bool alwaysShow = (bool?)ViewData["AlwaysShow"] ?? false;
 
@@ -23,7 +27,8 @@
     // Strip BOTH possible page-number keys so neither leaks into generated links.
     var qs = ViewContext.HttpContext.Request.Query
         .Where(k => !string.Equals(k.Key, "pageNumber",        StringComparison.OrdinalIgnoreCase)
-                 && !string.Equals(k.Key, "Filter.PageNumber", StringComparison.OrdinalIgnoreCase))
+                 && !string.Equals(k.Key, "Filter.PageNumber", StringComparison.OrdinalIgnoreCase)
+                 && !string.Equals(k.Key, pageKey,               StringComparison.OrdinalIgnoreCase))
         .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}")
         .ToList();
 
@@ -31,6 +36,18 @@
     {
         var url = "?" + string.Join("&", qs) + $"&{Uri.EscapeDataString(pageKey)}={p}";
         return string.IsNullOrWhiteSpace(fragment) ? url : url + "#" + Uri.EscapeDataString(fragment);
+    }
+
+    int blockStart = 1;
+    int blockEnd = totalPages;
+
+    if (maxPageLinks > 0)
+    {
+        // Clamp currentPage-derived bounds so the page-link loop below can never iterate
+        // more than maxPageLinks times, regardless of unsanitized page-number input.
+        blockStart = ((currentPage - 1) / maxPageLinks) * maxPageLinks + 1;
+        blockStart = Math.Max(1, Math.Min(blockStart, totalPages));
+        blockEnd = Math.Min(totalPages, blockStart + maxPageLinks - 1);
     }
 }
 
@@ -47,23 +64,44 @@
         </div>
     }
     <ul class="govuk-pagination__list">
-        @for (var p = 1; p <= totalPages; p++)
+        @if (maxPageLinks > 0)
         {
-            if (p == currentPage)
+            for (var p = blockStart; p <= blockEnd; p++)
             {
-                <li class="govuk-pagination__item govuk-pagination__item--current">
-                    <a class="govuk-link govuk-pagination__link" href="@PageUrl(p)" aria-label="Page @p" aria-current="page">@p</a>
-                </li>
+                if (p == currentPage)
+                {
+                    <li class="govuk-pagination__item govuk-pagination__item--current">
+                        <a class="govuk-link govuk-pagination__link" href="@PageUrl(p)" aria-label="Page @p" aria-current="page">@p</a>
+                    </li>
+                }
+                else
+                {
+                    <li class="govuk-pagination__item">
+                        <a class="govuk-link govuk-pagination__link" href="@PageUrl(p)" aria-label="Page @p">@p</a>
+                    </li>
+                }
             }
-            else if (p == 1 || p == totalPages || Math.Abs(p - currentPage) <= 1)
+        }
+        else
+        {
+            for (var p = 1; p <= totalPages; p++)
             {
-                <li class="govuk-pagination__item">
-                    <a class="govuk-link govuk-pagination__link" href="@PageUrl(p)" aria-label="Page @p">@p</a>
-                </li>
-            }
-            else if (Math.Abs(p - currentPage) == 2)
-            {
-                <li class="govuk-pagination__item govuk-pagination__item--ellipsis">&ctdot;</li>
+                if (p == currentPage)
+                {
+                    <li class="govuk-pagination__item govuk-pagination__item--current">
+                        <a class="govuk-link govuk-pagination__link" href="@PageUrl(p)" aria-label="Page @p" aria-current="page">@p</a>
+                    </li>
+                }
+                else if (p == 1 || p == totalPages || Math.Abs(p - currentPage) <= 1)
+                {
+                    <li class="govuk-pagination__item">
+                        <a class="govuk-link govuk-pagination__link" href="@PageUrl(p)" aria-label="Page @p">@p</a>
+                    </li>
+                }
+                else if (Math.Abs(p - currentPage) == 2)
+                {
+                    <li class="govuk-pagination__item govuk-pagination__item--ellipsis">&ctdot;</li>
+                }
             }
         }
     </ul>

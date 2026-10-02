@@ -28,7 +28,6 @@ public class RelationsModel(
     IAnimalRelationsRepository relationsRepository,
     IPedigreeRepository pedigreeRepository,
     ICaseService caseService,
-    IFeedRepository feedRepository,
     ILookupDataService lookups,
     IBatchRepository batchRepository,
     ICaseRelationsDraftStateService relationsDraftState,
@@ -41,6 +40,10 @@ public class RelationsModel(
     public const string AlreadyARelation = "This RBSE is already a twin, sister or offspring";
     public const string DamNotFound = "This RBSE does not exist or is not a female animal";
     public const string SireNotFound = "This RBSE does not exist or is not a male animal";
+    private const string DataEntryRole = "DataEntry";
+    private const string VlaAccessRole = "VLAAccess";
+    private const string SuccessKey = "Success";
+    private const string RelationsWarningKey = "RelationsWarning";
 
     [BindProperty(SupportsGet = true)]
     public string Rbse { get; set; } = string.Empty;
@@ -141,7 +144,7 @@ public class RelationsModel(
     /// <summary>Legacy btnSireLookUp_Click.</summary>
     public async Task<IActionResult> OnPostLookUpSireAsync()
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         await LoadAsync();
@@ -153,26 +156,26 @@ public class RelationsModel(
     /// <summary>Legacy btnSave_Click (Dam/Sire section): persists whatever is currently populated.</summary>
     public async Task<IActionResult> OnPostSaveDamSireAsync()
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole(DataEntryRole))
             return Forbid();
         await LoadAsync();
         var draft = await LoadOrInitializeRelationsDraftAsync();
         draft.HasPendingChanges = true;
         await relationsDraftState.SetAsync(draft);
-        TempData.Remove("Success");
+        TempData.Remove(SuccessKey);
         return RedirectToPage(new { rbse = Rbse });
     }
 
     public async Task<IActionResult> OnPostSaveCaseHerdbookAsync()
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole(DataEntryRole))
             return Forbid();
 
         await LoadAsync();
         var draft = await LoadOrInitializeRelationsDraftAsync();
         draft.HasPendingChanges = true;
         await relationsDraftState.SetAsync(draft);
-        TempData.Remove("Success");
+        TempData.Remove(SuccessKey);
         return RedirectToPage(new { rbse = Rbse });
     }
 
@@ -186,7 +189,7 @@ public class RelationsModel(
     /// <summary>Legacy RemoveDam: disassociates the dam without touching the sire.</summary>
     public async Task<IActionResult> OnPostRemoveDamAsync()
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole(DataEntryRole))
             return Forbid();
         await LoadAsync();
         var draft = await LoadOrInitializeRelationsDraftAsync();
@@ -196,7 +199,7 @@ public class RelationsModel(
         draft.HasPendingChanges = true;
         await relationsDraftState.SetAsync(draft);
 
-        TempData.Remove("Success");
+        TempData.Remove(SuccessKey);
         TempData.Remove(PendingDamSireKeys.Dam);
         return RedirectToPage(new { rbse = Rbse });
     }
@@ -204,7 +207,7 @@ public class RelationsModel(
     /// <summary>Legacy RemoveSire: disassociates the sire without touching the dam.</summary>
     public async Task<IActionResult> OnPostRemoveSireAsync()
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
         await LoadAsync();
         var draft = await LoadOrInitializeRelationsDraftAsync();
@@ -214,7 +217,7 @@ public class RelationsModel(
         draft.HasPendingChanges = true;
         await relationsDraftState.SetAsync(draft);
 
-        TempData.Remove("Success");
+        TempData.Remove(SuccessKey);
         TempData.Remove(PendingDamSireKeys.Sire);
         return RedirectToPage(new { rbse = Rbse });
     }
@@ -619,7 +622,7 @@ public class RelationsModel(
     /// <summary>Adds a related-animal row to the draft only. Not persisted until Save.</summary>
     public async Task<IActionResult> OnPostAddRelationRowAsync()
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         await LoadAsync();
@@ -656,7 +659,7 @@ public class RelationsModel(
         });
         draft.HasPendingChanges = true;
         await relationsDraftState.SetAsync(draft);
-        TempData.Remove("Success");
+        TempData.Remove(SuccessKey);
 
         return RedirectToPage(new { rbse = Rbse });
     }
@@ -664,7 +667,7 @@ public class RelationsModel(
     /// <summary>Populates the shared field panel from a staged row for editing (no changes saved yet).</summary>
     public async Task<IActionResult> OnPostBeginEditRelationRowAsync(string clientKey)
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         await LoadAsync();
@@ -681,7 +684,7 @@ public class RelationsModel(
             BirthMonth = item.BirthMonth;
             BirthYear = item.BirthYear;
             BirthDate = item.BirthDay > 0 && item.BirthMonth > 0 && item.BirthYear > 0
-                ? new DateTime(item.BirthYear.Value, item.BirthMonth.Value, item.BirthDay.Value)
+                ? new DateTime(item.BirthYear.Value, item.BirthMonth.Value, item.BirthDay.Value, 0, 0, 0, DateTimeKind.Unspecified)
                 : null;
             RelationFate = item.RelationFate;
             LeftDate = item.LeftDate;
@@ -697,7 +700,7 @@ public class RelationsModel(
     /// <summary>Updates the currently selected staged row from the shared field panel. Not persisted until Save.</summary>
     public async Task<IActionResult> OnPostUpdateRelationRowAsync()
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         var clientKey = EditingClientKey;
@@ -738,7 +741,7 @@ public class RelationsModel(
         item.Sire = Sire;
         draft.HasPendingChanges = true;
         await relationsDraftState.SetAsync(draft);
-        TempData.Remove("Success");
+        TempData.Remove(SuccessKey);
 
         return RedirectToPage(new { rbse = Rbse });
     }
@@ -746,7 +749,7 @@ public class RelationsModel(
     /// <summary>Removes a staged related-animal row. Not persisted until Save.</summary>
     public async Task<IActionResult> OnPostDeleteRelationRowAsync(string clientKey)
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         await LoadAsync();
@@ -758,7 +761,7 @@ public class RelationsModel(
             draft.Relations.Remove(item);
             draft.HasPendingChanges = true;
             await relationsDraftState.SetAsync(draft);
-            TempData.Remove("Success");
+            TempData.Remove(SuccessKey);
         }
 
         return RedirectToPage(new { rbse = Rbse });
@@ -767,10 +770,10 @@ public class RelationsModel(
     /// <summary>Commits all staged related-animal changes to the database in one transaction.</summary>
     public async Task<IActionResult> OnPostSaveRelationsAsync()
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole(DataEntryRole))
             return Forbid();
 
-        TempData.Remove("RelationsWarning");
+        TempData.Remove(RelationsWarningKey);
 
         await LoadAsync();
         var draft = await LoadOrInitializeRelationsDraftAsync();
@@ -946,7 +949,7 @@ public class RelationsModel(
             var result = await caseService.EditCaseAsync(editCommand, userId);
             if (result != EditCaseResult.Success)
             {
-                TempData["RelationsWarning"] = "Dam details were saved, but the status could not be updated — the case may have changed. Please try again.";
+                TempData[RelationsWarningKey] = "Dam details were saved, but the status could not be updated — the case may have changed. Please try again.";
                 return RedirectToPage(new { rbse = Rbse });
             }
         }
@@ -1024,7 +1027,7 @@ public class RelationsModel(
 
             // Legacy UpdateDamSireRecords mapped the SP's return code to one of these four
             // specific messages instead of a single generic one.
-            TempData["RelationsWarning"] = TryGetDamSireReturnCode(ex, out var returnCode)
+            TempData[RelationsWarningKey] = TryGetDamSireReturnCode(ex, out var returnCode)
                 ? returnCode switch
                 {
                     1 => "Failed to create or update a dam record. The record may have been changed by another user.",
@@ -1040,14 +1043,14 @@ public class RelationsModel(
         var relationsError = await PersistStagedRelationsAsync();
         if (relationsError is not null)
         {
-            TempData["RelationsWarning"] = relationsError;
+            TempData[RelationsWarningKey] = relationsError;
             return RedirectToPage(new { rbse = Rbse });
         }
 
         await relationsDraftState.ClearAsync(RbseHelper.ParseToRaw(Rbse));
 
-        TempData.Remove("RelationsWarning");
-        TempData["Success"] = "Related animal changes saved.";
+        TempData.Remove(RelationsWarningKey);
+        TempData[SuccessKey] = "Related animal changes saved.";
         return RedirectToPage(new { rbse = Rbse });
     }
 
@@ -1115,9 +1118,9 @@ public class RelationsModel(
             BirthMonth = related.BirthMonth;
             BirthYear = related.BirthYear;
             BirthDate = related.BirthDay > 0 && related.BirthMonth > 0 && related.BirthYear > 0
-                ? new DateTime(related.BirthYear.Value, related.BirthMonth.Value, related.BirthDay.Value)
+                ? new DateTime(related.BirthYear.Value, related.BirthMonth.Value, related.BirthDay.Value, 0, 0, 0, DateTimeKind.Unspecified)
                 : null;
-            LeftDate = DateTime.TryParse(related.LeftDate, out var leftDate) ? leftDate : null;
+            LeftDate = DateTime.TryParse(related.LeftDate, System.Globalization.CultureInfo.InvariantCulture, out var leftDate) ? leftDate : null;
             Sire = related.Name;
         }
     }
@@ -1228,7 +1231,7 @@ public class RelationsModel(
         }
 
         return await conn.QuerySingleOrDefaultAsync<PedigreeSnapshot>(
-            @"SELECT [ID] AS [Id], [RBSE], [Eartag], [Name], [Herdbook], [BirthDay], [BirthMonth], [BirthYear], [RowStamp]
+            @"SELECT [Eartag], [Name], [Herdbook], [BirthDay], [BirthMonth], [BirthYear], [RowStamp]
               FROM [Pedigree]
               WHERE [ID] = @ID",
             new { ID = pedigreeId });
@@ -1236,8 +1239,6 @@ public class RelationsModel(
 
     private sealed record PedigreeSnapshot
     {
-        public int Id { get; init; }
-        public string? Rbse { get; init; }
         public string? Eartag { get; init; }
         public string? Name { get; init; }
         public string? Herdbook { get; init; }
