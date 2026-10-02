@@ -13,6 +13,7 @@ using BSE.SharedKernel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Configuration;
 
 namespace BSE.Host.Pages.Case;
@@ -551,55 +552,52 @@ public class VlaModel(
         var today = DateTime.Today;
         var formADate = Case.FormADate?.Date;
 
+        // Legacy's CalendarDate.ascx control shows "Please enter a valid date" for
+        // unparseable text and only uses the field-specific business-rule message once
+        // the text parses but fails the earliest/latest range check. Match that: replace
+        // the binder's generic format message with the same wording legacy used, without
+        // altering the value the user typed.
+        ReplaceUnparseableDateMessage("Case.BirthDate", Case.BirthDate);
+        ReplaceUnparseableDateMessage("Case.PurchaseDate", Case.PurchaseDate);
+        ReplaceUnparseableDateMessage("Case.HerdEntryDate", Case.HerdEntryDate);
+        ReplaceUnparseableDateMessage("Case.OnsetDate", Case.OnsetDate);
+
         if (Case.BirthDate.HasValue)
         {
-            if (Case.BirthDate.Value.Date < new DateTime(1970, 1, 1))
-                ModelState.AddModelError("Case.BirthDate", "Birth date must be after 31/12/1969.");
-            else
-            {
-                var limit = formADate ?? today;
-                if (Case.BirthDate.Value.Date >= limit)
-                    ModelState.AddModelError("Case.BirthDate",
-                        formADate.HasValue ? "Birth date must be before the Form A date." : "Birth date must be a past date.");
-            }
+            var limit = formADate ?? today;
+            if (Case.BirthDate.Value.Date < new DateTime(1970, 1, 1) || Case.BirthDate.Value.Date > limit)
+                ModelState.AddModelError("Case.BirthDate", "Birth Date must be after 31/12/1969 and before the Form A Date");
         }
 
         if (Case.PurchaseDate.HasValue)
         {
-            if (Case.BirthDate.HasValue && Case.PurchaseDate.Value.Date <= Case.BirthDate.Value.Date)
-                ModelState.AddModelError("Case.PurchaseDate", "Purchase date must be after the birth date and before the Form A date.");
-            else
-            {
-                var limit = formADate ?? today;
-                if (Case.PurchaseDate.Value.Date >= limit)
-                    ModelState.AddModelError("Case.PurchaseDate",
-                        formADate.HasValue ? "Purchase date must be before the Form A date." : "Purchase date must be a past date.");
-            }
+            var limit = formADate ?? today;
+            if ((Case.BirthDate.HasValue && Case.PurchaseDate.Value.Date < Case.BirthDate.Value.Date) ||
+                Case.PurchaseDate.Value.Date > limit)
+                ModelState.AddModelError("Case.PurchaseDate", "Purchase Date must be after the birth date and before the Form A Date");
         }
 
         if (Case.HerdEntryDate.HasValue)
         {
             var limit = formADate ?? today;
             if (Case.HerdEntryDate.Value.Date > limit)
-                ModelState.AddModelError("Case.HerdEntryDate",
-                    formADate.HasValue ? "Herd entry date must be before the Form A date." : "Herd entry date must be a past date.");
+                ModelState.AddModelError("Case.HerdEntryDate", "The Herd Entry Date must be before the Form A Date.");
         }
 
         if (Case.OnsetDate.HasValue)
         {
-            if (Case.BirthDate.HasValue && Case.OnsetDate.Value.Date <= Case.BirthDate.Value.Date)
-                ModelState.AddModelError("Case.OnsetDate", "Onset date must be after the date of birth and before the Form A date.");
-            else
+            var limit = formADate ?? today;
+            if (Case.BirthDate.HasValue)
             {
-                var limit = formADate ?? today;
-                if (Case.OnsetDate.Value.Date > limit)
-                    ModelState.AddModelError("Case.OnsetDate",
-                        formADate.HasValue ? "Onset date must be before the Form A date." : "Onset date must be a past date.");
+                if (Case.OnsetDate.Value.Date < Case.BirthDate.Value.Date || Case.OnsetDate.Value.Date > limit)
+                    ModelState.AddModelError("Case.OnsetDate", "Onset Date must be after the Date Of Birth and before the Form A Date");
             }
+            else if (Case.OnsetDate.Value.Date > limit)
+                ModelState.AddModelError("Case.OnsetDate", "Onset Date must be before the Form A Date");
         }
 
         if (Case.MonthsPregnant.HasValue && Case.MonthsPostCalving.HasValue)
-            ModelState.AddModelError("Case.MonthsPostCalving", "You cannot enter values for both months pregnant and months post calving.");
+            ModelState.AddModelError("Case.MonthsPostCalving", "You cannot enter a value for Month's Post Calving and Months Pregnant");
 
         if (Case.MonthsPregnant.HasValue && (Case.MonthsPregnant.Value < 1 || Case.MonthsPregnant.Value > 9))
             ModelState.AddModelError("Case.MonthsPregnant", "Months pregnant must be between 1 and 9.");
@@ -608,13 +606,35 @@ public class VlaModel(
 
         if (Case.SlaughterDate.HasValue)
         {
-            if (Case.SlaughterDate.Value.Date > today)
-                ModelState.AddModelError("Case.SlaughterDate", "Slaughter date must not be in the future.");
-            if (formADate.HasValue && Case.SlaughterDate.Value.Date < formADate.Value)
-                ModelState.AddModelError("Case.SlaughterDate", "Slaughter date must be after the Form A date.");
-            else if (!formADate.HasValue && Case.BirthDate.HasValue && Case.SlaughterDate.Value.Date < Case.BirthDate.Value.Date)
-                ModelState.AddModelError("Case.SlaughterDate", "Slaughter date must be after the birth date.");
+            // Mirrors legacy SlaughterDateValid: earliest bound is Form A Date if present,
+            // else Birth Date if present, else no earliest bound (only "not in the future" applies).
+            if (formADate.HasValue)
+            {
+                if (Case.SlaughterDate.Value.Date < formADate.Value || Case.SlaughterDate.Value.Date > today)
+                    ModelState.AddModelError("Case.SlaughterDate", "You must enter a date between the Form A Date and todays date");
+            }
+            else if (Case.BirthDate.HasValue)
+            {
+                if (Case.SlaughterDate.Value.Date < Case.BirthDate.Value.Date || Case.SlaughterDate.Value.Date > today)
+                    ModelState.AddModelError("Case.SlaughterDate", "You must enter a date between the Birth Date and todays date");
+            }
+            else if (Case.SlaughterDate.Value.Date > today)
+            {
+                ModelState.AddModelError("Case.SlaughterDate", "You have entered a future date for the slaughter date");
+            }
         }
+    }
+
+    private void ReplaceUnparseableDateMessage(string key, DateTime? boundValue)
+    {
+        if (boundValue.HasValue)
+            return;
+
+        if (!ModelState.TryGetValue(key, out var entry) || entry.ValidationState != Microsoft.AspNetCore.Mvc.ModelBinding.ModelValidationState.Invalid)
+            return;
+
+        entry.Errors.Clear();
+        ModelState.AddModelError(key, "Please enter a valid date");
     }
 
     public string OwnersSortUrl(string col)

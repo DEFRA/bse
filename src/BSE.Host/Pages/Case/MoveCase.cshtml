@@ -80,7 +80,7 @@
             </div>
             <div class="bse-rbse-summary-item">
                 <span class="bse-rbse-summary-label">CPHH</span>
-                <span class="bse-rbse-summary-value">@BseFormat.FormatCphh(Model.CaseRecord.Cphh)</span>
+                <span class="bse-rbse-summary-value">@BseFormat.FormatCphh(Model.CaseRecord?.Cphh)</span>
             </div>
         </div>
         @if (Model.FarmWillBeDeleted)
@@ -129,15 +129,15 @@
         <dl class="govuk-summary-list bse-legacy-summary-list">
             <div class="govuk-summary-list__row">
                 <dt class="govuk-summary-list__key">New Owners Name</dt>
-                <dd class="govuk-summary-list__value">@Model.NewFarm.OwnerName</dd>
+                <dd class="govuk-summary-list__value">@Model.NewFarm?.OwnerName</dd>
             </div>
             <div class="govuk-summary-list__row">
                 <dt class="govuk-summary-list__key">Address</dt>
                 <dd class="govuk-summary-list__value">
-                    @Model.NewFarm.Address1<br>
-                    @Model.NewFarm.Address2<br>
-                    @Model.NewFarm.Address3<br>
-                    @Model.NewFarm.Postcode
+                    @Model.NewFarm?.Address1<br>
+                    @Model.NewFarm?.Address2<br>
+                    @Model.NewFarm?.Address3<br>
+                    @Model.NewFarm?.Postcode
                 </dd>
             </div>
         </dl>

@@ -79,30 +79,11 @@
     </tbody>
 </table>
 
-@if (Model.TotalPages > 1)
+@await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData)
 {
-    <nav class="govuk-pagination" role="navigation" aria-label="RBSE records pagination">
-        <ul class="govuk-pagination__list">
-            @for (var p = 1; p <= Model.TotalPages; p++)
-            {
-                var isCurrent = p == Model.PageNumber;
-                <li class="govuk-pagination__item @(isCurrent ? "govuk-pagination__item--current" : "")">
-                    <form method="post" asp-page-handler="Page" style="display: inline;">
-                        <input type="hidden" name="PageNumber" value="@p" />
-                        @if (isCurrent)
-                        {
-                            <button type="submit" class="govuk-link govuk-pagination__link" style="border:none;background:none;cursor:pointer;" aria-label="Page @p" aria-current="page">@p</button>
-                        }
-                        else
-                        {
-                            <button type="submit" class="govuk-link govuk-pagination__link" style="border:none;background:none;cursor:pointer;" aria-label="Page @p">@p</button>
-                        }
-                    </form>
-                </li>
-            }
-        </ul>
-    </nav>
-}
+    ["CurrentPage"] = Model.PageNumber,
+    ["TotalPages"] = Model.TotalPages
+})
 
 @* Export Button - Always shown, disabled when grid is empty *@
 <form method="post" asp-page-handler="Export" novalidate style="margin-top: 2rem;">

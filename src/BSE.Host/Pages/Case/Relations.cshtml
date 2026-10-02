@@ -87,8 +87,7 @@
     var bseGroupName = User.FindFirst("bse:group")?.Value;
     var isDefraGroup = string.Equals(bseGroupName, "DEFRA Data Entry", StringComparison.OrdinalIgnoreCase)
         || string.Equals(bseGroupName, "DEFRA Maintenance", StringComparison.OrdinalIgnoreCase)
-        || User.IsInRole("DEFRAAccess")
-        || User.IsInRole("DEFRAMaintenance");
+        || string.Equals(bseGroupName, "DEFRA Viewer", StringComparison.OrdinalIgnoreCase);
     var canEditDamSection = canEditRelations;
     var canEditSireSection = canEditRelations && User.IsInRole("VLAAccess") && !isDefraGroup;
     var canEditOtherRelations = canEditSireSection;

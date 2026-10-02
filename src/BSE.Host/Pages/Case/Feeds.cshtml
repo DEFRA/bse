@@ -120,7 +120,7 @@
                 </tr>
             }
 
-            @foreach (var f in Model.Feeds)
+            @foreach (var f in Model.PagedFeeds)
             {
                 <tr class="govuk-table__row bse-feeds-row @(f.IsUnsaved ? "bse-feeds-row--unsaved" : "") @(Model.EditingClientKey == f.ClientKey ? "bse-feeds-row--selected" : "")">
                     <td class="govuk-table__cell">@f.YearFrom</td>
@@ -154,6 +154,12 @@
             }
         </tbody>
     </table>
+
+    @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData)
+    {
+        ["CurrentPage"] = Model.CurrentPage,
+        ["TotalPages"] = Model.TotalPages
+    })
 
     <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
 
@@ -213,13 +219,13 @@
             <div class="govuk-form-group govuk-!-margin-bottom-2">
                 <label class="govuk-label" for="supplier-input">Supplier</label>
                 <div class="bse-feeds-supplier-row">
-                    <input id="supplier-input" type="text" maxlength="30" value="@Model.SupplierName" class="govuk-input bse-feeds-supplier-input" autocomplete="off" />
-                    <button type="button" id="validate-supplier-btn" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0" data-module="govuk-button">Validate Supplier</button>
+                    <input id="supplier-input" name="SupplierLookupName" type="text" maxlength="30" value="@Model.SupplierName" class="govuk-input bse-feeds-supplier-input" autocomplete="off" />
+                    <button type="submit" asp-page-handler="ValidateSupplierNavigate" id="validate-supplier-btn" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0" data-module="govuk-button">Validate Supplier</button>
                 </div>
             </div>
             <p id="supplier-validated-name" class="govuk-body govuk-!-margin-bottom-2">@Model.SupplierName</p>
-            <p id="supplier-lookup-error" class="govuk-error-message @(Model.FieldErrors.ContainsKey("SupplierId") ? "" : "govuk-visually-hidden")">
-                <span class="govuk-visually-hidden">Error:</span> @BSE.Host.Helpers.FeedValidation.SupplierEmpty
+            <p id="supplier-lookup-error" class="@(Model.FieldErrors.ContainsKey("SupplierId") ? "govuk-error-message" : "govuk-visually-hidden")">
+                <span class="govuk-visually-hidden">Error:</span> @(Model.FieldErrors.TryGetValue("SupplierId", out var supplierErr) ? supplierErr : BSE.Host.Helpers.FeedValidation.SupplierEmpty)
             </p>
             <ul id="supplier-matches-list" class="govuk-list" hidden></ul>
             <input type="hidden" id="supplier-id" name="SupplierId" value="@Model.SupplierId" />
@@ -320,60 +326,6 @@
 
 <script>
     (function () {
-        var btn = document.getElementById('validate-supplier-btn');
-        var input = document.getElementById('supplier-input');
-        var idField = document.getElementById('supplier-id');
-        var nameField = document.getElementById('supplier-name');
-        var validatedName = document.getElementById('supplier-validated-name');
-        var errorMsg = document.getElementById('supplier-lookup-error');
-        var matchesList = document.getElementById('supplier-matches-list');
-
-        function selectSupplier(id, name) {
-            idField.value = id;
-            nameField.value = name;
-            validatedName.textContent = name;
-            errorMsg.classList.add('govuk-visually-hidden');
-            matchesList.hidden = true;
-            matchesList.innerHTML = '';
-        }
-
-        if (btn) {
-            btn.addEventListener('click', function () {
-                idField.value = '';
-                nameField.value = '';
-                validatedName.textContent = '';
-                matchesList.hidden = true;
-                matchesList.innerHTML = '';
-
-                var name = encodeURIComponent(input.value || '');
-                fetch('?handler=ValidateSupplier&name=' + name)
-                    .then(function (r) { return r.json(); })
-                    .then(function (data) {
-                        if (data.found) {
-                            selectSupplier(data.id, data.name);
-                        } else if (data.matches && data.matches.length > 0) {
-                            errorMsg.classList.add('govuk-visually-hidden');
-                            data.matches.forEach(function (m) {
-                                var li = document.createElement('li');
-                                var a = document.createElement('a');
-                                a.href = '#';
-                                a.className = 'govuk-link';
-                                a.textContent = m.name;
-                                a.addEventListener('click', function (e) {
-                                    e.preventDefault();
-                                    selectSupplier(m.id, m.name);
-                                });
-                                li.appendChild(a);
-                                matchesList.appendChild(li);
-                            });
-                            matchesList.hidden = false;
-                        } else {
-                            errorMsg.classList.remove('govuk-visually-hidden');
-                        }
-                    });
-            });
-        }
-
         document.querySelectorAll('.bse-cancel-button').forEach(function (b) {
             b.addEventListener('click', function (e) {
                 var banner = document.getElementById('case-feeds-unsaved-banner');
