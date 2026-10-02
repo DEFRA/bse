@@ -875,7 +875,7 @@ public class RelationsModel(
             DamSire.HasSire = true;
     }
 
-    private IActionResult? ValidateDamSireInputs(string caseRbse)
+    private PageResult? ValidateDamSireInputs(string caseRbse)
     {
         if (!string.IsNullOrWhiteSpace(DamSire.DamRbse)
             && RbseHelper.Normalize(DamSire.DamRbse) == caseRbse)
@@ -920,7 +920,7 @@ public class RelationsModel(
                 return Page();
             }
 
-            var linkedDam = damMatches.FirstOrDefault();
+            var linkedDam = damMatches.Count > 0 ? damMatches[0] : null;
             if (linkedDam is not null)
             {
                 DamSire.HasDam = true;
@@ -946,7 +946,7 @@ public class RelationsModel(
                 return Page();
             }
 
-            var linkedSire = sireMatches.FirstOrDefault();
+            var linkedSire = sireMatches.Count > 0 ? sireMatches[0] : null;
             if (linkedSire is not null)
             {
                 DamSire.HasSire = true;
@@ -974,7 +974,7 @@ public class RelationsModel(
         {
             var damMatches = await relationsRepository.GetDamSireDetailsMatchesAsync(
                 null, null, RbseHelper.Normalize(DamSire.DamRbse), null, "F");
-            var exactDam = damMatches.FirstOrDefault(m => m.Id == DamSire.DamId) ?? damMatches.FirstOrDefault();
+            var exactDam = GetMatchingDamSire(damMatches, DamSire.DamId);
             if (exactDam?.RowStamp is { Length: > 0 })
                 DamSire.DamRowStamp = ToBase64(exactDam.RowStamp);
         }
@@ -983,13 +983,13 @@ public class RelationsModel(
         {
             var sireMatches = await relationsRepository.GetDamSireDetailsMatchesAsync(
                 null, null, RbseHelper.Normalize(DamSire.SireRbse), null, "M");
-            var exactSire = sireMatches.FirstOrDefault(m => m.Id == DamSire.SireId) ?? sireMatches.FirstOrDefault();
+            var exactSire = GetMatchingDamSire(sireMatches, DamSire.SireId);
             if (exactSire?.RowStamp is { Length: > 0 })
                 DamSire.SireRowStamp = ToBase64(exactSire.RowStamp);
         }
     }
 
-    private IActionResult? ValidateParentRowStampsPresent()
+    private PageResult? ValidateParentRowStampsPresent()
     {
         if (DamSire.HasDam && DamSire.DamId > 0 && string.IsNullOrWhiteSpace(DamSire.DamRowStamp))
         {
@@ -1137,55 +1137,74 @@ public class RelationsModel(
     /// </summary>
     private async Task ValidateAndDeriveRelationFieldsAsync(string? excludeClientKey)
     {
-        BirthDay = BirthDate?.Day;
-        BirthMonth = BirthDate?.Month;
-        BirthYear = BirthDate?.Year;
-
-        // Mirrors legacy RBSE.ascx auto-padding on postback: redisplay the short form
-        // entered (e.g. "16/01") as the full zero-padded value.
+        SetBirthFieldsFromDate();
         RelationRbse = RbseHelper.Format(RbseHelper.ParseToRaw(RelationRbse));
         ModelState.Remove(nameof(RelationRbse));
 
+        RelationFieldErrors = CreateRelationFieldErrors(excludeClientKey);
+        if (RelationFieldErrors.Count > 0)
+            return;
+
+        await DeriveRelationValuesFromLookupAsync();
+    }
+
+    private void SetBirthFieldsFromDate()
+    {
+        BirthDay = BirthDate?.Day;
+        BirthMonth = BirthDate?.Month;
+        BirthYear = BirthDate?.Year;
+    }
+
+    private Dictionary<string, string> CreateRelationFieldErrors(string? excludeClientKey)
+    {
         var otherRelationRbses = _stagedRelations
             .Where(r => r.ClientKey != excludeClientKey)
             .Select(r => r.RelationRbse);
 
-        RelationFieldErrors = RelationValidation.Validate(
+        return RelationValidation.Validate(
             new RelationValidation.Input(
-                RbseHelper.ParseToRaw(Rbse), RelationRbse, RelationType, Sex,
-                EartagCountry, EartagHerdmark, Eartag,
-                BirthDay, BirthMonth, BirthYear, LeftDate),
+                RbseHelper.ParseToRaw(Rbse),
+                RelationRbse,
+                RelationType,
+                Sex,
+                EartagCountry,
+                EartagHerdmark,
+                Eartag,
+                BirthDay,
+                BirthMonth,
+                BirthYear,
+                LeftDate),
             otherRelationRbses,
             Details?.Dam?.Rbse,
             Details?.Sire?.Rbse);
+    }
 
-        if (RelationFieldErrors.Count > 0)
+    private async Task DeriveRelationValuesFromLookupAsync()
+    {
+        var normalizedRbse = RbseHelper.ParseToRaw(RelationRbse);
+        if (normalizedRbse.Length == 0)
             return;
 
-        var normalizedRbse = RbseHelper.ParseToRaw(RelationRbse);
-        if (normalizedRbse.Length > 0)
+        var related = await relationsRepository.GetRelationDetailsOfRelatedCaseAsync(normalizedRbse);
+        if (related is null)
         {
-            var related = await relationsRepository.GetRelationDetailsOfRelatedCaseAsync(normalizedRbse);
-            if (related is null)
-            {
-                RelationFieldErrors = new Dictionary<string, string> { ["RelationRbse"] = RelationValidation.RbseNotFound };
-                return;
-            }
-
-            Sex = related.Sex;
-            RelationFate = related.Fate;
-            EartagCountry = related.EartagCountry;
-            EartagHerdmark = related.EartagHerdmark;
-            Eartag = related.Eartag;
-            BirthDay = related.BirthDay;
-            BirthMonth = related.BirthMonth;
-            BirthYear = related.BirthYear;
-            BirthDate = related.BirthDay > 0 && related.BirthMonth > 0 && related.BirthYear > 0
-                ? new DateTime(related.BirthYear.Value, related.BirthMonth.Value, related.BirthDay.Value, 0, 0, 0, DateTimeKind.Unspecified)
-                : null;
-            LeftDate = DateTime.TryParse(related.LeftDate, System.Globalization.CultureInfo.InvariantCulture, out var leftDate) ? leftDate : null;
-            Sire = related.Name;
+            RelationFieldErrors = new Dictionary<string, string> { ["RelationRbse"] = RelationValidation.RbseNotFound };
+            return;
         }
+
+        Sex = related.Sex;
+        RelationFate = related.Fate;
+        EartagCountry = related.EartagCountry;
+        EartagHerdmark = related.EartagHerdmark;
+        Eartag = related.Eartag;
+        BirthDay = related.BirthDay;
+        BirthMonth = related.BirthMonth;
+        BirthYear = related.BirthYear;
+        BirthDate = related.BirthDay > 0 && related.BirthMonth > 0 && related.BirthYear > 0
+            ? new DateTime(related.BirthYear.Value, related.BirthMonth.Value, related.BirthDay.Value, 0, 0, 0, DateTimeKind.Unspecified)
+            : null;
+        LeftDate = DateTime.TryParse(related.LeftDate, System.Globalization.CultureInfo.InvariantCulture, out var leftDate) ? leftDate : null;
+        Sire = related.Name;
     }
 
     /// <summary>Persists staged relation changes. Returns an error message if a row was
@@ -1283,6 +1302,20 @@ public class RelationsModel(
         return end > start && int.TryParse(ex.Message[start..end], out returnCode);
     }
 
+    private static T? GetMatchingDamSire<T>(IReadOnlyList<T> matches, int id) where T : class
+    {
+        if (matches.Count == 0)
+            return null;
+
+        foreach (var match in matches)
+        {
+            if (match is DamSireDetailRecord damSire && damSire.Id == id)
+                return match;
+        }
+
+        return matches[0];
+    }
+
     private async Task<PedigreeSnapshot?> GetPedigreeSnapshotByIdAsync(int pedigreeId)
     {
         using var conn = connectionFactory.CreateConnection();
@@ -1302,13 +1335,13 @@ public class RelationsModel(
 
     private sealed record PedigreeSnapshot
     {
-        public string? Eartag { get; init; }
-        public string? Name { get; init; }
-        public string? Herdbook { get; init; }
-        public int? BirthDay { get; init; }
-        public int? BirthMonth { get; init; }
-        public int? BirthYear { get; init; }
-        public byte[]? RowStamp { get; init; }
+        public string? Eartag { get; set; }
+        public string? Name { get; set; }
+        public string? Herdbook { get; set; }
+        public int? BirthDay { get; set; }
+        public int? BirthMonth { get; set; }
+        public int? BirthYear { get; set; }
+        public byte[]? RowStamp { get; set; }
     }
 
     /// <summary>Populates DamSire from the freshly-loaded Details. GET requests only.</summary>
@@ -1401,32 +1434,39 @@ public class RelationsModel(
         };
 
         if (isDam)
-        {
-            DamSire.HasDam = true;
-            DamSire.DamId = pending.Id;
-            DamSire.DamRbse = pending.Rbse;
-            DamSire.DamEartag = pending.Eartag;
-            DamSire.DamName = pending.Name;
-            DamSire.DamHerdbook = pending.Herdbook;
-            DamSire.DamBirthDay = pending.BirthDay;
-            DamSire.DamBirthMonth = pending.BirthMonth;
-            DamSire.DamBirthYear = pending.BirthYear;
-            DamSire.DamRowStamp = pending.RowStampBase64;
-            DamSire.DamFate = pending.Fate;
-            DamSire.DamFinalResult = pending.FinalResult;
-            DamSire.DamChildCount = pending.ChildCount;
+            return await ApplyPendingDamSelectionAsync(pending, pendingDraft);
 
-            // Persisted here too (not just this render's DamSire) so a subsequent Look Up
-            // for the other parent — a separate request/form — doesn't lose this selection.
-            if (_draft is not null)
-            {
-                _draft.PendingDam = pendingDraft;
-                _draft.RemoveDamPending = false;
-                await relationsDraftState.SetAsync(_draft);
-            }
-            return true;
+        return await ApplyPendingSireSelectionAsync(pending, pendingDraft);
+    }
+
+    private async Task<bool> ApplyPendingDamSelectionAsync(PendingDamSire pending, PendingParentDraft pendingDraft)
+    {
+        DamSire.HasDam = true;
+        DamSire.DamId = pending.Id;
+        DamSire.DamRbse = pending.Rbse;
+        DamSire.DamEartag = pending.Eartag;
+        DamSire.DamName = pending.Name;
+        DamSire.DamHerdbook = pending.Herdbook;
+        DamSire.DamBirthDay = pending.BirthDay;
+        DamSire.DamBirthMonth = pending.BirthMonth;
+        DamSire.DamBirthYear = pending.BirthYear;
+        DamSire.DamRowStamp = pending.RowStampBase64;
+        DamSire.DamFate = pending.Fate;
+        DamSire.DamFinalResult = pending.FinalResult;
+        DamSire.DamChildCount = pending.ChildCount;
+
+        if (_draft is not null)
+        {
+            _draft.PendingDam = pendingDraft;
+            _draft.RemoveDamPending = false;
+            await relationsDraftState.SetAsync(_draft);
         }
 
+        return true;
+    }
+
+    private async Task<bool> ApplyPendingSireSelectionAsync(PendingDamSire pending, PendingParentDraft pendingDraft)
+    {
         DamSire.HasSire = true;
         DamSire.SireId = pending.Id;
         DamSire.SireRbse = pending.Rbse;
@@ -1446,6 +1486,7 @@ public class RelationsModel(
             _draft.RemoveSirePending = false;
             await relationsDraftState.SetAsync(_draft);
         }
+
         return true;
     }
 
