@@ -1,4 +1,4 @@
-﻿git merge --abortusing BSE.Host.Models.ViewModels;
+﻿using BSE.Host.Models.ViewModels;
 using BSE.Host.Services;
 using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Repositories;
