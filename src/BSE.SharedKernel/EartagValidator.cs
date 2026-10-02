@@ -25,6 +25,13 @@ public static partial class EartagValidator
     [GeneratedRegex(@"^\d{2,6}$", RegexOptions.CultureInvariant)]
     private static partial Regex NumericAnimalRegex();
 
+    [GeneratedRegex(@"^\d{1,5}$", RegexOptions.CultureInvariant)]
+    private static partial Regex ShortNumericAnimalRegex();
+
+    // The numerical part is entirely zeros, ignoring the optional surrounding letters.
+    [GeneratedRegex("^[A-Z]{0,1}[0]{1,5}[A-Z]{0,1}$", RegexOptions.CultureInvariant)]
+    private static partial Regex AllZeroAnimalRegex();
+
     [GeneratedRegex("^[A-Z]{1,2}[0-9]{1,4}$", RegexOptions.CultureInvariant)]
     private static partial Regex GbAlphaNumericHerdRegex();
 
@@ -249,7 +256,7 @@ public static partial class EartagValidator
             return "Animal component is invalid: The first character must be numeric, 'X' or 'R'";
         if (invalidLastChars.Contains(animal[^1]))
             return "Animal component is invalid: The last character cannot be I, O, P, R, U or X";
-        if (animal.Length > 0 && animal.TrimStart('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z').Length == 0)
+        if (AllZeroAnimalRegex().IsMatch(animal))
             return "Animal component is invalid: The numerical part contains only zeros";
 
         return null;
@@ -340,9 +347,9 @@ public static partial class EartagValidator
             return "Herd component is invalid: It should consist of 'MN' followed by 1 to 3 numerical digits";
         if (long.Parse(herd[2..]) <= 0)
             return "Herd component is invalid: All digits in position 3 onwards are zero";
-        if (!NumericAnimalRegex().IsMatch(animal))
+        if (!ShortNumericAnimalRegex().IsMatch(animal))
             return "Animal component is invalid: It should consist of 1 to 5 numerical digits";
-        if (animal.Length > 0 && animal.TrimStart('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z').Length == 0)
+        if (AllZeroAnimalRegex().IsMatch(animal))
             return "Animal component is invalid: The numerical part contains only zeros";
 
         return null;
@@ -374,9 +381,9 @@ public static partial class EartagValidator
             return "Herd component is invalid: It should consist of 'GY' followed by 1 numeric digit";
         if (herd[2..] == "0")
             return "Herd component is invalid: Digit at position 3 should not be zero";
-        if (!NumericAnimalRegex().IsMatch(animal))
+        if (!ShortNumericAnimalRegex().IsMatch(animal))
             return "Animal component is invalid: It should consist of 1 to 5 numerical digits";
-        if (animal.TrimStart('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z').Length == 0)
+        if (AllZeroAnimalRegex().IsMatch(animal))
             return "Animal component is invalid: The numerical part contains only zeros";
 
         return null;
@@ -408,9 +415,9 @@ public static partial class EartagValidator
             return "Herd component is invalid: It should consist of 'JY' followed by 1 to 4 numeric digits";
         if (long.Parse(herd[2..]) <= 0)
             return "Herd component is invalid: All digits in position 3 onwards are zero";
-        if (!NumericAnimalRegex().IsMatch(animal))
+        if (!ShortNumericAnimalRegex().IsMatch(animal))
             return "Animal component is invalid: It should consist of 1 to 5 numerical digits";
-        if (animal.TrimStart('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z').Length == 0)
+        if (AllZeroAnimalRegex().IsMatch(animal))
             return "Animal component is invalid: The numerical part contains only zeros";
 
         return null;
