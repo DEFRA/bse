@@ -537,6 +537,14 @@ public class FarmModel(
 
             if (!isNonGbFarm && string.IsNullOrWhiteSpace(EditableFarm.AHO))
                 ModelState.AddModelError("EditableFarm.AHO", "Select an AHO for the farm.");
+
+            if (!string.IsNullOrWhiteSpace(EditableFarm.NumericHerdmark1)
+                && !IsValidNumericHerdmark(EditableFarm.NumericHerdmark1))
+                ModelState.AddModelError("EditableFarm.NumericHerdmark1", "Numeric herdmark 1 must be 6 digits.");
+
+            if (!string.IsNullOrWhiteSpace(EditableFarm.NumericHerdmark2)
+                && !IsValidNumericHerdmark(EditableFarm.NumericHerdmark2))
+                ModelState.AddModelError("EditableFarm.NumericHerdmark2", "Numeric herdmark 2 must be 6 digits.");
         }
 
         if (!ModelState.IsValid || EditableFarm is null)
@@ -1261,6 +1269,12 @@ public class FarmModel(
     {
         var normalised = CphhNormalizer.Normalize(cphh);
         return normalised.StartsWith("00", StringComparison.Ordinal);
+    }
+
+    private static bool IsValidNumericHerdmark(string value)
+    {
+        var trimmed = value.Trim();
+        return trimmed.Length == 6 && trimmed.All(char.IsDigit);
     }
 
     private async Task LoadLookupsForEditAsync()

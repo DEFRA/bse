@@ -224,7 +224,7 @@
                 </div>
             </div>
             <p id="supplier-validated-name" class="govuk-body govuk-!-margin-bottom-2">@Model.SupplierName</p>
-            <p id="supplier-lookup-error" class="govuk-error-message @(Model.FieldErrors.ContainsKey("SupplierId") ? "" : "govuk-visually-hidden")">
+            <p id="supplier-lookup-error" class="@(Model.FieldErrors.ContainsKey("SupplierId") ? "govuk-error-message" : "govuk-visually-hidden")">
                 <span class="govuk-visually-hidden">Error:</span> @(Model.FieldErrors.TryGetValue("SupplierId", out var supplierErr) ? supplierErr : BSE.Host.Helpers.FeedValidation.SupplierEmpty)
             </p>
             <ul id="supplier-matches-list" class="govuk-list" hidden></ul>

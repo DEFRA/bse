@@ -291,21 +291,30 @@
         }
 
         // Mirrors legacy behaviour: a tab with outstanding red-star validation errors
-        // (server-rendered error messages, or live client-side warning/error stars)
-        // cannot be navigated away from until the problem is fixed.
-        function hasVisibleValidationErrors() {
-            var form = getCurrentCaseForm();
-            if (!form) {
+        // (live client-side warning/error stars) cannot be navigated away from until
+        // the problem is fixed. Currently only the Case (APHA)/Vla tab implements the
+        // red-star/green-star live validation, so the blocker only applies to that form.
+        function isStarVisible(star) {
+            if (star.hidden) {
                 return false;
             }
 
-            if (form.querySelector('.govuk-form-group--error, .govuk-error-message')) {
-                return true;
+            if (star.style.display === 'none') {
+                return false;
             }
 
-            var stars = form.querySelectorAll('.bse-star-error');
+            return true;
+        }
+
+        function hasVisibleValidationErrors() {
+            var form = getCurrentCaseForm();
+            if (!form || form.id !== 'edit-vla-form') {
+                return false;
+            }
+
+            var stars = form.querySelectorAll('.bse-star-error, .bse-vla-star-red');
             for (var i = 0; i < stars.length; i++) {
-                if (stars[i].style.display !== 'none') {
+                if (isStarVisible(stars[i])) {
                     return true;
                 }
             }
@@ -318,7 +327,6 @@
             if (tabLink) {
                 if (hasVisibleValidationErrors()) {
                     event.preventDefault();
-                    alert('Please fix the validation errors on this tab before moving to another tab.');
                     return;
                 }
                 window.__bseCaseTabNavigationInProgress = true;
@@ -330,7 +338,6 @@
 
             if (isCaseAuditLogLink(link) && hasVisibleValidationErrors()) {
                 event.preventDefault();
-                alert('Please fix the validation errors on this tab before opening the case audit log.');
                 return;
             }
 
