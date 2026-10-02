@@ -1626,6 +1626,13 @@ public class FarmModel(
         return $"?HSort={col}&HDir={dir}&HPage=1&LSort={LSort}&LDir={LDir}&LPage={LPage}";
     }
 
+    public string HerdSizeAriaSort(string col)
+    {
+        if (!string.Equals(HSort, col, StringComparison.OrdinalIgnoreCase))
+            return "none";
+        return HDir == "asc" ? "ascending" : "descending";
+    }
+
     public string HerdSizesPageUrl(int page) =>
         $"?HPage={page}&HSort={HSort}&HDir={HDir}&LPage={LPage}&LSort={LSort}&LDir={LDir}";
 

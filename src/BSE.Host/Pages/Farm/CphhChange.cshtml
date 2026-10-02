@@ -64,16 +64,16 @@
     <div class="bse-cphh-summary-grid">
         <div class="bse-cphh-summary-item">
             <span class="bse-cphh-summary-label">Owner Name</span>
-            <span class="bse-cphh-summary-value">@Model.Farm.OwnerName</span>
+            <span class="bse-cphh-summary-value">@Model.Farm?.OwnerName</span>
         </div>
 
         <div class="bse-cphh-summary-item">
             <span class="bse-cphh-summary-label">Address</span>
             <span class="bse-cphh-summary-value">
-                @Model.Farm.Address1<br>
-                @Model.Farm.Address2<br>
-                @Model.Farm.Address3<br>
-                @Model.Farm.Postcode
+                @Model.Farm?.Address1<br>
+                @Model.Farm?.Address2<br>
+                @Model.Farm?.Address3<br>
+                @Model.Farm?.Postcode
             </span>
         </div>
 

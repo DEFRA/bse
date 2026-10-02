@@ -3,19 +3,6 @@
 @{
     ViewData["Title"] = Model.Case is null ? "Case" : $"RBSE Number: {Model.Rbse}";
     var canEditFarm = User.IsInRole("DataEntry");
-
-    string GetSortState(string currentSort, string sortField, string currentDirection)
-    {
-        if (!string.Equals(currentSort, sortField, StringComparison.Ordinal))
-            return "none";
-
-        return string.Equals(currentDirection, "asc", StringComparison.Ordinal) ? "ascending" : "descending";
-    }
-
-    string? GetEditableFarmInputCss(bool isEditable) => isEditable ? "bse-farm-legacy-top__input--editable" : null;
-    string? GetReadOnlyAttribute(bool isReadOnly) => isReadOnly ? "readonly" : null;
-    string? GetDisabledAttribute(bool isDisabled) => isDisabled ? "disabled" : null;
-    string GetHerdRowCss(bool isUnsaved) => isUnsaved ? "bse-herd-row--unsaved" : string.Empty;
 }
 
 @if (Model.Case is null)
@@ -73,7 +60,7 @@
         <div class="bse-farm-legacy-top">
             <div class="bse-farm-legacy-top__row bse-farm-legacy-top__row--lookup">
                 <label class="govuk-label" for="create-farm-cphh">CPHH</label>
-                <input id="create-farm-cphh" asp-for="EditableFarm!.CPHH" class="govuk-input bse-farm-legacy-top__input @GetEditableFarmInputCss(!createReadOnly)" readonly="@GetReadOnlyAttribute(createReadOnly)" />
+                <input id="create-farm-cphh" asp-for="EditableFarm!.CPHH" class="govuk-input bse-farm-legacy-top__input @(!createReadOnly ? "bse-farm-legacy-top__input--editable" : null)" readonly="@(createReadOnly ? "readonly" : null)" />
                 @if (!createReadOnly)
                 {
                     <button type="submit" asp-page-handler="LookupNewCase" class="govuk-button govuk-button--secondary bse-farm-legacy-top__lookup" data-module="govuk-button">Look Up</button>
@@ -81,7 +68,7 @@
             </div>
         </div>
 
-        <fieldset class="bse-form-fieldset-reset" disabled="@GetDisabledAttribute(createReadOnly || createDetailsLocked)" style="border:0;margin:0;padding:0;">
+        <fieldset class="bse-form-fieldset-reset" disabled="@((createReadOnly || createDetailsLocked) ? "disabled" : null)" style="border:0;margin:0;padding:0;">
 
         @await Html.PartialAsync("~/Pages/Farm/_FarmFormFields.cshtml", Model.EditableFarm!, new ViewDataDictionary(ViewData)
         {
@@ -97,10 +84,10 @@
         <table class="govuk-table">
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header" aria-sort="@GetSortState(Model.LSort, "cphh", Model.LDir)">
+                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.LSort=="cphh" ? (Model.LDir=="asc" ? "ascending" : "descending") : "none")">
                         <a class="govuk-link govuk-link--no-visited-state" href="@Model.LinkedFarmsSortUrl("cphh")">CPHH</a>
                     </th>
-                    <th scope="col" class="govuk-table__header" aria-sort="@GetSortState(Model.LSort, "status", Model.LDir)">
+                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.LSort=="status" ? (Model.LDir=="asc" ? "ascending" : "descending") : "none")">
                         <a class="govuk-link govuk-link--no-visited-state" href="@Model.LinkedFarmsSortUrl("status")">Status</a>
                     </th>
                     <th scope="col" class="govuk-table__header">Action</th>
@@ -114,7 +101,7 @@
                     </tr>
                 }
 
-                <tr id="add-linked-row-inline" class="govuk-table__row @GetHerdRowCss(true)" hidden="@(!Model.ShowAddLinkedRow)">
+                <tr id="add-linked-row-inline" class="govuk-table__row bse-herd-row--unsaved" hidden="@(!Model.ShowAddLinkedRow)">
                     <td class="govuk-table__cell">
                         <label class="govuk-visually-hidden" for="new-linked-cphh">Linked farm CPHH</label>
                         <input id="new-linked-cphh"
@@ -217,47 +204,47 @@
                 </colgroup>
                 <thead class="govuk-table__head">
                     <tr class="govuk-table__row">
-                        <th scope="col" id="herd-size-group-left" colspan="2" class="govuk-table__header case-farm-herd-table__group-left">Herd size</th>
-                        <th scope="col" id="herd-size-group-mid" colspan="11" class="govuk-table__header case-farm-herd-table__group-mid">Lactation</th>
+                        <th scope="col" colspan="2" class="govuk-table__header case-farm-herd-table__group-left">Herd size</th>
+                        <th scope="col" colspan="11" class="govuk-table__header case-farm-herd-table__group-mid">Lactation</th>
                     </tr>
                     <tr class="govuk-table__row">
-                        <th scope="col" id="herd-size-year-header" class="govuk-table__header" aria-sort="@GetSortState(Model.HSort, "year", Model.HDir)">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("year")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("year")">Year</a>
                         </th>
-                        <th scope="col" id="herd-size-total-header" class="govuk-table__header" aria-sort="@GetSortState(Model.HSort, "total", Model.HDir)">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("total")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("total")">Size</a>
                         </th>
-                        <th scope="col" id="herd-size-lac1-header" class="govuk-table__header" aria-sort="@GetSortState(Model.HSort, "lac1", Model.HDir)">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac1")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac1")">1</a>
                         </th>
-                        <th scope="col" id="herd-size-lac2-header" class="govuk-table__header" aria-sort="@GetSortState(Model.HSort, "lac2", Model.HDir)">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac2")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac2")">2</a>
                         </th>
-                        <th scope="col" id="herd-size-lac3-header" class="govuk-table__header" aria-sort="@GetSortState(Model.HSort, "lac3", Model.HDir)">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac3")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac3")">3</a>
                         </th>
-                        <th scope="col" id="herd-size-lac4-header" class="govuk-table__header" aria-sort="@GetSortState(Model.HSort, "lac4", Model.HDir)">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac4")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac4")">4</a>
                         </th>
-                        <th scope="col" id="herd-size-lac5-header" class="govuk-table__header" aria-sort="@GetSortState(Model.HSort, "lac5", Model.HDir)">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac5")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac5")">5</a>
                         </th>
-                        <th scope="col" id="herd-size-lac6-header" class="govuk-table__header" aria-sort="@GetSortState(Model.HSort, "lac6", Model.HDir)">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac6")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac6")">6</a>
                         </th>
-                        <th scope="col" id="herd-size-lac7-header" class="govuk-table__header" aria-sort="@GetSortState(Model.HSort, "lac7", Model.HDir)">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac7")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac7")">7</a>
                         </th>
-                        <th scope="col" id="herd-size-lac8-header" class="govuk-table__header" aria-sort="@GetSortState(Model.HSort, "lac8", Model.HDir)">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac8")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac8")">8</a>
                         </th>
-                        <th scope="col" id="herd-size-lac9-header" class="govuk-table__header" aria-sort="@GetSortState(Model.HSort, "lac9", Model.HDir)">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac9")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac9")">9</a>
                         </th>
-                        <th scope="col" id="herd-size-lac10-header" class="govuk-table__header" aria-sort="@GetSortState(Model.HSort, "lac10", Model.HDir)">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac10")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac10")">10</a>
                         </th>
-                        <th scope="col" id="herd-size-lac10p-header" class="govuk-table__header" aria-sort="@GetSortState(Model.HSort, "lac10p", Model.HDir)">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac10p")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac10p")">10+</a>
                         </th>
                     </tr>
@@ -273,7 +260,7 @@
                     @foreach (var h in Model.PagedSortedStagedHerdSizes)
                     {
                         var yearRepeated = Model.SortedStagedHerdSizes.Count(x => x.HerdYear == h.HerdYear) > 1;
-                        <tr class="govuk-table__row bse-herd-row @GetHerdRowCss(h.IsUnsaved)" data-client-key="@h.ClientKey">
+                        <tr class="govuk-table__row bse-herd-row @(h.IsUnsaved ? "bse-herd-row--unsaved" : "")" data-client-key="@h.ClientKey">
                             <td class="govuk-table__cell">
                                 @h.HerdYear
                                 @if (yearRepeated)
@@ -465,9 +452,8 @@
         @if (canEditFarm)
         {
             <output id="case-farm-unsaved-banner"
-                    class="govuk-inset-text bse-unsaved-banner"
-                    aria-live="polite"
-                    hidden="@(!Model.HasUnsavedChanges)">
+                 class="govuk-inset-text bse-unsaved-banner"
+                 hidden="@(!Model.HasUnsavedChanges)">
                 <strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.
             </output>
 
@@ -477,7 +463,7 @@
             </div>
         }
 
-        <fieldset class="bse-form-fieldset-reset" disabled="@GetDisabledAttribute(!canEditFarm)">
+        <fieldset class="bse-form-fieldset-reset" disabled="@(canEditFarm ? null : "disabled")">
 
         <div class="bse-farm-legacy-top">
             <div class="bse-farm-legacy-top__row">
@@ -499,10 +485,10 @@
         <table class="govuk-table">
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header" aria-sort="@GetSortState(Model.LSort, "cphh", Model.LDir)">
+                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.LSort=="cphh" ? (Model.LDir=="asc" ? "ascending" : "descending") : "none")">
                         <a class="govuk-link govuk-link--no-visited-state" href="@Model.LinkedFarmsSortUrl("cphh")">CPHH</a>
                     </th>
-                    <th scope="col" class="govuk-table__header" aria-sort="@GetSortState(Model.LSort, "status", Model.LDir)">
+                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.LSort=="status" ? (Model.LDir=="asc" ? "ascending" : "descending") : "none")">
                         <a class="govuk-link govuk-link--no-visited-state" href="@Model.LinkedFarmsSortUrl("status")">Status</a>
                     </th>
                     <th scope="col" class="govuk-table__header">Action</th>
@@ -516,7 +502,7 @@
                     </tr>
                 }
 
-                <tr id="add-linked-row-inline" class="govuk-table__row @GetHerdRowCss(true)" hidden="@(!Model.ShowAddLinkedRow)">
+                <tr id="add-linked-row-inline" class="govuk-table__row bse-herd-row--unsaved" hidden="@(!Model.ShowAddLinkedRow)">
                     <td class="govuk-table__cell">
                         <label class="govuk-visually-hidden" for="new-linked-cphh">Linked farm CPHH</label>
                         <input id="new-linked-cphh"
@@ -620,48 +606,48 @@
                 </colgroup>
                 <thead class="govuk-table__head">
                     <tr class="govuk-table__row">
-                        <th scope="col" id="herd-size-group-left" colspan="2" class="govuk-table__header case-farm-herd-table__group-left">Herd size</th>
-                        <th scope="col" id="herd-size-group-mid" colspan="11" class="govuk-table__header case-farm-herd-table__group-mid">Lactation</th>
-                        <th scope="col" id="herd-size-group-right" class="govuk-table__header case-farm-herd-table__group-right">Action</th>
+                        <th scope="col" colspan="2" class="govuk-table__header case-farm-herd-table__group-left">Herd size</th>
+                        <th scope="col" colspan="11" class="govuk-table__header case-farm-herd-table__group-mid">Lactation</th>
+                        <th scope="col" class="govuk-table__header case-farm-herd-table__group-right">Action</th>
                     </tr>
                     <tr class="govuk-table__row">
-                        <th scope="col" class="govuk-table__header" aria-sort="@GetSortState(Model.HSort, "year", Model.HDir)">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("year")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("year")">Year</a>
                         </th>
-                        <th scope="col" class="govuk-table__header" aria-sort="@GetSortState(Model.HSort, "total", Model.HDir)">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("total")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("total")">Size</a>
                         </th>
-                        <th scope="col" class="govuk-table__header" aria-sort="@GetSortState(Model.HSort, "lac1", Model.HDir)">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac1")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac1")">1</a>
                         </th>
-                        <th scope="col" class="govuk-table__header" aria-sort="@GetSortState(Model.HSort, "lac2", Model.HDir)">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac2")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac2")">2</a>
                         </th>
-                        <th scope="col" class="govuk-table__header" aria-sort="@GetSortState(Model.HSort, "lac3", Model.HDir)">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac3")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac3")">3</a>
                         </th>
-                        <th scope="col" class="govuk-table__header" aria-sort="@GetSortState(Model.HSort, "lac4", Model.HDir)">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac4")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac4")">4</a>
                         </th>
-                        <th scope="col" class="govuk-table__header" aria-sort="@GetSortState(Model.HSort, "lac5", Model.HDir)">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac5")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac5")">5</a>
                         </th>
-                        <th scope="col" class="govuk-table__header" aria-sort="@GetSortState(Model.HSort, "lac6", Model.HDir)">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac6")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac6")">6</a>
                         </th>
-                        <th scope="col" class="govuk-table__header" aria-sort="@GetSortState(Model.HSort, "lac7", Model.HDir)">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac7")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac7")">7</a>
                         </th>
-                        <th scope="col" class="govuk-table__header" aria-sort="@GetSortState(Model.HSort, "lac8", Model.HDir)">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac8")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac8")">8</a>
                         </th>
-                        <th scope="col" class="govuk-table__header" aria-sort="@GetSortState(Model.HSort, "lac9", Model.HDir)">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac9")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac9")">9</a>
                         </th>
-                        <th scope="col" class="govuk-table__header" aria-sort="@GetSortState(Model.HSort, "lac10", Model.HDir)">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac10")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac10")">10</a>
                         </th>
-                        <th scope="col" class="govuk-table__header" aria-sort="@GetSortState(Model.HSort, "lac10p", Model.HDir)">
+                        <th scope="col" class="govuk-table__header" aria-sort="@Model.HerdSizeAriaSort("lac10p")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.HerdSizeSortUrl("lac10p")">10+</a>
                         </th>
                         <th scope="col" class="govuk-table__header">
@@ -683,7 +669,7 @@
                         var editRow = isEditing ? Model.EditHerdRow : null;
                         var yearRepeated = Model.SortedStagedHerdSizes.Count(x => x.HerdYear == h.HerdYear) > 1;
 
-                        <tr class="govuk-table__row bse-herd-row @GetHerdRowCss(h.IsUnsaved)" data-client-key="@h.ClientKey">
+                        <tr class="govuk-table__row bse-herd-row @(h.IsUnsaved ? "bse-herd-row--unsaved" : "")" data-client-key="@h.ClientKey">
                             @if (isEditing)
                             {
                                 <td class="govuk-table__cell">
@@ -779,7 +765,7 @@
                         </tr>
                     }
 
-                    <tr id="add-herd-row-inline" class="govuk-table__row @GetHerdRowCss(true)" hidden="@(!Model.ShowAddHerdRow)">
+                    <tr id="add-herd-row-inline" class="govuk-table__row bse-herd-row--unsaved" hidden="@(!Model.ShowAddHerdRow)">
                         <td class="govuk-table__cell">
                             <label class="govuk-visually-hidden" for="new-herd-year">Year</label>
                             <input id="new-herd-year" name="NewHerdRow.HerdYear" type="number" min="1975" max="@DateTime.UtcNow.Year" value="@BSE.SharedKernel.InputValueFormatter.ToInputValue(Model.NewHerdRow.HerdYear)" class="govuk-input govuk-input--width-4" />
