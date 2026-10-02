@@ -29,23 +29,46 @@ public sealed class BsessRepository : DapperRepository, IBsessRepository
 
         var notificationDate = p.Get<string?>("@NotificationDate");
         var bsessEartag = p.Get<string?>("@BSESSEartag");
+        var bsessBirthDate = p.Get<string?>("@BSESSBirthDate");
+        var testGroupName = p.Get<string?>("@TestGroupName");
+        var bsessFinalResult = p.Get<string?>("@BSESSFinalResult");
+        var barcode = p.Get<string?>("@Barcode");
+        var formADate = p.Get<string?>("@FormADate");
+        var bseEartag = p.Get<string?>("@BSEEartag");
+        var bseBirthDate = p.Get<string?>("@BSEBirthDate");
+        var survey = p.Get<string?>("@Survey");
+        var bseFinalResult = p.Get<string?>("@BSEFinalResult");
 
-        // Both outputs null means no matching record was found.
-        if (notificationDate is null && bsessEartag is null)
+        // A matched BSE case without a TSESS import row is still a valid comparison result.
+        // Only return null when every output value is blank.
+        if (!BsessCheckByRbseResult.HasAnyValues(
+                notificationDate,
+                bsessEartag,
+                bsessBirthDate,
+                testGroupName,
+                bsessFinalResult,
+                barcode,
+                formADate,
+                bseEartag,
+                bseBirthDate,
+                survey,
+                bseFinalResult))
+        {
             return null;
+        }
 
         return new BsessCheckByRbseResult(
             NotificationDate: notificationDate,
             BsessEartag: bsessEartag,
-            BsessBirthDate: p.Get<string?>("@BSESSBirthDate"),
-            TestGroupName: p.Get<string?>("@TestGroupName"),
-            BsssFinalResult: p.Get<string?>("@BSESSFinalResult"),
-            Barcode: p.Get<string?>("@Barcode"),
-            FormADate: p.Get<string?>("@FormADate"),
-            BseEartag: p.Get<string?>("@BSEEartag"),
-            BseBirthDate: p.Get<string?>("@BSEBirthDate"),
-            Survey: p.Get<string?>("@Survey"),
-            BseFinalResult: p.Get<string?>("@BSEFinalResult"));
+            BsessBirthDate: bsessBirthDate,
+            TestGroupName: testGroupName,
+            BsssFinalResult: bsessFinalResult,
+            Barcode: barcode,
+            FormADate: formADate,
+            BseEartag: bseEartag,
+            BseBirthDate: bseBirthDate,
+            Survey: survey,
+            BseFinalResult: bseFinalResult);
     }
 
     public async Task<IReadOnlyList<BsessDiscrepancyRecord>> GetCheckByDateAsync(
