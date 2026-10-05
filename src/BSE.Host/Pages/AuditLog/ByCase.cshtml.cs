@@ -106,8 +106,4 @@ public class ByCaseModel(IAuditLogService auditLogService) : PageModel
             q += $"&returnTo={Uri.EscapeDataString(ReturnTo)}";
         return q;
     }
-
-    public string PageUrl(int page) =>
-        $"?rbse={Uri.EscapeDataString(Rbse)}&pageNumber={page}&sortBy={SortBy}&sortDir={SortDir}" +
-        (string.IsNullOrWhiteSpace(ReturnTo) ? string.Empty : $"&returnTo={Uri.EscapeDataString(ReturnTo)}");
 }

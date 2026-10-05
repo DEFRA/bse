@@ -139,15 +139,25 @@ A new record always belongs at the end of the last page:
 
 ## 8. Pagination
 
-`_Pagination.cshtml` is shared by 29 screens, so the new behaviours are opt-in and enabled only
-for this page:
+The pagination rework started here but is applied consistently across the whole application, so
+`_Pagination.cshtml` carries the new behaviour as its default. Both switches remain overridable
+per-screen if a page needs the previous style back.
 
-- `SlidingWindow` — the numeric links follow the current page (up to 3 pages ahead, the window
-  filled backwards to 10 links) instead of jumping a block at a time. Page 10 of 20 shows 4..13.
-- `ArrowsOnly` — Previous/Next render as `‹` / `›` so all four controls are symbols
+- `SlidingWindow` (default on) — the numeric links follow the current page (up to 3 pages ahead,
+  the window filled backwards to 10 links) instead of jumping a block at a time. Page 10 of 20
+  shows 4..13.
+- `ArrowsOnly` (default on) — Previous/Next render as `‹` / `›` so all four controls are symbols
   (`«  ‹  ›  »`) rather than mixing symbols with text labels. Visually-hidden labels are retained.
-- Tooltips were added to every control (page numbers and arrows). These apply to all screens,
-  being purely additive `title` attributes with no layout or behaviour change.
+- The count and the controls now share one line: `Page X of Y` is right-aligned, the arrows and
+  page numbers left-aligned. CSS `order` is used rather than reordering the markup, so the count
+  is still announced before the links.
+- Tooltips were added to every control (page numbers and arrows).
+
+Three screens had their own hand-rolled pagination and were converted to the shared partial, so
+they pick all of this up and no longer drift: `AuditLog/ByCase`, `Case/Clinical` (clinical visits)
+and `Case/Vla` (previous owners). Their now-unused `PageUrl` / `VisitsPageUrl` / `OwnersPageUrl`
+helpers were removed — the partial derives URLs from the query string, preserving each page's
+other state (`rbse`, sort columns, `returnTo`) automatically.
 
 ## 9. Verification
 

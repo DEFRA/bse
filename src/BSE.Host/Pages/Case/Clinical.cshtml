@@ -272,45 +272,7 @@
         </tbody>
     </table>
 
-        @if (Model.VisitsTotalPages > 1)
-        {
-            <nav class="govuk-pagination" role="navigation" aria-label="Clinical visits pagination">
-                @if (Model.VPage > 1)
-                {
-                    <div class="govuk-pagination__prev">
-                        <a class="govuk-link govuk-pagination__link" href="@Model.VisitsPageUrl(Model.VPage - 1)" rel="prev">
-                            <span class="govuk-pagination__link-title">Previous<span class="govuk-visually-hidden"> page</span></span>
-                        </a>
-                    </div>
-                }
-                <ul class="govuk-pagination__list">
-                    @{ int startPage = Math.Max(1, Model.VPage - 4); int endPage = Math.Min(Model.VisitsTotalPages, startPage + 9); }
-                    @for (int p = startPage; p <= endPage; p++)
-                    {
-                        if (p == Model.VPage)
-                        {
-                            <li class="govuk-pagination__item govuk-pagination__item--current">
-                                <a class="govuk-link govuk-pagination__link" href="@Model.VisitsPageUrl(p)" aria-label="Page @p" aria-current="page">@p</a>
-                            </li>
-                        }
-                        else
-                        {
-                            <li class="govuk-pagination__item">
-                                <a class="govuk-link govuk-pagination__link" href="@Model.VisitsPageUrl(p)" aria-label="Page @p">@p</a>
-                            </li>
-                        }
-                    }
-                </ul>
-                @if (Model.VPage < Model.VisitsTotalPages)
-                {
-                    <div class="govuk-pagination__next">
-                        <a class="govuk-link govuk-pagination__link" href="@Model.VisitsPageUrl(Model.VPage + 1)" rel="next">
-                            <span class="govuk-pagination__link-title">Next<span class="govuk-visually-hidden"> page</span></span>
-                        </a>
-                    </div>
-                }
-            </nav>
-        }
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.VPage, ["TotalPages"] = Model.VisitsTotalPages, ["PageNumberKey"] = "VPage" })
     @if (canEditClinical)
     {
         <div class="govuk-button-group govuk-!-margin-bottom-6">

@@ -8,11 +8,12 @@
      ViewData["MaxPageLinks"]  — int (optional)
                                  When set (>0), renders a fixed-size numeric page block
                                  (e.g. 1..10, then 11..20), instead of compact/ellipsis mode.
-     ViewData["SlidingWindow"] — bool (optional, default: false)
+     ViewData["SlidingWindow"] — bool (optional, default: true)
                                  Keeps the numeric links as a window that follows the current
                                  page (3 pages ahead where available, the rest behind) rather
                                  than jumping a block at a time, so page 10 of 20 shows 4..13.
-     ViewData["ArrowsOnly"]    — bool (optional, default: false)
+                                 Set false for fixed blocks (1..10, then 11..20).
+     ViewData["ArrowsOnly"]    — bool (optional, default: true)
                                  Renders Previous/Next as ‹ / › chevrons so all four controls are
                                  symbols (« ‹ › »), instead of mixing symbols with text labels.
      ViewData["Fragment"]      — string (optional) anchor id to jump back to the results
@@ -34,8 +35,8 @@
     int totalPages  = (int)(ViewData["TotalPages"]  ?? 1);
     string pageKey  = (string?)ViewData["PageNumberKey"] ?? "pageNumber";
     int maxPageLinks = (int?)ViewData["MaxPageLinks"] ?? 10;
-    bool slidingWindow = (bool?)ViewData["SlidingWindow"] ?? false;
-    bool arrowsOnly = (bool?)ViewData["ArrowsOnly"] ?? false;
+    bool slidingWindow = (bool?)ViewData["SlidingWindow"] ?? true;
+    bool arrowsOnly = (bool?)ViewData["ArrowsOnly"] ?? true;
     string fragment = (string?)ViewData["Fragment"] ?? "";
     bool alwaysShow = (bool?)ViewData["AlwaysShow"] ?? false;
 
@@ -81,6 +82,7 @@
     }
 }
 
+<div class="bse-pagination-bar">
 <p class="govuk-body govuk-!-margin-bottom-2 bse-pagination__count">Page @currentPage of @totalPages</p>
 
 <nav class="govuk-pagination bse-pagination" aria-label="Pagination">
@@ -183,3 +185,4 @@
         </div>
     }
 </nav>
+</div>

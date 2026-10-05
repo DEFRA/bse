@@ -181,7 +181,7 @@
         </div>
     </form>
     <script type="application/json" id="bse-user-groups-data">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.UserGroups.Select(g => new { id = g.Id, name = g.Name })))</script>
-    @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages, ["SlidingWindow"] = true, ["ArrowsOnly"] = true })
+    @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
 </div>
 
 @section Scripts {
