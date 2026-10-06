@@ -355,15 +355,17 @@
                 @foreach (var o in Model.OtherOwners)
                 {
                     var editing = Model.CanEditMainCase && Model.ReopenEditOwnerId == o.Id;
+                    var ownerEditKey = $"owner-{o.Id}";
                     <tr class="govuk-table__row">
                         @if (editing)
                         {
                             <td class="govuk-table__cell">
-                                <select name="EditOwnerType" class="govuk-select govuk-!-width-one-half">
+                                <label class="govuk-label" for="EditOwnerType_@ownerEditKey">Owner type</label>
+                                <select id="EditOwnerType_@ownerEditKey" name="EditOwnerType" class="govuk-select govuk-!-width-one-half">
                                     <option value="">-- Select --</option>
                                     @foreach (var t in Model.OwnerTypeOptions)
                                     {
-                                        <option value="@t.Code" selected="@(string.Equals(Model.EditOwnerType, t.Code, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@t.Description</option>
+                                        <option value="@t.Code" selected="@VlaModel.SelectedIfMatches(Model.EditOwnerType, t.Code)">@t.Description</option>
                                     }
                                 </select>
                                 @if (E("EditOwnerType") is not null)
@@ -372,14 +374,16 @@
                                 }
                             </td>
                             <td class="govuk-table__cell">
-                                <input name="EditOwnerName" class="govuk-input govuk-!-width-two-thirds" maxlength="255" value="@Model.EditOwnerName" />
+                                <label class="govuk-label" for="EditOwnerName_@ownerEditKey">Owner name</label>
+                                <input id="EditOwnerName_@ownerEditKey" name="EditOwnerName" class="govuk-input govuk-!-width-two-thirds" maxlength="255" value="@Model.EditOwnerName" />
                                 @if (E("EditOwnerName") is not null)
                                 {
                                     <span class="bse-vla-star-red" title="@E("EditOwnerName")">*</span>
                                 }
                             </td>
                             <td class="govuk-table__cell">
-                                <input name="EditOwnerCphh" class="govuk-input vla-owner-cphh-input" maxlength="14" value="@Model.EditOwnerCphh" autocomplete="off"
+                                <label class="govuk-label" for="EditOwnerCphh_@ownerEditKey">CPHH</label>
+                                <input id="EditOwnerCphh_@ownerEditKey" name="EditOwnerCphh" class="govuk-input vla-owner-cphh-input" maxlength="14" value="@Model.EditOwnerCphh" autocomplete="off"
                                        title="CPHH Format: NN[/]NNN[/]NNNN[/NN]" spellcheck="false" autocapitalize="off" />
                             </td>
                             <td class="govuk-table__cell">
@@ -411,11 +415,12 @@
 
                 <tr id="add-owner-row-inline" class="govuk-table__row bse-herd-row--unsaved" hidden="@(!Model.CanEditMainCase || !Model.ShowAddOwnerRow)">
                     <td class="govuk-table__cell">
-                        <select name="NewOwnerType" class="govuk-select govuk-!-width-one-half">
+                        <label class="govuk-label" for="NewOwnerType">Owner type</label>
+                        <select id="NewOwnerType" name="NewOwnerType" class="govuk-select govuk-!-width-one-half">
                             <option value="">-- Select --</option>
                             @foreach (var t in Model.OwnerTypeOptions)
                             {
-                                <option value="@t.Code" selected="@(string.Equals(Model.NewOwnerType, t.Code, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@t.Description</option>
+                                <option value="@t.Code" selected="@VlaModel.SelectedIfMatches(Model.NewOwnerType, t.Code)">@t.Description</option>
                             }
                         </select>
                         @if (E("NewOwnerType") is not null)
@@ -424,14 +429,16 @@
                         }
                     </td>
                     <td class="govuk-table__cell">
-                        <input name="NewOwnerName" class="govuk-input govuk-!-width-two-thirds" maxlength="255" value="@Model.NewOwnerName" />
+                        <label class="govuk-label" for="NewOwnerName">Owner name</label>
+                        <input id="NewOwnerName" name="NewOwnerName" class="govuk-input govuk-!-width-two-thirds" maxlength="255" value="@Model.NewOwnerName" />
                         @if (E("NewOwnerName") is not null)
                         {
                             <span class="bse-vla-star-red" title="@E("NewOwnerName")">*</span>
                         }
                     </td>
                     <td class="govuk-table__cell">
-                        <input name="NewOwnerCphh" class="govuk-input vla-owner-cphh-input" maxlength="14" value="@Model.NewOwnerCphh" autocomplete="off"
+                        <label class="govuk-label" for="NewOwnerCphh">CPHH</label>
+                        <input id="NewOwnerCphh" name="NewOwnerCphh" class="govuk-input vla-owner-cphh-input" maxlength="14" value="@Model.NewOwnerCphh" autocomplete="off"
                                title="CPHH Format: NN[/]NNN[/]NNNN[/NN]" spellcheck="false" autocapitalize="off" />
                     </td>
                     <td class="govuk-table__cell">
