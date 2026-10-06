@@ -64,7 +64,7 @@
 
 @if (TempData["Warning"] is string warningMsg)
 {
-    <div class="govuk-notification-banner" role="region"
+    <section class="govuk-notification-banner"
          aria-labelledby="clinical-warning-title" data-module="govuk-notification-banner">
         <div class="govuk-notification-banner__header">
             <h2 class="govuk-notification-banner__title" id="clinical-warning-title">Important</h2>
@@ -72,7 +72,7 @@
         <div class="govuk-notification-banner__content">
             <p class="govuk-body">@warningMsg</p>
         </div>
-    </div>
+    </section>
 }
 
 @if (!ViewContext.ModelState.IsValid)
@@ -105,12 +105,11 @@
     {
         @if (canEditClinical)
         {
-            <div id="case-clinical-unsaved-banner"
+            <output id="case-clinical-unsaved-banner"
                  class="govuk-inset-text bse-unsaved-banner"
-                 role="status"
                  hidden="@(!Model.HasUnsavedChanges)">
                 <strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.
-            </div>
+            </output>
         }
 
         <div class="govuk-button-group govuk-!-margin-bottom-4">
@@ -280,7 +279,7 @@
         </div>
     }
 
-    <div aria-live="polite" role="status" class="govuk-visually-hidden" id="visit-live-region"></div>
+    <output aria-live="polite" class="govuk-visually-hidden" id="visit-live-region"></output>
 
     <div class="govuk-!-margin-top-6">
         <ul class="govuk-list">
@@ -324,6 +323,8 @@
     }
 
     .bse-unsaved-banner {
+        /* <output> defaults to display:inline, which collapses govuk-inset-text's block layout. */
+        display: block;
         border-left-color: #1d70b8;
     }
 

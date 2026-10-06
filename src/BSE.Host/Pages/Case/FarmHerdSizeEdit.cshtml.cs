@@ -15,6 +15,8 @@ public class FarmHerdSizeEditModel(
     IFarmService farmService,
     IHerdSizeRepository herdSizeRepo) : PageModel
 {
+    private const string CaseFarmPage = "/Case/Farm";
+
     [BindProperty(SupportsGet = true)] public string Rbse { get; set; } = string.Empty;
     [BindProperty(SupportsGet = true)] public int Id { get; set; }
 
@@ -25,11 +27,11 @@ public class FarmHerdSizeEditModel(
     {
         var @case = await caseService.GetCaseAsync(Rbse);
         if (@case?.Cphh is not { } cphh)
-            return RedirectToPage("/Case/Farm", new { rbse = Rbse });
+            return RedirectToPage(CaseFarmPage, new { rbse = Rbse });
 
         var record = (await farmService.GetHerdSizesAsync(cphh)).FirstOrDefault(h => h.ID == Id);
         if (record is null)
-            return RedirectToPage("/Case/Farm", new { rbse = Rbse });
+            return RedirectToPage(CaseFarmPage, new { rbse = Rbse });
 
         HerdSize = new FarmModel.HerdSizeFormViewModel
         {
@@ -55,8 +57,8 @@ public class FarmHerdSizeEditModel(
     public async Task<IActionResult> OnPostAsync()
     {
         var @case = await caseService.GetCaseAsync(Rbse);
-        if (@case?.Cphh is not { } cphh)
-            return RedirectToPage("/Case/Farm", new { rbse = Rbse });
+        if (@case?.Cphh is null)
+            return RedirectToPage(CaseFarmPage, new { rbse = Rbse });
 
         if (HerdSize.HerdYear < 1975 || HerdSize.HerdYear > DateTime.UtcNow.Year)
             ModelState.AddModelError("HerdSize.HerdYear", $"Year must be between 1975 and {DateTime.UtcNow.Year}.");
@@ -97,6 +99,6 @@ public class FarmHerdSizeEditModel(
         else
             TempData["Success"] = $"Herd size for {HerdSize.HerdYear} updated.";
 
-        return RedirectToPage("/Case/Farm", new { rbse = Rbse });
+        return RedirectToPage(CaseFarmPage, new { rbse = Rbse });
     }
 }

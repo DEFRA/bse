@@ -96,14 +96,17 @@
                             <input type="hidden" asp-for="EditUpn" />
                             <input type="hidden" asp-for="EditNTLogin" value="@u.NTLogin" />
                             <td class="govuk-table__cell">
+                                <label class="govuk-visually-hidden" for="edit-user-name">Name</label>
                                 <input type="text" id="edit-user-name" asp-for="EditUserName" class="govuk-input @(userNameError is not null ? "govuk-input--error" : "")" />
                                 @if (userNameError is not null) { <p class="govuk-error-message govuk-!-font-size-14"><span class="govuk-visually-hidden">Error:</span> @userNameError</p> }
                             </td>
                             <td class="govuk-table__cell">
+                                <label class="govuk-visually-hidden" for="edit-email">Email</label>
                                 <input type="text" id="edit-email" asp-for="EditEmail" class="govuk-input @(emailError is not null ? "govuk-input--error" : "")" />
                                 @if (emailError is not null) { <p class="govuk-error-message govuk-!-font-size-14"><span class="govuk-visually-hidden">Error:</span> @emailError</p> }
                             </td>
                             <td class="govuk-table__cell">
+                                <label class="govuk-visually-hidden" for="edit-user-group-id">User Group</label>
                                 <select id="edit-user-group-id" asp-for="EditUserGroupId" class="govuk-select @(groupError is not null ? "govuk-select--error" : "")" asp-items="@(new SelectList(Model.UserGroups, "Id", "Name"))"></select>
                                 @if (groupError is not null) { <p class="govuk-error-message govuk-!-font-size-14"><span class="govuk-visually-hidden">Error:</span> @groupError</p> }
                             </td>
@@ -150,14 +153,17 @@
                         <td class="govuk-table__cell bse-row-select-cell"></td>
                         <input type="hidden" asp-for="EditUpn" />
                         <td class="govuk-table__cell">
+                            <label class="govuk-visually-hidden" for="edit-user-name">Name</label>
                             <input type="text" id="edit-user-name" asp-for="EditUserName" class="govuk-input @(userNameError is not null ? "govuk-input--error" : "")" />
                             @if (userNameError is not null) { <p class="govuk-error-message govuk-!-font-size-14"><span class="govuk-visually-hidden">Error:</span> @userNameError</p> }
                         </td>
                         <td class="govuk-table__cell">
+                            <label class="govuk-visually-hidden" for="edit-email">Email</label>
                             <input type="text" id="edit-email" asp-for="EditEmail" class="govuk-input @(emailError is not null ? "govuk-input--error" : "")" />
                             @if (emailError is not null) { <p class="govuk-error-message govuk-!-font-size-14"><span class="govuk-visually-hidden">Error:</span> @emailError</p> }
                         </td>
                         <td class="govuk-table__cell">
+                            <label class="govuk-visually-hidden" for="edit-user-group-id">User Group</label>
                             <select id="edit-user-group-id" asp-for="EditUserGroupId" class="govuk-select @(groupError is not null ? "govuk-select--error" : "")" asp-items="@(new SelectList(Model.UserGroups, "Id", "Name"))"></select>
                             @if (groupError is not null) { <p class="govuk-error-message govuk-!-font-size-14"><span class="govuk-visually-hidden">Error:</span> @groupError</p> }
                         </td>
