@@ -342,18 +342,20 @@
 
 /* Name, Email and User Group are each read as a single value, so keep them on one line. */
 .bse-user-maintenance-table th:nth-child(2),
-.bse-user-maintenance-table td:nth-child(2),
+.bse-user-maintenance-table td:nth-of-type(2),
 .bse-user-maintenance-table th:nth-child(3),
-.bse-user-maintenance-table td:nth-child(3),
+.bse-user-maintenance-table td:nth-of-type(3),
 .bse-user-maintenance-table th:nth-child(4),
-.bse-user-maintenance-table td:nth-child(4) {
+.bse-user-maintenance-table td:nth-of-type(4) {
     white-space: nowrap;
 }
 
-/* IsActive column stays a fixed, narrow width so the checkbox is never pushed off-screen. */
+/* IsActive column stays a fixed, narrow width so the checkbox is never pushed off-screen.
+   The left padding keeps the box off the cell border. */
 .bse-user-maintenance-table th:nth-child(5),
-.bse-user-maintenance-table td:nth-child(5) {
+.bse-user-maintenance-table td:nth-of-type(5) {
     width: 4.5rem;
+    padding-left: 10px;
 }
 
 .bse-user-maintenance-table .govuk-input,
@@ -365,10 +367,24 @@
     min-width: 0;
 }
 
-/* GOV.UK's small-checkbox variant pulls the 44px hit area 10px left, which pushes it under
-   the neighbouring cell. Keep it inside its own cell so the visible box stays clickable. */
+/* GOV.UK gives the checkbox a 44px hit area, which made every data row twice the height of
+   the header row. Shrink it to the size of the visible box and lift the box and tick to match. */
 .bse-user-maintenance-table .govuk-checkboxes__input {
     margin-left: 0;
+    width: 24px;
+    height: 24px;
+}
+
+.bse-user-maintenance-table .govuk-checkboxes__label {
+    padding: 0;
+}
+
+.bse-user-maintenance-table .govuk-checkboxes__label::before {
+    top: 0;
+}
+
+.bse-user-maintenance-table .govuk-checkboxes__label::after {
+    top: 7px;
 }
 
 .bse-user-maintenance-table .bse-row-select-link {
