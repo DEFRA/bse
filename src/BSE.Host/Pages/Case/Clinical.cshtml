@@ -64,7 +64,7 @@
 
 @if (TempData["Warning"] is string warningMsg)
 {
-    <div class="govuk-notification-banner" role="region"
+    <section class="govuk-notification-banner"
          aria-labelledby="clinical-warning-title" data-module="govuk-notification-banner">
         <div class="govuk-notification-banner__header">
             <h2 class="govuk-notification-banner__title" id="clinical-warning-title">Important</h2>
@@ -72,7 +72,7 @@
         <div class="govuk-notification-banner__content">
             <p class="govuk-body">@warningMsg</p>
         </div>
-    </div>
+    </section>
 }
 
 @if (!ViewContext.ModelState.IsValid)
@@ -105,12 +105,11 @@
     {
         @if (canEditClinical)
         {
-            <div id="case-clinical-unsaved-banner"
+            <output id="case-clinical-unsaved-banner"
                  class="govuk-inset-text bse-unsaved-banner"
-                 role="status"
                  hidden="@(!Model.HasUnsavedChanges)">
                 <strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.
-            </div>
+            </output>
         }
 
         <div class="govuk-button-group govuk-!-margin-bottom-4">
@@ -272,45 +271,7 @@
         </tbody>
     </table>
 
-        @if (Model.VisitsTotalPages > 1)
-        {
-            <nav class="govuk-pagination" role="navigation" aria-label="Clinical visits pagination">
-                @if (Model.VPage > 1)
-                {
-                    <div class="govuk-pagination__prev">
-                        <a class="govuk-link govuk-pagination__link" href="@Model.VisitsPageUrl(Model.VPage - 1)" rel="prev">
-                            <span class="govuk-pagination__link-title">Previous<span class="govuk-visually-hidden"> page</span></span>
-                        </a>
-                    </div>
-                }
-                <ul class="govuk-pagination__list">
-                    @{ int startPage = Math.Max(1, Model.VPage - 4); int endPage = Math.Min(Model.VisitsTotalPages, startPage + 9); }
-                    @for (int p = startPage; p <= endPage; p++)
-                    {
-                        if (p == Model.VPage)
-                        {
-                            <li class="govuk-pagination__item govuk-pagination__item--current">
-                                <a class="govuk-link govuk-pagination__link" href="@Model.VisitsPageUrl(p)" aria-label="Page @p" aria-current="page">@p</a>
-                            </li>
-                        }
-                        else
-                        {
-                            <li class="govuk-pagination__item">
-                                <a class="govuk-link govuk-pagination__link" href="@Model.VisitsPageUrl(p)" aria-label="Page @p">@p</a>
-                            </li>
-                        }
-                    }
-                </ul>
-                @if (Model.VPage < Model.VisitsTotalPages)
-                {
-                    <div class="govuk-pagination__next">
-                        <a class="govuk-link govuk-pagination__link" href="@Model.VisitsPageUrl(Model.VPage + 1)" rel="next">
-                            <span class="govuk-pagination__link-title">Next<span class="govuk-visually-hidden"> page</span></span>
-                        </a>
-                    </div>
-                }
-            </nav>
-        }
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.VPage, ["TotalPages"] = Model.VisitsTotalPages, ["PageNumberKey"] = "VPage" })
     @if (canEditClinical)
     {
         <div class="govuk-button-group govuk-!-margin-bottom-6">
@@ -318,7 +279,7 @@
         </div>
     }
 
-    <div aria-live="polite" role="status" class="govuk-visually-hidden" id="visit-live-region"></div>
+    <output aria-live="polite" class="govuk-visually-hidden" id="visit-live-region"></output>
 
     <div class="govuk-!-margin-top-6">
         <ul class="govuk-list">
@@ -362,6 +323,8 @@
     }
 
     .bse-unsaved-banner {
+        /* <output> defaults to display:inline, which collapses govuk-inset-text's block layout. */
+        display: block;
         border-left-color: #1d70b8;
     }
 

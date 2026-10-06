@@ -20,7 +20,7 @@ public sealed class CaseFarmDraftLinkedFarmItem
     public string Status { get; set; } = string.Empty;
 }
 
-public sealed class CaseFarmDraftHerdSizeItem
+public sealed class CaseFarmDraftHerdSizeItem : ILactationSizes
 {
     // Stable identifier for this draft row, used by the inline add/edit/delete handlers
     // instead of Id, since newly staged rows have no database Id until Save.
@@ -28,16 +28,16 @@ public sealed class CaseFarmDraftHerdSizeItem
     public int? Id { get; set; }
     public int HerdYear { get; set; }
     public int TotalSize { get; set; }
-    public int Lactation1Size { get; set; }
-    public int Lactation2Size { get; set; }
-    public int Lactation3Size { get; set; }
-    public int Lactation4Size { get; set; }
-    public int Lactation5Size { get; set; }
-    public int Lactation6Size { get; set; }
-    public int Lactation7Size { get; set; }
-    public int Lactation8Size { get; set; }
-    public int Lactation9Size { get; set; }
-    public int Lactation10Size { get; set; }
-    public int Lactation10PlusSize { get; set; }
+    public int? Lactation1Size { get; set; }
+    public int? Lactation2Size { get; set; }
+    public int? Lactation3Size { get; set; }
+    public int? Lactation4Size { get; set; }
+    public int? Lactation5Size { get; set; }
+    public int? Lactation6Size { get; set; }
+    public int? Lactation7Size { get; set; }
+    public int? Lactation8Size { get; set; }
+    public int? Lactation9Size { get; set; }
+    public int? Lactation10Size { get; set; }
+    public int? Lactation10PlusSize { get; set; }
     public string RowStampBase64 { get; set; } = string.Empty;
 }

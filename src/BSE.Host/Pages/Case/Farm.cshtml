@@ -84,17 +84,17 @@
         <table class="govuk-table">
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.LSort=="cphh" ? (Model.LDir=="asc" ? "ascending" : "descending") : "none")">
+                    <th scope="col" class="govuk-table__header" aria-sort="@Model.LinkedFarmAriaSort("cphh")">
                         <a class="govuk-link govuk-link--no-visited-state" href="@Model.LinkedFarmsSortUrl("cphh")">CPHH</a>
                     </th>
-                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.LSort=="status" ? (Model.LDir=="asc" ? "ascending" : "descending") : "none")">
+                    <th scope="col" class="govuk-table__header" aria-sort="@Model.LinkedFarmAriaSort("status")">
                         <a class="govuk-link govuk-link--no-visited-state" href="@Model.LinkedFarmsSortUrl("status")">Status</a>
                     </th>
                     <th scope="col" class="govuk-table__header">Action</th>
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
-                @if (!Model.SortedStagedLinkedFarms.Any())
+                @if (!Model.SortedStagedLinkedFarms().Any())
                 {
                     <tr class="govuk-table__row">
                         <td class="govuk-table__cell" colspan="3">No linked farms recorded.</td>
@@ -118,7 +118,7 @@
                     </td>
                 </tr>
 
-                @foreach (var lf in Model.PagedStagedLinkedFarms)
+                @foreach (var lf in Model.PagedStagedLinkedFarms())
                 {
                     var isEditingLinked = canEditFarm && Model.ReopenLinkedEditClientKey == lf.ClientKey;
                     var linkedError = isEditingLinked
@@ -250,16 +250,16 @@
                     </tr>
                 </thead>
                 <tbody class="govuk-table__body" id="herd-size-tbody">
-                    @if (!Model.SortedStagedHerdSizes.Any())
+                    @if (!Model.SortedStagedHerdSizes().Any())
                     {
                         <tr class="govuk-table__row">
                             <td class="govuk-table__cell" colspan="13">No herd size records for this farm.</td>
                         </tr>
                     }
 
-                    @foreach (var h in Model.PagedSortedStagedHerdSizes)
+                    @foreach (var h in Model.PagedSortedStagedHerdSizes())
                     {
-                        var yearRepeated = Model.SortedStagedHerdSizes.Count(x => x.HerdYear == h.HerdYear) > 1;
+                        var yearRepeated = Model.SortedStagedHerdSizes().Count(x => x.HerdYear == h.HerdYear) > 1;
                         <tr class="govuk-table__row bse-herd-row @(h.IsUnsaved ? "bse-herd-row--unsaved" : "")" data-client-key="@h.ClientKey">
                             <td class="govuk-table__cell">
                                 @h.HerdYear
@@ -485,17 +485,17 @@
         <table class="govuk-table">
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.LSort=="cphh" ? (Model.LDir=="asc" ? "ascending" : "descending") : "none")">
+                    <th scope="col" class="govuk-table__header" aria-sort="@Model.LinkedFarmAriaSort("cphh")">
                         <a class="govuk-link govuk-link--no-visited-state" href="@Model.LinkedFarmsSortUrl("cphh")">CPHH</a>
                     </th>
-                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.LSort=="status" ? (Model.LDir=="asc" ? "ascending" : "descending") : "none")">
+                    <th scope="col" class="govuk-table__header" aria-sort="@Model.LinkedFarmAriaSort("status")">
                         <a class="govuk-link govuk-link--no-visited-state" href="@Model.LinkedFarmsSortUrl("status")">Status</a>
                     </th>
                     <th scope="col" class="govuk-table__header">Action</th>
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
-                @if (!Model.SortedStagedLinkedFarms.Any())
+                @if (!Model.SortedStagedLinkedFarms().Any())
                 {
                     <tr class="govuk-table__row">
                         <td class="govuk-table__cell" colspan="3">No linked farms recorded.</td>
@@ -519,7 +519,7 @@
                     </td>
                 </tr>
 
-                @foreach (var lf in Model.PagedStagedLinkedFarms)
+                @foreach (var lf in Model.PagedStagedLinkedFarms())
                 {
                     var isEditingLinked = Model.ReopenLinkedEditClientKey == lf.ClientKey;
                     var linkedError = isEditingLinked
@@ -656,18 +656,18 @@
                     </tr>
                 </thead>
                 <tbody class="govuk-table__body" id="herd-size-tbody">
-                    @if (!Model.SortedStagedHerdSizes.Any())
+                    @if (!Model.SortedStagedHerdSizes().Any())
                     {
                         <tr class="govuk-table__row">
                             <td class="govuk-table__cell" colspan="14">No herd size records for this farm.</td>
                         </tr>
                     }
 
-                    @foreach (var h in Model.PagedSortedStagedHerdSizes)
+                    @foreach (var h in Model.PagedSortedStagedHerdSizes())
                     {
                         var isEditing = canEditFarm && Model.ReopenEditClientKey == h.ClientKey;
                         var editRow = isEditing ? Model.EditHerdRow : null;
-                        var yearRepeated = Model.SortedStagedHerdSizes.Count(x => x.HerdYear == h.HerdYear) > 1;
+                        var yearRepeated = Model.SortedStagedHerdSizes().Count(x => x.HerdYear == h.HerdYear) > 1;
 
                         <tr class="govuk-table__row bse-herd-row @(h.IsUnsaved ? "bse-herd-row--unsaved" : "")" data-client-key="@h.ClientKey">
                             @if (isEditing)
@@ -682,15 +682,15 @@
                                 </td>
                                 @for (var lac = 1; lac <= 10; lac++)
                                 {
-                                    var lacValue = (int)(typeof(BSE.Host.Pages.Case.FarmModel.HerdSizeRowInput).GetProperty($"Lactation{lac}Size")!.GetValue(editRow) ?? 0);
+                                    var lacValue = (int?)typeof(BSE.Host.Pages.Case.FarmModel.HerdSizeRowInput).GetProperty($"Lactation{lac}Size")!.GetValue(editRow);
                                     <td class="govuk-table__cell">
                                         <label class="govuk-visually-hidden" for="edit-herd-lac@(lac)-@h.ClientKey">Lactation @lac</label>
-                                        <input id="edit-herd-lac@(lac)-@h.ClientKey" name="EditHerdRow.Lactation@(lac)Size" type="number" min="0" max="999" value="@lacValue" class="govuk-input govuk-input--width-3" />
+                                        <input id="edit-herd-lac@(lac)-@h.ClientKey" name="EditHerdRow.Lactation@(lac)Size" type="number" min="0" max="999" value="@BSE.SharedKernel.InputValueFormatter.ToInputValue(lacValue)" class="govuk-input govuk-input--width-3" />
                                     </td>
                                 }
                                 <td class="govuk-table__cell">
                                     <label class="govuk-visually-hidden" for="edit-herd-lac10p-@h.ClientKey">Lactation 10+</label>
-                                    <input id="edit-herd-lac10p-@h.ClientKey" name="EditHerdRow.Lactation10PlusSize" type="number" min="0" max="999" value="@editRow.Lactation10PlusSize" class="govuk-input govuk-input--width-3" />
+                                    <input id="edit-herd-lac10p-@h.ClientKey" name="EditHerdRow.Lactation10PlusSize" type="number" min="0" max="999" value="@BSE.SharedKernel.InputValueFormatter.ToInputValue(editRow.Lactation10PlusSize)" class="govuk-input govuk-input--width-3" />
                                 </td>
                                 <td class="govuk-table__cell">
                                     <input type="hidden" name="EditingClientKey" value="@h.ClientKey" />
@@ -776,7 +776,7 @@
                         </td>
                         @for (var lac = 1; lac <= 10; lac++)
                         {
-                            var lacValue = (int)(typeof(BSE.Host.Pages.Case.FarmModel.HerdSizeRowInput).GetProperty($"Lactation{lac}Size")!.GetValue(Model.NewHerdRow) ?? 0);
+                            var lacValue = (int?)typeof(BSE.Host.Pages.Case.FarmModel.HerdSizeRowInput).GetProperty($"Lactation{lac}Size")!.GetValue(Model.NewHerdRow);
                             <td class="govuk-table__cell">
                                 <label class="govuk-visually-hidden" for="new-herd-lac@(lac)">Lactation @lac</label>
                                 <input id="new-herd-lac@(lac)" name="NewHerdRow.Lactation@(lac)Size" type="number" min="0" max="999" value="@BSE.SharedKernel.InputValueFormatter.ToInputValue(lacValue)" class="govuk-input govuk-input--width-3" />

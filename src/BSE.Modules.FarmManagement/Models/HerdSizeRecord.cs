@@ -10,16 +10,16 @@ public record HerdSizeRecord
     public string CPHH { get; init; } = string.Empty;
     public short HerdYear { get; init; }
     public short TotalSize { get; init; }
-    public short Lactation1Size { get; init; }
-    public short Lactation2Size { get; init; }
-    public short Lactation3Size { get; init; }
-    public short Lactation4Size { get; init; }
-    public short Lactation5Size { get; init; }
-    public short Lactation6Size { get; init; }
-    public short Lactation7Size { get; init; }
-    public short Lactation8Size { get; init; }
-    public short Lactation9Size { get; init; }
-    public short Lactation10Size { get; init; }
-    public short Lactation10PlusSize { get; init; }
+    public short? Lactation1Size { get; init; }
+    public short? Lactation2Size { get; init; }
+    public short? Lactation3Size { get; init; }
+    public short? Lactation4Size { get; init; }
+    public short? Lactation5Size { get; init; }
+    public short? Lactation6Size { get; init; }
+    public short? Lactation7Size { get; init; }
+    public short? Lactation8Size { get; init; }
+    public short? Lactation9Size { get; init; }
+    public short? Lactation10Size { get; init; }
+    public short? Lactation10PlusSize { get; init; }
     public byte[]? RowStamp { get; init; }
 }
