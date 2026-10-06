@@ -424,7 +424,7 @@
     opacity: 1;
     background-color: #b1b4b6;
     border-color: #b1b4b6;
-    color: #505a5f;
+    color: #3a4044;
     box-shadow: 0 2px 0 #8f9294;
     cursor: not-allowed;
 }
@@ -567,7 +567,7 @@
 }
 
 .bse-legacy-summary-list .govuk-summary-list__value {
-    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 .bse-rbse-change-field-row {
@@ -761,7 +761,7 @@
     color: #0b0c0c;
     font-weight: 400;
     line-height: 1.4;
-    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 .bse-legacy-checklist {
@@ -1946,7 +1946,7 @@
 }
 
 .bse-relations-parent-panel .govuk-summary-list__value {
-    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 .bse-relations-actions .govuk-button,
@@ -2701,6 +2701,7 @@
 
 .bse-farm-legacy__field--continuation .govuk-label {
     visibility: hidden;
+    line-height: 40px;
 }
 
 .bse-farm-legacy__field--dealer {
@@ -2727,10 +2728,6 @@
     width: 24px;
     height: 24px;
     margin: 0;
-}
-
-.bse-farm-legacy__field--continuation .govuk-label {
-    line-height: 40px;
 }
 
 @media (max-width: 900px) {
@@ -3376,10 +3373,7 @@
 
 /* New Farms-only appended columns */
 .bse-audit-table th:nth-child(10),
-.bse-audit-table td:nth-child(10) { max-width: 150px; white-space: normal; word-wrap: break-word; overflow-wrap: break-word; }  /* Owner Name - allow wrapping */
-
-.bse-audit-table th:nth-child(10),
-.bse-audit-table td:nth-child(10) { max-width: 200px; white-space: normal; word-wrap: break-word; overflow-wrap: break-word; } /* Address - allow wrapping */
+.bse-audit-table td:nth-child(10) { max-width: 200px; white-space: normal; word-wrap: break-word; overflow-wrap: break-word; } /* Owner Name / Address - allow wrapping */
 
 .bse-audit-table th:nth-child(11),
 .bse-audit-table td:nth-child(11) { max-width: 100px; white-space: normal; word-wrap: break-word; overflow-wrap: break-word; } /* County - allow wrapping */

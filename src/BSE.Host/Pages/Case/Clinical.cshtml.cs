@@ -24,6 +24,7 @@ public class ClinicalModel(
     IConfiguration configuration) : PageModel
 {
     private const int PageSize = 10;
+    private const string VlaAccessRole = "VLAAccess";
     private List<ClinicalVisitRecord> _persistedVisits = [];
 
     [BindProperty(SupportsGet = true)]
@@ -149,7 +150,7 @@ public class ClinicalModel(
     /// <summary>Adds a clinical visit to the draft only. Not persisted until Save.</summary>
     public async Task<IActionResult> OnPostAddVisitRowAsync()
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
+        if (!User.IsInRole("DataEntry") || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         var postedDate = NewVisitDate;
@@ -186,7 +187,7 @@ public class ClinicalModel(
     /// <summary>Opens the inline edit view for one staged clinical visit row (no changes saved yet).</summary>
     public async Task<IActionResult> OnPostBeginEditVisitRowAsync(string clientKey)
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
+        if (!User.IsInRole("DataEntry") || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         await LoadAsync();
@@ -206,7 +207,7 @@ public class ClinicalModel(
     /// <summary>Updates a staged clinical visit row in the draft only. Not persisted until Save.</summary>
     public async Task<IActionResult> OnPostUpdateVisitRowAsync()
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
+        if (!User.IsInRole("DataEntry") || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         var clientKey = EditingClientKey;
@@ -246,7 +247,7 @@ public class ClinicalModel(
     /// <summary>Removes a staged clinical visit row from the draft only. Not persisted until Save.</summary>
     public async Task<IActionResult> OnPostDeleteVisitAsync(string clientKey)
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
+        if (!User.IsInRole("DataEntry") || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         await LoadAsync();

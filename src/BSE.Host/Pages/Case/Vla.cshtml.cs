@@ -1,4 +1,4 @@
-using BSE.Host.Models.ViewModels;
+﻿using BSE.Host.Models.ViewModels;
 using BSE.Host.Services;
 using BSE.Infrastructure;
 using BSE.Modules.Batch.Models;
@@ -33,6 +33,9 @@ public class VlaModel(
 {
     private const string RowStampKey    = "VlaEdit_RowStamp_{0}";
     private const int    OwnersPageSize = 10;
+    private const string DataEntryRole  = "DataEntry";
+    private const string WarningKey     = "Warning";
+    private const string SpolSiteUrlKey = "SpolSiteUrl";
 
     [BindProperty(SupportsGet = true)]
     public string Rbse { get; set; } = string.Empty;
@@ -82,15 +85,15 @@ public class VlaModel(
         if (record is null)
         {
             Case.Rbse = Rbse;
-            SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+            SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
             await LoadLookupsAsync();
-            TempData["Warning"] = $"Case '{Rbse}' is not saved yet. Complete Farm first.";
+            TempData[WarningKey] = $"Case '{Rbse}' is not saved yet. Complete Farm first.";
             return Page();
         }
 
         TempData[string.Format(RowStampKey, Rbse)] = Convert.ToBase64String(record.RowStamp ?? []);
         Case = VlaEditViewModel.FromRecord(record);
-        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+        SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
         HasTracedBabData = await HasTracedBabDataAsync(Rbse);
 
         var batchTask = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
@@ -106,7 +109,7 @@ public class VlaModel(
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole(DataEntryRole))
             return Forbid();
 
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
@@ -125,15 +128,15 @@ public class VlaModel(
         if (persistedRecord is null)
         {
             Case.Rbse = caseRbse;
-            SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+            SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
             await LoadLookupsAsync();
-            TempData["Warning"] = $"Case '{caseRbse}' is not saved yet. Complete Farm first.";
+            TempData[WarningKey] = $"Case '{caseRbse}' is not saved yet. Complete Farm first.";
             return Page();
         }
 
         HasTracedBabData = await HasTracedBabDataAsync(caseRbse);
 
-        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+        SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
         await LoadLookupsAsync();
 
         if (Case.Origin != "P")
@@ -157,7 +160,7 @@ public class VlaModel(
         var rowStampBase64 = TempData[string.Format(RowStampKey, Rbse)]?.ToString();
         if (string.IsNullOrEmpty(rowStampBase64))
         {
-            ConcurrencyError = "Session expired — please reload the page and try again.";
+            ConcurrencyError = "Session expired â€” please reload the page and try again.";
             return Page();
         }
 
@@ -208,12 +211,12 @@ public class VlaModel(
 
     public async Task<IActionResult> OnPostBeginEditOwnerRowAsync(int ownerId)
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole(DataEntryRole))
             return Forbid();
 
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
         Rbse = caseRbse;
-        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+        SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
         await LoadLookupsAsync();
         var batchTask = batchRepository.GetBatchNumbersByRbseAsync(caseRbse);
         var pendingBatchTask = wizardState.GetAsync();
@@ -240,12 +243,12 @@ public class VlaModel(
 
     public async Task<IActionResult> OnPostAddOwnerRowAsync()
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole(DataEntryRole))
             return Forbid();
 
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
         Rbse = caseRbse;
-        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+        SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
         await LoadLookupsAsync();
         var batchTask = batchRepository.GetBatchNumbersByRbseAsync(caseRbse);
         var pendingBatchTask = wizardState.GetAsync();
@@ -284,12 +287,12 @@ public class VlaModel(
 
     public async Task<IActionResult> OnPostUpdateOwnerRowAsync()
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole(DataEntryRole))
             return Forbid();
 
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
         Rbse = caseRbse;
-        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+        SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
         await LoadLookupsAsync();
         var batchTask = batchRepository.GetBatchNumbersByRbseAsync(caseRbse);
         var pendingBatchTask = wizardState.GetAsync();
@@ -315,7 +318,7 @@ public class VlaModel(
         var owner = draft.OtherOwners.FirstOrDefault(o => (o.Id ?? 0) == EditingOwnerId);
         if (owner is null)
         {
-            TempData["Warning"] = "Owner record not found.";
+            TempData[WarningKey] = "Owner record not found.";
             return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
         }
 
@@ -330,7 +333,7 @@ public class VlaModel(
 
     public async Task<IActionResult> OnPostDeleteOwnerAsync(int ownerId, string rowStampBase64)
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole(DataEntryRole))
             return Forbid();
 
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
@@ -347,7 +350,7 @@ public class VlaModel(
         var owner = draft.OtherOwners.FirstOrDefault(o => (o.Id ?? 0) == ownerId);
         if (owner is null)
         {
-            TempData["Warning"] = "Owner record not found.";
+            TempData[WarningKey] = "Owner record not found.";
             return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
         }
 
@@ -381,11 +384,15 @@ public class VlaModel(
         OtherOwnersTotalCount = allOwners.Count;
         OtherOwnersTotalPages = Math.Max(1, (int)Math.Ceiling(allOwners.Count / (double)OwnersPageSize));
         OPage = Math.Clamp(OPage, 1, OtherOwnersTotalPages);
-        IEnumerable<OtherOwnerRecord> sorted = OSort == "cphh"
-            ? (ODir == "desc" ? allOwners.OrderByDescending(o => o.Cphh) : allOwners.OrderBy(o => o.Cphh))
-            : OSort == "name"
-                ? (ODir == "desc" ? allOwners.OrderByDescending(o => o.Name) : allOwners.OrderBy(o => o.Name))
-                : (ODir == "desc" ? allOwners.OrderByDescending(o => o.Type) : allOwners.OrderBy(o => o.Type));
+        Func<OtherOwnerRecord, object?> ownerKeySelector = OSort switch
+        {
+            "cphh" => o => o.Cphh,
+            "name" => o => o.Name,
+            _ => o => o.Type,
+        };
+        var sorted = ODir == "desc"
+            ? allOwners.OrderByDescending(ownerKeySelector)
+            : allOwners.OrderBy(ownerKeySelector);
         OtherOwners = sorted.Skip((OPage - 1) * OwnersPageSize).Take(OwnersPageSize).ToList().AsReadOnly();
     }
 
@@ -393,7 +400,7 @@ public class VlaModel(
     {
         // Legacy CaseEntryVLA uses IsVLAAllowedMainCaseEdit(Session):
         // selected batch present OR existing batch numbers linked to case.
-        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole("VLAAccess"))
         {
             CanEditMainCase = false;
             return;
@@ -473,17 +480,20 @@ public class VlaModel(
             ModelState.AddModelError(editingOwnerId.HasValue ? nameof(EditOwnerCphh) : nameof(NewOwnerCphh), "CPHH must be 11 digits.");
 
         if (!string.IsNullOrWhiteSpace(type))
-        {
-            var typeDesc = OwnerTypeOptions.FirstOrDefault(t => t.Code == type)?.Description ?? string.Empty;
-            if (typeDesc.Contains("Previous", StringComparison.OrdinalIgnoreCase))
-            {
-                var duplicateExists = StagedOtherOwners
-                    .Any(o => string.Equals(o.Type, type, StringComparison.OrdinalIgnoreCase)
-                           && (!editingOwnerId.HasValue || (o.Id ?? 0) != editingOwnerId.Value));
-                if (duplicateExists)
-                    ModelState.AddModelError(editingOwnerId.HasValue ? nameof(EditOwnerType) : nameof(NewOwnerType), "You can only have one owner of type Previous.");
-            }
-        }
+            ValidatePreviousOwnerUniqueness(type, editingOwnerId);
+    }
+
+    private void ValidatePreviousOwnerUniqueness(string type, int? editingOwnerId)
+    {
+        var typeDesc = OwnerTypeOptions.FirstOrDefault(t => t.Code == type)?.Description ?? string.Empty;
+        if (!typeDesc.Contains("Previous", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        var duplicateExists = StagedOtherOwners
+            .Any(o => string.Equals(o.Type, type, StringComparison.OrdinalIgnoreCase)
+                   && (!editingOwnerId.HasValue || (o.Id ?? 0) != editingOwnerId.Value));
+        if (duplicateExists)
+            ModelState.AddModelError(editingOwnerId.HasValue ? nameof(EditOwnerType) : nameof(NewOwnerType), "You can only have one owner of type Previous.");
     }
 
     private async Task PersistStagedOwnersAsync(string caseRbse)
@@ -501,50 +511,53 @@ public class VlaModel(
         conn.Open();
         using var tx = conn.BeginTransaction();
 
-        foreach (var existing in persisted)
-        {
-            if (!stagedExistingIds.Contains(existing.Id))
-            {
-                await ownerRepository.DeleteAsync(existing.Id, existing.RowStamp ?? [], conn, tx);
-            }
-        }
+        foreach (var removed in persisted.Where(x => !stagedExistingIds.Contains(x.Id)))
+            await ownerRepository.DeleteAsync(removed.Id, removed.RowStamp ?? [], conn, tx);
 
         foreach (var owner in staged)
-        {
-            var normalizedName = string.IsNullOrWhiteSpace(owner.Name) ? null : owner.Name;
-            var normalizedCphh = string.IsNullOrWhiteSpace(owner.Cphh) ? null : owner.Cphh;
-
-            if (owner.Id is > 0 && persistedById.TryGetValue(owner.Id.Value, out var persistedOwner))
-            {
-                var hasChanges = !string.Equals(owner.Type, persistedOwner.Type, StringComparison.Ordinal)
-                                 || !string.Equals(normalizedName, persistedOwner.Name, StringComparison.Ordinal)
-                                 || !string.Equals(normalizedCphh, persistedOwner.Cphh, StringComparison.Ordinal);
-
-                if (!hasChanges)
-                    continue;
-
-                var rowStamp = string.IsNullOrWhiteSpace(owner.RowStampBase64)
-                    ? persistedOwner.RowStamp ?? []
-                    : Convert.FromBase64String(owner.RowStampBase64);
-
-                await ownerRepository.EditAsync(new EditOtherOwnerCommand(
-                    owner.Id.Value,
-                    owner.Type,
-                    normalizedName,
-                    normalizedCphh,
-                    rowStamp), conn, tx);
-            }
-            else
-            {
-                await ownerRepository.AddAsync(new AddOtherOwnerCommand(
-                    caseRbse,
-                    owner.Type,
-                    normalizedName,
-                    normalizedCphh), conn, tx);
-            }
-        }
+            await SaveStagedOwnerAsync(owner, persistedById, caseRbse, conn, tx);
 
         tx.Commit();
+    }
+
+    private async Task SaveStagedOwnerAsync(
+        CaseEditDraftOtherOwnerItem owner,
+        IReadOnlyDictionary<int, OtherOwnerRecord> persistedById,
+        string caseRbse,
+        System.Data.IDbConnection conn,
+        System.Data.IDbTransaction tx)
+    {
+        var normalizedName = string.IsNullOrWhiteSpace(owner.Name) ? null : owner.Name;
+        var normalizedCphh = string.IsNullOrWhiteSpace(owner.Cphh) ? null : owner.Cphh;
+
+        if (owner.Id is > 0 && persistedById.TryGetValue(owner.Id.Value, out var persistedOwner))
+        {
+            var hasChanges = !string.Equals(owner.Type, persistedOwner.Type, StringComparison.Ordinal)
+                             || !string.Equals(normalizedName, persistedOwner.Name, StringComparison.Ordinal)
+                             || !string.Equals(normalizedCphh, persistedOwner.Cphh, StringComparison.Ordinal);
+
+            if (!hasChanges)
+                return;
+
+            var rowStamp = string.IsNullOrWhiteSpace(owner.RowStampBase64)
+                ? persistedOwner.RowStamp ?? []
+                : Convert.FromBase64String(owner.RowStampBase64);
+
+            await ownerRepository.EditAsync(new EditOtherOwnerCommand(
+                owner.Id.Value,
+                owner.Type,
+                normalizedName,
+                normalizedCphh,
+                rowStamp), conn, tx);
+        }
+        else
+        {
+            await ownerRepository.AddAsync(new AddOtherOwnerCommand(
+                caseRbse,
+                owner.Type,
+                normalizedName,
+                normalizedCphh), conn, tx);
+        }
     }
 
     private void ValidateVlaDomainRules()
@@ -562,40 +575,62 @@ public class VlaModel(
         ReplaceUnparseableDateMessage("Case.HerdEntryDate", Case.HerdEntryDate);
         ReplaceUnparseableDateMessage("Case.OnsetDate", Case.OnsetDate);
 
+        ValidateBirthDate(formADate, today);
+        ValidatePurchaseDate(formADate, today);
+        ValidateHerdEntryDate(formADate, today);
+        ValidateOnsetDate(formADate, today);
+        ValidateMonthsPregnantAndPostCalving();
+        ValidateSlaughterDate(formADate, today);
+    }
+
+    private void ValidateBirthDate(DateTime? formADate, DateTime today)
+    {
+        if (!Case.BirthDate.HasValue)
+            return;
+
+        var limit = formADate ?? today;
+        if (Case.BirthDate.Value.Date < DateTime.UnixEpoch || Case.BirthDate.Value.Date > limit)
+            ModelState.AddModelError("Case.BirthDate", "Birth Date must be after 31/12/1969 and before the Form A Date");
+    }
+
+    private void ValidatePurchaseDate(DateTime? formADate, DateTime today)
+    {
+        if (!Case.PurchaseDate.HasValue)
+            return;
+
+        var limit = formADate ?? today;
+        if ((Case.BirthDate.HasValue && Case.PurchaseDate.Value.Date < Case.BirthDate.Value.Date) ||
+            Case.PurchaseDate.Value.Date > limit)
+            ModelState.AddModelError("Case.PurchaseDate", "Purchase Date must be after the birth date and before the Form A Date");
+    }
+
+    private void ValidateHerdEntryDate(DateTime? formADate, DateTime today)
+    {
+        if (!Case.HerdEntryDate.HasValue)
+            return;
+
+        var limit = formADate ?? today;
+        if (Case.HerdEntryDate.Value.Date > limit)
+            ModelState.AddModelError("Case.HerdEntryDate", "The Herd Entry Date must be before the Form A Date.");
+    }
+
+    private void ValidateOnsetDate(DateTime? formADate, DateTime today)
+    {
+        if (!Case.OnsetDate.HasValue)
+            return;
+
+        var limit = formADate ?? today;
         if (Case.BirthDate.HasValue)
         {
-            var limit = formADate ?? today;
-            if (Case.BirthDate.Value.Date < new DateTime(1970, 1, 1) || Case.BirthDate.Value.Date > limit)
-                ModelState.AddModelError("Case.BirthDate", "Birth Date must be after 31/12/1969 and before the Form A Date");
+            if (Case.OnsetDate.Value.Date < Case.BirthDate.Value.Date || Case.OnsetDate.Value.Date > limit)
+                ModelState.AddModelError("Case.OnsetDate", "Onset Date must be after the Date Of Birth and before the Form A Date");
         }
+        else if (Case.OnsetDate.Value.Date > limit)
+            ModelState.AddModelError("Case.OnsetDate", "Onset Date must be before the Form A Date");
+    }
 
-        if (Case.PurchaseDate.HasValue)
-        {
-            var limit = formADate ?? today;
-            if ((Case.BirthDate.HasValue && Case.PurchaseDate.Value.Date < Case.BirthDate.Value.Date) ||
-                Case.PurchaseDate.Value.Date > limit)
-                ModelState.AddModelError("Case.PurchaseDate", "Purchase Date must be after the birth date and before the Form A Date");
-        }
-
-        if (Case.HerdEntryDate.HasValue)
-        {
-            var limit = formADate ?? today;
-            if (Case.HerdEntryDate.Value.Date > limit)
-                ModelState.AddModelError("Case.HerdEntryDate", "The Herd Entry Date must be before the Form A Date.");
-        }
-
-        if (Case.OnsetDate.HasValue)
-        {
-            var limit = formADate ?? today;
-            if (Case.BirthDate.HasValue)
-            {
-                if (Case.OnsetDate.Value.Date < Case.BirthDate.Value.Date || Case.OnsetDate.Value.Date > limit)
-                    ModelState.AddModelError("Case.OnsetDate", "Onset Date must be after the Date Of Birth and before the Form A Date");
-            }
-            else if (Case.OnsetDate.Value.Date > limit)
-                ModelState.AddModelError("Case.OnsetDate", "Onset Date must be before the Form A Date");
-        }
-
+    private void ValidateMonthsPregnantAndPostCalving()
+    {
         if (Case.MonthsPregnant.HasValue && Case.MonthsPostCalving.HasValue)
             ModelState.AddModelError("Case.MonthsPostCalving", "You cannot enter a value for Month's Post Calving and Months Pregnant");
 
@@ -603,25 +638,28 @@ public class VlaModel(
             ModelState.AddModelError("Case.MonthsPregnant", "Months pregnant must be between 1 and 9.");
         if (Case.MonthsPostCalving.HasValue && (Case.MonthsPostCalving.Value < 1 || Case.MonthsPostCalving.Value > 3))
             ModelState.AddModelError("Case.MonthsPostCalving", "Months post calving must be between 1 and 3.");
+    }
 
-        if (Case.SlaughterDate.HasValue)
+    private void ValidateSlaughterDate(DateTime? formADate, DateTime today)
+    {
+        if (!Case.SlaughterDate.HasValue)
+            return;
+
+        // Mirrors legacy SlaughterDateValid: earliest bound is Form A Date if present,
+        // else Birth Date if present, else no earliest bound (only "not in the future" applies).
+        if (formADate.HasValue)
         {
-            // Mirrors legacy SlaughterDateValid: earliest bound is Form A Date if present,
-            // else Birth Date if present, else no earliest bound (only "not in the future" applies).
-            if (formADate.HasValue)
-            {
-                if (Case.SlaughterDate.Value.Date < formADate.Value || Case.SlaughterDate.Value.Date > today)
-                    ModelState.AddModelError("Case.SlaughterDate", "You must enter a date between the Form A Date and todays date");
-            }
-            else if (Case.BirthDate.HasValue)
-            {
-                if (Case.SlaughterDate.Value.Date < Case.BirthDate.Value.Date || Case.SlaughterDate.Value.Date > today)
-                    ModelState.AddModelError("Case.SlaughterDate", "You must enter a date between the Birth Date and todays date");
-            }
-            else if (Case.SlaughterDate.Value.Date > today)
-            {
-                ModelState.AddModelError("Case.SlaughterDate", "You have entered a future date for the slaughter date");
-            }
+            if (Case.SlaughterDate.Value.Date < formADate.Value || Case.SlaughterDate.Value.Date > today)
+                ModelState.AddModelError("Case.SlaughterDate", "You must enter a date between the Form A Date and todays date");
+        }
+        else if (Case.BirthDate.HasValue)
+        {
+            if (Case.SlaughterDate.Value.Date < Case.BirthDate.Value.Date || Case.SlaughterDate.Value.Date > today)
+                ModelState.AddModelError("Case.SlaughterDate", "You must enter a date between the Birth Date and todays date");
+        }
+        else if (Case.SlaughterDate.Value.Date > today)
+        {
+            ModelState.AddModelError("Case.SlaughterDate", "You have entered a future date for the slaughter date");
         }
     }
 
