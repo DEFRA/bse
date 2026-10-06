@@ -135,39 +135,13 @@ public class UsersModel(IUserManagementService userManagementService, ILookupDat
         EditEmail = EditEmail?.Trim();
         EditUserName = EditUserName?.Trim() ?? string.Empty;
 
-        if (string.IsNullOrWhiteSpace(EditUserName))
-            ModelState.AddModelError(nameof(EditUserName), "Enter a display name");
-        else if (EditUserName.Length > UserNameMaxLength)
-            ModelState.AddModelError(nameof(EditUserName), $"Display name must be {UserNameMaxLength} characters or fewer");
-
-        if (isAdding)
-        {
-            if (string.IsNullOrWhiteSpace(EditEmail))
-                ModelState.AddModelError(nameof(EditEmail), "Enter an email address");
-            else if (EditEmail.Length > EmailMaxLength)
-                ModelState.AddModelError(nameof(EditEmail), $"Email must be {EmailMaxLength} characters or fewer");
-            else if (!ValidationHelpers.IsValidEmail(EditEmail))
-                ModelState.AddModelError(nameof(EditEmail), "Enter an email address in the correct format, like name@example.com");
-        }
-        else if (string.IsNullOrWhiteSpace(EditNTLogin))
-        {
-            ModelState.AddModelError(nameof(EditNTLogin), "Enter NT login");
-        }
-
-        if (EditUserGroupId <= 0)
-            ModelState.AddModelError(nameof(EditUserGroupId), "Select a user group");
+        ValidateEditFields(isAdding);
 
         Users = await userManagementService.GetAllUsersAsync();
         UserGroups = await lookupDataService.GetUserGroupsAsync();
 
         if (ModelState.IsValid)
-        {
-            if (!isAdding && Users.Any(u => u.UserId != EditUserId && u.NTLogin.Equals(EditNTLogin, StringComparison.OrdinalIgnoreCase)))
-                ModelState.AddModelError(nameof(EditNTLogin), "Unable to add the selected user");
-            if (!string.IsNullOrWhiteSpace(EditEmail) &&
-                Users.Any(u => u.UserId != EditUserId && !string.IsNullOrWhiteSpace(u.Email) && u.Email.Equals(EditEmail, StringComparison.OrdinalIgnoreCase)))
-                ModelState.AddModelError(nameof(EditEmail), "Unable to add the selected user");
-        }
+            ValidateUniqueness(isAdding);
 
         if (!ModelState.IsValid)
         {
@@ -211,6 +185,40 @@ public class UsersModel(IUserManagementService userManagementService, ILookupDat
         }
 
         return RedirectToPage(new { SortColumn, SortDesc, PageNumber });
+    }
+
+    private void ValidateEditFields(bool isAdding)
+    {
+        if (string.IsNullOrWhiteSpace(EditUserName))
+            ModelState.AddModelError(nameof(EditUserName), "Enter a display name");
+        else if (EditUserName.Length > UserNameMaxLength)
+            ModelState.AddModelError(nameof(EditUserName), $"Display name must be {UserNameMaxLength} characters or fewer");
+
+        if (isAdding)
+        {
+            if (string.IsNullOrWhiteSpace(EditEmail))
+                ModelState.AddModelError(nameof(EditEmail), "Enter an email address");
+            else if (EditEmail.Length > EmailMaxLength)
+                ModelState.AddModelError(nameof(EditEmail), $"Email must be {EmailMaxLength} characters or fewer");
+            else if (!ValidationHelpers.IsValidEmail(EditEmail))
+                ModelState.AddModelError(nameof(EditEmail), "Enter an email address in the correct format, like name@example.com");
+        }
+        else if (string.IsNullOrWhiteSpace(EditNTLogin))
+        {
+            ModelState.AddModelError(nameof(EditNTLogin), "Enter NT login");
+        }
+
+        if (EditUserGroupId <= 0)
+            ModelState.AddModelError(nameof(EditUserGroupId), "Select a user group");
+    }
+
+    private void ValidateUniqueness(bool isAdding)
+    {
+        if (!isAdding && Users.Any(u => u.UserId != EditUserId && u.NTLogin.Equals(EditNTLogin, StringComparison.OrdinalIgnoreCase)))
+            ModelState.AddModelError(nameof(EditNTLogin), "Unable to add the selected user");
+        if (!string.IsNullOrWhiteSpace(EditEmail) &&
+            Users.Any(u => u.UserId != EditUserId && !string.IsNullOrWhiteSpace(u.Email) && u.Email.Equals(EditEmail, StringComparison.OrdinalIgnoreCase)))
+            ModelState.AddModelError(nameof(EditEmail), "Unable to add the selected user");
     }
 
     // NTLogin is VARCHAR(25) NOT NULL with a unique constraint; derive a value from the email

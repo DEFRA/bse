@@ -6,7 +6,7 @@
     'use strict';
 
     var table = document.querySelector('.bse-user-maintenance-table');
-    if (!table) return;
+    if (!table) { return; }
 
     var form = table.closest('form');
     var tbody = table.querySelector('tbody');
@@ -24,6 +24,7 @@
     // True when the edit row came from the server (e.g. re-rendered after a validation error)
     // rather than being built here, so we have no original markup to restore on cancel.
     var isServerRendered = false;
+    var SELECTED_CLASS = 'bse-row-selected';
 
     function escapeHtml(value) {
         return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {
@@ -34,53 +35,48 @@
     function groupOptionsHtml(selectedId) {
         return groups.map(function (g) {
             var selected = String(g.id) === String(selectedId) ? ' selected' : '';
-            return '<option value="' + g.id + '"' + selected + '>' + escapeHtml(g.name) + '</option>';
+            return `<option value="${g.id}"${selected}>${escapeHtml(g.name)}</option>`;
         }).join('');
     }
 
     function refreshButtonState() {
         var hasSelection = !!selectedRow;
         var editing = !!editingRow;
-        if (newBtn) newBtn.disabled = editing;
-        if (editBtn) editBtn.disabled = editing || !hasSelection;
-        if (saveBtn) saveBtn.disabled = !editing;
-        if (cancelBtn) cancelBtn.disabled = !editing;
+        if (newBtn) { newBtn.disabled = editing; }
+        if (editBtn) { editBtn.disabled = editing || !hasSelection; }
+        if (saveBtn) { saveBtn.disabled = !editing; }
+        if (cancelBtn) { cancelBtn.disabled = !editing; }
     }
 
     function editCellsHtml(data) {
-        return ''
-            + '<td class="govuk-table__cell">'
-            + '<input type="text" id="edit-user-name" name="EditUserName" class="govuk-input" value="' + escapeHtml(data.userName) + '" />'
-            + '</td>'
-            + '<td class="govuk-table__cell">'
-            + '<input type="text" id="edit-email" name="EditEmail" class="govuk-input" value="' + escapeHtml(data.email) + '" />'
-            + '</td>'
-            + '<td class="govuk-table__cell">'
-            + '<select id="edit-user-group-id" name="EditUserGroupId" class="govuk-select">' + groupOptionsHtml(data.groupId) + '</select>'
-            + '</td>'
-            + '<td class="govuk-table__cell">'
-            + '<div class="govuk-checkboxes govuk-checkboxes--small bse-inline-checkbox">'
-            + '<div class="govuk-checkboxes__item">'
-            + '<input type="checkbox" id="EditIsActive" name="EditIsActive" value="true" class="govuk-checkboxes__input"' + (data.isActive ? ' checked' : '') + ' />'
-            + '<label class="govuk-label govuk-checkboxes__label" for="EditIsActive"><span class="govuk-visually-hidden">Active</span></label>'
-            // Must stay after the label: GOV.UK draws the tick via "input:checked + label::after".
-            + '<input type="hidden" name="EditIsActive" value="false" />'
-            + '</div></div>'
-            + '</td>';
+        // The hidden false input must stay after the label: GOV.UK draws the tick via "input:checked + label::after".
+        return `
+            <td class="govuk-table__cell"><label class="govuk-visually-hidden" for="edit-user-name">Name</label><input type="text" id="edit-user-name" name="EditUserName" class="govuk-input" value="${escapeHtml(data.userName)}" /></td>
+            <td class="govuk-table__cell"><label class="govuk-visually-hidden" for="edit-email">Email</label><input type="text" id="edit-email" name="EditEmail" class="govuk-input" value="${escapeHtml(data.email)}" /></td>
+            <td class="govuk-table__cell"><label class="govuk-visually-hidden" for="edit-user-group-id">User Group</label><select id="edit-user-group-id" name="EditUserGroupId" class="govuk-select">${groupOptionsHtml(data.groupId)}</select></td>
+            <td class="govuk-table__cell">
+                <div class="govuk-checkboxes govuk-checkboxes--small bse-inline-checkbox">
+                    <div class="govuk-checkboxes__item">
+                        <input type="checkbox" id="EditIsActive" name="EditIsActive" value="true" class="govuk-checkboxes__input"${data.isActive ? ' checked' : ''} />
+                        <label class="govuk-label govuk-checkboxes__label" for="EditIsActive"><span class="govuk-visually-hidden">Active</span></label>
+                        <input type="hidden" name="EditIsActive" value="false" />
+                    </div>
+                </div>
+            </td>`;
     }
 
     function selectRow(row) {
-        if (editingRow) return;
-        table.querySelectorAll('tr.bse-row-selected').forEach(function (r) { r.classList.remove('bse-row-selected'); });
-        row.classList.add('bse-row-selected');
+        if (editingRow) { return; }
+        table.querySelectorAll('tr.' + SELECTED_CLASS).forEach(function (r) { r.classList.remove(SELECTED_CLASS); });
+        row.classList.add(SELECTED_CLASS);
         selectedRow = row;
         var hiddenSelectedId = form.querySelector('[name="SelectedUserId"]');
-        if (hiddenSelectedId) hiddenSelectedId.value = row.dataset.userId;
+        if (hiddenSelectedId) { hiddenSelectedId.value = row.dataset.userId; }
         refreshButtonState();
     }
 
     function startEdit() {
-        if (!selectedRow || editingRow) return;
+        if (!selectedRow || editingRow) { return; }
         originalRowHtml = selectedRow.innerHTML;
         isNewRow = false;
 
@@ -96,47 +92,48 @@
 
         var selectCell = selectedRow.querySelector('.bse-row-select-cell');
         selectedRow.classList.add('bse-row-editing');
-        selectedRow.classList.remove('bse-row-selected');
+        selectedRow.classList.remove(SELECTED_CLASS);
         selectedRow.innerHTML = '';
         selectedRow.appendChild(selectCell);
-        selectedRow.insertAdjacentHTML('beforeend',
-            '<input type="hidden" name="EditUserId" value="' + escapeHtml(data.userId) + '" />'
-            + '<input type="hidden" name="EditUpn" value="' + escapeHtml(data.upn) + '" />'
-            + '<input type="hidden" name="EditNTLogin" value="' + escapeHtml(data.ntLogin) + '" />'
-            + editCellsHtml(data));
+        selectedRow.insertAdjacentHTML('beforeend', `
+            <input type="hidden" name="EditUserId" value="${escapeHtml(data.userId)}" />
+            <input type="hidden" name="EditUpn" value="${escapeHtml(data.upn)}" />
+            <input type="hidden" name="EditNTLogin" value="${escapeHtml(data.ntLogin)}" />
+            ${editCellsHtml(data)}`);
 
         editingRow = selectedRow;
         refreshButtonState();
         var nameInput = document.getElementById('edit-user-name');
-        if (nameInput) nameInput.focus();
+        if (nameInput) { nameInput.focus(); }
     }
 
     function startNew() {
-        if (editingRow) return;
+        if (editingRow) { return; }
         isNewRow = true;
 
         var row = document.createElement('tr');
         row.className = 'govuk-table__row bse-row-editing';
-        row.innerHTML = '<td class="govuk-table__cell bse-row-select-cell"></td>'
-            + '<input type="hidden" name="EditUserId" value="0" />'
-            + '<input type="hidden" name="EditUpn" value="" />'
-            + editCellsHtml({ userName: '', email: '', groupId: '', isActive: true });
+        row.innerHTML = `
+            <td class="govuk-table__cell bse-row-select-cell"></td>
+            <input type="hidden" name="EditUserId" value="0" />
+            <input type="hidden" name="EditUpn" value="" />
+            ${editCellsHtml({ userName: '', email: '', groupId: '', isActive: true })}`;
 
         tbody.appendChild(row);
         editingRow = row;
         refreshButtonState();
         var nameInput = document.getElementById('edit-user-name');
-        if (nameInput) nameInput.focus();
+        if (nameInput) { nameInput.focus(); }
     }
 
     function cancelEdit() {
-        if (!editingRow) return;
+        if (!editingRow) { return; }
         if (isNewRow) {
             editingRow.remove();
         } else {
             editingRow.innerHTML = originalRowHtml;
             editingRow.classList.remove('bse-row-editing');
-            editingRow.classList.add('bse-row-selected');
+            editingRow.classList.add(SELECTED_CLASS);
         }
         editingRow = null;
         originalRowHtml = null;
@@ -145,9 +142,9 @@
     }
     table.addEventListener('click', function (e) {
         var link = e.target.closest('.bse-row-select-link');
-        if (!link) return;
+        if (!link) { return; }
         e.preventDefault();
-        if (editingRow) return;
+        if (editingRow) { return; }
         selectRow(link.closest('tr'));
     });
 
@@ -156,7 +153,7 @@
             // A new record always belongs at the end of the last page. If we're not there, or the
             // last page is already full, fall through to the server handler so it navigates for us.
             var onLastPage = table.dataset.pageNumber === table.dataset.totalPages;
-            if (!onLastPage || table.dataset.pageSizeFull === 'true') return;
+            if (!onLastPage || table.dataset.pageSizeFull === 'true') { return; }
             e.preventDefault();
             startNew();
         });
@@ -171,8 +168,8 @@
 
     form.addEventListener('click', function (e) {
         var cancel = e.target.closest('[data-action="cancel"]');
-        if (!cancel) return;
-        if (isServerRendered) return; // let the server Cancel handler reset the page state
+        if (!cancel) { return; }
+        if (isServerRendered) { return; } // let the server Cancel handler reset the page state
         e.preventDefault();
         cancelEdit();
     });
@@ -186,7 +183,7 @@
         isNewRow = !serverEditRow.dataset.userId;
         selectedRow = isNewRow ? null : serverEditRow;
     } else {
-        selectedRow = tbody.querySelector('tr.bse-row-selected');
+        selectedRow = tbody.querySelector('tr.' + SELECTED_CLASS);
     }
 
     // Save keeps its native type="submit" behaviour — a real postback is required to persist.
