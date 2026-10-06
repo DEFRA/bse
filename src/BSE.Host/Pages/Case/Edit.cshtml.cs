@@ -186,6 +186,11 @@ public class EditModel(
         return RedirectToPage("/Home");
     }
 
+    /// <summary>Live eartag validation for the help tooltip, reusing the server-side rules so the
+    /// hint reflects the same pass/fail result as Save — mirrors legacy's ThreePartEartag postback.</summary>
+    public IActionResult OnGetValidateEartag(string? country, string? herdmark, string? animal)
+        => new JsonResult(new { error = EartagValidator.Validate(country, herdmark, animal) });
+
     public async Task<IActionResult> OnPostUpdateTestRowAsync()
     {
         if (!User.IsInRole("DataEntry"))
@@ -337,6 +342,13 @@ public class EditModel(
             && string.IsNullOrWhiteSpace(Case.Eartag))
         {
             ModelState.AddModelError("Case.EartagCountry", "Enter an eartag.");
+        }
+        else
+        {
+            // Mirrors BSELib.Eartag.GetEartag's country-specific format/checksum validation.
+            var eartagError = EartagValidator.Validate(Case.EartagCountry, Case.EartagHerdmark, Case.Eartag);
+            if (eartagError is not null)
+                ModelState.AddModelError("Case.EartagCountry", eartagError);
         }
 
         if (!IsNonGbCase && !Case.FormADate.HasValue)

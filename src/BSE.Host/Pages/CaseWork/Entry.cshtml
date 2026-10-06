@@ -244,7 +244,13 @@
                                 <div class="govuk-form-group @(Err("TseTestingSite") is not null ? "govuk-form-group--error" : "")">
                                     <label class="govuk-label" for="TseTestingSite">TSE Testing Site</label>
                                     @if (Err("TseTestingSite") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("TseTestingSite")</p> }
-                                    <input id="TseTestingSite" asp-for="TseTestingSite" class="govuk-input" autocomplete="off" />
+                                    <input id="TseTestingSite" asp-for="TseTestingSite" class="govuk-input" autocomplete="off" list="tse-testing-site-options" />
+                                    <datalist id="tse-testing-site-options">
+                                        @foreach (var site in Model.TseTestingSiteOptions)
+                                        {
+                                            <option value="@site.Value"></option>
+                                        }
+                                    </datalist>
                                 </div>
                                 <div class="govuk-form-group @(Err("SamplingDate") is not null ? "govuk-form-group--error" : "")">
                                     <label class="govuk-label" for="SamplingDate">Sampling Date</label>
