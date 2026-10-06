@@ -94,38 +94,11 @@
                         @if (isEditing)
                         {
                             var editRowId = u.UserId.ToString();
-                            var editUserNameId = $"edit-user-name-{editRowId}";
-                            var editEmailId = $"edit-email-{editRowId}";
-                            var editGroupId = $"edit-user-group-id-{editRowId}";
-                            var editActiveId = $"edit-is-active-{editRowId}";
                             <input type="hidden" asp-for="EditUserId" value="@u.UserId" />
                             <input type="hidden" asp-for="EditUpn" />
                             <input type="hidden" asp-for="EditNTLogin" value="@u.NTLogin" />
-                            <td class="govuk-table__cell">
-                                <label class="govuk-visually-hidden" for="@editUserNameId">Name</label>
-                                <input type="text" id="@editUserNameId" asp-for="EditUserName" class="govuk-input @(userNameError is not null ? "govuk-input--error" : "")" aria-label="Name" aria-invalid="@(userNameError is not null ? "true" : "false")" />
-                                @if (userNameError is not null) { <p class="govuk-error-message govuk-!-font-size-14"><span class="govuk-visually-hidden">Error:</span> @userNameError</p> }
-                            </td>
-                            <td class="govuk-table__cell">
-                                <label class="govuk-visually-hidden" for="@editEmailId">Email</label>
-                                <input type="text" id="@editEmailId" asp-for="EditEmail" class="govuk-input @(emailError is not null ? "govuk-input--error" : "")" aria-label="Email" aria-invalid="@(emailError is not null ? "true" : "false")" />
-                                @if (emailError is not null) { <p class="govuk-error-message govuk-!-font-size-14"><span class="govuk-visually-hidden">Error:</span> @emailError</p> }
-                            </td>
-                            <td class="govuk-table__cell">
-                                <label class="govuk-visually-hidden" for="@editGroupId">User Group</label>
-                                <select id="@editGroupId" asp-for="EditUserGroupId" class="govuk-select @(groupError is not null ? "govuk-select--error" : "")" asp-items="@(new SelectList(Model.UserGroups, "Id", "Name"))" aria-label="User group" aria-invalid="@(groupError is not null ? "true" : "false")"></select>
-                                @if (groupError is not null) { <p class="govuk-error-message govuk-!-font-size-14"><span class="govuk-visually-hidden">Error:</span> @groupError</p> }
-                            </td>
-                            <td class="govuk-table__cell">
-                                <div class="govuk-checkboxes govuk-checkboxes--small bse-inline-checkbox">
-                                    <div class="govuk-checkboxes__item">
-                                        <input type="checkbox" id="@editActiveId" asp-for="EditIsActive" class="govuk-checkboxes__input" aria-label="Active" />
-                                        <label class="govuk-label govuk-checkboxes__label" for="@editActiveId">
-                                            <span class="govuk-visually-hidden">Active</span>
-                                        </label>
-                                    </div>
-                                </div>
-                            </td>
+                            ViewData["RowId"] = editRowId;
+                            <partial name="_UserEditRowFields" />
                         }
                         else
                         {
@@ -156,38 +129,11 @@
                 @if (Model.IsAddingNew && Model.EditUserId == 0)
                 {
                     var addRowId = "new";
-                    var addUserNameId = $"edit-user-name-{addRowId}";
-                    var addEmailId = $"edit-email-{addRowId}";
-                    var addGroupId = $"edit-user-group-id-{addRowId}";
-                    var addActiveId = $"edit-is-active-{addRowId}";
                     <tr class="govuk-table__row bse-row-editing">
                         <td class="govuk-table__cell bse-row-select-cell"></td>
                         <input type="hidden" asp-for="EditUpn" />
-                        <td class="govuk-table__cell">
-                            <label class="govuk-visually-hidden" for="@addUserNameId">Name</label>
-                            <input type="text" id="@addUserNameId" asp-for="EditUserName" class="govuk-input @(userNameError is not null ? "govuk-input--error" : "")" aria-label="Name" aria-invalid="@(userNameError is not null ? "true" : "false")" />
-                            @if (userNameError is not null) { <p class="govuk-error-message govuk-!-font-size-14"><span class="govuk-visually-hidden">Error:</span> @userNameError</p> }
-                        </td>
-                        <td class="govuk-table__cell">
-                            <label class="govuk-visually-hidden" for="@addEmailId">Email</label>
-                            <input type="text" id="@addEmailId" asp-for="EditEmail" class="govuk-input @(emailError is not null ? "govuk-input--error" : "")" aria-label="Email" aria-invalid="@(emailError is not null ? "true" : "false")" />
-                            @if (emailError is not null) { <p class="govuk-error-message govuk-!-font-size-14"><span class="govuk-visually-hidden">Error:</span> @emailError</p> }
-                        </td>
-                        <td class="govuk-table__cell">
-                            <label class="govuk-visually-hidden" for="@addGroupId">User Group</label>
-                            <select id="@addGroupId" asp-for="EditUserGroupId" class="govuk-select @(groupError is not null ? "govuk-select--error" : "")" asp-items="@(new SelectList(Model.UserGroups, "Id", "Name"))" aria-label="User group" aria-invalid="@(groupError is not null ? "true" : "false")"></select>
-                            @if (groupError is not null) { <p class="govuk-error-message govuk-!-font-size-14"><span class="govuk-visually-hidden">Error:</span> @groupError</p> }
-                        </td>
-                        <td class="govuk-table__cell">
-                            <div class="govuk-checkboxes govuk-checkboxes--small bse-inline-checkbox">
-                                <div class="govuk-checkboxes__item">
-                                    <input type="checkbox" id="@addActiveId" asp-for="EditIsActive" class="govuk-checkboxes__input" aria-label="Active" />
-                                    <label class="govuk-label govuk-checkboxes__label" for="@addActiveId">
-                                        <span class="govuk-visually-hidden">Active</span>
-                                    </label>
-                                </div>
-                            </div>
-                        </td>
+                        ViewData["RowId"] = addRowId;
+                        <partial name="_UserEditRowFields" />
                     </tr>
                 }
             </tbody>

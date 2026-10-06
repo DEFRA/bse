@@ -285,17 +285,7 @@
                                     </span>
                                 }
                             </td>
-                            <td class="govuk-table__cell">@h.Lactation1Size</td>
-                            <td class="govuk-table__cell">@h.Lactation2Size</td>
-                            <td class="govuk-table__cell">@h.Lactation3Size</td>
-                            <td class="govuk-table__cell">@h.Lactation4Size</td>
-                            <td class="govuk-table__cell">@h.Lactation5Size</td>
-                            <td class="govuk-table__cell">@h.Lactation6Size</td>
-                            <td class="govuk-table__cell">@h.Lactation7Size</td>
-                            <td class="govuk-table__cell">@h.Lactation8Size</td>
-                            <td class="govuk-table__cell">@h.Lactation9Size</td>
-                            <td class="govuk-table__cell">@h.Lactation10Size</td>
-                            <td class="govuk-table__cell">@h.Lactation10PlusSize</td>
+                            <partial name="_HerdSizeLactationCells" model="h" />
                         </tr>
                     }
                 </tbody>
@@ -730,17 +720,7 @@
                                         </span>
                                     }
                                 </td>
-                                <td class="govuk-table__cell">@h.Lactation1Size</td>
-                                <td class="govuk-table__cell">@h.Lactation2Size</td>
-                                <td class="govuk-table__cell">@h.Lactation3Size</td>
-                                <td class="govuk-table__cell">@h.Lactation4Size</td>
-                                <td class="govuk-table__cell">@h.Lactation5Size</td>
-                                <td class="govuk-table__cell">@h.Lactation6Size</td>
-                                <td class="govuk-table__cell">@h.Lactation7Size</td>
-                                <td class="govuk-table__cell">@h.Lactation8Size</td>
-                                <td class="govuk-table__cell">@h.Lactation9Size</td>
-                                <td class="govuk-table__cell">@h.Lactation10Size</td>
-                                <td class="govuk-table__cell">@h.Lactation10PlusSize</td>
+                                <partial name="_HerdSizeLactationCells" model="h" />
                                 <td class="govuk-table__cell">
                                     @if (canEditFarm)
                                     {
