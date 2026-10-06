@@ -126,14 +126,10 @@ public class UsersModel(IUserManagementService userManagementService, ILookupDat
 
     public async Task<IActionResult> OnPostEditAsync()
     {
-        // Resolve checkbox value from posted form values (handles true/false dual inputs reliably).
-        EditIsActive = Request.Form[nameof(EditIsActive)]
-            .Any(v => string.Equals(v, "true", StringComparison.OrdinalIgnoreCase));
+        CaptureActiveCheckboxState();
 
         var isAdding = EditUserId == 0;
-
-        EditEmail = EditEmail?.Trim();
-        EditUserName = EditUserName?.Trim() ?? string.Empty;
+        NormaliseEditValues();
 
         ValidateEditFields(isAdding);
 
@@ -144,29 +140,38 @@ public class UsersModel(IUserManagementService userManagementService, ILookupDat
             ValidateUniqueness(isAdding);
 
         if (!ModelState.IsValid)
-        {
-            IsAddingNew = isAdding;
-            Users = ApplySorting(Users);
-            return Page();
-        }
+            return ReloadEditPage(isAdding);
 
+        return await SaveEditAsync(isAdding);
+    }
+
+    private void CaptureActiveCheckboxState()
+    {
+        EditIsActive = Request.Form[nameof(EditIsActive)]
+            .Any(v => string.Equals(v, "true", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void NormaliseEditValues()
+    {
+        EditEmail = EditEmail?.Trim();
+        EditUserName = EditUserName?.Trim() ?? string.Empty;
+    }
+
+    private IActionResult ReloadEditPage(bool isAdding)
+    {
+        IsAddingNew = isAdding;
+        Users = ApplySorting(Users);
+        return Page();
+    }
+
+    private async Task<IActionResult> SaveEditAsync(bool isAdding)
+    {
         if (isAdding)
         {
-            var newUser = new User(
-                UserId: 0,
-                NTLogin: DeriveNtLogin(EditEmail!, Users),
-                Upn: EditUpn,
-                UserName: EditUserName,
-                Email: EditEmail,
-                IsActive: EditIsActive,
-                UserGroupId: EditUserGroupId,
-                UserGroup: (UserGroup)EditUserGroupId);
-
+            var newUser = BuildUserForSave(0, true);
             var newUserId = await userManagementService.AddUserAsync(newUser);
             TempData["Success"] = $"User '{EditUserName}' added.";
 
-            // Keep the current ordering and land on whichever page the new record falls on,
-            // selected and ready for the next action.
             return RedirectToPage(new
             {
                 SortColumn,
@@ -175,23 +180,11 @@ public class UsersModel(IUserManagementService userManagementService, ILookupDat
                 SelectedUserId = newUserId
             });
         }
-        else
-        {
-            var user = new User(
-                UserId: EditUserId,
-                NTLogin: EditNTLogin,
-                Upn: EditUpn,
-                UserName: EditUserName,
-                Email: EditEmail,
-                IsActive: EditIsActive,
-                UserGroupId: EditUserGroupId,
-                UserGroup: (UserGroup)EditUserGroupId);
 
-            await userManagementService.UpdateUserAsync(user);
-            TempData["Success"] = $"User '{EditUserName}' updated.";
-        }
+        var user = BuildUserForSave(EditUserId, false);
+        await userManagementService.UpdateUserAsync(user);
+        TempData["Success"] = $"User '{EditUserName}' updated.";
 
-        // A rename can move the record under the current ordering, so follow it to its page.
         return RedirectToPage(new
         {
             SortColumn,
@@ -199,6 +192,21 @@ public class UsersModel(IUserManagementService userManagementService, ILookupDat
             PageNumber = await PageContainingAsync(EditUserId),
             SelectedUserId = EditUserId
         });
+    }
+
+    private User BuildUserForSave(int userId, bool isAdding)
+    {
+        var ntLogin = isAdding ? DeriveNtLogin(EditEmail!, Users) : EditNTLogin;
+
+        return new User(
+            UserId: userId,
+            NTLogin: ntLogin,
+            Upn: EditUpn,
+            UserName: EditUserName,
+            Email: EditEmail,
+            IsActive: EditIsActive,
+            UserGroupId: EditUserGroupId,
+            UserGroup: (UserGroup)EditUserGroupId);
     }
 
     // Where a record sits in the grid once the current sort is applied.

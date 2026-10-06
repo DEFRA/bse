@@ -54,16 +54,22 @@
     }
 
     function editCellsHtml(data) {
+        var rowKey = String(data.userId || 'new');
+        var nameId = 'edit-user-name-' + rowKey;
+        var emailId = 'edit-email-' + rowKey;
+        var groupId = 'edit-user-group-id-' + rowKey;
+        var activeId = 'edit-is-active-' + rowKey;
+
         // The hidden false input must stay after the label: GOV.UK draws the tick via "input:checked + label::after".
         return `
-            <td class="govuk-table__cell"><label class="govuk-visually-hidden" for="edit-user-name">Name</label><input type="text" id="edit-user-name" name="EditUserName" class="govuk-input" value="${escapeHtml(data.userName)}" /></td>
-            <td class="govuk-table__cell"><label class="govuk-visually-hidden" for="edit-email">Email</label><input type="text" id="edit-email" name="EditEmail" class="govuk-input" value="${escapeHtml(data.email)}" /></td>
-            <td class="govuk-table__cell"><label class="govuk-visually-hidden" for="edit-user-group-id">User Group</label><select id="edit-user-group-id" name="EditUserGroupId" class="govuk-select">${groupOptionsHtml(data.groupId)}</select></td>
+            <td class="govuk-table__cell"><label class="govuk-visually-hidden" for="${nameId}">Name</label><input type="text" id="${nameId}" name="EditUserName" class="govuk-input" value="${escapeHtml(data.userName)}" /></td>
+            <td class="govuk-table__cell"><label class="govuk-visually-hidden" for="${emailId}">Email</label><input type="text" id="${emailId}" name="EditEmail" class="govuk-input" value="${escapeHtml(data.email)}" /></td>
+            <td class="govuk-table__cell"><label class="govuk-visually-hidden" for="${groupId}">User Group</label><select id="${groupId}" name="EditUserGroupId" class="govuk-select">${groupOptionsHtml(data.groupId)}</select></td>
             <td class="govuk-table__cell">
                 <div class="govuk-checkboxes govuk-checkboxes--small bse-inline-checkbox">
                     <div class="govuk-checkboxes__item">
-                        <input type="checkbox" id="EditIsActive" name="EditIsActive" value="true" class="govuk-checkboxes__input"${data.isActive ? ' checked' : ''} />
-                        <label class="govuk-label govuk-checkboxes__label" for="EditIsActive"><span class="govuk-visually-hidden">Active</span></label>
+                        <input type="checkbox" id="${activeId}" name="EditIsActive" value="true" class="govuk-checkboxes__input"${data.isActive ? ' checked' : ''} />
+                        <label class="govuk-label govuk-checkboxes__label" for="${activeId}"><span class="govuk-visually-hidden">Active</span></label>
                         <input type="hidden" name="EditIsActive" value="false" />
                     </div>
                 </div>
@@ -108,7 +114,7 @@
 
         editingRow = selectedRow;
         refreshButtonState();
-        var nameInput = document.getElementById('edit-user-name');
+        var nameInput = editingRow.querySelector('[name="EditUserName"]');
         if (nameInput) { nameInput.focus(); }
     }
 
@@ -117,17 +123,18 @@
         isNewRow = true;
 
         var row = document.createElement('tr');
+        row.dataset.userId = 'new';
         row.className = 'govuk-table__row ' + EDITING_CLASS;
         row.innerHTML = `
             <td class="govuk-table__cell bse-row-select-cell"></td>
             <input type="hidden" name="EditUserId" value="0" />
             <input type="hidden" name="EditUpn" value="" />
-            ${editCellsHtml({ userName: '', email: '', groupId: '', isActive: true })}`;
+            ${editCellsHtml({ userId: 'new', userName: '', email: '', groupId: '', isActive: true })}`;
 
         table().querySelector('tbody').appendChild(row);
         editingRow = row;
         refreshButtonState();
-        var nameInput = document.getElementById('edit-user-name');
+        var nameInput = editingRow.querySelector('[name="EditUserName"]');
         if (nameInput) { nameInput.focus(); }
     }
 
