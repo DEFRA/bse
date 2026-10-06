@@ -77,6 +77,9 @@ public class VlaModel(
     public bool HasUnsavedOwnerChanges { get; private set; }
     private List<CaseEditDraftOtherOwnerItem> StagedOtherOwners { get; set; } = [];
 
+    public static string? SelectedIfMatches(string? currentValue, string? optionValue) =>
+        string.Equals(currentValue, optionValue, StringComparison.OrdinalIgnoreCase) ? "selected" : null;
+
     public string SpolSiteUrl { get; private set; } = string.Empty;
 
     public async Task<IActionResult> OnGetAsync()
@@ -522,7 +525,7 @@ public class VlaModel(
 
     private async Task SaveStagedOwnerAsync(
         CaseEditDraftOtherOwnerItem owner,
-        IReadOnlyDictionary<int, OtherOwnerRecord> persistedById,
+        Dictionary<int, OtherOwnerRecord> persistedById,
         string caseRbse,
         System.Data.IDbConnection conn,
         System.Data.IDbTransaction tx)

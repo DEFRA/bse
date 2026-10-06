@@ -1255,25 +1255,39 @@ public class FarmModel(
     private void ApplyHerdSizesSortingAndPaging(List<HerdSizeRecord> allHerd)
     {
         PersistedHerdSizes = allHerd;
-        IEnumerable<HerdSizeRecord> sortedHerd = HSort switch
-        {
-            "total"  => HDir == "asc" ? allHerd.OrderBy(h => h.TotalSize)            : allHerd.OrderByDescending(h => h.TotalSize),
-            "lac1"   => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation1Size)       : allHerd.OrderByDescending(h => h.Lactation1Size),
-            "lac2"   => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation2Size)       : allHerd.OrderByDescending(h => h.Lactation2Size),
-            "lac3"   => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation3Size)       : allHerd.OrderByDescending(h => h.Lactation3Size),
-            "lac4"   => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation4Size)       : allHerd.OrderByDescending(h => h.Lactation4Size),
-            "lac5"   => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation5Size)       : allHerd.OrderByDescending(h => h.Lactation5Size),
-            "lac6"   => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation6Size)       : allHerd.OrderByDescending(h => h.Lactation6Size),
-            "lac7"   => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation7Size)       : allHerd.OrderByDescending(h => h.Lactation7Size),
-            "lac8"   => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation8Size)       : allHerd.OrderByDescending(h => h.Lactation8Size),
-            "lac9"   => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation9Size)       : allHerd.OrderByDescending(h => h.Lactation9Size),
-            "lac10"  => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation10Size)      : allHerd.OrderByDescending(h => h.Lactation10Size),
-            "lac10p" => HDir == "asc" ? allHerd.OrderBy(h => h.Lactation10PlusSize)  : allHerd.OrderByDescending(h => h.Lactation10PlusSize),
-            _        => HDir == "asc" ? allHerd.OrderBy(h => h.HerdYear)             : allHerd.OrderByDescending(h => h.HerdYear)
-        };
+        var sortedHerd = OrderHerdSizesByColumn(allHerd);
         HPage = Math.Clamp(HPage, 1, Math.Max(1, (int)Math.Ceiling(allHerd.Count / (double)PageSize)));
         HerdSizes = sortedHerd.Skip((HPage - 1) * PageSize).Take(PageSize).ToList().AsReadOnly();
     }
+
+    private IEnumerable<HerdSizeRecord> OrderHerdSizesByColumn(IReadOnlyCollection<HerdSizeRecord> allHerd)
+    {
+        var ascending = HDir == "asc";
+        return HSort switch
+        {
+            "total"  => OrderHerdSizes(allHerd, h => h.TotalSize, ascending),
+            "lac1"   => OrderHerdSizes(allHerd, h => h.Lactation1Size, ascending),
+            "lac2"   => OrderHerdSizes(allHerd, h => h.Lactation2Size, ascending),
+            "lac3"   => OrderHerdSizes(allHerd, h => h.Lactation3Size, ascending),
+            "lac4"   => OrderHerdSizes(allHerd, h => h.Lactation4Size, ascending),
+            "lac5"   => OrderHerdSizes(allHerd, h => h.Lactation5Size, ascending),
+            "lac6"   => OrderHerdSizes(allHerd, h => h.Lactation6Size, ascending),
+            "lac7"   => OrderHerdSizes(allHerd, h => h.Lactation7Size, ascending),
+            "lac8"   => OrderHerdSizes(allHerd, h => h.Lactation8Size, ascending),
+            "lac9"   => OrderHerdSizes(allHerd, h => h.Lactation9Size, ascending),
+            "lac10"  => OrderHerdSizes(allHerd, h => h.Lactation10Size, ascending),
+            "lac10p" => OrderHerdSizes(allHerd, h => h.Lactation10PlusSize, ascending),
+            _        => OrderHerdSizes(allHerd, h => h.HerdYear, ascending)
+        };
+    }
+
+    private static IOrderedEnumerable<HerdSizeRecord> OrderHerdSizes<T>(
+        IEnumerable<HerdSizeRecord> source,
+        Func<HerdSizeRecord, T> keySelector,
+        bool ascending)
+        => ascending
+            ? source.OrderBy(keySelector)
+            : source.OrderByDescending(keySelector);
 
     // Resolves the display names for each FK/code column on the farm.
     private void ResolveFarmLookupNames(
@@ -1704,56 +1718,74 @@ public class FarmModel(
         $"?HPage={page}&HSort={HSort}&HDir={HDir}&LPage={LPage}&LSort={LSort}&LDir={LDir}";
 
     public IReadOnlyList<StagedLinkedFarmItem> SortedStagedLinkedFarms() =>
-        (LSort, LDir) switch
-        {
-            ("status", "desc") => StagedLinkedFarms.OrderByDescending(x => x.Status).ToList(),
-            ("status", _) => StagedLinkedFarms.OrderBy(x => x.Status).ToList(),
-            (_, "desc") => StagedLinkedFarms.OrderByDescending(x => x.RelatedCphh).ToList(),
-            _ => StagedLinkedFarms.OrderBy(x => x.RelatedCphh).ToList()
-        };
+        GetSortedStagedLinkedFarms();
 
     public IReadOnlyList<StagedLinkedFarmItem> PagedStagedLinkedFarms() =>
-        SortedStagedLinkedFarms()
-            .Skip((LinkedFarmsCurrentPage - 1) * PageSize)
-            .Take(PageSize)
-            .ToList();
+        GetPagedItems(GetSortedStagedLinkedFarms(), LinkedFarmsCurrentPage);
 
     public IReadOnlyList<StagedHerdSizeItem> PagedSortedStagedHerdSizes() =>
-        SortedStagedHerdSizes()
-            .Skip((HerdSizesCurrentPage - 1) * PageSize)
+        GetPagedItems(GetSortedStagedHerdSizes(), HerdSizesCurrentPage);
+
+    public IReadOnlyList<StagedHerdSizeItem> SortedStagedHerdSizes() =>
+        GetSortedStagedHerdSizes();
+
+    private IReadOnlyList<StagedLinkedFarmItem> GetSortedStagedLinkedFarms()
+    {
+        var ordered = (LSort, LDir) switch
+        {
+            ("status", "desc") => StagedLinkedFarms.OrderByDescending(x => x.Status),
+            ("status", _) => StagedLinkedFarms.OrderBy(x => x.Status),
+            (_, "desc") => StagedLinkedFarms.OrderByDescending(x => x.RelatedCphh),
+            _ => StagedLinkedFarms.OrderBy(x => x.RelatedCphh)
+        };
+
+        return ordered.ToList();
+    }
+
+    private static IReadOnlyList<T> GetPagedItems<T>(IReadOnlyList<T> source, int pageNumber)
+        => source
+            .Skip((pageNumber - 1) * PageSize)
             .Take(PageSize)
             .ToList();
 
-    public IReadOnlyList<StagedHerdSizeItem> SortedStagedHerdSizes() =>
-        (HSort, HDir) switch
+    private IReadOnlyList<StagedHerdSizeItem> GetSortedStagedHerdSizes()
+    {
+        var orderedSource = SortHerdSizesByColumn(StagedHerdSizes);
+        return orderedSource.ToList();
+    }
+
+    private IEnumerable<StagedHerdSizeItem> SortHerdSizesByColumn(IEnumerable<StagedHerdSizeItem> source)
+    {
+        return (HSort, HDir) switch
         {
-            ("total", "asc") => StagedHerdSizes.OrderBy(h => h.TotalSize).ToList(),
-            ("total", _) => StagedHerdSizes.OrderByDescending(h => h.TotalSize).ToList(),
-            ("lac1", "asc") => StagedHerdSizes.OrderBy(h => h.Lactation1Size).ToList(),
-            ("lac1", _) => StagedHerdSizes.OrderByDescending(h => h.Lactation1Size).ToList(),
-            ("lac2", "asc") => StagedHerdSizes.OrderBy(h => h.Lactation2Size).ToList(),
-            ("lac2", _) => StagedHerdSizes.OrderByDescending(h => h.Lactation2Size).ToList(),
-            ("lac3", "asc") => StagedHerdSizes.OrderBy(h => h.Lactation3Size).ToList(),
-            ("lac3", _) => StagedHerdSizes.OrderByDescending(h => h.Lactation3Size).ToList(),
-            ("lac4", "asc") => StagedHerdSizes.OrderBy(h => h.Lactation4Size).ToList(),
-            ("lac4", _) => StagedHerdSizes.OrderByDescending(h => h.Lactation4Size).ToList(),
-            ("lac5", "asc") => StagedHerdSizes.OrderBy(h => h.Lactation5Size).ToList(),
-            ("lac5", _) => StagedHerdSizes.OrderByDescending(h => h.Lactation5Size).ToList(),
-            ("lac6", "asc") => StagedHerdSizes.OrderBy(h => h.Lactation6Size).ToList(),
-            ("lac6", _) => StagedHerdSizes.OrderByDescending(h => h.Lactation6Size).ToList(),
-            ("lac7", "asc") => StagedHerdSizes.OrderBy(h => h.Lactation7Size).ToList(),
-            ("lac7", _) => StagedHerdSizes.OrderByDescending(h => h.Lactation7Size).ToList(),
-            ("lac8", "asc") => StagedHerdSizes.OrderBy(h => h.Lactation8Size).ToList(),
-            ("lac8", _) => StagedHerdSizes.OrderByDescending(h => h.Lactation8Size).ToList(),
-            ("lac9", "asc") => StagedHerdSizes.OrderBy(h => h.Lactation9Size).ToList(),
-            ("lac9", _) => StagedHerdSizes.OrderByDescending(h => h.Lactation9Size).ToList(),
-            ("lac10", "asc") => StagedHerdSizes.OrderBy(h => h.Lactation10Size).ToList(),
-            ("lac10", _) => StagedHerdSizes.OrderByDescending(h => h.Lactation10Size).ToList(),
-            ("lac10p", "asc") => StagedHerdSizes.OrderBy(h => h.Lactation10PlusSize).ToList(),
-            ("lac10p", _) => StagedHerdSizes.OrderByDescending(h => h.Lactation10PlusSize).ToList(),
-            ("year", "asc") => StagedHerdSizes.OrderBy(h => h.HerdYear).ToList(),
-            _ => StagedHerdSizes.OrderByDescending(h => h.HerdYear).ToList()
+            ("total", "asc") => source.OrderBy(h => h.TotalSize),
+            ("total", _) => source.OrderByDescending(h => h.TotalSize),
+            ("lac1", "asc") => source.OrderBy(h => h.Lactation1Size),
+            ("lac1", _) => source.OrderByDescending(h => h.Lactation1Size),
+            ("lac2", "asc") => source.OrderBy(h => h.Lactation2Size),
+            ("lac2", _) => source.OrderByDescending(h => h.Lactation2Size),
+            ("lac3", "asc") => source.OrderBy(h => h.Lactation3Size),
+            ("lac3", _) => source.OrderByDescending(h => h.Lactation3Size),
+            ("lac4", "asc") => source.OrderBy(h => h.Lactation4Size),
+            ("lac4", _) => source.OrderByDescending(h => h.Lactation4Size),
+            ("lac5", "asc") => source.OrderBy(h => h.Lactation5Size),
+            ("lac5", _) => source.OrderByDescending(h => h.Lactation5Size),
+            ("lac6", "asc") => source.OrderBy(h => h.Lactation6Size),
+            ("lac6", _) => source.OrderByDescending(h => h.Lactation6Size),
+            ("lac7", "asc") => source.OrderBy(h => h.Lactation7Size),
+            ("lac7", _) => source.OrderByDescending(h => h.Lactation7Size),
+            ("lac8", "asc") => source.OrderBy(h => h.Lactation8Size),
+            ("lac8", _) => source.OrderByDescending(h => h.Lactation8Size),
+            ("lac9", "asc") => source.OrderBy(h => h.Lactation9Size),
+            ("lac9", _) => source.OrderByDescending(h => h.Lactation9Size),
+            ("lac10", "asc") => source.OrderBy(h => h.Lactation10Size),
+            ("lac10", _) => source.OrderByDescending(h => h.Lactation10Size),
+            ("lac10p", "asc") => source.OrderBy(h => h.Lactation10PlusSize),
+            ("lac10p", _) => source.OrderByDescending(h => h.Lactation10PlusSize),
+            ("year", "asc") => source.OrderBy(h => h.HerdYear),
+            _ => source.OrderByDescending(h => h.HerdYear)
         };
+    }
 
     // ── View models ────────────────────────────────────────────────────────────
 
