@@ -1820,21 +1820,10 @@ public class FarmModel(
         public bool IsUnsaved => Id is null or <= 0;
     }
 
-    public class HerdSizeFormViewModel : ILactationSizes
+    public class HerdSizeFormViewModel : LactationSizeFields
     {
         public int HerdYear { get; set; }
         public int TotalSize { get; set; }
-        public int? Lactation1Size { get; set; }
-        public int? Lactation2Size { get; set; }
-        public int? Lactation3Size { get; set; }
-        public int? Lactation4Size { get; set; }
-        public int? Lactation5Size { get; set; }
-        public int? Lactation6Size { get; set; }
-        public int? Lactation7Size { get; set; }
-        public int? Lactation8Size { get; set; }
-        public int? Lactation9Size { get; set; }
-        public int? Lactation10Size { get; set; }
-        public int? Lactation10PlusSize { get; set; }
     }
 
     /// <summary>
@@ -1842,20 +1831,9 @@ public class FarmModel(
     /// blank optional lactation inputs bind to null instead of tripping ASP.NET Core's
     /// implicit "value must not be null" error for non-nullable value types.
     /// </summary>
-    public class HerdSizeRowInput : ILactationSizes
+    public class HerdSizeRowInput : LactationSizeFields
     {
         public int? HerdYear { get; set; }
         public int? TotalSize { get; set; }
-        public int? Lactation1Size { get; set; }
-        public int? Lactation2Size { get; set; }
-        public int? Lactation3Size { get; set; }
-        public int? Lactation4Size { get; set; }
-        public int? Lactation5Size { get; set; }
-        public int? Lactation6Size { get; set; }
-        public int? Lactation7Size { get; set; }
-        public int? Lactation8Size { get; set; }
-        public int? Lactation9Size { get; set; }
-        public int? Lactation10Size { get; set; }
-        public int? Lactation10PlusSize { get; set; }
     }
 }

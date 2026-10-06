@@ -16,6 +16,23 @@ public interface ILactationSizes
     int? Lactation10PlusSize { get; set; }
 }
 
+/// <summary>Concrete base implementing the eleven <see cref="ILactationSizes"/> properties,
+/// shared by every view-model/draft-state type that would otherwise redeclare them.</summary>
+public abstract class LactationSizeFields : ILactationSizes
+{
+    public int? Lactation1Size { get; set; }
+    public int? Lactation2Size { get; set; }
+    public int? Lactation3Size { get; set; }
+    public int? Lactation4Size { get; set; }
+    public int? Lactation5Size { get; set; }
+    public int? Lactation6Size { get; set; }
+    public int? Lactation7Size { get; set; }
+    public int? Lactation8Size { get; set; }
+    public int? Lactation9Size { get; set; }
+    public int? Lactation10Size { get; set; }
+    public int? Lactation10PlusSize { get; set; }
+}
+
 public static class LactationSizes
 {
     public static IEnumerable<int?> All(this ILactationSizes row)
