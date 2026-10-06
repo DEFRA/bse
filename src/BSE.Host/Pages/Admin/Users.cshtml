@@ -1,6 +1,7 @@
 @page
 @model UsersModel
 @using BSE.SharedKernel
+@using Microsoft.AspNetCore.Mvc.Rendering
 @{
     ViewData["Title"] = "User Maintenance";
 }
@@ -22,9 +23,28 @@
         </div>
     }
 
-    <div class="govuk-button-group">
-        <a asp-page="/Admin/UsersAdd" role="button" draggable="false" class="govuk-button" data-module="govuk-button">Add user</a>
-    </div>
+    @{
+        var userNameError = ViewData.ModelState[nameof(Model.EditUserName)]?.Errors.FirstOrDefault()?.ErrorMessage;
+        var emailError = ViewData.ModelState[nameof(Model.EditEmail)]?.Errors.FirstOrDefault()?.ErrorMessage;
+        var groupError = ViewData.ModelState[nameof(Model.EditUserGroupId)]?.Errors.FirstOrDefault()?.ErrorMessage;
+        var ntLoginError = ViewData.ModelState[nameof(Model.EditNTLogin)]?.Errors.FirstOrDefault()?.ErrorMessage;
+    }
+    @if (!ViewContext.ModelState.IsValid)
+    {
+        <div class="govuk-error-summary" data-module="govuk-error-summary">
+            <div role="alert">
+                <h2 class="govuk-error-summary__title">There is a problem</h2>
+                <div class="govuk-error-summary__body">
+                    <ul class="govuk-list govuk-error-summary__list">
+                        @if (ntLoginError is not null) { <li><a href="#edit-nt-login">@ntLoginError</a></li> }
+                        @if (userNameError is not null) { <li><a href="#edit-user-name">@userNameError</a></li> }
+                        @if (emailError is not null) { <li><a href="#edit-email">@emailError</a></li> }
+                        @if (groupError is not null) { <li><a href="#edit-user-group-id">@groupError</a></li> }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    }
 
     <h2 class="govuk-heading-m">Users</h2>
     @{
@@ -36,40 +56,134 @@
         var usersSortCol  = Model.SortColumn;
         var usersSortDesc = Model.SortDesc;
     }
-    <table class="govuk-table">
-        <caption class="govuk-visually-hidden">Users</caption>
-        <thead class="govuk-table__head">
-            <tr class="govuk-table__row">
-                @{ ViewData["Label"] = "ID";       ViewData["Column"] = "UserId";   ViewData["SortColumn"] = usersSortCol; ViewData["SortDesc"] = usersSortDesc; ViewData["BaseUrl"] = usersSortBase; ViewData["Prefix"] = ""; }
-                <partial name="_SortableHeader" />
-                @{ ViewData["Label"] = "Name";     ViewData["Column"] = "UserName"; }
-                <partial name="_SortableHeader" />
-                @{ ViewData["Label"] = "Email";    ViewData["Column"] = "Email"; }
-                <partial name="_SortableHeader" />
-                @{
-                    ViewData["Label"] = "User Group"; ViewData["Column"] = "User Group";
-                }
-                <partial name="_SortableHeader" />
-                @{ ViewData["Label"] = "Active";   ViewData["Column"] = "IsActive"; }
-                <partial name="_SortableHeader" />
-                <th scope="col" class="govuk-table__header">Actions</th>
-            </tr>
-        </thead>
-        <tbody class="govuk-table__body">
-            @foreach (var u in Model.PagedUsers)
-            {
+    <form method="post" asp-page-handler="Edit">
+        <input type="hidden" asp-for="SortColumn" />
+        <input type="hidden" asp-for="SortDesc" />
+        <input type="hidden" asp-for="PageNumber" />
+        <input type="hidden" asp-for="SelectedUserId" />
+        <table class="govuk-table bse-user-maintenance-table" data-page-number="@Model.PageNumber" data-total-pages="@Model.TotalPages" data-page-size-full="@(Model.PagedUsers.Count >= 10 ? "true" : "false")">
+            <caption class="govuk-visually-hidden">Users</caption>
+            <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    <td class="govuk-table__cell">@u.UserId</td>
-                    <td class="govuk-table__cell">@u.UserName</td>
-                    <td class="govuk-table__cell">@u.Email</td>
-                    <td class="govuk-table__cell">@(Model.UserGroups.FirstOrDefault(g => g.Id == u.UserGroupId)?.Name)</td>
-                    <td class="govuk-table__cell">@(u.IsActive ? "Yes" : "No")</td>
-                    <td class="govuk-table__cell">
-                        <a asp-page="/Admin/UsersEdit" asp-route-id="@u.UserId" class="govuk-link">Change</a>
-                    </td>
+                    <th scope="col" class="govuk-table__header"></th>
+                    @{ ViewData["Label"] = "Name";     ViewData["Column"] = "UserName"; ViewData["SortColumn"] = usersSortCol; ViewData["SortDesc"] = usersSortDesc; ViewData["BaseUrl"] = usersSortBase; ViewData["Prefix"] = ""; }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "Email";    ViewData["Column"] = "Email"; }
+                    <partial name="_SortableHeader" />
+                    @{
+                        ViewData["Label"] = "User Group"; ViewData["Column"] = "User Group";
+                    }
+                    <partial name="_SortableHeader" />
+                    @{ ViewData["Label"] = "IsActive"; ViewData["Column"] = "IsActive"; }
+                    <partial name="_SortableHeader" />
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody class="govuk-table__body">
+                @foreach (var u in Model.PagedUsers)
+                {
+                    var isEditing = Model.IsEditing(u.UserId);
+                    var isSelected = !Model.IsEditingOrAdding && Model.SelectedUserId == u.UserId;
+                    <tr class="govuk-table__row @(isEditing ? "bse-row-editing" : "") @(isSelected ? "bse-row-selected" : "")"
+                        data-user-id="@u.UserId" data-user-name="@u.UserName" data-email="@u.Email" data-nt-login="@u.NTLogin" data-upn="@u.Upn" data-group-id="@u.UserGroupId" data-is-active="@(u.IsActive ? "true" : "false")">
+                        <td class="govuk-table__cell bse-row-select-cell">
+                            <a asp-page="/Admin/Users" asp-route-SelectedUserId="@u.UserId" asp-route-SortColumn="@Model.SortColumn" asp-route-SortDesc="@Model.SortDesc" asp-route-PageNumber="@Model.PageNumber" class="bse-row-select-link" title="Select this user" aria-label="Select @u.UserName">&#9654;</a>
+                        </td>
+                        @if (isEditing)
+                        {
+                            <input type="hidden" asp-for="EditUserId" value="@u.UserId" />
+                            <input type="hidden" asp-for="EditUpn" />
+                            <input type="hidden" asp-for="EditNTLogin" value="@u.NTLogin" />
+                            <td class="govuk-table__cell">
+                                <input type="text" id="edit-user-name" asp-for="EditUserName" class="govuk-input @(userNameError is not null ? "govuk-input--error" : "")" />
+                                @if (userNameError is not null) { <p class="govuk-error-message govuk-!-font-size-14"><span class="govuk-visually-hidden">Error:</span> @userNameError</p> }
+                            </td>
+                            <td class="govuk-table__cell">
+                                <input type="text" id="edit-email" asp-for="EditEmail" class="govuk-input @(emailError is not null ? "govuk-input--error" : "")" />
+                                @if (emailError is not null) { <p class="govuk-error-message govuk-!-font-size-14"><span class="govuk-visually-hidden">Error:</span> @emailError</p> }
+                            </td>
+                            <td class="govuk-table__cell">
+                                <select id="edit-user-group-id" asp-for="EditUserGroupId" class="govuk-select @(groupError is not null ? "govuk-select--error" : "")" asp-items="@(new SelectList(Model.UserGroups, "Id", "Name"))"></select>
+                                @if (groupError is not null) { <p class="govuk-error-message govuk-!-font-size-14"><span class="govuk-visually-hidden">Error:</span> @groupError</p> }
+                            </td>
+                            <td class="govuk-table__cell">
+                                <div class="govuk-checkboxes govuk-checkboxes--small bse-inline-checkbox">
+                                    <div class="govuk-checkboxes__item">
+                                        <input type="checkbox" asp-for="EditIsActive" class="govuk-checkboxes__input" />
+                                        <label class="govuk-label govuk-checkboxes__label" asp-for="EditIsActive">
+                                            <span class="govuk-visually-hidden">Active</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </td>
+                        }
+                        else
+                        {
+                            <td class="govuk-table__cell">@u.UserName</td>
+                            <td class="govuk-table__cell">@u.Email</td>
+                            <td class="govuk-table__cell">@(Model.UserGroups.FirstOrDefault(g => g.Id == u.UserGroupId)?.Name)</td>
+                            <td class="govuk-table__cell">
+                                <div class="govuk-checkboxes govuk-checkboxes--small bse-inline-checkbox">
+                                    <div class="govuk-checkboxes__item">
+                                        @{ var cbId = $"IsActive_{u.UserId}"; }
+                                        @if (u.IsActive)
+                                        {
+                                            <input type="checkbox" id="@cbId" disabled checked="checked" class="govuk-checkboxes__input" />
+                                        }
+                                        else
+                                        {
+                                            <input type="checkbox" id="@cbId" disabled class="govuk-checkboxes__input" />
+                                        }
+                                        <label class="govuk-label govuk-checkboxes__label" for="@cbId">
+                                            <span class="govuk-visually-hidden">Active</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </td>
+                        }
+                    </tr>
+                }
+                @if (Model.IsAddingNew && Model.EditUserId == 0)
+                {
+                    <tr class="govuk-table__row bse-row-editing">
+                        <td class="govuk-table__cell bse-row-select-cell"></td>
+                        <input type="hidden" asp-for="EditUpn" />
+                        <td class="govuk-table__cell">
+                            <input type="text" id="edit-user-name" asp-for="EditUserName" class="govuk-input @(userNameError is not null ? "govuk-input--error" : "")" />
+                            @if (userNameError is not null) { <p class="govuk-error-message govuk-!-font-size-14"><span class="govuk-visually-hidden">Error:</span> @userNameError</p> }
+                        </td>
+                        <td class="govuk-table__cell">
+                            <input type="text" id="edit-email" asp-for="EditEmail" class="govuk-input @(emailError is not null ? "govuk-input--error" : "")" />
+                            @if (emailError is not null) { <p class="govuk-error-message govuk-!-font-size-14"><span class="govuk-visually-hidden">Error:</span> @emailError</p> }
+                        </td>
+                        <td class="govuk-table__cell">
+                            <select id="edit-user-group-id" asp-for="EditUserGroupId" class="govuk-select @(groupError is not null ? "govuk-select--error" : "")" asp-items="@(new SelectList(Model.UserGroups, "Id", "Name"))"></select>
+                            @if (groupError is not null) { <p class="govuk-error-message govuk-!-font-size-14"><span class="govuk-visually-hidden">Error:</span> @groupError</p> }
+                        </td>
+                        <td class="govuk-table__cell">
+                            <div class="govuk-checkboxes govuk-checkboxes--small bse-inline-checkbox">
+                                <div class="govuk-checkboxes__item">
+                                    <input type="checkbox" asp-for="EditIsActive" class="govuk-checkboxes__input" />
+                                    <label class="govuk-label govuk-checkboxes__label" asp-for="EditIsActive">
+                                        <span class="govuk-visually-hidden">Active</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <div class="govuk-button-group bse-user-maintenance-actions">
+            <button type="submit" data-action="start-new" asp-page-handler="StartNew" class="govuk-button" data-module="govuk-button" formnovalidate title="New" disabled="@Model.IsEditingOrAdding">New</button>
+            <button type="submit" data-action="start-edit" asp-page-handler="StartEdit" class="govuk-button" data-module="govuk-button" formnovalidate title="Edit" disabled="@(Model.IsEditingOrAdding || Model.SelectedUserId == 0)">Edit</button>
+            <button type="submit" data-action="save" class="govuk-button" data-module="govuk-button" title="Save" disabled="@(!Model.IsEditingOrAdding)"><svg class="bse-button-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M2.5 8.5 6.3 12.5 13.5 4" /></svg>Save</button>
+            <button type="submit" data-action="cancel" asp-page-handler="Cancel" class="govuk-button govuk-button--secondary" data-module="govuk-button" formnovalidate title="Cancel" disabled="@(!Model.IsEditingOrAdding)"><svg class="bse-button-icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.6 3.6 12.4 12.4M12.4 3.6 3.6 12.4" /></svg>Cancel</button>
+        </div>
+    </form>
+    <script type="application/json" id="bse-user-groups-data">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.UserGroups.Select(g => new { id = g.Id, name = g.Name })))</script>
     @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
 </div>
+
+@section Scripts {
+    <script src="~/js/user-maintenance.js" asp-append-version="true"></script>
+}

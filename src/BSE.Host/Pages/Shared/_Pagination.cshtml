@@ -8,6 +8,14 @@
      ViewData["MaxPageLinks"]  — int (optional)
                                  When set (>0), renders a fixed-size numeric page block
                                  (e.g. 1..10, then 11..20), instead of compact/ellipsis mode.
+     ViewData["SlidingWindow"] — bool (optional, default: true)
+                                 Keeps the numeric links as a window that follows the current
+                                 page (3 pages ahead where available, the rest behind) rather
+                                 than jumping a block at a time, so page 10 of 20 shows 4..13.
+                                 Set false for fixed blocks (1..10, then 11..20).
+     ViewData["ArrowsOnly"]    — bool (optional, default: true)
+                                 Renders Previous/Next as ‹ / › chevrons so all four controls are
+                                 symbols (« ‹ › »), instead of mixing symbols with text labels.
      ViewData["Fragment"]      — string (optional) anchor id to jump back to the results
                                  table instead of the top of the page.
      ViewData["AlwaysShow"]    — bool (optional, default: false) legacy's DataGridPager
@@ -27,6 +35,8 @@
     int totalPages  = (int)(ViewData["TotalPages"]  ?? 1);
     string pageKey  = (string?)ViewData["PageNumberKey"] ?? "pageNumber";
     int maxPageLinks = (int?)ViewData["MaxPageLinks"] ?? 10;
+    bool slidingWindow = (bool?)ViewData["SlidingWindow"] ?? true;
+    bool arrowsOnly = (bool?)ViewData["ArrowsOnly"] ?? true;
     string fragment = (string?)ViewData["Fragment"] ?? "";
     bool alwaysShow = (bool?)ViewData["AlwaysShow"] ?? false;
 
@@ -53,19 +63,33 @@
     {
         // Clamp currentPage-derived bounds so the page-link loop below can never iterate
         // more than maxPageLinks times, regardless of unsanitized page-number input.
-        blockStart = ((currentPage - 1) / maxPageLinks) * maxPageLinks + 1;
-        blockStart = Math.Max(1, Math.Min(blockStart, totalPages));
-        blockEnd = Math.Min(totalPages, blockStart + maxPageLinks - 1);
+        var safePage = Math.Max(1, Math.Min(currentPage, totalPages));
+
+        if (slidingWindow)
+        {
+            // Keep up to 3 pages visible ahead of the current one; the window fills backwards.
+            const int pagesAhead = 3;
+            blockEnd = Math.Min(totalPages, safePage + pagesAhead);
+            blockStart = Math.Max(1, blockEnd - maxPageLinks + 1);
+            blockEnd = Math.Min(totalPages, blockStart + maxPageLinks - 1);
+        }
+        else
+        {
+            blockStart = ((safePage - 1) / maxPageLinks) * maxPageLinks + 1;
+            blockStart = Math.Max(1, Math.Min(blockStart, totalPages));
+            blockEnd = Math.Min(totalPages, blockStart + maxPageLinks - 1);
+        }
     }
 }
 
+<div class="bse-pagination-bar">
 <p class="govuk-body govuk-!-margin-bottom-2 bse-pagination__count">Page @currentPage of @totalPages</p>
 
 <nav class="govuk-pagination bse-pagination" aria-label="Pagination">
     @if (currentPage > 1)
     {
         <div class="govuk-pagination__prev bse-pagination__first">
-            <a class="govuk-link govuk-pagination__link" href="@PageUrl(1)" rel="first">
+            <a class="govuk-link govuk-pagination__link" href="@PageUrl(1)" title="Go to first page" rel="first">
                 <span class="govuk-pagination__link-title" aria-hidden="true">&laquo;</span>
                 <span class="govuk-visually-hidden">First page</span>
             </a>
@@ -74,11 +98,19 @@
     @if (currentPage > 1)
     {
         <div class="govuk-pagination__prev">
-            <a class="govuk-link govuk-pagination__link" href="@PageUrl(currentPage - 1)" rel="prev">
-                <svg class="govuk-pagination__icon govuk-pagination__icon--prev" xmlns="http://www.w3.org/2000/svg" height="13" width="15" focusable="false" aria-hidden="true" viewBox="0 0 15 13">
-                    <path d="m6.5938-0.0078125-6.7266 6.7266 6.7441 6.4062 1.377-1.449-4.1856-3.9768h12.896v-2h-12.984l4.2931-4.293-1.414-1.414z" />
-                </svg>
-                <span class="govuk-pagination__link-title">Previous<span class="govuk-visually-hidden"> page</span></span>
+            <a class="govuk-link govuk-pagination__link" href="@PageUrl(currentPage - 1)" title="Go to previous page (page @(currentPage - 1))" rel="prev">
+                @if (arrowsOnly)
+                {
+                    <span class="govuk-pagination__link-title" aria-hidden="true">&lsaquo;</span>
+                    <span class="govuk-visually-hidden">Previous page</span>
+                }
+                else
+                {
+                    <svg class="govuk-pagination__icon govuk-pagination__icon--prev" xmlns="http://www.w3.org/2000/svg" height="13" width="15" focusable="false" aria-hidden="true" viewBox="0 0 15 13">
+                        <path d="m6.5938-0.0078125-6.7266 6.7266 6.7441 6.4062 1.377-1.449-4.1856-3.9768h12.896v-2h-12.984l4.2931-4.293-1.414-1.414z" />
+                    </svg>
+                    <span class="govuk-pagination__link-title">Previous<span class="govuk-visually-hidden"> page</span></span>
+                }
             </a>
         </div>
     }
@@ -90,13 +122,13 @@
                 if (p == currentPage)
                 {
                     <li class="govuk-pagination__item govuk-pagination__item--current">
-                        <a class="govuk-link govuk-pagination__link" href="@PageUrl(p)" aria-label="Page @p" aria-current="page">@p</a>
+                        <a class="govuk-link govuk-pagination__link" href="@PageUrl(p)" title="Page @p of @totalPages (current page)" aria-label="Page @p" aria-current="page">@p</a>
                     </li>
                 }
                 else
                 {
                     <li class="govuk-pagination__item">
-                        <a class="govuk-link govuk-pagination__link" href="@PageUrl(p)" aria-label="Page @p">@p</a>
+                        <a class="govuk-link govuk-pagination__link" href="@PageUrl(p)" title="Go to page @p of @totalPages" aria-label="Page @p">@p</a>
                     </li>
                 }
             }
@@ -108,13 +140,13 @@
                 if (p == currentPage)
                 {
                     <li class="govuk-pagination__item govuk-pagination__item--current">
-                        <a class="govuk-link govuk-pagination__link" href="@PageUrl(p)" aria-label="Page @p" aria-current="page">@p</a>
+                        <a class="govuk-link govuk-pagination__link" href="@PageUrl(p)" title="Page @p of @totalPages (current page)" aria-label="Page @p" aria-current="page">@p</a>
                     </li>
                 }
                 else if (p == 1 || p == totalPages || Math.Abs(p - currentPage) <= 1)
                 {
                     <li class="govuk-pagination__item">
-                        <a class="govuk-link govuk-pagination__link" href="@PageUrl(p)" aria-label="Page @p">@p</a>
+                        <a class="govuk-link govuk-pagination__link" href="@PageUrl(p)" title="Go to page @p of @totalPages" aria-label="Page @p">@p</a>
                     </li>
                 }
                 else if (Math.Abs(p - currentPage) == 2)
@@ -127,21 +159,30 @@
     @if (currentPage < totalPages)
     {
         <div class="govuk-pagination__next">
-            <a class="govuk-link govuk-pagination__link" href="@PageUrl(currentPage + 1)" rel="next">
-                <span class="govuk-pagination__link-title">Next<span class="govuk-visually-hidden"> page</span></span>
-                <svg class="govuk-pagination__icon govuk-pagination__icon--next" xmlns="http://www.w3.org/2000/svg" height="13" width="15" focusable="false" aria-hidden="true" viewBox="0 0 15 13">
-                    <path d="m8.107-0.0078125-1.4136 1.414 4.2926 4.293h-12.986v2h12.896l-4.1855 3.9766 1.377 1.4492 6.7441-6.4062-6.7246-6.7246z" />
-                </svg>
+            <a class="govuk-link govuk-pagination__link" href="@PageUrl(currentPage + 1)" title="Go to next page (page @(currentPage + 1))" rel="next">
+                @if (arrowsOnly)
+                {
+                    <span class="govuk-visually-hidden">Next page</span>
+                    <span class="govuk-pagination__link-title" aria-hidden="true">&rsaquo;</span>
+                }
+                else
+                {
+                    <span class="govuk-pagination__link-title">Next<span class="govuk-visually-hidden"> page</span></span>
+                    <svg class="govuk-pagination__icon govuk-pagination__icon--next" xmlns="http://www.w3.org/2000/svg" height="13" width="15" focusable="false" aria-hidden="true" viewBox="0 0 15 13">
+                        <path d="m8.107-0.0078125-1.4136 1.414 4.2926 4.293h-12.986v2h12.896l-4.1855 3.9766 1.377 1.4492 6.7441-6.4062-6.7246-6.7246z" />
+                    </svg>
+                }
             </a>
         </div>
     }
     @if (currentPage < totalPages)
     {
         <div class="govuk-pagination__next bse-pagination__last">
-            <a class="govuk-link govuk-pagination__link" href="@PageUrl(totalPages)" rel="last">
+            <a class="govuk-link govuk-pagination__link" href="@PageUrl(totalPages)" title="Go to last page (page @totalPages)" rel="last">
                 <span class="govuk-visually-hidden">Last page</span>
                 <span class="govuk-pagination__link-title" aria-hidden="true">&raquo;</span>
             </a>
         </div>
     }
 </nav>
+</div>

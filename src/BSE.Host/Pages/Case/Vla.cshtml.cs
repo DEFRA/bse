@@ -643,9 +643,6 @@ public class VlaModel(
         return $"?rbse={Uri.EscapeDataString(Rbse)}&OSort={col}&ODir={dir}&OPage=1";
     }
 
-    public string OwnersPageUrl(int page) =>
-        $"?rbse={Uri.EscapeDataString(Rbse)}&OPage={page}&OSort={OSort}&ODir={ODir}";
-
     private async Task LoadLookupsAsync()
     {
         var t1 = lookups.GetLookupAsync(LookupTableId.BirthDateSource);

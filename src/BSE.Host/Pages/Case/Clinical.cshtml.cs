@@ -391,9 +391,6 @@ public class ClinicalModel(
     public string VisitsSortUrl() =>
         $"?rbse={Uri.EscapeDataString(Rbse)}&VDir={(VDir == "asc" ? "desc" : "asc")}&VPage=1";
 
-    public string VisitsPageUrl(int page) =>
-        $"?rbse={Uri.EscapeDataString(Rbse)}&VPage={page}&VDir={VDir}";
-
     public IReadOnlyList<StagedVisitItem> Visits { get; private set; } = [];
 
     public sealed class StagedVisitItem

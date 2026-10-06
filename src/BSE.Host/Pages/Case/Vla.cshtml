@@ -445,45 +445,7 @@
             </tbody>
         </table>
 
-        @if (Model.OtherOwnersTotalPages > 1)
-        {
-            <nav class="govuk-pagination" role="navigation" aria-label="Previous owners pagination">
-                @if (Model.OPage > 1)
-                {
-                    <div class="govuk-pagination__prev">
-                        <a class="govuk-link govuk-pagination__link" href="@Model.OwnersPageUrl(Model.OPage - 1)" rel="prev">
-                            <span class="govuk-pagination__link-title">Previous<span class="govuk-visually-hidden"> page</span></span>
-                        </a>
-                    </div>
-                }
-                <ul class="govuk-pagination__list">
-                    @{ int startPage = Math.Max(1, Model.OPage - 4); int endPage = Math.Min(Model.OtherOwnersTotalPages, startPage + 9); }
-                    @for (int p = startPage; p <= endPage; p++)
-                    {
-                        if (p == Model.OPage)
-                        {
-                            <li class="govuk-pagination__item govuk-pagination__item--current">
-                                <a class="govuk-link govuk-pagination__link" href="@Model.OwnersPageUrl(p)" aria-label="Page @p" aria-current="page">@p</a>
-                            </li>
-                        }
-                        else
-                        {
-                            <li class="govuk-pagination__item">
-                                <a class="govuk-link govuk-pagination__link" href="@Model.OwnersPageUrl(p)" aria-label="Page @p">@p</a>
-                            </li>
-                        }
-                    }
-                </ul>
-                @if (Model.OPage < Model.OtherOwnersTotalPages)
-                {
-                    <div class="govuk-pagination__next">
-                        <a class="govuk-link govuk-pagination__link" href="@Model.OwnersPageUrl(Model.OPage + 1)" rel="next">
-                            <span class="govuk-pagination__link-title">Next<span class="govuk-visually-hidden"> page</span></span>
-                        </a>
-                    </div>
-                }
-            </nav>
-        }
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.OPage, ["TotalPages"] = Model.OtherOwnersTotalPages, ["PageNumberKey"] = "OPage" })
 
         @if (Model.CanEditMainCase)
         {
