@@ -15,6 +15,7 @@
         </ol>
     </nav>
 
+<div id="bse-users-grid">
     @if (TempData["Success"] is string successMsg)
     {
         <div class="govuk-notification-banner govuk-notification-banner--success" role="alert" aria-labelledby="govuk-notification-banner-title" data-module="govuk-notification-banner">
@@ -61,6 +62,7 @@
         <input type="hidden" asp-for="SortDesc" />
         <input type="hidden" asp-for="PageNumber" />
         <input type="hidden" asp-for="SelectedUserId" />
+        <div class="bse-user-maintenance-table-wrap">
         <table class="govuk-table bse-user-maintenance-table" data-page-number="@Model.PageNumber" data-total-pages="@Model.TotalPages" data-page-size-full="@(Model.PagedUsers.Count >= 10 ? "true" : "false")">
             <caption class="govuk-visually-hidden">Users</caption>
             <thead class="govuk-table__head">
@@ -173,6 +175,7 @@
                 }
             </tbody>
         </table>
+        </div>
         <div class="govuk-button-group bse-user-maintenance-actions">
             <button type="submit" data-action="start-new" asp-page-handler="StartNew" class="govuk-button" data-module="govuk-button" formnovalidate title="New" disabled="@Model.IsEditingOrAdding">New</button>
             <button type="submit" data-action="start-edit" asp-page-handler="StartEdit" class="govuk-button" data-module="govuk-button" formnovalidate title="Edit" disabled="@(Model.IsEditingOrAdding || Model.SelectedUserId == 0)">Edit</button>
@@ -182,6 +185,7 @@
     </form>
     <script type="application/json" id="bse-user-groups-data">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.UserGroups.Select(g => new { id = g.Id, name = g.Name })))</script>
     @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
+</div>
 </div>
 
 @section Scripts {

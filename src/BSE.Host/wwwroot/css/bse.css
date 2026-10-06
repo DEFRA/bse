@@ -318,40 +318,42 @@
 .bse-user-maintenance-table .govuk-table__cell,
 .bse-user-maintenance-table .govuk-table__header {
     vertical-align: middle;
+    /* Only enough right padding to stop adjacent columns touching. */
+    padding: 0 10px 0 0;
 }
 
+/* Nothing wraps and nothing scrolls, so the grid is sized to fit the container outright. */
+.bse-user-maintenance-table-wrap {
+    overflow-x: visible;
+}
+
+/* Auto layout so the no-wrap columns below can size themselves to their content. */
 .bse-user-maintenance-table {
-    table-layout: fixed;
+    table-layout: auto;
     width: 100%;
+    font-size: 1rem;
 }
 
-/* The width must be set on the header cell too — with table-layout: fixed the first row
-   defines the columns, and an auto-width header collapses this column to 0. */
 .bse-user-maintenance-table th:first-child,
 .bse-user-maintenance-table .bse-row-select-cell {
-    width: 2.5rem;
+    width: 1.75rem;
     text-align: center;
 }
 
+/* Name, Email and User Group are each read as a single value, so keep them on one line. */
 .bse-user-maintenance-table th:nth-child(2),
-.bse-user-maintenance-table td:nth-child(2) {
-    width: 21%;
-}
-
+.bse-user-maintenance-table td:nth-child(2),
 .bse-user-maintenance-table th:nth-child(3),
-.bse-user-maintenance-table td:nth-child(3) {
-    width: 30%;
-}
-
+.bse-user-maintenance-table td:nth-child(3),
 .bse-user-maintenance-table th:nth-child(4),
 .bse-user-maintenance-table td:nth-child(4) {
-    width: 21%;
+    white-space: nowrap;
 }
 
 /* IsActive column stays a fixed, narrow width so the checkbox is never pushed off-screen. */
 .bse-user-maintenance-table th:nth-child(5),
 .bse-user-maintenance-table td:nth-child(5) {
-    width: 6rem;
+    width: 4.5rem;
 }
 
 .bse-user-maintenance-table .govuk-input,

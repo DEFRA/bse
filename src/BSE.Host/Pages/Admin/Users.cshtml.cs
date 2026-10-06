@@ -48,7 +48,7 @@ public class UsersModel(IUserManagementService userManagementService, ILookupDat
     public bool IsEditing(int userId) => EditUserId != 0 && EditUserId == userId;
     public bool IsEditingOrAdding => EditUserId != 0 || IsAddingNew;
 
-    [BindProperty(SupportsGet = true)] public string SortColumn { get; set; } = string.Empty;
+    [BindProperty(SupportsGet = true)] public string SortColumn { get; set; } = "UserName";
     [BindProperty(SupportsGet = true)] public bool SortDesc { get; set; }
     [BindProperty(SupportsGet = true)] public int PageNumber { get; set; } = 1;
 
@@ -86,7 +86,7 @@ public class UsersModel(IUserManagementService userManagementService, ILookupDat
     }
 
     // "New" button below the grid — available regardless of whether a row is selected. The blank
-    // row is always added at the end of the last page, where the saved record will land.
+    // entry row renders after the last record, so send the user to the end of the grid to fill it in.
     public async Task<IActionResult> OnPostStartNewAsync()
     {
         var lastPage = PageCountFor((await userManagementService.GetAllUsersAsync()).Count());
@@ -188,11 +188,18 @@ public class UsersModel(IUserManagementService userManagementService, ILookupDat
                 UserGroupId: EditUserGroupId,
                 UserGroup: (UserGroup)EditUserGroupId);
 
-            await userManagementService.AddUserAsync(newUser);
+            var newUserId = await userManagementService.AddUserAsync(newUser);
             TempData["Success"] = $"User '{EditUserName}' added.";
 
-            // The new record sorts to the end, so show the page it landed on.
-            return RedirectToPage(new { SortColumn, SortDesc, PageNumber = PageCountFor(Users.Count() + 1) });
+            // Keep the current ordering and land on whichever page the new record falls on,
+            // selected and ready for the next action.
+            return RedirectToPage(new
+            {
+                SortColumn,
+                SortDesc,
+                PageNumber = await PageContainingAsync(newUserId),
+                SelectedUserId = newUserId
+            });
         }
         else
         {
@@ -210,7 +217,22 @@ public class UsersModel(IUserManagementService userManagementService, ILookupDat
             TempData["Success"] = $"User '{EditUserName}' updated.";
         }
 
-        return RedirectToPage(new { SortColumn, SortDesc, PageNumber });
+        // A rename can move the record under the current ordering, so follow it to its page.
+        return RedirectToPage(new
+        {
+            SortColumn,
+            SortDesc,
+            PageNumber = await PageContainingAsync(EditUserId),
+            SelectedUserId = EditUserId
+        });
+    }
+
+    // Where a record sits in the grid once the current sort is applied.
+    private async Task<int> PageContainingAsync(int userId)
+    {
+        var sorted = ApplySorting(await userManagementService.GetAllUsersAsync()).ToList();
+        var index = sorted.FindIndex(u => u.UserId == userId);
+        return index < 0 ? PageCountFor(sorted.Count) : (index / PageSize) + 1;
     }
 
     // NTLogin is VARCHAR(25) NOT NULL with a unique constraint; derive a value from the email

@@ -1,21 +1,15 @@
-// Progressive enhancement for /Admin/Users: selecting, adding and editing a row happens
-// entirely client-side (no page reload). Only Save still performs a real form submit,
-// since persisting a change always requires a server round-trip. If this script fails to
-// load, the existing server-rendered links/handlers still work via full page navigation.
+// Progressive enhancement for /Admin/Users.
+//
+// The grid refreshes in place: selecting, adding and editing happen purely client-side, while
+// paging, sorting and saving fetch the page and swap only the grid container, so the browser
+// never performs a full navigation. Without JavaScript every one of these still works as a
+// normal link or form post.
 (function () {
     'use strict';
 
-    var table = document.querySelector('.bse-user-maintenance-table');
-    if (!table) return;
-
-    var form = table.closest('form');
-    var tbody = table.querySelector('tbody');
-    var newBtn = form.querySelector('[data-action="start-new"]');
-    var editBtn = form.querySelector('[data-action="start-edit"]');
-    var saveBtn = form.querySelector('[data-action="save"]');
-    var cancelBtn = form.querySelector('[data-action="cancel"]');
-    var groupsDataEl = document.getElementById('bse-user-groups-data');
-    var groups = groupsDataEl ? JSON.parse(groupsDataEl.textContent) : [];
+    var CONTAINER_ID = 'bse-users-grid';
+    var container = document.getElementById(CONTAINER_ID);
+    if (!container) return;
 
     var selectedRow = null;
     var editingRow = null;
@@ -24,6 +18,11 @@
     // True when the edit row came from the server (e.g. re-rendered after a validation error)
     // rather than being built here, so we have no original markup to restore on cancel.
     var isServerRendered = false;
+    var groups = [];
+
+    function table() { return container.querySelector('.bse-user-maintenance-table'); }
+    function form() { return container.querySelector('form'); }
+    function button(action) { return container.querySelector('[data-action="' + action + '"]'); }
 
     function escapeHtml(value) {
         return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {
@@ -41,6 +40,8 @@
     function refreshButtonState() {
         var hasSelection = !!selectedRow;
         var editing = !!editingRow;
+        var newBtn = button('start-new'), editBtn = button('start-edit');
+        var saveBtn = button('save'), cancelBtn = button('cancel');
         if (newBtn) newBtn.disabled = editing;
         if (editBtn) editBtn.disabled = editing || !hasSelection;
         if (saveBtn) saveBtn.disabled = !editing;
@@ -71,11 +72,11 @@
 
     function selectRow(row) {
         if (editingRow) return;
-        table.querySelectorAll('tr.bse-row-selected').forEach(function (r) { r.classList.remove('bse-row-selected'); });
+        container.querySelectorAll('tr.bse-row-selected').forEach(function (r) { r.classList.remove('bse-row-selected'); });
         row.classList.add('bse-row-selected');
         selectedRow = row;
-        var hiddenSelectedId = form.querySelector('[name="SelectedUserId"]');
-        if (hiddenSelectedId) hiddenSelectedId.value = row.dataset.userId;
+        var hidden = form() && form().querySelector('[name="SelectedUserId"]');
+        if (hidden) hidden.value = row.dataset.userId;
         refreshButtonState();
     }
 
@@ -122,7 +123,7 @@
             + '<input type="hidden" name="EditUpn" value="" />'
             + editCellsHtml({ userName: '', email: '', groupId: '', isActive: true });
 
-        tbody.appendChild(row);
+        table().querySelector('tbody').appendChild(row);
         editingRow = row;
         refreshButtonState();
         var nameInput = document.getElementById('edit-user-name');
@@ -143,52 +144,116 @@
         isNewRow = false;
         refreshButtonState();
     }
-    table.addEventListener('click', function (e) {
-        var link = e.target.closest('.bse-row-select-link');
-        if (!link) return;
-        e.preventDefault();
-        if (editingRow) return;
-        selectRow(link.closest('tr'));
-    });
 
-    if (newBtn) {
-        newBtn.addEventListener('click', function (e) {
-            // A new record always belongs at the end of the last page. If we're not there, or the
-            // last page is already full, fall through to the server handler so it navigates for us.
-            var onLastPage = table.dataset.pageNumber === table.dataset.totalPages;
-            if (!onLastPage || table.dataset.pageSizeFull === 'true') return;
-            e.preventDefault();
-            startNew();
-        });
+    // Replaces just the grid markup with the equivalent region from a freshly rendered page.
+    function swapGrid(html, url) {
+        var parsed = new DOMParser().parseFromString(html, 'text/html');
+        var fresh = parsed.getElementById(CONTAINER_ID);
+        if (!fresh) { window.location.assign(url); return; }
+
+        container.innerHTML = fresh.innerHTML;
+        if (url) history.pushState({}, '', url);
+        adoptServerState();
     }
 
-    if (editBtn) {
-        editBtn.addEventListener('click', function (e) {
-            e.preventDefault();
-            startEdit();
-        });
+    function loadGrid(url) {
+        container.setAttribute('aria-busy', 'true');
+        return fetch(url, { headers: { 'X-Requested-With': 'fetch' }, credentials: 'same-origin' })
+            .then(function (r) { return r.text().then(function (html) { return { html: html, url: r.url || url }; }); })
+            .then(function (res) { swapGrid(res.html, res.url); })
+            .catch(function () { window.location.assign(url); })
+            .finally(function () { container.removeAttribute('aria-busy'); });
     }
 
-    form.addEventListener('click', function (e) {
-        var cancel = e.target.closest('[data-action="cancel"]');
-        if (!cancel) return;
-        if (isServerRendered) return; // let the server Cancel handler reset the page state
-        e.preventDefault();
-        cancelEdit();
-    });
+    function submitGrid(submitter) {
+        var f = form();
+        if (!f) return;
+        var data = new FormData(f);
+        if (submitter && submitter.name) data.append(submitter.name, submitter.value || '');
+        var action = (submitter && submitter.getAttribute('formaction')) || f.getAttribute('action') || window.location.href;
+
+        container.setAttribute('aria-busy', 'true');
+        return fetch(action, {
+            method: 'POST', body: data,
+            headers: { 'X-Requested-With': 'fetch' },
+            credentials: 'same-origin', redirect: 'follow'
+        })
+            .then(function (r) { return r.text().then(function (html) { return { html: html, url: r.url }; }); })
+            .then(function (res) { swapGrid(res.html, res.url); })
+            .catch(function () { f.submit(); })
+            .finally(function () { container.removeAttribute('aria-busy'); });
+    }
 
     // Adopt whatever state the server rendered — after a validation failure the edit row comes
     // back from the server, and without this the buttons would reset to "nothing selected".
-    var serverEditRow = tbody.querySelector('tr.bse-row-editing');
-    if (serverEditRow) {
-        editingRow = serverEditRow;
-        isServerRendered = true;
-        isNewRow = !serverEditRow.dataset.userId;
-        selectedRow = isNewRow ? null : serverEditRow;
-    } else {
-        selectedRow = tbody.querySelector('tr.bse-row-selected');
+    function adoptServerState() {
+        selectedRow = null;
+        editingRow = null;
+        originalRowHtml = null;
+        isNewRow = false;
+        isServerRendered = false;
+
+        var dataEl = document.getElementById('bse-user-groups-data');
+        if (dataEl) { try { groups = JSON.parse(dataEl.textContent); } catch (e) { groups = []; } }
+
+        var t = table();
+        if (!t) return;
+        var serverEditRow = t.querySelector('tr.bse-row-editing');
+        if (serverEditRow) {
+            editingRow = serverEditRow;
+            isServerRendered = true;
+            isNewRow = !serverEditRow.dataset.userId;
+            selectedRow = isNewRow ? null : serverEditRow;
+        } else {
+            selectedRow = t.querySelector('tr.bse-row-selected');
+        }
+        refreshButtonState();
     }
 
-    // Save keeps its native type="submit" behaviour — a real postback is required to persist.
-    refreshButtonState();
+    function isOnLastPageWithRoom() {
+        var t = table();
+        return !!t && t.dataset.pageNumber === t.dataset.totalPages && t.dataset.pageSizeFull !== 'true';
+    }
+
+    // Delegated so the handlers survive each grid swap.
+    container.addEventListener('click', function (e) {
+        var selectLink = e.target.closest('.bse-row-select-link');
+        if (selectLink) {
+            e.preventDefault();
+            if (!editingRow) selectRow(selectLink.closest('tr'));
+            return;
+        }
+
+        var action = e.target.closest('[data-action]');
+        if (action) {
+            var name = action.dataset.action;
+            e.preventDefault();
+            if (name === 'start-new') {
+                if (isOnLastPageWithRoom()) startNew(); else submitGrid(action);
+            } else if (name === 'start-edit') {
+                startEdit();
+            } else if (name === 'cancel') {
+                if (isServerRendered) submitGrid(action); else cancelEdit();
+            } else if (name === 'save') {
+                submitGrid(action);
+            }
+            return;
+        }
+
+        // Paging and column sorting only ever change the grid, so refresh it in place.
+        var link = e.target.closest('.govuk-pagination__link, .bse-sortable-table__button');
+        if (link && link.getAttribute('href')) {
+            e.preventDefault();
+            loadGrid(new URL(link.getAttribute('href'), window.location.href).toString());
+        }
+    });
+
+    container.addEventListener('submit', function (e) {
+        e.preventDefault();
+        submitGrid(e.submitter);
+    });
+
+    window.addEventListener('popstate', function () { loadGrid(window.location.href); });
+
+    adoptServerState();
 })();
