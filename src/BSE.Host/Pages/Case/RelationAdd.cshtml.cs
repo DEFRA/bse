@@ -47,6 +47,35 @@ public class RelationAddModel(
         return Page();
     }
 
+    /// <summary>Live lookup for the Relation RBSE field, mirrors legacy's
+    /// ctlRelationRBSE_RBSEChanged autopostback (populates Sex/Fate/Eartag/birth date/left
+    /// date/Sire from the related case as soon as a valid RBSE is entered, before Save).</summary>
+    public async Task<IActionResult> OnGetRelationDetailsAsync(string? rbse)
+    {
+        var normalized = RbseHelper.ParseToRaw(rbse);
+        if (normalized.Length == 0)
+            return new JsonResult(new { found = false });
+
+        var related = await relationsRepository.GetRelationDetailsOfRelatedCaseAsync(normalized);
+        if (related is null)
+            return new JsonResult(new { found = false });
+
+        return new JsonResult(new
+        {
+            found = true,
+            sex = related.Sex,
+            fate = related.Fate,
+            eartagCountry = related.EartagCountry,
+            eartagHerdmark = related.EartagHerdmark,
+            eartag = related.Eartag,
+            birthDay = related.BirthDay,
+            birthMonth = related.BirthMonth,
+            birthYear = related.BirthYear,
+            leftDate = related.LeftDate,
+            sire = related.Name
+        });
+    }
+
     public async Task<IActionResult> OnPostAsync()
     {
         await LoadLookupsAsync();

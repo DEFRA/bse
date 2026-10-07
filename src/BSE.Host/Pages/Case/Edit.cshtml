@@ -841,6 +841,10 @@
         outline-offset: 2px;
     }
 
+    .bse-eartag-help__icon--invalid {
+        color: #d4351c;
+    }
+
     .bse-eartag-help__tooltip {
         position: absolute;
         left: calc(100% + 0.35rem);
@@ -909,6 +913,8 @@
         var formBDateInput = document.getElementById('Case_FormBDate');
         var formCDateInput = document.getElementById('Case_FormCDate');
         var formCWarningTrigger = document.getElementById('case-formc-warning-trigger');
+        var eartagValidateTimer = null;
+        var eartagValidateController = null;
 
         function getTooltipForTrigger(trigger) {
             if (!trigger) {
@@ -958,73 +964,27 @@
             return (value || '').trim().toUpperCase();
         }
 
-        function hasDigitsOnly(value) {
-            return /^\d+$/.test(value);
-        }
-
-        function checkDigitFormat9(herd, animal) {
-            var herdNum = (herd || '').trim();
-            var animalNum = (animal || '').trim();
-
-            if (!/^\d{6}$/.test(herdNum) || !/^\d{8}[A-Z]$/.test(animalNum)) {
-                return true;
-            }
-
-            var electoralId = herdNum.substring(0, 2);
-            var herdPart = herdNum.substring(2);
-            var animalPart = animalNum.substring(0, 8);
-            var checkLetter = animalNum.substring(8);
-
-            var electoralHerd = Number(electoralId + herdPart);
-            var animalNumber = Number(animalPart);
-            if (Number.isNaN(electoralHerd) || Number.isNaN(animalNumber)) {
-                return true;
-            }
-
-            var check = electoralHerd * 10000 + animalNumber;
-            var alphabet = 'ABCDEFHIKLMNOPRSTUVWXYZ';
-            var mod = check % 23;
-            return mod < alphabet.length && checkLetter === alphabet.charAt(mod);
-        }
-
+        // Local, best-effort format name shown immediately while the authoritative check
+        // (OnGetValidateEartag, below) confirms it — this never reports errors itself.
         function resolveEartagHintText(country, herdmark, animal) {
             if (!country && !herdmark && !animal) {
                 return 'Enter the animal eartag in parts: country, herdmark and animal number.';
             }
 
             if (!country) {
-                if (herdmark) {
-                    return 'PRE-Barimo';
-                }
-
-                return 'Free format';
+                return herdmark ? 'PRE-Barimo' : 'Free format';
             }
 
             if (country.length > 2) {
-                if (country && hasDigitsOnly(country.charAt(0)) && !/^\d{3}[012_ ]?$/.test(country)) {
-                    return 'Country component is invalid.';
-                }
-                if (!/^\d{6}$/.test(herdmark)) {
-                    return 'Country-coded eartag: herd component should be 6 digits.';
-                }
-                if (!/^\d{5}$/.test(animal)) {
-                    return 'Country-coded eartag: animal component should be 5 digits.';
-                }
-                return hasDigitsOnly(country.charAt(0)) ? 'ISO Numeric Country' : 'ISO Alpha Country';
+                return /^\d/.test(country) ? 'ISO Numeric Country' : 'ISO Alpha Country';
             }
 
             if (country === 'UK') {
-                if (/^\d{6}$/.test(herdmark) && /^\d{8}[A-Z]$/.test(animal) && !checkDigitFormat9(herdmark, animal)) {
-                    return 'Eartag check digit is invalid.';
-                }
                 return 'Mainland GB Numeric';
             }
 
             var ecCodes = ['AT', 'BE', 'DE', 'DK', 'EL', 'ES', 'FI', 'FR', 'IE', 'IT', 'LU', 'NL', 'PT', 'SE'];
             if (ecCodes.indexOf(country) >= 0) {
-                if (!/^[0-9A-Z]{1,12}$/.test(animal)) {
-                    return 'EC eartag: animal component should be 1 to 12 uppercase letters or digits.';
-                }
                 return 'EC non-UK';
             }
 
@@ -1039,7 +999,54 @@
             var country = norm(eartagCountryInput ? eartagCountryInput.value : '');
             var herdmark = norm(eartagHerdmarkInput ? eartagHerdmarkInput.value : '');
             var animal = norm(eartagAnimalInput ? eartagAnimalInput.value : '');
+
+            function setInvalid(isInvalid) {
+                if (eartagTooltipTrigger) {
+                    eartagTooltipTrigger.classList.toggle('bse-eartag-help__icon--invalid', !!isInvalid);
+                }
+            }
+
+            if (!country && !herdmark && !animal) {
+                eartagTooltip.textContent = resolveEartagHintText(country, herdmark, animal);
+                setInvalid(false);
+                return;
+            }
+
+            // Show the local format guess immediately, then confirm against the server — which
+            // runs the same BSELib.Eartag rules as Save — mirrors legacy's ThreePartEartag.Validate().
             eartagTooltip.textContent = resolveEartagHintText(country, herdmark, animal);
+            setInvalid(false);
+
+            if (eartagValidateTimer) {
+                clearTimeout(eartagValidateTimer);
+            }
+            if (eartagValidateController) {
+                eartagValidateController.abort();
+            }
+
+            eartagValidateTimer = setTimeout(function () {
+                eartagValidateController = new AbortController();
+                var url = window.location.pathname + '?handler=ValidateEartag'
+                    + '&country=' + encodeURIComponent(country)
+                    + '&herdmark=' + encodeURIComponent(herdmark)
+                    + '&animal=' + encodeURIComponent(animal);
+
+                fetch(url, { signal: eartagValidateController.signal })
+                    .then(function (response) { return response.ok ? response.json() : null; })
+                    .then(function (result) {
+                        if (!result) {
+                            return;
+                        }
+                        if (result.error) {
+                            eartagTooltip.textContent = result.error;
+                            setInvalid(true);
+                        } else {
+                            eartagTooltip.textContent = resolveEartagHintText(country, herdmark, animal);
+                            setInvalid(false);
+                        }
+                    })
+                    .catch(function () { /* request aborted or failed — local guess stands */ });
+            }, 250);
         }
 
         function updateFormCWarningVisibility() {

@@ -1568,11 +1568,8 @@ public class FarmModel(
         var persistedLinkedById = PersistedLinkedFarms.ToDictionary(x => x.ID);
         var stagedLinkedByExistingId = StagedLinkedFarms.Where(x => x.Id is > 0).ToDictionary(x => x.Id!.Value);
 
-        foreach (var removed in PersistedLinkedFarms.Where(x => !stagedLinkedByExistingId.ContainsKey(x.ID)))
-        {
-            if (removed.RowStamp is not null)
-                await relationRepo.DeleteAsync(removed.ID, removed.RowStamp);
-        }
+        foreach (var removed in PersistedLinkedFarms.Where(x => !stagedLinkedByExistingId.ContainsKey(x.ID) && x.RowStamp is not null))
+            await relationRepo.DeleteAsync(removed.ID, removed.RowStamp!);
 
         foreach (var newRow in StagedLinkedFarms.Where(x => x.Id is null || x.Id <= 0))
             await relationRepo.AddAsync(farm.CPHH, newRow.RelatedCphh);
@@ -1602,11 +1599,8 @@ public class FarmModel(
         var persistedHerdById = PersistedHerdSizes.ToDictionary(x => x.ID);
         var stagedHerdByExistingId = StagedHerdSizes.Where(x => x.Id is > 0).ToDictionary(x => x.Id!.Value);
 
-        foreach (var removed in PersistedHerdSizes.Where(x => !stagedHerdByExistingId.ContainsKey(x.ID)))
-        {
-            if (removed.RowStamp is not null)
-                await herdSizeRepo.DeleteAsync(removed.ID, removed.RowStamp);
-        }
+        foreach (var removed in PersistedHerdSizes.Where(x => !stagedHerdByExistingId.ContainsKey(x.ID) && x.RowStamp is not null))
+            await herdSizeRepo.DeleteAsync(removed.ID, removed.RowStamp!);
 
         foreach (var newRow in StagedHerdSizes.Where(x => x.Id is null || x.Id <= 0))
         {
@@ -1729,7 +1723,7 @@ public class FarmModel(
     public IReadOnlyList<StagedHerdSizeItem> SortedStagedHerdSizes() =>
         GetSortedStagedHerdSizes();
 
-    private IReadOnlyList<StagedLinkedFarmItem> GetSortedStagedLinkedFarms()
+    private List<StagedLinkedFarmItem> GetSortedStagedLinkedFarms()
     {
         var ordered = (LSort, LDir) switch
         {
@@ -1742,13 +1736,13 @@ public class FarmModel(
         return ordered.ToList();
     }
 
-    private static IReadOnlyList<T> GetPagedItems<T>(IReadOnlyList<T> source, int pageNumber)
+    private static List<T> GetPagedItems<T>(IReadOnlyList<T> source, int pageNumber)
         => source
             .Skip((pageNumber - 1) * PageSize)
             .Take(PageSize)
             .ToList();
 
-    private IReadOnlyList<StagedHerdSizeItem> GetSortedStagedHerdSizes()
+    private List<StagedHerdSizeItem> GetSortedStagedHerdSizes()
     {
         var orderedSource = SortHerdSizesByColumn(StagedHerdSizes);
         return orderedSource.ToList();
@@ -1820,21 +1814,10 @@ public class FarmModel(
         public bool IsUnsaved => Id is null or <= 0;
     }
 
-    public class HerdSizeFormViewModel : ILactationSizes
+    public class HerdSizeFormViewModel : LactationSizeFields
     {
         public int HerdYear { get; set; }
         public int TotalSize { get; set; }
-        public int? Lactation1Size { get; set; }
-        public int? Lactation2Size { get; set; }
-        public int? Lactation3Size { get; set; }
-        public int? Lactation4Size { get; set; }
-        public int? Lactation5Size { get; set; }
-        public int? Lactation6Size { get; set; }
-        public int? Lactation7Size { get; set; }
-        public int? Lactation8Size { get; set; }
-        public int? Lactation9Size { get; set; }
-        public int? Lactation10Size { get; set; }
-        public int? Lactation10PlusSize { get; set; }
     }
 
     /// <summary>
@@ -1842,20 +1825,9 @@ public class FarmModel(
     /// blank optional lactation inputs bind to null instead of tripping ASP.NET Core's
     /// implicit "value must not be null" error for non-nullable value types.
     /// </summary>
-    public class HerdSizeRowInput : ILactationSizes
+    public class HerdSizeRowInput : LactationSizeFields
     {
         public int? HerdYear { get; set; }
         public int? TotalSize { get; set; }
-        public int? Lactation1Size { get; set; }
-        public int? Lactation2Size { get; set; }
-        public int? Lactation3Size { get; set; }
-        public int? Lactation4Size { get; set; }
-        public int? Lactation5Size { get; set; }
-        public int? Lactation6Size { get; set; }
-        public int? Lactation7Size { get; set; }
-        public int? Lactation8Size { get; set; }
-        public int? Lactation9Size { get; set; }
-        public int? Lactation10Size { get; set; }
-        public int? Lactation10PlusSize { get; set; }
     }
 }

@@ -19,6 +19,17 @@ using NSubstitute;
 namespace BSE.Modules.UserManagement.Tests.Integration;
 
 /// <summary>
+/// Serializes all WebApplicationFactory&lt;Program&gt;-based tests — Serilog's ReloadableLogger
+/// freezes itself into the static Log.Logger on first host start, so two Program hosts booting
+/// concurrently in different xunit collections throw "The logger is already frozen".
+/// </summary>
+[CollectionDefinition(Name, DisableParallelization = true)]
+public sealed class ProgramHostCollection
+{
+    public const string Name = "ProgramHost";
+}
+
+/// <summary>
 /// Integration tests for the User Management module identity pipeline.
 /// Uses <see cref="TestAuthHandler"/> in place of a real IdP — no Azure AD calls made.
 ///
@@ -32,6 +43,7 @@ namespace BSE.Modules.UserManagement.Tests.Integration;
 /// No code changes are required.
 /// </summary>
 [Trait("Category", "Integration")]
+[Collection(ProgramHostCollection.Name)]
 public sealed class UserManagementIntegrationTests : IClassFixture<UserManagementWebFactory>
 {
     private readonly UserManagementWebFactory _factory;

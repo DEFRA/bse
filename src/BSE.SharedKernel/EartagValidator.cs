@@ -5,11 +5,8 @@ namespace BSE.SharedKernel;
 /// <summary>
 /// Faithful C# port of legacy BSELib.EartagValidation (Eartag.vb + EartagFormat/*.vb) covering
 /// the UK-prefixed formats (GB/Northern Ireland/Isle of Man/Guernsey/Jersey, numeric and
-/// alpha-numeric) and the no-country-code formats (Free format, Pre-BARIMO) — the formats
-/// reachable when creating a non-GB case for a Channel Islands/Isle of Man farm.
-/// EC and ISO country-code eartag formats are NOT ported (not realistically entered on this
-/// page); those inputs are only checked for being non-blank, matching legacy's base
-/// EartagFormatBase.Validate() no-op.
+/// alpha-numeric), the no-country-code formats (Free format, Pre-BARIMO), the ISO EID format
+/// (country code longer than 2 characters) and the EC non-UK country codes.
 /// </summary>
 public static partial class EartagValidator
 {
@@ -97,6 +94,22 @@ public static partial class EartagValidator
     private static readonly char[] NiCheckCharacters =
         ['A','B','C','D','E','F','H','I','K','L','M','N','O','P','R','S','T','U','V','W','X','Y','Z'];
 
+    // ECEartagFormat.vb non-UK country code allow-list.
+    private static readonly string[] EcCountryCodes =
+        ["AT", "BE", "DE", "DK", "EL", "ES", "FI", "FR", "IE", "IT", "LU", "NL", "PT", "SE"];
+
+    [GeneratedRegex(@"^\d{3}[012_ ]?$", RegexOptions.CultureInvariant)]
+    private static partial Regex IsoNumericCountryRegex();
+
+    [GeneratedRegex(@"^\d{6}$", RegexOptions.CultureInvariant)]
+    private static partial Regex IsoHerdRegex();
+
+    [GeneratedRegex(@"^\d{5}$", RegexOptions.CultureInvariant)]
+    private static partial Regex IsoAnimalRegex();
+
+    [GeneratedRegex(@"^[0-9A-Z]{1,12}$", RegexOptions.CultureInvariant)]
+    private static partial Regex EcAnimalRegex();
+
     /// <summary>Returns null when valid, otherwise the legacy validation error message.</summary>
     public static string? Validate(string? countryCode, string? herdComponent, string? animalComponent)
     {
@@ -104,28 +117,58 @@ public static partial class EartagValidator
         var herd = (herdComponent ?? string.Empty).Trim().ToUpperInvariant();
         var animal = (animalComponent ?? string.Empty).Trim().ToUpperInvariant();
 
-        if (country.Length == 0)
-            return herd.Length == 0 ? ValidateFree(animal) : ValidatePreBarimo(herd, animal);
+        // Mirrors BSELib.Eartag.GetEartag's dispatch priority: a country code longer than 2
+        // characters is always ISO (IsNewVersionId), ahead of the UK/EC checks below. Anything
+        // left over — including a blank country — falls through to NoCountryEartag.
+        if (country.Length > 2)
+            return ValidateIso(country, herd, animal);
 
         if (country == "UK")
             return ValidateUk(herd, animal);
 
-        // EC/ISO country-code formats not ported — accept as long as the caller-level
-        // "at least one part entered" check already passed.
+        if (EcCountryCodes.Contains(country))
+            return ValidateEc(animal);
+
+        return herd.Length == 0 ? ValidateFree(country, animal) : ValidatePreBarimo(country, herd, animal);
+    }
+
+    // ── ISO EID (IsoNumericCountryEartagFormat.vb / IsoAlphaNumericCountryEartagFormat.vb) ──
+
+    private static string? ValidateIso(string country, string herd, string animal)
+    {
+        if (char.IsDigit(country[0]) && !IsoNumericCountryRegex().IsMatch(country))
+            return "Country component is invalid: It should contain 3 numerical digits followed by 0, 1, 2, _ or space character.";
+        if (!IsoHerdRegex().IsMatch(herd))
+            return "Herd component is invalid: It should contain 6 numerical digits.";
+        if (!IsoAnimalRegex().IsMatch(animal))
+            return "Animal component is invalid: It should contain 5 numerical digits.";
+        return null;
+    }
+
+    // ── EC non-UK (ECEartagFormat.vb) ────────────────────────────────────────
+
+    private static string? ValidateEc(string animal)
+    {
+        if (!EcAnimalRegex().IsMatch(animal))
+            return "Animal component is invalid: It should contain 1 to 12 numerical or uppercase alphabetical characters.";
         return null;
     }
 
     // ── No country (NoCountryEartag.vb) ─────────────────────────────────────
 
-    private static string? ValidateFree(string animal)
+    private static string? ValidateFree(string country, string animal)
     {
+        if (country.Length > 0)
+            return "Country code should be empty for Free format eartags";
         if (animal.Length is 0 or > 22)
             return "Animal component is invalid: It should contain 1 to 22 characters";
         return null;
     }
 
-    private static string? ValidatePreBarimo(string herd, string animal)
+    private static string? ValidatePreBarimo(string country, string herd, string animal)
     {
+        if (country.Length > 0)
+            return "Country code should be empty for Pre-BARIMO eartags";
         if (!PreBarimoHerdRegex().IsMatch(herd))
             return "Herd component is invalid: It should contain 1 or 2 uppercase alphabetical characters followed by 1 to 4 numeric characters";
         if (herd.Length >= 3 && herd[2..] == "0")

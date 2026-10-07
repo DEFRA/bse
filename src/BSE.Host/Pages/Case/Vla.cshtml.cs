@@ -118,13 +118,7 @@ public class VlaModel(
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
         Rbse = caseRbse;
 
-        var batchTask = batchRepository.GetBatchNumbersByRbseAsync(caseRbse);
-        var pendingBatchTask = wizardState.GetAsync();
-        await Task.WhenAll(batchTask, pendingBatchTask);
-        BatchNumbers = (await batchTask).ToList().AsReadOnly();
-        PendingBatch = await pendingBatchTask;
-        ApplyLegacyVlaEditPermissions();
-        if (!CanEditMainCase)
+        if (!await LoadBatchContextAndCheckEditPermissionAsync(caseRbse))
             return RedirectToPage(new { rbse = caseRbse });
 
         var persistedRecord = await caseService.GetCaseAsync(caseRbse);
@@ -221,13 +215,7 @@ public class VlaModel(
         Rbse = caseRbse;
         SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
         await LoadLookupsAsync();
-        var batchTask = batchRepository.GetBatchNumbersByRbseAsync(caseRbse);
-        var pendingBatchTask = wizardState.GetAsync();
-        await Task.WhenAll(batchTask, pendingBatchTask);
-        BatchNumbers = (await batchTask).ToList().AsReadOnly();
-        PendingBatch = await pendingBatchTask;
-        ApplyLegacyVlaEditPermissions();
-        if (!CanEditMainCase)
+        if (!await LoadBatchContextAndCheckEditPermissionAsync(caseRbse))
             return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
 
         await LoadOrInitializeOwnersDraftAsync();
@@ -253,13 +241,7 @@ public class VlaModel(
         Rbse = caseRbse;
         SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
         await LoadLookupsAsync();
-        var batchTask = batchRepository.GetBatchNumbersByRbseAsync(caseRbse);
-        var pendingBatchTask = wizardState.GetAsync();
-        await Task.WhenAll(batchTask, pendingBatchTask);
-        BatchNumbers = (await batchTask).ToList().AsReadOnly();
-        PendingBatch = await pendingBatchTask;
-        ApplyLegacyVlaEditPermissions();
-        if (!CanEditMainCase)
+        if (!await LoadBatchContextAndCheckEditPermissionAsync(caseRbse))
             return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
 
         await LoadOrInitializeOwnersDraftAsync();
@@ -297,13 +279,7 @@ public class VlaModel(
         Rbse = caseRbse;
         SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
         await LoadLookupsAsync();
-        var batchTask = batchRepository.GetBatchNumbersByRbseAsync(caseRbse);
-        var pendingBatchTask = wizardState.GetAsync();
-        await Task.WhenAll(batchTask, pendingBatchTask);
-        BatchNumbers = (await batchTask).ToList().AsReadOnly();
-        PendingBatch = await pendingBatchTask;
-        ApplyLegacyVlaEditPermissions();
-        if (!CanEditMainCase)
+        if (!await LoadBatchContextAndCheckEditPermissionAsync(caseRbse))
             return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
 
         await LoadOrInitializeOwnersDraftAsync();
@@ -340,13 +316,7 @@ public class VlaModel(
             return Forbid();
 
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
-        var batchTask = batchRepository.GetBatchNumbersByRbseAsync(caseRbse);
-        var pendingBatchTask = wizardState.GetAsync();
-        await Task.WhenAll(batchTask, pendingBatchTask);
-        BatchNumbers = (await batchTask).ToList().AsReadOnly();
-        PendingBatch = await pendingBatchTask;
-        ApplyLegacyVlaEditPermissions();
-        if (!CanEditMainCase)
+        if (!await LoadBatchContextAndCheckEditPermissionAsync(caseRbse))
             return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
 
         var draft = await GetOrCreateOwnersDraftAsync(caseRbse);
@@ -415,6 +385,19 @@ public class VlaModel(
 
         var hasAnyBatchHistory = BatchNumbers.Count > 0;
         CanEditMainCase = hasCurrentBatchSelection || hasAnyBatchHistory;
+    }
+
+    // Shared by OnPostAsync and the other-owner row handlers: loads the batch context this
+    // request needs for ApplyLegacyVlaEditPermissions, then reports whether editing is allowed.
+    private async Task<bool> LoadBatchContextAndCheckEditPermissionAsync(string caseRbse)
+    {
+        var batchTask = batchRepository.GetBatchNumbersByRbseAsync(caseRbse);
+        var pendingBatchTask = wizardState.GetAsync();
+        await Task.WhenAll(batchTask, pendingBatchTask);
+        BatchNumbers = (await batchTask).ToList().AsReadOnly();
+        PendingBatch = await pendingBatchTask;
+        ApplyLegacyVlaEditPermissions();
+        return CanEditMainCase;
     }
 
     private async Task<CaseEditDraftState> GetOrCreateOwnersDraftAsync(string caseRbse)
