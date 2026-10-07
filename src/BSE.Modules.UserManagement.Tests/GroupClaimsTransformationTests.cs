@@ -14,6 +14,19 @@ namespace BSE.Modules.UserManagement.Tests;
 
 public sealed class GroupClaimsTransformationTests
 {
+    private static readonly string[] DataEntryExpectedRoles = { "ReadOnly", "DataEntry", "FarmCreation", "DEFRAAccess" };
+    private static readonly string[] ReadOnlyExpectedRoles = { "ReadOnly", "DEFRAAccess" };
+    private static readonly string[] VlaMaintenanceExpectedRoles =
+    {
+        "ReadOnly",
+        "DataEntry",
+        "DEFRAMaintenance",
+        "VLAAccess",
+        "VLAMaintenance",
+        "PickListAccess",
+        "FarmCreation"
+    };
+
     private readonly IUserRepository _repo = Substitute.For<IUserRepository>();
     private readonly ILogger<GroupClaimsTransformation> _logger = Substitute.For<ILogger<GroupClaimsTransformation>>();
     private readonly GroupClaimsTransformation _sut;
@@ -191,7 +204,7 @@ public sealed class GroupClaimsTransformationTests
         result.FindFirst(ClaimsUserContext.BseGroupClaimType)!.Value.Should().Be("DEFRA Data Entry");
         result.FindFirst(ClaimsUserContext.BseGroupIdClaimType)!.Value.Should().Be(((int)UserGroup.DataEntry).ToString());
         result.FindAll(ClaimTypes.Role).Select(c => c.Value)
-              .Should().BeEquivalentTo(new[] { "ReadOnly", "DataEntry", "FarmCreation", "DEFRAAccess" });
+              .Should().BeEquivalentTo(DataEntryExpectedRoles);
         result.HasClaim(c => c.Type == ClaimTypes.Role && c.Value == "LegacyRole").Should().BeFalse();
     }
 
@@ -223,7 +236,7 @@ public sealed class GroupClaimsTransformationTests
         result.FindFirst(ClaimsUserContext.BseGroupClaimType)!.Value.Should().Be("DEFRA Viewer");
         result.FindFirst(ClaimsUserContext.BseGroupIdClaimType)!.Value.Should().Be(((int)UserGroup.ReadOnly).ToString());
         result.FindAll(ClaimTypes.Role).Select(c => c.Value)
-              .Should().BeEquivalentTo(new[] { "ReadOnly", "DEFRAAccess" });
+              .Should().BeEquivalentTo(ReadOnlyExpectedRoles);
     }
 
     [Fact]
@@ -269,16 +282,7 @@ public sealed class GroupClaimsTransformationTests
         var result = await _sut.TransformAsync(principal);
 
         result.FindAll(ClaimTypes.Role).Select(c => c.Value)
-              .Should().BeEquivalentTo(new[]
-              {
-                  "ReadOnly",
-                  "DataEntry",
-                  "DEFRAMaintenance",
-                  "VLAAccess",
-                  "VLAMaintenance",
-                  "PickListAccess",
-                  "FarmCreation"
-              });
+              .Should().BeEquivalentTo(VlaMaintenanceExpectedRoles);
     }
 
     [Fact]

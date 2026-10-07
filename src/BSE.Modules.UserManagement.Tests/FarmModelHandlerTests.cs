@@ -738,23 +738,23 @@ public sealed class FarmModelHandlerTests
     // These two (HSort, HDir) switches account for the bulk of Farm.cshtml.cs's
     // uncovered conditions, so every column x direction combination is exercised.
 
-    public static IEnumerable<object[]> HerdSizeSortColumns() =>
-    [
-        ["total", "asc"], ["total", "desc"],
-        ["lac1", "asc"], ["lac1", "desc"],
-        ["lac2", "asc"], ["lac2", "desc"],
-        ["lac3", "asc"], ["lac3", "desc"],
-        ["lac4", "asc"], ["lac4", "desc"],
-        ["lac5", "asc"], ["lac5", "desc"],
-        ["lac6", "asc"], ["lac6", "desc"],
-        ["lac7", "asc"], ["lac7", "desc"],
-        ["lac8", "asc"], ["lac8", "desc"],
-        ["lac9", "asc"], ["lac9", "desc"],
-        ["lac10", "asc"], ["lac10", "desc"],
-        ["lac10p", "asc"], ["lac10p", "desc"],
-        ["year", "asc"], ["year", "desc"],
-        ["unknown", "asc"], ["unknown", "desc"]
-    ];
+    public static TheoryData<string, string> HerdSizeSortColumns() => new()
+    {
+        { "total", "asc" }, { "total", "desc" },
+        { "lac1", "asc" }, { "lac1", "desc" },
+        { "lac2", "asc" }, { "lac2", "desc" },
+        { "lac3", "asc" }, { "lac3", "desc" },
+        { "lac4", "asc" }, { "lac4", "desc" },
+        { "lac5", "asc" }, { "lac5", "desc" },
+        { "lac6", "asc" }, { "lac6", "desc" },
+        { "lac7", "asc" }, { "lac7", "desc" },
+        { "lac8", "asc" }, { "lac8", "desc" },
+        { "lac9", "asc" }, { "lac9", "desc" },
+        { "lac10", "asc" }, { "lac10", "desc" },
+        { "lac10p", "asc" }, { "lac10p", "desc" },
+        { "year", "asc" }, { "year", "desc" },
+        { "unknown", "asc" }, { "unknown", "desc" }
+    };
 
     private static FarmModel.StagedHerdSizeItem LesserHerdSizeItem() => new()
     {

@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Security.Claims;
 using BSE.Host.Models.ViewModels;
 using BSE.Host.Pages.Admin;
@@ -184,11 +185,69 @@ public sealed class ClinicalVlaUsersHandlerTests
     }
 
     [Fact]
+    public async Task VlaModel_OnPostBeginEditOwnerRowAsync_Forbidden_WhenNotDataEntry()
+    {
+        var model = CreateVlaModel(["VLAAccess"]);
+        var result = await model.OnPostBeginEditOwnerRowAsync(11);
+        result.Should().BeOfType<ForbidResult>();
+    }
+
+    [Fact]
+    public async Task VlaModel_OnPostBeginEditOwnerRowAsync_NotAllowedToEdit_RedirectsToSelf()
+    {
+        var model = CreateVlaModel(["DataEntry", "VLAAccess"]);
+        var result = await model.OnPostBeginEditOwnerRowAsync(11);
+        result.Should().BeOfType<RedirectToPageResult>();
+    }
+
+    [Fact]
+    public async Task VlaModel_OnPostBeginEditOwnerRowAsync_PopulatesEditFieldsFromStagedOwner()
+    {
+        var model = CreateVlaModel(["DataEntry", "VLAAccess"]);
+        _batchRepository.GetBatchNumbersByRbseAsync(Rbse).Returns(
+            [new BatchNumberEntry(1, "2024/001", Rbse, "BSE1")]);
+        _caseEditDraftState.GetAsync(Rbse).Returns(new CaseEditDraftState
+        {
+            Rbse = Rbse,
+            OtherOwners = [new CaseEditDraftOtherOwnerItem { Id = 11, Type = "B", Name = "Owner Name", Cphh = "01001000101" }]
+        });
+
+        var result = await model.OnPostBeginEditOwnerRowAsync(11);
+
+        result.Should().BeOfType<PageResult>();
+        model.ReopenEditOwnerId.Should().Be(11);
+        model.EditOwnerType.Should().Be("B");
+        model.EditOwnerName.Should().Be("Owner Name");
+    }
+
+    [Fact]
+    public async Task VlaModel_OnPostBeginEditOwnerRowAsync_OwnerNotFound_RedirectsToSelf()
+    {
+        var model = CreateVlaModel(["DataEntry", "VLAAccess"]);
+        _batchRepository.GetBatchNumbersByRbseAsync(Rbse).Returns(
+            [new BatchNumberEntry(1, "2024/001", Rbse, "BSE1")]);
+        _caseEditDraftState.GetAsync(Rbse).Returns(new CaseEditDraftState { Rbse = Rbse });
+
+        var result = await model.OnPostBeginEditOwnerRowAsync(99);
+
+        result.Should().BeOfType<RedirectToPageResult>();
+    }
+
+    [Fact]
     public async Task VlaModel_OnPostAddOwnerRowAsync_Forbidden_WhenNotDataEntry()
     {
         var model = CreateVlaModel(["VLAAccess"]);
         var result = await model.OnPostAddOwnerRowAsync();
         result.Should().BeOfType<ForbidResult>();
+    }
+
+    [Fact]
+    public async Task VlaModel_OnPostAddOwnerRowAsync_NotAllowedToEdit_RedirectsToSelf()
+    {
+        // No pending batch and no batch history → CanEditMainCase is false.
+        var model = CreateVlaModel(["DataEntry", "VLAAccess"]);
+        var result = await model.OnPostAddOwnerRowAsync();
+        result.Should().BeOfType<RedirectToPageResult>();
     }
 
     [Fact]
@@ -232,6 +291,22 @@ public sealed class ClinicalVlaUsersHandlerTests
     }
 
     [Fact]
+    public async Task VlaModel_OnPostUpdateOwnerRowAsync_Forbidden_WhenNotDataEntry()
+    {
+        var model = CreateVlaModel(["VLAAccess"]);
+        var result = await model.OnPostUpdateOwnerRowAsync();
+        result.Should().BeOfType<ForbidResult>();
+    }
+
+    [Fact]
+    public async Task VlaModel_OnPostUpdateOwnerRowAsync_NotAllowedToEdit_RedirectsToSelf()
+    {
+        var model = CreateVlaModel(["DataEntry", "VLAAccess"]);
+        var result = await model.OnPostUpdateOwnerRowAsync();
+        result.Should().BeOfType<RedirectToPageResult>();
+    }
+
+    [Fact]
     public async Task VlaModel_OnPostUpdateOwnerRowAsync_Valid_UpdatesDraftRow()
     {
         var model = CreateVlaModel(["DataEntry", "VLAAccess"]);
@@ -256,6 +331,22 @@ public sealed class ClinicalVlaUsersHandlerTests
     }
 
     [Fact]
+    public async Task VlaModel_OnPostDeleteOwnerAsync_Forbidden_WhenNotDataEntry()
+    {
+        var model = CreateVlaModel(["VLAAccess"]);
+        var result = await model.OnPostDeleteOwnerAsync(11, string.Empty);
+        result.Should().BeOfType<ForbidResult>();
+    }
+
+    [Fact]
+    public async Task VlaModel_OnPostDeleteOwnerAsync_NotAllowedToEdit_RedirectsToSelf()
+    {
+        var model = CreateVlaModel(["DataEntry", "VLAAccess"]);
+        var result = await model.OnPostDeleteOwnerAsync(11, string.Empty);
+        result.Should().BeOfType<RedirectToPageResult>();
+    }
+
+    [Fact]
     public async Task VlaModel_OnPostDeleteOwnerAsync_RemovesMatchingOwner()
     {
         var model = CreateVlaModel(["DataEntry", "VLAAccess"]);
@@ -272,6 +363,95 @@ public sealed class ClinicalVlaUsersHandlerTests
 
         result.Should().BeOfType<RedirectToPageResult>();
         await _caseEditDraftState.Received(1).SetAsync(Arg.Is<CaseEditDraftState>(d => d.OtherOwners.Count == 0));
+    }
+
+    [Fact]
+    public async Task VlaModel_OnPostAsync_WhenUserLacksVlaAccess_RedirectsToSelf()
+    {
+        var model = CreateVlaModel(new[] { "DataEntry" });
+        var result = await model.OnPostAsync();
+
+        result.Should().BeOfType<RedirectToPageResult>();
+    }
+
+    [Fact]
+    public async Task VlaModel_OnPostAddOwnerRowAsync_RejectsDuplicatePreviousOwnerType()
+    {
+        var model = CreateVlaModel(new[] { "DataEntry", "VLAAccess" });
+        _batchRepository.GetBatchNumbersByRbseAsync(Rbse).Returns(
+            [new BatchNumberEntry(1, "2024/001", Rbse, "BSE1")]);
+        _lookups.GetLookupAsync(LookupTableId.OwnerType).Returns(
+            [new LookupItem { Code = "Previous", Description = "Previous owner" }]);
+        _caseEditDraftState.GetAsync(Rbse).Returns(new CaseEditDraftState
+        {
+            Rbse = Rbse,
+            OtherOwners = [new CaseEditDraftOtherOwnerItem { Id = 1, Type = "Previous", Name = "Existing Owner" }]
+        });
+
+        model.NewOwnerType = "Previous";
+        model.NewOwnerName = "Replacement Owner";
+
+        var result = await model.OnPostAddOwnerRowAsync();
+
+        result.Should().BeOfType<PageResult>();
+        model.ModelState.Should().ContainKey(nameof(VlaModel.NewOwnerType));
+        var previousOwnerState = model.ModelState[nameof(VlaModel.NewOwnerType)];
+        previousOwnerState.Should().NotBeNull();
+        previousOwnerState!.Errors
+            .Should().Contain(x => x.ErrorMessage.Contains("one owner of type Previous", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void VlaModel_ReplaceUnparseableDateMessage_RewritesInvalidDateText()
+    {
+        var model = CreateVlaModel(new[] { "DataEntry", "VLAAccess" });
+        model.ModelState.AddModelError("Case.BirthDate", "The value 'bad' is not valid.");
+
+        typeof(VlaModel)
+            .GetMethod("ReplaceUnparseableDateMessage", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .Invoke(model, new object?[] { "Case.BirthDate", null });
+
+        var birthDateState = model.ModelState["Case.BirthDate"];
+        birthDateState.Should().NotBeNull();
+        birthDateState!.Errors.Should().ContainSingle();
+        birthDateState.Errors[0].ErrorMessage.Should().Be("Please enter a valid date");
+    }
+
+    [Fact]
+    public void VlaModel_ValidateVlaDomainRules_RejectsOnsetAndSlaughterDatesOutsideAllowedRange()
+    {
+        var model = CreateVlaModel(new[] { "DataEntry", "VLAAccess" });
+        model.Case = new VlaEditViewModel
+        {
+            Rbse = Rbse,
+            FormADate = new DateTime(2024, 06, 01),
+            OnsetDate = new DateTime(2024, 07, 02),
+            SlaughterDate = DateTime.Today.AddDays(1)
+        };
+
+        typeof(VlaModel)
+            .GetMethod("ValidateVlaDomainRules", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .Invoke(model, null);
+
+        var onsetState = model.ModelState["Case.OnsetDate"];
+        onsetState.Should().NotBeNull();
+        onsetState!.Errors.Should().ContainSingle();
+
+        var slaughterState = model.ModelState["Case.SlaughterDate"];
+        slaughterState.Should().NotBeNull();
+        slaughterState!.Errors.Should().ContainSingle();
+    }
+
+    [Fact]
+    public void VlaModel_OwnersSortUrl_TogglesDirectionForSameColumn()
+    {
+        var model = CreateVlaModel(new[] { "DataEntry", "VLAAccess" });
+        model.Rbse = Rbse;
+        model.OSort = "type";
+        model.ODir = "asc";
+
+        model.OwnersSortUrl("type").Should().Contain("ODir=desc");
+        model.OwnersSortUrl("name").Should().Contain("ODir=asc");
     }
 
     // ── ClinicalModel ────────────────────────────────────────────────────────
