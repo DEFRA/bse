@@ -368,7 +368,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     [Fact]
     public async Task VlaModel_OnPostAsync_WhenUserLacksVlaAccess_RedirectsToSelf()
     {
-        var model = CreateVlaModel(new[] { "DataEntry" });
+        var model = CreateVlaModel(["DataEntry"]);
         var result = await model.OnPostAsync();
 
         result.Should().BeOfType<RedirectToPageResult>();
@@ -377,7 +377,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     [Fact]
     public async Task VlaModel_OnPostAddOwnerRowAsync_RejectsDuplicatePreviousOwnerType()
     {
-        var model = CreateVlaModel(new[] { "DataEntry", "VLAAccess" });
+        var model = CreateVlaModel(["DataEntry", "VLAAccess"]);
         _batchRepository.GetBatchNumbersByRbseAsync(Rbse).Returns(
             [new BatchNumberEntry(1, "2024/001", Rbse, "BSE1")]);
         _lookups.GetLookupAsync(LookupTableId.OwnerType).Returns(
@@ -404,7 +404,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     [Fact]
     public void VlaModel_ReplaceUnparseableDateMessage_RewritesInvalidDateText()
     {
-        var model = CreateVlaModel(new[] { "DataEntry", "VLAAccess" });
+        var model = CreateVlaModel(["DataEntry", "VLAAccess"]);
         model.ModelState.AddModelError("Case.BirthDate", "The value 'bad' is not valid.");
 
         typeof(VlaModel)
@@ -420,7 +420,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     [Fact]
     public void VlaModel_ValidateVlaDomainRules_RejectsOnsetAndSlaughterDatesOutsideAllowedRange()
     {
-        var model = CreateVlaModel(new[] { "DataEntry", "VLAAccess" });
+        var model = CreateVlaModel(["DataEntry", "VLAAccess"]);
         model.Case = new VlaEditViewModel
         {
             Rbse = Rbse,
@@ -445,7 +445,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     [Fact]
     public void VlaModel_OwnersSortUrl_TogglesDirectionForSameColumn()
     {
-        var model = CreateVlaModel(new[] { "DataEntry", "VLAAccess" });
+        var model = CreateVlaModel(["DataEntry", "VLAAccess"]);
         model.Rbse = Rbse;
         model.OSort = "type";
         model.ODir = "asc";

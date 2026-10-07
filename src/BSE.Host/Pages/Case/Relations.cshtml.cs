@@ -220,11 +220,8 @@ public class RelationsModel(
         // Mirrors legacy RBSE.ascx auto-padding on postback: a short form like "16/01"
         // becomes the full zero-padded value before being used to look up the dam/sire.
         var searchRbse = RbseHelper.ParseToRaw(isDam ? DamSire.DamSearchRbse : DamSire.SireSearchRbse);
-        if (isDam) DamSire.DamSearchRbse = RbseHelper.Format(searchRbse); else DamSire.SireSearchRbse = RbseHelper.Format(searchRbse);
+        SetFormattedSearchRbse(isDam, searchRbse);
         ModelState.Remove(isDam ? "DamSire.DamSearchRbse" : "DamSire.SireSearchRbse");
-        var searchEartag = isDam ? DamSire.DamSearchEartag : DamSire.SireSearchEartag;
-        var searchName = isDam ? DamSire.DamSearchName : DamSire.SireSearchName;
-        var searchHerdbook = isDam ? DamSire.DamSearchHerdbook : DamSire.SireSearchHerdbook;
 
         if (searchRbse.Length > 0 && IsSearchRbseRejected(isDam, searchRbse, caseRbse))
             return;
@@ -233,9 +230,34 @@ public class RelationsModel(
         // (even when exactly one candidate exists) rather than auto-selecting.
         if (searchRbse.Length == 0)
         {
-            if (isDam) DamShouldOpenPicker = true; else SireShouldOpenPicker = true;
+            SetShouldOpenPicker(isDam, true);
             return;
         }
+
+        await LookUpByRbseAsync(isDam, searchRbse);
+    }
+
+    private void SetFormattedSearchRbse(bool isDam, string searchRbse)
+    {
+        if (isDam)
+            DamSire.DamSearchRbse = RbseHelper.Format(searchRbse);
+        else
+            DamSire.SireSearchRbse = RbseHelper.Format(searchRbse);
+    }
+
+    private void SetShouldOpenPicker(bool isDam, bool value)
+    {
+        if (isDam)
+            DamShouldOpenPicker = value;
+        else
+            SireShouldOpenPicker = value;
+    }
+
+    private async Task LookUpByRbseAsync(bool isDam, string searchRbse)
+    {
+        var searchEartag = isDam ? DamSire.DamSearchEartag : DamSire.SireSearchEartag;
+        var searchName = isDam ? DamSire.DamSearchName : DamSire.SireSearchName;
+        var searchHerdbook = isDam ? DamSire.DamSearchHerdbook : DamSire.SireSearchHerdbook;
 
         var matches = await relationsRepository.GetDamSireDetailsMatchesAsync(
             NullIfBlank(searchEartag), NullIfBlank(searchName),
@@ -250,7 +272,7 @@ public class RelationsModel(
         {
             // Legacy redirected to PickSireDam.aspx here; ShouldOpenPicker is read by the
             // handler to decide whether to redirect there instead of re-rendering this page.
-            if (isDam) DamShouldOpenPicker = true; else SireShouldOpenPicker = true;
+            SetShouldOpenPicker(isDam, true);
         }
         else
         {
@@ -291,42 +313,7 @@ public class RelationsModel(
     {
         var shouldOpenPicker = isDam ? DamShouldOpenPicker : SireShouldOpenPicker;
         if (shouldOpenPicker)
-        {
-            var eartag = isDam ? DamSire.DamSearchEartag : DamSire.SireSearchEartag;
-            var name = isDam ? DamSire.DamSearchName : DamSire.SireSearchName;
-            var herdbook = isDam ? DamSire.DamSearchHerdbook : DamSire.SireSearchHerdbook;
-            var searchRbse = RbseHelper.ParseToRaw(isDam ? DamSire.DamSearchRbse : DamSire.SireSearchRbse);
-
-            TempData[PickSireDamContextKeys.Rbse] = Rbse;
-            TempData[PickSireDamContextKeys.ReturnTo] = "Relations";
-            TempData[PickSireDamContextKeys.Eartag] = eartag;
-            TempData[PickSireDamContextKeys.Name] = name;
-            TempData[PickSireDamContextKeys.Herdbook] = herdbook;
-
-            if (searchRbse.Length == 0)
-            {
-                // Legacy URL shape for blank RBSE lookup:
-                // PickSireDam.aspx?eartag=&name=&herdbook=&sex=M
-                // (case RBSE context is carried outside query string)
-                return RedirectToPage("/Case/PickSireDam", new
-                {
-                    sex = isDam ? "F" : "M",
-                    eartag = string.Empty,
-                    name = string.Empty,
-                    herdbook = string.Empty
-                });
-            }
-
-            return RedirectToPage("/Case/PickSireDam", new
-            {
-                rbse = Rbse,
-                sex = isDam ? "F" : "M",
-                eartag,
-                name,
-                herdbook,
-                returnTo = "Relations"
-            });
-        }
+            return RedirectToPickSireDam(isDam);
 
         // Re-rendering this page directly (no redirect) — hydrate the rest of the page state
         // (case herdbook, dam status options, SPOL link) that LoadAsync/LoadOrInitializeRelationsDraftAsync
@@ -340,6 +327,44 @@ public class RelationsModel(
         PopulateOppositeParentFromDetails(isDam);
 
         return Page();
+    }
+
+    private IActionResult RedirectToPickSireDam(bool isDam)
+    {
+        var eartag = isDam ? DamSire.DamSearchEartag : DamSire.SireSearchEartag;
+        var name = isDam ? DamSire.DamSearchName : DamSire.SireSearchName;
+        var herdbook = isDam ? DamSire.DamSearchHerdbook : DamSire.SireSearchHerdbook;
+        var searchRbse = RbseHelper.ParseToRaw(isDam ? DamSire.DamSearchRbse : DamSire.SireSearchRbse);
+
+        TempData[PickSireDamContextKeys.Rbse] = Rbse;
+        TempData[PickSireDamContextKeys.ReturnTo] = "Relations";
+        TempData[PickSireDamContextKeys.Eartag] = eartag;
+        TempData[PickSireDamContextKeys.Name] = name;
+        TempData[PickSireDamContextKeys.Herdbook] = herdbook;
+
+        if (searchRbse.Length == 0)
+        {
+            // Legacy URL shape for blank RBSE lookup:
+            // PickSireDam.aspx?eartag=&name=&herdbook=&sex=M
+            // (case RBSE context is carried outside query string)
+            return RedirectToPage("/Case/PickSireDam", new
+            {
+                sex = isDam ? "F" : "M",
+                eartag = string.Empty,
+                name = string.Empty,
+                herdbook = string.Empty
+            });
+        }
+
+        return RedirectToPage("/Case/PickSireDam", new
+        {
+            rbse = Rbse,
+            sex = isDam ? "F" : "M",
+            eartag,
+            name,
+            herdbook,
+            returnTo = "Relations"
+        });
     }
 
     private void PopulateOppositeParentFromDetails(bool justLookedUpDam)
@@ -909,59 +934,65 @@ public class RelationsModel(
     /// <summary>Resolves a dam/sire selected by RBSE (rather than explicit Look Up) into full details.</summary>
     private async Task<IActionResult?> ResolveLinkedParentsFromRbseLookupAsync()
     {
-        if (!string.IsNullOrWhiteSpace(DamSire.DamRbse)
-            && (DamSire.DamId <= 0 || string.IsNullOrWhiteSpace(DamSire.DamRowStamp)))
-        {
-            var damMatches = await relationsRepository.GetDamSireDetailsMatchesAsync(
-                null, null, RbseHelper.Normalize(DamSire.DamRbse), null, "F");
-            if (damMatches.Count > 1)
-            {
-                DamError = "Multiple dam matches were found. Please use Look Up and select a single record.";
-                return Page();
-            }
+        var damResult = await ResolveLinkedParentFromRbseLookupAsync(isDam: true);
+        if (damResult is not null)
+            return damResult;
 
-            var linkedDam = damMatches.Count > 0 ? damMatches[0] : null;
-            if (linkedDam is not null)
-            {
-                DamSire.HasDam = true;
-                DamSire.DamId = linkedDam.Id;
-                DamSire.DamEartag = linkedDam.Eartag;
-                DamSire.DamName = linkedDam.Name;
-                DamSire.DamHerdbook = linkedDam.Herdbook;
-                DamSire.DamBirthDay = linkedDam.BirthDay;
-                DamSire.DamBirthMonth = linkedDam.BirthMonth;
-                DamSire.DamBirthYear = linkedDam.BirthYear;
-                DamSire.DamRowStamp = ToBase64(linkedDam.RowStamp);
-            }
+        return await ResolveLinkedParentFromRbseLookupAsync(isDam: false);
+    }
+
+    private async Task<IActionResult?> ResolveLinkedParentFromRbseLookupAsync(bool isDam)
+    {
+        var rbse = isDam ? DamSire.DamRbse : DamSire.SireRbse;
+        var id = isDam ? DamSire.DamId : DamSire.SireId;
+        var rowStamp = isDam ? DamSire.DamRowStamp : DamSire.SireRowStamp;
+
+        if (string.IsNullOrWhiteSpace(rbse) || (id > 0 && !string.IsNullOrWhiteSpace(rowStamp)))
+            return null;
+
+        var matches = await relationsRepository.GetDamSireDetailsMatchesAsync(
+            null, null, RbseHelper.Normalize(rbse), null, isDam ? "F" : "M");
+
+        if (matches.Count > 1)
+        {
+            var parentNoun = isDam ? "dam" : "sire";
+            SetError(isDam, $"Multiple {parentNoun} matches were found. Please use Look Up and select a single record.");
+            return Page();
         }
 
-        if (!string.IsNullOrWhiteSpace(DamSire.SireRbse)
-            && (DamSire.SireId <= 0 || string.IsNullOrWhiteSpace(DamSire.SireRowStamp)))
-        {
-            var sireMatches = await relationsRepository.GetDamSireDetailsMatchesAsync(
-                null, null, RbseHelper.Normalize(DamSire.SireRbse), null, "M");
-            if (sireMatches.Count > 1)
-            {
-                SireError = "Multiple sire matches were found. Please use Look Up and select a single record.";
-                return Page();
-            }
-
-            var linkedSire = sireMatches.Count > 0 ? sireMatches[0] : null;
-            if (linkedSire is not null)
-            {
-                DamSire.HasSire = true;
-                DamSire.SireId = linkedSire.Id;
-                DamSire.SireEartag = linkedSire.Eartag;
-                DamSire.SireName = linkedSire.Name;
-                DamSire.SireHerdbook = linkedSire.Herdbook;
-                DamSire.SireBirthDay = linkedSire.BirthDay;
-                DamSire.SireBirthMonth = linkedSire.BirthMonth;
-                DamSire.SireBirthYear = linkedSire.BirthYear;
-                DamSire.SireRowStamp = ToBase64(linkedSire.RowStamp);
-            }
-        }
+        var linked = matches.Count > 0 ? matches[0] : null;
+        if (linked is not null)
+            ApplyLinkedParent(isDam, linked);
 
         return null;
+    }
+
+    private void ApplyLinkedParent(bool isDam, DamSireDetailRecord linked)
+    {
+        if (isDam)
+        {
+            DamSire.HasDam = true;
+            DamSire.DamId = linked.Id;
+            DamSire.DamEartag = linked.Eartag;
+            DamSire.DamName = linked.Name;
+            DamSire.DamHerdbook = linked.Herdbook;
+            DamSire.DamBirthDay = linked.BirthDay;
+            DamSire.DamBirthMonth = linked.BirthMonth;
+            DamSire.DamBirthYear = linked.BirthYear;
+            DamSire.DamRowStamp = ToBase64(linked.RowStamp);
+        }
+        else
+        {
+            DamSire.HasSire = true;
+            DamSire.SireId = linked.Id;
+            DamSire.SireEartag = linked.Eartag;
+            DamSire.SireName = linked.Name;
+            DamSire.SireHerdbook = linked.Herdbook;
+            DamSire.SireBirthDay = linked.BirthDay;
+            DamSire.SireBirthMonth = linked.BirthMonth;
+            DamSire.SireBirthYear = linked.BirthYear;
+            DamSire.SireRowStamp = ToBase64(linked.RowStamp);
+        }
     }
 
     /// <summary>
@@ -1138,7 +1169,7 @@ public class RelationsModel(
             return new JsonResult(new { found = false });
 
         var birthDate = related.BirthDay is > 0 && related.BirthMonth is > 0 && related.BirthYear is > 0
-            ? new DateTime(related.BirthYear.Value, related.BirthMonth.Value, related.BirthDay.Value).ToString("dd/MM/yyyy")
+            ? new DateTime(related.BirthYear.Value, related.BirthMonth.Value, related.BirthDay.Value, 0, 0, 0, DateTimeKind.Unspecified).ToString("dd/MM/yyyy")
             : null;
 
         return new JsonResult(new
@@ -1195,28 +1226,31 @@ public class RelationsModel(
 
         var normalizedRbse = RbseHelper.ParseToRaw(RelationRbse);
         if (normalizedRbse.Length > 0)
-        {
-            var related = await relationsRepository.GetRelationDetailsOfRelatedCaseAsync(normalizedRbse);
-            if (related is null)
-            {
-                RelationFieldErrors = new Dictionary<string, string> { ["RelationRbse"] = RelationValidation.RbseNotFound };
-                return;
-            }
+            await ApplyRelatedCaseFieldsAsync(normalizedRbse);
+    }
 
-            Sex = related.Sex;
-            RelationFate = related.Fate;
-            EartagCountry = related.EartagCountry;
-            EartagHerdmark = related.EartagHerdmark;
-            Eartag = related.Eartag;
-            BirthDay = related.BirthDay;
-            BirthMonth = related.BirthMonth;
-            BirthYear = related.BirthYear;
-            BirthDate = related.BirthDay > 0 && related.BirthMonth > 0 && related.BirthYear > 0
-                ? new DateTime(related.BirthYear.Value, related.BirthMonth.Value, related.BirthDay.Value, 0, 0, 0, DateTimeKind.Unspecified)
-                : null;
-            LeftDate = DateTime.TryParse(related.LeftDate, System.Globalization.CultureInfo.InvariantCulture, out var leftDate) ? leftDate : null;
-            Sire = related.Name;
+    private async Task ApplyRelatedCaseFieldsAsync(string normalizedRbse)
+    {
+        var related = await relationsRepository.GetRelationDetailsOfRelatedCaseAsync(normalizedRbse);
+        if (related is null)
+        {
+            RelationFieldErrors = new Dictionary<string, string> { ["RelationRbse"] = RelationValidation.RbseNotFound };
+            return;
         }
+
+        Sex = related.Sex;
+        RelationFate = related.Fate;
+        EartagCountry = related.EartagCountry;
+        EartagHerdmark = related.EartagHerdmark;
+        Eartag = related.Eartag;
+        BirthDay = related.BirthDay;
+        BirthMonth = related.BirthMonth;
+        BirthYear = related.BirthYear;
+        BirthDate = related.BirthDay > 0 && related.BirthMonth > 0 && related.BirthYear > 0
+            ? new DateTime(related.BirthYear.Value, related.BirthMonth.Value, related.BirthDay.Value, 0, 0, 0, DateTimeKind.Unspecified)
+            : null;
+        LeftDate = DateTime.TryParse(related.LeftDate, System.Globalization.CultureInfo.InvariantCulture, out var leftDate) ? leftDate : null;
+        Sire = related.Name;
     }
 
     /// <summary>Persists staged relation changes. Returns an error message if a row was
@@ -1333,13 +1367,13 @@ public class RelationsModel(
 
     private sealed record PedigreeSnapshot
     {
-        public string? Eartag { get; init; }
-        public string? Name { get; init; }
-        public string? Herdbook { get; init; }
-        public int? BirthDay { get; init; }
-        public int? BirthMonth { get; init; }
-        public int? BirthYear { get; init; }
-        public byte[]? RowStamp { get; init; }
+        public string? Eartag { get; set; }
+        public string? Name { get; set; }
+        public string? Herdbook { get; set; }
+        public int? BirthDay { get; set; }
+        public int? BirthMonth { get; set; }
+        public int? BirthYear { get; set; }
+        public byte[]? RowStamp { get; set; }
     }
 
     /// <summary>Populates DamSire from the freshly-loaded Details. GET requests only.</summary>
