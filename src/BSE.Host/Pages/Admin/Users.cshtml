@@ -132,7 +132,7 @@
                     <tr class="govuk-table__row bse-row-editing">
                         <td class="govuk-table__cell bse-row-select-cell"></td>
                         <input type="hidden" asp-for="EditUpn" />
-                        ViewData["RowId"] = addRowId;
+                        @{ ViewData["RowId"] = addRowId; }
                         <partial name="_UserEditRowFields" />
                     </tr>
                 }
