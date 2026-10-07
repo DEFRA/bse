@@ -220,14 +220,17 @@
             </div>
         </fieldset>
 
-        @if (canEditSireSection)
+        @if (canEditSireSection || sireLinked)
         {
             <div class="govuk-button-group bse-relations-actions">
-                <form method="post" asp-page="/Case/Relations" asp-page-handler="RemoveSire" asp-route-rbse="@Model.Rbse" novalidate>
-                    <input type="hidden" asp-for="Rbse" />
-                    <button type="submit" class="govuk-button govuk-button--warning"
-                            onclick="return confirm('This will disassociate the sire from the case.  Do you wish to continue?');">Remove Sire</button>
-                </form>
+                @if (canEditSireSection)
+                {
+                    <form method="post" asp-page="/Case/Relations" asp-page-handler="RemoveSire" asp-route-rbse="@Model.Rbse" novalidate>
+                        <input type="hidden" asp-for="Rbse" />
+                        <button type="submit" class="govuk-button govuk-button--warning"
+                                onclick="return confirm('This will disassociate the sire from the case.  Do you wish to continue?');">Remove Sire</button>
+                    </form>
+                }
                 @if (sireLinked)
                 {
                     <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationsView" asp-route-rbse="@d.SireRbse">View Sire's Relations</a>
@@ -245,14 +248,14 @@
                     <div class="bse-relations-parent-column">
                         <div class="bse-relations-parent-field-row">
                             <label class="govuk-label" asp-for="DamSire.SireSearchRbse">RBSE</label>
-                            <input asp-for="DamSire.SireSearchRbse" class="govuk-input bse-relations-parent-input" readonly="readonly" />
+                            <input asp-for="DamSire.SireSearchRbse" class="govuk-input bse-relations-parent-input" />
                         </div>
                         <div class="bse-relations-parent-field-row">
                             <label class="govuk-label" asp-for="DamSire.SireSearchEartag">Eartag</label>
-                            <input asp-for="DamSire.SireSearchEartag" class="govuk-input bse-relations-parent-input" readonly="readonly" />
+                            <input asp-for="DamSire.SireSearchEartag" class="govuk-input bse-relations-parent-input" />
                         </div>
                         <div class="bse-relations-parent-field-row bse-relations-parent-field-row--button">
-                            <button type="button" class="govuk-button govuk-button--secondary bse-relations-parent-lookup-button" disabled>Look Up</button>
+                            <button type="submit" class="govuk-button govuk-button--secondary bse-relations-parent-lookup-button" data-module="govuk-button">Look Up</button>
                         </div>
                         <div class="bse-relations-parent-field-row">
                             <span class="govuk-label">Fate</span>
@@ -263,11 +266,11 @@
                     <div class="bse-relations-parent-column">
                         <div class="bse-relations-parent-field-row">
                             <label class="govuk-label" asp-for="DamSire.SireSearchName">Name</label>
-                            <input asp-for="DamSire.SireSearchName" class="govuk-input bse-relations-parent-input" readonly="readonly" />
+                            <input asp-for="DamSire.SireSearchName" class="govuk-input bse-relations-parent-input" />
                         </div>
                         <div class="bse-relations-parent-field-row">
                             <label class="govuk-label" asp-for="DamSire.SireSearchHerdbook">Herdbook</label>
-                            <input asp-for="DamSire.SireSearchHerdbook" class="govuk-input bse-relations-parent-input" readonly="readonly" />
+                            <input asp-for="DamSire.SireSearchHerdbook" class="govuk-input bse-relations-parent-input" />
                         </div>
                         <div class="bse-relations-parent-field-row bse-relations-parent-field-row--spacer"></div>
                         <div class="bse-relations-parent-field-row">
@@ -383,14 +386,17 @@
             </div>
         </div>
 
-        @if (canEditDamSection)
+        @if (canEditDamSection || damLinked)
         {
             <div class="govuk-button-group bse-relations-actions">
-                <form method="post" asp-page="/Case/Relations" asp-page-handler="RemoveDam" asp-route-rbse="@Model.Rbse" novalidate>
-                    <input type="hidden" asp-for="Rbse" />
-                    <button type="submit" class="govuk-button govuk-button--warning"
-                            onclick="return confirm('This will disassociate the dam from the case.  Do you wish to continue?');">Remove Dam</button>
-                </form>
+                @if (canEditDamSection)
+                {
+                    <form method="post" asp-page="/Case/Relations" asp-page-handler="RemoveDam" asp-route-rbse="@Model.Rbse" novalidate>
+                        <input type="hidden" asp-for="Rbse" />
+                        <button type="submit" class="govuk-button govuk-button--warning"
+                                onclick="return confirm('This will disassociate the dam from the case.  Do you wish to continue?');">Remove Dam</button>
+                    </form>
+                }
                 @if (damLinked)
                 {
                     <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationsView" asp-route-rbse="@d.DamRbse">View Dam's Relations</a>
@@ -864,5 +870,66 @@
                 }
             });
         });
+
+        (function () {
+            var rbseInput = document.getElementById('relation-rbse');
+            var relatedFields = ['sex', 'relation-fate', 'eartag-country', 'eartag-herdmark', 'eartag', 'birth-date', 'left-date', 'sire']
+                .map(function (id) { return document.getElementById(id); })
+                .filter(Boolean);
+
+            if (!rbseInput) {
+                return;
+            }
+
+            function setField(id, value) {
+                var el = document.getElementById(id);
+                if (el) {
+                    el.value = value || '';
+                }
+            }
+
+            function setRelatedFieldsDisabled(disabled) {
+                relatedFields.forEach(function (el) { el.disabled = disabled; });
+            }
+
+            function clearRelatedFields() {
+                ['sex', 'relation-fate', 'eartag-country', 'eartag-herdmark', 'eartag', 'birth-date', 'left-date', 'sire']
+                    .forEach(function (id) { setField(id, ''); });
+            }
+
+            // Mirrors legacy ctlRelationRBSE_RBSEChanged: look up the related case and populate
+            // Sex/Fate/Eartag/birth date/left date/Sire, disabling those fields while an RBSE is set.
+            function lookUpRelationRbse() {
+                var rbse = rbseInput.value.trim();
+                if (!rbse) {
+                    clearRelatedFields();
+                    setRelatedFieldsDisabled(false);
+                    return;
+                }
+
+                fetch('?handler=RelationDetails&rbse=' + encodeURIComponent(rbse))
+                    .then(function (response) { return response.ok ? response.json() : null; })
+                    .then(function (result) {
+                        if (!result || !result.found) {
+                            clearRelatedFields();
+                            setRelatedFieldsDisabled(false);
+                            return;
+                        }
+
+                        setField('sex', result.sex);
+                        setField('relation-fate', result.fate);
+                        setField('eartag-country', result.eartagCountry);
+                        setField('eartag-herdmark', result.eartagHerdmark);
+                        setField('eartag', result.eartag);
+                        setField('birth-date', result.birthDate);
+                        setField('left-date', result.leftDate);
+                        setField('sire', result.sire);
+                        setRelatedFieldsDisabled(true);
+                    })
+                    .catch(function () { /* network error — leave fields as last entered */ });
+            }
+
+            rbseInput.addEventListener('blur', lookUpRelationRbse);
+        })();
     </script>
 

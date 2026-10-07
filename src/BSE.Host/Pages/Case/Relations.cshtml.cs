@@ -1124,6 +1124,37 @@ public class RelationsModel(
 
     public async Task<IActionResult> OnGetCancelRelationsEditAsync() => await CancelRelationsEditAsync();
 
+    /// <summary>Live lookup for the relation-panel RBSE field, mirrors legacy's
+    /// ctlRelationRBSE_RBSEChanged autopostback (populates Sex/Fate/Eartag/birth date/left
+    /// date/Sire from the related case as soon as a valid RBSE is entered, before Save).</summary>
+    public async Task<IActionResult> OnGetRelationDetailsAsync(string? rbse)
+    {
+        var normalized = RbseHelper.ParseToRaw(rbse);
+        if (normalized.Length == 0)
+            return new JsonResult(new { found = false });
+
+        var related = await relationsRepository.GetRelationDetailsOfRelatedCaseAsync(normalized);
+        if (related is null)
+            return new JsonResult(new { found = false });
+
+        var birthDate = related.BirthDay is > 0 && related.BirthMonth is > 0 && related.BirthYear is > 0
+            ? new DateTime(related.BirthYear.Value, related.BirthMonth.Value, related.BirthDay.Value).ToString("dd/MM/yyyy")
+            : null;
+
+        return new JsonResult(new
+        {
+            found = true,
+            sex = related.Sex,
+            fate = related.Fate,
+            eartagCountry = related.EartagCountry,
+            eartagHerdmark = related.EartagHerdmark,
+            eartag = related.Eartag,
+            birthDate,
+            leftDate = related.LeftDate,
+            sire = related.Name
+        });
+    }
+
     private async Task<IActionResult> CancelRelationsEditAsync()
     {
         await relationsDraftState.ClearAsync(RbseHelper.ParseToRaw(Rbse));
