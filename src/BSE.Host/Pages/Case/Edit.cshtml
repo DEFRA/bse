@@ -277,14 +277,13 @@
             <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
 
             <h2 class="govuk-visually-hidden">Test records</h2>
-            <table class="govuk-table">
+            <table id="test-records" class="govuk-table">
                 <caption class="govuk-visually-hidden">Test records for @BseFormat.FormatRbse(Model.Case.Rbse)</caption>
                 <thead class="govuk-table__head">
                     <tr class="govuk-table__row">
                         <th scope="col" class="govuk-table__header" aria-sort="@(Model.TSort=="type" ? (Model.TDir=="asc" ? "ascending" : "descending") : "none")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.TestsSortUrl("type")">Test type</a>
-                        </th>
-                        <th scope="col" class="govuk-table__header" aria-sort="@(Model.TSort=="result" ? (Model.TDir=="asc" ? "ascending" : "descending") : "none")">
+                        </th>                        <th scope="col" class="govuk-table__header" aria-sort="@(Model.TSort=="result" ? (Model.TDir=="asc" ? "ascending" : "descending") : "none")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.TestsSortUrl("result")">Test result</a>
                         </th>
                         <th scope="col" class="govuk-table__header">Action</th>
