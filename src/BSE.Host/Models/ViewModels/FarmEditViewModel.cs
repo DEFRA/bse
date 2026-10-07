@@ -44,6 +44,11 @@ public class FarmEditViewModel
     public int? AuthorityID { get; set; }
     public int? AuthorityCountyID { get; set; }
 
+    /// <summary>Authoritative, stored non-GB flag (not re-derived from the CPHH prefix) — must match
+    /// what CaseEditOrchestrationService's mandatory-fields check uses, so the UI never locks/excludes
+    /// a field (e.g. ADNS Region) that the backend still requires.</summary>
+    public bool IsNonGBFarm { get; set; }
+
     public AddFarmCommand ToAddCommand() => new(
         CPHH, OwnerName, Address1, Address2, Address3, Postcode,
         Parish, District, County,
@@ -122,6 +127,7 @@ public class FarmEditViewModel
         IsDealer               = r.IsDealer,
         ADNSRegionID           = r.ADNSRegionID,
         AuthorityID            = r.AuthorityID,
-        AuthorityCountyID      = r.AuthorityCountyID
+        AuthorityCountyID      = r.AuthorityCountyID,
+        IsNonGBFarm            = r.IsNonGBFarm
     };
 }

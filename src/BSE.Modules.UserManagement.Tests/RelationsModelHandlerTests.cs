@@ -57,7 +57,7 @@ public sealed class RelationsModelHandlerTests
     {
         var model = new RelationsModel(
             _relationsRepository, _pedigreeRepository, _caseService, _lookups,
-            _batchRepository, _relationsDraftState, _connectionFactory, _currentUser,
+            _batchRepository, _relationsDraftState, Substitute.For<ICaseScalarDraftStateService>(), Substitute.For<ICaseEditOrchestrationService>(), _connectionFactory, _currentUser,
             NullLogger<RelationsModel>.Instance,
             new ConfigurationBuilder().AddInMemoryCollection().Build())
         {

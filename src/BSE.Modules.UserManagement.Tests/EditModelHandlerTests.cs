@@ -40,6 +40,8 @@ public sealed class EditModelHandlerTests
     private readonly ICaseWorkRepository _caseWorkRepository = Substitute.For<ICaseWorkRepository>();
     private readonly ITestRepository _testRepository = Substitute.For<ITestRepository>();
     private readonly ICaseEditDraftStateService _caseEditDraftState = Substitute.For<ICaseEditDraftStateService>();
+    private readonly ICaseScalarDraftStateService _caseScalarDraftState = Substitute.For<ICaseScalarDraftStateService>();
+    private readonly ICaseEditOrchestrationService _caseEditOrchestration = Substitute.For<ICaseEditOrchestrationService>();
     private readonly IBatchRepository _batchRepository = Substitute.For<IBatchRepository>();
 
     private const string Rbse = "002600001";
@@ -59,7 +61,7 @@ public sealed class EditModelHandlerTests
     {
         var model = new EditModel(
             _caseService, _currentUserService, _lookups, _caseWorkRepository,
-            _testRepository, _caseEditDraftState, _batchRepository,
+            _testRepository, _caseEditDraftState, _caseScalarDraftState, _caseEditOrchestration, _batchRepository,
             new ConfigurationBuilder().AddInMemoryCollection().Build())
         {
             Rbse = Rbse

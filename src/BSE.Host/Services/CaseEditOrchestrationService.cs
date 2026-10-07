@@ -40,7 +40,8 @@ public sealed class CaseEditOrchestrationService(
     IFeedRepository feedRepository,
     IAnimalRelationsRepository relationsRepository,
     IPedigreeRepository pedigreeRepository,
-    IDbConnectionFactory connectionFactory) : ICaseEditOrchestrationService
+    IDbConnectionFactory connectionFactory,
+    ILogger<CaseEditOrchestrationService> logger) : ICaseEditOrchestrationService
 {
     public async Task<EditCaseResult> CommitAllAsync(string rbse, int userId)
     {
@@ -257,12 +258,12 @@ public sealed class CaseEditOrchestrationService(
         if (currentCase is null)
             return errors; // RbseNotFound — surfaced by the EditCase call that follows this check.
 
-        var eartagCountry = stagedCase?.EartagCountry ?? currentCase.EartagCountry;
-        var eartagHerdmark = stagedCase?.EartagHerdmark ?? currentCase.EartagHerdmark;
-        var eartag = stagedCase?.Eartag ?? currentCase.Eartag;
-        var formADate = stagedCase?.FormADate ?? currentCase.FormADate;
-        var formBDate = stagedCase?.FormBDate ?? currentCase.FormBDate;
-        var fate = stagedCase?.Fate ?? currentCase.Fate;
+        var eartagCountry = stagedCase is not null ? stagedCase.EartagCountry : currentCase.EartagCountry;
+        var eartagHerdmark = stagedCase is not null ? stagedCase.EartagHerdmark : currentCase.EartagHerdmark;
+        var eartag = stagedCase is not null ? stagedCase.Eartag : currentCase.Eartag;
+        var formADate = stagedCase is not null ? stagedCase.FormADate : currentCase.FormADate;
+        var formBDate = stagedCase is not null ? stagedCase.FormBDate : currentCase.FormBDate;
+        var fate = stagedCase is not null ? stagedCase.Fate : currentCase.Fate;
 
         if (string.IsNullOrWhiteSpace(currentCase.Cphh))
         {
@@ -277,11 +278,15 @@ public sealed class CaseEditOrchestrationService(
             }
             else
             {
-                var ownerName = stagedFarm?.OwnerName ?? farm.OwnerName;
-                var address1 = stagedFarm?.Address1 ?? farm.Address1;
-                var parish = stagedFarm?.Parish ?? farm.Parish;
-                var county = stagedFarm?.County ?? farm.County;
-                var aho = stagedFarm?.AHO ?? farm.AHO;
+                // Field-level '??' is wrong here: once the whole Farm command is staged this round,
+                // a null property on it means the user genuinely left that field blank, not "untouched"
+                // — falling back to the old DB value would silently let a cleared mandatory field (and,
+                // for NOT NULL columns like OwnerName, a NULL) reach the database unnoticed.
+                var ownerName = stagedFarm is not null ? stagedFarm.OwnerName : farm.OwnerName;
+                var address1 = stagedFarm is not null ? stagedFarm.Address1 : farm.Address1;
+                var parish = stagedFarm is not null ? stagedFarm.Parish : farm.Parish;
+                var county = stagedFarm is not null ? stagedFarm.County : farm.County;
+                var aho = stagedFarm is not null ? stagedFarm.AHO : farm.AHO;
                 var adnsRegionId = stagedFarm is not null ? stagedFarm.ADNSRegionID : farm.ADNSRegionID;
                 var isNonGbFarm = farm.IsNonGBFarm;
 
@@ -297,6 +302,14 @@ public sealed class CaseEditOrchestrationService(
                     errors.Add("Please specify an AHO for the farm.");
                 if (adnsRegionId is null && !isNonGbFarm)
                     errors.Add("Please specify an ADNS Region for the farm.");
+
+                // Diagnostic: helps pin down reports of "only some of the missing fields show" by
+                // capturing exactly what each check saw this round, without changing behaviour.
+                logger.LogInformation(
+                    "CheckMandatoryFieldsAsync farm check for {Rbse}: stagedFarmIsNull={StagedFarmIsNull} " +
+                    "isNonGbFarm={IsNonGbFarm} ownerName={OwnerName} address1={Address1} parish={Parish} " +
+                    "county={County} aho={Aho} adnsRegionId={AdnsRegionId}",
+                    rbse, stagedFarm is null, isNonGbFarm, ownerName, address1, parish, county, aho, adnsRegionId);
             }
         }
 
@@ -308,6 +321,9 @@ public sealed class CaseEditOrchestrationService(
 
         if (formBDate.HasValue && string.IsNullOrWhiteSpace(fate))
             errors.Add("Please specify a fate (Form B Reason) for the case.");
+
+        logger.LogInformation("CheckMandatoryFieldsAsync for {Rbse} returning {Count} error(s): {Errors}",
+            rbse, errors.Count, errors);
 
         return errors;
     }

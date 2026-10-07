@@ -9,7 +9,11 @@
     var authCountyOptions  = ViewData["AuthorityCountyOptions"]  as IEnumerable<BSE.SharedKernel.ILookupItem> ?? Enumerable.Empty<BSE.SharedKernel.ILookupItem>();
     var authorityOptions   = ViewData["AuthorityOptions"]        as IEnumerable<LuAuthority>                  ?? Enumerable.Empty<LuAuthority>();
     var adnsOptions        = ViewData["AdnsOptions"]             as IEnumerable<LuADNSRegion>                 ?? Enumerable.Empty<LuADNSRegion>();
-    var isNonGbFarm = !string.IsNullOrWhiteSpace(farm.CPHH) && BSE.SharedKernel.CphhNormalizer.Normalize(farm.CPHH).StartsWith("00", StringComparison.Ordinal);
+    // Authoritative, stored flag — must match CaseEditOrchestrationService's mandatory-fields check,
+    // which also reads FarmRecord.IsNonGBFarm rather than re-deriving it from the CPHH prefix. Using a
+    // different (CPHH-prefix-based) determination here could disable/exclude a field from the POST
+    // (e.g. ADNS Region) that the backend still treats as mandatory, or vice versa.
+    var isNonGbFarm = farm.IsNonGBFarm;
     var canEditJointControls = ViewData["CanEditJointControls"] as bool? ?? true;
     var canEditVlaControls = ViewData["CanEditVlaControls"] as bool? ?? true;
     var canEditDefraControls = ViewData["CanEditDefraControls"] as bool? ?? true;

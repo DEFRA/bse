@@ -1098,12 +1098,6 @@ public class RelationsModel(
             var baseRowStamp = Convert.FromBase64String(draft.CaseBaseRowStampBase64);
             baseCommand = BSE.Host.Models.ViewModels.CaseEditViewModel.FromRecord(caseRecord).ToEditCommand(baseRowStamp);
         }
-        else
-        {
-            draft.CaseBaseRowStampBase64 ??= Convert.ToBase64String(caseRecord.RowStamp ?? []);
-            var baseRowStamp = Convert.FromBase64String(draft.CaseBaseRowStampBase64);
-            baseCommand = BSE.Host.Models.ViewModels.CaseEditViewModel.FromRecord(caseRecord).ToEditCommand(baseRowStamp);
-        }
 
         draft.Case = baseCommand with { DamStatus = DamSire.DamStatus };
         draft.HasPendingChanges = true;

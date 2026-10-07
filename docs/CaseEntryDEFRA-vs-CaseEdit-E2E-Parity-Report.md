@@ -636,6 +636,167 @@ Files changed: `Farm.cshtml.cs` only. `get_errors` clean.
 
 ---
 
+## Bug found and fixed: Farm form's "non-GB" determination disagreed with the backend's (2026-10-07, tenth follow-up)
+
+Reported symptom: `SaveResult` showed only one of the expected missing-field messages (Owner Name and
+ADNS Region both left blank, only one appeared).
+
+### Root cause
+
+[_FarmFormFields.cshtml](../src/BSE.Host/Pages/Farm/_FarmFormFields.cshtml) — the shared partial that
+renders the Farm tab's actual input fields — computed its own `isNonGbFarm` flag by re-deriving it from
+the CPHH prefix (`CphhNormalizer.Normalize(farm.CPHH).StartsWith("00")`), then used that flag to
+`disabled="..."` (not `readonly`) the Parish, AHO, Authority County, Local Authority and **ADNS Region**
+fields whenever it evaluated true. `CaseEditOrchestrationService.CheckMandatoryFieldsAsync`, by
+contrast, uses `FarmRecord.IsNonGBFarm` — the authoritative, stored column (confirmed in the fourth
+follow-up as the deliberate, correct source of truth, specifically **not** re-derived from the CPHH
+prefix). When these two determinations disagree for a given farm, the UI can `disabled`-lock a field
+the backend still considers mandatory. A `disabled` HTML field is never included in the form POST at
+all (unlike `readonly`, which still submits its current value) — so the field's current value is lost
+from that round's staged command entirely, and whether it then shows up as "missing" or silently falls
+back to its last-persisted value depends on what's already in the database for that one field, making
+the set of fields that actually surface on `SaveResult` inconsistent and dependent on this mismatch
+rather than on what the user actually left blank.
+
+### Fix
+
+* Added `IsNonGBFarm` to [FarmEditViewModel](../src/BSE.Host/Models/ViewModels/FarmEditViewModel.cs),
+  populated from `FarmRecord.IsNonGBFarm` in `FromRecord` — the same stored column the orchestrator
+  already uses.
+* `_FarmFormFields.cshtml` now reads `farm.IsNonGBFarm` directly instead of re-deriving it from the
+  CPHH prefix, so the UI's field-locking and the backend's mandatory-fields check are guaranteed to
+  agree for every farm, every time.
+* Confirmed both callers that edit an **existing** farm (`Pages/Case/Farm.cshtml` and
+  `Pages/Farm/Edit.cshtml`) populate their view model via `FromRecord`, so both pick up the fix
+  automatically. The brand-new-farm-creation callers (`Pages/Farm/New.cshtml`,
+  `Pages/Farm/MoveCaseNewFarm.cshtml`) construct a fresh, blank `FarmEditViewModel` with no prior
+  record — `IsNonGBFarm` defaults to `false` there, which is the safe default (fields stay enabled;
+  the real flag is derived by the SP on insert and only matters for edits thereafter).
+
+Files changed: `FarmEditViewModel.cs`, `_FarmFormFields.cshtml`. `get_errors` clean on both.
+
+---
+
+## Mandatory-fields accumulation logic proven correct by regression test (2026-10-07, eleventh follow-up)
+
+User reported the symptom persisted after the tenth follow-up's fix. Since this is the second report of
+"only one error" and static review alone hadn't settled it, added a direct, executable regression test
+rather than continuing to reason about it statically.
+
+### What was verified
+
+New test [CaseEditOrchestrationServiceTests.cs](../src/BSE.Modules.UserManagement.Tests/CaseEditOrchestrationServiceTests.cs)
+constructs the **real** `CaseEditOrchestrationService` (not a substitute) with every dependency mocked,
+stages a Farm update with **both** `OwnerName` and `ADNSRegionID` null (`IsNonGBFarm = false`, Address1/
+Parish/County/AHO all present so only those two are missing), and asserts `CommitAllAsync` throws
+`MandatoryCaseFieldsMissingException` whose `Errors` contains **both** messages. Ran via
+`dotnet test --filter CaseEditOrchestrationServiceTests` — **passed**, proving `CheckMandatoryFieldsAsync`
+correctly accumulates multiple simultaneous missing-field errors into one exception; this rules out the
+orchestrator/exception/SaveResult pipeline itself as the source of the "only one error" symptom.
+
+### Where this leaves the investigation
+
+With the core accumulation logic now proven correct by an executable test (not just code review), the
+remaining explanation is upstream of the orchestrator: either the specific scenario reproduced after the
+tenth follow-up's fix genuinely only has one field missing at the point of Save (e.g. the other field is
+being posted with a non-blank value the user didn't expect), or there is a narrower staging-path issue
+specific to how `Farm.cshtml.cs` builds the `UpdateFarmCommand` for that exact repro that hasn't been
+isolated yet. Follow-up needed: the exact message(s) now shown on `SaveResult`, to confirm whether this
+is a continuing defect or already-correct behaviour the user wants double-checked.
+
+Files changed: `CaseEditOrchestrationServiceTests.cs` (new). `dotnet test` passed (1/1).
+
+---
+
+## Diagnostic logging added to pin down the remaining case (2026-10-07, twelfth follow-up)
+
+Follow-up confirmed via direct questions: Owner Name **is** genuinely blank on the test farm, yet only
+"Please specify an ADNS Region for the farm." appears on `SaveResult` — not the Owner Name message too.
+This is a genuine inconsistency the regression test (eleventh follow-up) proves is **not** caused by
+`CheckMandatoryFieldsAsync`'s accumulation logic itself (it correctly returns both messages when both
+inputs it receives are blank). Checked every code path between the browser form post and that check —
+`StageFarmScalarEditAsync` fully replaces `draft.Farm` each round (no partial-merge risk),
+`ApplyLegacyJointAndVlaEditGuards` only restores Herdmark/PedigreeType fields (not Owner Name), the
+distributed-cache draft store does a full JSON serialise/deserialise (no merge semantics) — found no
+further defect by static review alone.
+
+Added structured logging to `CheckMandatoryFieldsAsync` (now takes an `ILogger<CaseEditOrchestrationService>`)
+recording, for every Save: whether `stagedFarm` was null, `isNonGbFarm`, and the exact resolved
+`ownerName`/`address1`/`parish`/`county`/`aho`/`adnsRegionId` values the checks evaluated, plus the
+final error count/list for the whole check. This is purely additive (no behaviour change — confirmed by
+re-running the eleventh follow-up's regression test, still passing) and gives a concrete, inspectable
+answer next time this is reproduced, instead of further static guessing.
+
+**Action needed from the user:** restart the running app (a new constructor parameter was added, so
+hot-reload may not pick it up) and reproduce the Owner Name + ADNS Region scenario once more, then check
+the application console/log output for a line starting `CheckMandatoryFieldsAsync farm check for
+<rbse>: stagedFarmIsNull=... ownerName=... adnsRegionId=...` — that line will show definitively whether
+`ownerName` was actually blank at the point the check ran, or had been populated from somewhere.
+
+Files changed: `CaseEditOrchestrationService.cs` (added `ILogger` + 2 log statements),
+`CaseEditOrchestrationServiceTests.cs` (updated for the new constructor parameter). `dotnet test`
+re-run, still passing.
+
+---
+
+## 🔴 Root cause found and fixed: effective-value resolution silently masked a cleared mandatory field (2026-10-07, thirteenth follow-up)
+
+The user's restarted app surfaced the real underlying defect directly as a fatal SQL error:
+
+```
+Microsoft.Data.SqlClient.SqlException: Cannot insert the value NULL into column 'OwnerName',
+table 'bse_new.dbo.Farm'; column does not allow nulls. UPDATE fails.
+```
+
+### Root cause
+
+`CheckMandatoryFieldsAsync`'s "effective value" resolution used `stagedFarm?.OwnerName ?? farm.OwnerName`
+(and the equivalent for `Address1`/`Parish`/`County`/`AHO`, and separately for the Case-level
+`stagedCase?.EartagCountry ?? currentCase.EartagCountry` and siblings). This `?.`/`??` combination
+collapses two **different** situations into the same fallback behaviour:
+
+1. "The whole Farm command wasn't staged this round at all" (`stagedFarm` is `null`) — falling back to
+   the current DB value is correct here.
+2. "The whole Farm command **was** staged this round, and this particular property on it is `null`
+   because the user left that field genuinely blank on the form" — falling back to the DB value here is
+   **wrong**: it silently resurrects the old value and makes it impossible for the mandatory check to
+   ever see the field as missing.
+
+Because `Farm.cshtml.cs`'s `StageFarmScalarEditAsync` always stages the **complete** current form state
+(`draft.Farm = command`, a full replace, not a partial diff — confirmed in the twelfth follow-up), a
+`null` on an individual property of that staged command unambiguously means "submitted blank this
+round", never "not touched". Owner Name's column is `NOT NULL` in the database, so once the check
+incorrectly treated a cleared Owner Name as "still has its old value", `CommitAllAsync` proceeded past
+the mandatory check (no exception, no `SaveResult` redirect) straight into the real `UPDATE Farm` call
+with the genuinely-null staged value — which the database then rejected outright.
+
+This also explains the "only one error" symptom precisely: `ADNSRegionID` already used the correct
+object-level pattern (`stagedFarm is not null ? stagedFarm.ADNSRegionID : farm.ADNSRegionID` — written
+correctly from the start in the fourth follow-up), so a cleared ADNS Region was detected correctly,
+while Owner Name (and Address 1/Parish/County/AHO, and every Case-level field) used the flawed `??`
+pattern and were never detected as missing once previously saved with a value.
+
+### Fix
+
+Changed every effective-value resolution in `CheckMandatoryFieldsAsync` — both the Farm-level fields
+(`OwnerName`, `Address1`, `Parish`, `County`, `AHO`) and the Case-level fields (`EartagCountry`,
+`EartagHerdmark`, `Eartag`, `FormADate`, `FormBDate`, `Fate`) — to the same object-level pattern already
+used correctly for `ADNSRegionID`: `stagedX is not null ? stagedX.Field : current.Field`. Now, whenever
+the whole staged command exists, its value is used as-is (even if `null`), and the database fallback
+only applies when nothing was staged for that tab at all this round.
+
+Added a second regression test,
+`CommitAllAsync_WhenStagedFarmClearsAFieldThatStillHasAnOldDbValue_StillFlagsItMissing`, which stages
+Owner Name as `null` while the database still holds a non-null `"Previously Saved Owner"` — this is the
+exact scenario that previously reached the database and caused the `SqlException` above, and that the
+first regression test (eleventh follow-up) did not catch, because both its staged **and** DB values were
+`null` for Owner Name, so the bug didn't affect that result either way.
+
+Files changed: `CaseEditOrchestrationService.cs` (effective-value resolution fix, Case + Farm fields),
+`CaseEditOrchestrationServiceTests.cs` (new regression test added).
+
+---
+
 ## Executive summary
 
 | # | Finding | Severity |
