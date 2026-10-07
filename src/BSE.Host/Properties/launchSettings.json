@@ -5,7 +5,7 @@
       "launchBrowser": true,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "Authentication__BypassEnabled": "false"
+        "Authentication__BypassEnabled": "true"
       },
       "applicationUrl": "https://localhost:53642;http://localhost:53643"
     }

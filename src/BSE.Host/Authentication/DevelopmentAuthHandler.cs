@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Security.Claims;
 using System.Security.Principal;
 using System.Text.Encodings.Web;
@@ -31,6 +32,25 @@ public sealed class DevelopmentAuthOptions : AuthenticationSchemeOptions
     /// Falls back to NtLogin if the Windows identity is unavailable.
     /// </summary>
     public bool UseWindowsIdentity { get; set; } = true;
+
+    /// <summary>
+    /// When true, emits the bse:groupId / bse:group / role claims directly so
+    /// GroupClaimsTransformation's DB lookup guard short-circuits and no SQL
+    /// connection is required at all for local/offline development.
+    /// </summary>
+    public bool SkipDbRoleLookup { get; set; }
+
+    /// <summary>
+    /// UserGroup enum id (BSE.SharedKernel.UserGroup) to emit as bse:groupId when
+    /// SkipDbRoleLookup is true. Defaults to 1 (Admin) for full local access.
+    /// </summary>
+    public int DevUserGroupId { get; set; } = 1;
+
+    /// <summary>
+    /// Display group name (matches GroupClaimsTransformation.GetPoliciesForGroup) to
+    /// emit as bse:group when SkipDbRoleLookup is true.
+    /// </summary>
+    public string DevUserGroupName { get; set; } = "VLA Maintenance";
 }
 
 /// <summary>
@@ -60,13 +80,23 @@ public sealed class DevelopmentAuthHandler : AuthenticationHandler<DevelopmentAu
         if (Logger.IsEnabled(LogLevel.Debug))
             Logger.LogDebug("DevBypass: signing in as NT login '{NtLogin}' with email '{Email}'", ntLogin, email);
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.NameIdentifier, email),
-            new Claim(ClaimTypes.Name,           email),
-            new Claim(ClaimTypes.Email,          email),
-            new Claim("preferred_username",      email),
+            new(ClaimTypes.NameIdentifier, email),
+            new(ClaimTypes.Name,           email),
+            new(ClaimTypes.Email,          email),
+            new("preferred_username",      email),
         };
+
+        if (Options.SkipDbRoleLookup)
+        {
+            // Pre-seed the authoritative DB-driven claims so GroupClaimsTransformation's
+            // guard (HasClaim bse:groupId) short-circuits and skips its SQL lookup entirely.
+            claims.Add(new Claim("bse:groupId", Options.DevUserGroupId.ToString()));
+            claims.Add(new Claim("bse:group",   Options.DevUserGroupName));
+            foreach (var policy in GetPoliciesForGroup(Options.DevUserGroupName))
+                claims.Add(new Claim(ClaimTypes.Role, policy));
+        }
 
         var identity  = new ClaimsIdentity(claims, SchemeName);
         var principal = new ClaimsPrincipal(identity);
@@ -74,6 +104,23 @@ public sealed class DevelopmentAuthHandler : AuthenticationHandler<DevelopmentAu
 
         return Task.FromResult(AuthenticateResult.Success(ticket));
     }
+
+    /// <summary>
+    /// Mirrors GroupClaimsTransformation.GetPoliciesForGroup so the dev bypass grants
+    /// the same policy set a real DB-resolved group would, without any DB dependency.
+    /// </summary>
+    private static IEnumerable<string> GetPoliciesForGroup(string? groupName) =>
+        groupName switch
+        {
+            "DEFRA Viewer"            => ["ReadOnly", "DEFRAAccess"],
+            "DEFRA Data Entry"        => ["ReadOnly", "DataEntry", "FarmCreation", "DEFRAAccess"],
+            "DEFRA Maintenance"       => ["ReadOnly", "DataEntry", "DEFRAMaintenance", "PickListAccess", "FarmCreation", "DEFRAAccess"],
+            "VLA Data Entry"          => ["ReadOnly", "DataEntry", "VLAAccess", "PickListAccess"],
+            "VLA Maintenance"         => ["ReadOnly", "DataEntry", "DEFRAMaintenance", "VLAAccess", "VLAMaintenance", "PickListAccess", "FarmCreation"],
+            "DEFRA AI Wales Scotland" => ["ReadOnly"],
+            "DEFRA AHO User"          => ["ReadOnly"],
+            _                         => []
+        };
 
     /// <summary>
     /// Priority:

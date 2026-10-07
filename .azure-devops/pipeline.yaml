@@ -20,6 +20,11 @@ parameters:
     type: boolean
     default: false
 
+  - name: deployDbScripts
+    displayName: Force deploy DB scripts (e.g. fresh infra / no schema yet)
+    type: boolean
+    default: false
+
   - name: runSonar
     displayName: Run SonarCloud analysis
     type: boolean
@@ -191,15 +196,17 @@ stages:
 
           - script: |
               if [ "$(dbScriptsChanged)" = "true" ]; then
-                echo "Database script changes detected � database deployment WILL be applied for DEV."
+                echo "Database script changes detected — database deployment WILL be applied for DEV."
+              elif [ "${{ parameters.deployDbScripts }}" = "True" ]; then
+                echo "deployDbScripts override enabled — database deployment WILL be applied for DEV (forced)."
               else
-                echo "No database script changes detected � database deployment WILL BE SKIPPED for DEV."
+                echo "No database script changes detected and deployDbScripts not set — database deployment WILL BE SKIPPED for DEV."
               fi
             displayName: 'Log database deployment decision'
 
           - task: AzureCLI@2
             displayName: 'Apply database scripts'
-            condition: and(succeeded(), eq(variables['dbScriptsChanged'], 'true'))
+            condition: and(succeeded(), or(eq(variables['dbScriptsChanged'], 'true'), eq('${{ parameters.deployDbScripts }}', true)))
             inputs:
               azureSubscription: 'AZR-BSE-DEV1'
               scriptType: bash
@@ -286,15 +293,17 @@ stages:
 
           - script: |
               if [ "$(dbScriptsChanged)" = "true" ]; then
-                echo "Database script changes detected � database deployment WILL be applied for DEV."
+                echo "Database script changes detected — database deployment WILL be applied for TST."
+              elif [ "${{ parameters.deployDbScripts }}" = "True" ]; then
+                echo "deployDbScripts override enabled — database deployment WILL be applied for TST (forced)."
               else
-                echo "No database script changes detected � database deployment WILL BE SKIPPED for DEV."
+                echo "No database script changes detected and deployDbScripts not set — database deployment WILL BE SKIPPED for TST."
               fi
             displayName: 'Log database deployment decision'
 
           - task: AzureCLI@2
             displayName: 'Apply database scripts'
-            condition: and(succeeded(), eq(variables['dbScriptsChanged'], 'true'))
+            condition: and(succeeded(), or(eq(variables['dbScriptsChanged'], 'true'), eq('${{ parameters.deployDbScripts }}', true)))
             inputs:
               azureSubscription: 'AZR-BSE-TST1'
               scriptType: bash
@@ -420,14 +429,16 @@ stages:
           - script: |
               if [ "$(dbScriptsChanged)" = "true" ]; then
                 echo "Database script changes detected - database deployment WILL be applied for PRE."
+              elif [ "${{ parameters.deployDbScripts }}" = "True" ]; then
+                echo "deployDbScripts override enabled - database deployment WILL be applied for PRE (forced, e.g. fresh infra)."
               else
-                echo "No database script changes detected - database deployment WILL BE SKIPPED for PRE."
+                echo "No database script changes detected and deployDbScripts not set - database deployment WILL BE SKIPPED for PRE."
               fi
             displayName: 'Log database deployment decision'
 
           - task: AzureCLI@2
             displayName: 'Apply database scripts'
-            condition: and(succeeded(), eq(variables['dbScriptsChanged'], 'true'))
+            condition: and(succeeded(), or(eq(variables['dbScriptsChanged'], 'true'), eq('${{ parameters.deployDbScripts }}', true)))
             inputs:
               azureSubscription: 'AZR-BSE-PRE1'
               scriptType: bash
