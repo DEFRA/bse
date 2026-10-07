@@ -188,6 +188,9 @@ try
                 opts =>
                 {
                     opts.Email              = builder.Configuration["Authentication:DevUserEmail"] ?? "dev-user@defra.gov.uk";
+                    opts.SkipDbRoleLookup   = builder.Configuration.GetValue<bool>("Authentication:SkipDbRoleLookup", defaultValue: false);
+                    opts.DevUserGroupId     = builder.Configuration.GetValue<int>("Authentication:DevUserGroupId", defaultValue: 1);
+                    opts.DevUserGroupName   = builder.Configuration["Authentication:DevUserGroupName"] ?? "VLA Maintenance";
                     opts.UseWindowsIdentity = builder.Configuration.GetValue<bool>("Authentication:UseWindowsIdentity", defaultValue: true);
                 });
     }
