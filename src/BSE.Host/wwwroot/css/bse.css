@@ -1,5 +1,11 @@
 /* BSE custom additions on top of GOV.UK Frontend */
 
+/* <output> defaults to display:inline; the unsaved-changes banner replaced a <div> (Sonar:
+   prefer <output> over role="status") and must keep the same block-level govuk-inset-text look. */
+.bse-unsaved-banner {
+    display: block;
+}
+
 /* MOJ date-picker wraps its text input in a div; keep it transparent to layout everywhere
    it's used so surrounding flex/grid rules keep treating the input as a direct child, matching
    the layout in place before the wrapper was introduced. */
@@ -3291,6 +3297,14 @@
     outline-offset: 0;
     background: #ffdd00;
     color: #0b0c0c;
+}
+
+.bse-case-tabs__link--button {
+    width: 100%;
+    text-align: left;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
 }
 
 .bse-case-tabs__item--active .bse-case-tabs__link {

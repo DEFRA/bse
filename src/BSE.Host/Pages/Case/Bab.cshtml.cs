@@ -1,7 +1,9 @@
 ﻿using BSE.Infrastructure;
+using BSE.Host.Services;
 using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Repositories;
 using BSE.Modules.CaseManagement.Commands;
+using BSE.Modules.CaseManagement.Enums;
 using BSE.Modules.CaseManagement.Models;
 using BSE.Modules.CaseManagement.Repositories;
 using BSE.Modules.ReferenceData.Models;
@@ -21,6 +23,9 @@ public class BabModel(
     ILookupDataService lookups,
     IBatchRepository batchRepository,
     IDbConnectionFactory connectionFactory,
+    ICaseScalarDraftStateService caseScalarDraftState,
+    ICaseEditOrchestrationService caseEditOrchestration,
+    ICurrentUserService currentUser,
     IConfiguration configuration) : PageModel
 {
     private static readonly DateTime BabBirthDateThreshold = new(1988, 7, 18);
@@ -49,6 +54,7 @@ public class BabModel(
     {
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadAsync();
+        await ApplyStagedBabOverlayAsync();
         return Page();
     }
 
@@ -92,10 +98,9 @@ public class BabModel(
                 Bab.TracedAddress2 = Bab.TracedAddress3 = Bab.TracedPostcode = null;
         }
 
-        using var conn = connectionFactory.CreateConnection();
-        conn.Open();
-        using var tx = conn.BeginTransaction();
-
+        // Cross-tab staging (restores legacy's "one session, one commit" model): only the edit
+        // path (an existing BAB row) stages — first-time creation keeps committing immediately,
+        // since there is no earlier row for another tab's save to silently discard.
         if (!string.IsNullOrEmpty(rowStampBase64))
         {
             var rowStamp = Convert.FromBase64String(rowStampBase64);
@@ -104,24 +109,131 @@ public class BabModel(
                 Bab.TracedName, Bab.TracedAddress1, Bab.TracedAddress2, Bab.TracedAddress3,
                 Bab.TracedPostcode, Bab.FeedRisk, Bab.HorizontalRisk, Bab.MaternalRisk,
                 rowStamp);
-            await babRepository.EditAsync(edit, Origin, conn, tx);
+
+            var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
+            draft.BabBaseRowStampBase64 ??= rowStampBase64;
+            draft.Bab = edit with { RowStamp = Convert.FromBase64String(draft.BabBaseRowStampBase64) };
+            draft.BabOrigin = Origin;
+            draft.HasPendingChanges = true;
+            await caseScalarDraftState.SetAsync(draft);
+
+            var userId = await currentUser.GetUserIdAsync();
+            EditCaseResult commitResult;
+            try
+            {
+                commitResult = await caseEditOrchestration.CommitAllAsync(Rbse, userId);
+            }
+            catch (MandatoryCaseFieldsMissingException ex)
+            {
+                // Legacy parity: CaseEntrySave.aspx shows the consolidated list of missing items with
+                // a "Return" button instead of a single inline banner.
+                SaveResultModel.Stage(TempData, SaveResultMode.MissingMandatoryFields, ex.Errors);
+                return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
+            }
+
+            if (commitResult == EditCaseResult.ConcurrencyConflict)
+            {
+                // Legacy parity: CaseEntrySave.aspx shows the failure and navigates to Home.aspx on
+                // any commit failure, rather than staying on the originating tab.
+                TempData["ErrorMessage"] = "Another user has modified this case since you loaded it. " +
+                                           "Please reload and try again.";
+                return RedirectToPage("/Home");
+            }
+
+            if (commitResult != EditCaseResult.Success)
+            {
+                TempData["ErrorMessage"] = $"Unable to save BAB changes: {commitResult}.";
+                return RedirectToPage("/Home");
+            }
         }
         else
         {
+            using var conn = connectionFactory.CreateConnection();
+            conn.Open();
+            using var tx = conn.BeginTransaction();
+
             var add = new AddCaseBabCommand(
                 Rbse, Bab.NatalCphh, Bab.Notes,
                 Bab.TracedName, Bab.TracedAddress1, Bab.TracedAddress2, Bab.TracedAddress3,
                 Bab.TracedPostcode, Bab.FeedRisk, Bab.HorizontalRisk, Bab.MaternalRisk);
             await babRepository.AddAsync(add, Origin, conn, tx);
+
+            tx.Commit();
         }
 
-        tx.Commit();
-        TempData["Success"] = "BAB details saved.";
-        return RedirectToPage(new { rbse = Rbse });
+        // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx on a fully successful
+        // save, clearing the session case state — not back to the tab the user was on.
+        return RedirectToPage("/Home");
     }
 
-    public IActionResult OnGetCancelBabEdit()
+    /// <summary>
+    /// Validates this tab's fields and, if valid, stages them into the shared cross-tab
+    /// draft (without committing) before navigating to another tab. Only applies once a
+    /// BAB row already exists — there is nothing to stage before the row is first created.
+    /// </summary>
+    public async Task<IActionResult> OnPostStageAndGotoAsync(string targetPage, string? rowStampBase64)
     {
+        if (!User.IsInRole("DataEntry"))
+            return Forbid();
+
+        if (string.IsNullOrEmpty(rowStampBase64))
+            return RedirectToPage(targetPage, new { rbse = Rbse });
+
+        var currentBabTask = babRepository.GetByRbseAsync(Rbse);
+        var currentCaseTask = caseRepository.GetCaseByRbseAsync(Rbse);
+        await Task.WhenAll(currentBabTask, currentCaseTask);
+
+        var currentBab = await currentBabTask;
+        var currentCase = await currentCaseTask;
+
+        if (currentCase is null || !EvaluateLegacyBabEditPermission(currentCase, currentBab))
+            return RedirectToPage(targetPage, new { rbse = Rbse });
+
+        var normalisedNatalCphh = CphhNormalizer.Normalize(Bab.NatalCphh);
+        if (!string.IsNullOrWhiteSpace(normalisedNatalCphh) && normalisedNatalCphh.Length != 11)
+        {
+            ModelState.AddModelError("Bab.NatalCphh", "Enter CPHH as 11 digits in the format NN/NNN/NNNN/NN.");
+            SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+            await LoadAsync();
+            Bab.NatalCphh = normalisedNatalCphh;
+            return Page();
+        }
+
+        Bab.NatalCphh = string.IsNullOrWhiteSpace(normalisedNatalCphh) ? null : normalisedNatalCphh;
+
+        if (Origin != "P")
+        {
+            Bab.NatalCphh = Bab.TracedName = Bab.TracedAddress1 =
+                Bab.TracedAddress2 = Bab.TracedAddress3 = Bab.TracedPostcode = null;
+        }
+
+        var rowStamp = Convert.FromBase64String(rowStampBase64);
+        var edit = new EditCaseBabCommand(
+            Rbse, Bab.NatalCphh, Bab.Notes,
+            Bab.TracedName, Bab.TracedAddress1, Bab.TracedAddress2, Bab.TracedAddress3,
+            Bab.TracedPostcode, Bab.FeedRisk, Bab.HorizontalRisk, Bab.MaternalRisk,
+            rowStamp);
+
+        var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
+        draft.BabBaseRowStampBase64 ??= rowStampBase64;
+        draft.Bab = edit with { RowStamp = Convert.FromBase64String(draft.BabBaseRowStampBase64) };
+        draft.BabOrigin = Origin;
+        draft.HasPendingChanges = true;
+        await caseScalarDraftState.SetAsync(draft);
+
+        return RedirectToPage(targetPage, new { rbse = Rbse });
+    }
+
+    private async Task ApplyStagedBabOverlayAsync()
+    {
+        var staged = await caseScalarDraftState.GetAsync(Rbse);
+        if (staged?.Bab is not null)
+            Bab.ApplyStagedCommand(staged.Bab);
+    }
+
+    public async Task<IActionResult> OnGetCancelBabEdit()
+    {
+        await caseScalarDraftState.ClearAsync(Rbse);
         return RedirectToPage("/Home");
     }
 
@@ -192,5 +304,22 @@ public class BabModel(
             TracedPostcode = r.TracedPostcode,  FeedRisk       = r.FeedRisk,
             HorizontalRisk = r.HorizontalRisk,  MaternalRisk   = r.MaternalRisk
         };
+
+        /// <summary>Overlays a staged-but-not-yet-committed BAB edit (from another tab's
+        /// cross-tab draft) so revisiting this tab shows the pending edit instead of the
+        /// last-committed DB values.</summary>
+        public void ApplyStagedCommand(EditCaseBabCommand c)
+        {
+            NatalCphh = c.NatalCphh;
+            Notes = c.Notes;
+            TracedName = c.TracedName;
+            TracedAddress1 = c.TracedAddress1;
+            TracedAddress2 = c.TracedAddress2;
+            TracedAddress3 = c.TracedAddress3;
+            TracedPostcode = c.TracedPostcode;
+            FeedRisk = c.FeedRisk;
+            HorizontalRisk = c.HorizontalRisk;
+            MaternalRisk = c.MaternalRisk;
+        }
     }
 }

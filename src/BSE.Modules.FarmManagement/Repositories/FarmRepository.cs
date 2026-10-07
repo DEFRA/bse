@@ -64,35 +64,40 @@ public sealed class FarmRepository : DapperRepository, IFarmRepository
         });
 
     public Task UpdateAsync(UpdateFarmCommand c, int userId)
-        => ExecuteAsync("EditFarm", new
-        {
-            c.CPHH,
-            c.OwnerName,
-            c.Address1,
-            c.Address2,
-            c.Address3,
-            c.Postcode,
-            c.Parish,
-            c.District,
-            c.County,
-            c.CorrespondenceAddress1,
-            c.CorrespondenceAddress2,
-            c.CorrespondenceAddress3,
-            c.CorrespondencePostcode,
-            c.MapReference,
-            c.Herdmark1,
-            c.Herdmark2,
-            c.Herdmark3,
-            c.NumericHerdmark1,
-            c.NumericHerdmark2,
-            c.AHO,
-            c.HerdType,
-            c.PedigreeType,
-            c.IsDealer,
-            c.ADNSRegionID,
-            c.RowStamp,
-            UserID = userId
-        });
+        => ExecuteAsync("EditFarm", BuildEditFarmParams(c, userId));
+
+    public Task UpdateAsync(UpdateFarmCommand c, int userId, IDbConnection connection, IDbTransaction transaction)
+        => ExecuteAsync("EditFarm", BuildEditFarmParams(c, userId), connection, transaction);
+
+    private static object BuildEditFarmParams(UpdateFarmCommand c, int userId) => new
+    {
+        c.CPHH,
+        c.OwnerName,
+        c.Address1,
+        c.Address2,
+        c.Address3,
+        c.Postcode,
+        c.Parish,
+        c.District,
+        c.County,
+        c.CorrespondenceAddress1,
+        c.CorrespondenceAddress2,
+        c.CorrespondenceAddress3,
+        c.CorrespondencePostcode,
+        c.MapReference,
+        c.Herdmark1,
+        c.Herdmark2,
+        c.Herdmark3,
+        c.NumericHerdmark1,
+        c.NumericHerdmark2,
+        c.AHO,
+        c.HerdType,
+        c.PedigreeType,
+        c.IsDealer,
+        c.ADNSRegionID,
+        c.RowStamp,
+        UserID = userId
+    };
 
     public async Task<ChangeCphhResult> ChangeCphhAsync(string oldCphh, string newCphh, int userId)
     {

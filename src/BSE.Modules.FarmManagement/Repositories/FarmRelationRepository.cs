@@ -1,3 +1,4 @@
+using System.Data;
 using BSE.Infrastructure;
 using BSE.Modules.FarmManagement.Models;
 
@@ -23,4 +24,13 @@ public sealed class FarmRelationRepository : DapperRepository, IFarmRelationRepo
 
     public Task DeleteAsync(int id, byte[] rowStamp)
         => ExecuteAsync("DeleteFarmRelation", new { ID = id, RowStamp = rowStamp });
+
+    public Task AddAsync(string cphh, string relatedCphh, IDbConnection connection, IDbTransaction transaction)
+        => ExecuteAsync("AddFarmRelation", new { CPHH = cphh, RelatedCPHH = relatedCphh }, connection, transaction);
+
+    public Task UpdateAsync(int id, string relatedCphh, byte[] rowStamp, IDbConnection connection, IDbTransaction transaction)
+        => ExecuteAsync("EditFarmRelation", new { ID = id, RelatedCPHH = relatedCphh, RowStamp = rowStamp }, connection, transaction);
+
+    public Task DeleteAsync(int id, byte[] rowStamp, IDbConnection connection, IDbTransaction transaction)
+        => ExecuteAsync("DeleteFarmRelation", new { ID = id, RowStamp = rowStamp }, connection, transaction);
 }

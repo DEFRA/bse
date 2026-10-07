@@ -40,6 +40,8 @@ public sealed class FarmModelHandlerTests
     private readonly IBatchService _batchService = Substitute.For<IBatchService>();
     private readonly ICaseWizardStateService _wizardState = Substitute.For<ICaseWizardStateService>();
     private readonly ICaseFarmDraftStateService _farmDraftState = Substitute.For<ICaseFarmDraftStateService>();
+    private readonly ICaseScalarDraftStateService _caseScalarDraftState = Substitute.For<ICaseScalarDraftStateService>();
+    private readonly ICaseEditOrchestrationService _caseEditOrchestration = Substitute.For<ICaseEditOrchestrationService>();
     private readonly ICurrentUserService _currentUser = Substitute.For<ICurrentUserService>();
     private readonly BSE.Host.Services.IGeoLookupService _geoLookup = Substitute.For<BSE.Host.Services.IGeoLookupService>();
 
@@ -64,7 +66,8 @@ public sealed class FarmModelHandlerTests
     {
         var model = new FarmModel(
             _caseService, _farmService, _relationRepo, _herdSizeRepo, _lookups,
-            _batchRepository, _batchService, _wizardState, _farmDraftState, _currentUser,
+            _batchRepository, _batchService, _wizardState, _farmDraftState,
+            _caseScalarDraftState, _caseEditOrchestration, _currentUser,
             NullLogger<FarmModel>.Instance,
             new ConfigurationBuilder().AddInMemoryCollection().Build(),
             _geoLookup)
@@ -738,23 +741,23 @@ public sealed class FarmModelHandlerTests
     // These two (HSort, HDir) switches account for the bulk of Farm.cshtml.cs's
     // uncovered conditions, so every column x direction combination is exercised.
 
-    public static IEnumerable<object[]> HerdSizeSortColumns() =>
-    [
-        ["total", "asc"], ["total", "desc"],
-        ["lac1", "asc"], ["lac1", "desc"],
-        ["lac2", "asc"], ["lac2", "desc"],
-        ["lac3", "asc"], ["lac3", "desc"],
-        ["lac4", "asc"], ["lac4", "desc"],
-        ["lac5", "asc"], ["lac5", "desc"],
-        ["lac6", "asc"], ["lac6", "desc"],
-        ["lac7", "asc"], ["lac7", "desc"],
-        ["lac8", "asc"], ["lac8", "desc"],
-        ["lac9", "asc"], ["lac9", "desc"],
-        ["lac10", "asc"], ["lac10", "desc"],
-        ["lac10p", "asc"], ["lac10p", "desc"],
-        ["year", "asc"], ["year", "desc"],
-        ["unknown", "asc"], ["unknown", "desc"]
-    ];
+    public static TheoryData<string, string> HerdSizeSortColumns() => new()
+    {
+        { "total", "asc" }, { "total", "desc" },
+        { "lac1", "asc" }, { "lac1", "desc" },
+        { "lac2", "asc" }, { "lac2", "desc" },
+        { "lac3", "asc" }, { "lac3", "desc" },
+        { "lac4", "asc" }, { "lac4", "desc" },
+        { "lac5", "asc" }, { "lac5", "desc" },
+        { "lac6", "asc" }, { "lac6", "desc" },
+        { "lac7", "asc" }, { "lac7", "desc" },
+        { "lac8", "asc" }, { "lac8", "desc" },
+        { "lac9", "asc" }, { "lac9", "desc" },
+        { "lac10", "asc" }, { "lac10", "desc" },
+        { "lac10p", "asc" }, { "lac10p", "desc" },
+        { "year", "asc" }, { "year", "desc" },
+        { "unknown", "asc" }, { "unknown", "desc" }
+    };
 
     private static FarmModel.StagedHerdSizeItem LesserHerdSizeItem() => new()
     {

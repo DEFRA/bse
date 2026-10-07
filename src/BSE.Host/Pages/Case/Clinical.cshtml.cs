@@ -4,6 +4,7 @@ using BSE.Host.ModelBinding;
 using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Repositories;
 using BSE.Modules.CaseManagement.Commands;
+using BSE.Modules.CaseManagement.Enums;
 using BSE.Modules.CaseManagement.Models;
 using BSE.Modules.CaseManagement.Repositories;
 using BSE.SharedKernel;
@@ -20,6 +21,9 @@ public class ClinicalModel(
     ICaseRepository caseRepository,
     IBatchRepository batchRepository,
     ICaseClinicalDraftStateService clinicalDraftState,
+    ICaseScalarDraftStateService caseScalarDraftState,
+    ICaseEditOrchestrationService caseEditOrchestration,
+    ICurrentUserService currentUser,
     IDbConnectionFactory connectionFactory,
     IConfiguration configuration) : PageModel
 {
@@ -57,6 +61,7 @@ public class ClinicalModel(
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadAsync();
         await LoadOrInitializeDraftStateAsync();
+        await ApplyStagedSignsOverlayAsync();
         return Page();
     }
 
@@ -73,77 +78,155 @@ public class ClinicalModel(
             return RedirectToPage(new { rbse = Rbse });
         }
 
-        var signs = new ClinicalSignsViewModel();
-        // Manually bind from form — avoid ambiguous binding with Signs property
-        signs.Apprehension = Request.Form["Signs.Apprehension"] == "true";
-        signs.HypersensitiveTouch = Request.Form["Signs.HypersensitiveTouch"] == "true";
-        signs.HypersensitiveSound = Request.Form["Signs.HypersensitiveSound"] == "true";
-        signs.Maniacal = Request.Form["Signs.Maniacal"] == "true";
-        signs.PanicStricken = Request.Form["Signs.PanicStricken"] == "true";
-        signs.TemperamentChange = Request.Form["Signs.TemperamentChange"] == "true";
-        signs.AbnormalHeadCarriage = Request.Form["Signs.AbnormalHeadCarriage"] == "true";
-        signs.EarTwitching = Request.Form["Signs.EarTwitching"] == "true";
-        signs.EarsOddAngle = Request.Form["Signs.EarsOddAngle"] == "true";
-        signs.AbnormalBehaviour = Request.Form["Signs.AbnormalBehaviour"] == "true";
-        signs.HeadShyness = Request.Form["Signs.HeadShyness"] == "true";
-        signs.LickingFlank = Request.Form["Signs.LickingFlank"] == "true";
-        signs.LickingNose = Request.Form["Signs.LickingNose"] == "true";
-        signs.Kicking = Request.Form["Signs.Kicking"] == "true";
-        signs.ReluctantDoorways = Request.Form["Signs.ReluctantDoorways"] == "true";
-        signs.HeadPressing = Request.Form["Signs.HeadPressing"] == "true";
-        signs.HeadRubbing = Request.Form["Signs.HeadRubbing"] == "true";
-        signs.TeethGrinding = Request.Form["Signs.TeethGrinding"] == "true";
-        signs.Blindness = Request.Form["Signs.Blindness"] == "true";
-        signs.Circling = Request.Form["Signs.Circling"] == "true";
-        signs.HindAtaxia = Request.Form["Signs.HindAtaxia"] == "true";
-        signs.Falling = Request.Form["Signs.Falling"] == "true";
-        signs.Paresis = Request.Form["Signs.Paresis"] == "true";
-        signs.ForeAtaxia = Request.Form["Signs.ForeAtaxia"] == "true";
-        signs.Recumbent = Request.Form["Signs.Recumbent"] == "true";
-        signs.Tremor = Request.Form["Signs.Tremor"] == "true";
-        signs.KnucklingFetlock = Request.Form["Signs.KnucklingFetlock"] == "true";
-        signs.WeightLoss = Request.Form["Signs.WeightLoss"] == "true";
-        signs.ConditionLoss = Request.Form["Signs.ConditionLoss"] == "true";
-        signs.MilkYield = Request.Form["Signs.MilkYield"] == "true";
+        var signs = BindSignsFromForm();
 
         await LoadAsync();
         await LoadOrInitializeDraftStateAsync();
 
-        using (var conn = connectionFactory.CreateConnection())
+        // Cross-tab staging (restores legacy's "one session, one commit" model): only the edit
+        // path (an existing Clinical row) stages — first-time creation keeps committing
+        // immediately, since there is no earlier row for another tab's save to silently discard.
+        if (!string.IsNullOrEmpty(clinicalRowStampBase64))
         {
+            var rowStamp = Convert.FromBase64String(clinicalRowStampBase64);
+            var edit = signs.ToEditCommand(Rbse, rowStamp);
+
+            var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
+            draft.ClinicalBaseRowStampBase64 ??= clinicalRowStampBase64;
+            draft.Clinical = edit with { RowStamp = Convert.FromBase64String(draft.ClinicalBaseRowStampBase64) };
+            draft.HasPendingChanges = true;
+            await caseScalarDraftState.SetAsync(draft);
+
+            var userId = await currentUser.GetUserIdAsync();
+            EditCaseResult commitResult;
+            try
+            {
+                commitResult = await caseEditOrchestration.CommitAllAsync(Rbse, userId);
+            }
+            catch (MandatoryCaseFieldsMissingException ex)
+            {
+                // Legacy parity: CaseEntrySave.aspx shows the consolidated list of missing items with
+                // a "Return" button instead of a single inline banner.
+                SaveResultModel.Stage(TempData, SaveResultMode.MissingMandatoryFields, ex.Errors);
+                return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
+            }
+
+            if (commitResult == EditCaseResult.ConcurrencyConflict)
+            {
+                // Legacy parity: CaseEntrySave.aspx shows the failure and navigates to Home.aspx on
+                // any commit failure, rather than staying on the originating tab.
+                TempData["ErrorMessage"] = "Another user has modified this case since you loaded it. " +
+                                           "Please reload and try again.";
+                return RedirectToPage("/Home");
+            }
+
+            if (commitResult != EditCaseResult.Success)
+            {
+                TempData["ErrorMessage"] = $"Unable to save clinical signs: {commitResult}.";
+                return RedirectToPage("/Home");
+            }
+        }
+        else
+        {
+            using var conn = connectionFactory.CreateConnection();
             conn.Open();
             using var tx = conn.BeginTransaction();
-
-            if (!string.IsNullOrEmpty(clinicalRowStampBase64))
-            {
-                var rowStamp = Convert.FromBase64String(clinicalRowStampBase64);
-                await clinicalRepository.EditAsync(signs.ToEditCommand(Rbse, rowStamp), conn, tx);
-            }
-            else
-            {
-                await clinicalRepository.AddAsync(signs.ToAddCommand(Rbse), conn, tx);
-            }
-
+            await clinicalRepository.AddAsync(signs.ToAddCommand(Rbse), conn, tx);
             tx.Commit();
         }
 
         await PersistStagedVisitsAsync();
         await clinicalDraftState.ClearAsync(Rbse);
 
-        TempData["Success"] = "Clinical signs and visits saved.";
-        return RedirectToPage(new { rbse = Rbse });
+        // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx on a fully successful
+        // save, clearing the session case state — not back to the tab the user was on.
+        return RedirectToPage("/Home");
+    }
+
+    /// <summary>
+    /// Validates this tab's fields and, if valid, stages them into the shared cross-tab
+    /// draft (without committing) before navigating to another tab. Only applies once a
+    /// Clinical row already exists — there is nothing to stage before the row is first created.
+    /// </summary>
+    public async Task<IActionResult> OnPostStageAndGotoAsync(string targetPage, string? clinicalRowStampBase64)
+    {
+        if (!User.IsInRole("DataEntry"))
+            return Forbid();
+
+        if (string.IsNullOrEmpty(clinicalRowStampBase64))
+            return RedirectToPage(targetPage, new { rbse = Rbse });
+
+        var caseRecord = await caseRepository.GetCaseByRbseAsync(Rbse);
+        if (caseRecord is null)
+            return RedirectToPage(targetPage, new { rbse = Rbse });
+
+        var signs = BindSignsFromForm();
+        var rowStamp = Convert.FromBase64String(clinicalRowStampBase64);
+        var edit = signs.ToEditCommand(Rbse, rowStamp);
+
+        var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
+        draft.ClinicalBaseRowStampBase64 ??= clinicalRowStampBase64;
+        draft.Clinical = edit with { RowStamp = Convert.FromBase64String(draft.ClinicalBaseRowStampBase64) };
+        draft.HasPendingChanges = true;
+        await caseScalarDraftState.SetAsync(draft);
+
+        return RedirectToPage(targetPage, new { rbse = Rbse });
+    }
+
+    /// <summary>Manually bound from the posted form — avoids ambiguous binding with the Signs property.</summary>
+    private ClinicalSignsViewModel BindSignsFromForm() => new()
+    {
+        Apprehension = Request.Form["Signs.Apprehension"] == "true",
+        HypersensitiveTouch = Request.Form["Signs.HypersensitiveTouch"] == "true",
+        HypersensitiveSound = Request.Form["Signs.HypersensitiveSound"] == "true",
+        Maniacal = Request.Form["Signs.Maniacal"] == "true",
+        PanicStricken = Request.Form["Signs.PanicStricken"] == "true",
+        TemperamentChange = Request.Form["Signs.TemperamentChange"] == "true",
+        AbnormalHeadCarriage = Request.Form["Signs.AbnormalHeadCarriage"] == "true",
+        EarTwitching = Request.Form["Signs.EarTwitching"] == "true",
+        EarsOddAngle = Request.Form["Signs.EarsOddAngle"] == "true",
+        AbnormalBehaviour = Request.Form["Signs.AbnormalBehaviour"] == "true",
+        HeadShyness = Request.Form["Signs.HeadShyness"] == "true",
+        LickingFlank = Request.Form["Signs.LickingFlank"] == "true",
+        LickingNose = Request.Form["Signs.LickingNose"] == "true",
+        Kicking = Request.Form["Signs.Kicking"] == "true",
+        ReluctantDoorways = Request.Form["Signs.ReluctantDoorways"] == "true",
+        HeadPressing = Request.Form["Signs.HeadPressing"] == "true",
+        HeadRubbing = Request.Form["Signs.HeadRubbing"] == "true",
+        TeethGrinding = Request.Form["Signs.TeethGrinding"] == "true",
+        Blindness = Request.Form["Signs.Blindness"] == "true",
+        Circling = Request.Form["Signs.Circling"] == "true",
+        HindAtaxia = Request.Form["Signs.HindAtaxia"] == "true",
+        Falling = Request.Form["Signs.Falling"] == "true",
+        Paresis = Request.Form["Signs.Paresis"] == "true",
+        ForeAtaxia = Request.Form["Signs.ForeAtaxia"] == "true",
+        Recumbent = Request.Form["Signs.Recumbent"] == "true",
+        Tremor = Request.Form["Signs.Tremor"] == "true",
+        KnucklingFetlock = Request.Form["Signs.KnucklingFetlock"] == "true",
+        WeightLoss = Request.Form["Signs.WeightLoss"] == "true",
+        ConditionLoss = Request.Form["Signs.ConditionLoss"] == "true",
+        MilkYield = Request.Form["Signs.MilkYield"] == "true"
+    };
+
+    private async Task ApplyStagedSignsOverlayAsync()
+    {
+        var staged = await caseScalarDraftState.GetAsync(Rbse);
+        if (staged?.Clinical is not null)
+            Signs.ApplyStagedCommand(staged.Clinical);
     }
 
     /// <summary>Discards all staged visit changes without persisting them.</summary>
     public async Task<IActionResult> OnPostCancelClinicalEditAsync()
     {
         await clinicalDraftState.ClearAsync(Rbse);
+        await caseScalarDraftState.ClearAsync(Rbse);
         return RedirectToPage(new { rbse = Rbse });
     }
 
     public async Task<IActionResult> OnGetCancelClinicalEditAsync()
     {
         await clinicalDraftState.ClearAsync(Rbse);
+        await caseScalarDraftState.ClearAsync(Rbse);
         return RedirectToPage("/Home");
     }
 
@@ -470,5 +553,24 @@ public class ClinicalModel(
             HeadRubbing, TeethGrinding, Blindness, Circling, HindAtaxia, Falling, Paresis,
             ForeAtaxia, Recumbent, Tremor, KnucklingFetlock, WeightLoss, ConditionLoss, MilkYield,
             rowStamp);
+
+        /// <summary>Overlays a staged-but-not-yet-committed signs edit (from another tab's
+        /// cross-tab draft) so revisiting this tab shows the pending edit instead of the
+        /// last-committed DB values.</summary>
+        public void ApplyStagedCommand(EditCaseClinicalCommand c)
+        {
+            Apprehension = c.Apprehension; HypersensitiveTouch = c.HypersensitiveTouch;
+            HypersensitiveSound = c.HypersensitiveSound; Maniacal = c.Maniacal;
+            PanicStricken = c.PanicStricken; TemperamentChange = c.TemperamentChange;
+            AbnormalHeadCarriage = c.AbnormalHeadCarriage; EarTwitching = c.EarTwitching;
+            EarsOddAngle = c.EarsOddAngle; AbnormalBehaviour = c.AbnormalBehaviour;
+            HeadShyness = c.HeadShyness; LickingFlank = c.LickingFlank; LickingNose = c.LickingNose;
+            Kicking = c.Kicking; ReluctantDoorways = c.ReluctantDoorways; HeadPressing = c.HeadPressing;
+            HeadRubbing = c.HeadRubbing; TeethGrinding = c.TeethGrinding; Blindness = c.Blindness;
+            Circling = c.Circling; HindAtaxia = c.HindAtaxia; Falling = c.Falling; Paresis = c.Paresis;
+            ForeAtaxia = c.ForeAtaxia; Recumbent = c.Recumbent; Tremor = c.Tremor;
+            KnucklingFetlock = c.KnucklingFetlock; WeightLoss = c.WeightLoss;
+            ConditionLoss = c.ConditionLoss; MilkYield = c.MilkYield;
+        }
     }
 }

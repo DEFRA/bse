@@ -14,7 +14,7 @@
     </ol>
 </nav>
 
-@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Relations", Model.Rbse, Model.BatchNumbers, viewDocsUrl))
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Relations", Model.Rbse, Model.BatchNumbers, viewDocsUrl, User.IsInRole("DataEntry")))
 
 @{
     var relationsWarningMsg = TempData["RelationsWarning"] as string;
@@ -36,7 +36,7 @@
 
 @if (!string.IsNullOrWhiteSpace(relationsWarningMsg))
 {
-    <div class="govuk-notification-banner" role="region"
+    <section class="govuk-notification-banner"
          aria-labelledby="relations-warning-title" data-module="govuk-notification-banner">
         <div class="govuk-notification-banner__header">
             <h2 class="govuk-notification-banner__title" id="relations-warning-title">Important</h2>
@@ -44,12 +44,12 @@
         <div class="govuk-notification-banner__content">
             <p class="govuk-body">@relationsWarningMsg</p>
         </div>
-    </div>
+    </section>
 }
 
 @if (!string.IsNullOrWhiteSpace(genericWarningMsg))
 {
-    <div class="govuk-notification-banner" role="region"
+    <section class="govuk-notification-banner"
          aria-labelledby="relations-generic-warning-title" data-module="govuk-notification-banner">
         <div class="govuk-notification-banner__header">
             <h2 class="govuk-notification-banner__title" id="relations-generic-warning-title">Important</h2>
@@ -57,7 +57,7 @@
         <div class="govuk-notification-banner__content">
             <p class="govuk-body">@genericWarningMsg</p>
         </div>
-    </div>
+    </section>
 }
 
 @if (!ViewContext.ModelState.IsValid || Model.RelationFieldErrors.Count > 0)
@@ -94,16 +94,23 @@
     var d = Model.DamSire;
     var damLinked = !string.IsNullOrWhiteSpace(d.DamRbse);
     var sireLinked = !string.IsNullOrWhiteSpace(d.SireRbse);
+
+    // Extracted from a nested ternary (Sonar: "Extract this nested ternary operation").
+    string ParentIdDisplay(bool hasParent, int id)
+    {
+        if (!hasParent)
+            return "";
+        return id > 0 ? id.ToString() : "(New)";
+    }
 }
 
 @if (canEditRelations)
 {
-    <div id="case-relations-unsaved-banner"
+    <output id="case-relations-unsaved-banner"
          class="govuk-inset-text bse-unsaved-banner bse-relations-panel-width"
-         role="status"
          hidden="@(!Model.HasUnsavedChanges)">
         <strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.
-    </div>
+    </output>
 
     <div class="govuk-button-group bse-relations-panel-width govuk-!-margin-bottom-4">
         <button type="submit" form="case-relations-inline-form" formaction="@Url.Page("/Case/Relations", "SaveRelations", new { rbse = Model.Rbse })" class="govuk-button" data-module="govuk-button">Save</button>
@@ -130,7 +137,7 @@
         <div class="bse-relations-parent-column">
             <div class="bse-relations-parent-field-row">
                 <span class="govuk-label bse-relations-parent-label-strong">Sire Details</span>
-                <span class="govuk-body bse-relations-parent-static">@(d.HasSire ? (d.SireId > 0 ? d.SireId.ToString() : "(New)") : "")</span>
+                <span class="govuk-body bse-relations-parent-static">@ParentIdDisplay(d.HasSire, d.SireId)</span>
             </div>
         </div>
         <div class="bse-relations-parent-column">
@@ -186,32 +193,38 @@
                     </div>
                     <div class="bse-relations-parent-field-row bse-relations-parent-field-row--spacer"></div>
                     <div class="bse-relations-parent-field-row">
-                        <span class="govuk-label">Date of Birth</span>
+                        <span class="govuk-label" id="sire-dob-label">Date of Birth</span>
                         @if (string.IsNullOrWhiteSpace(d.SireRbse))
                         {
-                            <div class="govuk-date-input bse-relations-parent-date-input">
+                            <div class="govuk-date-input bse-relations-parent-date-input" aria-labelledby="sire-dob-label">
                                 <div class="govuk-date-input__item">
-                                    <input asp-for="DamSire.SireBirthDay" form="case-relations-inline-form" class="govuk-input govuk-date-input__input govuk-input--width-2" inputmode="numeric" />
+                                    <label class="govuk-visually-hidden" for="sire-birth-day">Sire day of birth</label>
+                                    <input id="sire-birth-day" asp-for="DamSire.SireBirthDay" form="case-relations-inline-form" class="govuk-input govuk-date-input__input govuk-input--width-2" inputmode="numeric" />
                                 </div>
                                 <div class="govuk-date-input__item">
-                                    <input asp-for="DamSire.SireBirthMonth" form="case-relations-inline-form" class="govuk-input govuk-date-input__input govuk-input--width-2" inputmode="numeric" />
+                                    <label class="govuk-visually-hidden" for="sire-birth-month">Sire month of birth</label>
+                                    <input id="sire-birth-month" asp-for="DamSire.SireBirthMonth" form="case-relations-inline-form" class="govuk-input govuk-date-input__input govuk-input--width-2" inputmode="numeric" />
                                 </div>
                                 <div class="govuk-date-input__item">
-                                    <input asp-for="DamSire.SireBirthYear" form="case-relations-inline-form" class="govuk-input govuk-date-input__input govuk-input--width-4" inputmode="numeric" />
+                                    <label class="govuk-visually-hidden" for="sire-birth-year">Sire year of birth</label>
+                                    <input id="sire-birth-year" asp-for="DamSire.SireBirthYear" form="case-relations-inline-form" class="govuk-input govuk-date-input__input govuk-input--width-4" inputmode="numeric" />
                                 </div>
                             </div>
                         }
                         else
                         {
-                            <div class="govuk-date-input bse-relations-parent-date-input bse-relations-disabled-date">
+                            <div class="govuk-date-input bse-relations-parent-date-input bse-relations-disabled-date" aria-labelledby="sire-dob-label">
                                 <div class="govuk-date-input__item">
-                                    <input class="govuk-input govuk-date-input__input govuk-input--width-2" type="text" value="@d.SireBirthDay" disabled />
+                                    <label class="govuk-visually-hidden" for="sire-birth-day-display">Sire day of birth</label>
+                                    <input id="sire-birth-day-display" class="govuk-input govuk-date-input__input govuk-input--width-2" type="text" value="@d.SireBirthDay" disabled />
                                 </div>
                                 <div class="govuk-date-input__item">
-                                    <input class="govuk-input govuk-date-input__input govuk-input--width-2" type="text" value="@d.SireBirthMonth" disabled />
+                                    <label class="govuk-visually-hidden" for="sire-birth-month-display">Sire month of birth</label>
+                                    <input id="sire-birth-month-display" class="govuk-input govuk-date-input__input govuk-input--width-2" type="text" value="@d.SireBirthMonth" disabled />
                                 </div>
                                 <div class="govuk-date-input__item">
-                                    <input class="govuk-input govuk-date-input__input govuk-input--width-4" type="text" value="@d.SireBirthYear" disabled />
+                                    <label class="govuk-visually-hidden" for="sire-birth-year-display">Sire year of birth</label>
+                                    <input id="sire-birth-year-display" class="govuk-input govuk-date-input__input govuk-input--width-4" type="text" value="@d.SireBirthYear" disabled />
                                 </div>
                             </div>
                         }
@@ -274,11 +287,20 @@
                         </div>
                         <div class="bse-relations-parent-field-row bse-relations-parent-field-row--spacer"></div>
                         <div class="bse-relations-parent-field-row">
-                            <span class="govuk-label">Date of Birth</span>
-                            <div class="govuk-date-input bse-relations-parent-date-input bse-relations-disabled-date">
-                                <div class="govuk-date-input__item"><input class="govuk-input govuk-date-input__input govuk-input--width-2" type="text" disabled /></div>
-                                <div class="govuk-date-input__item"><input class="govuk-input govuk-date-input__input govuk-input--width-2" type="text" disabled /></div>
-                                <div class="govuk-date-input__item"><input class="govuk-input govuk-date-input__input govuk-input--width-4" type="text" disabled /></div>
+                            <span class="govuk-label" id="sire-search-dob-label">Date of Birth</span>
+                            <div class="govuk-date-input bse-relations-parent-date-input bse-relations-disabled-date" aria-labelledby="sire-search-dob-label">
+                                <div class="govuk-date-input__item">
+                                    <label class="govuk-visually-hidden" for="sire-search-birth-day">Sire day of birth</label>
+                                    <input id="sire-search-birth-day" class="govuk-input govuk-date-input__input govuk-input--width-2" type="text" disabled />
+                                </div>
+                                <div class="govuk-date-input__item">
+                                    <label class="govuk-visually-hidden" for="sire-search-birth-month">Sire month of birth</label>
+                                    <input id="sire-search-birth-month" class="govuk-input govuk-date-input__input govuk-input--width-2" type="text" disabled />
+                                </div>
+                                <div class="govuk-date-input__item">
+                                    <label class="govuk-visually-hidden" for="sire-search-birth-year">Sire year of birth</label>
+                                    <input id="sire-search-birth-year" class="govuk-input govuk-date-input__input govuk-input--width-4" type="text" disabled />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -293,7 +315,7 @@
         <div class="bse-relations-parent-column">
             <div class="bse-relations-parent-field-row">
                 <span class="govuk-label bse-relations-parent-label-strong">Dam Details</span>
-                <span class="govuk-body bse-relations-parent-static">@(d.HasDam ? (d.DamId > 0 ? d.DamId.ToString() : "(New)") : "")</span>
+                <span class="govuk-body bse-relations-parent-static">@ParentIdDisplay(d.HasDam, d.DamId)</span>
             </div>
         </div>
         <div class="bse-relations-parent-column">
@@ -349,32 +371,38 @@
                 </div>
                 <div class="bse-relations-parent-field-row bse-relations-parent-field-row--spacer"></div>
                 <div class="bse-relations-parent-field-row">
-                    <span class="govuk-label">Date of Birth</span>
+                    <span class="govuk-label" id="dam-dob-label">Date of Birth</span>
                     @if (string.IsNullOrWhiteSpace(d.DamRbse))
                     {
-                        <div class="govuk-date-input bse-relations-parent-date-input">
+                        <div class="govuk-date-input bse-relations-parent-date-input" aria-labelledby="dam-dob-label">
                             <div class="govuk-date-input__item">
-                                <input asp-for="DamSire.DamBirthDay" form="case-relations-inline-form" class="govuk-input govuk-date-input__input govuk-input--width-2" inputmode="numeric" />
+                                <label class="govuk-visually-hidden" for="dam-birth-day">Dam day of birth</label>
+                                <input id="dam-birth-day" asp-for="DamSire.DamBirthDay" form="case-relations-inline-form" class="govuk-input govuk-date-input__input govuk-input--width-2" inputmode="numeric" />
                             </div>
                             <div class="govuk-date-input__item">
-                                <input asp-for="DamSire.DamBirthMonth" form="case-relations-inline-form" class="govuk-input govuk-date-input__input govuk-input--width-2" inputmode="numeric" />
+                                <label class="govuk-visually-hidden" for="dam-birth-month">Dam month of birth</label>
+                                <input id="dam-birth-month" asp-for="DamSire.DamBirthMonth" form="case-relations-inline-form" class="govuk-input govuk-date-input__input govuk-input--width-2" inputmode="numeric" />
                             </div>
                             <div class="govuk-date-input__item">
-                                <input asp-for="DamSire.DamBirthYear" form="case-relations-inline-form" class="govuk-input govuk-date-input__input govuk-input--width-4" inputmode="numeric" />
+                                <label class="govuk-visually-hidden" for="dam-birth-year">Dam year of birth</label>
+                                <input id="dam-birth-year" asp-for="DamSire.DamBirthYear" form="case-relations-inline-form" class="govuk-input govuk-date-input__input govuk-input--width-4" inputmode="numeric" />
                             </div>
                         </div>
                     }
                     else
                     {
-                        <div class="govuk-date-input bse-relations-parent-date-input bse-relations-disabled-date">
+                        <div class="govuk-date-input bse-relations-parent-date-input bse-relations-disabled-date" aria-labelledby="dam-dob-label">
                             <div class="govuk-date-input__item">
-                                <input class="govuk-input govuk-date-input__input govuk-input--width-2" type="text" value="@d.DamBirthDay" disabled />
+                                <label class="govuk-visually-hidden" for="dam-birth-day-display">Dam day of birth</label>
+                                <input id="dam-birth-day-display" class="govuk-input govuk-date-input__input govuk-input--width-2" type="text" value="@d.DamBirthDay" disabled />
                             </div>
                             <div class="govuk-date-input__item">
-                                <input class="govuk-input govuk-date-input__input govuk-input--width-2" type="text" value="@d.DamBirthMonth" disabled />
+                                <label class="govuk-visually-hidden" for="dam-birth-month-display">Dam month of birth</label>
+                                <input id="dam-birth-month-display" class="govuk-input govuk-date-input__input govuk-input--width-2" type="text" value="@d.DamBirthMonth" disabled />
                             </div>
                             <div class="govuk-date-input__item">
-                                <input class="govuk-input govuk-date-input__input govuk-input--width-4" type="text" value="@d.DamBirthYear" disabled />
+                                <label class="govuk-visually-hidden" for="dam-birth-year-display">Dam year of birth</label>
+                                <input id="dam-birth-year-display" class="govuk-input govuk-date-input__input govuk-input--width-4" type="text" value="@d.DamBirthYear" disabled />
                             </div>
                         </div>
                     }
@@ -449,11 +477,20 @@
                     </div>
                     <div class="bse-relations-parent-field-row bse-relations-parent-field-row--spacer"></div>
                     <div class="bse-relations-parent-field-row">
-                        <span class="govuk-label">Date of Birth</span>
-                        <div class="govuk-date-input bse-relations-parent-date-input bse-relations-disabled-date">
-                            <div class="govuk-date-input__item"><input class="govuk-input govuk-date-input__input govuk-input--width-2" type="text" disabled /></div>
-                            <div class="govuk-date-input__item"><input class="govuk-input govuk-date-input__input govuk-input--width-2" type="text" disabled /></div>
-                            <div class="govuk-date-input__item"><input class="govuk-input govuk-date-input__input govuk-input--width-4" type="text" disabled /></div>
+                        <span class="govuk-label" id="dam-search-dob-label">Date of Birth</span>
+                        <div class="govuk-date-input bse-relations-parent-date-input bse-relations-disabled-date" aria-labelledby="dam-search-dob-label">
+                            <div class="govuk-date-input__item">
+                                <label class="govuk-visually-hidden" for="dam-search-birth-day">Dam day of birth</label>
+                                <input id="dam-search-birth-day" class="govuk-input govuk-date-input__input govuk-input--width-2" type="text" disabled />
+                            </div>
+                            <div class="govuk-date-input__item">
+                                <label class="govuk-visually-hidden" for="dam-search-birth-month">Dam month of birth</label>
+                                <input id="dam-search-birth-month" class="govuk-input govuk-date-input__input govuk-input--width-2" type="text" disabled />
+                            </div>
+                            <div class="govuk-date-input__item">
+                                <label class="govuk-visually-hidden" for="dam-search-birth-year">Dam year of birth</label>
+                                <input id="dam-search-birth-year" class="govuk-input govuk-date-input__input govuk-input--width-4" type="text" disabled />
+                            </div>
                         </div>
                     </div>
                     <div class="bse-relations-parent-field-row">
@@ -598,7 +635,9 @@
                     <label class="govuk-label" for="eartag-country">Eartag</label>
                     <div class="bse-relations-eartag-inputs">
                         <input id="eartag-country" name="EartagCountry" type="text" maxlength="5" value="@Model.EartagCountry" class="govuk-input bse-relations-eartag-country" />
+                        <label class="govuk-visually-hidden" for="eartag-herdmark">Eartag herdmark</label>
                         <input id="eartag-herdmark" name="EartagHerdmark" type="text" value="@Model.EartagHerdmark" class="govuk-input bse-relations-eartag-herdmark" />
+                        <label class="govuk-visually-hidden" for="eartag">Eartag number</label>
                         <input id="eartag" name="Eartag" type="text" value="@Model.Eartag" class="govuk-input bse-relations-eartag-number" />
                     </div>
                 </div>
@@ -646,22 +685,23 @@
 
         </fieldset>
 
-        @if (canEditRelations)
-        {
-            <div class="govuk-button-group bse-relations-panel-width govuk-!-margin-top-4">
-                <button type="submit" asp-page-handler="SaveRelations" class="govuk-button" data-module="govuk-button">Save</button>
-                <a asp-page="/Case/Relations" asp-page-handler="CancelRelationsEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link bse-cancel-button">Cancel</a>
+        <div class="bse-case-bottom-row bse-relations-panel-width">
+            <div class="bse-case-bottom-row__right">
+                <div class="govuk-button-group bse-case-bottom-row__actions">
+                    @if (viewDocsUrl is not null)
+                    {
+                        <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">
+                            View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
+                        </a>
+                    }
+                    @if (canEditRelations)
+                    {
+                        <button type="submit" asp-page-handler="SaveRelations" class="govuk-button" data-module="govuk-button">Save</button>
+                        <a asp-page="/Case/Relations" asp-page-handler="CancelRelationsEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
+                    }
+                </div>
             </div>
-        }
-
-        @if (viewDocsUrl is not null)
-        {
-            <div class="govuk-button-group bse-relations-panel-width govuk-!-margin-top-2">
-                <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" class="govuk-link">
-                    View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
-                </a>
-            </div>
-        }
+        </div>
     </form>
 
     <style>
@@ -671,13 +711,28 @@
             padding: 0;
         }
 
+        .bse-case-bottom-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .bse-case-bottom-row__right {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin: 0 0 0 auto;
+        }
+
+        .bse-case-bottom-row__actions {
+            margin: 0;
+        }
+
         .bse-relations-panel-width {
             width: 996px;
             max-width: 100%;
-        }
-
-        .bse-unsaved-banner {
-            border-left-color: #1d70b8;
         }
 
         .bse-relations-row--unsaved {
@@ -863,8 +918,7 @@
     <script>
         document.querySelectorAll('.bse-cancel-button').forEach(function (b) {
             b.addEventListener('click', function (e) {
-                var banner = document.getElementById('case-relations-unsaved-banner');
-                var hasUnsaved = banner && !banner.hidden;
+                var hasUnsaved = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.HasUnsavedChanges));
                 if (hasUnsaved && !window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
                     e.preventDefault();
                 }

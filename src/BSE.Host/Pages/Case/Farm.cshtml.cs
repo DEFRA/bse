@@ -38,6 +38,8 @@ public class FarmModel(
     IBatchService batchService,
     ICaseWizardStateService wizardState,
     ICaseFarmDraftStateService farmDraftState,
+    ICaseScalarDraftStateService caseScalarDraftState,
+    ICaseEditOrchestrationService caseEditOrchestration,
     ICurrentUserService currentUser,
     ILogger<FarmModel> logger,
     IConfiguration configuration,
@@ -528,13 +530,96 @@ public class FarmModel(
             rowStamp = Convert.FromBase64String(EditableFarmRowStampBase64);
 
         var userId = await currentUser.GetUserIdAsync();
-        await farmService.UpdateAsync(EditableFarm!.ToUpdateCommand(rowStamp), userId);
+
+        // Cross-tab staging (restores legacy's "one session, one commit" model): stage this
+        // tab's edit into the shared draft, then commit *everything* staged for this RBSE
+        // (this tab and/or Case (DEFRA)) together, rather than committing only Farm's fields.
+        await StageFarmScalarEditAsync(EditableFarm!.ToUpdateCommand(rowStamp));
+
+        EditCaseResult commitResult;
+        try
+        {
+            commitResult = await caseEditOrchestration.CommitAllAsync(Rbse, userId);
+        }
+        catch (MandatoryCaseFieldsMissingException ex)
+        {
+            // Legacy parity: CaseEntrySave.aspx shows the consolidated list of missing items with
+            // a "Return" button instead of a single inline banner.
+            SaveResultModel.Stage(TempData, SaveResultMode.MissingMandatoryFields, ex.Errors);
+            return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
+        }
+
+        if (commitResult == EditCaseResult.ConcurrencyConflict)
+        {
+            // Legacy parity: CaseEntrySave.aspx shows the failure and navigates to Home.aspx on
+            // any commit failure, rather than staying on the originating tab.
+            TempData["ErrorMessage"] = "Another user has modified this case since you loaded it. " +
+                                       "Please reload and try again.";
+            return RedirectToPage("/Home");
+        }
+
+        if (commitResult != EditCaseResult.Success)
+        {
+            TempData["ErrorMessage"] = $"Unable to save farm changes: {commitResult}.";
+            return RedirectToPage("/Home");
+        }
 
         await PersistStagedCollectionsAsync();
         await farmDraftState.ClearAsync(Rbse);
 
-        TempData["Success"] = "Farm updated successfully.";
-        return RedirectToPage(new { rbse = Rbse });
+        // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx on a fully successful
+        // save, clearing the session case state — not back to the tab the user was on.
+        return RedirectToPage("/Home");
+    }
+
+    /// <summary>
+    /// Validates the Farm fields and, if valid, stages them into the shared cross-tab draft
+    /// (without committing) before navigating to another tab — restores legacy's
+    /// "a tab's own validation blocks every navigation attempt, not just Save" behaviour.
+    /// </summary>
+    public async Task<IActionResult> OnPostStageAndGotoAsync(string targetPage)
+    {
+        if (!User.IsInRole(DataEntryRole))
+            return Forbid();
+
+        var postedEditableFarm = EditableFarm;
+        var postedFarmRowStamp = EditableFarmRowStampBase64;
+
+        SpolSiteUrl = configuration[SpolSiteUrlConfigKey] ?? string.Empty;
+        await LoadAsync();
+        await LoadOrInitializeDraftStateAsync();
+        EditableFarm = postedEditableFarm;
+        EditableFarmRowStampBase64 = postedFarmRowStamp;
+
+        if (EditableFarm is null)
+            return RedirectToPage(targetPage, new { rbse = Rbse });
+
+        ApplyLegacyJointAndVlaEditGuards();
+        EditableFarm.CPHH = CphhNormalizer.Normalize(EditableFarm.CPHH);
+
+        await LoadLookupsForEditAsync();
+
+        if (await ValidateFarmForSaveAsync() is not null)
+            return Page();
+
+        byte[]? rowStamp = null;
+        if (!string.IsNullOrWhiteSpace(EditableFarmRowStampBase64))
+            rowStamp = Convert.FromBase64String(EditableFarmRowStampBase64);
+
+        await StageFarmScalarEditAsync(EditableFarm.ToUpdateCommand(rowStamp));
+
+        return RedirectToPage(targetPage, new { rbse = Rbse });
+    }
+
+    /// <summary>Writes the Farm tab's current field values into the shared cross-tab scalar
+    /// draft (BSE.Host.Services.CaseScalarDraftState), without committing to the database.</summary>
+    private async Task StageFarmScalarEditAsync(UpdateFarmCommand command)
+    {
+        var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
+        draft.FarmBaseRowStampBase64 ??= EditableFarmRowStampBase64;
+        draft.Farm = command;
+        draft.HasPendingChanges = true;
+        await caseScalarDraftState.SetAsync(draft);
     }
 
     private async Task<IActionResult?> ValidateFarmForSaveAsync()
@@ -574,28 +659,15 @@ public class FarmModel(
 
     private void ValidateRequiredFarmFields(FarmEditViewModel editableFarm)
     {
-        var isNonGbFarm = IsNonGbFarmCphh(editableFarm.CPHH);
-
-        if (!isNonGbFarm && editableFarm.ADNSRegionID is null)
-            ModelState.AddModelError(AdnsRegionField, "Select an ADNS region for the farm.");
-
+        // Legacy parity: CaseEntryFarm.aspx's own Save (UpdateSessionWithCaseDetails) writes every
+        // farm field unconditionally with no required-field checks of its own — Owner Name, Address 1,
+        // Parish, County, AHO and ADNS Region are only ever enforced by the cross-tab
+        // CheckMandatoryFields check on CaseEntrySave.aspx (CaseEditOrchestrationService.
+        // CheckMandatoryFieldsAsync), which redirects to the SaveResult screen. Validating them again
+        // here would block the user on this tab before that cross-tab check (and its SaveResult
+        // redirect) is ever reached, so they are deliberately not repeated in this method.
         if (string.IsNullOrWhiteSpace(editableFarm.CPHH))
             ModelState.AddModelError("EditableFarm.CPHH", EnterCphhMessage);
-
-        if (string.IsNullOrWhiteSpace(editableFarm.OwnerName))
-            ModelState.AddModelError("EditableFarm.OwnerName", "Enter an owner name for the farm.");
-
-        if (string.IsNullOrWhiteSpace(editableFarm.Address1))
-            ModelState.AddModelError("EditableFarm.Address1", "Enter the first line of the farm address.");
-
-        if (!isNonGbFarm && string.IsNullOrWhiteSpace(editableFarm.Parish))
-            ModelState.AddModelError("EditableFarm.Parish", "Enter a parish for the farm.");
-
-        if (string.IsNullOrWhiteSpace(editableFarm.County))
-            ModelState.AddModelError("EditableFarm.County", "Select a county for the farm.");
-
-        if (!isNonGbFarm && string.IsNullOrWhiteSpace(editableFarm.AHO))
-            ModelState.AddModelError("EditableFarm.AHO", "Select an AHO for the farm.");
 
         if (!string.IsNullOrWhiteSpace(editableFarm.NumericHerdmark1)
             && !IsValidNumericHerdmark(editableFarm.NumericHerdmark1))
@@ -613,6 +685,7 @@ public class FarmModel(
     private async Task<IActionResult> CancelFarmEditAsync()
     {
         await farmDraftState.ClearAsync(Rbse);
+        await caseScalarDraftState.ClearAsync(Rbse);
         return RedirectToPage(HomePagePath);
     }
 
@@ -1134,6 +1207,12 @@ public class FarmModel(
             EditableFarmRowStampBase64 = Farm.RowStamp is null ? string.Empty : Convert.ToBase64String(Farm.RowStamp);
             await LoadLookupsForEditAsync();
 
+            // Cross-tab staging overlay: if another tab's Save (or a Farm-tab navigation)
+            // already staged a Farm edit that hasn't been committed yet, show it instead of
+            // silently reverting to the last-committed DB values.
+            var stagedScalars = await caseScalarDraftState.GetAsync(Rbse);
+            if (stagedScalars?.Farm is not null)
+                EditableFarm.ApplyStagedCommand(stagedScalars.Farm);
         }
     }
 
@@ -1568,11 +1647,8 @@ public class FarmModel(
         var persistedLinkedById = PersistedLinkedFarms.ToDictionary(x => x.ID);
         var stagedLinkedByExistingId = StagedLinkedFarms.Where(x => x.Id is > 0).ToDictionary(x => x.Id!.Value);
 
-        foreach (var removed in PersistedLinkedFarms.Where(x => !stagedLinkedByExistingId.ContainsKey(x.ID)))
-        {
-            if (removed.RowStamp is not null)
-                await relationRepo.DeleteAsync(removed.ID, removed.RowStamp);
-        }
+        foreach (var removed in PersistedLinkedFarms.Where(x => !stagedLinkedByExistingId.ContainsKey(x.ID) && x.RowStamp is not null))
+            await relationRepo.DeleteAsync(removed.ID, removed.RowStamp!);
 
         foreach (var newRow in StagedLinkedFarms.Where(x => x.Id is null || x.Id <= 0))
             await relationRepo.AddAsync(farm.CPHH, newRow.RelatedCphh);
@@ -1602,11 +1678,8 @@ public class FarmModel(
         var persistedHerdById = PersistedHerdSizes.ToDictionary(x => x.ID);
         var stagedHerdByExistingId = StagedHerdSizes.Where(x => x.Id is > 0).ToDictionary(x => x.Id!.Value);
 
-        foreach (var removed in PersistedHerdSizes.Where(x => !stagedHerdByExistingId.ContainsKey(x.ID)))
-        {
-            if (removed.RowStamp is not null)
-                await herdSizeRepo.DeleteAsync(removed.ID, removed.RowStamp);
-        }
+        foreach (var removed in PersistedHerdSizes.Where(x => !stagedHerdByExistingId.ContainsKey(x.ID) && x.RowStamp is not null))
+            await herdSizeRepo.DeleteAsync(removed.ID, removed.RowStamp!);
 
         foreach (var newRow in StagedHerdSizes.Where(x => x.Id is null || x.Id <= 0))
         {
@@ -1729,7 +1802,7 @@ public class FarmModel(
     public IReadOnlyList<StagedHerdSizeItem> SortedStagedHerdSizes() =>
         GetSortedStagedHerdSizes();
 
-    private IReadOnlyList<StagedLinkedFarmItem> GetSortedStagedLinkedFarms()
+    private List<StagedLinkedFarmItem> GetSortedStagedLinkedFarms()
     {
         var ordered = (LSort, LDir) switch
         {
@@ -1742,13 +1815,13 @@ public class FarmModel(
         return ordered.ToList();
     }
 
-    private static IReadOnlyList<T> GetPagedItems<T>(IReadOnlyList<T> source, int pageNumber)
+    private static List<T> GetPagedItems<T>(IReadOnlyList<T> source, int pageNumber)
         => source
             .Skip((pageNumber - 1) * PageSize)
             .Take(PageSize)
             .ToList();
 
-    private IReadOnlyList<StagedHerdSizeItem> GetSortedStagedHerdSizes()
+    private List<StagedHerdSizeItem> GetSortedStagedHerdSizes()
     {
         var orderedSource = SortHerdSizesByColumn(StagedHerdSizes);
         return orderedSource.ToList();
