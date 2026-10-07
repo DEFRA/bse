@@ -18,12 +18,64 @@
         new { Label = "Feeds",       Page = "/Case/Feeds"    },
         new { Label = "Relations",   Page = "/Case/Relations"},
     };
+
+    // Farm, Case (DEFRA), Case (APHA), BAB and Clinical stage their scalar fields into the
+    // shared cross-tab draft (BSE.Host.Services.CaseScalarDraftState) before navigating away,
+    // so an invalid field blocks the tab switch, and the edit is not silently lost when Save
+    // is eventually pressed on a different tab. Feeds and Relations are pure row-editing grids
+    // with no scalar "form" state at risk, so their tab links are unchanged (plain navigation).
+    string? stageAndGotoFormId = Model.ActiveTab switch
+    {
+        "Farm" => "case-farm-inline-form",
+        "Case (DEFRA)" => "case-edit-inline-form",
+        "Case (APHA)" => "edit-vla-form",
+        "BAB" => "case-bab-inline-form",
+        "Clinical" => "case-clinical-inline-form",
+        _ => null
+    };
+
+    // Reuses the per-tab form id below via the "form" attribute, so the common Save/Cancel actions
+    // rendered here (next to View docs) submit the active tab's own form even though they sit
+    // outside it in the DOM. Separate from stageAndGotoFormId above: all 7 tabs have their own
+    // Save/Cancel, but only the 5 scalar-field tabs support staging mid-navigation.
+    string? saveCancelFormId = Model.ActiveTab switch
+    {
+        "Farm" => "case-farm-inline-form",
+        "Case (DEFRA)" => "case-edit-inline-form",
+        "Case (APHA)" => "edit-vla-form",
+        "BAB" => "case-bab-inline-form",
+        "Clinical" => "case-clinical-inline-form",
+        "Feeds" => "case-feeds-inline-form",
+        "Relations" => "case-relations-inline-form",
+        _ => null
+    };
+    string? topSaveHandler = Model.ActiveTab switch
+    {
+        "Farm" => "SaveFarm",
+        "BAB" => "SaveBab",
+        "Clinical" => "SaveSigns",
+        "Feeds" => "SaveFeeds",
+        "Relations" => "SaveRelations",
+        _ => null
+    };
+    (string Page, string Handler)? topCancel = Model.ActiveTab switch
+    {
+        "Farm" => ("/Case/Farm", "CancelFarmEdit"),
+        "Case (DEFRA)" => ("/Case/Edit", "CancelEdit"),
+        "Case (APHA)" => ("/Case/Vla", "CancelVlaEdit"),
+        "BAB" => ("/Case/Bab", "CancelBabEdit"),
+        "Clinical" => ("/Case/Clinical", "CancelClinicalEdit"),
+        "Feeds" => ("/Case/Feeds", "CancelFeedsEdit"),
+        "Relations" => ("/Case/Relations", "CancelRelationsEdit"),
+        _ => null
+    };
+    var showTopSaveCancel = Model.CanEditCurrentTab && saveCancelFormId is not null && topCancel is not null;
 }
 
 @* RBSE heading + batch numbers panel side-by-side (GOV.UK grid — stacks on narrow screens),
    mirroring legacy's RBSE number / BatchNumberDisplay1 header row. *@
 <div class="govuk-grid-row govuk-!-margin-bottom-2">
-    <div class="govuk-grid-column-two-thirds">
+    <div class="govuk-grid-column-full">
         <h1 class="govuk-heading-l govuk-!-margin-bottom-2">Case Details</h1>
         <p class="govuk-body bse-case-header-meta govuk-!-margin-bottom-0">
             <strong>RBSE Number: <span class="bse-rbse">@BseFormat.FormatRbse(Model.Rbse)</span></strong>
@@ -128,27 +180,12 @@
         }
 
         function showUnsavedBanner() {
-            var banner = document.querySelector('.bse-unsaved-banner');
-            if (banner) {
-                banner.hidden = false;
-                return;
-            }
-
-            var form = getCurrentCaseForm();
-            if (!form) {
-                return;
-            }
-
-            var created = document.createElement('div');
-            created.className = 'govuk-inset-text bse-unsaved-banner';
-            created.setAttribute('role', 'status');
-            created.innerHTML = '<strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.';
-            form.insertBefore(created, form.firstChild);
+            // Unsaved-changes banner removed from the UI; cross-tab detection still relies on
+            // the server-side draft-state check in hasUnsavedChangesAcrossTabs().
         }
 
         function hasUnsavedBannerOnPage() {
-            var banner = document.querySelector('.bse-unsaved-banner');
-            return !!(banner && !banner.hidden);
+            return false;
         }
 
         function extractRbseFromPath() {
@@ -362,22 +399,36 @@
         });
     })();
 </script>
-    <div class="govuk-grid-column-one-third">
-        <div class="bse-batch-docs-row">
-            @if (User.IsInRole("VLAAccess"))
-            {
-                <div class="bse-batch-docs-row__batch">
-                    @await Html.PartialAsync("_BatchNumbersPanel", new BSE.Host.Models.BatchNumbersPanelViewModel(Model.Rbse, Model.BatchNumbers ?? []))
-                </div>
-            }
-            @if (!string.IsNullOrWhiteSpace(Model.ViewDocsUrl))
-            {
-                <div class="bse-batch-docs-row__docs">
-                    <a href="@Model.ViewDocsUrl" target="_blank" rel="noopener noreferrer" class="govuk-link govuk-details__summary-text bse-batch-docs-row__docs-link">
+    <div class="govuk-grid-column-full">
+        <div class="bse-batch-docs-row govuk-!-margin-top-2">
+            <div class="bse-batch-docs-row__actions govuk-button-group">
+                @if (User.IsInRole("VLAAccess"))
+                {
+                    <div class="bse-batch-docs-row__batch">
+                        @await Html.PartialAsync("_BatchNumbersPanel", new BSE.Host.Models.BatchNumbersPanelViewModel(Model.Rbse, Model.BatchNumbers ?? []))
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.ViewDocsUrl))
+                {
+                    <a href="@Model.ViewDocsUrl" target="_blank" rel="noopener noreferrer" role="button" draggable="false"
+                       class="govuk-button govuk-button--secondary" data-module="govuk-button">
                         View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
                     </a>
-                </div>
-            }
+                }
+                @if (showTopSaveCancel)
+                {
+                    @if (topSaveHandler is not null)
+                    {
+                        <button type="submit" form="@saveCancelFormId" asp-page-handler="@topSaveHandler" class="govuk-button" data-module="govuk-button">Save</button>
+                    }
+                    else
+                    {
+                        <button type="submit" form="@saveCancelFormId" class="govuk-button" data-module="govuk-button">Save</button>
+                    }
+                    <a asp-page="@topCancel!.Value.Page" asp-page-handler="@topCancel!.Value.Handler" asp-route-rbse="@Model.Rbse"
+                       class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button" role="button" draggable="false">Cancel</a>
+                }
+            </div>
         </div>
     </div>
 </div>
@@ -398,9 +449,21 @@
 
     .bse-batch-docs-row {
         display: flex;
-        align-items: flex-start;
+        align-items: center;
+        justify-content: space-between;
         gap: 20px;
-        flex-wrap: nowrap;
+        flex-wrap: wrap;
+    }
+
+    .bse-batch-docs-row__actions {
+        display: flex;
+        align-items: center;
+        margin: 0 0 0 auto;
+        white-space: nowrap;
+    }
+
+    .bse-batch-docs-row__actions .bse-batch-docs-row__batch {
+        margin: 0 15px 10px 0;
     }
 
     .bse-batch-docs-row__batch .bse-batch-panel {
@@ -408,19 +471,6 @@
     }
 
     .bse-batch-docs-row__batch .govuk-details {
-        margin-bottom: 0;
-    }
-
-    .bse-batch-docs-row__docs {
-        white-space: nowrap;
-        padding-top: 2px;
-    }
-
-    .bse-batch-docs-row__docs-link {
-        font-family: "GDS Transport", arial, sans-serif;
-        font-size: 1.1875rem;
-        line-height: 1.3157894737;
-        font-weight: 400;
         margin-bottom: 0;
     }
 
@@ -448,8 +498,18 @@
                 else
                 {
                     <li class="bse-case-tabs__item">
-                        <a class="bse-case-tabs__link govuk-link govuk-link--no-visited-state"
-                           asp-page="@tab.Page" asp-route-rbse="@Model.Rbse">@tab.Label</a>
+                        @if (stageAndGotoFormId is not null)
+                        {
+                            <button type="submit" form="@stageAndGotoFormId"
+                                    formmethod="post"
+                                    formaction="?handler=StageAndGoto&amp;rbse=@Uri.EscapeDataString(Model.Rbse)&amp;targetPage=@Uri.EscapeDataString(tab.Page)"
+                                    class="bse-case-tabs__link bse-case-tabs__link--button govuk-link govuk-link--no-visited-state">@tab.Label</button>
+                        }
+                        else
+                        {
+                            <a class="bse-case-tabs__link govuk-link govuk-link--no-visited-state"
+                               asp-page="@tab.Page" asp-route-rbse="@Model.Rbse">@tab.Label</a>
+                        }
                     </li>
                 }
             }

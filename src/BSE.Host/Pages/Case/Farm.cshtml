@@ -338,7 +338,7 @@
         ? null
         : $"{Model.SpolSiteUrl}{Model.Rbse.Replace("/", "")}";
 }
-@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Farm", Model.Rbse, Model.BatchNumbers, viewDocsUrl))
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Farm", Model.Rbse, Model.BatchNumbers, viewDocsUrl, canEditFarm))
 
 @if (TempData["Success"] is string successMsg)
 {
@@ -438,20 +438,6 @@
         <input type="hidden" name="Rbse" value="@Model.Rbse" />
         <input type="hidden" asp-for="EditableFarm.CPHH" />
         <input type="hidden" asp-for="EditableFarmRowStampBase64" />
-
-        @if (canEditFarm)
-        {
-            <output id="case-farm-unsaved-banner"
-                 class="govuk-inset-text bse-unsaved-banner"
-                 hidden="@(!Model.HasUnsavedChanges)">
-                <strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.
-            </output>
-
-            <div class="govuk-button-group govuk-!-margin-bottom-4">
-                <button type="submit" asp-page-handler="SaveFarm" class="govuk-button" data-module="govuk-button">Save</button>
-                <a asp-page="/Case/Farm" asp-page-handler="CancelFarmEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
-            </div>
-        }
 
         <fieldset class="bse-form-fieldset-reset" disabled="@(canEditFarm ? null : "disabled")">
 
@@ -799,28 +785,26 @@
 
         <output aria-live="polite" class="govuk-visually-hidden" id="herd-live-region"></output>
 
-        @if (canEditFarm)
-        {
-            <div class="govuk-button-group govuk-!-margin-top-4">
-                <button type="submit" asp-page-handler="SaveFarm" class="govuk-button" data-module="govuk-button">Save</button>
-                <a asp-page="/Case/Farm" asp-page-handler="CancelFarmEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
+        <div class="bse-case-bottom-row">
+            <div class="govuk-button-group bse-case-bottom-row__left">
+                <a asp-page="/AuditLog/ByFarm" asp-route-cphh="@Model.Farm.CPHH" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">Farm audit log</a>
             </div>
-        }
 
-        <div class="govuk-!-margin-top-6">
-            <ul class="govuk-list">
-                <li>
-                    <a asp-page="/AuditLog/ByFarm" asp-route-cphh="@Model.Farm.CPHH" asp-route-rbse="@Model.Rbse" class="govuk-link">Farm audit log</a>
-                </li>
-                @if (!string.IsNullOrWhiteSpace(viewDocsUrl))
-                {
-                    <li>
-                        <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" class="govuk-link">
+            <div class="bse-case-bottom-row__right">
+                <div class="govuk-button-group bse-case-bottom-row__actions">
+                    @if (!string.IsNullOrWhiteSpace(viewDocsUrl))
+                    {
+                        <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">
                             View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
                         </a>
-                    </li>
-                }
-            </ul>
+                    }
+                    @if (canEditFarm)
+                    {
+                        <button type="submit" asp-page-handler="SaveFarm" class="govuk-button" data-module="govuk-button">Save</button>
+                        <a asp-page="/Case/Farm" asp-page-handler="CancelFarmEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
+                    }
+                </div>
+            </div>
         </div>
     </form>
 
@@ -829,6 +813,31 @@
         border: 0;
         margin: 0;
         padding: 0;
+    }
+
+    .bse-case-bottom-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .bse-case-bottom-row__left,
+    .bse-case-bottom-row__right {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin: 0;
+    }
+
+    .bse-case-bottom-row__right {
+        gap: 20px;
+        margin-left: auto;
+    }
+
+    .bse-case-bottom-row__actions {
+        margin: 0;
     }
 
     .case-farm-herd-table__group-left {
@@ -878,12 +887,6 @@
     .case-farm-herd-table .govuk-input {
         max-width: 100%;
         box-sizing: border-box;
-    }
-
-    .bse-unsaved-banner {
-        /* <output> defaults to display:inline, which collapses govuk-inset-text's block layout. */
-        display: block;
-        border-left-color: #1d70b8;
     }
 
     .bse-herd-row--unsaved {
@@ -1023,8 +1026,7 @@
         // ── Cancel page edits — confirmation before discarding changes ──
         document.querySelectorAll('.bse-cancel-link').forEach(function (lnk) {
             lnk.addEventListener('click', function (e) {
-                var hasUnsaved = document.getElementById('case-farm-unsaved-banner') &&
-                    !document.getElementById('case-farm-unsaved-banner').hidden;
+                var hasUnsaved = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.HasUnsavedChanges));
                 if (hasUnsaved && !window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
                     e.preventDefault();
                 }

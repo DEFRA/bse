@@ -147,4 +147,51 @@ public class VlaEditViewModel
         AlternateDiagnosis:     AlternateDiagnosis,
         LabComment:             LabComment,
         CaseType:               CaseType);
+
+    /// <summary>Overlays a staged-but-not-yet-committed Case edit (from another tab's
+    /// cross-tab draft) onto this view model, so revisiting a tab shows pending edits
+    /// made elsewhere instead of silently reverting to the last-committed DB values.</summary>
+    public void ApplyStagedCommand(EditCaseCommand c)
+    {
+        BirthDate = c.BirthDate;
+        BirthDateSource = c.BirthDateSource;
+        IsBirthDateEst = c.IsBirthDateEst ?? false;
+        Sex = c.Sex;
+        Breed = c.Breed;
+        Origin = c.Origin;
+        PurchaseDate = c.PurchaseDate;
+        PurchaseAgeInMonths = c.PurchaseAgeInMonths;
+        PurchasedCounty = c.PurchasedCounty;
+        HerdEntryDate = c.HerdEntryDate;
+        OnsetDate = c.OnsetDate;
+        IsOnsetDateEst = c.IsOnsetDateEst ?? false;
+        MonthsPregnant = c.MonthsPregnant;
+        MonthsPostCalving = c.MonthsPostCalving;
+        OnsetAgeInMonths = c.OnsetAgeInMonths;
+        SlaughterDate = c.SlaughterDate;
+        EartagCountry = c.EartagCountry;
+        EartagHerdmark = c.EartagHerdmark;
+        Eartag = c.Eartag;
+        PreviousEartag = c.PreviousEartag;
+        Bse1ReceivedDate = c.Bse1ReceivedDate;
+        FormADate = c.FormADate;
+        FormAResubmittedDate = c.FormAResubmittedDate;
+        FormBDate = c.FormBDate;
+        Fate = c.Fate;
+        FormCDate = c.FormCDate;
+        IsPurchaserBse1Received = c.IsPurchaserBse1Received;
+        IsBreederBse1Received = c.IsBreederBse1Received;
+        IsVendor1Bse1Received = c.IsVendor1Bse1Received;
+        IsHomebredBse1Received = c.IsHomebredBse1Received;
+        IsSummarySheetReceived = c.IsSummarySheetReceived;
+        IsPaperworkComplete = c.IsPaperworkComplete;
+        ReportedLocation = c.ReportedLocation;
+        Survey = c.Survey;
+        Notes = c.Notes;
+        DamStatus = c.DamStatus;
+        ValuationAge = c.ValuationAge;
+        AlternateDiagnosis = c.AlternateDiagnosis;
+        LabComment = c.LabComment;
+        CaseType = c.CaseType;
+    }
 }

@@ -3299,6 +3299,14 @@
     color: #0b0c0c;
 }
 
+.bse-case-tabs__link--button {
+    width: 100%;
+    text-align: left;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+}
+
 .bse-case-tabs__item--active .bse-case-tabs__link {
     background: #ffffff;
     border-top: 4px solid #1d70b8;

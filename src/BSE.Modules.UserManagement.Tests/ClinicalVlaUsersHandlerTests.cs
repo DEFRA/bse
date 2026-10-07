@@ -42,6 +42,8 @@ public sealed class ClinicalVlaUsersHandlerTests
     private readonly ICurrentUserService _currentUserService = Substitute.For<ICurrentUserService>();
     private readonly ICaseWizardStateService _wizardState = Substitute.For<ICaseWizardStateService>();
     private readonly ICaseEditDraftStateService _caseEditDraftState = Substitute.For<ICaseEditDraftStateService>();
+    private readonly ICaseScalarDraftStateService _caseScalarDraftState = Substitute.For<ICaseScalarDraftStateService>();
+    private readonly ICaseEditOrchestrationService _caseEditOrchestration = Substitute.For<ICaseEditOrchestrationService>();
     private readonly ILookupDataService _lookups = Substitute.For<ILookupDataService>();
     private readonly IBatchRepository _batchRepository = Substitute.For<IBatchRepository>();
     private readonly IOtherOwnerRepository _ownerRepository = Substitute.For<IOtherOwnerRepository>();
@@ -61,6 +63,7 @@ public sealed class ClinicalVlaUsersHandlerTests
 
         var model = new VlaModel(
             _caseService, _babRepository, _currentUserService, _wizardState, _caseEditDraftState,
+            _caseScalarDraftState, _caseEditOrchestration,
             _lookups, _batchRepository, _ownerRepository, _connectionFactory,
             new ConfigurationBuilder().AddInMemoryCollection().Build())
         {
@@ -460,6 +463,8 @@ public sealed class ClinicalVlaUsersHandlerTests
     private readonly ICaseRepository _caseRepository = Substitute.For<ICaseRepository>();
     private readonly ICaseClinicalDraftStateService _clinicalDraftState = Substitute.For<ICaseClinicalDraftStateService>();
     private readonly IDbConnectionFactory _clinicalConnectionFactory = Substitute.For<IDbConnectionFactory>();
+    private readonly ICaseScalarDraftStateService _clinicalScalarDraftState = Substitute.For<ICaseScalarDraftStateService>();
+    private readonly ICaseEditOrchestrationService _clinicalEditOrchestration = Substitute.For<ICaseEditOrchestrationService>();
 
     private ClinicalModel CreateClinicalModel(string[]? roles = null)
     {
@@ -475,7 +480,8 @@ public sealed class ClinicalVlaUsersHandlerTests
 
         var model = new ClinicalModel(
             _clinicalRepository, _caseRepository, _batchRepository, _clinicalDraftState,
-            _clinicalConnectionFactory, new ConfigurationBuilder().AddInMemoryCollection().Build())
+            _clinicalScalarDraftState, _clinicalEditOrchestration,
+            _currentUserService, _clinicalConnectionFactory, new ConfigurationBuilder().AddInMemoryCollection().Build())
         {
             Rbse = Rbse
         };

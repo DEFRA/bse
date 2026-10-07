@@ -11,4 +11,7 @@ public sealed record CaseTabsViewModel(
     string ActiveTab,
     string Rbse,
     IReadOnlyList<BatchNumberEntry>? BatchNumbers = null,
-    string? ViewDocsUrl = null);
+    string? ViewDocsUrl = null,
+    // True to render the common Save/Cancel actions next to "View docs" for the active tab's
+    // own form — each page computes this from its own edit-permission check.
+    bool CanEditCurrentTab = false);

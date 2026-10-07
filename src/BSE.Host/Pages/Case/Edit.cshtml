@@ -41,6 +41,10 @@
         && Model.Case.FormBDate.HasValue
         && Model.Case.FormCDate.Value.Date != Model.Case.FormBDate.Value.Date;
 
+    // Legacy: lblrfvFate red asterisk — shown whenever Form B Date is set and Fate isn't picked yet,
+    // independent of the blocking "Select a fate" error shown only after Save is clicked.
+    var showFateRequiredStar = hasFormB && string.IsNullOrWhiteSpace(Model.Case.Fate);
+
     var showHerdEntryDateWarning = false;
     if (Model.Case.HerdEntryDate.HasValue && Model.Case.BirthDate.HasValue)
     {
@@ -57,7 +61,7 @@
     </ol>
 </nav>
 
-@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Case (DEFRA)", Model.Case.Rbse, Model.BatchNumbers, viewDocsUrl))
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Case (DEFRA)", Model.Case.Rbse, Model.BatchNumbers, viewDocsUrl, User.IsInRole("DataEntry")))
 
 @if (TempData["Success"] is string successMsg)
 {
@@ -117,17 +121,6 @@
         @if (!User.IsInRole("DataEntry"))
         {
             <p class="govuk-body">You can view case details but cannot edit this page.</p>
-        }
-        else
-        {
-            <output id="case-edit-unsaved-banner" class="govuk-inset-text bse-unsaved-banner" hidden="@(!Model.HasUnsavedChanges)">
-                <strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.
-            </output>
-
-            <div class="govuk-button-group govuk-!-margin-bottom-4">
-                <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
-                <a asp-page="/Case/Edit" asp-page-handler="CancelEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
-            </div>
         }
 
         <input type="hidden" name="Rbse" value="@Model.Rbse" />
@@ -233,6 +226,10 @@
                 </div>
                 <div class="defra-legacy-field @(eFate is not null ? "govuk-form-group--error" : "")">
                     <label asp-for="Case.Fate" class="govuk-label">Fate (Form B reason)</label>
+                    @if (eFate is null && showFateRequiredStar)
+                    {
+                        <span class="defra-legacy-required-star" title="You must enter a Form B Reason" aria-hidden="true">*</span>
+                    }
                     @if (eFate is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eFate</p> }
                     <select asp-for="Case.Fate" class="govuk-select defra-legacy-input--sm @(eFate is not null ? "govuk-select--error" : "")" disabled="@(!hasFormB)">
                         <option value="">-- Select --</option>
@@ -588,34 +585,30 @@
             </div>
         </section>
 
-        @if (User.IsInRole("DataEntry"))
-        {
-            <div class="govuk-button-group govuk-!-margin-top-4">
-                <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
-                <a asp-page="/Case/Edit" asp-page-handler="CancelEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
-            </div>
-        }
-
-        <div class="govuk-!-margin-top-6">
-            <ul class="govuk-list">
+        <div class="bse-case-bottom-row">
+            <div class="govuk-button-group bse-case-bottom-row__left">
                 @if (Model.HasCaseWorkLink)
                 {
-                    <li>
-                        <a asp-page="/CaseWork/Entry" asp-route-rbse="@Model.Case.Rbse" class="govuk-link">Casework</a>
-                    </li>
+                    <a asp-page="/CaseWork/Entry" asp-route-rbse="@Model.Case.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">Casework</a>
                 }
-                <li>
-                    <a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse" asp-route-returnTo="/Case/Edit" class="govuk-link">Case audit log</a>
-                </li>
-                @if (!string.IsNullOrWhiteSpace(viewDocsUrl))
-                {
-                    <li>
-                        <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" class="govuk-link">
+                <a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse" asp-route-returnTo="/Case/Edit" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">Case audit log</a>
+            </div>
+
+            <div class="bse-case-bottom-row__right">
+                <div class="govuk-button-group bse-case-bottom-row__actions">
+                    @if (!string.IsNullOrWhiteSpace(viewDocsUrl))
+                    {
+                        <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">
                             View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
                         </a>
-                    </li>
-                }
-            </ul>
+                    }
+                    @if (User.IsInRole("DataEntry"))
+                    {
+                        <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+                        <a asp-page="/Case/Edit" asp-page-handler="CancelEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
+                    }
+                </div>
+            </div>
         </div>
     </fieldset>
 </form>
@@ -626,6 +619,31 @@
         margin: 0;
         padding: 0;
         min-width: 0;
+    }
+
+    .bse-case-bottom-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .bse-case-bottom-row__left,
+    .bse-case-bottom-row__right {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin: 0;
+    }
+
+    .bse-case-bottom-row__right {
+        gap: 20px;
+        margin-left: auto;
+    }
+
+    .bse-case-bottom-row__actions {
+        margin: 0;
     }
 
     .defra-legacy-panel {
@@ -755,12 +773,6 @@
         margin: 0;
     }
 
-    .bse-unsaved-banner {
-        /* <output> defaults to display:inline, which collapses govuk-inset-text's block layout. */
-        display: block;
-        border-left-color: #1d70b8;
-    }
-
     .bse-herd-row--unsaved {
         background: #fffbf2;
     }
@@ -878,6 +890,14 @@
         word-break: normal;
     }
 
+    .defra-legacy-required-star {
+        color: #d4351c;
+        font-size: 1.3rem;
+        line-height: 1;
+        font-weight: 700;
+        margin-left: 0.3rem;
+    }
+
     @@media (max-width: 768px) {
         .defra-legacy-grid {
             grid-template-columns: 1fr;
@@ -915,6 +935,14 @@
         var formCWarningTrigger = document.getElementById('case-formc-warning-trigger');
         var eartagValidateTimer = null;
         var eartagValidateController = null;
+        var receivedDatePairs = [
+            ['Case_PurchaserBse1ReceivedDate', 'Case_IsPurchaserBse1Received'],
+            ['Case_BreederBse1ReceivedDate', 'Case_IsBreederBse1Received'],
+            ['Case_Vendor1Bse1ReceivedDate', 'Case_IsVendor1Bse1Received'],
+            ['Case_HomebredBse1ReceivedDate', 'Case_IsHomebredBse1Received'],
+            ['Case_SummarySheetReceivedDate', 'Case_IsSummarySheetReceived'],
+            ['Case_PaperworkCompleteDate', 'Case_IsPaperworkComplete']
+        ];
 
         function getTooltipForTrigger(trigger) {
             if (!trigger) {
@@ -1064,11 +1092,31 @@
             }
         }
 
+        // Legacy: entering a received date auto-ticks its checkbox — never auto-unticks.
+        function wireReceivedDateCascade() {
+            receivedDatePairs.forEach(function (pair) {
+                var dateInput = document.getElementById(pair[0]);
+                var checkbox = document.getElementById(pair[1]);
+                if (!dateInput || !checkbox) {
+                    return;
+                }
+
+                ['input', 'change'].forEach(function (eventName) {
+                    dateInput.addEventListener(eventName, function () {
+                        if (dateInput.value) {
+                            checkbox.checked = true;
+                        }
+                    });
+                });
+            });
+        }
+
         if (eartagTooltipTrigger && eartagTooltip) {
             updateEartagTooltipText();
         }
 
         updateFormCWarningVisibility();
+        wireReceivedDateCascade();
 
         if (tooltipTriggers.length) {
             tooltipTriggers.forEach(function (trigger) {
@@ -1152,7 +1200,7 @@
 
         document.querySelectorAll('.bse-cancel-link').forEach(function (lnk) {
             lnk.addEventListener('click', function (e) {
-                var hasUnsaved = document.getElementById('case-edit-unsaved-banner') && !document.getElementById('case-edit-unsaved-banner').hidden;
+                var hasUnsaved = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.HasUnsavedChanges));
                 if (hasUnsaved && !window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
                     e.preventDefault();
                 }

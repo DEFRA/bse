@@ -26,6 +26,8 @@ public class EditModel(
     ICaseWorkRepository caseWorkRepository,
     ITestRepository testRepository,
     ICaseEditDraftStateService caseEditDraftState,
+    ICaseScalarDraftStateService caseScalarDraftState,
+    ICaseEditOrchestrationService caseEditOrchestration,
     IBatchRepository batchRepository,
     IConfiguration configuration) : PageModel
 {
@@ -114,6 +116,7 @@ public class EditModel(
 
         await Task.WhenAll(LoadLookupsAsync(), batchTask);
         await LoadOrInitializeDraftStateAsync();
+        await ApplyStagedCaseOverlayAsync();
         BatchNumbers = (await batchTask).ToList().AsReadOnly();
         return Page();
     }
@@ -183,6 +186,7 @@ public class EditModel(
     public async Task<IActionResult> OnGetCancelEditAsync()
     {
         await caseEditDraftState.ClearAsync(Rbse);
+        await caseScalarDraftState.ClearAsync(Rbse);
         return RedirectToPage("/Home");
     }
 
@@ -264,21 +268,32 @@ public class EditModel(
             return Page();
         }
 
-        var rowStamp = Convert.FromBase64String(rowStampBase64);
-        var editCommand = Case.ToEditCommand(rowStamp);
-        var command = new EditCaseDetailsCommand(editCommand, Clinical: null, Bab: null, DamSire: null);
+        // Cross-tab staging (restores legacy's "one session, one commit" model): stage this
+        // tab's edit into the shared draft, then commit *everything* staged for this RBSE
+        // (this tab and/or Farm) together, rather than committing only this page's fields.
+        await StageCaseScalarEditAsync(rowStampBase64);
 
         var userId = await currentUserService.GetUserIdAsync();
-        var result = await caseService.EditCaseAsync(command, userId);
+        EditCaseResult result;
+        try
+        {
+            result = await caseEditOrchestration.CommitAllAsync(Rbse, userId);
+        }
+        catch (MandatoryCaseFieldsMissingException ex)
+        {
+            // Legacy parity: CaseEntrySave.aspx shows the consolidated list of missing items with
+            // a "Return" button instead of a single inline banner.
+            SaveResultModel.Stage(TempData, SaveResultMode.MissingMandatoryFields, ex.Errors);
+            return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
+        }
 
         if (result == EditCaseResult.ConcurrencyConflict)
         {
-            ConcurrencyError = "Another user has modified this case since you loaded it. " +
-                               "Please reload to get the latest version and apply your changes again.";
-            var current = await caseService.GetCaseAsync(Rbse);
-            if (current is not null)
-                TempData[string.Format(RowStampKey, Rbse)] = Convert.ToBase64String(current.RowStamp ?? []);
-            return Page();
+            // Legacy parity: CaseEntrySave.aspx shows the failure and navigates to Home.aspx on
+            // any commit failure, rather than staying on the originating tab.
+            TempData["ErrorMessage"] = "Another user has modified this case since you loaded it. " +
+                                       "Please reload and try again.";
+            return RedirectToPage("/Home");
         }
 
         if (result != EditCaseResult.Success)
@@ -290,8 +305,8 @@ public class EditModel(
                 EditCaseResult.PostUpdateError  => "Database error after update.",
                 _                               => $"Update failed: {result}"
             };
-            ModelState.AddModelError("", message);
-            return Page();
+            TempData["ErrorMessage"] = message;
+            return RedirectToPage("/Home");
         }
 
         // Save casework fields if the case has a CaseWork row
@@ -315,8 +330,71 @@ public class EditModel(
         await PersistStagedTestsAsync();
         await caseEditDraftState.ClearAsync(Rbse);
 
-        TempData["Success"] = $"Case {Rbse} has been updated.";
-        return RedirectToPage(new { rbse = Rbse });
+        // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx on a fully successful
+        // save, clearing the session case state — not back to the tab the user was on.
+        return RedirectToPage("/Home");
+    }
+
+    /// <summary>
+    /// Validates this tab's fields and, if valid, stages them into the shared cross-tab
+    /// draft (without committing) before navigating to another tab — mirrors legacy's
+    /// <c>UpdateSessionWithCaseDetails()</c> running on every tab-switch, so an invalid
+    /// Form A/B/C/DOB chain blocks leaving this tab, not just blocks Save.
+    /// </summary>
+    public async Task<IActionResult> OnPostStageAndGotoAsync(string targetPage)
+    {
+        if (!User.IsInRole("DataEntry"))
+            return Forbid();
+
+        ApplyLegacyDefraPermissions();
+
+        var persistedRecord = await caseService.GetCaseAsync(Rbse);
+        if (persistedRecord is null)
+            return RedirectToPage(targetPage, new { rbse = Rbse });
+
+        IsNonGbCase = persistedRecord.IsNonGbCase;
+        if (IsNonGbCase)
+            Case.FormADate = persistedRecord.FormADate;
+
+        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+        await LoadLookupsAsync();
+        await LoadOrInitializeDraftStateAsync();
+
+        ApplyLegacyPreSaveNormalizations();
+        ValidateLegacyParityRules();
+
+        if (!ModelState.IsValid)
+            return Page();
+
+        var rowStampBase64 = TempData[string.Format(RowStampKey, Rbse)]?.ToString();
+        if (string.IsNullOrEmpty(rowStampBase64))
+        {
+            ConcurrencyError = "Session expired — please reload the page and try again.";
+            return Page();
+        }
+
+        await StageCaseScalarEditAsync(rowStampBase64);
+
+        return RedirectToPage(targetPage, new { rbse = Rbse });
+    }
+
+    /// <summary>Writes this tab's current field values into the shared cross-tab scalar
+    /// draft (BSE.Host.Services.CaseScalarDraftState), without committing to the database.</summary>
+    private async Task StageCaseScalarEditAsync(string rowStampBase64)
+    {
+        var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
+        draft.CaseBaseRowStampBase64 ??= rowStampBase64;
+        var baseRowStamp = Convert.FromBase64String(draft.CaseBaseRowStampBase64);
+        draft.Case = Case.ToEditCommand(baseRowStamp);
+        draft.HasPendingChanges = true;
+        await caseScalarDraftState.SetAsync(draft);
+    }
+
+    private async Task ApplyStagedCaseOverlayAsync()
+    {
+        var staged = await caseScalarDraftState.GetAsync(Rbse);
+        if (staged?.Case is not null)
+            Case.ApplyStagedCommand(staged.Case);
     }
 
     private void ApplyLegacyPreSaveNormalizations()
@@ -331,6 +409,15 @@ public class EditModel(
         // Slaughter Date is set to Form B Date during save mapping.
         if (!Case.SlaughterDate.HasValue && Case.FormBDate.HasValue)
             Case.SlaughterDate = Case.FormBDate;
+
+        // Legacy behavior (ctlXBSE1ReceivedDate_DateChanged): entering a received date auto-ticks
+        // its "Is X Received?" checkbox. One-way only — never auto-unticks on its own.
+        if (Case.PurchaserBse1ReceivedDate.HasValue) Case.IsPurchaserBse1Received = true;
+        if (Case.BreederBse1ReceivedDate.HasValue) Case.IsBreederBse1Received = true;
+        if (Case.Vendor1Bse1ReceivedDate.HasValue) Case.IsVendor1Bse1Received = true;
+        if (Case.HomebredBse1ReceivedDate.HasValue) Case.IsHomebredBse1Received = true;
+        if (Case.SummarySheetReceivedDate.HasValue) Case.IsSummarySheetReceived = true;
+        if (Case.PaperworkCompleteDate.HasValue) Case.IsPaperworkComplete = true;
     }
 
     private void ValidateLegacyParityRules()
@@ -440,9 +527,15 @@ public class EditModel(
         if (birthDate > latestForFormA)
             ModelState.AddModelError("Case.BirthDate", "Date of Birth must be before the Form A Date");
 
-        if (Case.OnsetDate.HasValue && birthDate > Case.OnsetDate.Value.Date)
-            ModelState.AddModelError("Case.BirthDate", "Date of Birth must be before the Onset Date");
-    }
+            if (Case.PurchaseDate.HasValue && birthDate > Case.PurchaseDate.Value.Date)
+                ModelState.AddModelError("Case.BirthDate", "Date of Birth must be before the Purchase Date");
+
+            if (Case.PurchaseDate.HasValue && birthDate > Case.PurchaseDate.Value.Date)
+                ModelState.AddModelError("Case.BirthDate", "Date of Birth must be before the Purchase Date");
+
+            if (Case.OnsetDate.HasValue && birthDate > Case.OnsetDate.Value.Date)
+                ModelState.AddModelError("Case.BirthDate", "Date of Birth must be before the Onset Date");
+        }
 
     private void ValidateCaseWorkDates(DateTime today)
     {
@@ -539,6 +632,7 @@ public class EditModel(
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
 
         await Task.WhenAll(LoadLookupsAsync(), batchTask, LoadTestsAsync());
+        await ApplyStagedCaseOverlayAsync();
         BatchNumbers = (await batchTask).ToList().AsReadOnly();
     }
 

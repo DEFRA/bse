@@ -364,6 +364,8 @@ public sealed class PageModelCoverageTests
         var currentUserService = Substitute.For<ICurrentUserService>();
         var wizardState = Substitute.For<ICaseWizardStateService>();
         var caseEditDraftState = Substitute.For<ICaseEditDraftStateService>();
+        var caseScalarDraftState = Substitute.For<ICaseScalarDraftStateService>();
+        var caseEditOrchestration = Substitute.For<ICaseEditOrchestrationService>();
         var lookupService = Substitute.For<ILookupDataService>();
         var batchRepository = Substitute.For<IBatchRepository>();
         var ownerRepository = Substitute.For<IOtherOwnerRepository>();
@@ -376,6 +378,8 @@ public sealed class PageModelCoverageTests
             currentUserService,
             wizardState,
             caseEditDraftState,
+            caseScalarDraftState,
+            caseEditOrchestration,
             lookupService,
             batchRepository,
             ownerRepository,
@@ -410,6 +414,8 @@ public sealed class PageModelCoverageTests
         var batchService = Substitute.For<IBatchService>();
         var wizardState = Substitute.For<ICaseWizardStateService>();
         var farmDraftState = Substitute.For<ICaseFarmDraftStateService>();
+        var caseScalarDraftState = Substitute.For<ICaseScalarDraftStateService>();
+        var caseEditOrchestration = Substitute.For<ICaseEditOrchestrationService>();
         var currentUser = Substitute.For<ICurrentUserService>();
         var geoLookup = Substitute.For<BSE.Host.Services.IGeoLookupService>();
 
@@ -423,6 +429,8 @@ public sealed class PageModelCoverageTests
             batchService,
             wizardState,
             farmDraftState,
+            caseScalarDraftState,
+            caseEditOrchestration,
             currentUser,
             NullLogger<FarmModel>.Instance,
             new ConfigurationBuilder().AddInMemoryCollection().Build(),

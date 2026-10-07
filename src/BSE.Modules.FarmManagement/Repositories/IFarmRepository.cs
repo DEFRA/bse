@@ -1,3 +1,4 @@
+using System.Data;
 using BSE.Modules.FarmManagement.Models;
 using BSE.SharedKernel;
 
@@ -16,6 +17,9 @@ public interface IFarmRepository
     Task<IEnumerable<FarmSummaryRecord>> GetByCphAsync(string cph);
     Task AddAsync(AddFarmCommand command, int userId);
     Task UpdateAsync(UpdateFarmCommand command, int userId);
+    /// <summary>Transactional variant — enlisted in a caller-supplied connection/transaction
+    /// so the farm row can be committed atomically alongside the case row and other case-save work.</summary>
+    Task UpdateAsync(UpdateFarmCommand command, int userId, IDbConnection connection, IDbTransaction transaction);
     Task<ChangeCphhResult> ChangeCphhAsync(string oldCphh, string newCphh, int userId);
     Task<int> GetConfirmedCaseCountAsync(string cphh);
     Task<int> GetCaseCountByCphhAsync(string cphh);
