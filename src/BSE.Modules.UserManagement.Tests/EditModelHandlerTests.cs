@@ -207,13 +207,12 @@ public sealed class EditModelHandlerTests
             EartagHerdmark = "GY1",
             EartagCountry = "UK"
         };
-        _caseService.EditCaseAsync(Arg.Any<EditCaseDetailsCommand>(), 7).Returns(EditCaseResult.Success);
+        _caseEditOrchestration.CommitAllAsync(Rbse, 7).Returns(EditCaseResult.Success);
 
         var result = await model.OnPostAsync();
 
         var redirect = result.Should().BeOfType<RedirectToPageResult>().Subject;
-        redirect.RouteValues!["rbse"].Should().Be(Rbse);
-        model.TempData["Success"].Should().Be($"Case {Rbse} has been updated.");
+        redirect.PageName.Should().Be("/Home");
         await _caseEditDraftState.Received(1).ClearAsync(Rbse, Arg.Any<CancellationToken>());
     }
 
@@ -235,13 +234,14 @@ public sealed class EditModelHandlerTests
             EartagHerdmark = "GY1",
             EartagCountry = "UK"
         };
-        _caseService.EditCaseAsync(Arg.Any<EditCaseDetailsCommand>(), 7).Returns(EditCaseResult.ConcurrencyConflict);
+        _caseEditOrchestration.CommitAllAsync(Rbse, 7).Returns(EditCaseResult.ConcurrencyConflict);
 
         var result = await model.OnPostAsync();
 
-        result.Should().BeOfType<PageResult>();
-        model.ConcurrencyError.Should().Contain("Another user has modified this case");
-        model.TempData[RowStampTempDataKey].Should().Be(Convert.ToBase64String([9, 9, 9]));
+        var redirect = result.Should().BeOfType<RedirectToPageResult>().Subject;
+        redirect.PageName.Should().Be("/Home");
+        model.TempData["ErrorMessage"].Should().BeOfType<string>()
+            .Which.Should().Contain("Another user has modified this case");
     }
 
     // Uncovered path: OnPostAsync's generic failure switch expression (lines ~296-306) —
@@ -260,11 +260,12 @@ public sealed class EditModelHandlerTests
             EartagHerdmark = "GY1",
             EartagCountry = "UK"
         };
-        _caseService.EditCaseAsync(Arg.Any<EditCaseDetailsCommand>(), 7).Returns(EditCaseResult.RbseNotFound);
+        _caseEditOrchestration.CommitAllAsync(Rbse, 7).Returns(EditCaseResult.RbseNotFound);
 
         var result = await model.OnPostAsync();
 
-        result.Should().BeOfType<PageResult>();
-        model.ModelState[""]!.Errors.Should().Contain(e => e.ErrorMessage == $"Case '{Rbse}' not found.");
+        var redirect = result.Should().BeOfType<RedirectToPageResult>().Subject;
+        redirect.PageName.Should().Be("/Home");
+        model.TempData["ErrorMessage"].Should().Be($"Case '{Rbse}' not found.");
     }
 }
