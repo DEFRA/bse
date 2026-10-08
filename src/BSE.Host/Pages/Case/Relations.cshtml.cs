@@ -818,12 +818,10 @@ public class RelationsModel(
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
         var caseRecord = await caseService.GetCaseAsync(caseRbse);
 
-        if (caseRecord is null)
-        {
-            TempData["Warning"] = $"Case '{caseRbse}' is not saved yet. Complete Farm first.";
-            return RedirectToPage(new { rbse = Rbse });
-        }
-
+        // Legacy parity: a brand-new case lives entirely in the shared session object until the
+        // first Save from *any* tab — CaseEditOrchestrationService.CommitAllAsync can create the
+        // case from whichever tab's data is staged, so this tab no longer forces the user back
+        // to Farm's own Save first.
         InferHasDamSireFromStagedInputs();
 
         var validationResult = ValidateDamSireInputs(caseRbse);
@@ -1083,7 +1081,7 @@ public class RelationsModel(
 
     /// <summary>Stages the case's DamStatus field into the shared cross-tab scalar draft, merging
     /// with whatever another tab may already have staged for the Case row rather than overwriting it.</summary>
-    private async Task StageCaseDamStatusAsync(BSE.Modules.CaseManagement.Models.CaseRecord caseRecord)
+    private async Task StageCaseDamStatusAsync(BSE.Modules.CaseManagement.Models.CaseRecord? caseRecord)
     {
         var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new BSE.Host.Services.CaseScalarDraftState { Rbse = Rbse };
 
@@ -1092,11 +1090,20 @@ public class RelationsModel(
         {
             baseCommand = draft.Case;
         }
-        else
+        else if (caseRecord is not null)
         {
             draft.CaseBaseRowStampBase64 ??= Convert.ToBase64String(caseRecord.RowStamp ?? []);
             var baseRowStamp = Convert.FromBase64String(draft.CaseBaseRowStampBase64);
             baseCommand = BSE.Host.Models.ViewModels.CaseEditViewModel.FromRecord(caseRecord).ToEditCommand(baseRowStamp);
+        }
+        else
+        {
+            // Legacy parity: a brand-new case has no persisted Case row yet to merge DamStatus
+            // into — build a blank command carrying only Rbse + DamStatus; CaseEditOrchestrationService
+            // fills in everything else (or creates the row outright) from whatever else is staged.
+            draft.CaseBaseRowStampBase64 ??= Convert.ToBase64String([]);
+            var baseRowStamp = Convert.FromBase64String(draft.CaseBaseRowStampBase64);
+            baseCommand = new BSE.Host.Models.ViewModels.CaseEditViewModel { Rbse = Rbse }.ToEditCommand(baseRowStamp);
         }
 
         draft.Case = baseCommand with { DamStatus = DamSire.DamStatus };
@@ -1175,8 +1182,6 @@ public class RelationsModel(
 
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
         var caseRecord = await caseService.GetCaseAsync(caseRbse);
-        if (caseRecord is null)
-            return;
 
         await StageCaseDamStatusAsync(caseRecord);
         await StageHerdbookAsync(caseRbse, caseRecord);

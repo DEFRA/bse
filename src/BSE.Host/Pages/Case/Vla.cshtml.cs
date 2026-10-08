@@ -93,17 +93,22 @@ public class VlaModel(
             return RedirectToPage("/SessionError");
 
         var record = await caseService.GetCaseAsync(Rbse);
-        if (record is null)
+
+        // Legacy parity: a brand-new case lives entirely in the shared session object until the
+        // first Save from *any* tab — CaseEditOrchestrationService.CommitAllAsync can create the
+        // case from whichever tab's data is staged (it only needs Farm staged with a CPHH), so
+        // this tab no longer forces the user back to Farm's own Save first.
+        Case.Rbse = Rbse;
+        if (record is not null)
         {
-            Case.Rbse = Rbse;
-            SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
-            await LoadLookupsAsync();
-            TempData[WarningKey] = $"Case '{Rbse}' is not saved yet. Complete Farm first.";
-            return Page();
+            TempData[string.Format(RowStampKey, Rbse)] = Convert.ToBase64String(record.RowStamp ?? []);
+            Case = VlaEditViewModel.FromRecord(record);
+        }
+        else
+        {
+            TempData[string.Format(RowStampKey, Rbse)] = Convert.ToBase64String([]);
         }
 
-        TempData[string.Format(RowStampKey, Rbse)] = Convert.ToBase64String(record.RowStamp ?? []);
-        Case = VlaEditViewModel.FromRecord(record);
         SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
         HasTracedBabData = await HasTracedBabDataAsync(Rbse);
 
@@ -130,15 +135,11 @@ public class VlaModel(
         if (!await LoadBatchContextAndCheckEditPermissionAsync(caseRbse))
             return RedirectToPage(new { rbse = caseRbse });
 
-        var persistedRecord = await caseService.GetCaseAsync(caseRbse);
-        if (persistedRecord is null)
-        {
-            Case.Rbse = caseRbse;
-            SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
-            await LoadLookupsAsync();
-            TempData[WarningKey] = $"Case '{caseRbse}' is not saved yet. Complete Farm first.";
-            return Page();
-        }
+        // Legacy parity: a brand-new case lives entirely in the shared session object until the
+        // first Save from *any* tab — CaseEditOrchestrationService.CommitAllAsync can create the
+        // case from whichever tab's data is staged, so this tab no longer forces the user back
+        // to Farm's own Save first (matches the GET side's equivalent fix above).
+        Case.Rbse = caseRbse;
 
         HasTracedBabData = await HasTracedBabDataAsync(caseRbse);
 
@@ -164,9 +165,9 @@ public class VlaModel(
         }
 
         var rowStampBase64 = TempData[string.Format(RowStampKey, Rbse)]?.ToString();
-        if (string.IsNullOrEmpty(rowStampBase64))
+        if (rowStampBase64 is null)
         {
-            ConcurrencyError = "Session expired â€” please reload the page and try again.";
+            ConcurrencyError = "Session expired — please reload the page and try again.";
             return Page();
         }
 
@@ -214,10 +215,6 @@ public class VlaModel(
         if (!await LoadBatchContextAndCheckEditPermissionAsync(caseRbse))
             return RedirectToPage(targetPage, new { rbse = caseRbse });
 
-        var persistedRecord = await caseService.GetCaseAsync(caseRbse);
-        if (persistedRecord is null)
-            return RedirectToPage(targetPage, new { rbse = caseRbse });
-
         SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
         await LoadLookupsAsync();
 
@@ -240,9 +237,9 @@ public class VlaModel(
         }
 
         var rowStampBase64 = TempData[string.Format(RowStampKey, Rbse)]?.ToString();
-        if (string.IsNullOrEmpty(rowStampBase64))
+        if (rowStampBase64 is null)
         {
-            ConcurrencyError = "Session expired â€” please reload the page and try again.";
+            ConcurrencyError = "Session expired — please reload the page and try again.";
             return Page();
         }
 
@@ -279,7 +276,7 @@ public class VlaModel(
     private async Task StagePostedCaseScalarsBeforeRedirectAsync()
     {
         var rowStampBase64 = TempData[string.Format(RowStampKey, Rbse)]?.ToString();
-        if (!string.IsNullOrEmpty(rowStampBase64))
+        if (rowStampBase64 is not null)
             await StageCaseScalarEditAsync(rowStampBase64);
     }
 

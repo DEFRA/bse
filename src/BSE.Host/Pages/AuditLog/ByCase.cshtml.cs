@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.AuditLog;
 
-[Authorize(Policy = "Authenticated")]
+[Authorize(Policy = "AuditAccess")]
 public class ByCaseModel(IAuditLogService auditLogService) : PageModel
 {
     private const int PageSize = 20;

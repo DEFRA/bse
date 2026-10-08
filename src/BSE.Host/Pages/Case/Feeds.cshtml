@@ -174,26 +174,23 @@
         </div>
     </div>
 
-    @if (viewDocsUrl is not null || canSaveFeeds)
-    {
-        <div class="bse-case-bottom-row">
-            <div class="bse-case-bottom-row__right">
-                <div class="govuk-button-group bse-case-bottom-row__actions">
-                    @if (viewDocsUrl is not null)
-                    {
-                        <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">
-                            View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
-                        </a>
-                    }
-                    @if (canEditFeeds)
-                    {
-                        <button type="submit" asp-page-handler="SaveFeeds" class="govuk-button" data-module="govuk-button">Save</button>
-                        <a asp-page="/Case/Feeds" asp-page-handler="CancelFeedsEdit" asp-route-rbse="@Model.Rbse" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
-                    }
-                </div>
+    <div class="bse-case-bottom-row">
+        <div class="bse-case-bottom-row__right">
+            <div class="govuk-button-group bse-case-bottom-row__actions">
+                @if (viewDocsUrl is not null)
+                {
+                    <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">
+                        View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
+                    </a>
+                }
+                @if (canSaveFeeds)
+                {
+                    <button type="submit" asp-page-handler="SaveFeeds" class="govuk-button" data-module="govuk-button">Save</button>
+                }
+                <a asp-page="/Case/Feeds" asp-page-handler="CancelFeedsEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
             </div>
         </div>
-    }
+    </div>
     </fieldset>
 </form>
 

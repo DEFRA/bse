@@ -382,6 +382,7 @@
         {
             ["CanEditJointControls"] = Model.CanEditJointControls,
             ["CanEditVlaControls"] = Model.CanEditVlaControls,
+            ["CanEditDefraControls"] = Model.CanEditDefraControls,
             TemplateInfo = { HtmlFieldPrefix = "EditableFarm" }
         })
 
@@ -731,8 +732,8 @@
                     @if (canEditFarm)
                     {
                         <button type="submit" asp-page-handler="SaveFarm" class="govuk-button" data-module="govuk-button">Save</button>
-                        <a asp-page="/Case/Farm" asp-page-handler="CancelFarmEdit" asp-route-rbse="@Model.Rbse" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
                     }
+                    <a asp-page="/Case/Farm" asp-page-handler="CancelFarmEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
                 </div>
             </div>
         </div>

@@ -73,6 +73,11 @@ public class CaseEditViewModel : ICaseEditFields
     public DateTime? RbseDate { get; set; }
     public bool HasCaseWork { get; set; }
 
+    /// <summary>Legacy CASEWORK_TABLE.IsCaseClosed — part of VLAMaintenanceEnable's 3-way gate for
+    /// Barcode/AHF Reference. Round-tripped via a hidden field like HasCaseWork since Save's
+    /// failure-path re-renders never re-fetch CaseWork from the DB.</summary>
+    public bool IsCaseClosed { get; set; }
+
     public static CaseEditViewModel FromRecord(CaseRecord r)
     {
         var vm = new CaseEditViewModel { FinalResultDate = r.FinalResultDate, FinalResult = r.FinalResult, Dbse = r.Dbse };
@@ -97,6 +102,7 @@ public class CaseEditViewModel : ICaseEditFields
         SummarySheetReceivedDate = cw.SummarySheetReceivedDate;
         PaperworkCompleteDate = cw.PaperworkCompleteDate;
         RbseDate = cw.RbseDate;
+        IsCaseClosed = cw.IsCaseClosed;
     }
 
     public EditCaseCommand ToEditCommand(byte[] rowStamp) => CaseEditFieldMapper.ToEditCommand(this, rowStamp);

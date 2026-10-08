@@ -77,12 +77,9 @@ public class BabModel(
         var currentBab = await currentBabTask;
         var currentCase = await currentCaseTask;
 
-        if (currentCase is null)
-        {
-            TempData["Warning"] = $"Case '{Rbse}' is not saved yet. Complete Farm first.";
-            return RedirectToPage(new { rbse = Rbse });
-        }
-
+        // Legacy parity: BAB only ever becomes editable once Date of Birth is set (or a BAB row
+        // already exists) — EvaluateLegacyBabEditPermission already covers "case doesn't exist yet"
+        // the same way it covers "no Date of Birth yet", so no separate block is needed here.
         var canEdit = EvaluateLegacyBabEditPermission(currentCase, currentBab);
         if (!canEdit)
             return RedirectToPage(new { rbse = Rbse });

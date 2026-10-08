@@ -236,8 +236,8 @@
                 @if (canSaveClinical)
                 {
                     <button type="submit" asp-page-handler="SaveSigns" class="govuk-button" data-module="govuk-button">Save</button>
-                    <a asp-page="/Case/Clinical" asp-page-handler="CancelClinicalEdit" asp-route-rbse="@Model.Rbse" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
                 }
+                <a asp-page="/Case/Clinical" asp-page-handler="CancelClinicalEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
             </div>
         </div>
     </div>
