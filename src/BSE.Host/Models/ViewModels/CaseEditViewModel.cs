@@ -78,7 +78,7 @@ public class CaseEditViewModel : ICaseEditFields
     /// failure-path re-renders never re-fetch CaseWork from the DB.</summary>
     public bool IsCaseClosed { get; set; }
 
-    public static CaseEditViewModel FromRecord(CaseRecord r) => new()
+    public static CaseEditViewModel FromRecord(CaseRecord r)
     {
         var vm = new CaseEditViewModel { FinalResultDate = r.FinalResultDate, FinalResult = r.FinalResult, Dbse = r.Dbse };
         CaseEditFieldMapper.CopyFromRecord(vm, r);
