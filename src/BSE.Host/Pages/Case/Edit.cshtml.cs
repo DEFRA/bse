@@ -1,4 +1,5 @@
 using BSE.Host.Models.ViewModels;
+using BSE.Host.Helpers;
 using BSE.Host.Services;
 using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Repositories;
@@ -350,31 +351,17 @@ public class EditModel(
         await StageCaseScalarEditAsync(rowStampBase64);
 
         var userId = await currentUserService.GetUserIdAsync();
-        CaseCommitOutcome commitOutcome;
-        try
-        {
-            commitOutcome = await caseEditOrchestration.CommitAllAsync(Rbse, userId);
-        }
-        catch (MandatoryCaseFieldsMissingException ex)
-        {
-            // Legacy parity: CaseEntrySave.aspx shows the consolidated list of missing items with
-            // a "Return" button instead of a single inline banner.
-            SaveResultModel.Stage(TempData, SaveResultMode.MissingMandatoryFields, ex.Errors);
-            return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
-        }
-
-        if (commitOutcome.Result != EditCaseResult.Success)
-        {
-            var message = commitOutcome.Result switch
+        var (failureRedirect, commitOutcome) = await CaseCommitHelper.CommitAllAsync(
+            this, caseEditOrchestration, Rbse, userId,
+            result => result switch
             {
                 EditCaseResult.RbseNotFound     => $"Case '{Rbse}' not found.",
                 EditCaseResult.AuditLogError    => "Audit log error during update.",
                 EditCaseResult.PostUpdateError  => "Database error after update.",
-                _                               => $"Update failed: {commitOutcome.Result}"
-            };
-            TempData["ErrorMessage"] = message;
-            return RedirectToPage("/Home");
-        }
+                _                               => $"Update failed: {result}"
+            });
+        if (failureRedirect is not null)
+            return failureRedirect;
 
         // Save casework fields if the case has a CaseWork row
         if (Case.HasCaseWork)
@@ -396,13 +383,8 @@ public class EditModel(
 
         await caseEditDraftState.ClearAsync(Rbse);
 
-        if (commitOutcome.Warnings.Count > 0)
-        {
-            // Legacy parity: CaseEntrySave.aspx shows "saved with some errors" instead of silently
-            // succeeding whenever a per-table concurrency conflict was skipped during the commit.
-            SaveResultModel.Stage(TempData, SaveResultMode.PartialSuccess, commitOutcome.Warnings);
-            return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
-        }
+        if (CaseCommitHelper.TryStageWarnings(this, commitOutcome!, Rbse) is { } warningRedirect)
+            return warningRedirect;
 
         // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx (or the ?redirect=
         // target, e.g. CaseWorkEntry.aspx, when arrived via the Casework link) on a fully
@@ -637,15 +619,12 @@ public class EditModel(
         if (birthDate > latestForFormA)
             ModelState.AddModelError("Case.BirthDate", "Date of Birth must be before the Form A Date");
 
-            if (Case.PurchaseDate.HasValue && birthDate > Case.PurchaseDate.Value.Date)
-                ModelState.AddModelError("Case.BirthDate", "Date of Birth must be before the Purchase Date");
+        if (Case.PurchaseDate.HasValue && birthDate > Case.PurchaseDate.Value.Date)
+            ModelState.AddModelError("Case.BirthDate", "Date of Birth must be before the Purchase Date");
 
-            if (Case.PurchaseDate.HasValue && birthDate > Case.PurchaseDate.Value.Date)
-                ModelState.AddModelError("Case.BirthDate", "Date of Birth must be before the Purchase Date");
-
-            if (Case.OnsetDate.HasValue && birthDate > Case.OnsetDate.Value.Date)
-                ModelState.AddModelError("Case.BirthDate", "Date of Birth must be before the Onset Date");
-        }
+        if (Case.OnsetDate.HasValue && birthDate > Case.OnsetDate.Value.Date)
+            ModelState.AddModelError("Case.BirthDate", "Date of Birth must be before the Onset Date");
+    }
 
     private void ValidateCaseWorkDates(DateTime today)
     {

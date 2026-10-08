@@ -440,7 +440,7 @@
                 }
                 @if (!string.IsNullOrWhiteSpace(Model.ViewDocsUrl))
                 {
-                    <a href="@Model.ViewDocsUrl" target="_blank" rel="noopener noreferrer" role="button" draggable="false"
+                    <a href="@Model.ViewDocsUrl" target="_blank" rel="noopener noreferrer"
                        class="govuk-button govuk-button--secondary" data-module="govuk-button">
                         View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
                     </a>
@@ -459,7 +459,7 @@
                 @if (showTopCancel)
                 {
                     <a asp-page="@topCancel!.Value.Page" asp-page-handler="@topCancel!.Value.Handler" asp-route-rbse="@Model.Rbse"
-                       class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button" role="button" draggable="false">Cancel</a>
+                       class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
                 }
             </div>
         </div>

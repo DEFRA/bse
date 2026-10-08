@@ -1,4 +1,5 @@
 ﻿using BSE.Host.Models.ViewModels;
+using BSE.Host.Helpers;
 using BSE.Host.Services;
 using BSE.Infrastructure;
 using BSE.Modules.Batch.Models;
@@ -176,42 +177,23 @@ public class VlaModel(
         await StageCaseScalarEditAsync(rowStampBase64);
 
         var userId = await currentUserService.GetUserIdAsync();
-        CaseCommitOutcome commitOutcome;
-        try
-        {
-            commitOutcome = await caseEditOrchestration.CommitAllAsync(caseRbse, userId);
-        }
-        catch (MandatoryCaseFieldsMissingException ex)
-        {
-            // Legacy parity: CaseEntrySave.aspx shows the consolidated list of missing items with
-            // a "Return" button instead of a single inline banner.
-            SaveResultModel.Stage(TempData, SaveResultMode.MissingMandatoryFields, ex.Errors);
-            return RedirectToPage("/Case/SaveResult", new { rbse = caseRbse });
-        }
-
-        if (commitOutcome.Result != EditCaseResult.Success)
-        {
-            var message = commitOutcome.Result switch
+        var (failureRedirect, commitOutcome) = await CaseCommitHelper.CommitAllAsync(
+            this, caseEditOrchestration, caseRbse, userId,
+            result => result switch
             {
                 EditCaseResult.RbseNotFound    => $"Case '{Rbse}' not found.",
                 EditCaseResult.AuditLogError   => "Audit log error during update.",
                 EditCaseResult.PostUpdateError => "Database error after update.",
-                _                              => $"Update failed: {commitOutcome.Result}"
-            };
-            TempData["ErrorMessage"] = message;
-            return RedirectToPage("/Home");
-        }
+                _                              => $"Update failed: {result}"
+            });
+        if (failureRedirect is not null)
+            return failureRedirect;
 
         await PersistStagedOwnersAsync(caseRbse);
         await caseEditDraftState.ClearAsync(caseRbse);
 
-        if (commitOutcome.Warnings.Count > 0)
-        {
-            // Legacy parity: CaseEntrySave.aspx shows "saved with some errors" instead of silently
-            // succeeding whenever a per-table concurrency conflict was skipped during the commit.
-            SaveResultModel.Stage(TempData, SaveResultMode.PartialSuccess, commitOutcome.Warnings);
-            return RedirectToPage("/Case/SaveResult", new { rbse = caseRbse });
-        }
+        if (CaseCommitHelper.TryStageWarnings(this, commitOutcome!, caseRbse) is { } warningRedirect)
+            return warningRedirect;
 
         // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx on a fully successful
         // save, clearing the session case state — not back to the tab the user was on.
