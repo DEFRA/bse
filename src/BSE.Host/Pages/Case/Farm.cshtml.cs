@@ -449,9 +449,12 @@ public class FarmModel(
             return Forbid();
 
         var postedCphh = NewLinkedCphh;
+        var postedEditableFarm = EditableFarm;
+        var postedFarmRowStamp = EditableFarmRowStampBase64;
 
         SpolSiteUrl = configuration[SpolSiteUrlConfigKey] ?? string.Empty;
         await LoadAsync();
+        await RestoreAndRestageFarmEditAsync(postedEditableFarm, postedFarmRowStamp);
 
         if (!CanEditDefraControls)
             return RedirectToPage(new { rbse = Rbse });
@@ -622,6 +625,31 @@ public class FarmModel(
         await caseScalarDraftState.SetAsync(draft);
     }
 
+    /// <summary>Undoes <c>LoadAsync()</c>'s overwrite of <see cref="EditableFarm"/> with the
+    /// last-persisted DB record, and re-stages the posted (in-progress, unsaved) Farm scalar edit —
+    /// otherwise a Linked Farms/Herd Size grid operation (add/edit/delete) silently discards any
+    /// not-yet-saved edit to the Farm tab's own fields (Owner Name, County, ADNS Region, etc.).</summary>
+    private async Task RestoreAndRestageFarmEditAsync(FarmEditViewModel? postedEditableFarm, string? postedFarmRowStampBase64)
+    {
+        if (postedEditableFarm is null)
+            return;
+
+        EditableFarm = postedEditableFarm;
+        EditableFarmRowStampBase64 = postedFarmRowStampBase64;
+
+        byte[]? rowStamp = null;
+        if (!string.IsNullOrWhiteSpace(postedFarmRowStampBase64))
+            rowStamp = Convert.FromBase64String(postedFarmRowStampBase64);
+
+        await StageFarmScalarEditAsync(EditableFarm.ToUpdateCommand(rowStamp));
+
+        // LoadAsync() already built the Authority/ADNS Region <select> option lists from the
+        // last-persisted AuthorityCountyID/AuthorityID — those are now stale against the just-restored
+        // EditableFarm above, so the posted County/Local Authority/ADNS Region selections would render
+        // with no matching <option> (looking exactly like the edit was lost) unless rebuilt here.
+        await LoadLookupsForEditAsync();
+    }
+
     private async Task<IActionResult?> ValidateFarmForSaveAsync()
     {
         if (EditableFarm is null)
@@ -697,9 +725,12 @@ public class FarmModel(
             return Forbid();
 
         var clientKey = EditingLinkedClientKey;
+        var postedEditableFarm = EditableFarm;
+        var postedFarmRowStamp = EditableFarmRowStampBase64;
 
         SpolSiteUrl = configuration[SpolSiteUrlConfigKey] ?? string.Empty;
         await LoadAsync();
+        await RestoreAndRestageFarmEditAsync(postedEditableFarm, postedFarmRowStamp);
 
         if (!CanEditDefraControls)
             return RedirectToPage(new { rbse = Rbse });
@@ -723,9 +754,12 @@ public class FarmModel(
 
         var clientKey = EditingLinkedClientKey;
         var postedCphh = EditLinkedCphh;
+        var postedEditableFarm = EditableFarm;
+        var postedFarmRowStamp = EditableFarmRowStampBase64;
 
         SpolSiteUrl = configuration[SpolSiteUrlConfigKey] ?? string.Empty;
         await LoadAsync();
+        await RestoreAndRestageFarmEditAsync(postedEditableFarm, postedFarmRowStamp);
 
         if (!CanEditDefraControls)
             return RedirectToPage(new { rbse = Rbse });
@@ -774,8 +808,12 @@ public class FarmModel(
         if (!User.IsInRole(DataEntryRole))
             return Forbid();
 
+        var postedEditableFarm = EditableFarm;
+        var postedFarmRowStamp = EditableFarmRowStampBase64;
+
         SpolSiteUrl = configuration[SpolSiteUrlConfigKey] ?? string.Empty;
         await LoadAsync();
+        await RestoreAndRestageFarmEditAsync(postedEditableFarm, postedFarmRowStamp);
 
         if (!CanEditDefraControls)
             return RedirectToPage(new { rbse = Rbse });
@@ -802,9 +840,12 @@ public class FarmModel(
             return Forbid();
 
         var clientKey = EditingClientKey;
+        var postedEditableFarm = EditableFarm;
+        var postedFarmRowStamp = EditableFarmRowStampBase64;
 
         SpolSiteUrl = configuration[SpolSiteUrlConfigKey] ?? string.Empty;
         await LoadAsync();
+        await RestoreAndRestageFarmEditAsync(postedEditableFarm, postedFarmRowStamp);
         var draft = await LoadOrInitializeDraftStateAsync();
 
         var item = draft.HerdSizes.FirstOrDefault(x => x.ClientKey == clientKey);
@@ -839,9 +880,12 @@ public class FarmModel(
             return Forbid();
 
         var postedRow = NewHerdRow;
+        var postedEditableFarm = EditableFarm;
+        var postedFarmRowStamp = EditableFarmRowStampBase64;
 
         SpolSiteUrl = configuration[SpolSiteUrlConfigKey] ?? string.Empty;
         await LoadAsync();
+        await RestoreAndRestageFarmEditAsync(postedEditableFarm, postedFarmRowStamp);
         var draft = await LoadOrInitializeDraftStateAsync();
 
         ValidateHerdRow(postedRow, prefix: nameof(NewHerdRow));
@@ -887,9 +931,12 @@ public class FarmModel(
 
         var clientKey = EditingClientKey;
         var postedRow = EditHerdRow;
+        var postedEditableFarm = EditableFarm;
+        var postedFarmRowStamp = EditableFarmRowStampBase64;
 
         SpolSiteUrl = configuration[SpolSiteUrlConfigKey] ?? string.Empty;
         await LoadAsync();
+        await RestoreAndRestageFarmEditAsync(postedEditableFarm, postedFarmRowStamp);
         var draft = await LoadOrInitializeDraftStateAsync();
 
         var item = draft.HerdSizes.FirstOrDefault(x => x.ClientKey == clientKey);
@@ -933,8 +980,12 @@ public class FarmModel(
         if (!User.IsInRole(DataEntryRole))
             return Forbid();
 
+        var postedEditableFarm = EditableFarm;
+        var postedFarmRowStamp = EditableFarmRowStampBase64;
+
         SpolSiteUrl = configuration[SpolSiteUrlConfigKey] ?? string.Empty;
         await LoadAsync();
+        await RestoreAndRestageFarmEditAsync(postedEditableFarm, postedFarmRowStamp);
         var draft = await LoadOrInitializeDraftStateAsync();
         var item = draft.HerdSizes.FirstOrDefault(x => x.ClientKey == clientKey);
         if (item is not null)
@@ -1205,14 +1256,20 @@ public class FarmModel(
         {
             EditableFarm = FarmEditViewModel.FromRecord(Farm);
             EditableFarmRowStampBase64 = Farm.RowStamp is null ? string.Empty : Convert.ToBase64String(Farm.RowStamp);
-            await LoadLookupsForEditAsync();
 
             // Cross-tab staging overlay: if another tab's Save (or a Farm-tab navigation)
             // already staged a Farm edit that hasn't been committed yet, show it instead of
-            // silently reverting to the last-committed DB values.
+            // silently reverting to the last-committed DB values. Must run before
+            // LoadLookupsForEditAsync() below — that call builds the Authority/ADNS Region
+            // cascading <select> option lists from EditableFarm's current AuthorityCountyID/
+            // AuthorityID, so building it from the stale DB-loaded IDs (before this overlay)
+            // leaves the restored County/Local Authority/ADNS Region with no matching <option>,
+            // which renders as if the edit had been silently discarded.
             var stagedScalars = await caseScalarDraftState.GetAsync(Rbse);
             if (stagedScalars?.Farm is not null)
                 EditableFarm.ApplyStagedCommand(stagedScalars.Farm);
+
+            await LoadLookupsForEditAsync();
         }
     }
 

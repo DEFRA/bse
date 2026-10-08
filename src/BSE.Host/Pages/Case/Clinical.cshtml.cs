@@ -215,6 +215,28 @@ public class ClinicalModel(
             Signs.ApplyStagedCommand(staged.Clinical);
     }
 
+    /// <summary>Re-stages the posted (in-progress, unsaved) clinical signs edit — otherwise a Visits
+    /// grid operation (add/edit/delete) silently discards any not-yet-saved checkbox edit, since
+    /// <c>LoadAsync()</c> always reloads <see cref="Signs"/> from the database and <see cref="Signs"/>
+    /// is never itself model-bound from the post.</summary>
+    private async Task RestoreAndRestageSignsEditAsync(string? clinicalRowStampBase64)
+    {
+        if (string.IsNullOrEmpty(clinicalRowStampBase64))
+            return;
+
+        var signs = BindSignsFromForm();
+        Signs = signs;
+
+        var rowStamp = Convert.FromBase64String(clinicalRowStampBase64);
+        var edit = signs.ToEditCommand(Rbse, rowStamp);
+
+        var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
+        draft.ClinicalBaseRowStampBase64 ??= clinicalRowStampBase64;
+        draft.Clinical = edit with { RowStamp = Convert.FromBase64String(draft.ClinicalBaseRowStampBase64) };
+        draft.HasPendingChanges = true;
+        await caseScalarDraftState.SetAsync(draft);
+    }
+
     /// <summary>Discards all staged visit changes without persisting them.</summary>
     public async Task<IActionResult> OnPostCancelClinicalEditAsync()
     {
@@ -231,7 +253,7 @@ public class ClinicalModel(
     }
 
     /// <summary>Adds a clinical visit to the draft only. Not persisted until Save.</summary>
-    public async Task<IActionResult> OnPostAddVisitRowAsync()
+    public async Task<IActionResult> OnPostAddVisitRowAsync(string? clinicalRowStampBase64)
     {
         if (!User.IsInRole("DataEntry") || !User.IsInRole(VlaAccessRole))
             return Forbid();
@@ -239,6 +261,7 @@ public class ClinicalModel(
         var postedDate = NewVisitDate;
 
         await LoadAsync();
+        await RestoreAndRestageSignsEditAsync(clinicalRowStampBase64);
         var draft = await LoadOrInitializeDraftStateAsync();
 
         ValidateVisitDate(postedDate, nameof(NewVisitDate));
@@ -268,12 +291,13 @@ public class ClinicalModel(
     }
 
     /// <summary>Opens the inline edit view for one staged clinical visit row (no changes saved yet).</summary>
-    public async Task<IActionResult> OnPostBeginEditVisitRowAsync(string clientKey)
+    public async Task<IActionResult> OnPostBeginEditVisitRowAsync(string clientKey, string? clinicalRowStampBase64)
     {
         if (!User.IsInRole("DataEntry") || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         await LoadAsync();
+        await RestoreAndRestageSignsEditAsync(clinicalRowStampBase64);
         var draft = await LoadOrInitializeDraftStateAsync();
 
         var visit = draft.Visits.FirstOrDefault(v => v.ClientKey == clientKey);
@@ -288,7 +312,7 @@ public class ClinicalModel(
     }
 
     /// <summary>Updates a staged clinical visit row in the draft only. Not persisted until Save.</summary>
-    public async Task<IActionResult> OnPostUpdateVisitRowAsync()
+    public async Task<IActionResult> OnPostUpdateVisitRowAsync(string? clinicalRowStampBase64)
     {
         if (!User.IsInRole("DataEntry") || !User.IsInRole(VlaAccessRole))
             return Forbid();
@@ -297,6 +321,7 @@ public class ClinicalModel(
         var postedDate = EditVisitDate;
 
         await LoadAsync();
+        await RestoreAndRestageSignsEditAsync(clinicalRowStampBase64);
         var draft = await LoadOrInitializeDraftStateAsync();
 
         var item = draft.Visits.FirstOrDefault(v => v.ClientKey == clientKey);
@@ -328,12 +353,13 @@ public class ClinicalModel(
     }
 
     /// <summary>Removes a staged clinical visit row from the draft only. Not persisted until Save.</summary>
-    public async Task<IActionResult> OnPostDeleteVisitAsync(string clientKey)
+    public async Task<IActionResult> OnPostDeleteVisitAsync(string clientKey, string? clinicalRowStampBase64)
     {
         if (!User.IsInRole("DataEntry") || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         await LoadAsync();
+        await RestoreAndRestageSignsEditAsync(clinicalRowStampBase64);
         var draft = await LoadOrInitializeDraftStateAsync();
 
         var item = draft.Visits.FirstOrDefault(v => v.ClientKey == clientKey);

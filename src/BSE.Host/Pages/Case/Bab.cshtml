@@ -207,10 +207,6 @@
             <div class="bab-legacy-field"></div>
         </div>
 
-        @if (Model.CanEditBabControls)
-        {
-            @await Html.PartialAsync("_CaseSaveCancel", new BSE.Host.Models.CaseSaveCancelViewModel(Model.Rbse, "/Case/Bab", "CancelBabEdit", "SaveBab", MarginTop: true))
-        }
         </fieldset>
 
         <div class="bse-case-bottom-row">

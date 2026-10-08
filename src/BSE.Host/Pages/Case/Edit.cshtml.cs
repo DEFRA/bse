@@ -126,7 +126,10 @@ public class EditModel(
         if (!User.IsInRole("DataEntry"))
             return Forbid();
 
+        var postedCase = Case;
+
         await LoadReadonlyPageAsync();
+        await RestoreAndRestageCaseEditAsync(postedCase);
         await LoadOrInitializeDraftStateAsync();
 
         var test = StagedTests.FirstOrDefault(t => t.Id == id);
@@ -145,7 +148,10 @@ public class EditModel(
         if (!User.IsInRole("DataEntry"))
             return Forbid();
 
+        var postedCase = Case;
+
         await LoadReadonlyPageAsync();
+        await RestoreAndRestageCaseEditAsync(postedCase);
         await LoadOrInitializeDraftStateAsync();
 
         if (string.IsNullOrWhiteSpace(NewTestType))
@@ -174,7 +180,10 @@ public class EditModel(
         if (!User.IsInRole("DataEntry"))
             return Forbid();
 
+        var postedCase = Case;
+
         await LoadReadonlyPageAsync();
+        await RestoreAndRestageCaseEditAsync(postedCase);
         await LoadOrInitializeDraftStateAsync();
 
         await PersistStagedTestsAsync();
@@ -200,7 +209,10 @@ public class EditModel(
         if (!User.IsInRole("DataEntry"))
             return Forbid();
 
+        var postedCase = Case;
+
         await LoadReadonlyPageAsync();
+        await RestoreAndRestageCaseEditAsync(postedCase);
         await LoadOrInitializeDraftStateAsync();
 
         if (string.IsNullOrWhiteSpace(EditTestType))
@@ -395,6 +407,22 @@ public class EditModel(
         var staged = await caseScalarDraftState.GetAsync(Rbse);
         if (staged?.Case is not null)
             Case.ApplyStagedCommand(staged.Case);
+    }
+
+    /// <summary>Undoes <c>LoadReadonlyPageAsync()</c>'s overwrite of <see cref="Case"/> with the
+    /// last-persisted DB record, and re-stages the posted (in-progress, unsaved) scalar edit —
+    /// otherwise a Tests grid operation (add/edit row) silently discards any not-yet-saved edit to
+    /// the DEFRA tab's own fields.</summary>
+    private async Task RestoreAndRestageCaseEditAsync(CaseEditViewModel? postedCase)
+    {
+        if (postedCase is null)
+            return;
+
+        Case = postedCase;
+
+        var rowStampBase64 = TempData[string.Format(RowStampKey, Rbse)]?.ToString();
+        if (!string.IsNullOrEmpty(rowStampBase64))
+            await StageCaseScalarEditAsync(rowStampBase64);
     }
 
     private void ApplyLegacyPreSaveNormalizations()

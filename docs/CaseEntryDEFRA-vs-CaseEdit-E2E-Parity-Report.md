@@ -797,6 +797,354 @@ Files changed: `CaseEditOrchestrationService.cs` (effective-value resolution fix
 
 ---
 
+## Bug found and fixed: grid row operations silently discarded in-progress scalar edits (2026-10-07, fourteenth follow-up)
+
+The user reported: *"when I tried to edit some of the select fields and then add linked farms or edit
+or delete then that edited values got lost and reset back to previously persisted values in all the
+case tabs."*
+
+### Root cause
+
+Every tab's inline grid handlers (Add/BeginEdit/Update/Delete a row) call that tab's own `LoadAsync()`
+(or `LoadReadonlyPageAsync()`) to refresh grid/lookup data before acting on the posted row. `LoadAsync()`
+unconditionally rebuilds the tab's scalar form view model from the **database** record and overlays only
+the **cross-tab staged draft** (`ApplyStagedCommand`/`ApplyStagedSignsOverlayAsync`) — it never considers
+what was just **posted in this exact request**. Any select/dropdown/text field the user had changed in
+that same submission, but not yet staged or saved, was silently overwritten back to its last-persisted
+value the moment a grid button was clicked.
+
+Checked and fixed per tab:
+
+- **Farm** (`Farm.cshtml.cs`) — `EditableFarm`/`EditableFarmRowStampBase64` are captured from the posted
+  model before `LoadAsync()` runs, then restored and re-staged via new helper
+  `RestoreAndRestageFarmEditAsync`. Applied to all 8 grid handlers (Linked Farms + Herd Size rows).
+- **Case (DEFRA)** (`Edit.cshtml.cs`) — `Case` is captured before `LoadReadonlyPageAsync()`, then
+  restored and re-staged via new helper `RestoreAndRestageCaseEditAsync`. Applied to all 4 Tests-grid
+  handlers.
+- **Clinical** (`Clinical.cshtml.cs`) — a different shape of the same bug: `Signs` is never itself
+  model-bound from the post (it's always rebuilt either from the DB via `LoadAsync()` or from
+  `Request.Form["Signs.*"]` via `BindSignsFromForm()`, and only the Save/StageAndGoto handlers called
+  the latter). The 4 Visit-grid handlers now accept the already-posted `clinicalRowStampBase64` hidden
+  field, call `BindSignsFromForm()` to recover the posted checkbox state, and re-stage it via new helper
+  `RestoreAndRestageSignsEditAsync`, mirroring the existing `OnPostStageAndGotoAsync` pattern.
+- **Case (APHA)/Vla** (`Vla.cshtml.cs`) — checked and confirmed **not affected**: its Other-Owners grid
+  handlers never call any function that reloads `Case` from the database; `Case` remains whatever was
+  model-bound from the post throughout.
+- **BAB** (`Bab.cshtml.cs`) — checked and confirmed **not affected**: has no inline grid at all, only
+  Save and StageAndGoto, both of which already use the directly posted `Bab` model.
+- **Feeds** (`Feeds.cshtml.cs`) — initially (wrongly) assessed as not affected, on the basis that it
+  has no scalar "form" outside the grid rows themselves. User confirmed the symptom also occurs here,
+  specifically when clicking **Validate Supplier** — the affected state turned out to be the shared
+  Add/Edit field panel itself (Year From/To, Ration Type, Ration Name, Pre-purchase), which legacy's
+  single physical panel round-trips via ViewState regardless of which button is clicked, but the
+  migrated page's `[BindProperty]`s for it only survive the current POST. `OnPostValidateSupplierNavigateAsync`
+  only round-trips the supplier name via `RedirectToPage("/Case/PickSupplier", new { rbse, name })` —
+  every other in-progress panel field (a Ration Type selected for a prospective new/edited row, Year
+  From/To, etc.) was silently discarded the moment the user left for the supplier picker and came back.
+  `OnPostDeleteFeedRowAsync` has the identical gap (redirects without using or preserving any panel
+  field). Fixed both by stashing the posted panel state into TempData (`StashPostedPanelState`)
+  immediately before each handler's redirect, and restoring it (`RestorePostedPanelState`) in
+  `OnGetAsync` right after the standard load — TempData (not `CaseFeedsDraftState`/
+  `CaseScalarDraftState`) was used deliberately since this panel state is never itself committed to the
+  database and only needs to survive the redirect hop(s) (including the intermediate round trip through
+  `/Case/PickSupplier`, which doesn't touch TempData and so doesn't disturb the stashed key), not a full
+  tab switch. `OnPostAddFeedRowAsync`/`OnPostUpdateFeedRowAsync` were left unchanged — they already
+  `return Page()` (preserving the posted panel exactly) on validation failure, and correctly clear the
+  panel on success since the row they describe has just been committed to the draft.
+- **Relations** (`Relations.cshtml.cs`) — initially (wrongly) assessed as not affected, since its
+  `LoadAsync()` has an explicit guard comment and never overwrites `DamSire`/`CaseHerdbook` on a POST.
+  User confirmed the symptom also occurs here — the actual mechanism is different and was missed: the
+  Add/Update/Delete relation-row handlers all `RedirectToPage` on success (not `return Page()`), which
+  triggers a **brand-new GET request**. That follow-up GET's `PopulateCaseAncillaryStateAsync()`
+  unconditionally re-reads `CaseHerdbook` and `DamSire.DamStatus` straight from the database with no
+  overlay of anything staged — so a Case Herdbook edit or Dam Status selection typed in the same
+  submission as a relation-row add/edit/delete, but not yet committed via the dedicated "Save Dam/Sire"/
+  "Save Case Herdbook" buttons, was silently discarded by the redirect's reload, not by the original
+  request itself. Fixed by capturing the posted `CaseHerdbook`/`DamSire.DamStatus` before `LoadAsync()`
+  in all three redirecting handlers, then calling new helper `RestoreAndRestageDamSireEditAsync` (reuses
+  the existing `StageCaseDamStatusAsync`/`StageHerdbookAsync` staging methods, previously only called
+  from the main Save handler) so the edit survives in `CaseScalarDraftState` across the redirect;
+  `PopulateCaseAncillaryStateAsync` now overlays that staged state after its DB read, so the follow-up
+  GET shows the preserved values instead of the stale persisted ones.
+  (`OnPostBeginEditRelationRowAsync` returns `Page()`, not a redirect, so it was never affected by this
+  specific mechanism and was left unchanged.)
+
+Files changed: `Farm.cshtml.cs`, `Edit.cshtml.cs`, `Clinical.cshtml.cs`, `Relations.cshtml.cs`,
+`Feeds.cshtml.cs`.
+
+---
+
+## Bug found and fixed: Farm's cascading Authority/ADNS Region dropdowns still reverted after a grid operation (2026-10-07)
+
+User reported the grid-reset symptom was **still** present on the Farm tab, specifically for Authority
+County, Local Authority and ADNS Region — three fields already covered by the fourteenth follow-up's
+`RestoreAndRestageFarmEditAsync` fix. This needed a different, additional fix because these three
+fields are a **cascading** group (Authority County → Local Authority → ADNS Region, each `<select>`'s
+option list depends on the previous field's selected value), not independent scalar fields.
+
+### Root cause
+
+`LoadAsync()` loads the Farm row, then — in this order — (1) calls `LoadLookupsForEditAsync()`, which
+builds `ViewData["AuthorityOptions"]`/`ViewData["AdnsOptions"]` from the **just-loaded, last-persisted**
+`EditableFarm.AuthorityCountyID`/`AuthorityID`, and only **afterwards** (2) overlays any cross-tab staged
+draft onto `EditableFarm` via `ApplyStagedCommand`. `RestoreAndRestageFarmEditAsync` (the fourteenth
+follow-up's fix) correctly restores the **posted** `EditableFarm` — including the correct
+`AuthorityCountyID`/`AuthorityID`/`ADNSRegionID` values — but runs *after* `LoadAsync()` has already
+built those `ViewData` option lists from the **stale** DB-loaded IDs. The restored ID value is technically
+correct on the model, but the `<select>`'s rendered `<option>` list no longer contains a matching
+`<option>` for it, so the browser shows the field reverted to blank/first-option — visually identical to
+the original bug, but with the underlying cause one level removed: the **value** survives, but its
+**dependent options list** does not.
+
+This is a structurally different problem from the fourteenth follow-up's fix (which only needed to
+restore+re-stage a scalar value) — any field whose displayed `<option>` list is itself derived from
+another field's current value needs its options list **rebuilt after** the value is restored, not just
+the value itself preserved.
+
+### Fix
+
+`RestoreAndRestageFarmEditAsync` now ends with a call to `LoadLookupsForEditAsync()`, after `EditableFarm`
+has been restored and re-staged — so `ViewData["AuthorityOptions"]`/`ViewData["AdnsOptions"]` are rebuilt
+from the **restored** `AuthorityCountyID`/`AuthorityID`, guaranteeing the Local Authority/ADNS Region
+`<select>`s always have a matching `<option>` for whatever was posted. Some callers already re-called
+`LoadLookupsForEditAsync()` themselves afterward for unrelated reasons (e.g. validation failure) — that is
+harmless, redundant work, not a correctness issue.
+
+Checked all 7 tabs for this same "cascading-options-built-from-a-field-that-gets-restored-later" pattern
+— it is unique to `Farm.cshtml.cs`'s Authority County/Local Authority/ADNS Region trio; no other tab has
+a server-rendered `<select>` whose options list is itself derived from another field's value, so no
+other tab needed this third fix shape.
+
+Files changed: `Farm.cshtml.cs` only. `get_errors` clean.
+
+### Follow-up: the same ordering bug was still live in `LoadAsync()` itself (2026-10-08)
+
+User reported the values were **still** being discarded after the fix above. The first fix only covered
+`RestoreAndRestageFarmEditAsync`, which only runs for handlers that render `Page()` directly in the same
+request (e.g. a validation failure). The far more common path — a successful Add/Edit/Delete grid row
+operation — calls `RestoreAndRestageFarmEditAsync` too, but then `RedirectToPage(...)` to itself, and the
+**follow-up GET** re-enters `OnGetAsync()` → `LoadAsync()`, which had exactly the same ordering bug,
+untouched by the first fix: it still called `LoadLookupsForEditAsync()` (building the Authority/ADNS
+option lists) **before** overlaying the cross-tab staged draft (`EditableFarm.ApplyStagedCommand`) onto
+the freshly DB-loaded `EditableFarm`. The staged `AuthorityCountyID`/`AuthorityID`/`ADNSRegionID` (saved
+correctly by `RestoreAndRestageFarmEditAsync`'s `StageFarmScalarEditAsync` call) was there and correct on
+the model, but — the same as before — the rendered `<select>` had no matching `<option>` for it, since
+the options were built one step too early.
+
+**Fix:** reordered `LoadAsync()` so the staged-draft overlay happens **before** `LoadLookupsForEditAsync()`,
+not after — the Authority/ADNS option lists are now always built from whichever `AuthorityCountyID`/
+`AuthorityID` ends up on `EditableFarm` (DB value, or the staged overlay if one exists), never from a
+value that's about to be replaced. Both fixes are needed together: this one covers the GET-after-redirect
+path; the earlier `RestoreAndRestageFarmEditAsync` fix covers the same-request `Page()` path.
+
+Files changed: `Farm.cshtml.cs` only. `get_errors` clean.
+
+### Follow-up: the actual root cause — `AuthorityID`/`AuthorityCountyID` were never staged at all (2026-10-08)
+
+User reported the symptom was **still** present after both ordering fixes above. Both of those fixes
+were real and necessary, but neither was sufficient, because the deeper problem was upstream of both:
+`AuthorityID`/`AuthorityCountyID` were **never part of the staged command in the first place**.
+
+### Root cause
+
+`UpdateFarmCommand` — the command type `FarmEditViewModel.ToUpdateCommand()` builds and
+`StageFarmScalarEditAsync` persists into `CaseScalarDraftState` — only ever carried `ADNSRegionID`.
+`FarmEditViewModel.ApplyStagedCommand(UpdateFarmCommand c)` (the method both ordering fixes depend on to
+restore the overlay) correspondingly only restored `ADNSRegionID` — it had no `AuthorityID`/
+`AuthorityCountyID` to restore **from**, because `ToUpdateCommand()` never put them there. Confirmed this
+is consistent with the `EditFarm` stored procedure itself
+([FarmRepository.cs](../src/BSE.Modules.FarmManagement/Repositories/FarmRepository.cs)'s
+`BuildEditFarmParams`), which also only ever sends `ADNSRegionID` — `AuthorityID`/`AuthorityCountyID` are
+**not persisted columns driven by this command at all**; they exist purely as the cascading picker's
+own intermediate "narrow down to the right ADNS Region" state. No ordering fix could have restored a
+value that was never captured anywhere to begin with — fixing the two call-order bugs was necessary
+(and remains necessary, now that the values genuinely are available to restore) but not sufficient on
+its own.
+
+### Fix
+
+* `UpdateFarmCommand` gained two new optional, trailing parameters — `AuthorityID`/`AuthorityCountyID`
+  (default `null`, so none of its 4 existing construction call sites across the codebase needed
+  updating). They are **not** added to `FarmRepository.BuildEditFarmParams`, so the `EditFarm` SP call
+  and the database columns it actually writes are completely unchanged — these two fields exist on the
+  command purely to round-trip through staging, never to be persisted directly.
+* `FarmEditViewModel.ToUpdateCommand()` now passes its own `AuthorityID`/`AuthorityCountyID` into the
+  command it builds.
+* `FarmEditViewModel.ApplyStagedCommand()` now also restores `AuthorityID`/`AuthorityCountyID` from the
+  staged command, alongside the `ADNSRegionID` it already restored.
+* With this in place, the two ordering fixes above now have a correctly-populated staged command to
+  restore from: `LoadAsync()`'s staged overlay (now running before `LoadLookupsForEditAsync()`) and
+  `RestoreAndRestageFarmEditAsync`'s direct restore (for the same-request `Page()` path) both now
+  correctly carry forward the user's in-progress County → Local Authority → ADNS Region selection,
+  and the Authority/ADNS Region `<select>` option lists are rebuilt from those **same, correctly
+  restored** IDs — so every part of the cascade agrees with every other part.
+
+Files changed: `UpdateFarmCommand.cs`, `FarmEditViewModel.cs`. `get_errors` clean on both and on all 4
+existing `UpdateFarmCommand` construction call sites (2 in `FarmServiceTests.cs`, 2 in
+`CaseEditOrchestrationServiceTests.cs`).
+
+### Follow-up: the same redirect-then-reload mechanism, missed on Vla's Other-Owners grid (2026-10-08)
+
+User reported the same symptom on the **Case (APHA)/Vla tab**'s `PurchasedCounty` field: editing it,
+then adding/editing/deleting an Other-Owners row, discarded the edit. The fourteenth follow-up had
+assessed Vla as "not affected", on the basis that no handler reloads `Case` from the database mid-request
+— true, but incomplete: it missed that `OnPostAddOwnerRowAsync`, `OnPostUpdateOwnerRowAsync`, and
+`OnPostDeleteOwnerAsync` all succeed via `RedirectToPage(...)`, not `return Page()`. That redirect starts
+a **brand-new GET request**, whose `OnGetAsync` rebuilds `Case` fresh from the database and overlays only
+`ApplyStagedCaseOverlayAsync()` — i.e. only whatever was staged by a previous Save/`OnPostStageAndGotoAsync`
+call. None of the three owner-row handlers ever called `StageCaseScalarEditAsync`, so any scalar field
+(`PurchasedCounty` or otherwise) edited in the same submission as an owner-row action was silently
+discarded the moment the redirect's follow-up GET ran — the exact same "RedirectToPage()-then-reload
+discards a same-request edit" mechanism already fixed for Relations, just not yet recognised as present
+here because the reload happens in the *next* request, not inside the handler itself.
+
+**Fix:** added `StagePostedCaseScalarsBeforeRedirectAsync()`, which stages the already-model-bound `Case`
+(via the existing `StageCaseScalarEditAsync`, reusing the row-stamp already held in `TempData` from the
+page's last GET) — called right before the success-path redirect in `OnPostAddOwnerRowAsync`,
+`OnPostUpdateOwnerRowAsync`, and `OnPostDeleteOwnerAsync`. `OnPostBeginEditOwnerRowAsync` needed no change
+— it returns `Page()` on success, so `Case` is already whatever was just posted when the page re-renders.
+Also found and fixed a related normalisation gap in `OnPostDeleteOwnerAsync`: unlike its three siblings,
+it never reassigned `Rbse = caseRbse;` after parsing — meaning the staged draft would have been keyed by
+the raw, un-normalised `Rbse` instead of the same normalised key the follow-up GET looks up by.
+
+Files changed: `Vla.cshtml.cs` only. `get_errors` clean.
+
+### Audit: searched all 7 tabs for any other cascading-options `<select>` pair (2026-10-08, no code change)
+
+Per explicit follow-up request, checked whether Farm's Authority County → Local Authority → ADNS Region
+is the only group of dropdowns anywhere in the Case wizard whose **options list** (not just its
+enabled/disabled state) is itself derived from another field's current value — i.e. the same shape of
+bug as the fifteenth/sixteenth follow-ups above, where restoring the value alone isn't enough because
+the rendered `<option>` list can still omit it.
+
+* Searched every `lookups.Get...Async(...)`/`_lookups.Get...Async(...)` call across all 7 tab page
+  models for one that takes a **parameter sourced from another bound field** (the defining trait of a
+  cascading lookup) — only `GetAuthoritiesByCountyAsync(authorityCountyId)` and
+  `GetADNSRegionsByAuthorityAsync(authorityId)` matched, both exclusively in `Farm.cshtml.cs` (plus the
+  three standalone, non-wizard Farm pages `Farm/Edit.cshtml.cs`, `Farm/New.cshtml.cs`,
+  `Farm/MoveCaseNewFarm.cshtml.cs`, which are single-page/single-commit flows with no
+  `CaseScalarDraftState` staging at all, so the specific grid-redirect-reset mechanism this report
+  tracks cannot occur on them).
+* Searched every `ViewData["...Options"] = ...` assignment across all 7 tabs for a conditional build
+  (`? ... : []`) keyed off another field — only the two Farm ones above matched (`AuthorityOptions`,
+  `AdnsOptions`); every other `...Options` list (`CountyOptions`, `AhoOptions`, `HerdTypeOptions`,
+  `PedigreeOptions`, `AuthorityCountyOptions`, and the various static lookup lists bound to `<select>`s
+  on Edit/Vla/Bab/Feeds/Relations/Clinical — e.g. `Case.Fate`, `Case.Sex`, `Case.BirthDateSource`,
+  `Case.Origin`, `Case.PurchasedCounty`, `Bab.FeedRisk`, `RationType`, `RelationType`) is a fixed,
+  unconditional lookup table list, never derived from another field's value.
+* Vla's `Case.PurchasedCounty` **is** conditionally `disabled` based on another field (`Case.Origin`,
+  via `purchaseFieldsDisabled`), and Clinical/Edit have similar disable-only cascades (Fate on Form B
+  Date, BirthDateSource on Date of Birth, etc.) — but in every one of these cases the **options list
+  itself** is a static county/lookup table, unaffected by the other field's value. These are
+  enable/disable cascades, already covered by the general staging fix pattern (restoring the posted
+  value is sufficient; there is no stale-options-list risk because the list never changes).
+
+**Conclusion: Farm's Authority County/Local Authority/ADNS Region trio is the only true
+cascading-options `<select>` group in the entire 7-tab Case wizard.** No further fix is needed elsewhere;
+this audit found no code to change.
+
+---
+
+## 🔴 Audit finding: per-table concurrency detection is implemented for only 2 of 11 tables (2026-10-08, no code change yet)
+
+Per explicit follow-up request, checked whether "another user modified this case at the same time" is
+detected and reported with the same granularity as legacy's `CaseEntrySave.aspx`.
+
+### Legacy behaviour: every table's stored procedure returns a RowStamp-mismatch code, and it's a *soft* error
+
+Every one of legacy's per-table update methods in `clsCase.vb`/`clsFarm.vb` passes the row's `RowStamp`
+to its `Edit*` stored procedure and reads back a `RETURN_VALUE` that includes a specific code for "the
+row was changed by another user since it was read" (a classic optimistic-concurrency check). Confirmed
+for every table in the shared session `DataSet`:
+
+| Table | Legacy concurrency check | On conflict |
+|---|---|---|
+| Case | `EditCase` SP, code 3 | `objErrorList.Add("...has been modified by another user")` — **soft**, does not abort |
+| Farm | `EditFarm` SP, code 3 | same pattern — **soft** |
+| BAB | `EditCaseBAB` SP, code 1 | same pattern — **soft** |
+| Clinical | `EditCaseClinical` SP, code 1 | same pattern — **soft** |
+| Dam/Sire/Pedigree | `AddEditDamSireDetails` SP, codes 1/2/4 | same pattern — **soft** |
+| Other Owner, Test, Clinical Visit, Feed, Relation (grids) | `OptimisticUpdateDataTable`'s row-updated callback checks `RecordsAffected = 0` | per-row `RowError = "Data was changed by another user"` — **soft**, only that row is skipped |
+| CaseWork | *(none — `RowStamp` is deliberately never sent; see code comment "Can't think of a reason to need RowStamp?")* | not checked at all, by design |
+
+Critically, **every one of these is a *soft* error, added to `objErrorList`, never thrown as an
+exception**. `UpdateCaseDetails` only rolls back the transaction on an actual thrown
+`CaseUpdateException`/unhandled exception (e.g. a hard SP failure) — a RowStamp mismatch on one table
+does **not** stop the other, non-conflicting tables in the same transaction from committing. The net
+result on `CaseEntrySave.aspx` is the **"saved with some errors"** branch: *"The database has been
+updated but some errors were encountered: ...has been modified by another user..."* — a partial commit,
+not an all-or-nothing abort.
+
+### Migrated behaviour: only Case and Relations actually check; the other 9 tables silently discard the SP's result
+
+* **`ICaseRepository.EditCaseAsync`** correctly reads the SP's `RETURN_VALUE` via a `DynamicParameters`
+  return-value parameter and maps a mismatch to `EditCaseResult.ConcurrencyConflict`
+  ([CaseRepository.cs](../src/BSE.Modules.CaseManagement/Repositories/CaseRepository.cs)) — this part is
+  correctly implemented.
+* **Relations** (`PersistStagedRelationsAsync` → `relationsRepository.DeleteRelationAsync`) also checks
+  and returns `false` on a stale RowStamp, which the orchestrator maps to `EditCaseResult.ConcurrencyConflict`.
+* **Every other repository call the orchestrator makes — Farm (`farmRepository.UpdateAsync`), BAB
+  (`babRepository.EditAsync`), Clinical (`clinicalRepository.EditAsync`), Dam/Sire
+  (`pedigreeRepository.AddEditDamSireAsync`), Feeds (`PersistStagedFeedsAsync` → `feedRepository.EditAsync`/
+  `DeleteAsync`), and (outside the orchestrator) CaseWork, Other Owner, and Test — all return a plain,
+  untyped `Task`, built on `DapperRepository.ExecuteAsync(string, object?)`
+  ([DapperRepository.cs](../src/BSE.Infrastructure/DapperRepository.cs)), which calls Dapper's
+  `connection.ExecuteAsync(...)` with a plain anonymous parameter object — `RETURN_VALUE` is never
+  declared as an output parameter, so it is never read, regardless of what the underlying SP returns.**
+  Confirmed by reading every one of these repositories' interface and implementation: none of them
+  declares a return-value parameter or inspects a result code; `RowStamp` is passed into the SP (so the
+  SP itself may well still refuse to apply a stale update, exactly as legacy's SP does), but the .NET
+  code has **no way of knowing whether the update actually happened or was silently skipped by the SP**.
+
+### Net effect: both a detection gap *and* an all-or-nothing-vs-partial-success divergence
+
+* **Detection gap (more severe):** if another user edits the Farm (or BAB, Clinical, Dam/Sire, Feeds,
+  CaseWork, Other Owner, Test) record between this user's page load and Save, and the underlying SP
+  silently no-ops the conflicting row (consistent with how it behaves for legacy), the migrated app has
+  **no way to detect this** — no exception, no returned failure code, nothing. The transaction commits,
+  `CommitAllAsync` returns `Success`, and the user is told the save succeeded — while that one table's
+  edit was, in fact, silently discarded by the database. This is **worse than both** legacy (which
+  explicitly surfaces every one of these as a "modified by another user" message) **and** the Case/
+  Relations tables in the migrated app itself (which correctly detect and report their own conflicts).
+* **All-or-nothing vs. partial-success (for the 2 tables that *are* checked):** even where detection
+  *is* implemented (Case, Relations), the orchestrator's response differs from legacy's: a Case-row
+  conflict or a stale relation row currently rolls back the **entire** transaction and returns
+  `EditCaseResult.ConcurrencyConflict` for the whole Save — discarding Farm/BAB/Clinical/Feeds edits
+  staged in the *same* round that had **no** conflict of their own. Legacy, by contrast, would have let
+  those non-conflicting tables' changes commit and only reported the one table that actually conflicted.
+  This is a deliberate, defensible safety trade-off (avoids ending up with a half-saved case spread
+  across tabs the user can't see all at once), but it is a genuine behavioural divergence from legacy
+  worth confirming as intentional rather than assuming.
+
+### Recommendation (not yet implemented — flagging for a decision before changing 6+ repositories' contracts)
+
+To close the detection gap, `FarmRepository.UpdateAsync`, `BabRepository.EditAsync`,
+`ClinicalRepository.EditAsync`, `ChildRepositories.cs`'s `AddEditDamSireAsync`/`EditAsync`(OtherOwner,Test),
+`FeedRepository.EditAsync`/`DeleteAsync`, and `CaseWorkRepository.EditAsync` would each need to change
+from `Task` to a typed result (mirroring `ICaseRepository.EditCaseAsync`'s
+`Task<EditCaseResult>` pattern), reading the SP's `RETURN_VALUE` via `DynamicParameters`, and the
+orchestrator would need to decide — consistent with legacy's **soft-error, partial-success** model —
+whether to surface a per-table "modified by another user" message (extending `SaveResult.cshtml`'s
+existing message-list pattern, rather than treating it as a hard `ConcurrencyConflict` abort like Case/
+Relations currently do). This is a non-trivial, multi-repository contract change — not applied in this
+audit pass pending confirmation of the desired behaviour (soft/partial, matching legacy exactly, vs. the
+stricter all-or-nothing model already in place for Case/Relations).
+
+
+
+## UI change: removed the "unsaved changes" banner from the Relations tab (2026-10-07)
+
+Per user request, the `<output id="case-relations-unsaved-banner">` inset-text banner ("You have
+unsaved changes. Select Save to keep them, or Cancel to discard them.") shown above the Save/Cancel
+buttons on the Relations tab whenever a row/dam/sire edit was staged has been removed — it was deemed
+unnecessary. The Cancel link's existing JavaScript confirm-before-discard dialog (driven by the same
+`Model.HasUnsavedChanges` flag) was left in place, since it is a separate, deliberate safeguard against
+accidental data loss rather than a persistent banner.
+
+Files changed: `Relations.cshtml`.
+
+---
+
 ## Executive summary
 
 | # | Finding | Severity |

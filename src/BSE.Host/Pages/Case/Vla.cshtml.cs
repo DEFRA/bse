@@ -284,6 +284,19 @@ public class VlaModel(
             Case.ApplyStagedCommand(staged.Case);
     }
 
+    /// <summary>Stages the currently posted (model-bound) <see cref="Case"/> scalars — e.g. Purchased
+    /// County, Purchase Date — into the shared cross-tab draft before an Other-Owners grid handler
+    /// redirects. Without this, a scalar field edited in the same submission as an Add/Edit/Delete
+    /// owner-row action is silently discarded: the redirect triggers a fresh GET that reloads
+    /// <see cref="Case"/> from the database and overlays only what was already staged, not what was
+    /// just posted in this exact request.</summary>
+    private async Task StagePostedCaseScalarsBeforeRedirectAsync()
+    {
+        var rowStampBase64 = TempData[string.Format(RowStampKey, Rbse)]?.ToString();
+        if (!string.IsNullOrEmpty(rowStampBase64))
+            await StageCaseScalarEditAsync(rowStampBase64);
+    }
+
     public async Task<IActionResult> OnGetCancelVlaEditAsync()
     {
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
@@ -317,6 +330,10 @@ public class VlaModel(
         EditOwnerRowStampBase64 = owner.RowStampBase64;
         return Page();
     }
+
+    // Note: OnPostBeginEditOwnerRowAsync above redirects on its early-exit paths only (no edit
+    // permission, owner not found) and returns Page() on success, so it never needs to stage —
+    // Case remains whatever was model-bound from this exact POST when the page re-renders.
 
     public async Task<IActionResult> OnPostAddOwnerRowAsync()
     {
@@ -352,6 +369,7 @@ public class VlaModel(
         });
         draft.HasPendingChanges = true;
         await caseEditDraftState.SetAsync(draft);
+        await StagePostedCaseScalarsBeforeRedirectAsync();
 
         return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
     }
@@ -392,6 +410,7 @@ public class VlaModel(
         owner.Cphh = string.IsNullOrWhiteSpace(normalizedCphh) ? null : normalizedCphh;
         draft.HasPendingChanges = true;
         await caseEditDraftState.SetAsync(draft);
+        await StagePostedCaseScalarsBeforeRedirectAsync();
 
         return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
     }
@@ -402,6 +421,7 @@ public class VlaModel(
             return Forbid();
 
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
+        Rbse = caseRbse;
         if (!await LoadBatchContextAndCheckEditPermissionAsync(caseRbse))
             return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
 
@@ -416,6 +436,7 @@ public class VlaModel(
         draft.OtherOwners.Remove(owner);
         draft.HasPendingChanges = true;
         await caseEditDraftState.SetAsync(draft);
+        await StagePostedCaseScalarsBeforeRedirectAsync();
         return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
     }
 

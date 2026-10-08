@@ -650,7 +650,11 @@ public class RelationsModel(
         if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
+        var postedCaseHerdbook = CaseHerdbook;
+        var postedDamStatus = DamSire.DamStatus;
+
         await LoadAsync();
+        await RestoreAndRestageDamSireEditAsync(postedCaseHerdbook, postedDamStatus);
         var draft = await LoadOrInitializeRelationsDraftAsync();
 
         await ValidateAndDeriveRelationFieldsAsync(excludeClientKey: null);
@@ -729,8 +733,11 @@ public class RelationsModel(
             return Forbid();
 
         var clientKey = EditingClientKey;
+        var postedCaseHerdbook = CaseHerdbook;
+        var postedDamStatus = DamSire.DamStatus;
 
         await LoadAsync();
+        await RestoreAndRestageDamSireEditAsync(postedCaseHerdbook, postedDamStatus);
         var draft = await LoadOrInitializeRelationsDraftAsync();
 
         var item = draft.Relations.FirstOrDefault(r => r.ClientKey == clientKey);
@@ -777,7 +784,11 @@ public class RelationsModel(
         if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
+        var postedCaseHerdbook = CaseHerdbook;
+        var postedDamStatus = DamSire.DamStatus;
+
         await LoadAsync();
+        await RestoreAndRestageDamSireEditAsync(postedCaseHerdbook, postedDamStatus);
         var draft = await LoadOrInitializeRelationsDraftAsync();
 
         var item = draft.Relations.FirstOrDefault(r => r.ClientKey == clientKey);
@@ -1165,6 +1176,23 @@ public class RelationsModel(
         await caseScalarDraftState.SetAsync(draft);
     }
 
+    /// <summary>Re-stages the posted (in-progress, unsaved) Case Herdbook / Dam Status edits before a
+    /// relation-row grid operation redirects — otherwise the redirect's follow-up GET reloads both
+    /// straight from the database via PopulateCaseAncillaryStateAsync and silently discards them.</summary>
+    private async Task RestoreAndRestageDamSireEditAsync(string? postedCaseHerdbook, string? postedDamStatus)
+    {
+        CaseHerdbook = postedCaseHerdbook;
+        DamSire.DamStatus = postedDamStatus;
+
+        var caseRbse = RbseHelper.ParseToRaw(Rbse);
+        var caseRecord = await caseService.GetCaseAsync(caseRbse);
+        if (caseRecord is null)
+            return;
+
+        await StageCaseDamStatusAsync(caseRecord);
+        await StageHerdbookAsync(caseRbse, caseRecord);
+    }
+
     /// <summary>Discards all staged related-animal changes without persisting them.</summary>
     public async Task<IActionResult> OnPostCancelRelationsEditAsync() => await CancelRelationsEditAsync();
 
@@ -1512,6 +1540,15 @@ public class RelationsModel(
             : null;
 
         DamSire.DamStatus = caseRecord?.DamStatus;
+
+        // Overlay whatever another action in this same browsing session already staged (e.g. a
+        // relation-row grid operation re-staging the Case Herdbook / Dam Status the user had just
+        // typed/selected), so it survives the redirect this request is about to return.
+        var staged = await caseScalarDraftState.GetAsync(Rbse);
+        if (staged?.Case is not null)
+            DamSire.DamStatus = staged.Case.DamStatus;
+        if (staged?.DamSire is not null)
+            CaseHerdbook = staged.DamSire.CaseHerdbook;
     }
 
     private bool HasDamInputStaged()
