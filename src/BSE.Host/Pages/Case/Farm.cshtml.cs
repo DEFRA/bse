@@ -540,9 +540,12 @@ public class FarmModel(
         await StageFarmScalarEditAsync(EditableFarm!.ToUpdateCommand(rowStamp));
 
         EditCaseResult commitResult;
+        var commitWarnings = Array.Empty<string>() as IReadOnlyList<string>;
         try
         {
-            commitResult = await caseEditOrchestration.CommitAllAsync(Rbse, userId);
+            var commitOutcome = await caseEditOrchestration.CommitAllAsync(Rbse, userId);
+            commitResult = commitOutcome.Result;
+            commitWarnings = commitOutcome.Warnings;
         }
         catch (MandatoryCaseFieldsMissingException ex)
         {
@@ -550,15 +553,6 @@ public class FarmModel(
             // a "Return" button instead of a single inline banner.
             SaveResultModel.Stage(TempData, SaveResultMode.MissingMandatoryFields, ex.Errors);
             return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
-        }
-
-        if (commitResult == EditCaseResult.ConcurrencyConflict)
-        {
-            // Legacy parity: CaseEntrySave.aspx shows the failure and navigates to Home.aspx on
-            // any commit failure, rather than staying on the originating tab.
-            TempData["ErrorMessage"] = "Another user has modified this case since you loaded it. " +
-                                       "Please reload and try again.";
-            return RedirectToPage("/Home");
         }
 
         if (commitResult != EditCaseResult.Success)
@@ -569,6 +563,14 @@ public class FarmModel(
 
         await PersistStagedCollectionsAsync();
         await farmDraftState.ClearAsync(Rbse);
+
+        if (commitWarnings.Count > 0)
+        {
+            // Legacy parity: CaseEntrySave.aspx shows "saved with some errors" instead of silently
+            // succeeding whenever a per-table concurrency conflict was skipped during the commit.
+            SaveResultModel.Stage(TempData, SaveResultMode.PartialSuccess, commitWarnings);
+            return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
+        }
 
         // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx on a fully successful
         // save, clearing the session case state — not back to the tab the user was on.
@@ -1064,85 +1066,6 @@ public class FarmModel(
     }
 
     /// <summary>Legacy warning text: lactation-total mismatch is informational, not blocking.</summary>
-
-    // ── POST: Batch assignment (legacy CaseEntryFarm.aspx Save/Cancel) ─────────
-
-    public async Task<IActionResult> OnPostSaveBatchAsync()
-    {
-        if (!User.IsInRole(VlaAccessRole))
-            return Forbid();
-
-        var pending = await wizardState.GetAsync();
-        if (pending is null || !string.Equals(pending.RbseNumber, Rbse, StringComparison.OrdinalIgnoreCase))
-        {
-            TempData[ErrorMessageKey] = "No batch was selected. Return to the home page and choose a batch number.";
-            return RedirectToPage(new { rbse = Rbse });
-        }
-
-        // Legacy uniqueness is on (BatchID, RBSE, Document), so a case may belong to several
-        // batches — only re-adding the same batch is a duplicate.
-        var alreadyInPendingBatch = (await batchRepository.GetBatchNumbersByRbseAsync(Rbse))
-            .Any(b => b.BatchId == pending.BatchId
-                   && string.Equals(b.Document, Bse1Document, StringComparison.OrdinalIgnoreCase));
-
-        if (alreadyInPendingBatch)
-        {
-            await wizardState.ClearAsync();
-            TempData["Warning"] =
-                $"Case {RbseHelper.Format(Rbse)} is already assigned to batch {pending.BatchNumber}. No change was made.";
-            return RedirectToPage(new { rbse = Rbse });
-        }
-
-        var userId = await currentUser.GetUserIdAsync();
-        var result = await batchService.AssignCaseToBatchAsync(pending.BatchId, Rbse, Bse1Document);
-
-        if (logger.IsEnabled(LogLevel.Information))
-        {
-            logger.LogInformation(
-                "Batch assignment {Result}: user {UserId} assigned RBSE {Rbse} to batch {BatchId} ({BatchNumber}) for document {Document}",
-                result, userId, Rbse, pending.BatchId, pending.BatchNumber, Bse1Document);
-        }
-
-        await wizardState.ClearAsync();
-
-        TempData[result switch
-        {
-            BatchAssignmentResult.Success => "Success",
-            BatchAssignmentResult.AlreadyAssigned => "Warning",
-            _ => ErrorMessageKey
-        }] = result switch
-        {
-            BatchAssignmentResult.Success =>
-                $"Case {RbseHelper.Format(Rbse)} has been assigned to batch {pending.BatchNumber}.",
-            BatchAssignmentResult.AlreadyAssigned =>
-                $"Case {RbseHelper.Format(Rbse)} is already assigned to batch {pending.BatchNumber}. No change was made.",
-            BatchAssignmentResult.BatchNotFound =>
-                $"Batch {pending.BatchNumber} no longer exists. The case was not assigned.",
-            _ => "The case could not be assigned to the batch."
-        };
-
-        return RedirectToPage(new { rbse = Rbse });
-    }
-
-    public async Task<IActionResult> OnPostCancelBatchAsync()
-    {
-        if (!User.IsInRole(VlaAccessRole))
-            return Forbid();
-
-        var pending = await wizardState.GetAsync();
-        await wizardState.ClearAsync();
-
-        // Return to the batch assignment screen with the previous selections retained.
-        var parts = (pending?.BatchNumber ?? "").Split('/');
-        if (parts.Length == 2
-            && short.TryParse(parts[0], out var year)
-            && int.TryParse(parts[1], out var number))
-        {
-            return RedirectToPage(HomePagePath, new { batchYear = year, batchNumber = number });
-        }
-
-        return RedirectToPage(HomePagePath);
-    }
 
     // ── AJAX: farm status for a CPHH (mirrors legacy GetRelatedFarmDetails) ────
 

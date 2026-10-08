@@ -1130,7 +1130,74 @@ Relations currently do). This is a non-trivial, multi-repository contract change
 audit pass pending confirmation of the desired behaviour (soft/partial, matching legacy exactly, vs. the
 stricter all-or-nothing model already in place for Case/Relations).
 
+### 🔴 Fix implemented: full legacy soft-error, partial-success concurrency parity (2026-10-08)
 
+Per explicit follow-up request ("I want exactly like legacy parity"), the recommendation above has been
+implemented in full for every table the orchestrator commits in its single transaction (Case, Farm, BAB,
+Clinical, Dam/Sire/Pedigree, Feeds, Relations). **Out of scope, left unchanged, and called out
+explicitly:** CaseWork (legacy itself deliberately never sends its RowStamp — see the table above — so
+there is nothing to reproduce), and Other Owner/Test (these are already persisted in their own separate
+transaction outside the orchestrator — a different, already-tracked architectural gap, see §5's first
+open item — so adding concurrency *detection* to them without first folding them into the shared
+transaction would not be genuine parity; not attempted here to avoid conflating two different problems).
+
+**New shared result type:** `CaseEditOrchestrationService.CommitAllAsync` now returns
+`Task<CaseCommitOutcome>` instead of `Task<EditCaseResult>`, where
+`CaseCommitOutcome(EditCaseResult Result, IReadOnlyList<string> Warnings)` mirrors legacy's
+`objErrorList`: `Warnings` accumulates every soft, per-table "modified by another user" message
+encountered during the commit, without aborting the transaction. All 7 tabs' Save handlers were updated
+to read `Warnings` after a successful commit and, if non-empty, route to the existing
+`/Case/SaveResult` page with `SaveResultMode.PartialSuccess` (already scaffolded, previously unused) —
+reproducing legacy's exact message ("The database has been updated but some errors were encountered:")
+with its "OK" button back to Home.
+
+**Per-table changes (repository layer):**
+
+* **Case** — `caseRepository.EditCaseAsync`'s own return type/contract is **unchanged** (used by other
+  callers too), but the orchestrator's *handling* of `EditCaseResult.ConcurrencyConflict` changed from
+  rolling back the transaction to adding a warning and continuing, exactly matching legacy's EditCase
+  code-3 handling.
+* **Farm** — `IFarmRepository.UpdateAsync`'s transaction-enlisted overload (used only by the
+  orchestrator; the non-transactional overload used by new-case-creation is untouched) now returns
+  `Task<string?>` instead of `Task`: `null` on success, the exact legacy message on code 3 (soft), and
+  still **throws** on codes 1/2/4 (hard, matching legacy's `FarmUpdateException`-driven abort for those).
+* **BAB, Clinical** — `IBabRepository.EditAsync`/`IClinicalRepository.EditAsync` now return
+  `Task<string?>` and — matching legacy's own code exactly — wrap the **entire** SP call in a try/catch
+  that converts *any* failure, including what would otherwise be a hard DB exception, into a soft
+  warning string. Legacy's `UpdateBABRecord`/`UpdateClinicalRecord` never roll back the transaction for
+  their own table's failures at all; this is now reproduced exactly.
+* **Dam/Sire/Pedigree** — `IPedigreeRepository.AddEditDamSireAsync` previously already read the SP's
+  return code but **threw** on any non-zero value (a divergence introduced when this method was first
+  written, not caught by the earlier audit pass). Now returns `Task<string?>` with the 4 legacy messages
+  (codes 1/2/3/4), never throwing — matching legacy's soft `objErrorList.Add` handling exactly.
+* **Feeds, Relations** — `IFeedRepository.EditAsync`/`DeleteAsync` now return `Task<int>` (rows
+  affected, via the pre-existing `DapperRepository.ExecuteWithRowCountAsync` helper) instead of `Task`;
+  `IAnimalRelationsRepository.EditRelationAsync`/`DeleteRelationAsync` already returned row counts. The
+  orchestrator's `PersistStagedFeedsAsync`/`PersistStagedRelationsAsync` now treat a `0`-rows-affected
+  result as a **per-row soft skip** (add a warning, move on to the next row) instead of aborting the
+  whole save — matching legacy's `OptimisticUpdateDataTable` row-updated callback exactly (it skips only
+  the one conflicting row via `UpdateStatus.SkipCurrentRow`, not the whole batch).
+
+**Dead code removed:** `Relations.cshtml.cs`'s `TryGetDamSireReturnCode` helper and its calling
+`catch (Exception ex)` block parsed a thrown exception's message for an embedded return code — this was
+only ever reachable because `AddEditDamSireAsync` used to throw; now that it returns a soft warning
+string instead, that code path is unreachable and has been removed in favour of a plain, generic
+log-and-redirect fallback for genuinely unexpected exceptions (e.g. DB connectivity).
+
+**What still throws and aborts the whole transaction (intentionally, matching legacy):** Case's
+RbseNotFound/AuditLogError/PostUpdateError codes, and Farm's "deleted by another user"/"audit log
+error"/"table update failed" codes (1/2/4) — these are legacy's own hard failures (`Throw New
+CaseUpdateException`/`FarmUpdateException`), not concurrency conflicts, and legacy itself aborts the
+whole `UpdateCaseDetails` transaction for them too.
+
+Files changed: `CaseEditOrchestrationService.cs` (new `CaseCommitOutcome` type, full `CommitAllAsync`
+rewrite, `PersistStagedFeedsAsync`/`PersistStagedRelationsAsync` rewrite), `IFarmRepository.cs` +
+`FarmRepository.cs`, `BabRepository.cs`, `ClinicalRepository.cs`, `ChildRepositories.cs`
+(`IPedigreeRepository`/`PedigreeRepository`), `FeedRepository.cs`, `Edit.cshtml.cs`, `Farm.cshtml.cs`,
+`Vla.cshtml.cs`, `Bab.cshtml.cs`, `Clinical.cshtml.cs`, `Feeds.cshtml.cs`, `Relations.cshtml.cs`.
+`get_errors` clean across the whole workspace.
+
+---
 
 ## UI change: removed the "unsaved changes" banner from the Relations tab (2026-10-07)
 
@@ -1247,3 +1314,267 @@ This is the single most significant functional parity gap for this workflow. It 
 
 * Full legacy `CaseEntrySave.aspx` / `clsCase.UpdateCaseDetails` DB-commit semantics for the Test table were never fully traced in the original legacy analysis — worth confirming before treating the migrated "stage tests, commit with DEFRA tab" pattern as 100% equivalent in every edge case (e.g. what legacy does if a user adds a test row then saves from the *Farm* tab instead of DEFRA).
 * `BSELib.clsDataCheck.DataSetHasChanges()` exact change-detection semantics (legacy) vs. the migrated `HasPendingChanges` flags — not bit-for-bit compared here; recommend a dedicated test once fix #1 is implemented.
+
+---
+
+## Bug found and fixed: new-case creation had its own "old style" Save/Cancel instead of the unified top bar (2026-10-08)
+
+Reported symptom: entering an existing RBSE on Home and landing on `/Case/Farm` shows the unified top
+Save/Cancel bar shared by all 7 tabs; entering an RBSE that **doesn't exist yet** also lands on
+`/Case/Farm`, but shows a visually different, page-specific Save/Cancel pair instead.
+
+### Legacy behaviour
+
+`CaseEntryFarm.aspx` is one physical page for both brand-new case creation and existing-case editing,
+with a single consistent Save/Cancel control regardless of which mode it's in.
+
+### Migrated behaviour found (the bug)
+
+`Farm.cshtml`'s existing-case view passes `CanEditCurrentTab` (derived from the `DataEntry` role) to
+`_CaseTabs`, which renders one common Save/Cancel pair at the top (`showTopSaveCancel`) using the real
+`SaveFarm`/`CancelFarmEdit` handlers — this is the "single Save/Cancel for all tabs" experience. The
+create-mode branch, however, called `_CaseTabs` with `CanEditCurrentTab` left at its default (`false`),
+so that top bar never appeared; instead the page fell back to its own bespoke Save/Cancel pair (posting
+to `CreateCase`), rendered once immediately under the breadcrumb/tab bar — a visually distinct,
+"old style" control pre-dating the top-bar unification done earlier in this session.
+
+### Fix
+
+* `CaseTabsViewModel` gained `SaveHandlerOverride`/`CancelPageOverride`/`CancelHandlerOverride` so a
+  caller can point the common top Save/Cancel at a different handler than the `ActiveTab`-keyed default
+  (needed because "Farm" normally means `SaveFarm`/`CancelFarmEdit`, which don't exist/apply for a case
+  that hasn't been created yet).
+* Farm's create-mode call to `_CaseTabs` now passes `CanEditCurrentTab: !createReadOnly`,
+  `SaveHandlerOverride: "CreateCase"`, `CancelPageOverride: "/Home"` (no cancel handler — Cancel is a
+  plain navigate-away, same as the page's own pre-existing Cancel link, since nothing has been
+  committed yet to undo), so the common top bar now submits to the correct `CreateCase` handler.
+* Removed the redundant page-specific Save/Cancel pair that used to render directly under the tab bar —
+  the one further down the page (after the herd-size table) is kept, mirroring the established
+  "common top bar + page-specific bottom bar" pattern already used by every existing-case tab.
+
+Files changed: `CaseTabsViewModel.cs`, `_CaseTabs.cshtml`, `Farm.cshtml`. `get_errors` clean across the
+whole workspace.
+
+### Known remaining gap, flagged rather than silently fixed: the other 6 tabs are still dead ends during creation
+
+Legacy's `CaseEntryFarm.aspx` tab bar lets a user freely switch to DEFRA/BAB/VLA/Clinical/Feeds/Relations
+**while still creating** a brand-new case, because the whole Case+Farm pair already lives in the shared
+in-memory session `DataSet` the moment typing starts — every other tab reads that same session object,
+not the database. The migrated app has no equivalent: every other tab's `OnGetAsync` reads the case via
+`caseService.GetCaseAsync(Rbse)`, which is `null` until `OnPostCreateCaseAsync` actually commits it, so
+clicking e.g. "Case (DEFRA)" from the Farm create-mode tab bar still lands on that tab's own "case not
+saved yet" fallback rather than a working DEFRA edit form for the in-progress new case. This was not
+attempted in this fix — building full cross-tab staging support for a case that doesn't exist in the
+database yet (extending `CaseScalarDraftState`/`CaseEditOrchestrationService` to support a first-time
+multi-table INSERT instead of an UPDATE) is a substantially larger piece of work than the Save/Cancel
+consistency fix above, and is called out here as a candidate follow-up rather than guessed at.
+
+---
+
+## Bug found and fixed: batch assignment had its own separate Save/Cancel step, duplicating the page's real Save/Cancel (2026-10-08)
+
+Reported symptom: after creating a new batch on Home and entering an existing case's RBSE then
+clicking **Go**, the Farm tab showed *"Selecting **Save** assigns this case to batch **2026/4**. The
+case is not assigned until you save."* followed by its own **Save**/**Cancel** buttons — then the page's
+normal Save/Cancel controls appeared again further down, so the user saw two independent-looking
+Save/Cancel decisions on one page.
+
+### Legacy behaviour
+
+`Home.aspx.vb`'s `btnGo_Click` only ever stores the chosen batch in `Session(SV_BatchID)` — it never
+commits a batch link to the database itself. The link is created entirely as a **side effect of the
+case's own Save**: `clsCase.UpdateCaseDetails` (called from `CaseEntrySave.aspx`, reached by whichever
+tab's Save button was clicked) unconditionally runs `CreateBatchLink(dsCase, iBatchID, ...)`
+**whenever `iBatchID <> 0`, regardless of which tab triggered Save and regardless of whether the case
+itself changed at all** ([clsCase.vb](../../bsenet-v2-2025-10/BSELib/clsCase.vb#L905-L911)) —
+inside the **same transaction** as everything else. There is no separate confirmation step, no
+dedicated Save/Cancel pair for the batch, and no message about it at all — it is completely silent.
+Failure to link (any SP exception) is wrapped in `CaseUpdateException` and aborts the whole save, the
+same as any other hard failure.
+
+### Migrated behaviour found (the bug)
+
+`Farm.cshtml.cs`'s `OnPostSaveBatchAsync`/`OnPostCancelBatchAsync` committed the batch link
+**immediately and independently**, via their own dedicated form or with its own Save/Cancel buttons
+rendered in a "Batch assignment" section — a separate, one-shot decision point that doesn't exist in
+legacy at all, and which visually duplicated the page's real Save/Cancel controls immediately below it.
+
+### Fix
+
+* `CaseEditOrchestrationService.CommitAllAsync` now folds the batch link into the same shared
+  transaction as Case/Farm/Bab/Clinical/Feeds/Relations: if a pending batch (from
+  `ICaseWizardStateService`) matches the current RBSE, it calls
+  `IBatchRepository.AssignCaseToBatchAsync(...)` (the already-existing transaction-enlisted overload)
+  silently, clearing the pending batch after a successful commit — matching legacy's
+  unconditional-whenever-a-batch-is-pending, same-transaction, no-confirmation behaviour exactly. A
+  non-success/non-already-assigned result now throws (aborting the whole transaction), mirroring
+  legacy's `CreateBatchLink` → `CaseUpdateException` hard-failure wrapping.
+* `Farm.cshtml`'s "Batch assignment" section is now **purely informational** (no form, no separate
+  Save/Cancel) — *"This case will be assigned to batch **2026/4** when you select Save below."* — so
+  there is exactly one Save/Cancel decision on the page, same as legacy.
+* Removed `OnPostSaveBatchAsync`/`OnPostCancelBatchAsync` from `Farm.cshtml.cs` and their tests from
+  `FarmModelHandlerTests.cs` (the handlers they tested no longer exist). `CaseEditOrchestrationServiceTests.cs`
+  updated for the orchestrator's two new constructor dependencies (`ICaseWizardStateService`,
+  `IBatchRepository`).
+* Unaffected: brand-new-case creation (`GetOrCreateCaseBatchIdAsync`/`BuildNewCaseCommand`) already
+  folded the pending batch into the new case's own insert with no separate step — this was already
+  correct and was not changed.
+
+Files changed: `CaseEditOrchestrationService.cs`, `Farm.cshtml`, `Farm.cshtml.cs`,
+`CaseEditOrchestrationServiceTests.cs`, `FarmModelHandlerTests.cs`. `get_errors` clean across the whole
+workspace.
+
+---
+
+## Bug found and fixed: `SessionError.aspx` guard missing from 6 of the 7 Case wizard tabs (2026-10-08)
+
+Per explicit follow-up request, compared legacy's `SessionError.aspx` (a static, informational "you got
+here without the required context" page) against the migrated app.
+
+### Legacy behaviour
+
+`SessionError.aspx` itself has no logic — `Page_Load` just sets the page title; the body is static text
+explaining three reasons the required data might be missing (session timeout, direct URL/bookmark
+access, stale back-button). **31 legacy pages** redirect to it, each via the identical one-line guard at
+the very top of `Page_Load`: `If IsNothing(Session(SessionVars.SV_RBSENumber)) Then
+Response.Redirect("SessionError.aspx")` (or an equivalent check for a different required session key,
+e.g. `PickSupplier.aspx.vb` checks `SV_TempSupplierDetails`). Within the scope of this report, that
+includes all 7 Case-wizard tabs (`CaseEntryFarm`, `CaseEntryDEFRA`, `CaseEntryVLA`, `CaseEntryBAB`,
+`CaseEntryClinical`, `CaseEntryFeeds`, `CaseEntryRelations`), plus `CaseEntrySave` and `CaseWorkEntry`.
+
+### Migrated behaviour found
+
+A `/SessionError` page **already exists** ([SessionError.cshtml](../src/BSE.Host/Pages/SessionError.cshtml) /
+[SessionError.cshtml.cs](../src/BSE.Host/Pages/SessionError.cshtml.cs)), faithfully reproducing legacy's
+content (consolidated into one GOV.UK error-summary message) and is correctly wired for **2** of the 31
+legacy call sites (`MaintenanceConfirmation.cshtml.cs`, `CaseWork/MinuteDocument.cshtml.cs`). The
+migrated architecture has no server-side session state to check (every page re-fetches by `Rbse` from
+the database), so the literal legacy condition can't be reproduced — but the **functionally equivalent**
+condition is a blank/missing `Rbse` (the exact same "arrived here with no required context" scenario:
+stale bookmark, direct URL typing, or a link followed after the server restarted). None of the 7
+Case-wizard tabs, nor `CaseWorkEntry`, checked for this at all.
+
+**Confirmed the actual (wrong) behaviour instead:** a blank `Rbse` on any of DEFRA/APHA/BAB/Clinical/
+Feeds/Relations falls straight into each page's existing "case not yet saved" branch
+(`if (record is null) { ...; TempData["Warning"] = $"Case '{Rbse}' is not saved yet. Complete Farm
+first."; return Page(); }`), rendering a confusing, malformed banner — literally `Case '' is not saved
+yet.` — instead of legacy's clear explanation and a way back. This branch is correct and still needed
+for its *real* purpose (a genuinely in-progress new case, reached via Farm → DEFRA with a real but
+not-yet-persisted RBSE) — the bug is specifically that it was also being used for the blank-`Rbse`,
+no-context-at-all case, which is a different situation entirely.
+
+**Farm is correctly excluded from this fix:** a blank `Rbse` on the Farm tab is the legitimate brand-new
+case entry point (`RequireFarmDetails`/"Create mode", mirroring legacy's `Home.aspx` routing a new GB
+case straight to `CaseEntryFarm.aspx`), not an error — Farm's own blank-`Rbse` handling was left
+untouched.
+
+### Fix
+
+Added `if (string.IsNullOrWhiteSpace(Rbse)) return RedirectToPage("/SessionError");` as the first line
+of `OnGetAsync()` in `Edit.cshtml.cs` (DEFRA), `Vla.cshtml.cs` (APHA), `Bab.cshtml.cs`, `Clinical.cshtml.cs`,
+`Feeds.cshtml.cs`, and `Relations.cshtml.cs`'s shared `LoadRelationsPageAsync` helper (covers both
+`OnGetAsync` and `OnGetEditCaseHerdbookAsync`), plus `CaseWork/Entry.cshtml.cs` — matching legacy's
+Page_Load-time guard exactly for the 7 wizard tabs plus the Casework page. The existing "case not saved
+yet" warning banner is unchanged and still fires correctly for its own, narrower, legitimate scenario
+(non-blank `Rbse`, record genuinely not yet persisted).
+
+Deliberately **not** extended to `OnPostAsync`/grid-row sub-handlers: those can only be reached by
+submitting a form rendered by `OnGetAsync`, which — by construction — already redirects away before any
+such form exists if `Rbse` was blank, so a POST with a blank `Rbse` cannot occur through normal
+navigation (only via a hand-crafted request, which is outside what `SessionError.aspx` is meant to
+guard against).
+
+Files changed: `Edit.cshtml.cs`, `Vla.cshtml.cs`, `Bab.cshtml.cs`, `Clinical.cshtml.cs`, `Feeds.cshtml.cs`,
+`Relations.cshtml.cs`, `CaseWork/Entry.cshtml.cs`. No changes to `Farm.cshtml.cs` (intentional — see
+above) or to `SessionError.cshtml`/`.cshtml.cs` (already correct). `get_errors` clean on all seven.
+
+---
+
+## CPHH display format parity on the new-case creation top bar (2026-10-08)
+
+### Legacy behaviour
+
+Legacy's `CPHH.ascx` control (used by every page that edits a CPHH, including `CaseEntryFarm.aspx`'s
+top bar) always displays the value in the slashed `NN/NNN/NNNN/NN` format
+([CPHH.ascx.vb](../../bsenet-v2-2025-10/BSESystem/CPHH.ascx.vb)): `SeparateCPHH()` strips the raw value
+to digits only, and `ConstructCPHH()` immediately reassembles it into the slashed display string, even
+while the field is still being edited (any postback — e.g. `txtCPHH_TextChanged` — reconstructs it).
+
+### Migrated behaviour found (the bug)
+
+The new-case creation top bar's CPHH input (`create-farm-cphh` in
+[Farm.cshtml](../src/BSE.Host/Pages/Case/Farm.cshtml)) was bound with `asp-for="EditableFarm!.CPHH"`,
+which renders the model's raw, unformatted value (e.g. `01001000101`) instead of the slashed display
+format. The existing-case Farm tab's own `farm-cphh-display` field already used
+`BseFormat.FormatCphh(...)` correctly — only the create-mode field had the gap.
+
+### Fix
+
+Replaced the `asp-for` binding with a manual `name="EditableFarm.CPHH"` plus
+`value="@BseFormat.FormatCphh(Model.EditableFarm?.CPHH)"`. This is safe because every handler that reads
+this field (`OnPostLookupNewCaseAsync`, the `CreateCase` handler, etc.) already runs the posted value
+through `CphhNormalizer.Normalize()`, which strips back to digits-only regardless of whether slashes are
+present. Files changed: [Farm.cshtml](../src/BSE.Host/Pages/Case/Farm.cshtml). `get_errors` clean.
+
+---
+
+## Cancel's "unsaved changes" confirmation brought into full cross-tab parity (2026-10-08)
+
+Closes gap #1 from the "Remaining gaps vs. legacy" list above, which this review re-confirmed rather
+than re-discovered.
+
+### Legacy behaviour
+
+Every tab's `CancelCaseEdit()` ([e.g. CaseEntryFarm.aspx.vb](../../bsenet-v2-2025-10/BSESystem/CaseEntryFarm.aspx.vb#L222-L242))
+is wired to **both** the page's own Cancel button and the shared header's Home link
+(`VLAHeader1_HomeClick`). It calls `UpdateSessionWithCaseDetails()` to sync the current form into the
+shared session `DataSet`, then checks `clsDataCheck.DataSetHasChanges(dsCase) OR DataSetHasChanges(dsFarm)`
+([clsDataCheck.vb](../../bsenet-v2-2025-10/BSELib/clsDataCheck.vb)) — a deep, field-level comparison
+across **every table in the whole shared session** (Case, Bab, Clinical, Feeds, Relations all live as
+child tables of the one `dsCase` DataSet; Farm/LinkedFarms/HerdSizes live in `dsFarm`). If anything
+anywhere has changed, it shows the `ExitConfirmation` popup; otherwise it navigates straight to
+`Home.aspx` with no prompt. There is no `beforeunload`/browser-level warning anywhere in legacy — every
+`PromptBeforeNavigateScript` call site is commented out.
+
+### Migrated behaviour found (the bug)
+
+Each of the 7 tabs' `.bse-cancel-link` click handler only checked that **one page's own** server-rendered
+`Model.HasUnsavedChanges` (or `HasUnsavedOwnerChanges` on Vla) flag — reflecting only that page's own
+grid draft, not `CaseScalarDraftState` or any other tab's staged edits. A user who staged an edit on one
+tab (e.g. a Fate change on DEFRA) and then clicked Cancel on a "clean" tab (e.g. Farm) got no warning at
+all before the orchestrator-wide shared state was discarded — the opposite of legacy's whole-session
+check. Two further bugs were found in passing:
+
+- **Feeds' confirm never fired at all.** Its script queried `.bse-cancel-button`, but the Cancel link's
+  actual class is `.bse-cancel-link` — a dead selector, so Cancel always navigated away silently with no
+  confirmation regardless of `Model.HasUnsavedChanges`.
+- **Bab and Vla could double-prompt.** Both track a local `dirty` flag and also install a `beforeunload`
+  handler. Confirming the custom "Are you sure?" dialog didn't set `submitting = true`, so the
+  subsequent real navigation still tripped the `beforeunload` handler and showed a second, native
+  "Leave site?" prompt immediately after the user had already said yes.
+
+### Fix
+
+The Home-link guard in [_CaseTabs.cshtml](../src/BSE.Host/Pages/Shared/_CaseTabs.cshtml) already called
+an async `/case/{rbse}/unsaved-status` endpoint that checks every tab's draft-state service
+(`ICaseEditDraftStateService`, `ICaseFarmDraftStateService`, `ICaseClinicalDraftStateService`,
+`ICaseFeedsDraftStateService`, `ICaseRelationsDraftStateService`, `ICaseScalarDraftStateService`) —
+the migrated, server-authoritative equivalent of legacy's whole-session `DataSetHasChanges` check.
+`hasUnsavedChangesAcrossTabs()` is now exposed as `window.hasUnsavedChangesAcrossTabs` so every tab's own
+script can reuse it. Each of the 7 tabs'
+([Clinical](../src/BSE.Host/Pages/Case/Clinical.cshtml), [Edit](../src/BSE.Host/Pages/Case/Edit.cshtml),
+[Farm](../src/BSE.Host/Pages/Case/Farm.cshtml), [Feeds](../src/BSE.Host/Pages/Case/Feeds.cshtml),
+[Relations](../src/BSE.Host/Pages/Case/Relations.cshtml), [Bab](../src/BSE.Host/Pages/Case/Bab.cshtml),
+[Vla](../src/BSE.Host/Pages/Case/Vla.cshtml)) Cancel-link handlers now: check the page's own local
+signal first (cheap, synchronous), and only if that's clear, `await window.hasUnsavedChangesAcrossTabs()`
+before deciding whether to prompt — matching legacy's OR-across-the-whole-session semantics while keeping
+the common case (nothing staged anywhere) fast. Feeds' dead `.bse-cancel-button` selector was corrected
+to `.bse-cancel-link`. Bab's and Vla's confirmed-navigation paths now set `submitting = true` before
+navigating, so the `beforeunload` handler no longer double-prompts. The async check cannot be used inside
+`beforeunload` itself (browsers only honour a synchronous `preventDefault()`/`returnValue` there), so
+browser-close/refresh protection remains local-only on Bab/Vla — unchanged from before, and still an
+enhancement beyond legacy (which has no `beforeunload` protection at all), not a regression.
+
+Files changed: `_CaseTabs.cshtml`, `Clinical.cshtml`, `Edit.cshtml`, `Farm.cshtml`, `Feeds.cshtml`,
+`Relations.cshtml`, `Bab.cshtml`, `Vla.cshtml`. `get_errors` clean on all eight.
+

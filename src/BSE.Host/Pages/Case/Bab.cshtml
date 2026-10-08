@@ -408,10 +408,15 @@
 
         cancelLinks.forEach(function (cancel) {
             cancel.addEventListener('click', function (e) {
-                if (!dirty) return;
-                if (!window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
-                    e.preventDefault();
-                }
+                e.preventDefault();
+                // Legacy's dirty-check spans the whole shared session (every tab), not just this page.
+                (dirty ? Promise.resolve(true) : (window.hasUnsavedChangesAcrossTabs ? window.hasUnsavedChangesAcrossTabs() : Promise.resolve(false)))
+                    .then(function (hasUnsaved) {
+                        if (!hasUnsaved || window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+                            submitting = true; // suppress the beforeunload prompt firing again on this navigation
+                            window.location.href = cancel.href;
+                        }
+                    });
             });
         });
 

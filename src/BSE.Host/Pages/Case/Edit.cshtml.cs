@@ -74,8 +74,13 @@ public class EditModel(
     public int? ReopenEditTestId { get; private set; }
 
     private const int TestsPageSize = 10;
+
+    // Anchor on the test records table, so adding/editing a row returns the user to the grid
+    // instead of the top of a long form.
+    private const string TestsAnchor = "test-records";
+
     [BindProperty(SupportsGet = true)] public int    TPage { get; set; } = 1;
-    [BindProperty(SupportsGet = true)] public string TSort { get; set; } = "type";
+    [BindProperty(SupportsGet = true)] public string TSort { get; set; } = string.Empty;
     [BindProperty(SupportsGet = true)] public string TDir  { get; set; } = "asc";
     public int TestsTotalPages { get; private set; } = 1;
     public int TestsTotalCount { get; private set; }
@@ -83,6 +88,13 @@ public class EditModel(
 
     public async Task<IActionResult> OnGetAsync()
     {
+        // Legacy parity: CaseEntryDEFRA.aspx.vb's Page_Load redirects to SessionError.aspx when
+        // Session(SV_RBSENumber) is missing (session timeout, direct URL access, stale back-button).
+        // The migrated app has no session state to check, but a blank Rbse is the exact same
+        // "arrived here with no required context" scenario.
+        if (string.IsNullOrWhiteSpace(Rbse))
+            return RedirectToPage("/SessionError");
+
         ApplyLegacyDefraPermissions();
 
         var record = await caseService.GetCaseAsync(Rbse);
@@ -134,7 +146,7 @@ public class EditModel(
 
         var test = StagedTests.FirstOrDefault(t => t.Id == id);
         if (test is null)
-            return RedirectToPage(new { rbse = Rbse });
+            return RedirectToTestsAnchor();
 
         ReopenEditTestId = id;
         EditTestType = test.TestType;
@@ -157,6 +169,10 @@ public class EditModel(
         if (string.IsNullOrWhiteSpace(NewTestType))
             ModelState.AddModelError(nameof(NewTestType), "Select a test type.");
 
+        // CaseTest.TestResult is NOT NULL with an FK to luTestResult, so a blank is unsaveable.
+        if (string.IsNullOrWhiteSpace(NewTestResult))
+            ModelState.AddModelError(nameof(NewTestResult), "Select a test result.");
+
         if (!ModelState.IsValid)
         {
             ShowAddTestRow = true;
@@ -172,7 +188,7 @@ public class EditModel(
         });
 
         await SaveDraftStateAsync();
-        return RedirectToPage(new { rbse = Rbse });
+        return RedirectToTestsAnchor();
     }
 
     public async Task<IActionResult> OnPostSaveAsync()
@@ -218,6 +234,9 @@ public class EditModel(
         if (string.IsNullOrWhiteSpace(EditTestType))
             ModelState.AddModelError(nameof(EditTestType), "Select a test type.");
 
+        if (string.IsNullOrWhiteSpace(EditTestResult))
+            ModelState.AddModelError(nameof(EditTestResult), "Select a test result.");
+
         if (!ModelState.IsValid)
         {
             ReopenEditTestId = EditingTestId;
@@ -226,15 +245,26 @@ public class EditModel(
 
         var test = StagedTests.FirstOrDefault(t => t.Id == EditingTestId);
         if (test is null)
-            return RedirectToPage(new { rbse = Rbse });
+            return RedirectToTestsAnchor();
 
         test.TestType = EditTestType;
         test.TestResult = EditTestResult;
         await SaveDraftStateAsync();
-        return RedirectToPage(new { rbse = Rbse });
+        return RedirectToTestsAnchor();
     }
 
-    public async Task<IActionResult> OnPostAsync()
+    public Task<IActionResult> OnPostAsync() => SaveAsync("/Home");
+
+    /// <summary>
+    /// Legacy parity: btnCaseWork_Click (CaseEntryDEFRA.aspx.vb) runs the exact same
+    /// UpdateSessionWithCaseDetails + CaseEntrySave.aspx save pipeline as the ordinary Save
+    /// button, only redirecting to CaseWorkEntry.aspx instead of Home.aspx on full success —
+    /// it is not a bare navigation link. Reuses the same SaveAsync path so mandatory-field and
+    /// concurrency handling behave identically to Save.
+    /// </summary>
+    public Task<IActionResult> OnPostSaveAndGotoCaseworkAsync() => SaveAsync("/CaseWork/Entry");
+
+    private async Task<IActionResult> SaveAsync(string successRedirectPage)
     {
         if (!User.IsInRole("DataEntry"))
             return Forbid();
@@ -267,6 +297,11 @@ public class EditModel(
         await LoadLookupsAsync();
         await LoadOrInitializeDraftStateAsync();
 
+        // Test rows are confirmed individually and live in their own table, so they commit here
+        // rather than after the Case row. A validation, mandatory-field or concurrency failure
+        // below must not silently discard tests the user has already confirmed.
+        await PersistStagedTestsAndResyncDraftAsync();
+
         ApplyLegacyPreSaveNormalizations();
         ValidateLegacyParityRules();
 
@@ -286,10 +321,10 @@ public class EditModel(
         await StageCaseScalarEditAsync(rowStampBase64);
 
         var userId = await currentUserService.GetUserIdAsync();
-        EditCaseResult result;
+        CaseCommitOutcome commitOutcome;
         try
         {
-            result = await caseEditOrchestration.CommitAllAsync(Rbse, userId);
+            commitOutcome = await caseEditOrchestration.CommitAllAsync(Rbse, userId);
         }
         catch (MandatoryCaseFieldsMissingException ex)
         {
@@ -299,23 +334,14 @@ public class EditModel(
             return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
         }
 
-        if (result == EditCaseResult.ConcurrencyConflict)
+        if (commitOutcome.Result != EditCaseResult.Success)
         {
-            // Legacy parity: CaseEntrySave.aspx shows the failure and navigates to Home.aspx on
-            // any commit failure, rather than staying on the originating tab.
-            TempData["ErrorMessage"] = "Another user has modified this case since you loaded it. " +
-                                       "Please reload and try again.";
-            return RedirectToPage("/Home");
-        }
-
-        if (result != EditCaseResult.Success)
-        {
-            var message = result switch
+            var message = commitOutcome.Result switch
             {
                 EditCaseResult.RbseNotFound     => $"Case '{Rbse}' not found.",
                 EditCaseResult.AuditLogError    => "Audit log error during update.",
                 EditCaseResult.PostUpdateError  => "Database error after update.",
-                _                               => $"Update failed: {result}"
+                _                               => $"Update failed: {commitOutcome.Result}"
             };
             TempData["ErrorMessage"] = message;
             return RedirectToPage("/Home");
@@ -339,8 +365,15 @@ public class EditModel(
             await caseWorkRepository.EditAsync(cwCommand);
         }
 
-        await PersistStagedTestsAsync();
         await caseEditDraftState.ClearAsync(Rbse);
+
+        if (commitOutcome.Warnings.Count > 0)
+        {
+            // Legacy parity: CaseEntrySave.aspx shows "saved with some errors" instead of silently
+            // succeeding whenever a per-table concurrency conflict was skipped during the commit.
+            SaveResultModel.Stage(TempData, SaveResultMode.PartialSuccess, commitOutcome.Warnings);
+            return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
+        }
 
         // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx on a fully successful
         // save, clearing the session case state — not back to the tab the user was on.
@@ -631,10 +664,12 @@ public class EditModel(
         TestsTotalCount = all.Count;
         TestsTotalPages = Math.Max(1, (int)Math.Ceiling(all.Count / (double)TestsPageSize));
         TPage = Math.Clamp(TPage, 1, TestsTotalPages);
+        // No TSort means the order the user entered them in — only sort on an explicit column click.
         IEnumerable<CaseTestRecord> sorted = TSort switch
         {
             "result" => TDir == "desc" ? all.OrderByDescending(t => t.TestResultDescription) : all.OrderBy(t => t.TestResultDescription),
-            _        => TDir == "desc" ? all.OrderByDescending(t => t.TestTypeDescription)   : all.OrderBy(t => t.TestTypeDescription),
+            "type"   => TDir == "desc" ? all.OrderByDescending(t => t.TestTypeDescription)   : all.OrderBy(t => t.TestTypeDescription),
+            _        => all,
         };
         Tests = sorted.Skip((TPage - 1) * TestsPageSize).Take(TestsPageSize).ToList().AsReadOnly();
     }
@@ -674,7 +709,7 @@ public class EditModel(
         var draft = await caseEditDraftState.GetAsync(Rbse);
         if (draft is null)
         {
-            var persistedTests = (await testRepository.GetByRbseAsync(Rbse)).ToList();
+            var persistedTests = (await testRepository.GetByRbseAsync(Rbse)).OrderBy(t => t.Id).ToList();
             draft = new CaseEditDraftState
             {
                 Rbse = Rbse,
@@ -734,6 +769,46 @@ public class EditModel(
         HasUnsavedChanges = hasPendingChanges;
     }
 
+    /// <summary>
+    /// Commits the staged test rows, then replaces the draft's test list with what is now in the
+    /// database so the temporary negative ids are replaced by real ones. Without the resync a
+    /// second Save would re-insert the same rows. Other staged collections on the shared draft
+    /// (the Case (APHA) tab's other-owner rows) are left untouched.
+    /// </summary>
+    private async Task PersistStagedTestsAndResyncDraftAsync()
+    {
+        await PersistStagedTestsAsync();
+
+        var draft = await caseEditDraftState.GetAsync(Rbse);
+        if (draft is null)
+            return;
+
+        draft.Tests = (await testRepository.GetByRbseAsync(Rbse)).OrderBy(t => t.Id).Select(t => new CaseEditDraftTestItem
+        {
+            Id = t.Id,
+            TestType = t.TestType,
+            TestTypeDescription = t.TestTypeDescription,
+            TestResult = t.TestResult,
+            TestResultDescription = t.TestResultDescription,
+            RowStampBase64 = t.RowStamp is null ? string.Empty : Convert.ToBase64String(t.RowStamp)
+        }).ToList();
+
+        await caseEditDraftState.SetAsync(draft);
+
+        StagedTests = draft.Tests.Select(t => new StagedTestItem
+        {
+            ClientKey = t.ClientKey,
+            Id = t.Id,
+            TestType = t.TestType,
+            TestTypeDescription = t.TestTypeDescription,
+            TestResult = t.TestResult,
+            TestResultDescription = t.TestResultDescription,
+            RowStampBase64 = t.RowStampBase64
+        }).ToList();
+
+        await LoadTestsAsync();
+    }
+
     private async Task PersistStagedTestsAsync()
     {
         var persisted = (await testRepository.GetByRbseAsync(Rbse)).ToList();
@@ -787,17 +862,20 @@ public class EditModel(
             await SaveDraftStateAsync();
         }
 
-        return RedirectToPage(new { rbse = Rbse });
+        return RedirectToTestsAnchor();
     }
+
+    private RedirectToPageResult RedirectToTestsAnchor() =>
+        RedirectToPage(pageName: null, pageHandler: null, routeValues: new { rbse = Rbse }, fragment: TestsAnchor);
 
     public string TestsSortUrl(string col)
     {
         var dir = string.Equals(TSort, col, StringComparison.OrdinalIgnoreCase) && TDir == "asc" ? "desc" : "asc";
-        return $"?rbse={Uri.EscapeDataString(Rbse)}&TSort={col}&TDir={dir}&TPage=1";
+        return $"?rbse={Uri.EscapeDataString(Rbse)}&TSort={col}&TDir={dir}&TPage=1#{TestsAnchor}";
     }
 
     public string TestsPageUrl(int page) =>
-        $"?rbse={Uri.EscapeDataString(Rbse)}&TPage={page}&TSort={TSort}&TDir={TDir}";
+        $"?rbse={Uri.EscapeDataString(Rbse)}&TPage={page}&TSort={TSort}&TDir={TDir}#{TestsAnchor}";
 
     public sealed class StagedTestItem
     {

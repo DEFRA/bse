@@ -52,7 +52,13 @@ public class BabModel(
 
     public async Task<IActionResult> OnGetAsync()
     {
+        // Legacy parity: CaseEntryBAB.aspx.vb's Page_Load redirects to SessionError.aspx when
+        // Session(SV_RBSENumber) is missing (session timeout, direct URL access, stale back-button).
+        if (string.IsNullOrWhiteSpace(Rbse))
+            return RedirectToPage("/SessionError");
+
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+
         await LoadAsync();
         await ApplyStagedBabOverlayAsync();
         return Page();
@@ -118,10 +124,10 @@ public class BabModel(
             await caseScalarDraftState.SetAsync(draft);
 
             var userId = await currentUser.GetUserIdAsync();
-            EditCaseResult commitResult;
+            CaseCommitOutcome commitOutcome;
             try
             {
-                commitResult = await caseEditOrchestration.CommitAllAsync(Rbse, userId);
+                commitOutcome = await caseEditOrchestration.CommitAllAsync(Rbse, userId);
             }
             catch (MandatoryCaseFieldsMissingException ex)
             {
@@ -131,19 +137,18 @@ public class BabModel(
                 return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
             }
 
-            if (commitResult == EditCaseResult.ConcurrencyConflict)
+            if (commitOutcome.Result != EditCaseResult.Success)
             {
-                // Legacy parity: CaseEntrySave.aspx shows the failure and navigates to Home.aspx on
-                // any commit failure, rather than staying on the originating tab.
-                TempData["ErrorMessage"] = "Another user has modified this case since you loaded it. " +
-                                           "Please reload and try again.";
+                TempData["ErrorMessage"] = $"Unable to save BAB changes: {commitOutcome.Result}.";
                 return RedirectToPage("/Home");
             }
 
-            if (commitResult != EditCaseResult.Success)
+            if (commitOutcome.Warnings.Count > 0)
             {
-                TempData["ErrorMessage"] = $"Unable to save BAB changes: {commitResult}.";
-                return RedirectToPage("/Home");
+                // Legacy parity: CaseEntrySave.aspx shows "saved with some errors" instead of silently
+                // succeeding whenever a per-table concurrency conflict was skipped during the commit.
+                SaveResultModel.Stage(TempData, SaveResultMode.PartialSuccess, commitOutcome.Warnings);
+                return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
             }
         }
         else
