@@ -80,13 +80,6 @@ public class ClinicalModel(
         if (!User.IsInRole("DataEntry") || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
-        var caseRecord = await caseRepository.GetCaseByRbseAsync(Rbse);
-        if (caseRecord is null)
-        {
-            TempData["Warning"] = $"Case '{Rbse}' is not saved yet. Complete Farm first.";
-            return RedirectToPage(new { rbse = Rbse });
-        }
-
         var signs = BindSignsFromForm();
 
         await LoadAsync();
@@ -136,6 +129,43 @@ public class ClinicalModel(
                 return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
             }
         }
+        else if (await caseRepository.GetCaseByRbseAsync(Rbse) is null)
+        {
+            // Legacy parity: a brand-new case lives entirely in the shared session object until
+            // the first Save from any tab — inserting Clinical directly here (as if the Case row
+            // already existed) violates FK_CaseClinical_Case, so route through the orchestrator's
+            // case-creation path instead, same as the staged-edit branch above.
+            var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
+            draft.Clinical = signs.ToEditCommand(Rbse, []);
+            draft.HasPendingChanges = true;
+            await caseScalarDraftState.SetAsync(draft);
+
+            var userId = await currentUser.GetUserIdAsync();
+            CaseCommitOutcome commitOutcome;
+            try
+            {
+                commitOutcome = await caseEditOrchestration.CommitAllAsync(Rbse, userId);
+            }
+            catch (MandatoryCaseFieldsMissingException ex)
+            {
+                SaveResultModel.Stage(TempData, SaveResultMode.MissingMandatoryFields, ex.Errors);
+                return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
+            }
+
+            if (commitOutcome.Result != EditCaseResult.Success)
+            {
+                TempData["ErrorMessage"] = $"Unable to save clinical signs: {commitOutcome.Result}.";
+                return RedirectToPage("/Home");
+            }
+
+            if (commitOutcome.Warnings.Count > 0)
+            {
+                await PersistStagedVisitsAsync();
+                await clinicalDraftState.ClearAsync(Rbse);
+                SaveResultModel.Stage(TempData, SaveResultMode.PartialSuccess, commitOutcome.Warnings);
+                return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
+            }
+        }
         else
         {
             using var conn = connectionFactory.CreateConnection();
@@ -164,10 +194,6 @@ public class ClinicalModel(
             return Forbid();
 
         if (string.IsNullOrEmpty(clinicalRowStampBase64))
-            return RedirectToPage(targetPage, new { rbse = Rbse });
-
-        var caseRecord = await caseRepository.GetCaseByRbseAsync(Rbse);
-        if (caseRecord is null)
             return RedirectToPage(targetPage, new { rbse = Rbse });
 
         var signs = BindSignsFromForm();

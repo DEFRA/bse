@@ -221,8 +221,8 @@
                     @if (Model.CanEditBabControls)
                     {
                         <button type="submit" asp-page-handler="SaveBab" class="govuk-button" data-module="govuk-button">Save</button>
-                        <a asp-page="/Case/Bab" asp-page-handler="CancelBabEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
                     }
+                    <a asp-page="/Case/Bab" asp-page-handler="CancelBabEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
                 </div>
             </div>
         </div>

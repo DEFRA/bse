@@ -118,6 +118,11 @@ public class EditModel(
         var record = await caseService.GetCaseAsync(Rbse);
         if (record is null)
         {
+            // Legacy parity: the whole Case+Farm pair lives in one shared in-memory session object
+            // until the first Save from *any* tab, so every tab is fully usable (and stageable)
+            // before the case row itself exists in the database — restores that for the DEFRA tab
+            // now that the single cross-tab Save/Cancel (and CaseEditOrchestrationService's
+            // first-time-create path) can actually commit a brand-new case from here too.
             Case.Rbse = Rbse;
             var missingCaseBatchTask = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
             SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
@@ -126,7 +131,8 @@ public class EditModel(
                               || await caseWorkRepository.GetEntryByRbseAsync(Rbse) is not null;
             await Task.WhenAll(LoadLookupsAsync(), missingCaseBatchTask, LoadOrInitializeDraftStateAsync());
             BatchNumbers = (await missingCaseBatchTask).ToList().AsReadOnly();
-            TempData["Warning"] = $"Case '{Rbse}' is not saved yet. Complete Farm first.";
+            TempData[string.Format(RowStampKey, Rbse)] = Convert.ToBase64String([]);
+            await ApplyStagedCaseOverlayAsync();
             return Page();
         }
 
@@ -294,22 +300,14 @@ public class EditModel(
         ApplyLegacyDefraPermissions();
 
         var persistedRecord = await caseService.GetCaseAsync(Rbse);
-        if (persistedRecord is null)
-        {
-            Case.Rbse = Rbse;
-            var batchTask = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
-            SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
-            var caseWork = await caseWorkRepository.GetByRbseAsync(Rbse);
-            HasCaseWorkLink = caseWork is not null
-                              || await caseWorkRepository.GetEntryByRbseAsync(Rbse) is not null;
-            await LoadLookupsAsync();
-            await LoadOrInitializeDraftStateAsync();
-            BatchNumbers = (await batchTask).ToList().AsReadOnly();
-            TempData["Warning"] = $"Case '{Rbse}' is not saved yet. Complete Farm first.";
-            return Page();
-        }
 
-        IsNonGbCase = persistedRecord.IsNonGbCase;
+        // Legacy parity: a brand-new case lives entirely in the shared session object until the
+        // first Save from *any* tab — CaseEditOrchestrationService.CommitAllAsync can now create
+        // the case from whichever tab's data is staged (it only needs Farm staged with a CPHH),
+        // so this tab no longer forces the user back to Farm's own Save first (matches the GET
+        // side's equivalent fix above).
+        Case.Rbse = Rbse;
+        IsNonGbCase = persistedRecord?.IsNonGbCase ?? false;
 
         // Legacy parity: VLA Data Entry's Save button is technically enabled (btnSave.Enabled =
         // True in VLADataEntryEnable) but every field is read-only, so Save is always a no-op for
@@ -322,7 +320,7 @@ public class EditModel(
 
         // Legacy CaseEntryDEFRA behavior: Form A date is read-only for non-GB cases.
         if (IsNonGbCase)
-            Case.FormADate = persistedRecord.FormADate;
+            Case.FormADate = persistedRecord!.FormADate;
 
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadLookupsAsync();
@@ -334,13 +332,13 @@ public class EditModel(
         await PersistStagedTestsAndResyncDraftAsync();
 
         ApplyLegacyPreSaveNormalizations();
-        ValidateLegacyParityRules();
+        ValidateLegacyParityRules(isSaveButton: true);
 
         if (!ModelState.IsValid)
             return Page();
 
         var rowStampBase64 = TempData[string.Format(RowStampKey, Rbse)]?.ToString();
-        if (string.IsNullOrEmpty(rowStampBase64))
+        if (rowStampBase64 is null)
         {
             ConcurrencyError = "Session expired — please reload the page and try again.";
             return Page();
@@ -428,12 +426,13 @@ public class EditModel(
         ApplyLegacyDefraPermissions();
 
         var persistedRecord = await caseService.GetCaseAsync(Rbse);
-        if (persistedRecord is null)
-            return RedirectToPage(targetPage, new { rbse = Rbse });
 
-        IsNonGbCase = persistedRecord.IsNonGbCase;
+        // Legacy parity: a brand-new case's fields still need to be staged before leaving this
+        // tab, same as an existing one — otherwise they're silently lost the moment another tab
+        // is visited, before the case itself has ever been created.
+        IsNonGbCase = persistedRecord?.IsNonGbCase ?? false;
         if (IsNonGbCase)
-            Case.FormADate = persistedRecord.FormADate;
+            Case.FormADate = persistedRecord!.FormADate;
 
         // Same no-op guard as SaveAsync: VLA Data Entry's fieldset is fully disabled, so the
         // posted Case fields are blank — staging them into the shared cross-tab draft would risk
@@ -446,13 +445,13 @@ public class EditModel(
         await LoadOrInitializeDraftStateAsync();
 
         ApplyLegacyPreSaveNormalizations();
-        ValidateLegacyParityRules();
+        ValidateLegacyParityRules(isSaveButton: false);
 
         if (!ModelState.IsValid)
             return Page();
 
         var rowStampBase64 = TempData[string.Format(RowStampKey, Rbse)]?.ToString();
-        if (string.IsNullOrEmpty(rowStampBase64))
+        if (rowStampBase64 is null)
         {
             ConcurrencyError = "Session expired — please reload the page and try again.";
             return Page();
@@ -494,7 +493,7 @@ public class EditModel(
         Case = postedCase;
 
         var rowStampBase64 = TempData[string.Format(RowStampKey, Rbse)]?.ToString();
-        if (!string.IsNullOrEmpty(rowStampBase64))
+        if (rowStampBase64 is not null)
             await StageCaseScalarEditAsync(rowStampBase64);
     }
 
@@ -521,11 +520,17 @@ public class EditModel(
         if (Case.PaperworkCompleteDate.HasValue) Case.IsPaperworkComplete = true;
     }
 
-    private void ValidateLegacyParityRules()
+    private void ValidateLegacyParityRules(bool isSaveButton)
     {
         var today = DateTime.Today;
 
-        ValidateEartag();
+        // Legacy parity: ctlEartag.Validate() (format check only — see ValidateEartag) is only
+        // called from btnSave_Click — UpdateSessionWithCaseDetails() (the function tab-switch
+        // handlers call) never validates the eartag at all, it just copies whatever is there
+        // into the session row.
+        if (isSaveButton)
+            ValidateEartag();
+
         ValidateFormADate(today);
         ValidateFormAResubmittedDate(today);
         ValidateFormBDate(today);
@@ -536,11 +541,14 @@ public class EditModel(
 
     private void ValidateEartag()
     {
+        // Legacy parity: ThreePartEartag.Validate()'s mbIsMandatory is never set to True for
+        // ctlEartag on this page (no IsMandatory attribute in the markup), so a fully blank eartag
+        // passes this control's own check — "eartag required" is exclusively a CheckMandatoryFields
+        // (final commit, consolidated SaveResult) concern, not something Save itself blocks on.
         if (string.IsNullOrWhiteSpace(Case.EartagCountry)
             && string.IsNullOrWhiteSpace(Case.EartagHerdmark)
             && string.IsNullOrWhiteSpace(Case.Eartag))
         {
-            ModelState.AddModelError("Case.EartagCountry", "Enter an eartag.");
             return;
         }
 
@@ -552,9 +560,10 @@ public class EditModel(
 
     private void ValidateFormADate(DateTime today)
     {
-        if (!IsNonGbCase && !Case.FormADate.HasValue)
-            ModelState.AddModelError("Case.FormADate", "Enter a Form A date.");
-
+        // Legacy parity: FormADateValid()'s CalendarDate.Validate() returns True immediately for a
+        // blank field on every path (tab-switch and Save alike) — Form A Date requiredness is never
+        // checked here in legacy, only by CheckMandatoryFields at final commit (already reproduced
+        // in CaseEditOrchestrationService.CheckMandatoryFieldsAsync).
         if (Case.Bse1ReceivedDate.HasValue && Case.Bse1ReceivedDate.Value.Date > today)
             ModelState.AddModelError("Case.Bse1ReceivedDate", "You must enter a past date.");
 

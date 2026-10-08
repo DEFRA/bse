@@ -37,6 +37,12 @@
     cursor: not-allowed;
 }
 
+/* Legacy parity: CaseWorkOpenReport/ClosedReport's Pager.SelectGridRowForDataRow highlights the
+   row for ?rbse= (e.g. landing back here after Save) so the user can find it on the page it jumped to. */
+.bse-casework-report-row--selected {
+    background-color: #fff7bf;
+}
+
 /* Legacy-style immediate inline validation indicators: a bold asterisk shown next to a field
    as soon as the user changes it, without waiting for Save. Green (#9CCE00) mirrors the legacy
    "are you sure?" advisories; red mirrors the legacy hard validation errors. The message itself

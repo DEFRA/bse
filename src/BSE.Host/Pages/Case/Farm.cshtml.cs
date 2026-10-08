@@ -615,7 +615,7 @@ public class FarmModel(
             farmCphh = CphhNormalizer.Normalize(postedEditableFarm.CPHH);
         await LoadFromFarmCphhAsync(farmCphh);
 
-        if (Case is null && Farm is null)
+        if (Case is null && string.IsNullOrWhiteSpace(postedEditableFarm.CPHH))
         {
             // Legacy parity: CaseEntryFarm.aspx's UpdateSessionWithCaseDetails() returns True with
             // no validation at all when SV_FarmDetails hasn't been populated yet (i.e. Look Up was

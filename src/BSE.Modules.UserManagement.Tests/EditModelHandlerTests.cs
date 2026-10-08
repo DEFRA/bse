@@ -100,7 +100,7 @@ public sealed class EditModelHandlerTests
 
         result.Should().BeOfType<PageResult>();
         model.Case.Rbse.Should().Be(Rbse);
-        model.TempData["Warning"].Should().Be($"Case '{Rbse}' is not saved yet. Complete Farm first.");
+        model.TempData[RowStampTempDataKey].Should().Be(Convert.ToBase64String([]));
     }
 
     // Uncovered path: OnGetAsync's "case found" branch (lines ~101-116) — populates Case
@@ -139,9 +139,14 @@ public sealed class EditModelHandlerTests
 
         var result = await model.OnPostAsync();
 
+        // Legacy parity: a brand-new case lives entirely in the shared session object until
+        // the first Save from any tab, so posting this tab before the case exists no longer
+        // shows a blocking warning - it falls through to normal validation/staging. With no
+        // RowStamp TempData seeded (OnGetAsync wasn't called first), the handler treats this
+        // as an expired session.
         result.Should().BeOfType<PageResult>();
-        model.TempData["Warning"].Should().Be($"Case '{Rbse}' is not saved yet. Complete Farm first.");
-        await _caseService.DidNotReceive().EditCaseAsync(Arg.Any<EditCaseDetailsCommand>(), Arg.Any<int>());
+        model.ConcurrencyError.Should().Be("Session expired — please reload the page and try again.");
+        await _caseEditOrchestration.DidNotReceive().CommitAllAsync(Arg.Any<string>(), Arg.Any<int>());
     }
 
     // Uncovered path: ValidateBirthDate (extracted from the former 45-complexity

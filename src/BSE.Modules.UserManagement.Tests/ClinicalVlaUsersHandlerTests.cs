@@ -88,7 +88,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         var result = await model.OnGetAsync();
 
         result.Should().BeOfType<PageResult>();
-        model.TempData["Warning"].Should().Be($"Case '{Rbse}' is not saved yet. Complete Farm first.");
+        model.TempData[string.Format("VlaEdit_RowStamp_{0}", Rbse)].Should().Be(Convert.ToBase64String([]));
     }
 
     [Fact]
@@ -130,8 +130,10 @@ public sealed class ClinicalVlaUsersHandlerTests
 
         var result = await model.OnPostAsync();
 
+        // No row-stamp TempData was seeded for this request (OnGetAsync wasn't called first),
+        // so the handler treats this as an expired session rather than a missing case.
         result.Should().BeOfType<PageResult>();
-        model.TempData["Warning"].Should().Be($"Case '{Rbse}' is not saved yet. Complete Farm first.");
+        model.ConcurrencyError.Should().Be("Session expired — please reload the page and try again.");
     }
 
     [Fact]
@@ -516,19 +518,28 @@ public sealed class ClinicalVlaUsersHandlerTests
     [Fact]
     public async Task ClinicalModel_OnPostSaveSignsAsync_CaseNotFound_SetsWarning()
     {
+        // Legacy parity: a brand-new case lives entirely in the shared session object until the
+        // first Save from any tab, so posting Clinical signs before the Case row exists now routes
+        // through the orchestrator's case-creation path instead of showing a blocking warning.
         _caseRepository.GetCaseByRbseAsync(Rbse).Returns((CaseRecord?)null);
 
-        var model = CreateClinicalModel(["DataEntry"]);
+        var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
+        model.PageContext.HttpContext.Request.ContentType = "application/x-www-form-urlencoded";
+        model.PageContext.HttpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>());
+        _currentUserService.GetUserIdAsync().Returns(7);
+        _clinicalEditOrchestration.CommitAllAsync(Rbse, 7).Returns(CaseCommitOutcome.Success([]));
+
         var result = await model.OnPostSaveSignsAsync(null);
 
-        result.Should().BeOfType<RedirectToPageResult>();
-        model.TempData["Warning"].Should().Be($"Case '{Rbse}' is not saved yet. Complete Farm first.");
+        var redirect = result.Should().BeOfType<RedirectToPageResult>().Subject;
+        redirect.PageName.Should().Be("/Home");
+        await _clinicalEditOrchestration.Received(1).CommitAllAsync(Rbse, Arg.Any<int>());
     }
 
     [Fact]
     public async Task ClinicalModel_OnPostSaveSignsAsync_NoRowStamp_AddsSigns()
     {
-        var model = CreateClinicalModel(["DataEntry"]);
+        var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
         model.PageContext.HttpContext.Request.ContentType = "application/x-www-form-urlencoded";
         model.PageContext.HttpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>());
         _caseRepository.GetCaseByRbseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = "01001000101" });
@@ -544,7 +555,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     [Fact]
     public async Task ClinicalModel_OnPostSaveSignsAsync_WithRowStamp_EditsSigns()
     {
-        var model = CreateClinicalModel(["DataEntry"]);
+        var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
         model.PageContext.HttpContext.Request.ContentType = "application/x-www-form-urlencoded";
         model.PageContext.HttpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>());
         _caseRepository.GetCaseByRbseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = "01001000101" });
@@ -1216,7 +1227,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     [Fact]
     public async Task ClinicalModel_OnPostSaveSignsAsync_RemovesVisitNoLongerStaged()
     {
-        var model = CreateClinicalModel(["DataEntry"]);
+        var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
         model.PageContext.HttpContext.Request.ContentType = "application/x-www-form-urlencoded";
         model.PageContext.HttpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>());
         _caseRepository.GetCaseByRbseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = "01001000101" });
@@ -1238,7 +1249,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     [Fact]
     public async Task ClinicalModel_OnPostSaveSignsAsync_EditsVisitWhenDateChanged()
     {
-        var model = CreateClinicalModel(["DataEntry"]);
+        var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
         model.PageContext.HttpContext.Request.ContentType = "application/x-www-form-urlencoded";
         model.PageContext.HttpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>());
         _caseRepository.GetCaseByRbseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = "01001000101" });
@@ -1262,7 +1273,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     [Fact]
     public async Task ClinicalModel_OnPostSaveSignsAsync_SkipsUnchangedPersistedVisit()
     {
-        var model = CreateClinicalModel(["DataEntry"]);
+        var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
         model.PageContext.HttpContext.Request.ContentType = "application/x-www-form-urlencoded";
         model.PageContext.HttpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>());
         _caseRepository.GetCaseByRbseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = "01001000101" });
