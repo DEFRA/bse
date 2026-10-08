@@ -207,7 +207,7 @@ public sealed class EditModelHandlerTests
             EartagHerdmark = "GY1",
             EartagCountry = "UK"
         };
-        _caseEditOrchestration.CommitAllAsync(Rbse, 7).Returns(EditCaseResult.Success);
+        _caseEditOrchestration.CommitAllAsync(Rbse, 7).Returns(CaseCommitOutcome.Success([]));
 
         var result = await model.OnPostAsync();
 
@@ -235,14 +235,14 @@ public sealed class EditModelHandlerTests
             EartagHerdmark = "GY1",
             EartagCountry = "UK"
         };
-        _caseEditOrchestration.CommitAllAsync(Rbse, 7).Returns(EditCaseResult.ConcurrencyConflict);
+        _caseEditOrchestration.CommitAllAsync(Rbse, 7).Returns(
+            CaseCommitOutcome.Success([$"The case record with RBSE {Rbse} has been modified by another user"]));
 
         var result = await model.OnPostAsync();
 
         var redirect = result.Should().BeOfType<RedirectToPageResult>().Subject;
-        redirect.PageName.Should().Be("/Home");
-        model.TempData["ErrorMessage"].Should().BeOfType<string>()
-            .Which.Should().Contain("Another user has modified this case");
+        redirect.PageName.Should().Be("/Case/SaveResult");
+        redirect.RouteValues!["rbse"].Should().Be(Rbse);
     }
 
     // Uncovered path: OnPostAsync's generic failure switch expression (lines ~296-306) —
@@ -261,7 +261,7 @@ public sealed class EditModelHandlerTests
             EartagHerdmark = "GY1",
             EartagCountry = "UK"
         };
-        _caseEditOrchestration.CommitAllAsync(Rbse, 7).Returns(EditCaseResult.RbseNotFound);
+        _caseEditOrchestration.CommitAllAsync(Rbse, 7).Returns(CaseCommitOutcome.Failure(EditCaseResult.RbseNotFound));
 
         var result = await model.OnPostAsync();
 
