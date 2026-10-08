@@ -4,6 +4,10 @@ namespace BSE.Modules.FarmManagement.Models;
 /// Command parameters for the <c>EditFarm</c> stored procedure.
 /// <c>RowStamp</c> is the current concurrency token; the SP will return code 1 if the
 /// row has changed since it was read. <c>UserID</c> is passed separately.
+/// <c>AuthorityID</c>/<c>AuthorityCountyID</c> are not sent to the SP (only
+/// <c>ADNSRegionID</c> is persisted) — they exist here purely so the cascading
+/// County/Local Authority picker state survives being staged and re-applied by
+/// <c>FarmEditViewModel.ApplyStagedCommand</c> across a tab revisit or grid-row refresh.
 /// </summary>
 public record UpdateFarmCommand(
     string CPHH,
@@ -30,5 +34,7 @@ public record UpdateFarmCommand(
     string? PedigreeType,
     bool IsDealer,
     int? ADNSRegionID,
-    byte[]? RowStamp
+    byte[]? RowStamp,
+    int? AuthorityID = null,
+    int? AuthorityCountyID = null
 );

@@ -85,10 +85,16 @@ public class FeedsModel(
 
     public async Task<IActionResult> OnGetAsync()
     {
+        // Legacy parity: CaseEntryFeeds.aspx.vb's Page_Load redirects to SessionError.aspx when
+        // Session(SV_RBSENumber) is missing (session timeout, direct URL access, stale back-button).
+        if (string.IsNullOrWhiteSpace(Rbse))
+            return RedirectToPage("/SessionError");
+
         Rbse = RbseHelper.ParseToRaw(Rbse);
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadAsync();
         await LoadOrInitializeDraftStateAsync();
+        RestorePostedPanelState();
 
         if (ResetSupplier)
         {
@@ -256,6 +262,7 @@ public class FeedsModel(
             return Forbid();
 
         Rbse = RbseHelper.ParseToRaw(Rbse);
+        StashPostedPanelState();
 
         await LoadAsync();
         var draft = await LoadOrInitializeDraftStateAsync();
@@ -293,10 +300,10 @@ public class FeedsModel(
         // rows are committed together with whatever else is staged for this RBSE (Case/Farm/Bab/
         // Clinical), not in isolation, so Save from any tab commits everything together.
         var userId = await currentUser.GetUserIdAsync();
-        EditCaseResult commitResult;
+        CaseCommitOutcome commitOutcome;
         try
         {
-            commitResult = await caseEditOrchestration.CommitAllAsync(Rbse, userId);
+            commitOutcome = await caseEditOrchestration.CommitAllAsync(Rbse, userId);
         }
         catch (MandatoryCaseFieldsMissingException ex)
         {
@@ -306,19 +313,18 @@ public class FeedsModel(
             return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
         }
 
-        if (commitResult == EditCaseResult.ConcurrencyConflict)
+        if (commitOutcome.Result != EditCaseResult.Success)
         {
-            // Legacy parity: CaseEntrySave.aspx shows the failure and navigates to Home.aspx on
-            // any commit failure, rather than staying on the originating tab.
-            TempData["ErrorMessage"] = "Another user has modified this case since you loaded it. " +
-                                       "Please reload and try again.";
+            TempData["ErrorMessage"] = $"Unable to save feed records: {commitOutcome.Result}.";
             return RedirectToPage("/Home");
         }
 
-        if (commitResult != EditCaseResult.Success)
+        if (commitOutcome.Warnings.Count > 0)
         {
-            TempData["ErrorMessage"] = $"Unable to save feed records: {commitResult}.";
-            return RedirectToPage("/Home");
+            // Legacy parity: CaseEntrySave.aspx shows "saved with some errors" instead of silently
+            // succeeding whenever a per-table concurrency conflict was skipped during the commit.
+            SaveResultModel.Stage(TempData, SaveResultMode.PartialSuccess, commitOutcome.Warnings);
+            return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
         }
 
         // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx on a fully successful
@@ -341,6 +347,7 @@ public class FeedsModel(
             return Forbid();
 
         Rbse = RbseHelper.ParseToRaw(Rbse);
+        StashPostedPanelState();
         var postedLookupName = Request.Form[nameof(SupplierLookupName)].ToString();
         var supplierName = (SupplierLookupName ?? postedLookupName ?? SupplierName ?? string.Empty).Trim();
 
@@ -360,6 +367,46 @@ public class FeedsModel(
         BatchNumbers = (await batchTask).ToList().AsReadOnly();
         RationTypes = await rtTask;
     }
+
+    private string PanelStateTempDataKey => $"FeedsPanelState_{RbseHelper.ParseToRaw(Rbse)}";
+
+    /// <summary>Stashes the shared add/edit panel's posted-but-not-yet-committed values into
+    /// TempData before a row operation (e.g. Delete) reloads and redirects — otherwise an
+    /// in-progress selection for a not-yet-added/updated row is silently discarded, since none
+    /// of these fields round-trip through the GET that follows the redirect.</summary>
+    private void StashPostedPanelState()
+    {
+        var panel = new FeedsPanelState(
+            EditingClientKey, EditingFeedId, YearFrom, YearTo, RationType, RationName,
+            IsPrePurchase, SupplierId, SupplierName);
+        TempData[PanelStateTempDataKey] = System.Text.Json.JsonSerializer.Serialize(panel);
+    }
+
+    /// <summary>Restores whatever OnPostDeleteFeedRowAsync (or similar) stashed, so the follow-up
+    /// GET redisplays the panel exactly as the user left it rather than blank.</summary>
+    private void RestorePostedPanelState()
+    {
+        if (TempData[PanelStateTempDataKey] is not string json)
+            return;
+
+        var panel = System.Text.Json.JsonSerializer.Deserialize<FeedsPanelState>(json);
+        if (panel is null)
+            return;
+
+        EditingClientKey = panel.EditingClientKey;
+        EditingFeedId = panel.EditingFeedId;
+        YearFrom = panel.YearFrom;
+        YearTo = panel.YearTo;
+        RationType = panel.RationType;
+        RationName = panel.RationName;
+        IsPrePurchase = panel.IsPrePurchase;
+        SupplierId = panel.SupplierId;
+        SupplierName = panel.SupplierName;
+    }
+
+    private sealed record FeedsPanelState(
+        string? EditingClientKey, int? EditingFeedId, short? YearFrom, short? YearTo,
+        string? RationType, string? RationName, bool IsPrePurchase, int? SupplierId, string? SupplierName);
 
     private async Task<CaseFeedsDraftState> LoadOrInitializeDraftStateAsync()
     {

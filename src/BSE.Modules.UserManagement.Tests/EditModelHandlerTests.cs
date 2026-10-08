@@ -216,15 +216,16 @@ public sealed class EditModelHandlerTests
         await _caseEditDraftState.Received(1).ClearAsync(Rbse, Arg.Any<CancellationToken>());
     }
 
-    // Uncovered path: OnPostAsync's ConcurrencyConflict branch (lines ~286-294) — reloads
-    // the current RowStamp from the database so a retry doesn't immediately fail again.
+    // Uncovered path: OnPostAsync's commit-outcome-has-warnings branch (lines ~343-348) —
+    // a per-table "modified by another user" conflict is now soft (CaseEditOrchestrationService
+    // folds a Case-level ConcurrencyConflict into CaseCommitOutcome.Warnings rather than failing
+    // the whole commit), so the save redirects to the partial-success SaveResult page instead of
+    // re-showing this page with a ConcurrencyError.
     [Fact]
-    public async Task OnPostAsync_WhenConcurrencyConflict_SetsErrorAndRefreshesRowStamp()
+    public async Task OnPostAsync_WhenCommitHasWarnings_RedirectsToPartialSuccessSaveResult()
     {
         var model = CreateModel(["DataEntry"]);
-        var original = MakeValidCaseRecord();
-        var refreshed = original with { RowStamp = [9, 9, 9] };
-        _caseService.GetCaseAsync(Rbse).Returns(original, refreshed);
+        _caseService.GetCaseAsync(Rbse).Returns(MakeValidCaseRecord());
         model.TempData[RowStampTempDataKey] = Convert.ToBase64String([1, 2, 3]);
         model.Case = new CaseEditViewModel
         {

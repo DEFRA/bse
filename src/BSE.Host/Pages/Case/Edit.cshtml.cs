@@ -88,6 +88,13 @@ public class EditModel(
 
     public async Task<IActionResult> OnGetAsync()
     {
+        // Legacy parity: CaseEntryDEFRA.aspx.vb's Page_Load redirects to SessionError.aspx when
+        // Session(SV_RBSENumber) is missing (session timeout, direct URL access, stale back-button).
+        // The migrated app has no session state to check, but a blank Rbse is the exact same
+        // "arrived here with no required context" scenario.
+        if (string.IsNullOrWhiteSpace(Rbse))
+            return RedirectToPage("/SessionError");
+
         ApplyLegacyDefraPermissions();
 
         var record = await caseService.GetCaseAsync(Rbse);
@@ -131,7 +138,10 @@ public class EditModel(
         if (!User.IsInRole("DataEntry"))
             return Forbid();
 
+        var postedCase = Case;
+
         await LoadReadonlyPageAsync();
+        await RestoreAndRestageCaseEditAsync(postedCase);
         await LoadOrInitializeDraftStateAsync();
 
         var test = StagedTests.FirstOrDefault(t => t.Id == id);
@@ -150,7 +160,10 @@ public class EditModel(
         if (!User.IsInRole("DataEntry"))
             return Forbid();
 
+        var postedCase = Case;
+
         await LoadReadonlyPageAsync();
+        await RestoreAndRestageCaseEditAsync(postedCase);
         await LoadOrInitializeDraftStateAsync();
 
         if (string.IsNullOrWhiteSpace(NewTestType))
@@ -183,7 +196,10 @@ public class EditModel(
         if (!User.IsInRole("DataEntry"))
             return Forbid();
 
+        var postedCase = Case;
+
         await LoadReadonlyPageAsync();
+        await RestoreAndRestageCaseEditAsync(postedCase);
         await LoadOrInitializeDraftStateAsync();
 
         await PersistStagedTestsAsync();
@@ -209,7 +225,10 @@ public class EditModel(
         if (!User.IsInRole("DataEntry"))
             return Forbid();
 
+        var postedCase = Case;
+
         await LoadReadonlyPageAsync();
+        await RestoreAndRestageCaseEditAsync(postedCase);
         await LoadOrInitializeDraftStateAsync();
 
         if (string.IsNullOrWhiteSpace(EditTestType))
@@ -234,7 +253,18 @@ public class EditModel(
         return RedirectToTestsAnchor();
     }
 
-    public async Task<IActionResult> OnPostAsync()
+    public Task<IActionResult> OnPostAsync() => SaveAsync("/Home");
+
+    /// <summary>
+    /// Legacy parity: btnCaseWork_Click (CaseEntryDEFRA.aspx.vb) runs the exact same
+    /// UpdateSessionWithCaseDetails + CaseEntrySave.aspx save pipeline as the ordinary Save
+    /// button, only redirecting to CaseWorkEntry.aspx instead of Home.aspx on full success —
+    /// it is not a bare navigation link. Reuses the same SaveAsync path so mandatory-field and
+    /// concurrency handling behave identically to Save.
+    /// </summary>
+    public Task<IActionResult> OnPostSaveAndGotoCaseworkAsync() => SaveAsync("/CaseWork/Entry");
+
+    private async Task<IActionResult> SaveAsync(string successRedirectPage)
     {
         if (!User.IsInRole("DataEntry"))
             return Forbid();
@@ -291,10 +321,10 @@ public class EditModel(
         await StageCaseScalarEditAsync(rowStampBase64);
 
         var userId = await currentUserService.GetUserIdAsync();
-        EditCaseResult result;
+        CaseCommitOutcome commitOutcome;
         try
         {
-            result = await caseEditOrchestration.CommitAllAsync(Rbse, userId);
+            commitOutcome = await caseEditOrchestration.CommitAllAsync(Rbse, userId);
         }
         catch (MandatoryCaseFieldsMissingException ex)
         {
@@ -304,23 +334,14 @@ public class EditModel(
             return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
         }
 
-        if (result == EditCaseResult.ConcurrencyConflict)
+        if (commitOutcome.Result != EditCaseResult.Success)
         {
-            // Legacy parity: CaseEntrySave.aspx shows the failure and navigates to Home.aspx on
-            // any commit failure, rather than staying on the originating tab.
-            TempData["ErrorMessage"] = "Another user has modified this case since you loaded it. " +
-                                       "Please reload and try again.";
-            return RedirectToPage("/Home");
-        }
-
-        if (result != EditCaseResult.Success)
-        {
-            var message = result switch
+            var message = commitOutcome.Result switch
             {
                 EditCaseResult.RbseNotFound     => $"Case '{Rbse}' not found.",
                 EditCaseResult.AuditLogError    => "Audit log error during update.",
                 EditCaseResult.PostUpdateError  => "Database error after update.",
-                _                               => $"Update failed: {result}"
+                _                               => $"Update failed: {commitOutcome.Result}"
             };
             TempData["ErrorMessage"] = message;
             return RedirectToPage("/Home");
@@ -346,9 +367,20 @@ public class EditModel(
 
         await caseEditDraftState.ClearAsync(Rbse);
 
-        // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx on a fully successful
-        // save, clearing the session case state — not back to the tab the user was on.
-        return RedirectToPage("/Home");
+        if (commitOutcome.Warnings.Count > 0)
+        {
+            // Legacy parity: CaseEntrySave.aspx shows "saved with some errors" instead of silently
+            // succeeding whenever a per-table concurrency conflict was skipped during the commit.
+            SaveResultModel.Stage(TempData, SaveResultMode.PartialSuccess, commitOutcome.Warnings);
+            return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
+        }
+
+        // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx (or the ?redirect=
+        // target, e.g. CaseWorkEntry.aspx, when arrived via the Casework link) on a fully
+        // successful save, clearing the session case state — not back to the tab the user was on.
+        return successRedirectPage == "/CaseWork/Entry"
+            ? RedirectToPage(successRedirectPage, new { rbse = Rbse })
+            : RedirectToPage(successRedirectPage);
     }
 
     /// <summary>
@@ -411,6 +443,22 @@ public class EditModel(
         var staged = await caseScalarDraftState.GetAsync(Rbse);
         if (staged?.Case is not null)
             Case.ApplyStagedCommand(staged.Case);
+    }
+
+    /// <summary>Undoes <c>LoadReadonlyPageAsync()</c>'s overwrite of <see cref="Case"/> with the
+    /// last-persisted DB record, and re-stages the posted (in-progress, unsaved) scalar edit —
+    /// otherwise a Tests grid operation (add/edit row) silently discards any not-yet-saved edit to
+    /// the DEFRA tab's own fields.</summary>
+    private async Task RestoreAndRestageCaseEditAsync(CaseEditViewModel? postedCase)
+    {
+        if (postedCase is null)
+            return;
+
+        Case = postedCase;
+
+        var rowStampBase64 = TempData[string.Format(RowStampKey, Rbse)]?.ToString();
+        if (!string.IsNullOrEmpty(rowStampBase64))
+            await StageCaseScalarEditAsync(rowStampBase64);
     }
 
     private void ApplyLegacyPreSaveNormalizations()

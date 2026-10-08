@@ -106,17 +106,6 @@
 
 @if (canEditRelations)
 {
-    <output id="case-relations-unsaved-banner"
-         class="govuk-inset-text bse-unsaved-banner bse-relations-panel-width"
-         hidden="@(!Model.HasUnsavedChanges)">
-        <strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.
-    </output>
-
-    <div class="govuk-button-group bse-relations-panel-width govuk-!-margin-bottom-4">
-        <button type="submit" form="case-relations-inline-form" formaction="@Url.Page("/Case/Relations", "SaveRelations", new { rbse = Model.Rbse })" class="govuk-button" data-module="govuk-button">Save</button>
-        <a asp-page="/Case/Relations" asp-page-handler="CancelRelationsEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link bse-cancel-button">Cancel</a>
-    </div>
-
     <input type="hidden" asp-for="DamSire.HasDam" form="case-relations-inline-form" />
     <input type="hidden" asp-for="DamSire.DamId" form="case-relations-inline-form" />
     <input type="hidden" asp-for="DamSire.DamRowStamp" form="case-relations-inline-form" />
@@ -916,12 +905,26 @@
     </style>
 
     <script>
-        document.querySelectorAll('.bse-cancel-button').forEach(function (b) {
-            b.addEventListener('click', function (e) {
-                var hasUnsaved = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.HasUnsavedChanges));
-                if (hasUnsaved && !window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
-                    e.preventDefault();
-                }
+        // Legacy's Cancel is a postback that captures the current form before checking for
+        // changes, so edits typed on this tab but never staged anywhere must count as unsaved too.
+        var cancelForm = document.getElementById('case-relations-inline-form');
+        var formDirty = false;
+        if (cancelForm) {
+            cancelForm.addEventListener('input', function () { formDirty = true; });
+            cancelForm.addEventListener('change', function () { formDirty = true; });
+        }
+
+        document.querySelectorAll('.bse-cancel-link').forEach(function (lnk) {
+            lnk.addEventListener('click', function (e) {
+                e.preventDefault();
+                var hasUnsavedHere = formDirty || @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.HasUnsavedChanges));
+                // Legacy's dirty-check spans the whole shared session (every tab), not just this page.
+                (hasUnsavedHere ? Promise.resolve(true) : (window.hasUnsavedChangesAcrossTabs ? window.hasUnsavedChangesAcrossTabs() : Promise.resolve(false)))
+                    .then(function (hasUnsaved) {
+                        if (!hasUnsaved || window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+                            window.location.href = lnk.href;
+                        }
+                    });
             });
         });
 

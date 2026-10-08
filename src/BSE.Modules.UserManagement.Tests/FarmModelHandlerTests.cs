@@ -521,60 +521,6 @@ public sealed class FarmModelHandlerTests
         ((RedirectToPageResult)result).PageName.Should().Be("/Home");
     }
 
-    // ── Batch assignment ─────────────────────────────────────────────────────
-
-    [Fact]
-    public async Task OnPostSaveBatchAsync_Forbidden_WhenNotVlaAccess()
-    {
-        var model = CreateModel(["DataEntry"]);
-        var result = await model.OnPostSaveBatchAsync();
-        result.Should().BeOfType<ForbidResult>();
-    }
-
-    [Fact]
-    public async Task OnPostSaveBatchAsync_NoPendingBatch_SetsErrorAndRedirects()
-    {
-        _wizardState.GetAsync().Returns((CaseWizardState?)null);
-
-        var model = CreateModel(["VLAAccess"]);
-        var result = await model.OnPostSaveBatchAsync();
-
-        result.Should().BeOfType<RedirectToPageResult>();
-        model.TempData["ErrorMessage"].Should().Be("No batch was selected. Return to the home page and choose a batch number.");
-    }
-
-    [Fact]
-    public async Task OnPostSaveBatchAsync_Success_AssignsCaseAndRedirects()
-    {
-        var pending = new CaseWizardState(Rbse, "2024/001", 55);
-        _wizardState.GetAsync().Returns(pending);
-        _batchRepository.GetBatchNumbersByRbseAsync(Rbse).Returns(Array.Empty<BatchNumberEntry>());
-        _batchService.AssignCaseToBatchAsync(55, Rbse, "BSE1").Returns(BatchAssignmentResult.Success);
-        _currentUser.GetUserIdAsync().Returns(3);
-
-        var model = CreateModel(["VLAAccess"]);
-        var result = await model.OnPostSaveBatchAsync();
-
-        result.Should().BeOfType<RedirectToPageResult>();
-        await _wizardState.Received(1).ClearAsync();
-        model.TempData["Success"].Should().NotBeNull();
-    }
-
-    [Fact]
-    public async Task OnPostCancelBatchAsync_ClearsPendingAndRedirectsToHome()
-    {
-        _wizardState.GetAsync().Returns(new CaseWizardState(Rbse, "2024/007", 1));
-
-        var model = CreateModel(["VLAAccess"]);
-        var result = await model.OnPostCancelBatchAsync();
-
-        result.Should().BeOfType<RedirectToPageResult>();
-        var redirect = (RedirectToPageResult)result;
-        redirect.PageName.Should().Be("/Home");
-        redirect.RouteValues.Should().ContainKey("batchYear").WhoseValue.Should().Be((short)2024);
-        await _wizardState.Received(1).ClearAsync();
-    }
-
     // ── AJAX endpoints ───────────────────────────────────────────────────────
 
     [Fact]
@@ -701,6 +647,7 @@ public sealed class FarmModelHandlerTests
             ]
         });
         _currentUser.GetUserIdAsync().Returns(9);
+        _caseEditOrchestration.CommitAllAsync(Rbse, 9).Returns(CaseCommitOutcome.Success([]));
 
         var model = CreateModel(["DataEntry"]);
         model.EditableFarm = FarmEditViewModel.FromRecord(farm);
@@ -867,6 +814,7 @@ public sealed class FarmModelHandlerTests
         _farmService.GetByCphhAsync("00001000101").Returns(farm);
         _farmDraftState.GetAsync(Rbse).Returns(new CaseFarmDraftState { Rbse = Rbse, Cphh = "00001000101" });
         _currentUser.GetUserIdAsync().Returns(9);
+        _caseEditOrchestration.CommitAllAsync(Rbse, 9).Returns(CaseCommitOutcome.Success([]));
 
         var model = CreateModel(["DataEntry"]);
         model.EditableFarm = new FarmEditViewModel

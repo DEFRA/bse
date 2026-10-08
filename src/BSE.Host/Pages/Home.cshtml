@@ -12,8 +12,8 @@
 
 <h1 class="govuk-heading-l">BSE Database System</h1>
 
-@* ── Error summary (batch panel validation) ──────────────────────────────────── *@
-@if (hasBatchError)
+@* ── Error summary (batch panel + RBSE panel validation) ─────────────────────── *@
+@if (hasAnyError)
 {
     <div class="govuk-error-summary" data-module="govuk-error-summary">
         <div role="alert">
@@ -27,6 +27,10 @@
                     @if (batchNumberError is not null)
                     {
                         <li><a href="#batch-number">@batchNumberError</a></li>
+                    }
+                    @if (rbseError is not null)
+                    {
+                        <li><a href="#rbse-lookup-input">@rbseError</a></li>
                     }
                 </ul>
             </div>
@@ -111,8 +115,7 @@
         <h2 class="govuk-heading-m govuk-!-margin-bottom-3" id="rbse-panel-heading">RBSE Number</h2>
 
         <form id="case-entry-form" method="post" asp-page-handler="RbseLookup" class="govuk-!-margin-bottom-4">
-            <div class="govuk-form-group bse-home-rbse-entry @(rbseError is not null ? "govuk-form-group--error" : "")">
-                <label class="govuk-label govuk-!-margin-bottom-0" for="rbse-lookup-input">RBSE</label>
+            <div class="govuk-form-group @(rbseError is not null ? "govuk-form-group--error" : "")">
                 @if (rbseError is not null)
                 {
                     <p id="rbse-error" class="govuk-error-message">
@@ -120,15 +123,17 @@
                         @rbseError
                     </p>
                 }
-                <div class="bse-home-rbse-combobox">
-                    <input id="rbse-lookup-input" name="LookupRbse" type="text"
-                           class="govuk-input bse-home-rbse-input @(rbseError is not null ? "govuk-input--error" : "")"
-                           value="@Model.LookupRbse" autocomplete="on" data-no-global-autosuggest="true" title="RBSE Format: NN/NN/NNNNN" spellcheck="false" autocapitalize="off"
-                           aria-describedby="@(rbseError is not null ? "rbse-error" : "")" />
-                </div>
+                <div class="bse-home-rbse-entry" aria-describedby="@(rbseError is not null ? "rbse-error" : "")">
+                    <label class="govuk-label govuk-!-margin-bottom-0" for="rbse-lookup-input">RBSE</label>
+                    <div class="bse-home-rbse-combobox">
+                        <input id="rbse-lookup-input" name="LookupRbse" type="text"
+                               class="govuk-input bse-home-rbse-input @(rbseError is not null ? "govuk-input--error" : "")"
+                               value="@Model.LookupRbse" autocomplete="on" data-no-global-autosuggest="true" title="RBSE Format: NN/NN/NNNNN" spellcheck="false" autocapitalize="off" />
+                    </div>
 
-                <button type="submit" class="govuk-button"
-                        data-module="govuk-button">Go</button>
+                    <button type="submit" class="govuk-button"
+                            data-module="govuk-button">Go</button>
+                </div>
             </div>
 
         </form>

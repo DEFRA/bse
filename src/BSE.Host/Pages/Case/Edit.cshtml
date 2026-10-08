@@ -226,18 +226,24 @@
                 </div>
                 <div class="defra-legacy-field @(eFate is not null ? "govuk-form-group--error" : "")">
                     <label asp-for="Case.Fate" class="govuk-label">Fate (Form B reason)</label>
-                    @if (eFate is null && showFateRequiredStar)
-                    {
-                        <span class="defra-legacy-required-star" title="You must enter a Form B Reason" aria-hidden="true">*</span>
-                    }
                     @if (eFate is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eFate</p> }
-                    <select asp-for="Case.Fate" class="govuk-select defra-legacy-input--sm @(eFate is not null ? "govuk-select--error" : "")" disabled="@(!hasFormB)">
-                        <option value="">-- Select --</option>
-                        @foreach (var o in Model.FateOptions)
+                    <div class="bse-eartag-help-inline">
+                        <select asp-for="Case.Fate" class="govuk-select defra-legacy-input--sm @(eFate is not null ? "govuk-select--error" : "")" disabled="@(!hasFormB)">
+                            <option value="">-- Select --</option>
+                            @foreach (var o in Model.FateOptions)
+                            {
+                                <option value="@o.Code" selected="@(o.Code == Model.Case.Fate ? "selected" : null)">@o.Description</option>
+                            }
+                        </select>
+                        @if (eFate is null && showFateRequiredStar)
                         {
-                            <option value="@o.Code" selected="@(o.Code == Model.Case.Fate ? "selected" : null)">@o.Description</option>
+                            <span id="fate-required-star" class="defra-legacy-required-star" title="You must enter a Form B Reason" aria-hidden="true">*</span>
                         }
-                    </select>
+                        else
+                        {
+                            <span id="fate-required-star" class="defra-legacy-required-star" title="You must enter a Form B Reason" aria-hidden="true" hidden>*</span>
+                        }
+                    </div>
                 </div>
             </div>
 
@@ -345,7 +351,7 @@
                                     {
                                         <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
                                             <button type="submit" asp-page-handler="BeginEditTestRow" asp-route-id="@t.Id" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">Change</button>
-                                            <button type="submit" asp-page-handler="DeleteTest" asp-route-id="@t.Id" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0" onclick="return confirm('Delete this test record?')">Delete</button>
+                                            <button type="submit" asp-page-handler="DeleteTest" asp-route-id="@t.Id" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0">Delete</button>
                                         </div>
                                     }
                                 }
@@ -430,12 +436,16 @@
 
             <div class="defra-legacy-grid">
                 <div class="defra-legacy-field @(eBirth is not null ? "govuk-form-group--error" : "")">
+                    <label asp-for="Case.BirthDate" class="govuk-label">Date of Birth</label>
+                    @if (eBirth is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eBirth</p> }
                     <div class="bse-eartag-help-inline">
-                        <label asp-for="Case.BirthDate" class="govuk-label">Date of Birth</label>
+                        <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                            <input asp-for="Case.BirthDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eBirth is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.BirthDate)" />
+                        </div>
                         @if (eBirth is null && showHerdEntryDateWarning)
                         {
                             <button type="button"
-                                    class="bse-eartag-help__icon bse-eartag-help__icon--small"
+                                    class="bse-eartag-help__icon"
                                     data-bse-tooltip-trigger
                                     aria-label="Herd entry date warning"
                                     aria-controls="case-herdentry-warning-tooltip"
@@ -446,10 +456,6 @@
                                 Are you sure the Herd Entry is less than 18 months after the Date of Birth
                             </span>
                         }
-                    </div>
-                    @if (eBirth is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eBirth</p> }
-                    <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input asp-for="Case.BirthDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eBirth is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.BirthDate)" />
                     </div>
                 </div>
                 <div class="defra-legacy-field">
@@ -586,11 +592,11 @@
 
         <div class="bse-case-bottom-row">
             <div class="govuk-button-group bse-case-bottom-row__left">
+                <a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse" asp-route-returnTo="/Case/Edit" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">Case audit log</a>
                 @if (Model.HasCaseWorkLink)
                 {
-                    <a asp-page="/CaseWork/Entry" asp-route-rbse="@Model.Case.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">Casework</a>
+                    <button type="submit" form="case-edit-inline-form" asp-page-handler="SaveAndGotoCasework" class="govuk-button govuk-button--secondary" data-module="govuk-button">Casework</button>
                 }
-                <a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse" asp-route-returnTo="/Case/Edit" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">Case audit log</a>
             </div>
 
             <div class="bse-case-bottom-row__right">
@@ -821,6 +827,7 @@
     .bse-eartag-help-inline {
         display: inline-flex;
         align-items: center;
+        gap: 0.3rem;
         position: relative;
     }
 
@@ -828,7 +835,7 @@
         border: 0;
         background: transparent;
         color: #00703c;
-        font-size: 1.7rem;
+        font-size: 2rem;
         line-height: 1;
         font-weight: 700;
         padding: 0 2px;
@@ -839,7 +846,7 @@
     }
 
     .bse-eartag-help__icon--small {
-        font-size: 1.3rem;
+        font-size: 1.7rem;
         padding: 0 1px;
     }
 
@@ -891,10 +898,10 @@
 
     .defra-legacy-required-star {
         color: #d4351c;
-        font-size: 1.3rem;
+        font-size: 2rem;
         line-height: 1;
         font-weight: 700;
-        margin-left: 0.3rem;
+        margin-left: 0.1rem;
     }
 
     @@media (max-width: 768px) {
@@ -932,6 +939,13 @@
         var formBDateInput = document.getElementById('Case_FormBDate');
         var formCDateInput = document.getElementById('Case_FormCDate');
         var formCWarningTrigger = document.getElementById('case-formc-warning-trigger');
+        var formADateInput = document.getElementById('Case_FormADate');
+        var formAResubInput = document.getElementById('Case_FormAResubmittedDate');
+        var fateSelect = document.getElementById('Case_Fate');
+        var fateRequiredStar = document.getElementById('fate-required-star');
+        var birthDateInput = document.getElementById('Case_BirthDate');
+        var birthDateSourceSelect = document.getElementById('Case_BirthDateSource');
+        var isBirthDateEstCheckbox = document.getElementById('Case_IsBirthDateEst');
         var eartagValidateTimer = null;
         var eartagValidateController = null;
         var receivedDatePairs = [
@@ -1091,6 +1105,98 @@
             }
         }
 
+        // Legacy: lblrfvFate — visible whenever Form B Date has a value and Fate isn't picked yet.
+        function updateFateStarVisibility() {
+            if (!fateRequiredStar) {
+                return;
+            }
+
+            var hasFormBValue = !!(formBDateInput && formBDateInput.value);
+            var hasFateValue = !!(fateSelect && fateSelect.value);
+            fateRequiredStar.hidden = !(hasFormBValue && !hasFateValue);
+        }
+
+        // Legacy ctlFormBDate_DateChanged + MakeControlsWritable: clearing Form B blanks and disables
+        // Fate/Form C; a Form B value enables both.
+        function applyFormBCascade() {
+            var hasFormBValue = !!(formBDateInput && formBDateInput.value);
+
+            if (fateSelect) {
+                fateSelect.disabled = !hasFormBValue;
+                if (!hasFormBValue) {
+                    fateSelect.value = '';
+                }
+            }
+            if (formCDateInput) {
+                formCDateInput.disabled = !hasFormBValue;
+                if (!hasFormBValue) {
+                    formCDateInput.value = '';
+                }
+            }
+
+            updateFateStarVisibility();
+            updateFormCWarningVisibility();
+        }
+
+        // Legacy ctlFormADate_DateChanged + MakeControlsWritable: clearing Form A blanks and disables
+        // Form A Resubmitted/Form B (which in turn cascades to Fate/Form C); a Form A value enables
+        // Form A Resubmitted/Form B.
+        function applyFormACascade() {
+            var hasFormAValue = !!(formADateInput && formADateInput.value);
+
+            if (formAResubInput) {
+                formAResubInput.disabled = !hasFormAValue;
+                if (!hasFormAValue) {
+                    formAResubInput.value = '';
+                }
+            }
+            if (formBDateInput) {
+                formBDateInput.disabled = !hasFormAValue;
+                if (!hasFormAValue) {
+                    formBDateInput.value = '';
+                }
+            }
+
+            applyFormBCascade();
+        }
+
+        // Legacy MakeControlsWritable: BirthDateSource/IsBirthDateEst enabled only once Date of Birth
+        // has a value; clearing Date of Birth also un-ticks IsBirthDateEst.
+        function applyBirthDateCascade() {
+            var hasBirthDateValue = !!(birthDateInput && birthDateInput.value);
+
+            if (birthDateSourceSelect) {
+                birthDateSourceSelect.disabled = !hasBirthDateValue;
+            }
+            if (isBirthDateEstCheckbox) {
+                isBirthDateEstCheckbox.disabled = !hasBirthDateValue;
+                if (!hasBirthDateValue) {
+                    isBirthDateEstCheckbox.checked = false;
+                }
+            }
+        }
+
+        function wireFieldCascades() {
+            if (formADateInput) {
+                ['input', 'change'].forEach(function (eventName) {
+                    formADateInput.addEventListener(eventName, applyFormACascade);
+                });
+            }
+            if (formBDateInput) {
+                ['input', 'change'].forEach(function (eventName) {
+                    formBDateInput.addEventListener(eventName, applyFormBCascade);
+                });
+            }
+            if (fateSelect) {
+                fateSelect.addEventListener('change', updateFateStarVisibility);
+            }
+            if (birthDateInput) {
+                ['input', 'change'].forEach(function (eventName) {
+                    birthDateInput.addEventListener(eventName, applyBirthDateCascade);
+                });
+            }
+        }
+
         // Legacy: entering a received date auto-ticks its checkbox — never auto-unticks.
         function wireReceivedDateCascade() {
             receivedDatePairs.forEach(function (pair) {
@@ -1116,6 +1222,7 @@
 
         updateFormCWarningVisibility();
         wireReceivedDateCascade();
+        wireFieldCascades();
 
         if (tooltipTriggers.length) {
             tooltipTriggers.forEach(function (trigger) {
@@ -1197,12 +1304,26 @@
             });
         });
 
+        // Legacy's Cancel is a postback that captures the current form before checking for
+        // changes, so edits typed on this tab but never staged anywhere must count as unsaved too.
+        var cancelForm = document.getElementById('case-edit-inline-form');
+        var formDirty = false;
+        if (cancelForm) {
+            cancelForm.addEventListener('input', function () { formDirty = true; });
+            cancelForm.addEventListener('change', function () { formDirty = true; });
+        }
+
         document.querySelectorAll('.bse-cancel-link').forEach(function (lnk) {
             lnk.addEventListener('click', function (e) {
-                var hasUnsaved = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.HasUnsavedChanges));
-                if (hasUnsaved && !window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
-                    e.preventDefault();
-                }
+                e.preventDefault();
+                var hasUnsavedHere = formDirty || @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.HasUnsavedChanges));
+                // Legacy's dirty-check spans the whole shared session (every tab), not just this page.
+                (hasUnsavedHere ? Promise.resolve(true) : (window.hasUnsavedChangesAcrossTabs ? window.hasUnsavedChangesAcrossTabs() : Promise.resolve(false)))
+                    .then(function (hasUnsaved) {
+                        if (!hasUnsaved || window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+                            window.location.href = lnk.href;
+                        }
+                    });
             });
         });
     })();

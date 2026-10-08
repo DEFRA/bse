@@ -29,6 +29,14 @@
     max-width: none;
 }
 
+/* The calendar toggle button is inserted by moj-frontend's JS and has no built-in awareness of
+   the paired input's disabled state (site.js syncs the attribute) — style it to read as
+   unambiguously unavailable once disabled, matching the disabled-button treatment above. */
+.moj-datepicker__toggle:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 /* Legacy-style immediate inline validation indicators: a bold asterisk shown next to a field
    as soon as the user changes it, without waiting for Save. Green (#9CCE00) mirrors the legacy
    "are you sure?" advisories; red mirrors the legacy hard validation errors. The message itself

@@ -86,6 +86,11 @@ public class VlaModel(
 
     public async Task<IActionResult> OnGetAsync()
     {
+        // Legacy parity: CaseEntryVLA.aspx.vb's Page_Load redirects to SessionError.aspx when
+        // Session(SV_RBSENumber) is missing (session timeout, direct URL access, stale back-button).
+        if (string.IsNullOrWhiteSpace(Rbse))
+            return RedirectToPage("/SessionError");
+
         var record = await caseService.GetCaseAsync(Rbse);
         if (record is null)
         {
@@ -170,10 +175,10 @@ public class VlaModel(
         await StageCaseScalarEditAsync(rowStampBase64);
 
         var userId = await currentUserService.GetUserIdAsync();
-        EditCaseResult result;
+        CaseCommitOutcome commitOutcome;
         try
         {
-            result = await caseEditOrchestration.CommitAllAsync(caseRbse, userId);
+            commitOutcome = await caseEditOrchestration.CommitAllAsync(caseRbse, userId);
         }
         catch (MandatoryCaseFieldsMissingException ex)
         {
@@ -183,23 +188,14 @@ public class VlaModel(
             return RedirectToPage("/Case/SaveResult", new { rbse = caseRbse });
         }
 
-        if (result == EditCaseResult.ConcurrencyConflict)
+        if (commitOutcome.Result != EditCaseResult.Success)
         {
-            // Legacy parity: CaseEntrySave.aspx shows the failure and navigates to Home.aspx on
-            // any commit failure, rather than staying on the originating tab.
-            TempData["ErrorMessage"] = "Another user has modified this case since you loaded it. " +
-                                       "Please reload and try again.";
-            return RedirectToPage("/Home");
-        }
-
-        if (result != EditCaseResult.Success)
-        {
-            var message = result switch
+            var message = commitOutcome.Result switch
             {
                 EditCaseResult.RbseNotFound    => $"Case '{Rbse}' not found.",
                 EditCaseResult.AuditLogError   => "Audit log error during update.",
                 EditCaseResult.PostUpdateError => "Database error after update.",
-                _                              => $"Update failed: {result}"
+                _                              => $"Update failed: {commitOutcome.Result}"
             };
             TempData["ErrorMessage"] = message;
             return RedirectToPage("/Home");
@@ -207,6 +203,14 @@ public class VlaModel(
 
         await PersistStagedOwnersAsync(caseRbse);
         await caseEditDraftState.ClearAsync(caseRbse);
+
+        if (commitOutcome.Warnings.Count > 0)
+        {
+            // Legacy parity: CaseEntrySave.aspx shows "saved with some errors" instead of silently
+            // succeeding whenever a per-table concurrency conflict was skipped during the commit.
+            SaveResultModel.Stage(TempData, SaveResultMode.PartialSuccess, commitOutcome.Warnings);
+            return RedirectToPage("/Case/SaveResult", new { rbse = caseRbse });
+        }
 
         // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx on a fully successful
         // save, clearing the session case state — not back to the tab the user was on.
@@ -284,6 +288,19 @@ public class VlaModel(
             Case.ApplyStagedCommand(staged.Case);
     }
 
+    /// <summary>Stages the currently posted (model-bound) <see cref="Case"/> scalars — e.g. Purchased
+    /// County, Purchase Date — into the shared cross-tab draft before an Other-Owners grid handler
+    /// redirects. Without this, a scalar field edited in the same submission as an Add/Edit/Delete
+    /// owner-row action is silently discarded: the redirect triggers a fresh GET that reloads
+    /// <see cref="Case"/> from the database and overlays only what was already staged, not what was
+    /// just posted in this exact request.</summary>
+    private async Task StagePostedCaseScalarsBeforeRedirectAsync()
+    {
+        var rowStampBase64 = TempData[string.Format(RowStampKey, Rbse)]?.ToString();
+        if (!string.IsNullOrEmpty(rowStampBase64))
+            await StageCaseScalarEditAsync(rowStampBase64);
+    }
+
     public async Task<IActionResult> OnGetCancelVlaEditAsync()
     {
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
@@ -317,6 +334,10 @@ public class VlaModel(
         EditOwnerRowStampBase64 = owner.RowStampBase64;
         return Page();
     }
+
+    // Note: OnPostBeginEditOwnerRowAsync above redirects on its early-exit paths only (no edit
+    // permission, owner not found) and returns Page() on success, so it never needs to stage —
+    // Case remains whatever was model-bound from this exact POST when the page re-renders.
 
     public async Task<IActionResult> OnPostAddOwnerRowAsync()
     {
@@ -352,6 +373,7 @@ public class VlaModel(
         });
         draft.HasPendingChanges = true;
         await caseEditDraftState.SetAsync(draft);
+        await StagePostedCaseScalarsBeforeRedirectAsync();
 
         return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
     }
@@ -392,6 +414,7 @@ public class VlaModel(
         owner.Cphh = string.IsNullOrWhiteSpace(normalizedCphh) ? null : normalizedCphh;
         draft.HasPendingChanges = true;
         await caseEditDraftState.SetAsync(draft);
+        await StagePostedCaseScalarsBeforeRedirectAsync();
 
         return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
     }
@@ -402,6 +425,7 @@ public class VlaModel(
             return Forbid();
 
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
+        Rbse = caseRbse;
         if (!await LoadBatchContextAndCheckEditPermissionAsync(caseRbse))
             return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
 
@@ -416,6 +440,7 @@ public class VlaModel(
         draft.OtherOwners.Remove(owner);
         draft.HasPendingChanges = true;
         await caseEditDraftState.SetAsync(draft);
+        await StagePostedCaseScalarsBeforeRedirectAsync();
         return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
     }
 

@@ -49,7 +49,7 @@
         "Relations" => "case-relations-inline-form",
         _ => null
     };
-    string? topSaveHandler = Model.ActiveTab switch
+    string? topSaveHandler = Model.SaveHandlerOverride ?? Model.ActiveTab switch
     {
         "Farm" => "SaveFarm",
         "BAB" => "SaveBab",
@@ -58,7 +58,9 @@
         "Relations" => "SaveRelations",
         _ => null
     };
-    (string Page, string Handler)? topCancel = Model.ActiveTab switch
+    (string Page, string? Handler)? topCancel = Model.CancelPageOverride is not null
+        ? (Model.CancelPageOverride, Model.CancelHandlerOverride)
+        : Model.ActiveTab switch
     {
         "Farm" => ("/Case/Farm", "CancelFarmEdit"),
         "Case (DEFRA)" => ("/Case/Edit", "CancelEdit"),
@@ -67,7 +69,7 @@
         "Clinical" => ("/Case/Clinical", "CancelClinicalEdit"),
         "Feeds" => ("/Case/Feeds", "CancelFeedsEdit"),
         "Relations" => ("/Case/Relations", "CancelRelationsEdit"),
-        _ => null
+        _ => ((string, string?)?)null
     };
     var showTopSaveCancel = Model.CanEditCurrentTab && saveCancelFormId is not null && topCancel is not null;
 }
@@ -308,6 +310,10 @@
                 // Navigation should still proceed even if draft-clear call fails.
             }
         }
+
+        // Exposed so each tab's own Cancel-link confirm can see cross-tab staged edits too.
+        window.hasUnsavedChangesAcrossTabs = hasUnsavedChangesAcrossTabs;
+        window.clearUnsavedChangesAcrossTabs = clearUnsavedChangesAcrossTabs;
 
         function isHomeLink(anchor) {
             if (!anchor) {

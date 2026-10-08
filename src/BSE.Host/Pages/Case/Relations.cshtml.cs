@@ -650,7 +650,11 @@ public class RelationsModel(
         if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
+        var postedCaseHerdbook = CaseHerdbook;
+        var postedDamStatus = DamSire.DamStatus;
+
         await LoadAsync();
+        await RestoreAndRestageDamSireEditAsync(postedCaseHerdbook, postedDamStatus);
         var draft = await LoadOrInitializeRelationsDraftAsync();
 
         await ValidateAndDeriveRelationFieldsAsync(excludeClientKey: null);
@@ -729,8 +733,11 @@ public class RelationsModel(
             return Forbid();
 
         var clientKey = EditingClientKey;
+        var postedCaseHerdbook = CaseHerdbook;
+        var postedDamStatus = DamSire.DamStatus;
 
         await LoadAsync();
+        await RestoreAndRestageDamSireEditAsync(postedCaseHerdbook, postedDamStatus);
         var draft = await LoadOrInitializeRelationsDraftAsync();
 
         var item = draft.Relations.FirstOrDefault(r => r.ClientKey == clientKey);
@@ -777,7 +784,11 @@ public class RelationsModel(
         if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
+        var postedCaseHerdbook = CaseHerdbook;
+        var postedDamStatus = DamSire.DamStatus;
+
         await LoadAsync();
+        await RestoreAndRestageDamSireEditAsync(postedCaseHerdbook, postedDamStatus);
         var draft = await LoadOrInitializeRelationsDraftAsync();
 
         var item = draft.Relations.FirstOrDefault(r => r.ClientKey == clientKey);
@@ -843,10 +854,10 @@ public class RelationsModel(
         // DamStatus, herdbook/dam-sire pedigree record and relation rows commit together with
         // whatever else is staged for this RBSE (Case/Farm/Bab/Clinical/Feeds), not in isolation.
         var userId = await currentUser.GetUserIdAsync();
-        EditCaseResult commitResult;
+        CaseCommitOutcome commitOutcome;
         try
         {
-            commitResult = await caseEditOrchestration.CommitAllAsync(caseRbse, userId);
+            commitOutcome = await caseEditOrchestration.CommitAllAsync(caseRbse, userId);
         }
         catch (MandatoryCaseFieldsMissingException ex)
         {
@@ -865,33 +876,23 @@ public class RelationsModel(
                 DamSire.DamRbse,
                 DamSire.SireRbse);
 
-            // Legacy UpdateDamSireRecords mapped the SP's return code to one of these four
-            // specific messages instead of a single generic one.
-            TempData["ErrorMessage"] = TryGetDamSireReturnCode(ex, out var returnCode)
-                ? returnCode switch
-                {
-                    1 => "Failed to create or update a dam record. The record may have been changed by another user.",
-                    2 => "Failed to create or update a sire record. The record may have been changed by another user.",
-                    3 => "Failed to create a pedigree record for the case.",
-                    4 => "Failed to update the case's pedigree record with pointers to the dam and sire information. The record may have been changed by another user.",
-                    _ => "Unable to update case herdbook. Please reload and try again."
-                }
-                : "Unable to update case herdbook. Please reload and try again.";
+            TempData["ErrorMessage"] = "Unable to update case herdbook. Please reload and try again.";
             return RedirectToPage("/Home");
         }
 
-        if (commitResult == EditCaseResult.ConcurrencyConflict)
+        if (commitOutcome.Result != EditCaseResult.Success)
         {
-            // Legacy parity: CaseEntrySave.aspx shows the failure and navigates to Home.aspx on
-            // any commit failure, rather than staying on the originating tab.
-            TempData["ErrorMessage"] = "Another user has modified this case since you loaded it. Please reload and try again.";
+            TempData["ErrorMessage"] = $"Unable to save related animal changes: {commitOutcome.Result}.";
             return RedirectToPage("/Home");
         }
 
-        if (commitResult != EditCaseResult.Success)
+        if (commitOutcome.Warnings.Count > 0)
         {
-            TempData["ErrorMessage"] = $"Unable to save related animal changes: {commitResult}.";
-            return RedirectToPage("/Home");
+            // Legacy parity: CaseEntrySave.aspx shows "saved with some errors" instead of silently
+            // succeeding whenever a per-table concurrency conflict was skipped during the commit
+            // (e.g. a stale dam/sire pedigree RowStamp, or a relation row changed by another user).
+            SaveResultModel.Stage(TempData, SaveResultMode.PartialSuccess, commitOutcome.Warnings);
+            return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
         }
 
         // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx on a fully successful
@@ -1165,6 +1166,23 @@ public class RelationsModel(
         await caseScalarDraftState.SetAsync(draft);
     }
 
+    /// <summary>Re-stages the posted (in-progress, unsaved) Case Herdbook / Dam Status edits before a
+    /// relation-row grid operation redirects — otherwise the redirect's follow-up GET reloads both
+    /// straight from the database via PopulateCaseAncillaryStateAsync and silently discards them.</summary>
+    private async Task RestoreAndRestageDamSireEditAsync(string? postedCaseHerdbook, string? postedDamStatus)
+    {
+        CaseHerdbook = postedCaseHerdbook;
+        DamSire.DamStatus = postedDamStatus;
+
+        var caseRbse = RbseHelper.ParseToRaw(Rbse);
+        var caseRecord = await caseService.GetCaseAsync(caseRbse);
+        if (caseRecord is null)
+            return;
+
+        await StageCaseDamStatusAsync(caseRecord);
+        await StageHerdbookAsync(caseRbse, caseRecord);
+    }
+
     /// <summary>Discards all staged related-animal changes without persisting them.</summary>
     public async Task<IActionResult> OnPostCancelRelationsEditAsync() => await CancelRelationsEditAsync();
 
@@ -1268,25 +1286,6 @@ public class RelationsModel(
             : null;
         LeftDate = DateTime.TryParse(related.LeftDate, System.Globalization.CultureInfo.InvariantCulture, out var leftDate) ? leftDate : null;
         Sire = related.Name;
-    }
-
-    private static bool TryGetDamSireReturnCode(Exception ex, out int returnCode)
-    {
-        returnCode = 0;
-        if (ex is not InvalidOperationException || string.IsNullOrWhiteSpace(ex.Message))
-            return false;
-
-        const string marker = "returned code ";
-        var markerIndex = ex.Message.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
-        if (markerIndex < 0)
-            return false;
-
-        var start = markerIndex + marker.Length;
-        var end = start;
-        while (end < ex.Message.Length && char.IsDigit(ex.Message[end]))
-            end++;
-
-        return end > start && int.TryParse(ex.Message[start..end], out returnCode);
     }
 
     private async Task<PedigreeSnapshot?> GetPedigreeSnapshotByIdAsync(int pedigreeId)
@@ -1457,6 +1456,11 @@ public class RelationsModel(
 
     private async Task<IActionResult> LoadRelationsPageAsync(bool editCaseHerdbook)
     {
+        // Legacy parity: CaseEntryRelations.aspx.vb's Page_Load redirects to SessionError.aspx when
+        // Session(SV_RBSENumber) is missing (session timeout, direct URL access, stale back-button).
+        if (string.IsNullOrWhiteSpace(Rbse))
+            return RedirectToPage("/SessionError");
+
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadAsync();
         var draft = await LoadOrInitializeRelationsDraftAsync();
@@ -1512,6 +1516,15 @@ public class RelationsModel(
             : null;
 
         DamSire.DamStatus = caseRecord?.DamStatus;
+
+        // Overlay whatever another action in this same browsing session already staged (e.g. a
+        // relation-row grid operation re-staging the Case Herdbook / Dam Status the user had just
+        // typed/selected), so it survives the redirect this request is about to return.
+        var staged = await caseScalarDraftState.GetAsync(Rbse);
+        if (staged?.Case is not null)
+            DamSire.DamStatus = staged.Case.DamStatus;
+        if (staged?.DamSire is not null)
+            CaseHerdbook = staged.DamSire.CaseHerdbook;
     }
 
     private bool HasDamInputStaged()
