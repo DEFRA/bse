@@ -486,7 +486,7 @@ public sealed class FarmModelHandlerTests
         _farmService.GetByCphhAsync(Cphh).Returns(farm);
         _farmDraftState.GetAsync(Rbse).Returns(new CaseFarmDraftState { Rbse = Rbse, Cphh = Cphh });
         _currentUser.GetUserIdAsync().Returns(9);
-        _caseEditOrchestration.CommitAllAsync(Rbse, 9).Returns(EditCaseResult.Success);
+        _caseEditOrchestration.CommitAllAsync(Rbse, 9).Returns(CaseCommitOutcome.Success([]));
 
         var model = CreateModel(["DataEntry"]);
         model.EditableFarm = FarmEditViewModel.FromRecord(farm);
@@ -606,7 +606,7 @@ public sealed class FarmModelHandlerTests
         _farmService.GetByCphhAsync(Cphh).Returns(farm);
         _farmDraftState.GetAsync(Rbse).Returns(new CaseFarmDraftState { Rbse = Rbse, Cphh = Cphh });
         _caseEditOrchestration.CommitAllAsync(Rbse, Arg.Any<int>())
-            .Returns<EditCaseResult>(_ => throw new MandatoryCaseFieldsMissingException(["Owner Name is required."]));
+            .Returns<CaseCommitOutcome>(_ => throw new MandatoryCaseFieldsMissingException(["Owner Name is required."]));
 
         var model = CreateModel(["DataEntry"]);
         model.EditableFarm = new FarmEditViewModel { CPHH = Cphh }; // missing owner/address/parish/aho/adns

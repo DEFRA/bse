@@ -143,7 +143,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         var caseRecord = new CaseRecord { Rbse = Rbse, Cphh = "01001000101", RowStamp = [1, 2, 3] };
         _caseService.GetCaseAsync(Rbse).Returns(caseRecord);
         _caseEditOrchestration.CommitAllAsync(Rbse, Arg.Any<int>())
-            .Returns(EditCaseResult.ConcurrencyConflict);
+            .Returns(CaseCommitOutcome.Success([$"The case record with RBSE {Rbse} has been modified by another user"]));
         _currentUserService.GetUserIdAsync().Returns(4);
 
         model.TempData[string.Format("VlaEdit_RowStamp_{0}", Rbse)] = Convert.ToBase64String([1, 2, 3]);
@@ -152,8 +152,8 @@ public sealed class ClinicalVlaUsersHandlerTests
         var result = await model.OnPostAsync();
 
         var redirect = result.Should().BeOfType<RedirectToPageResult>().Subject;
-        redirect.PageName.Should().Be("/Home");
-        model.TempData["ErrorMessage"].Should().NotBeNull();
+        redirect.PageName.Should().Be("/Case/SaveResult");
+        redirect.RouteValues!["rbse"].Should().Be(Rbse);
     }
 
     [Fact]
@@ -165,7 +165,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         var caseRecord = new CaseRecord { Rbse = Rbse, Cphh = "01001000101", RowStamp = [1, 2, 3] };
         _caseService.GetCaseAsync(Rbse).Returns(caseRecord);
         _caseEditOrchestration.CommitAllAsync(Rbse, Arg.Any<int>())
-            .Returns(EditCaseResult.Success);
+            .Returns(CaseCommitOutcome.Success([]));
         _currentUserService.GetUserIdAsync().Returns(4);
 
         model.TempData[string.Format("VlaEdit_RowStamp_{0}", Rbse)] = Convert.ToBase64String([1, 2, 3]);
@@ -550,8 +550,6 @@ public sealed class ClinicalVlaUsersHandlerTests
         _caseRepository.GetCaseByRbseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = "01001000101" });
         _currentUserService.GetUserIdAsync().Returns(7);
         _clinicalEditOrchestration.CommitAllAsync(Rbse, 7).Returns(CaseCommitOutcome.Success([]));
-
-        _clinicalEditOrchestration.CommitAllAsync(Rbse, Arg.Any<int>()).Returns(EditCaseResult.Success);
 
         var rowStampBase64 = Convert.ToBase64String([9, 9]);
         var result = await model.OnPostSaveSignsAsync(rowStampBase64);

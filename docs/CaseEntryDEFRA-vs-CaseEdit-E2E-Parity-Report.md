@@ -1578,3 +1578,162 @@ enhancement beyond legacy (which has no `beforeunload` protection at all), not a
 Files changed: `_CaseTabs.cshtml`, `Clinical.cshtml`, `Edit.cshtml`, `Farm.cshtml`, `Feeds.cshtml`,
 `Relations.cshtml`, `Bab.cshtml`, `Vla.cshtml`. `get_errors` clean on all eight.
 
+---
+
+## Full button/action-element parity audit across all 7 case tabs (2026-10-08)
+
+Per explicit request to cover every button/action element, not just Save/Cancel. Inventoried every
+clickable element on Farm/Edit/Bab/Vla/Clinical/Feeds/Relations against legacy. Most are already at
+parity from earlier rounds (grid row Add/Edit/Delete staging, Save/Cancel, tab-switch staging). Two
+items specifically checked and confirmed as **already correct, no change needed**:
+
+- **Remove Sire / Remove Dam** (Relations tab) — legacy attaches
+  `onClick="javascript:return confirm('This will disassociate the sire/dam from the case.  Do you wish
+  to continue?');"` to `btnRemoveSire`/`btnRemoveDam`
+  ([CaseEntryRelations.aspx.vb](../../bsenet-v2-2025-10/BSESystem/CaseEntryRelations.aspx.vb#L56-L57)).
+  [Relations.cshtml](../src/BSE.Host/Pages/Case/Relations.cshtml) already has matching
+  `onclick="return confirm(...)"` handlers on both buttons with the exact same wording. Checked every
+  other Delete/Remove grid-row button across all 7 tabs (LinkedFarms, HerdSizes, Tests, Owners, Visits,
+  Feeds, Relations rows) for an equivalent legacy confirm — legacy has **no** confirm on any of them;
+  only Remove Sire/Dam get one. Migrated correctly has no confirm on those either.
+
+One gap found and fixed:
+
+### 🔴 Bug found and fixed: Casework link no longer forces a save first
+
+Confirmed and fixed §2.1 from the "Other confirmed mismatches and gaps" section above (previously
+documented as a known gap, not yet implemented).
+
+**Legacy:** `btnCaseWork_Click` ([CaseEntryDEFRA.aspx.vb](../../bsenet-v2-2025-10/BSESystem/CaseEntryDEFRA.aspx.vb#L412-L414))
+runs `If UpdateSessionWithCaseDetails() Then Response.Redirect("CaseEntrySave.aspx?redirect=CaseWorkEntry.aspx")`
+— the exact same stage-then-commit pipeline as the ordinary Save button, just with a different redirect
+target on full success. Confirmed via `clsCase.vb`/`CaseEntrySave.aspx.vb` that the `redirect=` query
+value is honoured **only** on the fully-successful, no-warnings path — missing-mandatory-fields still
+goes to the Farm tab and any other failure still goes to Home, regardless of where the user came from.
+Confirmed (via grep across all 7 `CaseEntry*.aspx.vb` files) that this Casework button exists **only**
+on the DEFRA tab in legacy, matching `Model.HasCaseWorkLink`'s current migrated gating.
+
+**Migrated behaviour found (the bug):** the Casework item was a bare
+`<a asp-page="/CaseWork/Entry" asp-route-rbse="@Model.Case.Rbse">Casework</a>` — plain navigation, no
+save, no staging. Any in-progress edit on the DEFRA tab (including unsaved test rows) was silently
+discarded with zero warning when clicking it.
+
+**Fix:** [Edit.cshtml.cs](../src/BSE.Host/Pages/Case/Edit.cshtml.cs)'s `OnPostAsync()` body was extracted
+into a private `SaveAsync(string successRedirectPage)`, called by `OnPostAsync()` (passing `"/Home"`,
+unchanged behaviour) and a new `OnPostSaveAndGotoCaseworkAsync()` (passing `"/CaseWork/Entry"`). Only the
+single final success-path return respects the parameter — the `MandatoryCaseFieldsMissingException` catch
+(→ `/Case/SaveResult`) and the `ConcurrencyConflict`/other-failure/partial-success paths (→ `/Home` or
+`/Case/SaveResult`) are unchanged, matching legacy's "redirect= only honoured on full success" rule.
+[Edit.cshtml](../src/BSE.Host/Pages/Case/Edit.cshtml)'s Casework link is now
+`<button type="submit" form="case-edit-inline-form" asp-page-handler="SaveAndGotoCasework">Casework</button>`
+— posts the same form as the ordinary Save button (already carries a hidden `Rbse` input), so it goes
+through identical validation, mandatory-field checking, cross-tab staging/commit, and test-row
+persistence as Save, only redirecting to Casework instead of Home on success.
+
+Files changed: `Edit.cshtml.cs`, `Edit.cshtml`. `get_errors` clean on both.
+
+### Remaining lookup/navigation buttons checked (2026-10-08, same audit continued)
+
+All confirmed already at parity — no changes made:
+
+- **Vla "Calculate" buttons** (Age Purchased / Onset Age) — legacy's `CalculateAgePurchased()` uses a
+  plain `DateDiff(DateInterval.Month, dob, purchaseDate)` with **no day-of-month adjustment**, while
+  `CalculateOnsetAge()` does adjust (subtracts a month if the day-of-month hasn't been reached yet) — a
+  genuine inconsistency between the two legacy methods, not a bug to "fix to be consistent".
+  [Vla.cshtml](../src/BSE.Host/Pages/Case/Vla.cshtml)'s `calculatePurchasedAge()`/`calculateOnsetAge()`
+  JS functions already reproduce this exact asymmetry, with a comment explicitly noting it.
+- **Look Up Sire / Look Up Dam** (Relations) — reviewed `OnPostLookUpSireAsync`/`OnPostLookUpDamAsync`;
+  stage-before-redirect pattern is sound, no data-loss risk found.
+- **Validate Supplier** (Feeds) — confirmed the `StashPostedPanelState()`/`RestorePostedPanelState()`
+  fix from an earlier round is still intact after the unrelated external file changes.
+- **CPHH change / "Look Up" button on an *existing* case's Farm tab** — investigated migrated's unused
+  `FarmModel.CanChangeCphh => User.IsInRole("DEFRAMaintenance")` property (declared, never referenced in
+  any view — looked like dead/incomplete code). Checked legacy's `CheckLookupCPHH()`
+  ([CaseEntryFarm.aspx.vb](../../bsenet-v2-2025-10/BSESystem/CaseEntryFarm.aspx.vb#L565-L573)): `btnLookUp.Visible`
+  is `True` **only** when the Case row's `RowState = DataRowState.Added` (i.e. a brand-new, not-yet-saved
+  case) — for any already-persisted case it is always `False`, and `CPHH1.Enabled = btnLookUp.Visible`
+  means the CPHH field is also always read-only then. **Conclusion: legacy itself has no "change CPHH on
+  an existing case" capability on this tab at all** — migrated's read-only `farm-cphh-display` field for
+  existing cases is correct, and `CanChangeCphh` being unused is harmless leftover scaffolding, not a
+  functional gap. Not removed (out of scope for a parity audit; flagging only).
+- **Sort-column headers** (LinkedFarms/HerdSizes/Tests/Owners/Visits/Feeds/Relations grids) — all use the
+  shared `_SortableHeader.cshtml` partial, a generic column-sort component with no business-rule content;
+  legacy's equivalent is a standard ASP.NET DataGrid `AllowSorting` column — both are generic UI sorting
+  with no case-specific logic to diverge, treated as out of scope for a *functional* parity audit.
+
+This closes out the button/action-element audit requested across all 7 tabs. Outstanding, already-tracked
+items not re-examined in this pass: role/permission matrix (§2.2), full client-side date-cascade
+reactivity (§2.3) — both pre-existing, documented gaps, not button/action-element items.
+
+---
+
+## §2.2 and §2.3 implemented (2026-10-08)
+
+Per explicit request to implement the two remaining tracked gaps.
+
+### §2.3 (date auto-clear cascade reactivity) — found already implemented, not by this session
+
+Before writing anything, re-checked the current file (per the external-changes notice) and found
+`applyFormACascade()`/`applyFormBCascade()`/`applyBirthDateCascade()`/`wireReceivedDateCascade()` in
+[Edit.cshtml](../src/BSE.Host/Pages/Case/Edit.cshtml) already fully reproduce every rule from §2.3:
+Form A cleared blanks+disables Form A Resubmitted/Form B (which cascades on to Fate/Form C); Form A set
+re-enables them; Form B cleared blanks+disables Fate/Form C; Form B set re-enables them; Date of Birth
+cleared disables Birth Date Source and un-ticks "estimated"; each received-date auto-ticks its checkbox.
+This must have landed via the external file changes noted at the top of this session (not written in
+this pass) — verified complete and correctly wired (`wireFieldCascades()` is called), no further action
+needed. §2.3 is now closed.
+
+### §2.2 (role/permission matrix) — implemented
+
+**Legacy** ([CaseEntryDEFRA.aspx.vb](../../bsenet-v2-2025-10/BSESystem/CaseEntryDEFRA.aspx.vb#L420-L484)):
+`EnableControls()` dispatches on 5 AD groups, but only 4 distinct *behaviours* actually exist — DEFRA
+Data Entry and DEFRA Maintenance are identical (`MakeControlsWritable()`, Save enabled, Barcode/AHF
+Reference always disabled). DEFRA Viewer is fully read-only, Save disabled. VLA Data Entry is fully
+read-only but Save stays enabled (a harmless no-op since nothing editable could have changed). VLA
+Maintenance is writable **and** is the only group ever able to edit Barcode/AHF Reference/Paperwork
+Complete Date, further gated by a CaseWork row existing **and** `IsCaseClosed <> 1`.
+
+**Migrated behaviour found (the bug):** every POST handler's Forbid-gate and the main fieldset's
+disabled-state checked only `User.IsInRole("DataEntry")` — a VLA Maintenance user (who does not hold the
+DEFRA-specific "DataEntry" role claim) was completely blocked from saving or editing this tab at all,
+despite legacy explicitly allowing it. Separately, Barcode/AHF Reference's readonly logic used
+`isDefraDataEntry = DataEntry && !VLAAccess` — backwards from legacy: it left these two fields **editable
+for any VLA user** (including plain VLA Data Entry, who should never edit them) with no `IsCaseClosed`
+check at all, while being needlessly readonly for the one case that doesn't matter (DEFRA+VLAAccess
+combined). `FarmModel`'s precedent (`ApplyLegacyEditPermissions`) was used as the established pattern for
+this fix.
+
+**Fix:**
+- [Edit.cshtml.cs](../src/BSE.Host/Pages/Case/Edit.cshtml.cs): added `CanEditCaseFields` (DataEntry role
+  OR VLA Maintenance — replaces the DEFRA-only fieldset/tab-Save gate) and
+  `CanEditVlaMaintenanceCaseworkFields` (VLA Maintenance AND `Case.HasCaseWork` AND NOT
+  `Case.IsCaseClosed` — the 3-way gate for Barcode/AHF Reference). All 7 of this file's
+  `if (!User.IsInRole("DataEntry")) return Forbid();` POST-handler gates became
+  `if (!CanUserEditCase())`, which also admits VLA Maintenance (DEFRA Data Entry/Maintenance already
+  covered by the existing "DataEntry" role check — legacy's two DEFRA groups behave identically here, so
+  no separate DEFRAMaintenance role check was needed, unlike Farm's own permission model).
+- [CaseEditViewModel.cs](../src/BSE.Host/Models/ViewModels/CaseEditViewModel.cs): added `IsCaseClosed`,
+  populated in `ApplyCaseWork` from `CaseWorkRecord.IsCaseClosed` — round-tripped via a new hidden field
+  next to the existing `Case.HasCaseWork` one, since Save's failure-path re-renders never re-fetch
+  CaseWork from the DB (same reason `HasCaseWork` already needed one).
+- [Edit.cshtml](../src/BSE.Host/Pages/Case/Edit.cshtml): the main fieldset, the "view but cannot edit"
+  message, and the `_CaseTabs` partial's `CanEditCurrentTab` argument all now read
+  `Model.CanEditCaseFields` instead of `User.IsInRole("DataEntry")`; Barcode/AHF Reference's `readonly`
+  now reads `!Model.CanEditVlaMaintenanceCaseworkFields`.
+- **Deliberately not touched:** Paperwork Complete Date's existing `disabled="@(!Model.Case.HasCaseWork)"`
+  gate — the sixth follow-up review (field-level validation deep-dive, above) already investigated this
+  specific field in detail and found legacy's own DEFRA-role behaviour for it is genuinely
+  ambiguous/ViewState-dependent (never explicitly set in `MakeControlsWritable`), and deliberately kept
+  migrated's simpler, more-consistent rule rather than replicate that ambiguity. Only Barcode/AHF
+  Reference — unambiguously always-disabled for DEFRA roles in legacy — were changed this round.
+- **VLA Data Entry's Save** is now blocked outright (`Forbid`) rather than reproducing legacy's
+  "technically enabled but every field is read-only so it's a no-op" quirk — same net effect (nothing can
+  ever be changed by this group), safer mechanism (an explicit 403 instead of trusting that every field
+  really is disabled and can't smuggle a value through).
+
+Files changed: `Edit.cshtml.cs`, `Edit.cshtml`, `CaseEditViewModel.cs`. `get_errors` clean on all three
+individually and on the whole `BSE.Host` project.
+
+
+
+
