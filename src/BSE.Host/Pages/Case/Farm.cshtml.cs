@@ -1,4 +1,5 @@
 using BSE.Host.Services;
+using BSE.Host.Helpers;
 using BSE.Host.Models.ViewModels;
 using BSE.Host.Models;
 using BSE.Modules.Batch.Models;
@@ -539,38 +540,17 @@ public class FarmModel(
         // (this tab and/or Case (DEFRA)) together, rather than committing only Farm's fields.
         await StageFarmScalarEditAsync(EditableFarm!.ToUpdateCommand(rowStamp));
 
-        EditCaseResult commitResult;
-        var commitWarnings = Array.Empty<string>() as IReadOnlyList<string>;
-        try
-        {
-            var commitOutcome = await caseEditOrchestration.CommitAllAsync(Rbse, userId);
-            commitResult = commitOutcome.Result;
-            commitWarnings = commitOutcome.Warnings;
-        }
-        catch (MandatoryCaseFieldsMissingException ex)
-        {
-            // Legacy parity: CaseEntrySave.aspx shows the consolidated list of missing items with
-            // a "Return" button instead of a single inline banner.
-            SaveResultModel.Stage(TempData, SaveResultMode.MissingMandatoryFields, ex.Errors);
-            return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
-        }
-
-        if (commitResult != EditCaseResult.Success)
-        {
-            TempData["ErrorMessage"] = $"Unable to save farm changes: {commitResult}.";
-            return RedirectToPage("/Home");
-        }
+        var (failureRedirect, commitOutcome) = await CaseCommitHelper.CommitAllAsync(
+            this, caseEditOrchestration, Rbse, userId,
+            result => $"Unable to save farm changes: {result}.");
+        if (failureRedirect is not null)
+            return failureRedirect;
 
         await PersistStagedCollectionsAsync();
         await farmDraftState.ClearAsync(Rbse);
 
-        if (commitWarnings.Count > 0)
-        {
-            // Legacy parity: CaseEntrySave.aspx shows "saved with some errors" instead of silently
-            // succeeding whenever a per-table concurrency conflict was skipped during the commit.
-            SaveResultModel.Stage(TempData, SaveResultMode.PartialSuccess, commitWarnings);
-            return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
-        }
+        if (CaseCommitHelper.TryStageWarnings(this, commitOutcome!, Rbse) is { } warningRedirect)
+            return warningRedirect;
 
         // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx on a fully successful
         // save, clearing the session case state — not back to the tab the user was on.

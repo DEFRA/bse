@@ -18,52 +18,8 @@
 
 @await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Feeds", Model.Rbse, Model.BatchNumbers, viewDocsUrl, canSaveFeeds))
 
-@if (TempData["Success"] is string successMsg)
-{
-    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert"
-         aria-labelledby="feeds-success-title" data-module="govuk-notification-banner">
-        <div class="govuk-notification-banner__header">
-            <h2 class="govuk-notification-banner__title" id="feeds-success-title">Success</h2>
-        </div>
-        <div class="govuk-notification-banner__content">
-            <p class="govuk-notification-banner__heading">@successMsg</p>
-        </div>
-    </div>
-}
-
-@if (TempData["Warning"] is string warningMsg)
-{
-    <div class="govuk-notification-banner" role="region"
-         aria-labelledby="feeds-warning-title" data-module="govuk-notification-banner">
-        <div class="govuk-notification-banner__header">
-            <h2 class="govuk-notification-banner__title" id="feeds-warning-title">Important</h2>
-        </div>
-        <div class="govuk-notification-banner__content">
-            <p class="govuk-body">@warningMsg</p>
-        </div>
-    </div>
-}
-
-@if (!ViewContext.ModelState.IsValid || Model.FieldErrors.Count > 0)
-{
-    <div class="govuk-error-summary" data-module="govuk-error-summary">
-        <div role="alert">
-            <h2 class="govuk-error-summary__title">There is a problem</h2>
-            <div class="govuk-error-summary__body">
-                <ul class="govuk-list govuk-error-summary__list">
-                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
-                    {
-                        <li>@e.ErrorMessage</li>
-                    }
-                    @foreach (var e in Model.FieldErrors.Values)
-                    {
-                        <li>@e</li>
-                    }
-                </ul>
-            </div>
-        </div>
-    </div>
-}
+@await Html.PartialAsync("_CaseEditNotifications", new BSE.Host.Models.CaseEditNotificationsViewModel(
+    "feeds", TempData["Success"] as string, TempData["Warning"] as string, Model.FieldErrors.Values.ToList()))
 
 <form method="post" novalidate id="case-feeds-inline-form">
     <input type="hidden" asp-for="Rbse" />
@@ -105,7 +61,7 @@
                 </tr>
             }
 
-            @foreach (var f in Model.PagedFeeds)
+            @foreach (var f in Model.GetPagedFeeds())
             {
                 <tr class="govuk-table__row bse-feeds-row @(f.IsUnsaved ? "bse-feeds-row--unsaved" : "") @(Model.EditingClientKey == f.ClientKey ? "bse-feeds-row--selected" : "")">
                     <td class="govuk-table__cell">@f.YearFrom</td>
@@ -225,14 +181,14 @@
                 <div class="govuk-button-group bse-case-bottom-row__actions">
                     @if (viewDocsUrl is not null)
                     {
-                        <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">
+                        <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">
                             View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
                         </a>
                     }
-                    @if (canSaveFeeds)
+                    @if (canEditFeeds)
                     {
                         <button type="submit" asp-page-handler="SaveFeeds" class="govuk-button" data-module="govuk-button">Save</button>
-                        <a asp-page="/Case/Feeds" asp-page-handler="CancelFeedsEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
+                        <a asp-page="/Case/Feeds" asp-page-handler="CancelFeedsEdit" asp-route-rbse="@Model.Rbse" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
                     }
                 </div>
             </div>

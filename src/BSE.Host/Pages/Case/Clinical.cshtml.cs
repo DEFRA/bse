@@ -1,4 +1,5 @@
 using BSE.Infrastructure;
+using BSE.Host.Helpers;
 using BSE.Host.Services;
 using BSE.Host.ModelBinding;
 using BSE.Modules.Batch.Models;
@@ -103,34 +104,20 @@ public class ClinicalModel(
             await caseScalarDraftState.SetAsync(draft);
 
             var userId = await currentUser.GetUserIdAsync();
-            CaseCommitOutcome commitOutcome;
-            try
-            {
-                commitOutcome = await caseEditOrchestration.CommitAllAsync(Rbse, userId);
-            }
-            catch (MandatoryCaseFieldsMissingException ex)
-            {
-                // Legacy parity: CaseEntrySave.aspx shows the consolidated list of missing items with
-                // a "Return" button instead of a single inline banner.
-                SaveResultModel.Stage(TempData, SaveResultMode.MissingMandatoryFields, ex.Errors);
-                return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
-            }
+            var (failureRedirect, commitOutcome) = await CaseCommitHelper.CommitAllAsync(
+                this, caseEditOrchestration, Rbse, userId,
+                result => $"Unable to save clinical signs: {result}.");
+            if (failureRedirect is not null)
+                return failureRedirect;
 
-            if (commitOutcome.Result != EditCaseResult.Success)
+            if (commitOutcome!.Warnings.Count > 0)
             {
-                TempData["ErrorMessage"] = $"Unable to save clinical signs: {commitOutcome.Result}.";
-                return RedirectToPage("/Home");
-            }
-
-            if (commitOutcome.Warnings.Count > 0)
-            {
-                // Legacy parity: CaseEntrySave.aspx shows "saved with some errors" instead of silently
-                // succeeding whenever a per-table concurrency conflict was skipped during the commit.
                 await PersistStagedVisitsAsync();
                 await clinicalDraftState.ClearAsync(Rbse);
-                SaveResultModel.Stage(TempData, SaveResultMode.PartialSuccess, commitOutcome.Warnings);
-                return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
             }
+
+            if (CaseCommitHelper.TryStageWarnings(this, commitOutcome, Rbse) is { } warningRedirect)
+                return warningRedirect;
         }
         else
         {
