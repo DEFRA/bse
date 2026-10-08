@@ -25,6 +25,8 @@ public class VlaModel(
     ICurrentUserService currentUserService,
     ICaseWizardStateService wizardState,
     ICaseEditDraftStateService caseEditDraftState,
+    ICaseScalarDraftStateService caseScalarDraftState,
+    ICaseEditOrchestrationService caseEditOrchestration,
     ILookupDataService lookups,
     IBatchRepository batchRepository,
     IOtherOwnerRepository ownerRepository,
@@ -106,6 +108,7 @@ public class VlaModel(
         PendingBatch = await pendingBatchTask;
         ApplyLegacyVlaEditPermissions();
         await LoadOrInitializeOwnersDraftAsync();
+        await ApplyStagedCaseOverlayAsync();
 
         return Page();
     }
@@ -161,22 +164,32 @@ public class VlaModel(
             return Page();
         }
 
-        var rowStamp = Convert.FromBase64String(rowStampBase64);
-        var editCommand = Case.ToEditCommand(rowStamp);
-        var command = new EditCaseDetailsCommand(editCommand, Clinical: null, Bab: null, DamSire: null);
+        // Cross-tab staging (restores legacy's "one session, one commit" model): stage this
+        // tab's edit into the shared draft, then commit *everything* staged for this RBSE
+        // (this tab and/or Farm/BAB/Clinical) together, rather than committing only this page's fields.
+        await StageCaseScalarEditAsync(rowStampBase64);
 
         var userId = await currentUserService.GetUserIdAsync();
-        var result = await caseService.EditCaseAsync(command, userId);
+        EditCaseResult result;
+        try
+        {
+            result = await caseEditOrchestration.CommitAllAsync(caseRbse, userId);
+        }
+        catch (MandatoryCaseFieldsMissingException ex)
+        {
+            // Legacy parity: CaseEntrySave.aspx shows the consolidated list of missing items with
+            // a "Return" button instead of a single inline banner.
+            SaveResultModel.Stage(TempData, SaveResultMode.MissingMandatoryFields, ex.Errors);
+            return RedirectToPage("/Case/SaveResult", new { rbse = caseRbse });
+        }
 
         if (result == EditCaseResult.ConcurrencyConflict)
         {
-            ConcurrencyError = "Another user has modified this case since you loaded it. " +
-                               "Please reload to get the latest version and apply your changes again.";
-            var current = await caseService.GetCaseAsync(Rbse);
-            if (current is not null)
-                TempData[string.Format(RowStampKey, caseRbse)] = Convert.ToBase64String(current.RowStamp ?? []);
-            await LoadOrInitializeOwnersDraftAsync();
-            return Page();
+            // Legacy parity: CaseEntrySave.aspx shows the failure and navigates to Home.aspx on
+            // any commit failure, rather than staying on the originating tab.
+            TempData["ErrorMessage"] = "Another user has modified this case since you loaded it. " +
+                                       "Please reload and try again.";
+            return RedirectToPage("/Home");
         }
 
         if (result != EditCaseResult.Success)
@@ -188,21 +201,94 @@ public class VlaModel(
                 EditCaseResult.PostUpdateError => "Database error after update.",
                 _                              => $"Update failed: {result}"
             };
-            ModelState.AddModelError("", message);
-            await LoadOrInitializeOwnersDraftAsync();
-            return Page();
+            TempData["ErrorMessage"] = message;
+            return RedirectToPage("/Home");
         }
 
         await PersistStagedOwnersAsync(caseRbse);
         await caseEditDraftState.ClearAsync(caseRbse);
 
-        TempData["Success"] = $"Case {caseRbse} has been updated.";
-        return RedirectToPage(new { rbse = caseRbse });
+        // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx on a fully successful
+        // save, clearing the session case state — not back to the tab the user was on.
+        return RedirectToPage("/Home");
+    }
+
+    /// <summary>
+    /// Validates this tab's fields and, if valid, stages them into the shared cross-tab
+    /// draft (without committing) before navigating to another tab.
+    /// </summary>
+    public async Task<IActionResult> OnPostStageAndGotoAsync(string targetPage)
+    {
+        if (!User.IsInRole(DataEntryRole))
+            return Forbid();
+
+        var caseRbse = RbseHelper.ParseToRaw(Rbse);
+        Rbse = caseRbse;
+
+        if (!await LoadBatchContextAndCheckEditPermissionAsync(caseRbse))
+            return RedirectToPage(targetPage, new { rbse = caseRbse });
+
+        var persistedRecord = await caseService.GetCaseAsync(caseRbse);
+        if (persistedRecord is null)
+            return RedirectToPage(targetPage, new { rbse = caseRbse });
+
+        SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
+        await LoadLookupsAsync();
+
+        if (Case.Origin != "P")
+        {
+            Case.PurchaseDate = null;
+            Case.PurchaseAgeInMonths = null;
+            Case.PurchasedCounty = null;
+        }
+
+        if (Case.FormBDate.HasValue && !Case.SlaughterDate.HasValue)
+            Case.SlaughterDate = Case.FormBDate;
+
+        ValidateVlaDomainRules();
+
+        if (!ModelState.IsValid)
+        {
+            await LoadOrInitializeOwnersDraftAsync();
+            return Page();
+        }
+
+        var rowStampBase64 = TempData[string.Format(RowStampKey, Rbse)]?.ToString();
+        if (string.IsNullOrEmpty(rowStampBase64))
+        {
+            ConcurrencyError = "Session expired â€” please reload the page and try again.";
+            return Page();
+        }
+
+        await StageCaseScalarEditAsync(rowStampBase64);
+
+        return RedirectToPage(targetPage, new { rbse = caseRbse });
+    }
+
+    /// <summary>Writes this tab's current field values into the shared cross-tab scalar
+    /// draft (BSE.Host.Services.CaseScalarDraftState), without committing to the database.</summary>
+    private async Task StageCaseScalarEditAsync(string rowStampBase64)
+    {
+        var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
+        draft.CaseBaseRowStampBase64 ??= rowStampBase64;
+        var baseRowStamp = Convert.FromBase64String(draft.CaseBaseRowStampBase64);
+        draft.Case = Case.ToEditCommand(baseRowStamp);
+        draft.HasPendingChanges = true;
+        await caseScalarDraftState.SetAsync(draft);
+    }
+
+    private async Task ApplyStagedCaseOverlayAsync()
+    {
+        var staged = await caseScalarDraftState.GetAsync(Rbse);
+        if (staged?.Case is not null)
+            Case.ApplyStagedCommand(staged.Case);
     }
 
     public async Task<IActionResult> OnGetCancelVlaEditAsync()
     {
-        await caseEditDraftState.ClearAsync(RbseHelper.ParseToRaw(Rbse));
+        var caseRbse = RbseHelper.ParseToRaw(Rbse);
+        await caseEditDraftState.ClearAsync(caseRbse);
+        await caseScalarDraftState.ClearAsync(caseRbse);
         return RedirectToPage("/Home");
     }
 

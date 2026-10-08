@@ -1,3 +1,4 @@
+using System.Data;
 using BSE.Modules.FarmManagement.Models;
 
 namespace BSE.Modules.FarmManagement.Repositories;
@@ -13,4 +14,9 @@ public interface IHerdSizeRepository
     Task AddAsync(AddHerdSizeCommand command);
     Task UpdateAsync(UpdateHerdSizeCommand command);
     Task DeleteAsync(int id, byte[] rowStamp);
+
+    // Transactional variants, enlisted in a caller-supplied connection/transaction.
+    Task AddAsync(AddHerdSizeCommand command, IDbConnection connection, IDbTransaction transaction);
+    Task UpdateAsync(UpdateHerdSizeCommand command, IDbConnection connection, IDbTransaction transaction);
+    Task DeleteAsync(int id, byte[] rowStamp, IDbConnection connection, IDbTransaction transaction);
 }

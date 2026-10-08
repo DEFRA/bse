@@ -110,6 +110,14 @@ public static partial class EartagValidator
     [GeneratedRegex(@"^[0-9A-Z]{1,12}$", RegexOptions.CultureInvariant)]
     private static partial Regex EcAnimalRegex();
 
+    [GeneratedRegex("^[A-Z]{2}$", RegexOptions.CultureInvariant)]
+    private static partial Regex TwoLetterPrefixRegex();
+
+    // Repeated verbatim across most Validate* methods below — extracted to satisfy
+    // Sonar's "define a constant instead of duplicating this literal" rule.
+    private const string AllDigitsFromPosition3AreZero = "Herd component is invalid: All digits in position 3 onwards are zero";
+    private const string EartagChecksumFailed = "Eartag is invalid: The eartag checksum failed";
+
     /// <summary>Returns null when valid, otherwise the legacy validation error message.</summary>
     public static string? Validate(string? countryCode, string? herdComponent, string? animalComponent)
     {
@@ -172,7 +180,7 @@ public static partial class EartagValidator
         if (!PreBarimoHerdRegex().IsMatch(herd))
             return "Herd component is invalid: It should contain 1 or 2 uppercase alphabetical characters followed by 1 to 4 numeric characters";
         if (herd.Length >= 3 && herd[2..] == "0")
-            return "Herd component is invalid: All digits in position 3 onwards are zero";
+            return AllDigitsFromPosition3AreZero;
         if (!PreBarimoAnimalRegex().IsMatch(animal))
             return "Animal component is invalid: It should contain 1 to 5 numeric characters, optionally followed by 1 uppercase character";
         if (animal == "0")
@@ -188,21 +196,29 @@ public static partial class EartagValidator
         var animalNumeric = animal.Length > 0 && animal.All(char.IsDigit);
 
         if (herdNumeric && animalNumeric)
-        {
-            if (herd.StartsWith('9'))
-                return ValidateNiNumeric(herd, animal);
-            if (herd.StartsWith("01"))
-                return ValidateIsleOfManNumeric(ReformatNumericHerd(herd), ReformatNumericAnimal(animal));
-            if (herd.StartsWith("02"))
-                return ValidateGuernseyNumeric(ReformatNumericHerd(herd), ReformatNumericAnimal(animal));
-            if (herd.StartsWith("03"))
-                return ValidateJerseyNumeric(ReformatNumericHerd(herd), ReformatNumericAnimal(animal));
-            return ValidateGbNumeric(ReformatNumericHerd(herd), ReformatNumericAnimal(animal));
-        }
+            return ValidateUkNumeric(herd, animal);
 
         if (herdNumeric)
             return ValidateNiAlphaNumeric(herd, animal);
 
+        return ValidateUkAlphaNumeric(herd, animal);
+    }
+
+    private static string? ValidateUkNumeric(string herd, string animal)
+    {
+        if (herd.StartsWith('9'))
+            return ValidateNiNumeric(herd, animal);
+        if (herd.StartsWith("01"))
+            return ValidateIsleOfManNumeric(ReformatNumericHerd(herd), ReformatNumericAnimal(animal));
+        if (herd.StartsWith("02"))
+            return ValidateGuernseyNumeric(ReformatNumericHerd(herd), ReformatNumericAnimal(animal));
+        if (herd.StartsWith("03"))
+            return ValidateJerseyNumeric(ReformatNumericHerd(herd), ReformatNumericAnimal(animal));
+        return ValidateGbNumeric(ReformatNumericHerd(herd), ReformatNumericAnimal(animal));
+    }
+
+    private static string? ValidateUkAlphaNumeric(string herd, string animal)
+    {
         if (herd.StartsWith("MN"))
             return ValidateIsleOfManAlphaNumeric(ReformatIsleOfManAlphaHerd(herd), ReformatAlphaAnimal(animal));
         if (herd.StartsWith("GY"))
@@ -230,18 +246,16 @@ public static partial class EartagValidator
 
     private static string ReformatAlphaHerd(string herd)
     {
-        if (Regex.IsMatch(herd.Length >= 2 ? herd[..2] : herd, "^[A-Z]{2}$"))
+        if (TwoLetterPrefixRegex().IsMatch(herd.Length >= 2 ? herd[..2] : herd))
         {
             var partA = herd[..2];
             var partB = herd.Length > 2 ? herd[2..] : string.Empty;
             return partA + partB.PadLeft(4, '0');
         }
-        else
-        {
-            var partA = herd.Length >= 1 ? herd[..1] : string.Empty;
-            var partB = herd.Length > 1 ? herd[1..] : string.Empty;
-            return partA + partB.PadLeft(4, '0');
-        }
+
+        var singleLetterPartA = herd.Length >= 1 ? herd[..1] : string.Empty;
+        var singleLetterPartB = herd.Length > 1 ? herd[1..] : string.Empty;
+        return singleLetterPartA + singleLetterPartB.PadLeft(4, '0');
     }
 
     private static string ReformatIsleOfManAlphaHerd(string herd)
@@ -277,7 +291,7 @@ public static partial class EartagValidator
 
         var modulus = CalculateModulus(herd + animal[1..], 7);
         if (animal[..1] != (modulus + 1).ToString())
-            return "Eartag is invalid: The eartag checksum failed";
+            return EartagChecksumFailed;
         if (long.Parse(animal[1..]) == 0)
             return "Animal component is invalid: All digits in position 2 onwards are zero";
 
@@ -318,7 +332,7 @@ public static partial class EartagValidator
         if (!NiNumericAnimalRegex().IsMatch(animal))
             return "Animal component is invalid: It should consist of 2 to 5 numerical digits";
         if (!IsNiCheckDigitFormat10(herd, animal))
-            return "Eartag is invalid: The eartag checksum failed";
+            return EartagChecksumFailed;
         if (animal[..^1] == "0")
             return "Animal component is invalid: If it contains 2 characters, the first should not be zero";
 
@@ -341,11 +355,11 @@ public static partial class EartagValidator
         if (!NiElectoralCodes.Contains(herd[..2]))
             return "Herd component is invalid: NI Electoral Code not recognised";
         if (long.Parse(herd[2..]) == 0)
-            return "Herd component is invalid: All digits in position 3 onwards are zero";
+            return AllDigitsFromPosition3AreZero;
         if (!NiAlphaNumericAnimalRegex().IsMatch(animal))
             return "Animal component is invalid: It should consist of 1 to 4 numerical digits followed by one uppercase character";
         if (!IsNiCheckDigitFormat9(herd, animal))
-            return "Eartag is invalid: The eartag checksum failed";
+            return EartagChecksumFailed;
         if (animal[..^1] == "0")
             return "Animal component is invalid: If it contains 2 characters, the first should not be zero";
 
@@ -371,13 +385,13 @@ public static partial class EartagValidator
         if (!IsleOfManNumericHerdRegex().IsMatch(herd))
             return "Herd component invalid: It should consist of 3 to 6 numerical digits, starting with '01'";
         if (long.Parse(herd[2..]) <= 0)
-            return "Herd component is invalid: All digits in position 3 onwards are zero";
+            return AllDigitsFromPosition3AreZero;
         if (!NumericAnimalRegex().IsMatch(animal))
             return "Animal component is invalid: It should contain 2 to 6 numerical digits";
 
         var modulus = CalculateModulus(herd + animal[1..], 7);
         if (animal[..1] != (modulus + 1).ToString())
-            return "Eartag is invalid: The eartag checksum failed";
+            return EartagChecksumFailed;
         if (long.Parse(animal[1..]) == 0)
             return "Animal component is invalid: All digits in position 2 onwards are zero";
 
@@ -389,7 +403,7 @@ public static partial class EartagValidator
         if (!IsleOfManAlphaNumericHerdRegex().IsMatch(herd))
             return "Herd component is invalid: It should consist of 'MN' followed by 1 to 3 numerical digits";
         if (long.Parse(herd[2..]) <= 0)
-            return "Herd component is invalid: All digits in position 3 onwards are zero";
+            return AllDigitsFromPosition3AreZero;
         if (!ShortNumericAnimalRegex().IsMatch(animal))
             return "Animal component is invalid: It should consist of 1 to 5 numerical digits";
         if (AllZeroAnimalRegex().IsMatch(animal))
@@ -405,13 +419,13 @@ public static partial class EartagValidator
         if (!GuernseyNumericHerdRegex().IsMatch(herd))
             return "Herd component is invalid: It should consist of 3 to 6 numerical digits, starting with '01'";
         if (long.Parse(herd[2..]) <= 0)
-            return "Herd component is invalid: All digits in position 3 onwards are zero";
+            return AllDigitsFromPosition3AreZero;
         if (!NumericAnimalRegex().IsMatch(animal))
             return "Animal component is invalid: It should consist of 2 to 6 numerical digits";
 
         var modulus = CalculateModulus(herd + animal[1..], 7);
         if (animal[..1] != (modulus + 1).ToString())
-            return "Eartag is invalid: The eartag checksum failed";
+            return EartagChecksumFailed;
         if (long.Parse(animal[1..]) == 0)
             return "Animal component is invalid: All digits in position 2 onwards are zero";
 
@@ -439,13 +453,13 @@ public static partial class EartagValidator
         if (!JerseyNumericHerdRegex().IsMatch(herd))
             return "Herd component is invalid: It should consist of 3 to 6 numerical digits, starting with '03'";
         if (long.Parse(herd[2..]) <= 0)
-            return "Herd component is invalid: All digits in position 3 onwards are zero";
+            return AllDigitsFromPosition3AreZero;
         if (!NumericAnimalRegex().IsMatch(animal))
             return "Animal component is invalid: It should consist of 2 to 6 numerical digits";
 
         var modulus = CalculateModulus(herd + animal[1..], 7);
         if (animal[..1] != (modulus + 1).ToString())
-            return "Eartag is invalid: The eartag checksum failed";
+            return EartagChecksumFailed;
         if (long.Parse(animal[1..]) == 0)
             return "Animal component is invalid: All digits in position 2 onwards are zero";
 
@@ -457,7 +471,7 @@ public static partial class EartagValidator
         if (!JerseyAlphaNumericHerdRegex().IsMatch(herd))
             return "Herd component is invalid: It should consist of 'JY' followed by 1 to 4 numeric digits";
         if (long.Parse(herd[2..]) <= 0)
-            return "Herd component is invalid: All digits in position 3 onwards are zero";
+            return AllDigitsFromPosition3AreZero;
         if (!ShortNumericAnimalRegex().IsMatch(animal))
             return "Animal component is invalid: It should consist of 1 to 5 numerical digits";
         if (AllZeroAnimalRegex().IsMatch(animal))

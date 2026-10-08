@@ -4,6 +4,7 @@ using BSE.Infrastructure;
 using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Repositories;
 using BSE.Modules.CaseManagement.Commands;
+using BSE.Modules.CaseManagement.Enums;
 using BSE.Modules.CaseManagement.Models;
 using BSE.Modules.CaseManagement.Repositories;
 using BSE.Modules.CaseManagement.Services;
@@ -32,7 +33,9 @@ public class FeedsModel(
     ILookupRepository lookupRepository,
     IBatchRepository batchRepository,
     ICaseFeedsDraftStateService feedsDraftState,
-    IDbConnectionFactory connectionFactory,
+    ICaseScalarDraftStateService caseScalarDraftState,
+    ICaseEditOrchestrationService caseEditOrchestration,
+    ICurrentUserService currentUser,
     IConfiguration configuration) : PageModel
 {
     private List<CaseFeedRecord> _persistedFeeds = [];
@@ -286,11 +289,41 @@ public class FeedsModel(
         await LoadAsync();
         await LoadOrInitializeDraftStateAsync();
 
-        await PersistStagedFeedsAsync();
-        await feedsDraftState.ClearAsync(Rbse);
+        // Cross-tab commit (restores legacy's "one session, one commit" model): the staged feed
+        // rows are committed together with whatever else is staged for this RBSE (Case/Farm/Bab/
+        // Clinical), not in isolation, so Save from any tab commits everything together.
+        var userId = await currentUser.GetUserIdAsync();
+        EditCaseResult commitResult;
+        try
+        {
+            commitResult = await caseEditOrchestration.CommitAllAsync(Rbse, userId);
+        }
+        catch (MandatoryCaseFieldsMissingException ex)
+        {
+            // Legacy parity: CaseEntrySave.aspx shows the consolidated list of missing items with
+            // a "Return" button instead of a single inline banner.
+            SaveResultModel.Stage(TempData, SaveResultMode.MissingMandatoryFields, ex.Errors);
+            return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
+        }
 
-        TempData["Success"] = "Feed records saved.";
-        return RedirectToPage(new { rbse = Rbse });
+        if (commitResult == EditCaseResult.ConcurrencyConflict)
+        {
+            // Legacy parity: CaseEntrySave.aspx shows the failure and navigates to Home.aspx on
+            // any commit failure, rather than staying on the originating tab.
+            TempData["ErrorMessage"] = "Another user has modified this case since you loaded it. " +
+                                       "Please reload and try again.";
+            return RedirectToPage("/Home");
+        }
+
+        if (commitResult != EditCaseResult.Success)
+        {
+            TempData["ErrorMessage"] = $"Unable to save feed records: {commitResult}.";
+            return RedirectToPage("/Home");
+        }
+
+        // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx on a fully successful
+        // save, clearing the session case state — not back to the tab the user was on.
+        return RedirectToPage("/Home");
     }
 
     /// <summary>Discards all staged feed changes without persisting them.</summary>
@@ -298,7 +331,8 @@ public class FeedsModel(
     {
         Rbse = RbseHelper.ParseToRaw(Rbse);
         await feedsDraftState.ClearAsync(Rbse);
-        return RedirectToPage(new { rbse = Rbse });
+        await caseScalarDraftState.ClearAsync(Rbse);
+        return RedirectToPage("/Home");
     }
 
     public async Task<IActionResult> OnPostValidateSupplierNavigateAsync()
@@ -391,59 +425,6 @@ public class FeedsModel(
             _                   => q.OrderBy(f => f.YearFrom).ThenBy(f => f.YearTo)
         };
         return q.ToList().AsReadOnly();
-    }
-
-    private async Task PersistStagedFeedsAsync()
-    {
-        var rbse = RbseHelper.ParseToRaw(Rbse);
-        var persistedById = _persistedFeeds.ToDictionary(f => f.Id);
-        var stagedByExistingId = Feeds.Where(f => f.Id is > 0).ToDictionary(f => f.Id!.Value);
-
-        using var conn = connectionFactory.CreateConnection();
-        conn.Open();
-        using var tx = conn.BeginTransaction();
-
-        foreach (var removed in _persistedFeeds.Where(f => !stagedByExistingId.ContainsKey(f.Id)))
-        {
-            if (removed.RowStamp is null)
-                continue;
-
-            await feedRepository.DeleteAsync(removed.Id, removed.RowStamp, conn, tx);
-        }
-
-        foreach (var staged in Feeds)
-        {
-            if (staged.Id is null or <= 0)
-            {
-                await feedRepository.AddAsync(new AddFeedCommand(
-                    rbse, staged.YearFrom, staged.YearTo, staged.RationType!,
-                    staged.SupplierId, staged.RationName, staged.IsPrePurchase), conn, tx);
-                continue;
-            }
-
-            if (!persistedById.TryGetValue(staged.Id.Value, out var persisted))
-                continue;
-
-            var changed = persisted.YearFrom != staged.YearFrom
-                          || persisted.YearTo != staged.YearTo
-                          || !string.Equals(persisted.RationType, staged.RationType, StringComparison.OrdinalIgnoreCase)
-                          || !string.Equals(persisted.RationName ?? "", staged.RationName ?? "", StringComparison.OrdinalIgnoreCase)
-                          || persisted.IsPrePurchase != staged.IsPrePurchase
-                          || persisted.SupplierId != staged.SupplierId;
-
-            if (!changed)
-                continue;
-
-            var rowStamp = string.IsNullOrWhiteSpace(staged.RowStampBase64)
-                ? persisted.RowStamp ?? []
-                : Convert.FromBase64String(staged.RowStampBase64);
-
-            await feedRepository.EditAsync(new EditFeedCommand(
-                staged.Id.Value, staged.YearFrom, staged.YearTo, staged.RationType!,
-                staged.SupplierId, staged.RationName, staged.IsPrePurchase, rowStamp), conn, tx);
-        }
-
-        tx.Commit();
     }
 
     public sealed class StagedFeedItem

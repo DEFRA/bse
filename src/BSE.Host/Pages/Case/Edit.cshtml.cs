@@ -26,6 +26,8 @@ public class EditModel(
     ICaseWorkRepository caseWorkRepository,
     ITestRepository testRepository,
     ICaseEditDraftStateService caseEditDraftState,
+    ICaseScalarDraftStateService caseScalarDraftState,
+    ICaseEditOrchestrationService caseEditOrchestration,
     IBatchRepository batchRepository,
     IConfiguration configuration) : PageModel
 {
@@ -72,8 +74,13 @@ public class EditModel(
     public int? ReopenEditTestId { get; private set; }
 
     private const int TestsPageSize = 10;
+
+    // Anchor on the test records table, so adding/editing a row returns the user to the grid
+    // instead of the top of a long form.
+    private const string TestsAnchor = "test-records";
+
     [BindProperty(SupportsGet = true)] public int    TPage { get; set; } = 1;
-    [BindProperty(SupportsGet = true)] public string TSort { get; set; } = "type";
+    [BindProperty(SupportsGet = true)] public string TSort { get; set; } = string.Empty;
     [BindProperty(SupportsGet = true)] public string TDir  { get; set; } = "asc";
     public int TestsTotalPages { get; private set; } = 1;
     public int TestsTotalCount { get; private set; }
@@ -114,6 +121,7 @@ public class EditModel(
 
         await Task.WhenAll(LoadLookupsAsync(), batchTask);
         await LoadOrInitializeDraftStateAsync();
+        await ApplyStagedCaseOverlayAsync();
         BatchNumbers = (await batchTask).ToList().AsReadOnly();
         return Page();
     }
@@ -128,7 +136,7 @@ public class EditModel(
 
         var test = StagedTests.FirstOrDefault(t => t.Id == id);
         if (test is null)
-            return RedirectToPage(new { rbse = Rbse });
+            return RedirectToTestsAnchor();
 
         ReopenEditTestId = id;
         EditTestType = test.TestType;
@@ -148,6 +156,10 @@ public class EditModel(
         if (string.IsNullOrWhiteSpace(NewTestType))
             ModelState.AddModelError(nameof(NewTestType), "Select a test type.");
 
+        // CaseTest.TestResult is NOT NULL with an FK to luTestResult, so a blank is unsaveable.
+        if (string.IsNullOrWhiteSpace(NewTestResult))
+            ModelState.AddModelError(nameof(NewTestResult), "Select a test result.");
+
         if (!ModelState.IsValid)
         {
             ShowAddTestRow = true;
@@ -163,7 +175,7 @@ public class EditModel(
         });
 
         await SaveDraftStateAsync();
-        return RedirectToPage(new { rbse = Rbse });
+        return RedirectToTestsAnchor();
     }
 
     public async Task<IActionResult> OnPostSaveAsync()
@@ -183,6 +195,7 @@ public class EditModel(
     public async Task<IActionResult> OnGetCancelEditAsync()
     {
         await caseEditDraftState.ClearAsync(Rbse);
+        await caseScalarDraftState.ClearAsync(Rbse);
         return RedirectToPage("/Home");
     }
 
@@ -202,6 +215,9 @@ public class EditModel(
         if (string.IsNullOrWhiteSpace(EditTestType))
             ModelState.AddModelError(nameof(EditTestType), "Select a test type.");
 
+        if (string.IsNullOrWhiteSpace(EditTestResult))
+            ModelState.AddModelError(nameof(EditTestResult), "Select a test result.");
+
         if (!ModelState.IsValid)
         {
             ReopenEditTestId = EditingTestId;
@@ -210,12 +226,12 @@ public class EditModel(
 
         var test = StagedTests.FirstOrDefault(t => t.Id == EditingTestId);
         if (test is null)
-            return RedirectToPage(new { rbse = Rbse });
+            return RedirectToTestsAnchor();
 
         test.TestType = EditTestType;
         test.TestResult = EditTestResult;
         await SaveDraftStateAsync();
-        return RedirectToPage(new { rbse = Rbse });
+        return RedirectToTestsAnchor();
     }
 
     public async Task<IActionResult> OnPostAsync()
@@ -251,6 +267,11 @@ public class EditModel(
         await LoadLookupsAsync();
         await LoadOrInitializeDraftStateAsync();
 
+        // Test rows are confirmed individually and live in their own table, so they commit here
+        // rather than after the Case row. A validation, mandatory-field or concurrency failure
+        // below must not silently discard tests the user has already confirmed.
+        await PersistStagedTestsAndResyncDraftAsync();
+
         ApplyLegacyPreSaveNormalizations();
         ValidateLegacyParityRules();
 
@@ -264,21 +285,32 @@ public class EditModel(
             return Page();
         }
 
-        var rowStamp = Convert.FromBase64String(rowStampBase64);
-        var editCommand = Case.ToEditCommand(rowStamp);
-        var command = new EditCaseDetailsCommand(editCommand, Clinical: null, Bab: null, DamSire: null);
+        // Cross-tab staging (restores legacy's "one session, one commit" model): stage this
+        // tab's edit into the shared draft, then commit *everything* staged for this RBSE
+        // (this tab and/or Farm) together, rather than committing only this page's fields.
+        await StageCaseScalarEditAsync(rowStampBase64);
 
         var userId = await currentUserService.GetUserIdAsync();
-        var result = await caseService.EditCaseAsync(command, userId);
+        EditCaseResult result;
+        try
+        {
+            result = await caseEditOrchestration.CommitAllAsync(Rbse, userId);
+        }
+        catch (MandatoryCaseFieldsMissingException ex)
+        {
+            // Legacy parity: CaseEntrySave.aspx shows the consolidated list of missing items with
+            // a "Return" button instead of a single inline banner.
+            SaveResultModel.Stage(TempData, SaveResultMode.MissingMandatoryFields, ex.Errors);
+            return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
+        }
 
         if (result == EditCaseResult.ConcurrencyConflict)
         {
-            ConcurrencyError = "Another user has modified this case since you loaded it. " +
-                               "Please reload to get the latest version and apply your changes again.";
-            var current = await caseService.GetCaseAsync(Rbse);
-            if (current is not null)
-                TempData[string.Format(RowStampKey, Rbse)] = Convert.ToBase64String(current.RowStamp ?? []);
-            return Page();
+            // Legacy parity: CaseEntrySave.aspx shows the failure and navigates to Home.aspx on
+            // any commit failure, rather than staying on the originating tab.
+            TempData["ErrorMessage"] = "Another user has modified this case since you loaded it. " +
+                                       "Please reload and try again.";
+            return RedirectToPage("/Home");
         }
 
         if (result != EditCaseResult.Success)
@@ -290,8 +322,8 @@ public class EditModel(
                 EditCaseResult.PostUpdateError  => "Database error after update.",
                 _                               => $"Update failed: {result}"
             };
-            ModelState.AddModelError("", message);
-            return Page();
+            TempData["ErrorMessage"] = message;
+            return RedirectToPage("/Home");
         }
 
         // Save casework fields if the case has a CaseWork row
@@ -312,11 +344,73 @@ public class EditModel(
             await caseWorkRepository.EditAsync(cwCommand);
         }
 
-        await PersistStagedTestsAsync();
         await caseEditDraftState.ClearAsync(Rbse);
 
-        TempData["Success"] = $"Case {Rbse} has been updated.";
-        return RedirectToPage(new { rbse = Rbse });
+        // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx on a fully successful
+        // save, clearing the session case state — not back to the tab the user was on.
+        return RedirectToPage("/Home");
+    }
+
+    /// <summary>
+    /// Validates this tab's fields and, if valid, stages them into the shared cross-tab
+    /// draft (without committing) before navigating to another tab — mirrors legacy's
+    /// <c>UpdateSessionWithCaseDetails()</c> running on every tab-switch, so an invalid
+    /// Form A/B/C/DOB chain blocks leaving this tab, not just blocks Save.
+    /// </summary>
+    public async Task<IActionResult> OnPostStageAndGotoAsync(string targetPage)
+    {
+        if (!User.IsInRole("DataEntry"))
+            return Forbid();
+
+        ApplyLegacyDefraPermissions();
+
+        var persistedRecord = await caseService.GetCaseAsync(Rbse);
+        if (persistedRecord is null)
+            return RedirectToPage(targetPage, new { rbse = Rbse });
+
+        IsNonGbCase = persistedRecord.IsNonGbCase;
+        if (IsNonGbCase)
+            Case.FormADate = persistedRecord.FormADate;
+
+        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+        await LoadLookupsAsync();
+        await LoadOrInitializeDraftStateAsync();
+
+        ApplyLegacyPreSaveNormalizations();
+        ValidateLegacyParityRules();
+
+        if (!ModelState.IsValid)
+            return Page();
+
+        var rowStampBase64 = TempData[string.Format(RowStampKey, Rbse)]?.ToString();
+        if (string.IsNullOrEmpty(rowStampBase64))
+        {
+            ConcurrencyError = "Session expired — please reload the page and try again.";
+            return Page();
+        }
+
+        await StageCaseScalarEditAsync(rowStampBase64);
+
+        return RedirectToPage(targetPage, new { rbse = Rbse });
+    }
+
+    /// <summary>Writes this tab's current field values into the shared cross-tab scalar
+    /// draft (BSE.Host.Services.CaseScalarDraftState), without committing to the database.</summary>
+    private async Task StageCaseScalarEditAsync(string rowStampBase64)
+    {
+        var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
+        draft.CaseBaseRowStampBase64 ??= rowStampBase64;
+        var baseRowStamp = Convert.FromBase64String(draft.CaseBaseRowStampBase64);
+        draft.Case = Case.ToEditCommand(baseRowStamp);
+        draft.HasPendingChanges = true;
+        await caseScalarDraftState.SetAsync(draft);
+    }
+
+    private async Task ApplyStagedCaseOverlayAsync()
+    {
+        var staged = await caseScalarDraftState.GetAsync(Rbse);
+        if (staged?.Case is not null)
+            Case.ApplyStagedCommand(staged.Case);
     }
 
     private void ApplyLegacyPreSaveNormalizations()
@@ -331,110 +425,149 @@ public class EditModel(
         // Slaughter Date is set to Form B Date during save mapping.
         if (!Case.SlaughterDate.HasValue && Case.FormBDate.HasValue)
             Case.SlaughterDate = Case.FormBDate;
+
+        // Legacy behavior (ctlXBSE1ReceivedDate_DateChanged): entering a received date auto-ticks
+        // its "Is X Received?" checkbox. One-way only — never auto-unticks on its own.
+        if (Case.PurchaserBse1ReceivedDate.HasValue) Case.IsPurchaserBse1Received = true;
+        if (Case.BreederBse1ReceivedDate.HasValue) Case.IsBreederBse1Received = true;
+        if (Case.Vendor1Bse1ReceivedDate.HasValue) Case.IsVendor1Bse1Received = true;
+        if (Case.HomebredBse1ReceivedDate.HasValue) Case.IsHomebredBse1Received = true;
+        if (Case.SummarySheetReceivedDate.HasValue) Case.IsSummarySheetReceived = true;
+        if (Case.PaperworkCompleteDate.HasValue) Case.IsPaperworkComplete = true;
     }
 
     private void ValidateLegacyParityRules()
     {
         var today = DateTime.Today;
 
+        ValidateEartag();
+        ValidateFormADate(today);
+        ValidateFormAResubmittedDate(today);
+        ValidateFormBDate(today);
+        ValidateFormCAndFate();
+        ValidateBirthDate(today);
+        ValidateCaseWorkDates(today);
+    }
+
+    private void ValidateEartag()
+    {
         if (string.IsNullOrWhiteSpace(Case.EartagCountry)
             && string.IsNullOrWhiteSpace(Case.EartagHerdmark)
             && string.IsNullOrWhiteSpace(Case.Eartag))
         {
             ModelState.AddModelError("Case.EartagCountry", "Enter an eartag.");
-        }
-        else
-        {
-            // Mirrors BSELib.Eartag.GetEartag's country-specific format/checksum validation.
-            var eartagError = EartagValidator.Validate(Case.EartagCountry, Case.EartagHerdmark, Case.Eartag);
-            if (eartagError is not null)
-                ModelState.AddModelError("Case.EartagCountry", eartagError);
+            return;
         }
 
+        // Mirrors BSELib.Eartag.GetEartag's country-specific format/checksum validation.
+        var eartagError = EartagValidator.Validate(Case.EartagCountry, Case.EartagHerdmark, Case.Eartag);
+        if (eartagError is not null)
+            ModelState.AddModelError("Case.EartagCountry", eartagError);
+    }
+
+    private void ValidateFormADate(DateTime today)
+    {
         if (!IsNonGbCase && !Case.FormADate.HasValue)
-        {
             ModelState.AddModelError("Case.FormADate", "Enter a Form A date.");
-        }
 
         if (Case.Bse1ReceivedDate.HasValue && Case.Bse1ReceivedDate.Value.Date > today)
             ModelState.AddModelError("Case.Bse1ReceivedDate", "You must enter a past date.");
 
-        if (Case.FormADate.HasValue)
+        if (!Case.FormADate.HasValue)
+            return;
+
+        var latest = Case.SlaughterDate?.Date ?? today;
+        var formA = Case.FormADate.Value.Date;
+        if (formA <= latest)
+            return;
+
+        var message = Case.SlaughterDate.HasValue
+            ? "You must enter a date before the Slaughter Date."
+            : "You must enter a past date.";
+        ModelState.AddModelError("Case.FormADate", message);
+    }
+
+    private void ValidateFormAResubmittedDate(DateTime today)
+    {
+        if (!Case.FormAResubmittedDate.HasValue)
+            return;
+
+        if (!Case.FormADate.HasValue)
         {
-            var latest = Case.SlaughterDate?.Date ?? today;
-            var formA = Case.FormADate.Value.Date;
-            if (formA > latest)
-            {
-                var message = Case.SlaughterDate.HasValue
-                    ? "You must enter a date before the Slaughter Date."
-                    : "You must enter a past date.";
-                ModelState.AddModelError("Case.FormADate", message);
-            }
+            ModelState.AddModelError("Case.FormAResubmittedDate", "You must enter a Form A Date first.");
+            return;
         }
 
-        if (Case.FormAResubmittedDate.HasValue)
+        var value = Case.FormAResubmittedDate.Value.Date;
+        var min = Case.FormADate.Value.Date;
+        if (value < min || value > today)
+            ModelState.AddModelError("Case.FormAResubmittedDate", "You must enter a date in the past but after the Form A Date.");
+    }
+
+    private void ValidateFormBDate(DateTime today)
+    {
+        if (!Case.FormBDate.HasValue)
+            return;
+
+        if (!Case.FormADate.HasValue)
         {
-            if (!Case.FormADate.HasValue)
-            {
-                ModelState.AddModelError("Case.FormAResubmittedDate", "You must enter a Form A Date first.");
-            }
-            else
-            {
-                var value = Case.FormAResubmittedDate.Value.Date;
-                var min = Case.FormADate.Value.Date;
-                if (value < min || value > today)
-                    ModelState.AddModelError("Case.FormAResubmittedDate", "You must enter a date in the past but after the Form A Date.");
-            }
+            ModelState.AddModelError("Case.FormBDate", "You must enter a Form A Date first.");
+            return;
         }
 
-        if (Case.FormBDate.HasValue)
-        {
-            if (!Case.FormADate.HasValue)
-            {
-                ModelState.AddModelError("Case.FormBDate", "You must enter a Form A Date first.");
-            }
-            else
-            {
-                var value = Case.FormBDate.Value.Date;
-                var min = Case.FormADate.Value.Date;
-                if (value < min || value > today)
-                    ModelState.AddModelError("Case.FormBDate", "You must enter a date in the past but after the Form A Date.");
-            }
-        }
+        var value = Case.FormBDate.Value.Date;
+        var min = Case.FormADate.Value.Date;
+        if (value < min || value > today)
+            ModelState.AddModelError("Case.FormBDate", "You must enter a date in the past but after the Form A Date.");
+    }
 
+    private void ValidateFormCAndFate()
+    {
         if (Case.FormCDate.HasValue && !Case.FormBDate.HasValue)
             ModelState.AddModelError("Case.FormCDate", "You must enter a Form B Date first.");
 
         if (Case.FormBDate.HasValue && string.IsNullOrWhiteSpace(Case.Fate))
             ModelState.AddModelError("Case.Fate", "Select a fate.");
+    }
 
-        if (Case.BirthDate.HasValue)
-        {
-            var birthDate = Case.BirthDate.Value.Date;
-            if (birthDate < new DateTime(1970, 1, 1))
-                ModelState.AddModelError("Case.BirthDate", "Date of Birth must be on or after 01/01/1970.");
+    private void ValidateBirthDate(DateTime today)
+    {
+        if (!Case.BirthDate.HasValue)
+            return;
 
-            var latestForFormA = Case.FormADate?.Date ?? today;
-            if (birthDate > latestForFormA)
-                ModelState.AddModelError("Case.BirthDate", "Date of Birth must be before the Form A Date");
+        var birthDate = Case.BirthDate.Value.Date;
+        if (birthDate < DateTime.UnixEpoch)
+            ModelState.AddModelError("Case.BirthDate", "Date of Birth must be on or after 01/01/1970.");
+
+        var latestForFormA = Case.FormADate?.Date ?? today;
+        if (birthDate > latestForFormA)
+            ModelState.AddModelError("Case.BirthDate", "Date of Birth must be before the Form A Date");
+
+            if (Case.PurchaseDate.HasValue && birthDate > Case.PurchaseDate.Value.Date)
+                ModelState.AddModelError("Case.BirthDate", "Date of Birth must be before the Purchase Date");
+
+            if (Case.PurchaseDate.HasValue && birthDate > Case.PurchaseDate.Value.Date)
+                ModelState.AddModelError("Case.BirthDate", "Date of Birth must be before the Purchase Date");
 
             if (Case.OnsetDate.HasValue && birthDate > Case.OnsetDate.Value.Date)
                 ModelState.AddModelError("Case.BirthDate", "Date of Birth must be before the Onset Date");
         }
 
-        if (Case.HasCaseWork && Case.RbseDate.HasValue)
-        {
-            var min = Case.RbseDate.Value.Date.AddDays(1);
-            var max = today;
-            var message = $"You must enter a date in the past but after the RBSE Date ({Case.RbseDate.Value:dd/MM/yyyy})";
+    private void ValidateCaseWorkDates(DateTime today)
+    {
+        if (!Case.HasCaseWork || !Case.RbseDate.HasValue)
+            return;
 
-            ValidateOptionalRange(Case.PurchaserBse1ReceivedDate, "Case.PurchaserBse1ReceivedDate", min, max, message);
-            ValidateOptionalRange(Case.BreederBse1ReceivedDate, "Case.BreederBse1ReceivedDate", min, max, message);
-            ValidateOptionalRange(Case.Vendor1Bse1ReceivedDate, "Case.Vendor1Bse1ReceivedDate", min, max, message);
-            ValidateOptionalRange(Case.HomebredBse1ReceivedDate, "Case.HomebredBse1ReceivedDate", min, max, message);
-            ValidateOptionalRange(Case.SummarySheetReceivedDate, "Case.SummarySheetReceivedDate", min, max, message);
-            ValidateOptionalRange(Case.PaperworkCompleteDate, "Case.PaperworkCompleteDate", min, max, message);
-        }
+        var min = Case.RbseDate.Value.Date.AddDays(1);
+        var max = today;
+        var message = $"You must enter a date in the past but after the RBSE Date ({Case.RbseDate.Value:dd/MM/yyyy})";
+
+        ValidateOptionalRange(Case.PurchaserBse1ReceivedDate, "Case.PurchaserBse1ReceivedDate", min, max, message);
+        ValidateOptionalRange(Case.BreederBse1ReceivedDate, "Case.BreederBse1ReceivedDate", min, max, message);
+        ValidateOptionalRange(Case.Vendor1Bse1ReceivedDate, "Case.Vendor1Bse1ReceivedDate", min, max, message);
+        ValidateOptionalRange(Case.HomebredBse1ReceivedDate, "Case.HomebredBse1ReceivedDate", min, max, message);
+        ValidateOptionalRange(Case.SummarySheetReceivedDate, "Case.SummarySheetReceivedDate", min, max, message);
+        ValidateOptionalRange(Case.PaperworkCompleteDate, "Case.PaperworkCompleteDate", min, max, message);
     }
 
     private void ValidateOptionalRange(DateTime? value, string modelKey, DateTime min, DateTime max, string message)
@@ -486,10 +619,12 @@ public class EditModel(
         TestsTotalCount = all.Count;
         TestsTotalPages = Math.Max(1, (int)Math.Ceiling(all.Count / (double)TestsPageSize));
         TPage = Math.Clamp(TPage, 1, TestsTotalPages);
+        // No TSort means the order the user entered them in — only sort on an explicit column click.
         IEnumerable<CaseTestRecord> sorted = TSort switch
         {
             "result" => TDir == "desc" ? all.OrderByDescending(t => t.TestResultDescription) : all.OrderBy(t => t.TestResultDescription),
-            _        => TDir == "desc" ? all.OrderByDescending(t => t.TestTypeDescription)   : all.OrderBy(t => t.TestTypeDescription),
+            "type"   => TDir == "desc" ? all.OrderByDescending(t => t.TestTypeDescription)   : all.OrderBy(t => t.TestTypeDescription),
+            _        => all,
         };
         Tests = sorted.Skip((TPage - 1) * TestsPageSize).Take(TestsPageSize).ToList().AsReadOnly();
     }
@@ -515,6 +650,7 @@ public class EditModel(
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
 
         await Task.WhenAll(LoadLookupsAsync(), batchTask, LoadTestsAsync());
+        await ApplyStagedCaseOverlayAsync();
         BatchNumbers = (await batchTask).ToList().AsReadOnly();
     }
 
@@ -528,7 +664,7 @@ public class EditModel(
         var draft = await caseEditDraftState.GetAsync(Rbse);
         if (draft is null)
         {
-            var persistedTests = (await testRepository.GetByRbseAsync(Rbse)).ToList();
+            var persistedTests = (await testRepository.GetByRbseAsync(Rbse)).OrderBy(t => t.Id).ToList();
             draft = new CaseEditDraftState
             {
                 Rbse = Rbse,
@@ -588,6 +724,46 @@ public class EditModel(
         HasUnsavedChanges = hasPendingChanges;
     }
 
+    /// <summary>
+    /// Commits the staged test rows, then replaces the draft's test list with what is now in the
+    /// database so the temporary negative ids are replaced by real ones. Without the resync a
+    /// second Save would re-insert the same rows. Other staged collections on the shared draft
+    /// (the Case (APHA) tab's other-owner rows) are left untouched.
+    /// </summary>
+    private async Task PersistStagedTestsAndResyncDraftAsync()
+    {
+        await PersistStagedTestsAsync();
+
+        var draft = await caseEditDraftState.GetAsync(Rbse);
+        if (draft is null)
+            return;
+
+        draft.Tests = (await testRepository.GetByRbseAsync(Rbse)).OrderBy(t => t.Id).Select(t => new CaseEditDraftTestItem
+        {
+            Id = t.Id,
+            TestType = t.TestType,
+            TestTypeDescription = t.TestTypeDescription,
+            TestResult = t.TestResult,
+            TestResultDescription = t.TestResultDescription,
+            RowStampBase64 = t.RowStamp is null ? string.Empty : Convert.ToBase64String(t.RowStamp)
+        }).ToList();
+
+        await caseEditDraftState.SetAsync(draft);
+
+        StagedTests = draft.Tests.Select(t => new StagedTestItem
+        {
+            ClientKey = t.ClientKey,
+            Id = t.Id,
+            TestType = t.TestType,
+            TestTypeDescription = t.TestTypeDescription,
+            TestResult = t.TestResult,
+            TestResultDescription = t.TestResultDescription,
+            RowStampBase64 = t.RowStampBase64
+        }).ToList();
+
+        await LoadTestsAsync();
+    }
+
     private async Task PersistStagedTestsAsync()
     {
         var persisted = (await testRepository.GetByRbseAsync(Rbse)).ToList();
@@ -641,17 +817,20 @@ public class EditModel(
             await SaveDraftStateAsync();
         }
 
-        return RedirectToPage(new { rbse = Rbse });
+        return RedirectToTestsAnchor();
     }
+
+    private RedirectToPageResult RedirectToTestsAnchor() =>
+        RedirectToPage(pageName: null, pageHandler: null, routeValues: new { rbse = Rbse }, fragment: TestsAnchor);
 
     public string TestsSortUrl(string col)
     {
         var dir = string.Equals(TSort, col, StringComparison.OrdinalIgnoreCase) && TDir == "asc" ? "desc" : "asc";
-        return $"?rbse={Uri.EscapeDataString(Rbse)}&TSort={col}&TDir={dir}&TPage=1";
+        return $"?rbse={Uri.EscapeDataString(Rbse)}&TSort={col}&TDir={dir}&TPage=1#{TestsAnchor}";
     }
 
     public string TestsPageUrl(int page) =>
-        $"?rbse={Uri.EscapeDataString(Rbse)}&TPage={page}&TSort={TSort}&TDir={TDir}";
+        $"?rbse={Uri.EscapeDataString(Rbse)}&TPage={page}&TSort={TSort}&TDir={TDir}#{TestsAnchor}";
 
     public sealed class StagedTestItem
     {

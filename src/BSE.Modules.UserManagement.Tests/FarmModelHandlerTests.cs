@@ -40,6 +40,8 @@ public sealed class FarmModelHandlerTests
     private readonly IBatchService _batchService = Substitute.For<IBatchService>();
     private readonly ICaseWizardStateService _wizardState = Substitute.For<ICaseWizardStateService>();
     private readonly ICaseFarmDraftStateService _farmDraftState = Substitute.For<ICaseFarmDraftStateService>();
+    private readonly ICaseScalarDraftStateService _caseScalarDraftState = Substitute.For<ICaseScalarDraftStateService>();
+    private readonly ICaseEditOrchestrationService _caseEditOrchestration = Substitute.For<ICaseEditOrchestrationService>();
     private readonly ICurrentUserService _currentUser = Substitute.For<ICurrentUserService>();
     private readonly BSE.Host.Services.IGeoLookupService _geoLookup = Substitute.For<BSE.Host.Services.IGeoLookupService>();
 
@@ -64,7 +66,8 @@ public sealed class FarmModelHandlerTests
     {
         var model = new FarmModel(
             _caseService, _farmService, _relationRepo, _herdSizeRepo, _lookups,
-            _batchRepository, _batchService, _wizardState, _farmDraftState, _currentUser,
+            _batchRepository, _batchService, _wizardState, _farmDraftState,
+            _caseScalarDraftState, _caseEditOrchestration, _currentUser,
             NullLogger<FarmModel>.Instance,
             new ConfigurationBuilder().AddInMemoryCollection().Build(),
             _geoLookup)
