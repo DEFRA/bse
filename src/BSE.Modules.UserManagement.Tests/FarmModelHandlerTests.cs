@@ -486,6 +486,7 @@ public sealed class FarmModelHandlerTests
         _farmService.GetByCphhAsync(Cphh).Returns(farm);
         _farmDraftState.GetAsync(Rbse).Returns(new CaseFarmDraftState { Rbse = Rbse, Cphh = Cphh });
         _currentUser.GetUserIdAsync().Returns(9);
+        _caseEditOrchestration.CommitAllAsync(Rbse, 9).Returns(EditCaseResult.Success);
 
         var model = CreateModel(["DataEntry"]);
         model.EditableFarm = FarmEditViewModel.FromRecord(farm);
@@ -493,10 +494,10 @@ public sealed class FarmModelHandlerTests
 
         var result = await model.OnPostSaveFarmAsync();
 
-        result.Should().BeOfType<RedirectToPageResult>();
-        await _farmService.Received(1).UpdateAsync(Arg.Any<UpdateFarmCommand>(), 9);
+        var redirect = result.Should().BeOfType<RedirectToPageResult>().Subject;
+        redirect.PageName.Should().Be("/Home");
+        await _caseEditOrchestration.Received(1).CommitAllAsync(Rbse, 9);
         await _farmDraftState.Received(1).ClearAsync(Rbse);
-        model.TempData["Success"].Should().Be("Farm updated successfully.");
     }
 
     [Fact]
@@ -650,12 +651,16 @@ public sealed class FarmModelHandlerTests
     }
 
     [Fact]
-    public async Task OnPostSaveFarmAsync_MissingRequiredFields_ReturnsPageWithErrors()
+    public async Task OnPostSaveFarmAsync_MissingRequiredFields_RedirectsToSaveResult()
     {
+        // Owner/Address/Parish/AHO/ADNS are no longer validated on this tab — they're enforced by
+        // the cross-tab CommitAllAsync mandatory-field check, which throws when fields are missing.
         var farm = MakeFarm();
         _caseService.GetCaseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = Cphh });
         _farmService.GetByCphhAsync(Cphh).Returns(farm);
         _farmDraftState.GetAsync(Rbse).Returns(new CaseFarmDraftState { Rbse = Rbse, Cphh = Cphh });
+        _caseEditOrchestration.CommitAllAsync(Rbse, Arg.Any<int>())
+            .Returns<EditCaseResult>(_ => throw new MandatoryCaseFieldsMissingException(["Owner Name is required."]));
 
         var model = CreateModel(["DataEntry"]);
         model.EditableFarm = new FarmEditViewModel { CPHH = Cphh }; // missing owner/address/parish/aho/adns
@@ -663,9 +668,8 @@ public sealed class FarmModelHandlerTests
 
         var result = await model.OnPostSaveFarmAsync();
 
-        result.Should().BeOfType<PageResult>();
-        model.ModelState.Should().ContainKey("EditableFarm.OwnerName");
-        model.ModelState.Should().ContainKey("EditableFarm.Address1");
+        var redirect = result.Should().BeOfType<RedirectToPageResult>().Subject;
+        redirect.PageName.Should().Be("/Case/SaveResult");
     }
 
     [Fact]

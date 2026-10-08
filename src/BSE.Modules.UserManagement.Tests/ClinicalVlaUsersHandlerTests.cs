@@ -142,7 +142,7 @@ public sealed class ClinicalVlaUsersHandlerTests
             [new BatchNumberEntry(1, "2024/001", Rbse, "BSE1")]);
         var caseRecord = new CaseRecord { Rbse = Rbse, Cphh = "01001000101", RowStamp = [1, 2, 3] };
         _caseService.GetCaseAsync(Rbse).Returns(caseRecord);
-        _caseService.EditCaseAsync(Arg.Any<EditCaseDetailsCommand>(), Arg.Any<int>())
+        _caseEditOrchestration.CommitAllAsync(Rbse, Arg.Any<int>())
             .Returns(EditCaseResult.ConcurrencyConflict);
         _currentUserService.GetUserIdAsync().Returns(4);
 
@@ -151,8 +151,9 @@ public sealed class ClinicalVlaUsersHandlerTests
 
         var result = await model.OnPostAsync();
 
-        result.Should().BeOfType<PageResult>();
-        model.ConcurrencyError.Should().NotBeNullOrEmpty();
+        var redirect = result.Should().BeOfType<RedirectToPageResult>().Subject;
+        redirect.PageName.Should().Be("/Home");
+        model.TempData["ErrorMessage"].Should().NotBeNull();
     }
 
     [Fact]
@@ -163,7 +164,7 @@ public sealed class ClinicalVlaUsersHandlerTests
             [new BatchNumberEntry(1, "2024/001", Rbse, "BSE1")]);
         var caseRecord = new CaseRecord { Rbse = Rbse, Cphh = "01001000101", RowStamp = [1, 2, 3] };
         _caseService.GetCaseAsync(Rbse).Returns(caseRecord);
-        _caseService.EditCaseAsync(Arg.Any<EditCaseDetailsCommand>(), Arg.Any<int>())
+        _caseEditOrchestration.CommitAllAsync(Rbse, Arg.Any<int>())
             .Returns(EditCaseResult.Success);
         _currentUserService.GetUserIdAsync().Returns(4);
 
@@ -172,8 +173,9 @@ public sealed class ClinicalVlaUsersHandlerTests
 
         var result = await model.OnPostAsync();
 
-        result.Should().BeOfType<RedirectToPageResult>();
-        model.TempData["Success"].Should().Be($"Case {Rbse} has been updated.");
+        var redirect = result.Should().BeOfType<RedirectToPageResult>().Subject;
+        redirect.PageName.Should().Be("/Home");
+        await _caseEditDraftState.Received(1).ClearAsync(Rbse);
     }
 
     [Fact]
@@ -533,10 +535,10 @@ public sealed class ClinicalVlaUsersHandlerTests
 
         var result = await model.OnPostSaveSignsAsync(null);
 
-        result.Should().BeOfType<RedirectToPageResult>();
+        var redirect = result.Should().BeOfType<RedirectToPageResult>().Subject;
+        redirect.PageName.Should().Be("/Home");
         await _clinicalRepository.Received(1).AddAsync(
             Arg.Any<AddCaseClinicalCommand>(), Arg.Any<System.Data.IDbConnection>(), Arg.Any<System.Data.IDbTransaction>());
-        model.TempData["Success"].Should().Be("Clinical signs and visits saved.");
     }
 
     [Fact]
@@ -547,12 +549,14 @@ public sealed class ClinicalVlaUsersHandlerTests
         model.PageContext.HttpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>());
         _caseRepository.GetCaseByRbseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = "01001000101" });
 
+        _clinicalEditOrchestration.CommitAllAsync(Rbse, Arg.Any<int>()).Returns(EditCaseResult.Success);
+
         var rowStampBase64 = Convert.ToBase64String([9, 9]);
         var result = await model.OnPostSaveSignsAsync(rowStampBase64);
 
-        result.Should().BeOfType<RedirectToPageResult>();
-        await _clinicalRepository.Received(1).EditAsync(
-            Arg.Any<EditCaseClinicalCommand>(), Arg.Any<System.Data.IDbConnection>(), Arg.Any<System.Data.IDbTransaction>());
+        var redirect = result.Should().BeOfType<RedirectToPageResult>().Subject;
+        redirect.PageName.Should().Be("/Home");
+        await _clinicalEditOrchestration.Received(1).CommitAllAsync(Rbse, Arg.Any<int>());
     }
 
     [Fact]
