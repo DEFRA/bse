@@ -73,7 +73,11 @@ public class ClinicalModel(
     /// <summary>Commits clinical signs and all staged visit changes to the database in one go.</summary>
     public async Task<IActionResult> OnPostSaveSignsAsync(string? clinicalRowStampBase64)
     {
-        if (!User.IsInRole("DataEntry"))
+        // Legacy parity: DEFRA Data Entry/Maintenance are always MakeControlsReadOnly on this tab
+        // (VLA-only edit) — matches the same DataEntry+VLAAccess gate already used by every other
+        // handler in this file (Add/Update/Delete/BeginEdit visit row). A plain DataEntry check
+        // alone would let a DEFRA-only POST of blank/disabled clinical-sign fields overwrite them.
+        if (!User.IsInRole("DataEntry") || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         var caseRecord = await caseRepository.GetCaseByRbseAsync(Rbse);

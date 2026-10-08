@@ -20,7 +20,6 @@
     {
         eartagHintText = "Country-coded";
     }
-    var isDefraDataEntry = User.IsInRole("DataEntry") && !User.IsInRole("VLAAccess");
 
     string? eEartag       = ViewData.ModelState["Case.EartagCountry"]?.Errors.FirstOrDefault()?.ErrorMessage;
     string? eFormA         = ViewData.ModelState["Case.FormADate"]?.Errors.FirstOrDefault()?.ErrorMessage;
@@ -61,7 +60,7 @@
     </ol>
 </nav>
 
-@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Case (DEFRA)", Model.Case.Rbse, Model.BatchNumbers, viewDocsUrl, User.IsInRole("DataEntry")))
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Case (DEFRA)", Model.Case.Rbse, Model.BatchNumbers, viewDocsUrl, Model.CanEditCaseFields))
 
 @if (TempData["Success"] is string successMsg)
 {
@@ -117,8 +116,8 @@
 }
 
 <form method="post" novalidate id="case-edit-inline-form">
-    <fieldset class="bse-form-fieldset-reset" disabled="@(!User.IsInRole("DataEntry") ? "disabled" : null)">
-        @if (!User.IsInRole("DataEntry"))
+    <fieldset class="bse-form-fieldset-reset" disabled="@(!Model.CanEditCaseFields ? "disabled" : null)">
+        @if (!Model.CanEditCaseFields)
         {
             <p class="govuk-body">You can view case details but cannot edit this page.</p>
         }
@@ -126,6 +125,7 @@
         <input type="hidden" name="Rbse" value="@Model.Rbse" />
         <input type="hidden" asp-for="Case.Rbse" />
         <input type="hidden" asp-for="Case.HasCaseWork" />
+        <input type="hidden" asp-for="Case.IsCaseClosed" />
         <input type="hidden" asp-for="Case.RbseDate" />
         <input type="hidden" asp-for="Case.Sex" />
         <input type="hidden" asp-for="Case.Breed" />
@@ -519,7 +519,7 @@
                     @if (Model.Case.HasCaseWork)
                     {
                         <label asp-for="Case.Barcode" class="govuk-label">Barcode</label>
-                        <input asp-for="Case.Barcode" class="govuk-input defra-legacy-input--sm" maxlength="20" readonly="@(isDefraDataEntry ? "readonly" : null)" />
+                        <input asp-for="Case.Barcode" class="govuk-input defra-legacy-input--sm" maxlength="20" readonly="@(!Model.CanEditVlaMaintenanceCaseworkFields ? "readonly" : null)" />
                     }
                 </div>
             </div>
@@ -530,7 +530,7 @@
                     @if (Model.Case.HasCaseWork)
                     {
                         <label asp-for="Case.AhfReference" class="govuk-label">AHF reference</label>
-                        <input asp-for="Case.AhfReference" class="govuk-input defra-legacy-input--sm" maxlength="40" readonly="@(isDefraDataEntry ? "readonly" : null)" />
+                        <input asp-for="Case.AhfReference" class="govuk-input defra-legacy-input--sm" maxlength="40" readonly="@(!Model.CanEditVlaMaintenanceCaseworkFields ? "readonly" : null)" />
                     }
                 </div>
             </div>

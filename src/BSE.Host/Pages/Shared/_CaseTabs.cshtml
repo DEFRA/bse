@@ -265,8 +265,21 @@
             }
         });
 
+        // Legacy parity: CancelCaseEdit()/the Home link both stage the CURRENT tab's just-typed
+        // field values before checking DataSetHasChanges, so an edit never-staged-anywhere (no tab
+        // switch, no Save) still triggers the confirm. Reuses the same form snapshot already taken
+        // for the sessionStorage draft-restore feature above, rather than tracking dirty state twice.
+        function isCurrentFormDirty() {
+            var form = getCurrentCaseForm();
+            if (!form) {
+                return false;
+            }
+
+            return restoredFromDraft || JSON.stringify(serializeForm(form)) !== initialSnapshot;
+        }
+
         async function hasUnsavedChangesAcrossTabs() {
-            if (hasUnsavedBannerOnPage()) {
+            if (hasUnsavedBannerOnPage() || isCurrentFormDirty()) {
                 return true;
             }
 

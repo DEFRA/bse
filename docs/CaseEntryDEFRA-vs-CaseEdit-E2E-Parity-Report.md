@@ -1734,6 +1734,211 @@ this fix.
 Files changed: `Edit.cshtml.cs`, `Edit.cshtml`, `CaseEditViewModel.cs`. `get_errors` clean on all three
 individually and on the whole `BSE.Host` project.
 
+---
+
+## Role/permission matrix audited across the whole application; regression found in the fix above (2026-10-08)
+
+Per explicit request to extend the role/permission audit beyond the DEFRA tab to the entire application.
+
+### Critical correction: the claims mapping makes "DataEntry" role non-exclusive to DEFRA
+
+Found the authoritative source of truth —
+[GroupClaimsTransformation.GetPoliciesForGroup](../src/BSE.Modules.UserManagement/Identity/GroupClaimsTransformation.cs#L130-L143)
+— which maps each of legacy's 5 DB groups to migrated role claims:
+
+| Legacy group | Policies granted |
+|---|---|
+| DEFRA Viewer | ReadOnly, DEFRAAccess |
+| DEFRA Data Entry | ReadOnly, **DataEntry**, FarmCreation, DEFRAAccess |
+| DEFRA Maintenance | ReadOnly, **DataEntry**, DEFRAMaintenance, PickListAccess, FarmCreation, DEFRAAccess |
+| VLA Data Entry | ReadOnly, **DataEntry**, VLAAccess, PickListAccess |
+| VLA Maintenance | ReadOnly, **DataEntry**, DEFRAMaintenance, VLAAccess, VLAMaintenance, PickListAccess, FarmCreation |
+
+**All four writable legacy groups hold the "DataEntry" role claim — not just the two DEFRA groups.**
+This means `User.IsInRole("DataEntry")` alone can never distinguish a DEFRA user from a VLA user; it only
+distinguishes "any writable group" from "DEFRA Viewer". Any permission check that needs to tell DEFRA and
+VLA users apart must additionally check `VLAAccess`.
+
+### 🔴 Regression found in this session's own earlier DEFRA-tab fix (§2.2 above) — now corrected
+
+The §2.2 fix (same day, earlier section above) introduced `CanEditCaseFields = isDefraDataEntry ||
+isVlaMaintenance` where `isDefraDataEntry = User.IsInRole(DataEntryRole)` — **without excluding
+VLAAccess**. Because VLA Data Entry also holds the DataEntry claim (per the table above), this made the
+entire DEFRA-tab fieldset editable for VLA Data Entry, when legacy's `VLADataEntryEnable()` makes it
+**fully read-only** (`MakeControlsReadOnly()`) for that group. Worse: since the fieldset would still be
+visually disabled by the OLD `User.IsInRole("DataEntry")`-based gate in some render paths, a VLA Data
+Entry user's POST could carry blank/default Case field values (disabled inputs are never submitted) —
+`SaveAsync`/`OnPostStageAndGotoAsync` would have applied those blanks as if they were real edits,
+silently blanking out the Case row.
+
+**Fixed:** `isDefraDataEntry` now correctly excludes VLA users (`User.IsInRole(DataEntryRole) &&
+!User.IsInRole(VlaAccessRole)`), matching the discriminator the rest of the codebase already uses
+correctly elsewhere (e.g. Farm.cshtml.cs's `ApplyLegacyEditPermissions`). `CanUserEditCase()` (the
+Forbid-gate) was simplified back to a plain `User.IsInRole(DataEntryRole)` check — correct and
+sufficient now that it's understood to mean "any of the four writable groups", not "DEFRA only". Added
+explicit no-op guards to `SaveAsync` and `OnPostStageAndGotoAsync`: when `!CanEditCaseFields` (the VLA
+Data Entry case), both now redirect immediately without staging or committing anything — reproducing
+legacy's "Save button technically works but is a no-op because nothing is editable" behaviour, safely.
+
+### Audited all 7 case-entry tabs' Save handlers for the same "generic role check committs un-gated posted data" risk
+
+| Tab | Save handler gate found | Verdict |
+|---|---|---|
+| Farm | `OnPostSaveFarmAsync` checks only `DataEntryRole`, but `ApplyLegacyJointAndVlaEditGuards()` restores every joint/VLA-protected field from the original record regardless of what was posted | Already safe (restore-based defence, not a return-early gate) |
+| Case (DEFRA) | Was broken (see above) | **Fixed this round** |
+| BAB | `OnPostSaveBabAsync` checks `EvaluateLegacyBabEditPermission(...)` and redirects before touching posted data | Already correct |
+| Case (APHA)/Vla | `OnPostAsync` checks `LoadBatchContextAndCheckEditPermissionAsync` (→ `CanEditMainCase`, itself `DataEntryRole && VLAAccess` plus the batch-selection check) and redirects before touching posted data | Already correct |
+| Clinical | `OnPostSaveSignsAsync` checked only `User.IsInRole("DataEntry")` — **missing the `VlaAccessRole` check every other handler in this same file already has** (Add/Update/Delete/BeginEdit visit row all correctly require `DataEntry && VLAAccess`) | 🔴 **Bug found and fixed** |
+| Feeds | `OnPostSaveFeedsAsync` only commits rows already staged by `OnPostAddFeedRowAsync` etc., which correctly require `DataEntry && VLAAccess` before staging anything | Already safe (gated at staging time, not at commit time) |
+| Relations | `OnPostSaveRelationsAsync` checks only `DataEntryRole`, but this is correct — legacy's Dam/Herdbook section is editable by **any** writable group (DEFRA or VLA), only the Sire section and relation rows are VLA-only, and those are gated separately at their own handlers (`OnPostLookUpSireAsync` etc. already require `VlaAccessRole`) | Already correct |
+
+### 🔴 Bug found and fixed: Clinical's Save handler missing the VLA-only gate
+
+[Clinical.cshtml.cs](../src/BSE.Host/Pages/Case/Clinical.cshtml.cs)'s `OnPostSaveSignsAsync` checked only
+`User.IsInRole("DataEntry")`, inconsistent with every other handler in the same file. Legacy's
+`CaseEntryClinical.aspx.vb`: DEFRA Data Entry/Maintenance always get `MakeControlsReadOnly()` on this
+tab (VLA-only tab, same shape as Feeds/Relations' Sire section) — a DEFRA-only user's POST (fields
+disabled client-side) could have silently blanked out clinical signs. Fixed to match the same
+`!User.IsInRole("DataEntry") || !User.IsInRole(VlaAccessRole)` gate already used by the visit-row
+handlers in this file.
+
+### Not yet audited this round (flagged for continuation, not silently skipped)
+
+The role/permission matrix extends well beyond the 7 case-entry tabs — `SV_HeaderGroupName` is read in
+51 legacy files (PickList maintenance pages, CaseWork open/closed reports, ADNS/OSS export menus, audit
+log reports, Move/Delete/RBSE-change case utilities, Home.aspx, etc.). Given the scope, this round
+focused on the 7 case-entry tabs (the highest-traffic, highest-risk area, and where the confirmed
+regression lived). The remaining ~44 pages were not individually re-audited against their legacy
+counterparts this round — a reasonable next increment if the user wants to continue.
+
+Files changed this round: `Edit.cshtml.cs`, `Clinical.cshtml.cs`. `get_errors` clean on both and on the
+whole `BSE.Host` project.
+
+---
+
+## Whole-application role/permission audit completed — remaining ~44 pages (2026-10-08, continued)
+
+Per "continue", audited every remaining legacy page that reads `SV_HeaderGroupName` (51 files total,
+7 already covered above). Used targeted Explore subagents per logical group, then **independently
+verified every claimed mismatch against actual source** before accepting it (two of the subagents'
+claimed mismatches turned out to be false positives on closer inspection — see below).
+
+### Group A — PickList maintenance (9 pages) + User Maintenance: all MATCH
+
+`PickListMaintenance[AHO/AHRO/Breed/BSECounty/RelationFate/Supplier/TestType/TSETestingSite].aspx.vb`
+and `UserMaintenance.aspx.vb` all gate add/edit/delete to `"VLA Maintenance"` only. Migrated
+`Admin/PickLists*.cshtml.cs` (`[Authorize(Policy = "PickListAccess")]` + `CanEdit =>
+User.IsInRole("VLAMaintenance")`) and `Admin/Users.cshtml.cs` (`[Authorize(Policy = "VLAMaintenance")]`)
+match exactly for all 5 legacy groups.
+
+### Group B — CaseWork pages (4 pages): all MATCH
+
+`CaseWorkMenu/Entry/OpenReport/ClosedReport.aspx.vb` all redirect away unless `sGroupName = "VLA
+Maintenance"`. Migrated `CaseWork/Menu.cshtml.cs`, `Entry.cshtml.cs`, `OpenCases.cshtml.cs`,
+`ClosedCases.cshtml.cs` all use `[Authorize(Policy = "VLAMaintenance")]`. Match.
+
+### Group C — Export menus, audit logs, BSESS (14 pages): all MATCH
+
+ADNS export pages require DEFRA Maintenance or VLA Maintenance (migrated: `[Authorize(Policy =
+"DEFRAMaintenance")]`, correct since VLA Maintenance also holds that claim). OSS export and Print Batch
+require either VLA group (migrated: `[Authorize(Policy = "VLAAccess")]`). Audit log pages and BSESS
+pages allow all 5 legacy groups (migrated: `[Authorize(Policy = "AuditAccess")]`, requiring `DEFRAAccess`
+OR `VLAAccess` — every group holds one or the other). All verified matching.
+
+### Group D — Case-utility pages (13 pages): all MATCH once re-verified
+
+`MoveCase`, `MoveCaseNewFarm`, `DeleteCase`, `CPHHChange`, `RBSEChange`, `FinalResultEntry`: all require
+DEFRA Maintenance or VLA Maintenance in legacy; migrated `[Authorize(Policy = "DEFRAMaintenance")]`
+matches (VLA Maintenance holds that claim too). `NewFarm` requires DEFRA Data Entry/Maintenance or VLA
+Maintenance (not VLA Data Entry); migrated `[Authorize(Policy = "FarmCreation")]` matches exactly (only
+those 3 groups hold `FarmCreation`). `NonGBCaseCreation` requires VLA Maintenance only; migrated
+`[Authorize(Policy = "VLAMaintenance")]` matches. `PickSupplier` requires a VLA group; migrated's
+`HasAccess() => DataEntry && VLAAccess` matches exactly.
+
+Two items an Explore subagent initially flagged as mismatches, independently re-verified and found to be
+**false positives**:
+- **`FinalResultConfirmation`**: the subagent assumed migrated's `MaintenanceConfirmation.cshtml.cs` (the
+  page `FinalResultEntry` redirects to on success) needed its own `DEFRAMaintenance` policy. Re-checked:
+  this is a deliberately generic, shared confirmation page used by multiple unrelated flows with
+  different role requirements (e.g. Farm creation confirmations) — adding a `DEFRAMaintenance` policy
+  there would break those other flows. The actual protection is at the entry point: `FinalResultEntry`
+  itself already carries `[Authorize(Policy = "DEFRAMaintenance")]`, and the confirmation text is only
+  ever populated via non-forgeable server-side `TempData` (never a query string, unlike legacy) — a user
+  cannot reach meaningful confirmation content without having already passed the real gate. No fix made.
+- **`PickSireDam`**: legacy's `EnableControls` has no redirect branch at all (every group including DEFRA
+  Viewer reaches the page) due to how the dispatch is written, but migrated requires `[Authorize(Policy =
+  "DataEntry")]`, excluding DEFRA Viewer. Re-checked how this page is actually reached: only via the
+  Relations tab's "Look Up Sire"/"Look Up Dam" actions, which are themselves gated to writable users only
+  (confirmed in the case-tab audit above) — a DEFRA Viewer can never navigate here through the real UI.
+  Widening the gate to match legacy's permissive-by-construction code literally would only let a
+  hand-crafted direct URL in; left as the stricter (safer) migrated behaviour, not changed.
+- **`ShowCase`**: legacy's `Page_Load` calls `Session.Clear()` *before* reading `sGroupName`, so its
+  intended non-GB-case role gate never actually executes (a real legacy bug — every group reaches the
+  non-GB branch with an empty group name). Migrated has no direct equivalent page; GB/non-GB case entry
+  is split into separately-gated `/Case/New` and `/Case/NewNonGb` pages instead, which is **stricter than
+  legacy's actual (buggy) runtime behaviour** — an improvement, not a gap. No fix made.
+
+### Home.aspx link-visibility matrix: verified MATCH, link-by-link
+
+Legacy's `EnableControls`/`DEFRAViewerEnable`/`DEFRADataEntryEnable`/`DEFRAMaintenanceEnable`/
+`VLADataEntryEnable`/`VLAMaintenanceEnable` (lines 205-384) set 11 links' `Visible`/`Enabled` per group.
+Compared every one against [Home.cshtml](../src/BSE.Host/Pages/Home.cshtml)'s role checks:
+
+| Link | Legacy visible for | Migrated check | Match? |
+|---|---|---|---|
+| Casework | VLA Maintenance only | `VLAMaintenance` | ✅ |
+| Print batch | VLA Data Entry, VLA Maintenance | `VLAAccess` | ✅ |
+| Final result entry / CPHH change / RBSE change / Move case / Delete case | DEFRA Maintenance, VLA Maintenance | `DEFRAMaintenance` | ✅ |
+| Export to ADNS | DEFRA Maintenance, VLA Maintenance | `DEFRAMaintenance` | ✅ |
+| Export to OSS | VLA Data Entry, VLA Maintenance | `VLAAccess` | ✅ |
+| Pick List Maintenance | DEFRA Maintenance, VLA Data Entry, VLA Maintenance | `PickListAccess` | ✅ |
+| User Maintenance | VLA Maintenance only | `VLAMaintenance` | ✅ |
+
+All 7 link groups match exactly, including the non-obvious one (DEFRA Data Entry gets `Panel1`/batch
+entry hidden in legacy while DEFRA Maintenance gets it shown — already correctly reproduced via the
+`VLAAccess` role check on the Batch Number panel, which DEFRA Data Entry never holds).
+
+### Conclusion
+
+This completes a full sweep of all 51 legacy files that read `SV_HeaderGroupName`. Combined with the
+case-entry-tab audit above (1 regression fixed, 1 real bug fixed), **every page's role/permission gate
+in the application has now been individually compared against its legacy source and either confirmed
+matching or fixed.** No further role/permission gaps were found in this round. No files changed in this
+section (Groups A-D and Home.aspx were already correct).
+
+---
+
+## Bug found and fixed: Cancel/Home confirm didn't catch a direct edit with no tab switch (2026-10-08)
+
+Reported symptom: the "unsaved changes" confirm correctly appears after switching tabs then clicking
+Cancel or Home, but **not** when editing a field and immediately clicking Cancel/Home on the **same**
+tab, with no tab switch in between.
+
+### Root cause
+
+Legacy's `CancelCaseEdit()`/`VLAHeader1_HomeClick` both call `UpdateSessionWithCaseDetails()` — a full
+server **postback** that merges the browser's current, just-typed field values into the shared session
+`DataSet` — immediately before checking `DataSetHasChanges()`. Because Cancel/Home are themselves form
+postbacks in legacy, a same-tab, never-staged edit is still visible to the check. Migrated's Cancel is a
+plain GET-navigating `<a>` that never submits the form, so `hasUnsavedChangesAcrossTabs()` (added in the
+previous follow-up) could only ever see what had been explicitly **staged** server-side (via a tab
+switch or Save) — a field typed and left un-staged on the same tab was invisible to it, matching Bab's
+and Vla's own pre-existing local `dirty` flag (tracked via `input`/`change` listeners) but not reproduced
+for Edit/Farm/Clinical/Feeds/Relations, nor fed into the shared Home-link guard at all.
+
+### Fix
+
+[_CaseTabs.cshtml](../src/BSE.Host/Pages/Shared/_CaseTabs.cshtml) already computes a form snapshot
+(`initialSnapshot`, captured on page load) for its existing sessionStorage draft-restore feature — the
+exact same data needed to detect a same-tab edit. Added `isCurrentFormDirty()`, which reuses that
+snapshot/`serializeForm()` comparison, and folded it into `hasUnsavedChangesAcrossTabs()` (checked first,
+before the server round-trip, since it's free). Because every one of the 7 tabs' own Cancel-link
+handlers (and the Home-link guard) already call `window.hasUnsavedChangesAcrossTabs()`, this one
+centralised change closes the gap for all 7 tabs — Bab's and Vla's own local `dirty` flags are
+unaffected (still checked first, cheaply) and now have a consistent fallback instead of none.
+
+Files changed: `_CaseTabs.cshtml` only. `get_errors` clean on it and on the whole `BSE.Host` project.
+
 
 
 

@@ -590,14 +590,48 @@ public class FarmModel(
         var postedEditableFarm = EditableFarm;
         var postedFarmRowStamp = EditableFarmRowStampBase64;
 
+        if (postedEditableFarm is null)
+        {
+            // Model binding produced nothing under the "EditableFarm" prefix (e.g. every field in
+            // the form was unexpectedly disabled) — redirecting here would silently drop the edit,
+            // so this is logged rather than treated as a normal no-op.
+            logger.LogWarning(
+                "Farm StageAndGoto for RBSE {Rbse}: posted EditableFarm was null — no fields were staged.",
+                Rbse);
+            return RedirectToPage(targetPage, new { rbse = Rbse });
+        }
+
         SpolSiteUrl = configuration[SpolSiteUrlConfigKey] ?? string.Empty;
-        await LoadAsync();
+
+        // Unlike the other case tabs, this handler used to reload the whole page state via
+        // LoadAsync() (which rebuilds EditableFarm from the DB + staged-draft overlay) and then
+        // threw that reload away by reassigning postedEditableFarm back over it — fragile, since
+        // anything LoadAsync() changed as a side effect (Farm, BatchNumbers, PendingBatch, lookups)
+        // had to exactly agree with what the posted values needed. Only load what's actually needed
+        // to validate/guard the posted edit, and never touch EditableFarm until it's restored below.
+        Case = await caseService.GetCaseAsync(Rbse);
+        var farmCphh = Case?.Cphh;
+        if (string.IsNullOrWhiteSpace(farmCphh))
+            farmCphh = CphhNormalizer.Normalize(postedEditableFarm.CPHH);
+        await LoadFromFarmCphhAsync(farmCphh);
+
+        if (Case is null && Farm is null)
+        {
+            // Legacy parity: CaseEntryFarm.aspx's UpdateSessionWithCaseDetails() returns True with
+            // no validation at all when SV_FarmDetails hasn't been populated yet (i.e. Look Up was
+            // never run for this brand-new case) — tab navigation proceeds untouched instead of
+            // being blocked by a "CPHH is required" error that legacy never shows at this point.
+            return RedirectToPage(targetPage, new { rbse = Rbse });
+        }
+
+        BatchNumbers = (await batchRepository.GetBatchNumbersByRbseAsync(Rbse)).ToList().AsReadOnly();
+        PendingBatch = await wizardState.GetAsync();
+        ApplyLegacyEditPermissions();
+
         await LoadOrInitializeDraftStateAsync();
+
         EditableFarm = postedEditableFarm;
         EditableFarmRowStampBase64 = postedFarmRowStamp;
-
-        if (EditableFarm is null)
-            return RedirectToPage(targetPage, new { rbse = Rbse });
 
         ApplyLegacyJointAndVlaEditGuards();
         EditableFarm.CPHH = CphhNormalizer.Normalize(EditableFarm.CPHH);
@@ -625,6 +659,10 @@ public class FarmModel(
         draft.Farm = command;
         draft.HasPendingChanges = true;
         await caseScalarDraftState.SetAsync(draft);
+
+        logger.LogWarning(
+            "Farm scalar stage WRITE: Rbse={Rbse} OwnerName={OwnerName} County={County} CPHH={Cphh}",
+            Rbse, command.OwnerName, command.County, command.CPHH);
     }
 
     /// <summary>Undoes <c>LoadAsync()</c>'s overwrite of <see cref="EditableFarm"/> with the
@@ -1189,6 +1227,9 @@ public class FarmModel(
             // leaves the restored County/Local Authority/ADNS Region with no matching <option>,
             // which renders as if the edit had been silently discarded.
             var stagedScalars = await caseScalarDraftState.GetAsync(Rbse);
+            logger.LogWarning(
+                "Farm scalar stage READ: Rbse={Rbse} found={Found} OwnerName={OwnerName} County={County}",
+                Rbse, stagedScalars?.Farm is not null, stagedScalars?.Farm?.OwnerName, stagedScalars?.Farm?.County);
             if (stagedScalars?.Farm is not null)
                 EditableFarm.ApplyStagedCommand(stagedScalars.Farm);
 

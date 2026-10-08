@@ -32,6 +32,9 @@ public class EditModel(
     IConfiguration configuration) : PageModel
 {
     private const string RowStampKey = "CaseEdit_RowStamp_{0}";
+    private const string DataEntryRole = "DataEntry";
+    private const string VlaAccessRole = "VLAAccess";
+    private const string VlaMaintenanceRole = "VLAMaintenance";
 
     [BindProperty(SupportsGet = true)]
     public string Rbse { get; set; } = string.Empty;
@@ -43,6 +46,21 @@ public class EditModel(
     public IReadOnlyList<BatchNumberEntry> BatchNumbers { get; private set; } = [];
     public bool HasCaseWorkLink { get; private set; }
     public bool CanEditDefraNotes { get; private set; }
+
+    /// <summary>Legacy EnableControls' writable roles: DEFRA Data Entry, DEFRA Maintenance and
+    /// VLA Maintenance all call MakeControlsWritable(); DEFRA Viewer and VLA Data Entry call
+    /// MakeControlsReadOnly(). Gates both the editable fieldset and the Save/Casework POST handlers.</summary>
+    public bool CanEditCaseFields { get; private set; }
+
+    /// <summary>Legacy VLAMaintenanceEnable's 3-way gate: Barcode/AHF Reference are writable only
+    /// for VLA Maintenance, only when a CaseWork row exists, and only while the case isn't closed.
+    /// DEFRA Data Entry/Maintenance never get these two fields (always disabled there, unambiguous
+    /// in legacy). Paperwork Complete Date's own DEFRA-role gating is left as the existing
+    /// HasCaseWork-only check — legacy's own behaviour there is genuinely ambiguous/ViewState-
+    /// dependent (see Field-level parity review, sixth follow-up) and migrated's simpler, more
+    /// consistent rule was a deliberate choice, not revisited here.</summary>
+    public bool CanEditVlaMaintenanceCaseworkFields { get; private set; }
+
     public bool IsNonGbCase { get; private set; }
 
     // Lookup options for dropdowns
@@ -120,6 +138,10 @@ public class EditModel(
         if (caseWork is not null)
             Case.ApplyCaseWork(caseWork);
 
+        // Re-run now that Case.HasCaseWork/IsCaseClosed reflect the freshly-loaded record (the
+        // earlier call near the top of this method only had the role-based flags available).
+        ApplyLegacyDefraPermissions();
+
         HasCaseWorkLink = caseWork is not null
                           || await caseWorkRepository.GetEntryByRbseAsync(Rbse) is not null;
 
@@ -135,7 +157,7 @@ public class EditModel(
 
     public async Task<IActionResult> OnPostBeginEditTestRowAsync(int id)
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!CanUserEditCase())
             return Forbid();
 
         var postedCase = Case;
@@ -157,7 +179,7 @@ public class EditModel(
 
     public async Task<IActionResult> OnPostAddTestRowAsync()
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!CanUserEditCase())
             return Forbid();
 
         var postedCase = Case;
@@ -193,7 +215,7 @@ public class EditModel(
 
     public async Task<IActionResult> OnPostSaveAsync()
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!CanUserEditCase())
             return Forbid();
 
         var postedCase = Case;
@@ -222,7 +244,7 @@ public class EditModel(
 
     public async Task<IActionResult> OnPostUpdateTestRowAsync()
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!CanUserEditCase())
             return Forbid();
 
         var postedCase = Case;
@@ -266,7 +288,7 @@ public class EditModel(
 
     private async Task<IActionResult> SaveAsync(string successRedirectPage)
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!CanUserEditCase())
             return Forbid();
 
         ApplyLegacyDefraPermissions();
@@ -288,6 +310,15 @@ public class EditModel(
         }
 
         IsNonGbCase = persistedRecord.IsNonGbCase;
+
+        // Legacy parity: VLA Data Entry's Save button is technically enabled (btnSave.Enabled =
+        // True in VLADataEntryEnable) but every field is read-only, so Save is always a no-op for
+        // this group. The fieldset being disabled means the posted Case fields are blank/default
+        // (disabled inputs are never submitted) — redirecting here without touching anything
+        // avoids treating that blank post as a real edit and overwriting the persisted record.
+        if (!CanEditCaseFields)
+            return RedirectToPage(successRedirectPage == "/CaseWork/Entry" ? successRedirectPage : "/Home",
+                successRedirectPage == "/CaseWork/Entry" ? new { rbse = Rbse } : null);
 
         // Legacy CaseEntryDEFRA behavior: Form A date is read-only for non-GB cases.
         if (IsNonGbCase)
@@ -391,7 +422,7 @@ public class EditModel(
     /// </summary>
     public async Task<IActionResult> OnPostStageAndGotoAsync(string targetPage)
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!CanUserEditCase())
             return Forbid();
 
         ApplyLegacyDefraPermissions();
@@ -403,6 +434,12 @@ public class EditModel(
         IsNonGbCase = persistedRecord.IsNonGbCase;
         if (IsNonGbCase)
             Case.FormADate = persistedRecord.FormADate;
+
+        // Same no-op guard as SaveAsync: VLA Data Entry's fieldset is fully disabled, so the
+        // posted Case fields are blank — staging them into the shared cross-tab draft would risk
+        // a later Save (on any tab) committing blanked-out DEFRA fields.
+        if (!CanEditCaseFields)
+            return RedirectToPage(targetPage, new { rbse = Rbse });
 
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadLookupsAsync();
@@ -691,6 +728,8 @@ public class EditModel(
         if (caseWork is not null)
             Case.ApplyCaseWork(caseWork);
 
+        ApplyLegacyDefraPermissions();
+
         HasCaseWorkLink = caseWork is not null
                           || await caseWorkRepository.GetEntryByRbseAsync(Rbse) is not null;
 
@@ -704,8 +743,32 @@ public class EditModel(
 
     private void ApplyLegacyDefraPermissions()
     {
-        CanEditDefraNotes = User.IsInRole("DataEntry");
+        // Legacy EnableControls' 5-group model, collapsed to its actual distinct behaviours:
+        // DEFRA Data Entry and DEFRA Maintenance are identical here (both MakeControlsWritable,
+        // Barcode/AHF Reference always disabled), so only "DataEntry" needs checking, not a
+        // separate DEFRAMaintenance role. VLA Data Entry is read-only; VLA Maintenance is
+        // writable and is the only group ever able to edit Barcode/AHF Reference (gated further
+        // below by CaseWork-row-exists AND not IsCaseClosed).
+        //
+        // IMPORTANT: GroupClaimsTransformation.GetPoliciesForGroup grants the "DataEntry" role
+        // claim to ALL FOUR writable legacy groups, including "VLA Data Entry" — not just the two
+        // DEFRA groups. So "DataEntry" alone cannot distinguish a DEFRA user from a VLA Data Entry
+        // user; the "!VLAAccess" exclusion below is load-bearing, not redundant.
+        var isVlaGroup = User.IsInRole(VlaAccessRole);
+        var isVlaMaintenance = isVlaGroup && User.IsInRole(VlaMaintenanceRole);
+        var isDefraDataEntry = User.IsInRole(DataEntryRole) && !isVlaGroup;
+
+        CanEditDefraNotes = isDefraDataEntry;
+        CanEditCaseFields = isDefraDataEntry || isVlaMaintenance;
+        CanEditVlaMaintenanceCaseworkFields = isVlaMaintenance && Case.HasCaseWork && !Case.IsCaseClosed;
     }
+
+    /// <summary>Legacy parity: every group except DEFRA Viewer holds the "DataEntry" role claim
+    /// (see GetPoliciesForGroup), including VLA Data Entry — whose Save button is technically
+    /// enabled in legacy too, but every field is read-only there so it is never a meaningful save.
+    /// Reaching this handler is therefore harmless as long as <see cref="CanEditCaseFields"/> is
+    /// also checked before applying any posted field values (see the no-op guard in SaveAsync).</summary>
+    private bool CanUserEditCase() => User.IsInRole(DataEntryRole);
 
     private async Task<CaseEditDraftState> LoadOrInitializeDraftStateAsync()
     {
@@ -852,7 +915,7 @@ public class EditModel(
 
     public async Task<IActionResult> OnPostDeleteTestAsync(int id, string? rowStampBase64)
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!CanUserEditCase())
             return Forbid();
 
         await LoadReadonlyPageAsync();
