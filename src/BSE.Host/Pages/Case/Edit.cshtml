@@ -595,7 +595,7 @@
                 <a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse" asp-route-returnTo="/Case/Edit" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">Case audit log</a>
                 @if (Model.HasCaseWorkLink)
                 {
-                    <a asp-page="/CaseWork/Entry" asp-route-rbse="@Model.Case.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">Casework</a>
+                    <button type="submit" form="case-edit-inline-form" asp-page-handler="SaveAndGotoCasework" class="govuk-button govuk-button--secondary" data-module="govuk-button">Casework</button>
                 }
             </div>
 

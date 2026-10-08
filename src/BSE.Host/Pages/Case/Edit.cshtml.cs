@@ -375,9 +375,12 @@ public class EditModel(
             return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
         }
 
-        // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx on a fully successful
-        // save, clearing the session case state — not back to the tab the user was on.
-        return RedirectToPage("/Home");
+        // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx (or the ?redirect=
+        // target, e.g. CaseWorkEntry.aspx, when arrived via the Casework link) on a fully
+        // successful save, clearing the session case state — not back to the tab the user was on.
+        return successRedirectPage == "/CaseWork/Entry"
+            ? RedirectToPage(successRedirectPage, new { rbse = Rbse })
+            : RedirectToPage(successRedirectPage);
     }
 
     /// <summary>
