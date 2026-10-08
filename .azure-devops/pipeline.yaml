@@ -120,8 +120,10 @@ stages:
         # covering Deploy/, Migrations/, StoredProcedures/) changed, so downstream
         # deployment stages can skip applying database scripts when there are no
         # script changes to deploy.
+        # TARGET_BRANCH is passed via env: rather than interpolated as a $(...) macro so that
+        # untrusted PR-supplied branch names cannot inject shell commands into this script.
         if [ "$(Build.Reason)" = "PullRequest" ]; then
-          DIFF_RANGE="origin/$(System.PullRequest.TargetBranch)...HEAD"
+          DIFF_RANGE="origin/${TARGET_BRANCH}...HEAD"
         else
           DIFF_RANGE="HEAD~1...HEAD"
         fi
@@ -136,6 +138,8 @@ stages:
           echo "No database script changes detected under $(databaseScriptsPath)."
           echo "##vso[task.setvariable variable=dbScriptsChanged;isOutput=true]false"
         fi
+      env:
+        TARGET_BRANCH: $(System.PullRequest.TargetBranch)
       name: detectDbChanges
       displayName: 'Detect database script changes'
 
@@ -216,7 +220,7 @@ stages:
 
                 TOOLS="$(Agent.TempDirectory)/sqlcmd"
                 mkdir -p "$TOOLS"
-                curl -sSL --fail --max-time 60 -o "$TOOLS/sqlcmd.tar.bz2" \
+                curl -sSL --proto '=https' --fail --max-time 60 -o "$TOOLS/sqlcmd.tar.bz2" \
                   https://github.com/microsoft/go-sqlcmd/releases/download/v1.8.2/sqlcmd-linux-amd64.tar.bz2
                 tar -xjf "$TOOLS/sqlcmd.tar.bz2" -C "$TOOLS"
 
@@ -313,7 +317,7 @@ stages:
 
                 TOOLS="$(Agent.TempDirectory)/sqlcmd"
                 mkdir -p "$TOOLS"
-                curl -sSL --fail --max-time 60 -o "$TOOLS/sqlcmd.tar.bz2" \
+                curl -sSL --proto '=https' --fail --max-time 60 -o "$TOOLS/sqlcmd.tar.bz2" \
                   https://github.com/microsoft/go-sqlcmd/releases/download/v1.8.2/sqlcmd-linux-amd64.tar.bz2
                 tar -xjf "$TOOLS/sqlcmd.tar.bz2" -C "$TOOLS"
 
@@ -448,7 +452,7 @@ stages:
 
                 TOOLS="$(Agent.TempDirectory)/sqlcmd"
                 mkdir -p "$TOOLS"
-                curl -sSL --fail --max-time 60 -o "$TOOLS/sqlcmd.tar.bz2" \
+                curl -sSL --proto '=https' --fail --max-time 60 -o "$TOOLS/sqlcmd.tar.bz2" \
                   https://github.com/microsoft/go-sqlcmd/releases/download/v1.8.2/sqlcmd-linux-amd64.tar.bz2
                 tar -xjf "$TOOLS/sqlcmd.tar.bz2" -C "$TOOLS"
 

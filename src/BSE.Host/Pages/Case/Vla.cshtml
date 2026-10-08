@@ -2,6 +2,8 @@
 @model VlaModel
 @{
     ViewData["Title"] = $"Case (APHA) — {Model.Case.Rbse}";
+    static bool IsSelected(string? optionCode, string? currentValue) =>
+        string.Equals(optionCode, currentValue, StringComparison.OrdinalIgnoreCase);
     string rbseNoSlash = Model.Case.Rbse.Replace("/", "");
     var viewDocsUrl = string.IsNullOrWhiteSpace(Model.SpolSiteUrl)
         ? null
@@ -9,6 +11,11 @@
 
     string? E(string key) => ViewData.ModelState[key]?.Errors.FirstOrDefault()?.ErrorMessage;
     string DateVal(DateTime? d) => d?.ToString("dd/MM/yyyy") ?? string.Empty;
+    string OwnersSortAria(string column)
+    {
+        if (Model.OSort != column) return "none";
+        return Model.ODir == "asc" ? "ascending" : "descending";
+    }
     // Prefer the raw text the user typed (preserved on failed/invalid binding) so it is
     // redisplayed unchanged after Save, matching legacy CalendarDate behaviour; otherwise
     // fall back to formatting the successfully bound value.
@@ -34,31 +41,8 @@
 
 @await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Case (APHA)", Model.Case.Rbse, Model.BatchNumbers, viewDocsUrl, Model.CanEditMainCase))
 
-@if (TempData["Success"] is string successMsg)
-{
-    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert"
-         aria-labelledby="vla-success-title" data-module="govuk-notification-banner">
-        <div class="govuk-notification-banner__header">
-            <h2 class="govuk-notification-banner__title" id="vla-success-title">Success</h2>
-        </div>
-        <div class="govuk-notification-banner__content">
-            <p class="govuk-notification-banner__heading">@successMsg</p>
-        </div>
-    </div>
-}
-
-@if (TempData["Warning"] is string warningMsg)
-{
-    <section class="govuk-notification-banner"
-         aria-labelledby="vla-warning-title" data-module="govuk-notification-banner">
-        <div class="govuk-notification-banner__header">
-            <h2 class="govuk-notification-banner__title" id="vla-warning-title">Important</h2>
-        </div>
-        <div class="govuk-notification-banner__content">
-            <p class="govuk-body">@warningMsg</p>
-        </div>
-    </section>
-}
+@await Html.PartialAsync("_CaseEditNotifications", new BSE.Host.Models.CaseEditNotificationsViewModel(
+    "vla", TempData["Success"] as string, TempData["Warning"] as string))
 
 @if (!string.IsNullOrEmpty(Model.ConcurrencyError))
 {
@@ -134,7 +118,7 @@
                         <option value="">-- Select --</option>
                         @foreach (var o in Model.SexOptions)
                         {
-                            <option value="@o.Code" selected="@(o.Code == Model.Case.Sex ? "selected" : null)">@o.Description</option>
+                            <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.Sex)">@o.Description</option>
                         }
                     </select>
                 </div>
@@ -148,7 +132,7 @@
                         <option value="">-- Select --</option>
                         @foreach (var o in Model.BirthDateSourceOptions)
                         {
-                            <option value="@o.Code" selected="@(o.Code == Model.Case.BirthDateSource ? "selected" : null)">@o.Description</option>
+                            <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.BirthDateSource)">@o.Description</option>
                         }
                     </select>
                 </div>
@@ -161,7 +145,7 @@
                         <option value="">-- Select --</option>
                         @foreach (var o in Model.BreedOptions)
                         {
-                            <option value="@o.Code" selected="@(o.Code == Model.Case.Breed ? "selected" : null)">@o.Description</option>
+                            <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.Breed)">@o.Description</option>
                         }
                     </select>
                 </div>
@@ -179,7 +163,7 @@
                         <option value="">-- Select --</option>
                         @foreach (var o in Model.OriginOptions)
                         {
-                            <option value="@o.Code" selected="@(o.Code == Model.Case.Origin ? "selected" : null)">@o.Description</option>
+                            <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.Origin)">@o.Description</option>
                         }
                     </select>
                 </div>
@@ -220,7 +204,7 @@
                             <option value="">-- Select --</option>
                             @foreach (var o in Model.PurchasedCountyOptions)
                             {
-                                <option value="@o.Code" selected="@(o.Code == Model.Case.PurchasedCounty ? "selected" : null)">@o.Description</option>
+                                <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.PurchasedCounty)">@o.Description</option>
                             }
                         </select>
                     </div>
@@ -338,13 +322,13 @@
             <caption class="govuk-visually-hidden">Previous owners for @BseFormat.FormatRbse(Model.Case.Rbse)</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.OSort=="type" ? (Model.ODir=="asc" ? "ascending" : "descending") : "none")">
+                    <th scope="col" class="govuk-table__header" aria-sort="@OwnersSortAria("type")">
                         <a class="govuk-link govuk-link--no-visited-state" href="@Model.OwnersSortUrl("type")">Owner type</a>
                     </th>
-                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.OSort=="name" ? (Model.ODir=="asc" ? "ascending" : "descending") : "none")">
+                    <th scope="col" class="govuk-table__header" aria-sort="@OwnersSortAria("name")">
                         <a class="govuk-link govuk-link--no-visited-state" href="@Model.OwnersSortUrl("name")">Name</a>
                     </th>
-                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.OSort=="cphh" ? (Model.ODir=="asc" ? "ascending" : "descending") : "none")">
+                    <th scope="col" class="govuk-table__header" aria-sort="@OwnersSortAria("cphh")">
                         <a class="govuk-link govuk-link--no-visited-state" href="@Model.OwnersSortUrl("cphh")">CPHH</a>
                     </th>
                     @if (Model.CanEditMainCase)
@@ -472,21 +456,21 @@
 
         <div class="bse-case-bottom-row">
             <div class="govuk-button-group bse-case-bottom-row__left">
-                <a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse" asp-route-returnTo="/Case/Vla" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">Case audit log</a>
+                <a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse" asp-route-returnTo="/Case/Vla" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">Case audit log</a>
             </div>
 
             <div class="bse-case-bottom-row__right">
                 <div class="govuk-button-group bse-case-bottom-row__actions">
                     @if (!string.IsNullOrWhiteSpace(viewDocsUrl))
                     {
-                        <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">
+                        <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">
                             View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
                         </a>
                     }
                     @if (Model.CanEditMainCase)
                     {
                         <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
-                        <a asp-page="/Case/Vla" asp-page-handler="CancelVlaEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
+                        <a asp-page="/Case/Vla" asp-page-handler="CancelVlaEdit" asp-route-rbse="@Model.Rbse" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
                     }
                 </div>
             </div>

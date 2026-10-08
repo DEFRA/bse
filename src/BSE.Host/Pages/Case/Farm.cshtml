@@ -30,22 +30,7 @@
     @await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Farm", Model.Rbse, Model.BatchNumbers, createModeViewDocsUrl,
         CanEditCurrentTab: !createReadOnly, SaveHandlerOverride: "CreateCase", CancelPageOverride: "/Home"))
 
-    @if (!ViewContext.ModelState.IsValid)
-    {
-        <div class="govuk-error-summary" data-module="govuk-error-summary">
-            <div role="alert">
-                <h2 class="govuk-error-summary__title">There is a problem</h2>
-                <div class="govuk-error-summary__body">
-                    <ul class="govuk-list govuk-error-summary__list">
-                        @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
-                        {
-                            <li>@e.ErrorMessage</li>
-                        }
-                    </ul>
-                </div>
-            </div>
-        </div>
-    }
+    @await Html.PartialAsync("_CaseEditNotifications", new BSE.Host.Models.CaseEditNotificationsViewModel("farm-create"))
 
     <form method="post" novalidate id="case-farm-inline-form">
         <input type="hidden" name="Rbse" value="@Model.Rbse" />
@@ -333,48 +318,8 @@
 }
 @await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Farm", Model.Rbse, Model.BatchNumbers, viewDocsUrl, canEditFarm))
 
-@if (TempData["Success"] is string successMsg)
-{
-    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert"
-         aria-labelledby="farm-success-title" data-module="govuk-notification-banner">
-        <div class="govuk-notification-banner__header">
-            <h2 class="govuk-notification-banner__title" id="farm-success-title">Success</h2>
-        </div>
-        <div class="govuk-notification-banner__content">
-            <p class="govuk-notification-banner__heading">@successMsg</p>
-        </div>
-    </div>
-}
-
-@if (TempData["Warning"] is string warningMsg)
-{
-    <div class="govuk-notification-banner" role="region"
-         aria-labelledby="farm-warning-title" data-module="govuk-notification-banner">
-        <div class="govuk-notification-banner__header">
-            <h2 class="govuk-notification-banner__title" id="farm-warning-title">Important</h2>
-        </div>
-        <div class="govuk-notification-banner__content">
-            <p class="govuk-body">@warningMsg</p>
-        </div>
-    </div>
-}
-
-@if (!ViewContext.ModelState.IsValid)
-{
-    <div class="govuk-error-summary" data-module="govuk-error-summary">
-        <div role="alert">
-            <h2 class="govuk-error-summary__title">There is a problem</h2>
-            <div class="govuk-error-summary__body">
-                <ul class="govuk-list govuk-error-summary__list">
-                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
-                    {
-                        <li>@e.ErrorMessage</li>
-                    }
-                </ul>
-            </div>
-        </div>
-    </div>
-}
+@await Html.PartialAsync("_CaseEditNotifications", new BSE.Host.Models.CaseEditNotificationsViewModel(
+    "farm", TempData["Success"] as string, TempData["Warning"] as string))
 
 @if (Model.ShowBatchAssignment)
 {
@@ -772,21 +717,21 @@
 
         <div class="bse-case-bottom-row">
             <div class="govuk-button-group bse-case-bottom-row__left">
-                <a asp-page="/AuditLog/ByFarm" asp-route-cphh="@Model.Farm.CPHH" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">Farm audit log</a>
+                <a asp-page="/AuditLog/ByFarm" asp-route-cphh="@Model.Farm.CPHH" asp-route-rbse="@Model.Rbse" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">Farm audit log</a>
             </div>
 
             <div class="bse-case-bottom-row__right">
                 <div class="govuk-button-group bse-case-bottom-row__actions">
                     @if (!string.IsNullOrWhiteSpace(viewDocsUrl))
                     {
-                        <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">
+                        <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">
                             View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
                         </a>
                     }
                     @if (canEditFarm)
                     {
                         <button type="submit" asp-page-handler="SaveFarm" class="govuk-button" data-module="govuk-button">Save</button>
-                        <a asp-page="/Case/Farm" asp-page-handler="CancelFarmEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
+                        <a asp-page="/Case/Farm" asp-page-handler="CancelFarmEdit" asp-route-rbse="@Model.Rbse" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
                     }
                 </div>
             </div>

@@ -26,7 +26,6 @@ namespace BSE.Host.Pages.Case;
 [Authorize]
 public class RelationsModel(
     IAnimalRelationsRepository relationsRepository,
-    IPedigreeRepository pedigreeRepository,
     ICaseService caseService,
     ILookupDataService lookups,
     IBatchRepository batchRepository,
@@ -1307,13 +1306,13 @@ public class RelationsModel(
 
     private sealed record PedigreeSnapshot
     {
-        public string? Eartag { get; set; }
-        public string? Name { get; set; }
-        public string? Herdbook { get; set; }
-        public int? BirthDay { get; set; }
-        public int? BirthMonth { get; set; }
-        public int? BirthYear { get; set; }
-        public byte[]? RowStamp { get; set; }
+        public string? Eartag { get; init; }
+        public string? Name { get; init; }
+        public string? Herdbook { get; init; }
+        public int? BirthDay { get; init; }
+        public int? BirthMonth { get; init; }
+        public int? BirthYear { get; init; }
+        public byte[]? RowStamp { get; init; }
     }
 
     /// <summary>Populates DamSire from the freshly-loaded Details. GET requests only.</summary>

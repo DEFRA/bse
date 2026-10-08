@@ -4,8 +4,14 @@
    Rendered once per placement (top/bottom) from every tab instead of each tab hand-rolling its own markup.
 *@
 @model BSE.Host.Models.CaseSaveCancelViewModel
+@{
+    string buttonGroupMarginClass;
+    if (Model.NoMargin) buttonGroupMarginClass = "govuk-!-margin-bottom-0";
+    else if (Model.MarginTop) buttonGroupMarginClass = "govuk-!-margin-top-4";
+    else buttonGroupMarginClass = "govuk-!-margin-bottom-4";
+}
 
-<div class="govuk-button-group @(Model.NoMargin ? "govuk-!-margin-bottom-0" : Model.MarginTop ? "govuk-!-margin-top-4" : "govuk-!-margin-bottom-4")">
+<div class="govuk-button-group @buttonGroupMarginClass">
     @if (Model.SaveHandler is not null)
     {
         <button type="submit" asp-page-handler="@Model.SaveHandler" class="govuk-button" data-module="govuk-button">Save</button>
@@ -15,5 +21,5 @@
         <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
     }
     <a asp-page="@Model.CancelPage" asp-page-handler="@Model.CancelHandler" asp-route-rbse="@Model.Rbse"
-       class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button" role="button" draggable="false">Cancel</a>
+       class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
 </div>

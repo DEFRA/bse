@@ -1,6 +1,10 @@
 ﻿@page "{rbse}"
 @model BSE.Host.Pages.Case.VlaEditModel
 @{
+    static bool IsSelected(string? optionCode, string? currentValue) =>
+        string.Equals(optionCode, currentValue, StringComparison.OrdinalIgnoreCase);
+}
+@{
     ViewData["Title"] = $"Edit Case (APHA) — {Model.Case.Rbse}";
     string DateVal(DateTime? d) => d?.ToString("dd/MM/yyyy") ?? "";
     string rbseNoSlash = Model.Case.Rbse.Replace("/", "");
@@ -108,7 +112,7 @@
         }
         <select asp-for="Case.BirthDateSource" class="govuk-select @(ViewData.ModelState["Case.BirthDateSource"]?.Errors.Count > 0 ? "govuk-select--error" : "")">
             <option value="">-- Select --</option>
-            @foreach (var o in Model.BirthDateSourceOptions) { <option value="@o.Code" selected="@(o.Code == Model.Case.BirthDateSource ? "selected" : null)">@o.Description</option> }
+            @foreach (var o in Model.BirthDateSourceOptions) { <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.BirthDateSource)">@o.Description</option> }
         </select>
     </div>
     <div class="govuk-form-group">
@@ -127,7 +131,7 @@
         }
         <select asp-for="Case.Sex" class="govuk-select @(ViewData.ModelState["Case.Sex"]?.Errors.Count > 0 ? "govuk-select--error" : "")">
             <option value="">-- Select --</option>
-            @foreach (var o in Model.SexOptions) { <option value="@o.Code" selected="@(o.Code == Model.Case.Sex ? "selected" : null)">@o.Description</option> }
+            @foreach (var o in Model.SexOptions) { <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.Sex)">@o.Description</option> }
         </select>
     </div>
     <div class="govuk-form-group @(ViewData.ModelState["Case.Breed"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
@@ -138,7 +142,7 @@
         }
         <select asp-for="Case.Breed" class="govuk-select @(ViewData.ModelState["Case.Breed"]?.Errors.Count > 0 ? "govuk-select--error" : "")">
             <option value="">-- Select --</option>
-            @foreach (var o in Model.BreedOptions) { <option value="@o.Code" selected="@(o.Code == Model.Case.Breed ? "selected" : null)">@o.Description</option> }
+            @foreach (var o in Model.BreedOptions) { <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.Breed)">@o.Description</option> }
         </select>
     </div>
     <div class="govuk-form-group @(ViewData.ModelState["Case.Origin"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
@@ -149,7 +153,7 @@
         }
         <select asp-for="Case.Origin" class="govuk-select @(ViewData.ModelState["Case.Origin"]?.Errors.Count > 0 ? "govuk-select--error" : "")">
             <option value="">-- Select --</option>
-            @foreach (var o in Model.OriginOptions) { <option value="@o.Code" selected="@(o.Code == Model.Case.Origin ? "selected" : null)">@o.Description</option> }
+            @foreach (var o in Model.OriginOptions) { <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.Origin)">@o.Description</option> }
         </select>
     </div>
 
@@ -208,7 +212,7 @@
         }
         <select asp-for="Case.PurchasedCounty" class="govuk-select govuk-!-width-one-half @(ViewData.ModelState["Case.PurchasedCounty"]?.Errors.Count > 0 ? "govuk-select--error" : "")">
             <option value="">-- Select --</option>
-            @foreach (var o in Model.PurchasedCountyOptions) { <option value="@o.Code" selected="@(o.Code == Model.Case.PurchasedCounty ? "selected" : null)">@o.Description</option> }
+            @foreach (var o in Model.PurchasedCountyOptions) { <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.PurchasedCounty)">@o.Description</option> }
         </select>
     </div>
 
