@@ -12,7 +12,7 @@ namespace BSE.Host.Models.ViewModels;
 /// and converted back to <see cref="EditCaseDetailsCommand"/> on POST.
 /// RowStamp is round-tripped via TempData (Base64) to prevent tampering.
 /// </summary>
-public class CaseEditViewModel
+public class CaseEditViewModel : ICaseEditFields
 {
     public string Rbse { get; set; } = string.Empty;
     public string? EartagCountry { get; set; }
@@ -80,98 +80,15 @@ public class CaseEditViewModel
 
     public static CaseEditViewModel FromRecord(CaseRecord r) => new()
     {
-        Rbse = r.Rbse,
-        EartagCountry = r.EartagCountry,
-        EartagHerdmark = r.EartagHerdmark,
-        Eartag = r.Eartag,
-        PreviousEartag = r.PreviousEartag,
-        Bse1ReceivedDate = r.Bse1ReceivedDate,
-        FormADate = r.FormADate,
-        FormAResubmittedDate = r.FormAResubmittedDate,
-        FormBDate = r.FormBDate,
-        Fate = r.Fate,
-        FormCDate = r.FormCDate,
-        IsPurchaserBse1Received = r.IsPurchaserBse1Received,
-        IsBreederBse1Received = r.IsBreederBse1Received,
-        IsVendor1Bse1Received = r.IsVendor1Bse1Received,
-        IsHomebredBse1Received = r.IsHomebredBse1Received,
-        IsSummarySheetReceived = r.IsSummarySheetReceived,
-        IsPaperworkComplete = r.IsPaperworkComplete,
-        ReportedLocation = r.ReportedLocation,
-        Survey = r.Survey,
-        Notes = r.Notes,
-        BirthDate = r.BirthDate,
-        IsBirthDateEst = r.IsBirthDateEst ?? false,
-        DamStatus = r.DamStatus,
-        BirthDateSource = r.BirthDateSource,
-        ValuationAge = r.ValuationAge,
-        Sex = r.Sex,
-        Breed = r.Breed,
-        Origin = r.Origin,
-        PurchaseDate = r.PurchaseDate,
-        PurchaseAgeInMonths = r.PurchaseAgeInMonths,
-        PurchasedCounty = r.PurchasedCounty,
-        HerdEntryDate = r.HerdEntryDate,
-        OnsetDate = r.OnsetDate,
-        IsOnsetDateEst = r.IsOnsetDateEst ?? false,
-        MonthsPregnant = r.MonthsPregnant,
-        MonthsPostCalving = r.MonthsPostCalving,
-        OnsetAgeInMonths = r.OnsetAgeInMonths,
-        SlaughterDate = r.SlaughterDate,
-        AlternateDiagnosis = r.AlternateDiagnosis,
-        LabComment = r.LabComment,
-        CaseType = r.CaseType,
-        FinalResultDate = r.FinalResultDate,
-        FinalResult = r.FinalResult,
-        Dbse = r.Dbse
-    };
+        var vm = new CaseEditViewModel { FinalResultDate = r.FinalResultDate, FinalResult = r.FinalResult, Dbse = r.Dbse };
+        CaseEditFieldMapper.CopyFromRecord(vm, r);
+        return vm;
+    }
 
     /// <summary>Overlays a staged-but-not-yet-committed Case edit (from another tab's
     /// cross-tab draft) onto this view model, so revisiting a tab shows pending edits
     /// made elsewhere instead of silently reverting to the last-committed DB values.</summary>
-    public void ApplyStagedCommand(EditCaseCommand c)
-    {
-        EartagCountry = c.EartagCountry;
-        EartagHerdmark = c.EartagHerdmark;
-        Eartag = c.Eartag;
-        PreviousEartag = c.PreviousEartag;
-        Bse1ReceivedDate = c.Bse1ReceivedDate;
-        FormADate = c.FormADate;
-        FormAResubmittedDate = c.FormAResubmittedDate;
-        FormBDate = c.FormBDate;
-        Fate = c.Fate;
-        FormCDate = c.FormCDate;
-        IsPurchaserBse1Received = c.IsPurchaserBse1Received;
-        IsBreederBse1Received = c.IsBreederBse1Received;
-        IsVendor1Bse1Received = c.IsVendor1Bse1Received;
-        IsHomebredBse1Received = c.IsHomebredBse1Received;
-        IsSummarySheetReceived = c.IsSummarySheetReceived;
-        IsPaperworkComplete = c.IsPaperworkComplete;
-        ReportedLocation = c.ReportedLocation;
-        Survey = c.Survey;
-        Notes = c.Notes;
-        BirthDate = c.BirthDate;
-        IsBirthDateEst = c.IsBirthDateEst ?? false;
-        DamStatus = c.DamStatus;
-        BirthDateSource = c.BirthDateSource;
-        ValuationAge = c.ValuationAge;
-        Sex = c.Sex;
-        Breed = c.Breed;
-        Origin = c.Origin;
-        PurchaseDate = c.PurchaseDate;
-        PurchaseAgeInMonths = c.PurchaseAgeInMonths;
-        PurchasedCounty = c.PurchasedCounty;
-        HerdEntryDate = c.HerdEntryDate;
-        OnsetDate = c.OnsetDate;
-        IsOnsetDateEst = c.IsOnsetDateEst ?? false;
-        MonthsPregnant = c.MonthsPregnant;
-        MonthsPostCalving = c.MonthsPostCalving;
-        OnsetAgeInMonths = c.OnsetAgeInMonths;
-        SlaughterDate = c.SlaughterDate;
-        AlternateDiagnosis = c.AlternateDiagnosis;
-        LabComment = c.LabComment;
-        CaseType = c.CaseType;
-    }
+    public void ApplyStagedCommand(EditCaseCommand c) => CaseEditFieldMapper.ApplyStagedCommand(this, c);
 
     public void ApplyCaseWork(CaseWorkRecord cw)
     {
@@ -188,47 +105,5 @@ public class CaseEditViewModel
         IsCaseClosed = cw.IsCaseClosed;
     }
 
-    public EditCaseCommand ToEditCommand(byte[] rowStamp) => new(
-        Rbse: Rbse,
-        EartagCountry: EartagCountry,
-        EartagHerdmark: EartagHerdmark,
-        Eartag: Eartag,
-        PreviousEartag: PreviousEartag,
-        Bse1ReceivedDate: Bse1ReceivedDate,
-        FormADate: FormADate,
-        FormAResubmittedDate: FormAResubmittedDate,
-        FormBDate: FormBDate,
-        Fate: Fate,
-        FormCDate: FormCDate,
-        IsPurchaserBse1Received: IsPurchaserBse1Received,
-        IsBreederBse1Received: IsBreederBse1Received,
-        IsVendor1Bse1Received: IsVendor1Bse1Received,
-        IsHomebredBse1Received: IsHomebredBse1Received,
-        IsSummarySheetReceived: IsSummarySheetReceived,
-        IsPaperworkComplete: IsPaperworkComplete,
-        ReportedLocation: ReportedLocation,
-        Survey: Survey,
-        Notes: Notes,
-        BirthDate: BirthDate,
-        IsBirthDateEst: BirthDate.HasValue ? IsBirthDateEst : null,
-        DamStatus: DamStatus,
-        BirthDateSource: BirthDateSource,
-        ValuationAge: ValuationAge,
-        Sex: Sex,
-        Breed: Breed,
-        Origin: Origin,
-        PurchaseDate: PurchaseDate,
-        PurchaseAgeInMonths: PurchaseAgeInMonths,
-        PurchasedCounty: PurchasedCounty,
-        HerdEntryDate: HerdEntryDate,
-        OnsetDate: OnsetDate,
-        IsOnsetDateEst: OnsetDate.HasValue ? IsOnsetDateEst : null,
-        MonthsPregnant: MonthsPregnant,
-        MonthsPostCalving: MonthsPostCalving,
-        OnsetAgeInMonths: OnsetAgeInMonths,
-        SlaughterDate: SlaughterDate,
-        RowStamp: rowStamp,
-        AlternateDiagnosis: AlternateDiagnosis,
-        LabComment: LabComment,
-        CaseType: CaseType);
+    public EditCaseCommand ToEditCommand(byte[] rowStamp) => CaseEditFieldMapper.ToEditCommand(this, rowStamp);
 }

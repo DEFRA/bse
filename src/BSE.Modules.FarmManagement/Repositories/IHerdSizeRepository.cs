@@ -12,11 +12,12 @@ public interface IHerdSizeRepository
     Task<IEnumerable<HerdSizeRecord>> GetByCphhAsync(string cphh);
     Task<IEnumerable<HerdDetailRecord>> GetByBatchIdAsync(int batchId);
     Task AddAsync(AddHerdSizeCommand command);
-    Task UpdateAsync(UpdateHerdSizeCommand command);
-    Task DeleteAsync(int id, byte[] rowStamp);
-
-    // Transactional variants, enlisted in a caller-supplied connection/transaction.
+    /// <summary>Transactional variant, enlisted in a caller-supplied connection/transaction.</summary>
     Task AddAsync(AddHerdSizeCommand command, IDbConnection connection, IDbTransaction transaction);
+    Task UpdateAsync(UpdateHerdSizeCommand command);
+    /// <summary>Transactional variant, enlisted in a caller-supplied connection/transaction.</summary>
     Task UpdateAsync(UpdateHerdSizeCommand command, IDbConnection connection, IDbTransaction transaction);
+    Task DeleteAsync(int id, byte[] rowStamp);
+    /// <summary>Transactional variant, enlisted in a caller-supplied connection/transaction.</summary>
     Task DeleteAsync(int id, byte[] rowStamp, IDbConnection connection, IDbTransaction transaction);
 }

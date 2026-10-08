@@ -33,7 +33,6 @@ namespace BSE.Modules.UserManagement.Tests;
 public sealed class RelationsModelHandlerTests
 {
     private readonly IAnimalRelationsRepository _relationsRepository = Substitute.For<IAnimalRelationsRepository>();
-    private readonly IPedigreeRepository _pedigreeRepository = Substitute.For<IPedigreeRepository>();
     private readonly ICaseService _caseService = Substitute.For<ICaseService>();
     private readonly ILookupDataService _lookups = Substitute.For<ILookupDataService>();
     private readonly IBatchRepository _batchRepository = Substitute.For<IBatchRepository>();
@@ -56,7 +55,7 @@ public sealed class RelationsModelHandlerTests
     private RelationsModel CreateModel(string[]? roles = null)
     {
         var model = new RelationsModel(
-            _relationsRepository, _pedigreeRepository, _caseService, _lookups,
+            _relationsRepository, _caseService, _lookups,
             _batchRepository, _relationsDraftState, Substitute.For<ICaseScalarDraftStateService>(), Substitute.For<ICaseEditOrchestrationService>(), _connectionFactory, _currentUser,
             NullLogger<RelationsModel>.Instance,
             new ConfigurationBuilder().AddInMemoryCollection().Build())

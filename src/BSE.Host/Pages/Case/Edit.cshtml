@@ -4,6 +4,14 @@
 @{
     ViewData["Title"] = $"Case {Model.Case.Rbse} — DEFRA tab";
     string DateVal(DateTime? d) => d?.ToString("dd/MM/yyyy") ?? "";
+    static bool IsSelected(string? optionCode, string? currentValue) =>
+        string.Equals(optionCode, currentValue, StringComparison.OrdinalIgnoreCase);
+
+    string TestsSortAria(string column)
+    {
+        if (Model.TSort != column) return "none";
+        return Model.TDir == "asc" ? "ascending" : "descending";
+    }
     string rbseNoSlash = Model.Case.Rbse.Replace("/", "");
     var viewDocsUrl = string.IsNullOrWhiteSpace(Model.SpolSiteUrl)
         ? null
@@ -62,47 +70,8 @@
 
 @await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Case (DEFRA)", Model.Case.Rbse, Model.BatchNumbers, viewDocsUrl, Model.CanEditCaseFields))
 
-@if (TempData["Success"] is string successMsg)
-{
-    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert" aria-labelledby="defra-success-title" data-module="govuk-notification-banner">
-        <div class="govuk-notification-banner__header">
-            <h2 class="govuk-notification-banner__title" id="defra-success-title">Success</h2>
-        </div>
-        <div class="govuk-notification-banner__content">
-            <p class="govuk-notification-banner__heading">@successMsg</p>
-        </div>
-    </div>
-}
-
-@if (TempData["Warning"] is string warningMsg)
-{
-    <section class="govuk-notification-banner"
-         aria-labelledby="defra-warning-title" data-module="govuk-notification-banner">
-        <div class="govuk-notification-banner__header">
-            <h2 class="govuk-notification-banner__title" id="defra-warning-title">Important</h2>
-        </div>
-        <div class="govuk-notification-banner__content">
-            <p class="govuk-body">@warningMsg</p>
-        </div>
-    </section>
-}
-
-@if (!ViewContext.ModelState.IsValid)
-{
-    <div class="govuk-error-summary" data-module="govuk-error-summary">
-        <div role="alert">
-            <h2 class="govuk-error-summary__title">There is a problem</h2>
-            <div class="govuk-error-summary__body">
-                <ul class="govuk-list govuk-error-summary__list">
-                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
-                    {
-                        <li>@e.ErrorMessage</li>
-                    }
-                </ul>
-            </div>
-        </div>
-    </div>
-}
+@await Html.PartialAsync("_CaseEditNotifications", new BSE.Host.Models.CaseEditNotificationsViewModel(
+    "defra", TempData["Success"] as string, TempData["Warning"] as string))
 
 @if (!string.IsNullOrEmpty(Model.ConcurrencyError))
 {
@@ -232,7 +201,7 @@
                             <option value="">-- Select --</option>
                             @foreach (var o in Model.FateOptions)
                             {
-                                <option value="@o.Code" selected="@(o.Code == Model.Case.Fate ? "selected" : null)">@o.Description</option>
+                                <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.Fate)">@o.Description</option>
                             }
                         </select>
                         @if (eFate is null && showFateRequiredStar)
@@ -287,9 +256,9 @@
                 <caption class="govuk-visually-hidden">Test records for @BseFormat.FormatRbse(Model.Case.Rbse)</caption>
                 <thead class="govuk-table__head">
                     <tr class="govuk-table__row">
-                        <th scope="col" class="govuk-table__header" aria-sort="@(Model.TSort=="type" ? (Model.TDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@TestsSortAria("type")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.TestsSortUrl("type")">Test type</a>
-                        </th>                        <th scope="col" class="govuk-table__header" aria-sort="@(Model.TSort=="result" ? (Model.TDir=="asc" ? "ascending" : "descending") : "none")">
+                        </th>                        <th scope="col" class="govuk-table__header" aria-sort="@TestsSortAria("result")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.TestsSortUrl("result")">Test result</a>
                         </th>
                         <th scope="col" class="govuk-table__header">Action</th>
@@ -315,7 +284,7 @@
                                         <option value="">-- Select --</option>
                                         @foreach (var o in Model.TestTypeOptions)
                                         {
-                                            <option value="@o.Code" selected="@(string.Equals(Model.EditTestType, o.Code, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@o.Description</option>
+                                            <option value="@o.Code" selected="@IsSelected(o.Code, Model.EditTestType)">@o.Description</option>
                                         }
                                     </select>
                                 </td>
@@ -325,7 +294,7 @@
                                         <option value="">-- Select --</option>
                                         @foreach (var o in Model.TestResultOptions)
                                         {
-                                            <option value="@o.Code" selected="@(string.Equals(Model.EditTestResult, o.Code, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@o.Description</option>
+                                            <option value="@o.Code" selected="@IsSelected(o.Code, Model.EditTestResult)">@o.Description</option>
                                         }
                                     </select>
                                 </td>
@@ -366,7 +335,7 @@
                                 <option value="">-- Select --</option>
                                 @foreach (var o in Model.TestTypeOptions)
                                 {
-                                    <option value="@o.Code" selected="@(string.Equals(Model.NewTestType, o.Code, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@o.Description</option>
+                                    <option value="@o.Code" selected="@IsSelected(o.Code, Model.NewTestType)">@o.Description</option>
                                 }
                             </select>
                         </td>
@@ -376,7 +345,7 @@
                                 <option value="">-- Select --</option>
                                 @foreach (var o in Model.TestResultOptions)
                                 {
-                                    <option value="@o.Code" selected="@(string.Equals(Model.NewTestResult, o.Code, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@o.Description</option>
+                                    <option value="@o.Code" selected="@IsSelected(o.Code, Model.NewTestResult)">@o.Description</option>
                                 }
                             </select>
                         </td>
@@ -422,7 +391,7 @@
                         <option value="">-- Select --</option>
                         @foreach (var o in Model.CaseTypeOptions)
                         {
-                            <option value="@o.Code" selected="@(o.Code == Model.Case.CaseType ? "selected" : null)">@o.Description</option>
+                            <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.CaseType)">@o.Description</option>
                         }
                     </select>
                 </div>
@@ -464,7 +433,7 @@
                         <option value="">-- Select --</option>
                         @foreach (var o in Model.ReportedLocationOptions)
                         {
-                            <option value="@o.Code" selected="@(o.Code == Model.Case.ReportedLocation ? "selected" : null)">@o.Description</option>
+                            <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.ReportedLocation)">@o.Description</option>
                         }
                     </select>
                 </div>
@@ -477,7 +446,7 @@
                         <option value="">-- Select --</option>
                         @foreach (var o in Model.BirthDateSourceOptions)
                         {
-                            <option value="@o.Code" selected="@(o.Code == Model.Case.BirthDateSource ? "selected" : null)">@o.Description</option>
+                            <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.BirthDateSource)">@o.Description</option>
                         }
                     </select>
                 </div>
@@ -498,7 +467,7 @@
                         <option value="">-- Select --</option>
                         @foreach (var o in Model.SurveyOptions)
                         {
-                            <option value="@o.Code" selected="@(o.Code == Model.Case.Survey ? "selected" : null)">@o.Description</option>
+                            <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.Survey)">@o.Description</option>
                         }
                     </select>
                 </div>
@@ -511,7 +480,7 @@
                         <option value="">-- Select --</option>
                         @foreach (var o in Model.ValuationAgeOptions)
                         {
-                            <option value="@o.Code" selected="@(o.Code == Model.Case.ValuationAge ? "selected" : null)">@o.Description</option>
+                            <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.ValuationAge)">@o.Description</option>
                         }
                     </select>
                 </div>
@@ -592,7 +561,7 @@
 
         <div class="bse-case-bottom-row">
             <div class="govuk-button-group bse-case-bottom-row__left">
-                <a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse" asp-route-returnTo="/Case/Edit" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">Case audit log</a>
+                <a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse" asp-route-returnTo="/Case/Edit" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">Case audit log</a>
                 @if (Model.HasCaseWorkLink)
                 {
                     <button type="submit" form="case-edit-inline-form" asp-page-handler="SaveAndGotoCasework" class="govuk-button govuk-button--secondary" data-module="govuk-button">Casework</button>
@@ -603,14 +572,14 @@
                 <div class="govuk-button-group bse-case-bottom-row__actions">
                     @if (!string.IsNullOrWhiteSpace(viewDocsUrl))
                     {
-                        <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">
+                        <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">
                             View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
                         </a>
                     }
                     @if (User.IsInRole("DataEntry"))
                     {
                         <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
-                        <a asp-page="/Case/Edit" asp-page-handler="CancelEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
+                        <a asp-page="/Case/Edit" asp-page-handler="CancelEdit" asp-route-rbse="@Model.Rbse" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
                     }
                 </div>
             </div>

@@ -56,8 +56,8 @@ public class FeedsModel(
     public const int PageSize = 10;
     public int TotalPages => Math.Max(1, (int)Math.Ceiling(Feeds.Count / (double)PageSize));
     public int CurrentPage => Math.Clamp(PageNumber, 1, TotalPages);
-    public IReadOnlyList<StagedFeedItem> PagedFeeds =>
-        Feeds.Skip((CurrentPage - 1) * PageSize).Take(PageSize).ToList();
+    public IReadOnlyList<StagedFeedItem> GetPagedFeeds() =>
+        [.. Feeds.Skip((CurrentPage - 1) * PageSize).Take(PageSize)];
     public IEnumerable<LookupItem> RationTypes { get; private set; } = [];
     public string SpolSiteUrl { get; private set; } = string.Empty;
     public IReadOnlyList<BatchNumberEntry> BatchNumbers { get; private set; } = [];
@@ -300,32 +300,14 @@ public class FeedsModel(
         // rows are committed together with whatever else is staged for this RBSE (Case/Farm/Bab/
         // Clinical), not in isolation, so Save from any tab commits everything together.
         var userId = await currentUser.GetUserIdAsync();
-        CaseCommitOutcome commitOutcome;
-        try
-        {
-            commitOutcome = await caseEditOrchestration.CommitAllAsync(Rbse, userId);
-        }
-        catch (MandatoryCaseFieldsMissingException ex)
-        {
-            // Legacy parity: CaseEntrySave.aspx shows the consolidated list of missing items with
-            // a "Return" button instead of a single inline banner.
-            SaveResultModel.Stage(TempData, SaveResultMode.MissingMandatoryFields, ex.Errors);
-            return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
-        }
+        var (failureRedirect, commitOutcome) = await CaseCommitHelper.CommitAllAsync(
+            this, caseEditOrchestration, Rbse, userId,
+            result => $"Unable to save feed records: {result}.");
+        if (failureRedirect is not null)
+            return failureRedirect;
 
-        if (commitOutcome.Result != EditCaseResult.Success)
-        {
-            TempData["ErrorMessage"] = $"Unable to save feed records: {commitOutcome.Result}.";
-            return RedirectToPage("/Home");
-        }
-
-        if (commitOutcome.Warnings.Count > 0)
-        {
-            // Legacy parity: CaseEntrySave.aspx shows "saved with some errors" instead of silently
-            // succeeding whenever a per-table concurrency conflict was skipped during the commit.
-            SaveResultModel.Stage(TempData, SaveResultMode.PartialSuccess, commitOutcome.Warnings);
-            return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
-        }
+        if (CaseCommitHelper.TryStageWarnings(this, commitOutcome!, Rbse) is { } warningRedirect)
+            return warningRedirect;
 
         // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx on a fully successful
         // save, clearing the session case state — not back to the tab the user was on.

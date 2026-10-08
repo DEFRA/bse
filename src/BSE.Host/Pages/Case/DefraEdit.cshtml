@@ -4,6 +4,8 @@
 @{
     ViewData["Title"] = $"Edit Case (DEFRA) — {Model.Case.Rbse}";
     string DateVal(DateTime? d) => d?.ToString("dd/MM/yyyy") ?? "";
+    static bool IsSelected(string? optionCode, string? currentValue) =>
+        string.Equals(optionCode, currentValue, StringComparison.OrdinalIgnoreCase);
     string rbseNoSlash = Model.Case.Rbse.Replace("/", "");
 
     string? eEartag       = ViewData.ModelState["Case.EartagCountry"]?.Errors.FirstOrDefault()?.ErrorMessage;
@@ -244,7 +246,7 @@
                     <option value="">-- Select --</option>
                     @foreach (var o in Model.CaseTypeOptions)
                     {
-                        <option value="@o.Code" selected="@(o.Code == Model.Case.CaseType ? "selected" : null)">@o.Description</option>
+                        <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.CaseType)">@o.Description</option>
                     }
                 </select>
             </div>
@@ -270,7 +272,7 @@
                     <option value="">-- Select --</option>
                     @foreach (var o in Model.ReportedLocationOptions)
                     {
-                        <option value="@o.Code" selected="@(o.Code == Model.Case.ReportedLocation ? "selected" : null)">@o.Description</option>
+                        <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.ReportedLocation)">@o.Description</option>
                     }
                 </select>
             </div>
@@ -283,7 +285,7 @@
                     <option value="">-- Select --</option>
                     @foreach (var o in Model.BirthDateSourceOptions)
                     {
-                        <option value="@o.Code" selected="@(o.Code == Model.Case.BirthDateSource ? "selected" : null)">@o.Description</option>
+                        <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.BirthDateSource)">@o.Description</option>
                     }
                 </select>
             </div>
@@ -308,7 +310,7 @@
                     <option value="">-- Select --</option>
                     @foreach (var o in Model.SurveyOptions)
                     {
-                        <option value="@o.Code" selected="@(o.Code == Model.Case.Survey ? "selected" : null)">@o.Description</option>
+                        <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.Survey)">@o.Description</option>
                     }
                 </select>
             </div>
@@ -321,7 +323,7 @@
                     <option value="">-- Select --</option>
                     @foreach (var o in Model.ValuationAgeOptions)
                     {
-                        <option value="@o.Code" selected="@(o.Code == Model.Case.ValuationAge ? "selected" : null)">@o.Description</option>
+                        <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.ValuationAge)">@o.Description</option>
                     }
                 </select>
             </div>
