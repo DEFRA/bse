@@ -247,3 +247,33 @@ wrong. **Fixed:** `CheckOrder` now takes the field name and reproduces legacy's 
 
 Files changed: `CaseSearchViewModel.cs`. `get_errors` clean.
 
+---
+
+## Bug found and fixed: Cancel didn't warn after a CPHH lookup on a brand-new case (2026-10-09)
+
+Reported symptom: on `/Case/Farm` in new-case-creation mode, looking up an existing CPHH (populating
+Owner Name/Address/etc. from the found farm) then clicking Cancel showed no "unsaved changes" prompt.
+
+### Root cause
+
+Both the generic `_CaseTabs.cshtml` Home-link guard and `Farm.cshtml`'s own `.bse-cancel-link` handler
+ultimately rely on `isCurrentFormDirty()`, which detects changes by diffing the current form against a
+snapshot taken on `DOMContentLoaded`. A successful CPHH lookup (`OnPostLookupNewCaseAsync`) returns
+`Page()` directly with the found farm's data already populated — there is no earlier, blanker render the
+browser ever displays, so the very first snapshot the JS captures already includes the looked-up data.
+Nothing then differs from that baseline, so the dirty-check always reports "no changes" even though
+legacy's equivalent (populating the shared session farm dataset via `CheckLookupCPHH`) is exactly the
+kind of change that makes legacy's `DataSetHasChanges()` return true for the rest of that session.
+
+### Fix
+
+`isCurrentFormDirty()` (`_CaseTabs.cshtml`) now also treats the presence of a
+`[data-force-dirty="true"]` marker element inside the current case form as dirty, in addition to the
+existing snapshot diff — a small, reusable hook for exactly this "the initial render itself is already
+a change" case. `Farm.cshtml`'s create-mode form now renders that hidden marker whenever
+`!RequireFarmDetails` and the farm fields are populated (i.e. a lookup found a real farm). Both the
+generic Home-link guard and Farm's own Cancel-link handler call through to this same function, so both
+are fixed by the one change.
+
+Files changed: `_CaseTabs.cshtml`, `Farm.cshtml`. `get_errors` clean on both.
+
