@@ -37,13 +37,14 @@ public sealed class CaseEditOrchestrationServiceTests
     private readonly IFeedRepository _feedRepository = Substitute.For<IFeedRepository>();
     private readonly IAnimalRelationsRepository _relationsRepository = Substitute.For<IAnimalRelationsRepository>();
     private readonly IPedigreeRepository _pedigreeRepository = Substitute.For<IPedigreeRepository>();
+    private readonly BSE.Modules.CaseWork.Repositories.ICaseWorkRepository _caseWorkRepository = Substitute.For<BSE.Modules.CaseWork.Repositories.ICaseWorkRepository>();
     private readonly IBatchRepository _batchRepository = Substitute.For<IBatchRepository>();
     private readonly IDbConnectionFactory _connectionFactory = Substitute.For<IDbConnectionFactory>();
 
     private CaseEditOrchestrationService CreateService() => new(
         _scalarDraftState, _feedsDraftState, _relationsDraftState, _wizardState,
         _caseRepository, _farmRepository, _babRepository, _clinicalRepository,
-        _feedRepository, _relationsRepository, _pedigreeRepository, _batchRepository, _connectionFactory,
+        _feedRepository, _relationsRepository, _pedigreeRepository, _caseWorkRepository, _batchRepository, _connectionFactory,
         NullLogger<CaseEditOrchestrationService>.Instance);
 
     private static CaseRecord ValidCaseRecord() => new()

@@ -958,19 +958,56 @@ public class RelationsModel(
             return Page();
         }
 
-        if (DamSire.DamBirthDay.HasValue && !DamSire.DamBirthMonth.HasValue)
+        var damDateError = ValidatePartialBirthDate(DamSire.DamBirthDay, DamSire.DamBirthMonth, DamSire.DamBirthYear);
+        if (damDateError is not null)
         {
-            DamError = "Please enter a month, or remove the day.";
+            DamError = damDateError;
             return Page();
         }
 
-        if (DamSire.SireBirthDay.HasValue && !DamSire.SireBirthMonth.HasValue)
+        var sireDateError = ValidatePartialBirthDate(DamSire.SireBirthDay, DamSire.SireBirthMonth, DamSire.SireBirthYear);
+        if (sireDateError is not null)
         {
-            SireError = "Please enter a month, or remove the day.";
+            SireError = sireDateError;
             return Page();
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Mirrors legacy PartialDate: rvDay/rvMonth range validators (always enforced, independent
+    /// of year), plus the day/month/year combination rules from PartialDate.Validate() — called
+    /// by UpdateSessionWithCaseDetails for ctlDamBirthDate/ctlSireBirthDate. A blank year always
+    /// passes, even if day/month are populated; day without month is only rejected once a year
+    /// is present; the remaining day/month/year combination must form a real calendar date.
+    /// </summary>
+    private static string? ValidatePartialBirthDate(int? day, int? month, int? year)
+    {
+        if (day is < 1 or > 31)
+            return "Please enter a valid day between 1 and 31.";
+
+        if (month is < 1 or > 12)
+            return "Please enter a month between 1 and 12.";
+
+        if (year is < 1000 or > 9999)
+            return "Please enter a four digit year.";
+
+        if (!year.HasValue)
+            return null;
+
+        if (day.HasValue && !month.HasValue)
+            return "Please enter a month, or remove the day.";
+
+        try
+        {
+            _ = new DateTime(year.Value, month ?? 1, day ?? 1);
+            return null;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            return "Please enter a valid date.";
+        }
     }
 
     /// <summary>Resolves a dam/sire selected by RBSE (rather than explicit Look Up) into full details.</summary>

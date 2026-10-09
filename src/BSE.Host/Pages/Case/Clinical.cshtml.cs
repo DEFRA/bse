@@ -189,8 +189,18 @@ public class ClinicalModel(
 
         var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
         draft.ClinicalBaseRowStampBase64 ??= clinicalRowStampBase64;
-        draft.Clinical = edit with { RowStamp = Convert.FromBase64String(draft.ClinicalBaseRowStampBase64) };
-        draft.HasPendingChanges = true;
+        var stagedEdit = edit with { RowStamp = Convert.FromBase64String(draft.ClinicalBaseRowStampBase64) };
+
+        // Legacy parity: merely switching tabs without typing anything must not trip the
+        // cross-tab unsaved-changes exit warning — only flag a genuine edit to the signs.
+        var persistedClinical = await clinicalRepository.GetByRbseAsync(Rbse);
+        var baseline = persistedClinical is not null
+            ? ClinicalSignsViewModel.FromRecord(persistedClinical).ToEditCommand(Rbse, Convert.FromBase64String(draft.ClinicalBaseRowStampBase64))
+            : null;
+
+        draft.Clinical = stagedEdit;
+        if (DraftChangeDetector.IsDifferentFromPersisted(stagedEdit, baseline))
+            draft.HasPendingChanges = true;
         await caseScalarDraftState.SetAsync(draft);
 
         return RedirectToPage(targetPage, new { rbse = Rbse });
@@ -434,7 +444,12 @@ public class ClinicalModel(
         }
 
         _persistedVisits = (await visitsTask).ToList();
-        BirthDate        = (await caseTask)?.BirthDate;
+        var caseRecord = await caseTask;
+        // Legacy parity: the shared session dataset means an unsaved Date of Birth typed on the
+        // DEFRA tab is instantly visible to this tab's visit-date validation bound — not just the
+        // last-persisted value.
+        var stagedCase = (await caseScalarDraftState.GetAsync(Rbse))?.Case;
+        BirthDate        = stagedCase is not null ? stagedCase.BirthDate : caseRecord?.BirthDate;
         BatchNumbers     = (await batchTask).ToList().AsReadOnly();
     }
 

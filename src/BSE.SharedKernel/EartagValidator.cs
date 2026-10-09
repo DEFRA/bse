@@ -26,22 +26,30 @@ public static partial class EartagValidator
     private static partial Regex ShortNumericAnimalRegex();
 
     // The numerical part is entirely zeros, ignoring the optional surrounding letters.
-    [GeneratedRegex("^[A-Z]{0,1}[0]{1,5}[A-Z]{0,1}$", RegexOptions.CultureInvariant)]
+    // Legacy's shared animalNumericPattern ([a-zA-Z], GBAlphaNumeric/Guernsey/IsleOfMan/Jersey
+    // AlphaNumeric EartagFormat.vb) accepts either case here — unlike most other eartag patterns,
+    // which are genuinely case-sensitive (Option Compare Binary) and must not be widened to match.
+    [GeneratedRegex("^[a-zA-Z]{0,1}[0]{1,5}[a-zA-Z]{0,1}$", RegexOptions.CultureInvariant)]
     private static partial Regex AllZeroAnimalRegex();
 
-    [GeneratedRegex("^[A-Z]{1,2}[0-9]{1,4}$", RegexOptions.CultureInvariant)]
+    // Legacy GBAlphaNumericEartagFormat.vb's herdPattern is [a-zA-Z] (case-insensitive).
+    [GeneratedRegex("^[a-zA-Z]{1,2}[0-9]{1,4}$", RegexOptions.CultureInvariant)]
     private static partial Regex GbAlphaNumericHerdRegex();
 
-    [GeneratedRegex("^[A-Z]{0,1}[0-9]{1,5}[A-Z]{0,1}$", RegexOptions.CultureInvariant)]
+    // Legacy GBAlphaNumericEartagFormat.vb's animalPattern is [a-zA-Z] (case-insensitive).
+    [GeneratedRegex("^[a-zA-Z]{0,1}[0-9]{1,5}[a-zA-Z]{0,1}$", RegexOptions.CultureInvariant)]
     private static partial Regex GbAlphaNumericAnimalRegex();
 
-    [GeneratedRegex("^[A-Z]{1}[0-9]{1,5}[A-Z]{1}$", RegexOptions.CultureInvariant)]
+    // Legacy UKNonNIAlphaNumericEartagFormat.vb's ReformatAnimalComponent patterns are all
+    // [a-zA-Z] (case-insensitive) — this is a reformat/padding step, not a format-specific
+    // validation rule, shared by GB/Guernsey/Isle of Man/Jersey alpha-numeric eartags.
+    [GeneratedRegex("^[a-zA-Z]{1}[0-9]{1,5}[a-zA-Z]{1}$", RegexOptions.CultureInvariant)]
     private static partial Regex AlphaAnimalCompressedPattern();
 
-    [GeneratedRegex("^[A-Z]{1}[0-9]{1,5}$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex("^[a-zA-Z]{1}[0-9]{1,5}$", RegexOptions.CultureInvariant)]
     private static partial Regex AlphaAnimalDigitOnlyPattern();
 
-    [GeneratedRegex("^[0-9]{1,5}[A-Z]{1}$", RegexOptions.CultureInvariant)]
+    [GeneratedRegex("^[0-9]{1,5}[a-zA-Z]{1}$", RegexOptions.CultureInvariant)]
     private static partial Regex NumericAnimalAlphaSuffixPattern();
 
     [GeneratedRegex("^9[0-9]{3,6}$", RegexOptions.CultureInvariant)]
@@ -121,9 +129,13 @@ public static partial class EartagValidator
     /// <summary>Returns null when valid, otherwise the legacy validation error message.</summary>
     public static string? Validate(string? countryCode, string? herdComponent, string? animalComponent)
     {
-        var country = (countryCode ?? string.Empty).Trim().ToUpperInvariant();
-        var herd = (herdComponent ?? string.Empty).Trim().ToUpperInvariant();
-        var animal = (animalComponent ?? string.Empty).Trim().ToUpperInvariant();
+        // Legacy parity: BSELib.Eartag.GetEartag/ValidateComponents never uppercases its inputs
+        // (the project compiles with Option Compare Binary, i.e. case-sensitive), so a lowercase
+        // letter where a format expects uppercase is correctly rejected rather than silently
+        // normalized and accepted.
+        var country = (countryCode ?? string.Empty).Trim();
+        var herd = (herdComponent ?? string.Empty).Trim();
+        var animal = (animalComponent ?? string.Empty).Trim();
 
         // Mirrors BSELib.Eartag.GetEartag's dispatch priority: a country code longer than 2
         // characters is always ISO (IsNewVersionId), ahead of the UK/EC checks below. Anything

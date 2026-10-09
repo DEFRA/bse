@@ -51,7 +51,7 @@ public class FeedAddModel(
 
         FieldErrors = FeedValidation.Validate(
             new FeedValidation.Input(NewFeed.YearFrom, NewFeed.YearTo, NewFeed.RationType, NewFeed.SupplierId),
-            caseRecord);
+            caseRecord?.BirthDate);
 
         if (FieldErrors.Count > 0)
         {

@@ -8,6 +8,8 @@ using BSE.Modules.CaseManagement.Commands;
 using BSE.Modules.CaseManagement.Enums;
 using BSE.Modules.CaseManagement.Models;
 using BSE.Modules.CaseManagement.Repositories;
+using BSE.Modules.CaseWork.Commands;
+using BSE.Modules.CaseWork.Repositories;
 using BSE.Modules.FarmManagement.Repositories;
 using BSE.Modules.FarmManagement.Models;
 using BSE.SharedKernel;
@@ -58,6 +60,7 @@ public sealed class CaseEditOrchestrationService(
     IFeedRepository feedRepository,
     IAnimalRelationsRepository relationsRepository,
     IPedigreeRepository pedigreeRepository,
+    ICaseWorkRepository caseWorkRepository,
     IBatchRepository batchRepository,
     IDbConnectionFactory connectionFactory,
     ILogger<CaseEditOrchestrationService> logger) : ICaseEditOrchestrationService
@@ -131,6 +134,14 @@ public sealed class CaseEditOrchestrationService(
                 var addResult = await caseRepository.AddCaseAsync(MapToAddCase(rbse, cphh, caseCommand), userId, connection, transaction);
                 if (addResult != AddCaseResult.Success)
                     throw new InvalidOperationException($"Failed to create case {rbse} (result: {addResult}).");
+
+                // Legacy parity: Common.vb's GetCaseDetailsFromDatabase always calls AddEmptyRow
+                // against CASEWORK_TABLE for a brand-new case — without this, a case created via
+                // this cross-tab Save path (as opposed to Farm's own dedicated create-case form,
+                // which already does this via CaseService.CreateCaseAsync) never gets a CaseWork row.
+                await caseWorkRepository.AddAsync(
+                    new AddCaseWorkCommand(rbse, DateTime.Today, null, null, null, null, null, null, null, null),
+                    connection, transaction);
 
                 if (draft.Bab is not null)
                     await babRepository.AddAsync(MapToAddBab(draft.Bab), draft.BabOrigin, connection, transaction);
