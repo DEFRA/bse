@@ -316,6 +316,16 @@ public class RelationsModel(
         if (shouldOpenPicker)
             return RedirectToPickSireDam(isDam);
 
+        var hasError = !ModelState.IsValid || !string.IsNullOrWhiteSpace(isDam ? DamError : SireError);
+        if (!hasError)
+        {
+            // Post-Redirect-Get: a successful match is already fully persisted in the relations
+            // draft state (ApplyMatchAsync), so redirecting to a fresh GET avoids leaving this
+            // POST response in browser history. Without this, clicking "View Sire's/Dam's
+            // Relations" then Back triggered a resubmission prompt / ERR_CACHE_MISS.
+            return RedirectToPage(new { rbse = Rbse });
+        }
+
         // Re-rendering this page directly (no redirect) — hydrate the rest of the page state
         // (case herdbook, dam status options, SPOL link) that LoadAsync/LoadOrInitializeRelationsDraftAsync
         // don't cover, so the page doesn't render with those sections blank after a Look Up.
@@ -1232,9 +1242,12 @@ public class RelationsModel(
     /// <summary>Live lookup for the relation-panel RBSE field, mirrors legacy's
     /// ctlRelationRBSE_RBSEChanged autopostback (populates Sex/Fate/Eartag/birth date/left
     /// date/Sire from the related case as soon as a valid RBSE is entered, before Save).</summary>
-    public async Task<IActionResult> OnGetRelationDetailsAsync(string? rbse)
+    public async Task<IActionResult> OnGetRelationDetailsAsync(string? relationRbse)
     {
-        var normalized = RbseHelper.ParseToRaw(rbse);
+        // Parameter deliberately NOT named "rbse" — this page's own route is "{rbse}", and a
+        // same-named handler parameter binds from the route value (the current case) instead
+        // of this query string, silently ignoring whatever RBSE the user actually searched for.
+        var normalized = RbseHelper.ParseToRaw(relationRbse);
         if (normalized.Length == 0)
             return new JsonResult(new { found = false });
 

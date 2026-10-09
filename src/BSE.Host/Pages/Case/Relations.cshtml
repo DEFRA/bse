@@ -60,7 +60,12 @@
     </section>
 }
 
-@if (!ViewContext.ModelState.IsValid || Model.RelationFieldErrors.Count > 0)
+@{
+    // RelationRbse errors are shown inline via the asterisk + red border next to the field
+    // (matching legacy's RBSE.ascx), not repeated in the page-level summary.
+    var summaryFieldErrors = Model.RelationFieldErrors.Where(e => e.Key != "RelationRbse").ToList();
+}
+@if (!ViewContext.ModelState.IsValid || summaryFieldErrors.Count > 0)
 {
     <div class="govuk-error-summary" data-module="govuk-error-summary">
         <div role="alert">
@@ -71,9 +76,9 @@
                     {
                         <li>@e.ErrorMessage</li>
                     }
-                    @foreach (var e in Model.RelationFieldErrors.Values)
+                    @foreach (var e in summaryFieldErrors)
                     {
-                        <li>@e</li>
+                        <li>@e.Value</li>
                     }
                 </ul>
             </div>
@@ -174,7 +179,7 @@
                 <div class="bse-relations-parent-column">
                     <div class="bse-relations-parent-field-row">
                         <label class="govuk-label" asp-for="DamSire.SireName">Name</label>
-                        <input asp-for="DamSire.SireName" form="case-relations-inline-form" maxlength="80" class="govuk-input bse-relations-parent-input" readonly="@(string.IsNullOrWhiteSpace(d.SireRbse) ? null : "readonly")" />
+                        <input asp-for="DamSire.SireName" form="case-relations-inline-form" maxlength="80" class="govuk-input bse-relations-parent-input" />
                     </div>
                     <div class="bse-relations-parent-field-row">
                         <label class="govuk-label" asp-for="DamSire.SireHerdbook">Herdbook</label>
@@ -248,9 +253,15 @@
             <fieldset class="bse-form-fieldset-reset" disabled="@(canEditSireSection ? null : "disabled")">
                 <div class="bse-relations-parent-columns">
                     <div class="bse-relations-parent-column">
-                        <div class="bse-relations-parent-field-row">
+                        <div class="bse-relations-parent-field-row @(string.IsNullOrWhiteSpace(Model.SireError) ? "" : "govuk-form-group--error")">
                             <label class="govuk-label" asp-for="DamSire.SireSearchRbse">RBSE</label>
-                            <input asp-for="DamSire.SireSearchRbse" class="govuk-input bse-relations-parent-input" />
+                            <span class="bse-relations-rbse-input-wrap">
+                                <input asp-for="DamSire.SireSearchRbse" class="govuk-input bse-relations-parent-input @(string.IsNullOrWhiteSpace(Model.SireError) ? "" : "govuk-input--error")" />
+                                @if (!string.IsNullOrWhiteSpace(Model.SireError))
+                                {
+                                    <span class="bse-relations-required-star" title="@Model.SireError" aria-hidden="true">*</span>
+                                }
+                            </span>
                         </div>
                         <div class="bse-relations-parent-field-row">
                             <label class="govuk-label" asp-for="DamSire.SireSearchEartag">Eartag</label>
@@ -352,7 +363,7 @@
             <div class="bse-relations-parent-column">
                 <div class="bse-relations-parent-field-row">
                     <label class="govuk-label" asp-for="DamSire.DamName">Name</label>
-                    <input asp-for="DamSire.DamName" form="case-relations-inline-form" maxlength="80" class="govuk-input bse-relations-parent-input" readonly="@(string.IsNullOrWhiteSpace(d.DamRbse) ? null : "readonly")" />
+                    <input asp-for="DamSire.DamName" form="case-relations-inline-form" maxlength="80" class="govuk-input bse-relations-parent-input" />
                 </div>
                 <div class="bse-relations-parent-field-row">
                     <label class="govuk-label" asp-for="DamSire.DamHerdbook">Herdbook</label>
@@ -428,9 +439,15 @@
 
             <div class="bse-relations-parent-columns">
                 <div class="bse-relations-parent-column">
-                    <div class="bse-relations-parent-field-row">
+                    <div class="bse-relations-parent-field-row @(string.IsNullOrWhiteSpace(Model.DamError) ? "" : "govuk-form-group--error")">
                         <label class="govuk-label" asp-for="DamSire.DamSearchRbse">RBSE</label>
-                        <input asp-for="DamSire.DamSearchRbse" class="govuk-input bse-relations-parent-input" />
+                        <span class="bse-relations-rbse-input-wrap">
+                            <input asp-for="DamSire.DamSearchRbse" class="govuk-input bse-relations-parent-input @(string.IsNullOrWhiteSpace(Model.DamError) ? "" : "govuk-input--error")" />
+                            @if (!string.IsNullOrWhiteSpace(Model.DamError))
+                            {
+                                <span class="bse-relations-required-star" title="@Model.DamError" aria-hidden="true">*</span>
+                            }
+                        </span>
                     </div>
                     <div class="bse-relations-parent-field-row">
                         <label class="govuk-label" asp-for="DamSire.DamSearchEartag">Eartag</label>
@@ -644,10 +661,13 @@
                 }
             </div>
             <div class="bse-relations-right-column">
-                <div class="govuk-form-group bse-relations-field-row govuk-!-margin-bottom-3 @(Model.RelationFieldErrors.ContainsKey("RelationRbse") ? "govuk-form-group--error" : "")">
+                <div id="relation-rbse-group" class="govuk-form-group bse-relations-field-row govuk-!-margin-bottom-3 @(Model.RelationFieldErrors.ContainsKey("RelationRbse") ? "govuk-form-group--error" : "")">
                     <label class="govuk-label" for="relation-rbse">RBSE</label>
                     @if (Model.RelationFieldErrors.TryGetValue("RelationRbse", out var relationRbseError)) { <p class="govuk-error-message bse-relations-field-error"><span class="govuk-visually-hidden">Error:</span> @relationRbseError</p> }
-                    <input id="relation-rbse" name="RelationRbse" type="text" value="@Model.RelationRbse" class="govuk-input bse-relations-field-input @(Model.RelationFieldErrors.ContainsKey("RelationRbse") ? "govuk-input--error" : "")" />
+                    <span class="bse-relations-rbse-input-wrap">
+                        <input id="relation-rbse" name="RelationRbse" type="text" value="@Model.RelationRbse" class="govuk-input bse-relations-field-input @(Model.RelationFieldErrors.ContainsKey("RelationRbse") ? "govuk-input--error" : "")" />
+                        <span id="relation-rbse-star" class="bse-relations-required-star" title="@(relationRbseError ?? RelationValidation.RbseNotFound)" data-not-found-title="@RelationValidation.RbseNotFound" aria-hidden="true" @(relationRbseError is null ? "hidden" : "")>*</span>
+                    </span>
                 </div>
                 <div class="govuk-form-group bse-relations-field-row govuk-!-margin-bottom-3 @((Model.RelationFieldErrors.ContainsKey("BirthDay") || Model.RelationFieldErrors.ContainsKey("BirthMonth") || Model.RelationFieldErrors.ContainsKey("BirthYear")) ? "govuk-form-group--error" : "")">
                     <label class="govuk-label" for="birth-date">Date of Birth</label>
@@ -872,6 +892,20 @@
             margin-bottom: 0;
         }
 
+        .bse-relations-rbse-input-wrap {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .bse-relations-required-star {
+            color: #d4351c;
+            font-size: 1.5rem;
+            line-height: 1;
+            font-weight: 700;
+            cursor: help;
+        }
+
         .bse-row-actions {
             display: flex;
             align-items: center;
@@ -930,6 +964,8 @@
 
         (function () {
             var rbseInput = document.getElementById('relation-rbse');
+            var rbseGroup = document.getElementById('relation-rbse-group');
+            var rbseStar = document.getElementById('relation-rbse-star');
             var relatedFields = ['sex', 'relation-fate', 'eartag-country', 'eartag-herdmark', 'eartag', 'birth-date', 'left-date', 'sire']
                 .map(function (id) { return document.getElementById(id); })
                 .filter(Boolean);
@@ -954,6 +990,17 @@
                     .forEach(function (id) { setField(id, ''); });
             }
 
+            // Mirrors legacy's lblInvalid asterisk + red border on the RBSE field, toggled as
+            // soon as focus leaves it — not only after a full Add As New postback.
+            function setInvalidIndicator(isInvalid) {
+                if (rbseGroup) rbseGroup.classList.toggle('govuk-form-group--error', isInvalid);
+                rbseInput.classList.toggle('govuk-input--error', isInvalid);
+                if (rbseStar) {
+                    rbseStar.hidden = !isInvalid;
+                    if (isInvalid) rbseStar.title = rbseStar.dataset.notFoundTitle;
+                }
+            }
+
             // Mirrors legacy ctlRelationRBSE_RBSEChanged: look up the related case and populate
             // Sex/Fate/Eartag/birth date/left date/Sire, disabling those fields while an RBSE is set.
             function lookUpRelationRbse() {
@@ -961,15 +1008,17 @@
                 if (!rbse) {
                     clearRelatedFields();
                     setRelatedFieldsDisabled(false);
+                    setInvalidIndicator(false);
                     return;
                 }
 
-                fetch('?handler=RelationDetails&rbse=' + encodeURIComponent(rbse))
+                fetch('?handler=RelationDetails&relationRbse=' + encodeURIComponent(rbse))
                     .then(function (response) { return response.ok ? response.json() : null; })
                     .then(function (result) {
                         if (!result || !result.found) {
                             clearRelatedFields();
                             setRelatedFieldsDisabled(false);
+                            setInvalidIndicator(true);
                             return;
                         }
 
@@ -982,8 +1031,9 @@
                         setField('left-date', result.leftDate);
                         setField('sire', result.sire);
                         setRelatedFieldsDisabled(true);
+                        setInvalidIndicator(false);
                     })
-                    .catch(function () { /* network error — leave fields as last entered */ });
+                    .catch(function () { /* network error — leave fields/indicator as last entered */ });
             }
 
             rbseInput.addEventListener('blur', lookUpRelationRbse);

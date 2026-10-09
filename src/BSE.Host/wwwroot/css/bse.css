@@ -1478,20 +1478,27 @@
 .bse-closed-cases-table .govuk-table__header:nth-child(1),
 .bse-closed-cases-table .govuk-table__cell:nth-child(1) { min-width: 10ch; white-space: nowrap; }
 
-.bse-open-cases-table .govuk-table__header:nth-child(2),
-.bse-open-cases-table .govuk-table__cell:nth-child(2),
 .bse-open-cases-table .govuk-table__header:nth-child(8),
 .bse-open-cases-table .govuk-table__cell:nth-child(8),
 .bse-open-cases-table .govuk-table__header:nth-child(22),
 .bse-open-cases-table .govuk-table__cell:nth-child(22),
 .bse-open-cases-table .govuk-table__header:nth-child(28),
 .bse-open-cases-table .govuk-table__cell:nth-child(28),
-.bse-closed-cases-table .govuk-table__header:nth-child(2),
-.bse-closed-cases-table .govuk-table__cell:nth-child(2),
 .bse-closed-cases-table .govuk-table__header:nth-child(8),
 .bse-closed-cases-table .govuk-table__cell:nth-child(8),
 .bse-closed-cases-table .govuk-table__header:nth-child(18),
 .bse-closed-cases-table .govuk-table__cell:nth-child(18) { min-width: 9ch; }
+
+/* Survey: unlike the identifier/date columns above, legacy wraps this onto ~2 lines
+   instead of letting one long survey name (e.g. "Surveillance Cohort") stretch the
+   column wide enough to overlay the next column (RBSE 00/08/00044 bug repro). */
+.bse-open-cases-table .govuk-table__header:nth-child(2),
+.bse-open-cases-table .govuk-table__cell:nth-child(2),
+.bse-closed-cases-table .govuk-table__header:nth-child(2),
+.bse-closed-cases-table .govuk-table__cell:nth-child(2) {
+    min-width: 11ch;
+    max-width: 14ch;
+}
 
 .bse-open-cases-table .govuk-table__header:nth-child(3),
 .bse-open-cases-table .govuk-table__cell:nth-child(3),
