@@ -2,6 +2,8 @@
 @model VlaModel
 @{
     ViewData["Title"] = $"Case (APHA) — {Model.Case.Rbse}";
+    static bool IsSelected(string? optionCode, string? currentValue) =>
+        string.Equals(optionCode, currentValue, StringComparison.OrdinalIgnoreCase);
     string rbseNoSlash = Model.Case.Rbse.Replace("/", "");
     var viewDocsUrl = string.IsNullOrWhiteSpace(Model.SpolSiteUrl)
         ? null
@@ -9,6 +11,11 @@
 
     string? E(string key) => ViewData.ModelState[key]?.Errors.FirstOrDefault()?.ErrorMessage;
     string DateVal(DateTime? d) => d?.ToString("dd/MM/yyyy") ?? string.Empty;
+    string OwnersSortAria(string column)
+    {
+        if (Model.OSort != column) return "none";
+        return Model.ODir == "asc" ? "ascending" : "descending";
+    }
     // Prefer the raw text the user typed (preserved on failed/invalid binding) so it is
     // redisplayed unchanged after Save, matching legacy CalendarDate behaviour; otherwise
     // fall back to formatting the successfully bound value.
@@ -34,31 +41,8 @@
 
 @await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Case (APHA)", Model.Case.Rbse, Model.BatchNumbers, viewDocsUrl, Model.CanEditMainCase))
 
-@if (TempData["Success"] is string successMsg)
-{
-    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert"
-         aria-labelledby="vla-success-title" data-module="govuk-notification-banner">
-        <div class="govuk-notification-banner__header">
-            <h2 class="govuk-notification-banner__title" id="vla-success-title">Success</h2>
-        </div>
-        <div class="govuk-notification-banner__content">
-            <p class="govuk-notification-banner__heading">@successMsg</p>
-        </div>
-    </div>
-}
-
-@if (TempData["Warning"] is string warningMsg)
-{
-    <section class="govuk-notification-banner"
-         aria-labelledby="vla-warning-title" data-module="govuk-notification-banner">
-        <div class="govuk-notification-banner__header">
-            <h2 class="govuk-notification-banner__title" id="vla-warning-title">Important</h2>
-        </div>
-        <div class="govuk-notification-banner__content">
-            <p class="govuk-body">@warningMsg</p>
-        </div>
-    </section>
-}
+@await Html.PartialAsync("_CaseEditNotifications", new BSE.Host.Models.CaseEditNotificationsViewModel(
+    "vla", TempData["Success"] as string, TempData["Warning"] as string))
 
 @if (!string.IsNullOrEmpty(Model.ConcurrencyError))
 {
@@ -72,11 +56,6 @@
 }
 
 <form id="edit-vla-form" method="post" novalidate>
-    @if (!Model.CanEditMainCase)
-    {
-        <p class="govuk-body">You can view case details but cannot edit this page.</p>
-    }
-
     @if (Model.CanEditMainCase)
     {
         <input type="hidden" name="Rbse" value="@Model.Rbse" />
@@ -114,13 +93,15 @@
         <fieldset class="bse-form-fieldset-reset" disabled="@(vlaReadOnly ? "disabled" : null)">
         <div class="vla-legacy-grid">
             <div class="vla-legacy-field @(E("Case.BirthDate") is not null ? "govuk-form-group--error" : "")">
-                <div class="bse-vla-help-inline">
-                    <label for="Case_BirthDate" class="govuk-label">Date Of Birth <span id="birth-date-star" class="bse-vla-star-red" hidden="@(E("Case.BirthDate") is null)" title="@(E("Case.BirthDate") ?? "Please enter a valid date")">*</span> <span id="vla-inform-defra-star" class="bse-vla-star-green" hidden="@(!showInformDefraWarning)" title="DEFRA may need informing if you change the Date Of Birth">*</span></label>
-                </div>
+                <label for="Case_BirthDate" class="govuk-label">Date Of Birth</label>
                 <div>
                     @if (E("Case.BirthDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.BirthDate")</p> }
-                    <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input asp-for="Case.BirthDate" id="Case_BirthDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.BirthDate") is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateDisplay("Case.BirthDate", Model.Case.BirthDate)" />
+                    <div class="bse-vla-help-inline">
+                        <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                            <input asp-for="Case.BirthDate" id="Case_BirthDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.BirthDate") is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateDisplay("Case.BirthDate", Model.Case.BirthDate)" />
+                        </div>
+                        <span id="birth-date-star" class="bse-vla-star-red" hidden="@(E("Case.BirthDate") is null)" title="@(E("Case.BirthDate") ?? "Please enter a valid date")">*</span>
+                        <span id="vla-inform-defra-star" class="bse-vla-star-green" hidden="@(!showInformDefraWarning)" title="DEFRA may need informing if you change the Date Of Birth">*</span>
                     </div>
                 </div>
             </div>
@@ -132,7 +113,7 @@
                         <option value="">-- Select --</option>
                         @foreach (var o in Model.SexOptions)
                         {
-                            <option value="@o.Code" selected="@(o.Code == Model.Case.Sex ? "selected" : null)">@o.Description</option>
+                            <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.Sex)">@o.Description</option>
                         }
                     </select>
                 </div>
@@ -146,7 +127,7 @@
                         <option value="">-- Select --</option>
                         @foreach (var o in Model.BirthDateSourceOptions)
                         {
-                            <option value="@o.Code" selected="@(o.Code == Model.Case.BirthDateSource ? "selected" : null)">@o.Description</option>
+                            <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.BirthDateSource)">@o.Description</option>
                         }
                     </select>
                 </div>
@@ -159,7 +140,7 @@
                         <option value="">-- Select --</option>
                         @foreach (var o in Model.BreedOptions)
                         {
-                            <option value="@o.Code" selected="@(o.Code == Model.Case.Breed ? "selected" : null)">@o.Description</option>
+                            <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.Breed)">@o.Description</option>
                         }
                     </select>
                 </div>
@@ -177,7 +158,7 @@
                         <option value="">-- Select --</option>
                         @foreach (var o in Model.OriginOptions)
                         {
-                            <option value="@o.Code" selected="@(o.Code == Model.Case.Origin ? "selected" : null)">@o.Description</option>
+                            <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.Origin)">@o.Description</option>
                         }
                     </select>
                 </div>
@@ -192,11 +173,14 @@
         <div id="purchase-section">
             <div class="vla-legacy-grid">
                 <div class="vla-legacy-field @(E("Case.PurchaseDate") is not null ? "govuk-form-group--error" : "")">
-                    <label for="Case_PurchaseDate" class="govuk-label">Date Purchased <span id="purchase-date-star" class="bse-vla-star-red" hidden="@(E("Case.PurchaseDate") is null)" title="@(E("Case.PurchaseDate") ?? "Please enter a valid date")">*</span></label>
+                    <label for="Case_PurchaseDate" class="govuk-label">Date Purchased</label>
                     <div>
                         @if (E("Case.PurchaseDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.PurchaseDate")</p> }
-                        <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                            <input asp-for="Case.PurchaseDate" id="Case_PurchaseDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.PurchaseDate") is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateDisplay("Case.PurchaseDate", Model.Case.PurchaseDate)" disabled="@(purchaseFieldsDisabled ? "disabled" : null)" />
+                        <div class="bse-vla-help-inline">
+                            <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                                <input asp-for="Case.PurchaseDate" id="Case_PurchaseDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.PurchaseDate") is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateDisplay("Case.PurchaseDate", Model.Case.PurchaseDate)" disabled="@(purchaseFieldsDisabled ? "disabled" : null)" />
+                            </div>
+                            <span id="purchase-date-star" class="bse-vla-star-red" hidden="@(E("Case.PurchaseDate") is null)" title="@(E("Case.PurchaseDate") ?? "Please enter a valid date")">*</span>
                         </div>
                     </div>
                 </div>
@@ -215,7 +199,7 @@
                             <option value="">-- Select --</option>
                             @foreach (var o in Model.PurchasedCountyOptions)
                             {
-                                <option value="@o.Code" selected="@(o.Code == Model.Case.PurchasedCounty ? "selected" : null)">@o.Description</option>
+                                <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.PurchasedCounty)">@o.Description</option>
                             }
                         </select>
                     </div>
@@ -238,24 +222,28 @@
 
         <div class="vla-legacy-grid">
             <div class="vla-legacy-field @(E("Case.HerdEntryDate") is not null ? "govuk-form-group--error" : "")">
-                <div class="bse-vla-help-inline">
-                    <label for="Case_HerdEntryDate" class="govuk-label">Herd Entry Date <span id="herd-entry-date-star" class="bse-vla-star-red" hidden="@(E("Case.HerdEntryDate") is null)" title="@(E("Case.HerdEntryDate") ?? "Please enter a valid date")">*</span> <span id="vla-herd-date-warning-star" class="bse-vla-star-green" hidden title="Are you sure the Herd Entry is less than 18 months after the Date of Birth">*</span></label>
-                </div>
+                <label for="Case_HerdEntryDate" class="govuk-label">Herd Entry Date</label>
                 <div>
                     @if (E("Case.HerdEntryDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.HerdEntryDate")</p> }
-                    <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input asp-for="Case.HerdEntryDate" id="Case_HerdEntryDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.HerdEntryDate") is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateDisplay("Case.HerdEntryDate", Model.Case.HerdEntryDate)" />
+                    <div class="bse-vla-help-inline">
+                        <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                            <input asp-for="Case.HerdEntryDate" id="Case_HerdEntryDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.HerdEntryDate") is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateDisplay("Case.HerdEntryDate", Model.Case.HerdEntryDate)" />
+                        </div>
+                        <span id="herd-entry-date-star" class="bse-vla-star-red" hidden="@(E("Case.HerdEntryDate") is null)" title="@(E("Case.HerdEntryDate") ?? "Please enter a valid date")">*</span>
+                        <span id="vla-herd-date-warning-star" class="bse-vla-star-green" hidden title="Are you sure the Herd Entry is less than 18 months after the Date of Birth">*</span>
                     </div>
                 </div>
             </div>
             <div class="vla-legacy-field @(E("Case.OnsetDate") is not null ? "govuk-form-group--error" : "")">
-                <div class="bse-vla-help-inline">
-                    <label for="Case_OnsetDate" class="govuk-label">Onset Date <span id="onset-date-star" class="bse-vla-star-red" hidden="@(E("Case.OnsetDate") is null)" title="@(E("Case.OnsetDate") ?? "Please enter a valid date")">*</span> <span id="vla-onset-date-warning-star" class="bse-vla-star-green" hidden title="Are you sure that the onset date was more than 3 months before the Form A Date?">*</span></label>
-                </div>
+                <label for="Case_OnsetDate" class="govuk-label">Onset Date</label>
                 <div>
                     @if (E("Case.OnsetDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.OnsetDate")</p> }
-                    <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input asp-for="Case.OnsetDate" id="Case_OnsetDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.OnsetDate") is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateDisplay("Case.OnsetDate", Model.Case.OnsetDate)" />
+                    <div class="bse-vla-help-inline">
+                        <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                            <input asp-for="Case.OnsetDate" id="Case_OnsetDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.OnsetDate") is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateDisplay("Case.OnsetDate", Model.Case.OnsetDate)" />
+                        </div>
+                        <span id="onset-date-star" class="bse-vla-star-red" hidden="@(E("Case.OnsetDate") is null)" title="@(E("Case.OnsetDate") ?? "Please enter a valid date")">*</span>
+                        <span id="vla-onset-date-warning-star" class="bse-vla-star-green" hidden title="Are you sure that the onset date was more than 3 months before the Form A Date?">*</span>
                     </div>
                 </div>
             </div>
@@ -265,36 +253,47 @@
                 <div><input asp-for="Case.IsOnsetDateEst" id="Case_IsOnsetDateEst" type="checkbox" class="vla-legacy-checkbox" /></div>
             </div>
             <div class="vla-legacy-field @(E("Case.MonthsPregnant") is not null ? "govuk-form-group--error" : "")">
-                <label for="Case_MonthsPregnant" class="govuk-label">Months Pregnant <span id="months-pregnant-star" class="bse-vla-star-red" hidden title="This must be a value between 1 and 9">*</span></label>
+                <label for="Case_MonthsPregnant" class="govuk-label">Months Pregnant</label>
                 <div>
                     @if (E("Case.MonthsPregnant") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.MonthsPregnant")</p> }
-                    <input asp-for="Case.MonthsPregnant" id="Case_MonthsPregnant" type="number" class="govuk-input vla-legacy-input @(E("Case.MonthsPregnant") is not null ? "govuk-input--error" : "")" min="1" max="9" />
+                    <div class="bse-vla-help-inline">
+                        <input asp-for="Case.MonthsPregnant" id="Case_MonthsPregnant" type="number" class="govuk-input vla-legacy-input @(E("Case.MonthsPregnant") is not null ? "govuk-input--error" : "")" min="1" max="9" />
+                        <span id="months-pregnant-star" class="bse-vla-star-red" hidden title="This must be a value between 1 and 9">*</span>
+                    </div>
                 </div>
             </div>
 
             <div class="vla-legacy-field @(E("Case.MonthsPostCalving") is not null ? "govuk-form-group--error" : "")">
-                <label for="Case_MonthsPostCalving" class="govuk-label">Months Post Calving <span id="months-post-calving-star" class="bse-vla-star-red" hidden title="This must be a value between 1 and 3">*</span> <span id="months-pregnant-error-star" class="bse-vla-star-red" hidden title="You cannot enter a value for Month's Post Calving and Months Pregnant">*</span></label>
+                <label for="Case_MonthsPostCalving" class="govuk-label">Months Post Calving</label>
                 <div>
                     @if (E("Case.MonthsPostCalving") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.MonthsPostCalving")</p> }
-                    <input asp-for="Case.MonthsPostCalving" id="Case_MonthsPostCalving" type="number" class="govuk-input vla-legacy-input @(E("Case.MonthsPostCalving") is not null ? "govuk-input--error" : "")" min="1" max="3" />
+                    <div class="bse-vla-help-inline">
+                        <input asp-for="Case.MonthsPostCalving" id="Case_MonthsPostCalving" type="number" class="govuk-input vla-legacy-input @(E("Case.MonthsPostCalving") is not null ? "govuk-input--error" : "")" min="1" max="3" />
+                        <span id="months-post-calving-star" class="bse-vla-star-red" hidden title="This must be a value between 1 and 3">*</span>
+                        <span id="months-pregnant-error-star" class="bse-vla-star-red" hidden title="You cannot enter a value for Month's Post Calving and Months Pregnant">*</span>
+                    </div>
                 </div>
             </div>
             <div class="vla-legacy-field">
-                <div class="bse-vla-help-inline">
-                    <label class="govuk-label">Onset Age <span id="vla-onset-age-warning-star" class="bse-vla-star-green" hidden title="Are you sure that the onset age is less than 18 months?">*</span></label>
-                </div>
+                <label class="govuk-label">Onset Age</label>
                 <div class="vla-legacy-age-group vla-legacy-age-group--header">
-                    <button type="button" id="btn-calc-onset-age" class="govuk-button govuk-button--secondary vla-legacy-calc-button">Calculate</button>
+                    <div class="bse-vla-help-inline">
+                        <button type="button" id="btn-calc-onset-age" class="govuk-button govuk-button--secondary vla-legacy-calc-button">Calculate</button>
+                        <span id="vla-onset-age-warning-star" class="bse-vla-star-green" hidden title="Are you sure that the onset age is less than 18 months?">*</span>
+                    </div>
                 </div>
             </div>
 
             <div class="vla-legacy-field @(E("Case.SlaughterDate") is not null ? "govuk-form-group--error" : "")">
-                <label for="Case_SlaughterDate" class="govuk-label">Slaughter Date <span id="slaughter-date-star" class="bse-vla-star-red" hidden title="Please enter a valid date">*</span></label>
+                <label for="Case_SlaughterDate" class="govuk-label">Slaughter Date</label>
                 <div>
                     @if (E("Case.SlaughterDate") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @E("Case.SlaughterDate")</p> }
                     <p id="slaughter-date-error-message" class="govuk-error-message" hidden><span class="govuk-visually-hidden">Error:</span> <span id="slaughter-date-error-text"></span></p>
-                    <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input asp-for="Case.SlaughterDate" id="Case_SlaughterDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.SlaughterDate") is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.SlaughterDate)" />
+                    <div class="bse-vla-help-inline">
+                        <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                            <input asp-for="Case.SlaughterDate" id="Case_SlaughterDate" type="text" class="govuk-input vla-legacy-input moj-js-datepicker-input @(E("Case.SlaughterDate") is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.SlaughterDate)" />
+                        </div>
+                        <span id="slaughter-date-star" class="bse-vla-star-red" hidden title="Please enter a valid date">*</span>
                     </div>
                 </div>
             </div>
@@ -318,13 +317,13 @@
             <caption class="govuk-visually-hidden">Previous owners for @BseFormat.FormatRbse(Model.Case.Rbse)</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.OSort=="type" ? (Model.ODir=="asc" ? "ascending" : "descending") : "none")">
+                    <th scope="col" class="govuk-table__header" aria-sort="@OwnersSortAria("type")">
                         <a class="govuk-link govuk-link--no-visited-state" href="@Model.OwnersSortUrl("type")">Owner type</a>
                     </th>
-                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.OSort=="name" ? (Model.ODir=="asc" ? "ascending" : "descending") : "none")">
+                    <th scope="col" class="govuk-table__header" aria-sort="@OwnersSortAria("name")">
                         <a class="govuk-link govuk-link--no-visited-state" href="@Model.OwnersSortUrl("name")">Name</a>
                     </th>
-                    <th scope="col" class="govuk-table__header" aria-sort="@(Model.OSort=="cphh" ? (Model.ODir=="asc" ? "ascending" : "descending") : "none")">
+                    <th scope="col" class="govuk-table__header" aria-sort="@OwnersSortAria("cphh")">
                         <a class="govuk-link govuk-link--no-visited-state" href="@Model.OwnersSortUrl("cphh")">CPHH</a>
                     </th>
                     @if (Model.CanEditMainCase)
@@ -447,29 +446,27 @@
             <div class="govuk-button-group govuk-!-margin-bottom-4">
                 <button type="button" id="show-add-owner-row" class="govuk-button govuk-button--secondary" data-module="govuk-button">Add previous owner</button>
             </div>
-
-            @await Html.PartialAsync("_CaseSaveCancel", new BSE.Host.Models.CaseSaveCancelViewModel(Model.Rbse, "/Case/Vla", "CancelVlaEdit", MarginTop: true))
         }
         </fieldset>
 
         <div class="bse-case-bottom-row">
             <div class="govuk-button-group bse-case-bottom-row__left">
-                <a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse" asp-route-returnTo="/Case/Vla" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">Case audit log</a>
+                <a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse" asp-route-returnTo="/Case/Vla" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">Case audit log</a>
             </div>
 
             <div class="bse-case-bottom-row__right">
                 <div class="govuk-button-group bse-case-bottom-row__actions">
                     @if (!string.IsNullOrWhiteSpace(viewDocsUrl))
                     {
-                        <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">
+                        <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">
                             View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
                         </a>
                     }
                     @if (Model.CanEditMainCase)
                     {
                         <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
-                        <a asp-page="/Case/Vla" asp-page-handler="CancelVlaEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
                     }
+                    <a asp-page="/Case/Vla" asp-page-handler="CancelVlaEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
                 </div>
             </div>
         </div>
@@ -621,6 +618,7 @@
     .bse-vla-help-inline {
         display: inline-flex;
         align-items: center;
+        gap: 0.3rem;
         position: relative;
     }
 
@@ -643,11 +641,15 @@
     .bse-vla-star-red {
         color: #FF0000;
         font-weight: 700;
+        font-size: 1.8rem;
+        line-height: 1;
     }
 
     .bse-vla-star-green {
         color: #00703c;
         font-weight: 700;
+        font-size: 1.8rem;
+        line-height: 1;
     }
 </style>
 
@@ -714,6 +716,46 @@
 
         if (sexSel) {
             sexSel.addEventListener('change', applyPregnancyFieldAvailability);
+        }
+
+        // Legacy MakeControlsWritable: Date Of Birth/Onset Date Estimated checkboxes (and the
+        // Birth Date Source dropdown) are only enabled while their driving date has a value —
+        // clearing the date disables and unchecks/resets the dependent control too.
+        var birthDateInput = document.getElementById('Case_BirthDate');
+        var birthDateSourceSel = document.getElementById('Case_BirthDateSource');
+        var birthDateEstCheckbox = document.getElementById('Case_IsBirthDateEst');
+
+        function applyBirthDateEstimatedAvailability() {
+            if (!birthDateInput) return;
+            var hasBirthDate = parseUkDate(birthDateInput.value) !== null;
+            if (birthDateSourceSel) birthDateSourceSel.disabled = !hasBirthDate;
+            if (birthDateEstCheckbox) {
+                birthDateEstCheckbox.disabled = !hasBirthDate;
+                if (!hasBirthDate) birthDateEstCheckbox.checked = false;
+            }
+            if (!hasBirthDate && birthDateSourceSel) birthDateSourceSel.value = '';
+        }
+
+        if (birthDateInput) {
+            ['change', 'input', 'blur'].forEach(function (evt) {
+                birthDateInput.addEventListener(evt, applyBirthDateEstimatedAvailability);
+            });
+        }
+
+        var onsetDateInput = document.getElementById('Case_OnsetDate');
+        var onsetDateEstCheckbox = document.getElementById('Case_IsOnsetDateEst');
+
+        function applyOnsetDateEstimatedAvailability() {
+            if (!onsetDateInput || !onsetDateEstCheckbox) return;
+            var hasOnsetDate = parseUkDate(onsetDateInput.value) !== null;
+            onsetDateEstCheckbox.disabled = !hasOnsetDate;
+            if (!hasOnsetDate) onsetDateEstCheckbox.checked = false;
+        }
+
+        if (onsetDateInput) {
+            ['change', 'input', 'blur'].forEach(function (evt) {
+                onsetDateInput.addEventListener(evt, applyOnsetDateEstimatedAvailability);
+            });
         }
 
         function parseUkDate(value) {
@@ -1067,6 +1109,8 @@
         updateDateWarningIndicators();
         updateOnsetWarning();
         applyPregnancyFieldAvailability();
+        applyBirthDateEstimatedAvailability();
+        applyOnsetDateEstimatedAvailability();
 
         var showAddOwnerBtn = document.getElementById('show-add-owner-row');
         var addOwnerRow = document.getElementById('add-owner-row-inline');
@@ -1111,10 +1155,16 @@
 
         document.querySelectorAll('.bse-cancel-link').forEach(function (lnk) {
             lnk.addEventListener('click', function (e) {
-                var hasUnsaved = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.HasUnsavedOwnerChanges));
-                if ((dirty || hasUnsaved) && !window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
-                    e.preventDefault();
-                }
+                e.preventDefault();
+                var hasUnsavedHere = dirty || @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.HasUnsavedOwnerChanges));
+                // Legacy's dirty-check spans the whole shared session (every tab), not just this page.
+                (hasUnsavedHere ? Promise.resolve(true) : (window.hasUnsavedChangesAcrossTabs ? window.hasUnsavedChangesAcrossTabs() : Promise.resolve(false)))
+                    .then(function (hasUnsaved) {
+                        if (!hasUnsaved || window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+                            submitting = true; // suppress the beforeunload prompt firing again on this navigation
+                            window.location.href = lnk.href;
+                        }
+                    });
             });
         });
 

@@ -100,7 +100,7 @@ public sealed class EditModelHandlerTests
 
         result.Should().BeOfType<PageResult>();
         model.Case.Rbse.Should().Be(Rbse);
-        model.TempData["Warning"].Should().Be($"Case '{Rbse}' is not saved yet. Complete Farm first.");
+        model.TempData[RowStampTempDataKey].Should().Be(Convert.ToBase64String([]));
     }
 
     // Uncovered path: OnGetAsync's "case found" branch (lines ~101-116) — populates Case
@@ -139,9 +139,14 @@ public sealed class EditModelHandlerTests
 
         var result = await model.OnPostAsync();
 
+        // Legacy parity: a brand-new case lives entirely in the shared session object until
+        // the first Save from any tab, so posting this tab before the case exists no longer
+        // shows a blocking warning - it falls through to normal validation/staging. With no
+        // RowStamp TempData seeded (OnGetAsync wasn't called first), the handler treats this
+        // as an expired session.
         result.Should().BeOfType<PageResult>();
-        model.TempData["Warning"].Should().Be($"Case '{Rbse}' is not saved yet. Complete Farm first.");
-        await _caseService.DidNotReceive().EditCaseAsync(Arg.Any<EditCaseDetailsCommand>(), Arg.Any<int>());
+        model.ConcurrencyError.Should().Be("Session expired — please reload the page and try again.");
+        await _caseEditOrchestration.DidNotReceive().CommitAllAsync(Arg.Any<string>(), Arg.Any<int>());
     }
 
     // Uncovered path: ValidateBirthDate (extracted from the former 45-complexity
@@ -207,7 +212,7 @@ public sealed class EditModelHandlerTests
             EartagHerdmark = "GY1",
             EartagCountry = "UK"
         };
-        _caseEditOrchestration.CommitAllAsync(Rbse, 7).Returns(EditCaseResult.Success);
+        _caseEditOrchestration.CommitAllAsync(Rbse, 7).Returns(CaseCommitOutcome.Success([]));
 
         var result = await model.OnPostAsync();
 
@@ -216,15 +221,16 @@ public sealed class EditModelHandlerTests
         await _caseEditDraftState.Received(1).ClearAsync(Rbse, Arg.Any<CancellationToken>());
     }
 
-    // Uncovered path: OnPostAsync's ConcurrencyConflict branch (lines ~286-294) — reloads
-    // the current RowStamp from the database so a retry doesn't immediately fail again.
+    // Uncovered path: OnPostAsync's commit-outcome-has-warnings branch (lines ~343-348) —
+    // a per-table "modified by another user" conflict is now soft (CaseEditOrchestrationService
+    // folds a Case-level ConcurrencyConflict into CaseCommitOutcome.Warnings rather than failing
+    // the whole commit), so the save redirects to the partial-success SaveResult page instead of
+    // re-showing this page with a ConcurrencyError.
     [Fact]
-    public async Task OnPostAsync_WhenConcurrencyConflict_SetsErrorAndRefreshesRowStamp()
+    public async Task OnPostAsync_WhenCommitHasWarnings_RedirectsToPartialSuccessSaveResult()
     {
         var model = CreateModel(["DataEntry"]);
-        var original = MakeValidCaseRecord();
-        var refreshed = original with { RowStamp = [9, 9, 9] };
-        _caseService.GetCaseAsync(Rbse).Returns(original, refreshed);
+        _caseService.GetCaseAsync(Rbse).Returns(MakeValidCaseRecord());
         model.TempData[RowStampTempDataKey] = Convert.ToBase64String([1, 2, 3]);
         model.Case = new CaseEditViewModel
         {
@@ -234,14 +240,14 @@ public sealed class EditModelHandlerTests
             EartagHerdmark = "GY1",
             EartagCountry = "UK"
         };
-        _caseEditOrchestration.CommitAllAsync(Rbse, 7).Returns(EditCaseResult.ConcurrencyConflict);
+        _caseEditOrchestration.CommitAllAsync(Rbse, 7).Returns(
+            CaseCommitOutcome.Success([$"The case record with RBSE {Rbse} has been modified by another user"]));
 
         var result = await model.OnPostAsync();
 
         var redirect = result.Should().BeOfType<RedirectToPageResult>().Subject;
-        redirect.PageName.Should().Be("/Home");
-        model.TempData["ErrorMessage"].Should().BeOfType<string>()
-            .Which.Should().Contain("Another user has modified this case");
+        redirect.PageName.Should().Be("/Case/SaveResult");
+        redirect.RouteValues!["rbse"].Should().Be(Rbse);
     }
 
     // Uncovered path: OnPostAsync's generic failure switch expression (lines ~296-306) —
@@ -260,7 +266,7 @@ public sealed class EditModelHandlerTests
             EartagHerdmark = "GY1",
             EartagCountry = "UK"
         };
-        _caseEditOrchestration.CommitAllAsync(Rbse, 7).Returns(EditCaseResult.RbseNotFound);
+        _caseEditOrchestration.CommitAllAsync(Rbse, 7).Returns(CaseCommitOutcome.Failure(EditCaseResult.RbseNotFound));
 
         var result = await model.OnPostAsync();
 

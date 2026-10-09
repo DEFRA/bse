@@ -411,7 +411,6 @@ public sealed class PageModelCoverageTests
         var herdSizeRepo = Substitute.For<IHerdSizeRepository>();
         var lookups = Substitute.For<ILookupDataService>();
         var batchRepository = Substitute.For<IBatchRepository>();
-        var batchService = Substitute.For<IBatchService>();
         var wizardState = Substitute.For<ICaseWizardStateService>();
         var farmDraftState = Substitute.For<ICaseFarmDraftStateService>();
         var caseScalarDraftState = Substitute.For<ICaseScalarDraftStateService>();
@@ -426,7 +425,6 @@ public sealed class PageModelCoverageTests
             herdSizeRepo,
             lookups,
             batchRepository,
-            batchService,
             wizardState,
             farmDraftState,
             caseScalarDraftState,

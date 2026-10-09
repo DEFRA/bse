@@ -49,48 +49,8 @@
 
 @await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Clinical", Model.Rbse, Model.BatchNumbers, viewDocsUrl, canSaveClinical))
 
-@if (TempData["Success"] is string successMsg)
-{
-    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert"
-         aria-labelledby="clinical-success-title" data-module="govuk-notification-banner">
-        <div class="govuk-notification-banner__header">
-            <h2 class="govuk-notification-banner__title" id="clinical-success-title">Success</h2>
-        </div>
-        <div class="govuk-notification-banner__content">
-            <p class="govuk-notification-banner__heading">@successMsg</p>
-        </div>
-    </div>
-}
-
-@if (TempData["Warning"] is string warningMsg)
-{
-    <section class="govuk-notification-banner"
-         aria-labelledby="clinical-warning-title" data-module="govuk-notification-banner">
-        <div class="govuk-notification-banner__header">
-            <h2 class="govuk-notification-banner__title" id="clinical-warning-title">Important</h2>
-        </div>
-        <div class="govuk-notification-banner__content">
-            <p class="govuk-body">@warningMsg</p>
-        </div>
-    </section>
-}
-
-@if (!ViewContext.ModelState.IsValid)
-{
-    <div class="govuk-error-summary" data-module="govuk-error-summary">
-        <div role="alert">
-            <h2 class="govuk-error-summary__title">There is a problem</h2>
-            <div class="govuk-error-summary__body">
-                <ul class="govuk-list govuk-error-summary__list">
-                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
-                    {
-                        <li>@e.ErrorMessage</li>
-                    }
-                </ul>
-            </div>
-        </div>
-    </div>
-}
+@await Html.PartialAsync("_CaseEditNotifications", new BSE.Host.Models.CaseEditNotificationsViewModel(
+    "clinical", TempData["Success"] as string, TempData["Warning"] as string))
 
 <form method="post" novalidate id="case-clinical-inline-form">
     <input type="hidden" asp-for="Rbse" />
@@ -269,15 +229,15 @@
             <div class="govuk-button-group bse-case-bottom-row__actions">
                 @if (!string.IsNullOrWhiteSpace(viewDocsUrl))
                 {
-                    <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">
+                    <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">
                         View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
                     </a>
                 }
                 @if (canSaveClinical)
                 {
                     <button type="submit" asp-page-handler="SaveSigns" class="govuk-button" data-module="govuk-button">Save</button>
-                    <a asp-page="/Case/Clinical" asp-page-handler="CancelClinicalEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
                 }
+                <a asp-page="/Case/Clinical" asp-page-handler="CancelClinicalEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
             </div>
         </div>
     </div>
@@ -407,12 +367,26 @@
             });
         });
 
+        // Legacy's Cancel is a postback that captures the current form before checking for
+        // changes, so edits typed on this tab but never staged anywhere must count as unsaved too.
+        var cancelForm = document.getElementById('case-clinical-inline-form');
+        var formDirty = false;
+        if (cancelForm) {
+            cancelForm.addEventListener('input', function () { formDirty = true; });
+            cancelForm.addEventListener('change', function () { formDirty = true; });
+        }
+
         document.querySelectorAll('.bse-cancel-link').forEach(function (lnk) {
             lnk.addEventListener('click', function (e) {
-                var hasUnsaved = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.HasUnsavedChanges));
-                if (hasUnsaved && !window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
-                    e.preventDefault();
-                }
+                e.preventDefault();
+                var hasUnsavedHere = formDirty || @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.HasUnsavedChanges));
+                // Legacy's dirty-check spans the whole shared session (every tab), not just this page.
+                (hasUnsavedHere ? Promise.resolve(true) : (window.hasUnsavedChangesAcrossTabs ? window.hasUnsavedChangesAcrossTabs() : Promise.resolve(false)))
+                    .then(function (hasUnsaved) {
+                        if (!hasUnsaved || window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+                            window.location.href = lnk.href;
+                        }
+                    });
             });
         });
 

@@ -87,6 +87,11 @@ public class CaseWorkEntryModel(
 
     public async Task<IActionResult> OnGetAsync()
     {
+        // Legacy parity: CaseWorkEntry.aspx.vb's Page_Load redirects to SessionError.aspx when
+        // Session(SV_RBSENumber) is missing (session timeout, direct URL access, stale back-button).
+        if (string.IsNullOrWhiteSpace(Rbse))
+            return RedirectToPage("/SessionError");
+
         await LoadAsync();
         if (Entry is null) return Page();
 

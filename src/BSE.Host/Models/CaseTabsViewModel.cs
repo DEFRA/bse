@@ -14,4 +14,10 @@ public sealed record CaseTabsViewModel(
     string? ViewDocsUrl = null,
     // True to render the common Save/Cancel actions next to "View docs" for the active tab's
     // own form — each page computes this from its own edit-permission check.
-    bool CanEditCurrentTab = false);
+    bool CanEditCurrentTab = false,
+    // Overrides the per-ActiveTab Save handler/Cancel target below — used by Farm's new-case
+    // creation mode, whose Save/Cancel are "CreateCase"/plain navigate-to-Home rather than the
+    // existing-case "SaveFarm"/"CancelFarmEdit" handlers.
+    string? SaveHandlerOverride = null,
+    string? CancelPageOverride = null,
+    string? CancelHandlerOverride = null);

@@ -2,6 +2,9 @@ using BSE.Host.Models.ViewModels;
 using BSE.Host.Services;
 using BSE.Infrastructure;
 using BSE.Modules.AnimalRelations.Repositories;
+using BSE.Modules.Batch.Repositories;
+using BSE.Modules.CaseManagement.Commands;
+using BSE.Modules.CaseManagement.Enums;
 using BSE.Modules.CaseManagement.Models;
 using BSE.Modules.CaseManagement.Repositories;
 using BSE.Modules.FarmManagement.Models;
@@ -10,6 +13,7 @@ using BSE.SharedKernel;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using System.Data;
 
 namespace BSE.Modules.UserManagement.Tests;
 
@@ -25,6 +29,7 @@ public sealed class CaseEditOrchestrationServiceTests
     private readonly ICaseScalarDraftStateService _scalarDraftState = Substitute.For<ICaseScalarDraftStateService>();
     private readonly ICaseFeedsDraftStateService _feedsDraftState = Substitute.For<ICaseFeedsDraftStateService>();
     private readonly ICaseRelationsDraftStateService _relationsDraftState = Substitute.For<ICaseRelationsDraftStateService>();
+    private readonly ICaseWizardStateService _wizardState = Substitute.For<ICaseWizardStateService>();
     private readonly ICaseRepository _caseRepository = Substitute.For<ICaseRepository>();
     private readonly IFarmRepository _farmRepository = Substitute.For<IFarmRepository>();
     private readonly IBabRepository _babRepository = Substitute.For<IBabRepository>();
@@ -32,12 +37,14 @@ public sealed class CaseEditOrchestrationServiceTests
     private readonly IFeedRepository _feedRepository = Substitute.For<IFeedRepository>();
     private readonly IAnimalRelationsRepository _relationsRepository = Substitute.For<IAnimalRelationsRepository>();
     private readonly IPedigreeRepository _pedigreeRepository = Substitute.For<IPedigreeRepository>();
+    private readonly BSE.Modules.CaseWork.Repositories.ICaseWorkRepository _caseWorkRepository = Substitute.For<BSE.Modules.CaseWork.Repositories.ICaseWorkRepository>();
+    private readonly IBatchRepository _batchRepository = Substitute.For<IBatchRepository>();
     private readonly IDbConnectionFactory _connectionFactory = Substitute.For<IDbConnectionFactory>();
 
     private CaseEditOrchestrationService CreateService() => new(
-        _scalarDraftState, _feedsDraftState, _relationsDraftState,
+        _scalarDraftState, _feedsDraftState, _relationsDraftState, _wizardState,
         _caseRepository, _farmRepository, _babRepository, _clinicalRepository,
-        _feedRepository, _relationsRepository, _pedigreeRepository, _connectionFactory,
+        _feedRepository, _relationsRepository, _pedigreeRepository, _caseWorkRepository, _batchRepository, _connectionFactory,
         NullLogger<CaseEditOrchestrationService>.Instance);
 
     private static CaseRecord ValidCaseRecord() => new()
@@ -140,5 +147,62 @@ public sealed class CaseEditOrchestrationServiceTests
 
         var thrown = await act.Should().ThrowAsync<MandatoryCaseFieldsMissingException>();
         thrown.Which.Errors.Should().BeEquivalentTo(["Please enter an owner name for the farm."]);
+    }
+
+    [Fact]
+    public async Task CommitAllAsync_WhenCaseDoesNotExistYet_CreatesFarmAndCaseInOneTransaction()
+    {
+        // Legacy parity: a brand-new case lives only in the shared session DataSet until the first
+        // Save from any tab — CommitAllAsync must insert both Farm and Case rows together rather
+        // than trying (and failing) to UPDATE rows that don't exist yet.
+        _scalarDraftState.GetAsync(Rbse).Returns(new CaseScalarDraftState
+        {
+            Rbse = Rbse,
+            HasPendingChanges = true,
+            Farm = new UpdateFarmCommand(
+                CPHH: Cphh, OwnerName: "New Owner", Address1: "1 Farm Lane", Address2: null, Address3: null,
+                Postcode: null, Parish: "Some Parish", District: null, County: "Some County",
+                CorrespondenceAddress1: null, CorrespondenceAddress2: null, CorrespondenceAddress3: null,
+                CorrespondencePostcode: null, MapReference: null, Herdmark1: null, Herdmark2: null,
+                Herdmark3: null, NumericHerdmark1: null, NumericHerdmark2: null, AHO: "Some AHO",
+                HerdType: null, PedigreeType: null, IsDealer: false, ADNSRegionID: 5, RowStamp: []),
+            Case = new EditCaseCommand(
+                Rbse: Rbse, EartagCountry: "UK", EartagHerdmark: "12345", Eartag: "1", PreviousEartag: null,
+                Bse1ReceivedDate: null, FormADate: DateTime.Today, FormAResubmittedDate: null, FormBDate: null,
+                Fate: null, FormCDate: null, IsPurchaserBse1Received: false, IsBreederBse1Received: false,
+                IsVendor1Bse1Received: false, IsHomebredBse1Received: false, IsSummarySheetReceived: false,
+                IsPaperworkComplete: false, ReportedLocation: null, Survey: null, Notes: null, BirthDate: null,
+                IsBirthDateEst: null, DamStatus: null, BirthDateSource: null, ValuationAge: null, Sex: null,
+                Breed: null, Origin: null, PurchaseDate: null, PurchaseAgeInMonths: null, PurchasedCounty: null,
+                HerdEntryDate: null, OnsetDate: null, IsOnsetDateEst: null, MonthsPregnant: null,
+                MonthsPostCalving: null, OnsetAgeInMonths: null, SlaughterDate: null, RowStamp: [],
+                AlternateDiagnosis: null, LabComment: null, CaseType: null)
+        });
+        _feedsDraftState.GetAsync(Rbse).Returns((CaseFeedsDraftState?)null);
+        _relationsDraftState.GetAsync(Rbse).Returns((CaseRelationsDraftState?)null);
+        _wizardState.GetAsync().Returns((CaseWizardState?)null);
+
+        _caseRepository.GetCaseByRbseAsync(Rbse).Returns((CaseRecord?)null);
+        _farmRepository.GetByCphhAsync(Cphh).Returns((FarmRecord?)null);
+        _caseRepository.AddCaseAsync(Arg.Any<AddCaseCommand>(), Arg.Any<int>(), Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>())
+            .Returns(AddCaseResult.Success);
+
+        var connection = Substitute.For<IDbConnection>();
+        var transaction = Substitute.For<IDbTransaction>();
+        connection.BeginTransaction().Returns(transaction);
+        _connectionFactory.CreateConnection().Returns(connection);
+
+        var sut = CreateService();
+
+        var outcome = await sut.CommitAllAsync(Rbse, userId: 1);
+
+        outcome.Result.Should().Be(EditCaseResult.Success);
+        await _farmRepository.Received(1).AddAsync(
+            Arg.Is<AddFarmCommand>(f => f.CPHH == Cphh && f.OwnerName == "New Owner"), 1, connection, transaction);
+        await _caseRepository.Received(1).AddCaseAsync(
+            Arg.Is<AddCaseCommand>(c => c.Rbse == Rbse && c.Cphh == Cphh && c.Eartag == "1"), 1, connection, transaction);
+        await _farmRepository.DidNotReceive().UpdateAsync(Arg.Any<UpdateFarmCommand>(), Arg.Any<int>(), Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>());
+        await _caseRepository.DidNotReceive().EditCaseAsync(Arg.Any<EditCaseCommand>(), Arg.Any<int>(), Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>());
+        transaction.Received(1).Commit();
     }
 }

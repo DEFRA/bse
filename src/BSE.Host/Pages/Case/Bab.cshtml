@@ -8,12 +8,6 @@
         : $"{Model.SpolSiteUrl}{rbseNoSlash}";
     bool IsPurchasedOrigin(string? o) => string.Equals(o, "P", StringComparison.OrdinalIgnoreCase)
                                       || string.Equals(o, "Purchased", StringComparison.OrdinalIgnoreCase);
-    bool hasTracedData = !string.IsNullOrWhiteSpace(Model.Bab?.NatalCphh)
-                      || !string.IsNullOrWhiteSpace(Model.Bab?.TracedName)
-                      || !string.IsNullOrWhiteSpace(Model.Bab?.TracedAddress1)
-                      || !string.IsNullOrWhiteSpace(Model.Bab?.TracedAddress2)
-                      || !string.IsNullOrWhiteSpace(Model.Bab?.TracedAddress3)
-                      || !string.IsNullOrWhiteSpace(Model.Bab?.TracedPostcode);
     var babReadOnly = !Model.CanEditBabControls;
     var tracedReadOnly = babReadOnly || !IsPurchasedOrigin(Model.Origin);
 }
@@ -27,49 +21,8 @@
 
 @await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("BAB", Model.Rbse, Model.BatchNumbers, viewDocsUrl, Model.CanEditBabControls))
 
-@if (TempData["Success"] is string successMsg)
-{
-    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert"
-         aria-labelledby="bab-success-title" data-module="govuk-notification-banner">
-        <div class="govuk-notification-banner__header">
-            <h2 class="govuk-notification-banner__title" id="bab-success-title">Success</h2>
-        </div>
-        <div class="govuk-notification-banner__content">
-            <p class="govuk-notification-banner__heading">@successMsg</p>
-        </div>
-    </div>
-}
-
-@if (TempData["Warning"] is string warningMsg)
-{
-    <div class="govuk-notification-banner" role="region"
-         aria-labelledby="bab-warning-title" data-module="govuk-notification-banner">
-        <div class="govuk-notification-banner__header">
-            <h2 class="govuk-notification-banner__title" id="bab-warning-title">Important</h2>
-        </div>
-        <div class="govuk-notification-banner__content">
-            <p class="govuk-body">@warningMsg</p>
-        </div>
-    </div>
-}
-
-
-@if (!ViewContext.ModelState.IsValid)
-{
-    <div class="govuk-error-summary" data-module="govuk-error-summary">
-        <div role="alert">
-            <h2 class="govuk-error-summary__title">There is a problem</h2>
-            <div class="govuk-error-summary__body">
-                <ul class="govuk-list govuk-error-summary__list">
-                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
-                    {
-                        <li>@e.ErrorMessage</li>
-                    }
-                </ul>
-            </div>
-        </div>
-    </div>
-}
+@await Html.PartialAsync("_CaseEditNotifications", new BSE.Host.Models.CaseEditNotificationsViewModel(
+    "bab", TempData["Success"] as string, TempData["Warning"] as string))
 
 <form method="post" asp-page-handler="SaveBab" novalidate id="case-bab-inline-form">
         <input type="hidden" asp-for="Rbse" />
@@ -207,10 +160,6 @@
             <div class="bab-legacy-field"></div>
         </div>
 
-        @if (Model.CanEditBabControls)
-        {
-            @await Html.PartialAsync("_CaseSaveCancel", new BSE.Host.Models.CaseSaveCancelViewModel(Model.Rbse, "/Case/Bab", "CancelBabEdit", "SaveBab", MarginTop: true))
-        }
         </fieldset>
 
         <div class="bse-case-bottom-row">
@@ -218,15 +167,15 @@
                 <div class="govuk-button-group bse-case-bottom-row__actions">
                     @if (!string.IsNullOrWhiteSpace(viewDocsUrl))
                     {
-                        <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">
+                        <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">
                             View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
                         </a>
                     }
                     @if (Model.CanEditBabControls)
                     {
                         <button type="submit" asp-page-handler="SaveBab" class="govuk-button" data-module="govuk-button">Save</button>
-                        <a asp-page="/Case/Bab" asp-page-handler="CancelBabEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
                     }
+                    <a asp-page="/Case/Bab" asp-page-handler="CancelBabEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
                 </div>
             </div>
         </div>
@@ -412,10 +361,15 @@
 
         cancelLinks.forEach(function (cancel) {
             cancel.addEventListener('click', function (e) {
-                if (!dirty) return;
-                if (!window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
-                    e.preventDefault();
-                }
+                e.preventDefault();
+                // Legacy's dirty-check spans the whole shared session (every tab), not just this page.
+                (dirty ? Promise.resolve(true) : (window.hasUnsavedChangesAcrossTabs ? window.hasUnsavedChangesAcrossTabs() : Promise.resolve(false)))
+                    .then(function (hasUnsaved) {
+                        if (!hasUnsaved || window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+                            submitting = true; // suppress the beforeunload prompt firing again on this navigation
+                            window.location.href = cancel.href;
+                        }
+                    });
             });
         });
 

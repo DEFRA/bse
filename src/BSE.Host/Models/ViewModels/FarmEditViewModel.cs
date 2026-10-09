@@ -62,7 +62,7 @@ public class FarmEditViewModel
         CorrespondenceAddress1, CorrespondenceAddress2, CorrespondenceAddress3, CorrespondencePostcode,
         MapReference, Herdmark1, Herdmark2, Herdmark3, NumericHerdmark1, NumericHerdmark2,
         AHO, HerdType, PedigreeType, IsDealer, ADNSRegionID,
-        rowStamp);
+        rowStamp, AuthorityID, AuthorityCountyID);
 
     /// <summary>Overlays a staged-but-not-yet-committed Farm edit (from another tab's
     /// cross-tab draft) onto this view model, so revisiting the Farm tab shows pending
@@ -95,6 +95,8 @@ public class FarmEditViewModel
         PedigreeType = c.PedigreeType;
         IsDealer = c.IsDealer;
         ADNSRegionID = c.ADNSRegionID;
+        AuthorityID = c.AuthorityID;
+        AuthorityCountyID = c.AuthorityCountyID;
     }
 
     public static FarmEditViewModel FromRecord(FarmRecord r) => new()

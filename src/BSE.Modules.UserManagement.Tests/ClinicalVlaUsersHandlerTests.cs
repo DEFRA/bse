@@ -88,7 +88,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         var result = await model.OnGetAsync();
 
         result.Should().BeOfType<PageResult>();
-        model.TempData["Warning"].Should().Be($"Case '{Rbse}' is not saved yet. Complete Farm first.");
+        model.TempData[string.Format("VlaEdit_RowStamp_{0}", Rbse)].Should().Be(Convert.ToBase64String([]));
     }
 
     [Fact]
@@ -130,12 +130,14 @@ public sealed class ClinicalVlaUsersHandlerTests
 
         var result = await model.OnPostAsync();
 
+        // No row-stamp TempData was seeded for this request (OnGetAsync wasn't called first),
+        // so the handler treats this as an expired session rather than a missing case.
         result.Should().BeOfType<PageResult>();
-        model.TempData["Warning"].Should().Be($"Case '{Rbse}' is not saved yet. Complete Farm first.");
+        model.ConcurrencyError.Should().Be("Session expired — please reload the page and try again.");
     }
 
     [Fact]
-    public async Task VlaModel_OnPostAsync_ConcurrencyConflict_SetsConcurrencyError()
+    public async Task VlaModel_OnPostAsync_CommitHasWarnings_RedirectsToPartialSuccessSaveResult()
     {
         var model = CreateVlaModel(["DataEntry", "VLAAccess"]);
         _batchRepository.GetBatchNumbersByRbseAsync(Rbse).Returns(
@@ -143,7 +145,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         var caseRecord = new CaseRecord { Rbse = Rbse, Cphh = "01001000101", RowStamp = [1, 2, 3] };
         _caseService.GetCaseAsync(Rbse).Returns(caseRecord);
         _caseEditOrchestration.CommitAllAsync(Rbse, Arg.Any<int>())
-            .Returns(EditCaseResult.ConcurrencyConflict);
+            .Returns(CaseCommitOutcome.Success([$"The case record with RBSE {Rbse} has been modified by another user"]));
         _currentUserService.GetUserIdAsync().Returns(4);
 
         model.TempData[string.Format("VlaEdit_RowStamp_{0}", Rbse)] = Convert.ToBase64String([1, 2, 3]);
@@ -152,8 +154,8 @@ public sealed class ClinicalVlaUsersHandlerTests
         var result = await model.OnPostAsync();
 
         var redirect = result.Should().BeOfType<RedirectToPageResult>().Subject;
-        redirect.PageName.Should().Be("/Home");
-        model.TempData["ErrorMessage"].Should().NotBeNull();
+        redirect.PageName.Should().Be("/Case/SaveResult");
+        redirect.RouteValues!["rbse"].Should().Be(Rbse);
     }
 
     [Fact]
@@ -165,7 +167,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         var caseRecord = new CaseRecord { Rbse = Rbse, Cphh = "01001000101", RowStamp = [1, 2, 3] };
         _caseService.GetCaseAsync(Rbse).Returns(caseRecord);
         _caseEditOrchestration.CommitAllAsync(Rbse, Arg.Any<int>())
-            .Returns(EditCaseResult.Success);
+            .Returns(CaseCommitOutcome.Success([]));
         _currentUserService.GetUserIdAsync().Returns(4);
 
         model.TempData[string.Format("VlaEdit_RowStamp_{0}", Rbse)] = Convert.ToBase64String([1, 2, 3]);
@@ -516,19 +518,28 @@ public sealed class ClinicalVlaUsersHandlerTests
     [Fact]
     public async Task ClinicalModel_OnPostSaveSignsAsync_CaseNotFound_SetsWarning()
     {
+        // Legacy parity: a brand-new case lives entirely in the shared session object until the
+        // first Save from any tab, so posting Clinical signs before the Case row exists now routes
+        // through the orchestrator's case-creation path instead of showing a blocking warning.
         _caseRepository.GetCaseByRbseAsync(Rbse).Returns((CaseRecord?)null);
 
-        var model = CreateClinicalModel(["DataEntry"]);
+        var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
+        model.PageContext.HttpContext.Request.ContentType = "application/x-www-form-urlencoded";
+        model.PageContext.HttpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>());
+        _currentUserService.GetUserIdAsync().Returns(7);
+        _clinicalEditOrchestration.CommitAllAsync(Rbse, 7).Returns(CaseCommitOutcome.Success([]));
+
         var result = await model.OnPostSaveSignsAsync(null);
 
-        result.Should().BeOfType<RedirectToPageResult>();
-        model.TempData["Warning"].Should().Be($"Case '{Rbse}' is not saved yet. Complete Farm first.");
+        var redirect = result.Should().BeOfType<RedirectToPageResult>().Subject;
+        redirect.PageName.Should().Be("/Home");
+        await _clinicalEditOrchestration.Received(1).CommitAllAsync(Rbse, Arg.Any<int>());
     }
 
     [Fact]
     public async Task ClinicalModel_OnPostSaveSignsAsync_NoRowStamp_AddsSigns()
     {
-        var model = CreateClinicalModel(["DataEntry"]);
+        var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
         model.PageContext.HttpContext.Request.ContentType = "application/x-www-form-urlencoded";
         model.PageContext.HttpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>());
         _caseRepository.GetCaseByRbseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = "01001000101" });
@@ -544,12 +555,12 @@ public sealed class ClinicalVlaUsersHandlerTests
     [Fact]
     public async Task ClinicalModel_OnPostSaveSignsAsync_WithRowStamp_EditsSigns()
     {
-        var model = CreateClinicalModel(["DataEntry"]);
+        var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
         model.PageContext.HttpContext.Request.ContentType = "application/x-www-form-urlencoded";
         model.PageContext.HttpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>());
         _caseRepository.GetCaseByRbseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = "01001000101" });
-
-        _clinicalEditOrchestration.CommitAllAsync(Rbse, Arg.Any<int>()).Returns(EditCaseResult.Success);
+        _currentUserService.GetUserIdAsync().Returns(7);
+        _clinicalEditOrchestration.CommitAllAsync(Rbse, 7).Returns(CaseCommitOutcome.Success([]));
 
         var rowStampBase64 = Convert.ToBase64String([9, 9]);
         var result = await model.OnPostSaveSignsAsync(rowStampBase64);
@@ -583,7 +594,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     public async Task ClinicalModel_OnPostAddVisitRowAsync_Forbidden_WhenMissingRole()
     {
         var model = CreateClinicalModel(["DataEntry"]); // missing VLAAccess
-        var result = await model.OnPostAddVisitRowAsync();
+        var result = await model.OnPostAddVisitRowAsync(null);
         result.Should().BeOfType<ForbidResult>();
     }
 
@@ -595,7 +606,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
         model.NewVisitDate = null;
 
-        var result = await model.OnPostAddVisitRowAsync();
+        var result = await model.OnPostAddVisitRowAsync(null);
 
         result.Should().BeOfType<PageResult>();
         model.ShowAddVisitRow.Should().BeTrue();
@@ -610,7 +621,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
         model.NewVisitDate = new DateTime(2024, 1, 10);
 
-        var result = await model.OnPostAddVisitRowAsync();
+        var result = await model.OnPostAddVisitRowAsync(null);
 
         result.Should().BeOfType<RedirectToPageResult>();
         await _clinicalDraftState.Received(1).SetAsync(Arg.Is<CaseClinicalDraftState>(d =>
@@ -628,7 +639,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         _clinicalDraftState.GetAsync(Rbse).Returns(draft);
 
         var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
-        var result = await model.OnPostBeginEditVisitRowAsync("v1");
+        var result = await model.OnPostBeginEditVisitRowAsync("v1", null);
 
         result.Should().BeOfType<PageResult>();
         model.ReopenEditClientKey.Should().Be("v1");
@@ -649,7 +660,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         model.EditingClientKey = "v1";
         model.EditVisitDate = new DateTime(2024, 3, 1);
 
-        var result = await model.OnPostUpdateVisitRowAsync();
+        var result = await model.OnPostUpdateVisitRowAsync(null);
 
         result.Should().BeOfType<RedirectToPageResult>();
         await _clinicalDraftState.Received(1).SetAsync(Arg.Is<CaseClinicalDraftState>(d =>
@@ -667,7 +678,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         _clinicalDraftState.GetAsync(Rbse).Returns(draft);
 
         var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
-        var result = await model.OnPostDeleteVisitAsync("v1");
+        var result = await model.OnPostDeleteVisitAsync("v1", null);
 
         result.Should().BeOfType<RedirectToPageResult>();
         await _clinicalDraftState.Received(1).SetAsync(Arg.Is<CaseClinicalDraftState>(d => d.Visits.Count == 0));
@@ -1089,7 +1100,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     public async Task ClinicalModel_OnPostBeginEditVisitRowAsync_Forbidden_WhenMissingRole()
     {
         var model = CreateClinicalModel(["DataEntry"]); // missing VLAAccess
-        var result = await model.OnPostBeginEditVisitRowAsync("v1");
+        var result = await model.OnPostBeginEditVisitRowAsync("v1", null);
         result.Should().BeOfType<ForbidResult>();
     }
 
@@ -1097,7 +1108,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     public async Task ClinicalModel_OnPostUpdateVisitRowAsync_Forbidden_WhenMissingRole()
     {
         var model = CreateClinicalModel(["VLAAccess"]); // missing DataEntry
-        var result = await model.OnPostUpdateVisitRowAsync();
+        var result = await model.OnPostUpdateVisitRowAsync(null);
         result.Should().BeOfType<ForbidResult>();
     }
 
@@ -1105,7 +1116,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     public async Task ClinicalModel_OnPostDeleteVisitAsync_Forbidden_WhenMissingRole()
     {
         var model = CreateClinicalModel(["VLAAccess"]); // missing DataEntry
-        var result = await model.OnPostDeleteVisitAsync("v1");
+        var result = await model.OnPostDeleteVisitAsync("v1", null);
         result.Should().BeOfType<ForbidResult>();
     }
 
@@ -1121,7 +1132,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         });
         model.NewVisitDate = existingDate;
 
-        var result = await model.OnPostAddVisitRowAsync();
+        var result = await model.OnPostAddVisitRowAsync(null);
 
         result.Should().BeOfType<PageResult>();
         model.ModelState[nameof(ClinicalModel.NewVisitDate)]!.Errors.Should()
@@ -1136,7 +1147,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         _clinicalDraftState.GetAsync(Rbse).Returns(new CaseClinicalDraftState { Rbse = Rbse });
         model.NewVisitDate = new DateTime(2023, 12, 31);
 
-        var result = await model.OnPostAddVisitRowAsync();
+        var result = await model.OnPostAddVisitRowAsync(null);
 
         result.Should().BeOfType<PageResult>();
         model.ModelState[nameof(ClinicalModel.NewVisitDate)]!.Errors.Should()
@@ -1150,7 +1161,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         _clinicalDraftState.GetAsync(Rbse).Returns(new CaseClinicalDraftState { Rbse = Rbse });
         model.NewVisitDate = DateTime.Today.AddDays(5);
 
-        var result = await model.OnPostAddVisitRowAsync();
+        var result = await model.OnPostAddVisitRowAsync(null);
 
         result.Should().BeOfType<PageResult>();
         model.ModelState[nameof(ClinicalModel.NewVisitDate)]!.Errors.Should()
@@ -1164,7 +1175,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         _clinicalDraftState.GetAsync(Rbse).Returns(new CaseClinicalDraftState { Rbse = Rbse });
         model.EditingClientKey = "missing";
 
-        var result = await model.OnPostUpdateVisitRowAsync();
+        var result = await model.OnPostUpdateVisitRowAsync(null);
 
         result.Should().BeOfType<RedirectToPageResult>();
         model.TempData["ErrorMessage"].Should().Be("The clinical visit row being edited no longer exists.");
@@ -1187,7 +1198,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         model.EditingClientKey = "v2";
         model.EditVisitDate = sharedDate;
 
-        var result = await model.OnPostUpdateVisitRowAsync();
+        var result = await model.OnPostUpdateVisitRowAsync(null);
 
         result.Should().BeOfType<PageResult>();
         model.ReopenEditClientKey.Should().Be("v2");
@@ -1216,7 +1227,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     [Fact]
     public async Task ClinicalModel_OnPostSaveSignsAsync_RemovesVisitNoLongerStaged()
     {
-        var model = CreateClinicalModel(["DataEntry"]);
+        var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
         model.PageContext.HttpContext.Request.ContentType = "application/x-www-form-urlencoded";
         model.PageContext.HttpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>());
         _caseRepository.GetCaseByRbseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = "01001000101" });
@@ -1238,7 +1249,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     [Fact]
     public async Task ClinicalModel_OnPostSaveSignsAsync_EditsVisitWhenDateChanged()
     {
-        var model = CreateClinicalModel(["DataEntry"]);
+        var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
         model.PageContext.HttpContext.Request.ContentType = "application/x-www-form-urlencoded";
         model.PageContext.HttpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>());
         _caseRepository.GetCaseByRbseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = "01001000101" });
@@ -1262,7 +1273,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     [Fact]
     public async Task ClinicalModel_OnPostSaveSignsAsync_SkipsUnchangedPersistedVisit()
     {
-        var model = CreateClinicalModel(["DataEntry"]);
+        var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
         model.PageContext.HttpContext.Request.ContentType = "application/x-www-form-urlencoded";
         model.PageContext.HttpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>());
         _caseRepository.GetCaseByRbseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = "01001000101" });

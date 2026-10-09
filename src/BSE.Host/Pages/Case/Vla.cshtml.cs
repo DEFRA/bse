@@ -1,4 +1,5 @@
 ﻿using BSE.Host.Models.ViewModels;
+using BSE.Host.Helpers;
 using BSE.Host.Services;
 using BSE.Infrastructure;
 using BSE.Modules.Batch.Models;
@@ -86,18 +87,28 @@ public class VlaModel(
 
     public async Task<IActionResult> OnGetAsync()
     {
+        // Legacy parity: CaseEntryVLA.aspx.vb's Page_Load redirects to SessionError.aspx when
+        // Session(SV_RBSENumber) is missing (session timeout, direct URL access, stale back-button).
+        if (string.IsNullOrWhiteSpace(Rbse))
+            return RedirectToPage("/SessionError");
+
         var record = await caseService.GetCaseAsync(Rbse);
-        if (record is null)
+
+        // Legacy parity: a brand-new case lives entirely in the shared session object until the
+        // first Save from *any* tab — CaseEditOrchestrationService.CommitAllAsync can create the
+        // case from whichever tab's data is staged (it only needs Farm staged with a CPHH), so
+        // this tab no longer forces the user back to Farm's own Save first.
+        Case.Rbse = Rbse;
+        if (record is not null)
         {
-            Case.Rbse = Rbse;
-            SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
-            await LoadLookupsAsync();
-            TempData[WarningKey] = $"Case '{Rbse}' is not saved yet. Complete Farm first.";
-            return Page();
+            TempData[string.Format(RowStampKey, Rbse)] = Convert.ToBase64String(record.RowStamp ?? []);
+            Case = VlaEditViewModel.FromRecord(record);
+        }
+        else
+        {
+            TempData[string.Format(RowStampKey, Rbse)] = Convert.ToBase64String([]);
         }
 
-        TempData[string.Format(RowStampKey, Rbse)] = Convert.ToBase64String(record.RowStamp ?? []);
-        Case = VlaEditViewModel.FromRecord(record);
         SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
         HasTracedBabData = await HasTracedBabDataAsync(Rbse);
 
@@ -124,30 +135,18 @@ public class VlaModel(
         if (!await LoadBatchContextAndCheckEditPermissionAsync(caseRbse))
             return RedirectToPage(new { rbse = caseRbse });
 
-        var persistedRecord = await caseService.GetCaseAsync(caseRbse);
-        if (persistedRecord is null)
-        {
-            Case.Rbse = caseRbse;
-            SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
-            await LoadLookupsAsync();
-            TempData[WarningKey] = $"Case '{caseRbse}' is not saved yet. Complete Farm first.";
-            return Page();
-        }
+        // Legacy parity: a brand-new case lives entirely in the shared session object until the
+        // first Save from *any* tab — CaseEditOrchestrationService.CommitAllAsync can create the
+        // case from whichever tab's data is staged, so this tab no longer forces the user back
+        // to Farm's own Save first (matches the GET side's equivalent fix above).
+        Case.Rbse = caseRbse;
 
         HasTracedBabData = await HasTracedBabDataAsync(caseRbse);
 
         SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
         await LoadLookupsAsync();
 
-        if (Case.Origin != "P")
-        {
-            Case.PurchaseDate = null;
-            Case.PurchaseAgeInMonths = null;
-            Case.PurchasedCounty = null;
-        }
-
-        if (Case.FormBDate.HasValue && !Case.SlaughterDate.HasValue)
-            Case.SlaughterDate = Case.FormBDate;
+        ApplyLegacyPreSaveNormalizations();
 
         ValidateVlaDomainRules();
 
@@ -158,9 +157,9 @@ public class VlaModel(
         }
 
         var rowStampBase64 = TempData[string.Format(RowStampKey, Rbse)]?.ToString();
-        if (string.IsNullOrEmpty(rowStampBase64))
+        if (rowStampBase64 is null)
         {
-            ConcurrencyError = "Session expired â€” please reload the page and try again.";
+            ConcurrencyError = "Session expired — please reload the page and try again.";
             return Page();
         }
 
@@ -170,43 +169,23 @@ public class VlaModel(
         await StageCaseScalarEditAsync(rowStampBase64);
 
         var userId = await currentUserService.GetUserIdAsync();
-        EditCaseResult result;
-        try
-        {
-            result = await caseEditOrchestration.CommitAllAsync(caseRbse, userId);
-        }
-        catch (MandatoryCaseFieldsMissingException ex)
-        {
-            // Legacy parity: CaseEntrySave.aspx shows the consolidated list of missing items with
-            // a "Return" button instead of a single inline banner.
-            SaveResultModel.Stage(TempData, SaveResultMode.MissingMandatoryFields, ex.Errors);
-            return RedirectToPage("/Case/SaveResult", new { rbse = caseRbse });
-        }
-
-        if (result == EditCaseResult.ConcurrencyConflict)
-        {
-            // Legacy parity: CaseEntrySave.aspx shows the failure and navigates to Home.aspx on
-            // any commit failure, rather than staying on the originating tab.
-            TempData["ErrorMessage"] = "Another user has modified this case since you loaded it. " +
-                                       "Please reload and try again.";
-            return RedirectToPage("/Home");
-        }
-
-        if (result != EditCaseResult.Success)
-        {
-            var message = result switch
+        var (failureRedirect, commitOutcome) = await CaseCommitHelper.CommitAllAsync(
+            this, caseEditOrchestration, caseRbse, userId,
+            result => result switch
             {
                 EditCaseResult.RbseNotFound    => $"Case '{Rbse}' not found.",
                 EditCaseResult.AuditLogError   => "Audit log error during update.",
                 EditCaseResult.PostUpdateError => "Database error after update.",
                 _                              => $"Update failed: {result}"
-            };
-            TempData["ErrorMessage"] = message;
-            return RedirectToPage("/Home");
-        }
+            });
+        if (failureRedirect is not null)
+            return failureRedirect;
 
         await PersistStagedOwnersAsync(caseRbse);
         await caseEditDraftState.ClearAsync(caseRbse);
+
+        if (CaseCommitHelper.TryStageWarnings(this, commitOutcome!, caseRbse) is { } warningRedirect)
+            return warningRedirect;
 
         // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx on a fully successful
         // save, clearing the session case state — not back to the tab the user was on.
@@ -228,22 +207,10 @@ public class VlaModel(
         if (!await LoadBatchContextAndCheckEditPermissionAsync(caseRbse))
             return RedirectToPage(targetPage, new { rbse = caseRbse });
 
-        var persistedRecord = await caseService.GetCaseAsync(caseRbse);
-        if (persistedRecord is null)
-            return RedirectToPage(targetPage, new { rbse = caseRbse });
-
         SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
         await LoadLookupsAsync();
 
-        if (Case.Origin != "P")
-        {
-            Case.PurchaseDate = null;
-            Case.PurchaseAgeInMonths = null;
-            Case.PurchasedCounty = null;
-        }
-
-        if (Case.FormBDate.HasValue && !Case.SlaughterDate.HasValue)
-            Case.SlaughterDate = Case.FormBDate;
+        ApplyLegacyPreSaveNormalizations();
 
         ValidateVlaDomainRules();
 
@@ -254,9 +221,9 @@ public class VlaModel(
         }
 
         var rowStampBase64 = TempData[string.Format(RowStampKey, Rbse)]?.ToString();
-        if (string.IsNullOrEmpty(rowStampBase64))
+        if (rowStampBase64 is null)
         {
-            ConcurrencyError = "Session expired â€” please reload the page and try again.";
+            ConcurrencyError = "Session expired — please reload the page and try again.";
             return Page();
         }
 
@@ -272,8 +239,19 @@ public class VlaModel(
         var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
         draft.CaseBaseRowStampBase64 ??= rowStampBase64;
         var baseRowStamp = Convert.FromBase64String(draft.CaseBaseRowStampBase64);
-        draft.Case = Case.ToEditCommand(baseRowStamp);
-        draft.HasPendingChanges = true;
+        var newCommand = Case.ToEditCommand(baseRowStamp);
+
+        // Legacy parity: UpdateSessionWithCaseDetails() runs on every tab-switch too, but legacy's
+        // DataSetHasChanges() only flags a genuine edit — merely switching tabs without typing
+        // anything must not trip the cross-tab unsaved-changes exit warning.
+        var persistedRecord = await caseService.GetCaseAsync(Rbse);
+        var baseline = persistedRecord is not null
+            ? VlaEditViewModel.FromRecord(persistedRecord).ToEditCommand(baseRowStamp)
+            : null;
+
+        draft.Case = newCommand;
+        if (DraftChangeDetector.IsDifferentFromPersisted(newCommand, baseline))
+            draft.HasPendingChanges = true;
         await caseScalarDraftState.SetAsync(draft);
     }
 
@@ -282,6 +260,19 @@ public class VlaModel(
         var staged = await caseScalarDraftState.GetAsync(Rbse);
         if (staged?.Case is not null)
             Case.ApplyStagedCommand(staged.Case);
+    }
+
+    /// <summary>Stages the currently posted (model-bound) <see cref="Case"/> scalars — e.g. Purchased
+    /// County, Purchase Date — into the shared cross-tab draft before an Other-Owners grid handler
+    /// redirects. Without this, a scalar field edited in the same submission as an Add/Edit/Delete
+    /// owner-row action is silently discarded: the redirect triggers a fresh GET that reloads
+    /// <see cref="Case"/> from the database and overlays only what was already staged, not what was
+    /// just posted in this exact request.</summary>
+    private async Task StagePostedCaseScalarsBeforeRedirectAsync()
+    {
+        var rowStampBase64 = TempData[string.Format(RowStampKey, Rbse)]?.ToString();
+        if (rowStampBase64 is not null)
+            await StageCaseScalarEditAsync(rowStampBase64);
     }
 
     public async Task<IActionResult> OnGetCancelVlaEditAsync()
@@ -318,6 +309,10 @@ public class VlaModel(
         return Page();
     }
 
+    // Note: OnPostBeginEditOwnerRowAsync above redirects on its early-exit paths only (no edit
+    // permission, owner not found) and returns Page() on success, so it never needs to stage —
+    // Case remains whatever was model-bound from this exact POST when the page re-renders.
+
     public async Task<IActionResult> OnPostAddOwnerRowAsync()
     {
         if (!User.IsInRole(DataEntryRole))
@@ -352,6 +347,7 @@ public class VlaModel(
         });
         draft.HasPendingChanges = true;
         await caseEditDraftState.SetAsync(draft);
+        await StagePostedCaseScalarsBeforeRedirectAsync();
 
         return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
     }
@@ -392,6 +388,7 @@ public class VlaModel(
         owner.Cphh = string.IsNullOrWhiteSpace(normalizedCphh) ? null : normalizedCphh;
         draft.HasPendingChanges = true;
         await caseEditDraftState.SetAsync(draft);
+        await StagePostedCaseScalarsBeforeRedirectAsync();
 
         return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
     }
@@ -402,6 +399,7 @@ public class VlaModel(
             return Forbid();
 
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
+        Rbse = caseRbse;
         if (!await LoadBatchContextAndCheckEditPermissionAsync(caseRbse))
             return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
 
@@ -416,6 +414,7 @@ public class VlaModel(
         draft.OtherOwners.Remove(owner);
         draft.HasPendingChanges = true;
         await caseEditDraftState.SetAsync(draft);
+        await StagePostedCaseScalarsBeforeRedirectAsync();
         return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
     }
 
@@ -630,6 +629,31 @@ public class VlaModel(
                 normalizedName,
                 normalizedCphh), conn, tx);
         }
+    }
+
+    /// <summary>Legacy parity (MakeControlsWritable's Date-of-Birth/Onset-Date-driven gates):
+    /// a date field being cleared also clears/disables whatever depends on it, so a stale
+    /// Estimated flag or Source value never gets saved once its date is blank.</summary>
+    private void ApplyLegacyPreSaveNormalizations()
+    {
+        if (Case.Origin != "P")
+        {
+            Case.PurchaseDate = null;
+            Case.PurchaseAgeInMonths = null;
+            Case.PurchasedCounty = null;
+        }
+
+        if (Case.FormBDate.HasValue && !Case.SlaughterDate.HasValue)
+            Case.SlaughterDate = Case.FormBDate;
+
+        if (!Case.BirthDate.HasValue)
+        {
+            Case.BirthDateSource = null;
+            Case.IsBirthDateEst = false;
+        }
+
+        if (!Case.OnsetDate.HasValue)
+            Case.IsOnsetDateEst = false;
     }
 
     private void ValidateVlaDomainRules()

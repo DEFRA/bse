@@ -4,6 +4,14 @@
 @{
     ViewData["Title"] = $"Case {Model.Case.Rbse} — DEFRA tab";
     string DateVal(DateTime? d) => d?.ToString("dd/MM/yyyy") ?? "";
+    static bool IsSelected(string? optionCode, string? currentValue) =>
+        string.Equals(optionCode, currentValue, StringComparison.OrdinalIgnoreCase);
+
+    string TestsSortAria(string column)
+    {
+        if (Model.TSort != column) return "none";
+        return Model.TDir == "asc" ? "ascending" : "descending";
+    }
     string rbseNoSlash = Model.Case.Rbse.Replace("/", "");
     var viewDocsUrl = string.IsNullOrWhiteSpace(Model.SpolSiteUrl)
         ? null
@@ -20,7 +28,6 @@
     {
         eartagHintText = "Country-coded";
     }
-    var isDefraDataEntry = User.IsInRole("DataEntry") && !User.IsInRole("VLAAccess");
 
     string? eEartag       = ViewData.ModelState["Case.EartagCountry"]?.Errors.FirstOrDefault()?.ErrorMessage;
     string? eFormA         = ViewData.ModelState["Case.FormADate"]?.Errors.FirstOrDefault()?.ErrorMessage;
@@ -61,49 +68,10 @@
     </ol>
 </nav>
 
-@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Case (DEFRA)", Model.Case.Rbse, Model.BatchNumbers, viewDocsUrl, User.IsInRole("DataEntry")))
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Case (DEFRA)", Model.Case.Rbse, Model.BatchNumbers, viewDocsUrl, Model.CanEditCaseFields))
 
-@if (TempData["Success"] is string successMsg)
-{
-    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert" aria-labelledby="defra-success-title" data-module="govuk-notification-banner">
-        <div class="govuk-notification-banner__header">
-            <h2 class="govuk-notification-banner__title" id="defra-success-title">Success</h2>
-        </div>
-        <div class="govuk-notification-banner__content">
-            <p class="govuk-notification-banner__heading">@successMsg</p>
-        </div>
-    </div>
-}
-
-@if (TempData["Warning"] is string warningMsg)
-{
-    <section class="govuk-notification-banner"
-         aria-labelledby="defra-warning-title" data-module="govuk-notification-banner">
-        <div class="govuk-notification-banner__header">
-            <h2 class="govuk-notification-banner__title" id="defra-warning-title">Important</h2>
-        </div>
-        <div class="govuk-notification-banner__content">
-            <p class="govuk-body">@warningMsg</p>
-        </div>
-    </section>
-}
-
-@if (!ViewContext.ModelState.IsValid)
-{
-    <div class="govuk-error-summary" data-module="govuk-error-summary">
-        <div role="alert">
-            <h2 class="govuk-error-summary__title">There is a problem</h2>
-            <div class="govuk-error-summary__body">
-                <ul class="govuk-list govuk-error-summary__list">
-                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
-                    {
-                        <li>@e.ErrorMessage</li>
-                    }
-                </ul>
-            </div>
-        </div>
-    </div>
-}
+@await Html.PartialAsync("_CaseEditNotifications", new BSE.Host.Models.CaseEditNotificationsViewModel(
+    "defra", TempData["Success"] as string, TempData["Warning"] as string))
 
 @if (!string.IsNullOrEmpty(Model.ConcurrencyError))
 {
@@ -117,15 +85,11 @@
 }
 
 <form method="post" novalidate id="case-edit-inline-form">
-    <fieldset class="bse-form-fieldset-reset" disabled="@(!User.IsInRole("DataEntry") ? "disabled" : null)">
-        @if (!User.IsInRole("DataEntry"))
-        {
-            <p class="govuk-body">You can view case details but cannot edit this page.</p>
-        }
-
+    <fieldset class="bse-form-fieldset-reset" disabled="@(!Model.CanEditCaseFields ? "disabled" : null)">
         <input type="hidden" name="Rbse" value="@Model.Rbse" />
         <input type="hidden" asp-for="Case.Rbse" />
         <input type="hidden" asp-for="Case.HasCaseWork" />
+        <input type="hidden" asp-for="Case.IsCaseClosed" />
         <input type="hidden" asp-for="Case.RbseDate" />
         <input type="hidden" asp-for="Case.Sex" />
         <input type="hidden" asp-for="Case.Breed" />
@@ -226,18 +190,24 @@
                 </div>
                 <div class="defra-legacy-field @(eFate is not null ? "govuk-form-group--error" : "")">
                     <label asp-for="Case.Fate" class="govuk-label">Fate (Form B reason)</label>
-                    @if (eFate is null && showFateRequiredStar)
-                    {
-                        <span class="defra-legacy-required-star" title="You must enter a Form B Reason" aria-hidden="true">*</span>
-                    }
                     @if (eFate is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eFate</p> }
-                    <select asp-for="Case.Fate" class="govuk-select defra-legacy-input--sm @(eFate is not null ? "govuk-select--error" : "")" disabled="@(!hasFormB)">
-                        <option value="">-- Select --</option>
-                        @foreach (var o in Model.FateOptions)
+                    <div class="bse-eartag-help-inline">
+                        <select asp-for="Case.Fate" class="govuk-select defra-legacy-input--sm @(eFate is not null ? "govuk-select--error" : "")" disabled="@(!hasFormB)">
+                            <option value="">-- Select --</option>
+                            @foreach (var o in Model.FateOptions)
+                            {
+                                <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.Fate)">@o.Description</option>
+                            }
+                        </select>
+                        @if (eFate is null && showFateRequiredStar)
                         {
-                            <option value="@o.Code" selected="@(o.Code == Model.Case.Fate ? "selected" : null)">@o.Description</option>
+                            <span id="fate-required-star" class="defra-legacy-required-star" title="You must enter a Form B Reason" aria-hidden="true">*</span>
                         }
-                    </select>
+                        else
+                        {
+                            <span id="fate-required-star" class="defra-legacy-required-star" title="You must enter a Form B Reason" aria-hidden="true" hidden>*</span>
+                        }
+                    </div>
                 </div>
             </div>
 
@@ -281,9 +251,9 @@
                 <caption class="govuk-visually-hidden">Test records for @BseFormat.FormatRbse(Model.Case.Rbse)</caption>
                 <thead class="govuk-table__head">
                     <tr class="govuk-table__row">
-                        <th scope="col" class="govuk-table__header" aria-sort="@(Model.TSort=="type" ? (Model.TDir=="asc" ? "ascending" : "descending") : "none")">
+                        <th scope="col" class="govuk-table__header" aria-sort="@TestsSortAria("type")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.TestsSortUrl("type")">Test type</a>
-                        </th>                        <th scope="col" class="govuk-table__header" aria-sort="@(Model.TSort=="result" ? (Model.TDir=="asc" ? "ascending" : "descending") : "none")">
+                        </th>                        <th scope="col" class="govuk-table__header" aria-sort="@TestsSortAria("result")">
                             <a class="govuk-link govuk-link--no-visited-state" href="@Model.TestsSortUrl("result")">Test result</a>
                         </th>
                         <th scope="col" class="govuk-table__header">Action</th>
@@ -309,7 +279,7 @@
                                         <option value="">-- Select --</option>
                                         @foreach (var o in Model.TestTypeOptions)
                                         {
-                                            <option value="@o.Code" selected="@(string.Equals(Model.EditTestType, o.Code, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@o.Description</option>
+                                            <option value="@o.Code" selected="@IsSelected(o.Code, Model.EditTestType)">@o.Description</option>
                                         }
                                     </select>
                                 </td>
@@ -319,7 +289,7 @@
                                         <option value="">-- Select --</option>
                                         @foreach (var o in Model.TestResultOptions)
                                         {
-                                            <option value="@o.Code" selected="@(string.Equals(Model.EditTestResult, o.Code, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@o.Description</option>
+                                            <option value="@o.Code" selected="@IsSelected(o.Code, Model.EditTestResult)">@o.Description</option>
                                         }
                                     </select>
                                 </td>
@@ -345,7 +315,7 @@
                                     {
                                         <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
                                             <button type="submit" asp-page-handler="BeginEditTestRow" asp-route-id="@t.Id" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">Change</button>
-                                            <button type="submit" asp-page-handler="DeleteTest" asp-route-id="@t.Id" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0" onclick="return confirm('Delete this test record?')">Delete</button>
+                                            <button type="submit" asp-page-handler="DeleteTest" asp-route-id="@t.Id" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0">Delete</button>
                                         </div>
                                     }
                                 }
@@ -360,7 +330,7 @@
                                 <option value="">-- Select --</option>
                                 @foreach (var o in Model.TestTypeOptions)
                                 {
-                                    <option value="@o.Code" selected="@(string.Equals(Model.NewTestType, o.Code, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@o.Description</option>
+                                    <option value="@o.Code" selected="@IsSelected(o.Code, Model.NewTestType)">@o.Description</option>
                                 }
                             </select>
                         </td>
@@ -370,7 +340,7 @@
                                 <option value="">-- Select --</option>
                                 @foreach (var o in Model.TestResultOptions)
                                 {
-                                    <option value="@o.Code" selected="@(string.Equals(Model.NewTestResult, o.Code, StringComparison.OrdinalIgnoreCase) ? "selected" : null)">@o.Description</option>
+                                    <option value="@o.Code" selected="@IsSelected(o.Code, Model.NewTestResult)">@o.Description</option>
                                 }
                             </select>
                         </td>
@@ -416,7 +386,7 @@
                         <option value="">-- Select --</option>
                         @foreach (var o in Model.CaseTypeOptions)
                         {
-                            <option value="@o.Code" selected="@(o.Code == Model.Case.CaseType ? "selected" : null)">@o.Description</option>
+                            <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.CaseType)">@o.Description</option>
                         }
                     </select>
                 </div>
@@ -430,12 +400,16 @@
 
             <div class="defra-legacy-grid">
                 <div class="defra-legacy-field @(eBirth is not null ? "govuk-form-group--error" : "")">
+                    <label asp-for="Case.BirthDate" class="govuk-label">Date of Birth</label>
+                    @if (eBirth is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eBirth</p> }
                     <div class="bse-eartag-help-inline">
-                        <label asp-for="Case.BirthDate" class="govuk-label">Date of Birth</label>
+                        <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                            <input asp-for="Case.BirthDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eBirth is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.BirthDate)" />
+                        </div>
                         @if (eBirth is null && showHerdEntryDateWarning)
                         {
                             <button type="button"
-                                    class="bse-eartag-help__icon bse-eartag-help__icon--small"
+                                    class="bse-eartag-help__icon"
                                     data-bse-tooltip-trigger
                                     aria-label="Herd entry date warning"
                                     aria-controls="case-herdentry-warning-tooltip"
@@ -447,10 +421,6 @@
                             </span>
                         }
                     </div>
-                    @if (eBirth is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @eBirth</p> }
-                    <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input asp-for="Case.BirthDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(eBirth is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.BirthDate)" />
-                    </div>
                 </div>
                 <div class="defra-legacy-field">
                     <label asp-for="Case.ReportedLocation" class="govuk-label">Reported Location</label>
@@ -458,7 +428,7 @@
                         <option value="">-- Select --</option>
                         @foreach (var o in Model.ReportedLocationOptions)
                         {
-                            <option value="@o.Code" selected="@(o.Code == Model.Case.ReportedLocation ? "selected" : null)">@o.Description</option>
+                            <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.ReportedLocation)">@o.Description</option>
                         }
                     </select>
                 </div>
@@ -471,7 +441,7 @@
                         <option value="">-- Select --</option>
                         @foreach (var o in Model.BirthDateSourceOptions)
                         {
-                            <option value="@o.Code" selected="@(o.Code == Model.Case.BirthDateSource ? "selected" : null)">@o.Description</option>
+                            <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.BirthDateSource)">@o.Description</option>
                         }
                     </select>
                 </div>
@@ -492,7 +462,7 @@
                         <option value="">-- Select --</option>
                         @foreach (var o in Model.SurveyOptions)
                         {
-                            <option value="@o.Code" selected="@(o.Code == Model.Case.Survey ? "selected" : null)">@o.Description</option>
+                            <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.Survey)">@o.Description</option>
                         }
                     </select>
                 </div>
@@ -505,27 +475,21 @@
                         <option value="">-- Select --</option>
                         @foreach (var o in Model.ValuationAgeOptions)
                         {
-                            <option value="@o.Code" selected="@(o.Code == Model.Case.ValuationAge ? "selected" : null)">@o.Description</option>
+                            <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.ValuationAge)">@o.Description</option>
                         }
                     </select>
                 </div>
                 <div class="defra-legacy-field">
-                    @if (Model.Case.HasCaseWork)
-                    {
-                        <label asp-for="Case.Barcode" class="govuk-label">Barcode</label>
-                        <input asp-for="Case.Barcode" class="govuk-input defra-legacy-input--sm" maxlength="20" readonly="@(isDefraDataEntry ? "readonly" : null)" />
-                    }
+                    <label asp-for="Case.Barcode" class="govuk-label">Barcode</label>
+                    <input asp-for="Case.Barcode" class="govuk-input defra-legacy-input--sm" maxlength="20" readonly="@(!Model.CanEditVlaMaintenanceCaseworkFields ? "readonly" : null)" />
                 </div>
             </div>
 
             <div class="defra-legacy-grid">
                 <div class="defra-legacy-field"></div>
                 <div class="defra-legacy-field">
-                    @if (Model.Case.HasCaseWork)
-                    {
-                        <label asp-for="Case.AhfReference" class="govuk-label">AHF reference</label>
-                        <input asp-for="Case.AhfReference" class="govuk-input defra-legacy-input--sm" maxlength="40" readonly="@(isDefraDataEntry ? "readonly" : null)" />
-                    }
+                    <label asp-for="Case.AhfReference" class="govuk-label">AHF reference</label>
+                    <input asp-for="Case.AhfReference" class="govuk-input defra-legacy-input--sm" maxlength="40" readonly="@(!Model.CanEditVlaMaintenanceCaseworkFields ? "readonly" : null)" />
                 </div>
             </div>
 
@@ -586,26 +550,26 @@
 
         <div class="bse-case-bottom-row">
             <div class="govuk-button-group bse-case-bottom-row__left">
+                <a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse" asp-route-returnTo="/Case/Edit" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">Case audit log</a>
                 @if (Model.HasCaseWorkLink)
                 {
-                    <a asp-page="/CaseWork/Entry" asp-route-rbse="@Model.Case.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">Casework</a>
+                    <button type="submit" form="case-edit-inline-form" asp-page-handler="SaveAndGotoCasework" class="govuk-button govuk-button--secondary" data-module="govuk-button">Casework</button>
                 }
-                <a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse" asp-route-returnTo="/Case/Edit" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">Case audit log</a>
             </div>
 
             <div class="bse-case-bottom-row__right">
                 <div class="govuk-button-group bse-case-bottom-row__actions">
                     @if (!string.IsNullOrWhiteSpace(viewDocsUrl))
                     {
-                        <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">
+                        <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">
                             View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
                         </a>
                     }
                     @if (User.IsInRole("DataEntry"))
                     {
                         <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
-                        <a asp-page="/Case/Edit" asp-page-handler="CancelEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
                     }
+                    <a asp-page="/Case/Edit" asp-page-handler="CancelEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
                 </div>
             </div>
         </div>
@@ -821,6 +785,7 @@
     .bse-eartag-help-inline {
         display: inline-flex;
         align-items: center;
+        gap: 0.3rem;
         position: relative;
     }
 
@@ -828,7 +793,7 @@
         border: 0;
         background: transparent;
         color: #00703c;
-        font-size: 1.7rem;
+        font-size: 2rem;
         line-height: 1;
         font-weight: 700;
         padding: 0 2px;
@@ -839,7 +804,7 @@
     }
 
     .bse-eartag-help__icon--small {
-        font-size: 1.3rem;
+        font-size: 1.7rem;
         padding: 0 1px;
     }
 
@@ -891,10 +856,10 @@
 
     .defra-legacy-required-star {
         color: #d4351c;
-        font-size: 1.3rem;
+        font-size: 2rem;
         line-height: 1;
         font-weight: 700;
-        margin-left: 0.3rem;
+        margin-left: 0.1rem;
     }
 
     @@media (max-width: 768px) {
@@ -932,6 +897,13 @@
         var formBDateInput = document.getElementById('Case_FormBDate');
         var formCDateInput = document.getElementById('Case_FormCDate');
         var formCWarningTrigger = document.getElementById('case-formc-warning-trigger');
+        var formADateInput = document.getElementById('Case_FormADate');
+        var formAResubInput = document.getElementById('Case_FormAResubmittedDate');
+        var fateSelect = document.getElementById('Case_Fate');
+        var fateRequiredStar = document.getElementById('fate-required-star');
+        var birthDateInput = document.getElementById('Case_BirthDate');
+        var birthDateSourceSelect = document.getElementById('Case_BirthDateSource');
+        var isBirthDateEstCheckbox = document.getElementById('Case_IsBirthDateEst');
         var eartagValidateTimer = null;
         var eartagValidateController = null;
         var receivedDatePairs = [
@@ -988,7 +960,11 @@
         }
 
         function norm(value) {
-            return (value || '').trim().toUpperCase();
+            // Legacy parity: ThreePartEartag.Validate() passes the raw, as-typed text (no
+            // uppercasing) into BSELib.Eartag.GetEartag, and most eartag formats are
+            // case-sensitive — uppercasing here before asking the server would hide a
+            // lowercase-letter error that legacy's live postback validation shows.
+            return (value || '').trim();
         }
 
         // Local, best-effort format name shown immediately while the authoritative check
@@ -1091,6 +1067,98 @@
             }
         }
 
+        // Legacy: lblrfvFate — visible whenever Form B Date has a value and Fate isn't picked yet.
+        function updateFateStarVisibility() {
+            if (!fateRequiredStar) {
+                return;
+            }
+
+            var hasFormBValue = !!(formBDateInput && formBDateInput.value);
+            var hasFateValue = !!(fateSelect && fateSelect.value);
+            fateRequiredStar.hidden = !(hasFormBValue && !hasFateValue);
+        }
+
+        // Legacy ctlFormBDate_DateChanged + MakeControlsWritable: clearing Form B blanks and disables
+        // Fate/Form C; a Form B value enables both.
+        function applyFormBCascade() {
+            var hasFormBValue = !!(formBDateInput && formBDateInput.value);
+
+            if (fateSelect) {
+                fateSelect.disabled = !hasFormBValue;
+                if (!hasFormBValue) {
+                    fateSelect.value = '';
+                }
+            }
+            if (formCDateInput) {
+                formCDateInput.disabled = !hasFormBValue;
+                if (!hasFormBValue) {
+                    formCDateInput.value = '';
+                }
+            }
+
+            updateFateStarVisibility();
+            updateFormCWarningVisibility();
+        }
+
+        // Legacy ctlFormADate_DateChanged + MakeControlsWritable: clearing Form A blanks and disables
+        // Form A Resubmitted/Form B (which in turn cascades to Fate/Form C); a Form A value enables
+        // Form A Resubmitted/Form B.
+        function applyFormACascade() {
+            var hasFormAValue = !!(formADateInput && formADateInput.value);
+
+            if (formAResubInput) {
+                formAResubInput.disabled = !hasFormAValue;
+                if (!hasFormAValue) {
+                    formAResubInput.value = '';
+                }
+            }
+            if (formBDateInput) {
+                formBDateInput.disabled = !hasFormAValue;
+                if (!hasFormAValue) {
+                    formBDateInput.value = '';
+                }
+            }
+
+            applyFormBCascade();
+        }
+
+        // Legacy MakeControlsWritable: BirthDateSource/IsBirthDateEst enabled only once Date of Birth
+        // has a value; clearing Date of Birth also un-ticks IsBirthDateEst.
+        function applyBirthDateCascade() {
+            var hasBirthDateValue = !!(birthDateInput && birthDateInput.value);
+
+            if (birthDateSourceSelect) {
+                birthDateSourceSelect.disabled = !hasBirthDateValue;
+            }
+            if (isBirthDateEstCheckbox) {
+                isBirthDateEstCheckbox.disabled = !hasBirthDateValue;
+                if (!hasBirthDateValue) {
+                    isBirthDateEstCheckbox.checked = false;
+                }
+            }
+        }
+
+        function wireFieldCascades() {
+            if (formADateInput) {
+                ['input', 'change'].forEach(function (eventName) {
+                    formADateInput.addEventListener(eventName, applyFormACascade);
+                });
+            }
+            if (formBDateInput) {
+                ['input', 'change'].forEach(function (eventName) {
+                    formBDateInput.addEventListener(eventName, applyFormBCascade);
+                });
+            }
+            if (fateSelect) {
+                fateSelect.addEventListener('change', updateFateStarVisibility);
+            }
+            if (birthDateInput) {
+                ['input', 'change'].forEach(function (eventName) {
+                    birthDateInput.addEventListener(eventName, applyBirthDateCascade);
+                });
+            }
+        }
+
         // Legacy: entering a received date auto-ticks its checkbox — never auto-unticks.
         function wireReceivedDateCascade() {
             receivedDatePairs.forEach(function (pair) {
@@ -1116,6 +1184,7 @@
 
         updateFormCWarningVisibility();
         wireReceivedDateCascade();
+        wireFieldCascades();
 
         if (tooltipTriggers.length) {
             tooltipTriggers.forEach(function (trigger) {
@@ -1197,12 +1266,26 @@
             });
         });
 
+        // Legacy's Cancel is a postback that captures the current form before checking for
+        // changes, so edits typed on this tab but never staged anywhere must count as unsaved too.
+        var cancelForm = document.getElementById('case-edit-inline-form');
+        var formDirty = false;
+        if (cancelForm) {
+            cancelForm.addEventListener('input', function () { formDirty = true; });
+            cancelForm.addEventListener('change', function () { formDirty = true; });
+        }
+
         document.querySelectorAll('.bse-cancel-link').forEach(function (lnk) {
             lnk.addEventListener('click', function (e) {
-                var hasUnsaved = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.HasUnsavedChanges));
-                if (hasUnsaved && !window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
-                    e.preventDefault();
-                }
+                e.preventDefault();
+                var hasUnsavedHere = formDirty || @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.HasUnsavedChanges));
+                // Legacy's dirty-check spans the whole shared session (every tab), not just this page.
+                (hasUnsavedHere ? Promise.resolve(true) : (window.hasUnsavedChangesAcrossTabs ? window.hasUnsavedChangesAcrossTabs() : Promise.resolve(false)))
+                    .then(function (hasUnsaved) {
+                        if (!hasUnsaved || window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+                            window.location.href = lnk.href;
+                        }
+                    });
             });
         });
     })();

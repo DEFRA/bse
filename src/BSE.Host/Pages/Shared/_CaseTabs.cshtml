@@ -49,7 +49,7 @@
         "Relations" => "case-relations-inline-form",
         _ => null
     };
-    string? topSaveHandler = Model.ActiveTab switch
+    string? topSaveHandler = Model.SaveHandlerOverride ?? Model.ActiveTab switch
     {
         "Farm" => "SaveFarm",
         "BAB" => "SaveBab",
@@ -58,7 +58,9 @@
         "Relations" => "SaveRelations",
         _ => null
     };
-    (string Page, string Handler)? topCancel = Model.ActiveTab switch
+    (string Page, string? Handler)? topCancel = Model.CancelPageOverride is not null
+        ? (Model.CancelPageOverride, Model.CancelHandlerOverride)
+        : Model.ActiveTab switch
     {
         "Farm" => ("/Case/Farm", "CancelFarmEdit"),
         "Case (DEFRA)" => ("/Case/Edit", "CancelEdit"),
@@ -67,9 +69,13 @@
         "Clinical" => ("/Case/Clinical", "CancelClinicalEdit"),
         "Feeds" => ("/Case/Feeds", "CancelFeedsEdit"),
         "Relations" => ("/Case/Relations", "CancelRelationsEdit"),
-        _ => null
+        _ => ((string, string?)?)null
     };
-    var showTopSaveCancel = Model.CanEditCurrentTab && saveCancelFormId is not null && topCancel is not null;
+    // Legacy parity: btnCancel/btnCancel2 are never disabled for any role in any EnableControls
+    // variant — only btnSave is conditionally disabled (and only for the fully read-only Viewer
+    // role). Cancel/Home must stay reachable even on a tab the current user cannot edit.
+    var showTopSave = Model.CanEditCurrentTab && saveCancelFormId is not null;
+    var showTopCancel = topCancel is not null;
 }
 
 @* RBSE heading + batch numbers panel side-by-side (GOV.UK grid — stacks on narrow screens),
@@ -263,8 +269,23 @@
             }
         });
 
+        // Legacy parity: CancelCaseEdit()/the Home link both stage the CURRENT tab's just-typed
+        // field values before checking DataSetHasChanges, so an edit never-staged-anywhere (no tab
+        // switch, no Save) still triggers the confirm. Reuses the same form snapshot already taken
+        // for the sessionStorage draft-restore feature above, rather than tracking dirty state twice.
+        // Deliberately does NOT treat restoredFromDraft alone as dirty — a restored draft that
+        // happens to match the fresh server-rendered state is not an unsaved change.
+        function isCurrentFormDirty() {
+            var form = getCurrentCaseForm();
+            if (!form) {
+                return false;
+            }
+
+            return JSON.stringify(serializeForm(form)) !== initialSnapshot;
+        }
+
         async function hasUnsavedChangesAcrossTabs() {
-            if (hasUnsavedBannerOnPage()) {
+            if (hasUnsavedBannerOnPage() || isCurrentFormDirty()) {
                 return true;
             }
 
@@ -308,6 +329,10 @@
                 // Navigation should still proceed even if draft-clear call fails.
             }
         }
+
+        // Exposed so each tab's own Cancel-link confirm can see cross-tab staged edits too.
+        window.hasUnsavedChangesAcrossTabs = hasUnsavedChangesAcrossTabs;
+        window.clearUnsavedChangesAcrossTabs = clearUnsavedChangesAcrossTabs;
 
         function isHomeLink(anchor) {
             if (!anchor) {
@@ -382,15 +407,20 @@
                 return;
             }
 
+            // Must preventDefault synchronously, before the await below — calling it only after
+            // an async check resolves is too late to reliably stop the browser's default navigation,
+            // so clicking Cancel on the confirm dialog would still leave the page.
+            event.preventDefault();
+
             // Keep parity with tab navigation: persist current tab edits before leaving.
             persistCurrentTabDraft();
 
             var unsaved = await hasUnsavedChangesAcrossTabs();
             if (!unsaved) {
+                window.location.href = link.href;
                 return;
             }
 
-            event.preventDefault();
             var confirmed = window.confirm('You have unsaved changes. Click OK to discard them and leave, or Cancel to go back and save.');
             if (confirmed) {
                 await clearUnsavedChangesAcrossTabs();
@@ -410,12 +440,12 @@
                 }
                 @if (!string.IsNullOrWhiteSpace(Model.ViewDocsUrl))
                 {
-                    <a href="@Model.ViewDocsUrl" target="_blank" rel="noopener noreferrer" role="button" draggable="false"
+                    <a href="@Model.ViewDocsUrl" target="_blank" rel="noopener noreferrer"
                        class="govuk-button govuk-button--secondary" data-module="govuk-button">
                         View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
                     </a>
                 }
-                @if (showTopSaveCancel)
+                @if (showTopSave)
                 {
                     @if (topSaveHandler is not null)
                     {
@@ -425,8 +455,11 @@
                     {
                         <button type="submit" form="@saveCancelFormId" class="govuk-button" data-module="govuk-button">Save</button>
                     }
+                }
+                @if (showTopCancel)
+                {
                     <a asp-page="@topCancel!.Value.Page" asp-page-handler="@topCancel!.Value.Handler" asp-route-rbse="@Model.Rbse"
-                       class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button" role="button" draggable="false">Cancel</a>
+                       class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
                 }
             </div>
         </div>

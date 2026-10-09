@@ -1,4 +1,5 @@
 using BSE.Infrastructure;
+using BSE.Host.Helpers;
 using BSE.Host.Services;
 using BSE.Host.ModelBinding;
 using BSE.Modules.Batch.Models;
@@ -58,6 +59,11 @@ public class ClinicalModel(
 
     public async Task<IActionResult> OnGetAsync()
     {
+        // Legacy parity: CaseEntryClinical.aspx.vb's Page_Load redirects to SessionError.aspx when
+        // Session(SV_RBSENumber) is missing (session timeout, direct URL access, stale back-button).
+        if (string.IsNullOrWhiteSpace(Rbse))
+            return RedirectToPage("/SessionError");
+
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadAsync();
         await LoadOrInitializeDraftStateAsync();
@@ -68,15 +74,12 @@ public class ClinicalModel(
     /// <summary>Commits clinical signs and all staged visit changes to the database in one go.</summary>
     public async Task<IActionResult> OnPostSaveSignsAsync(string? clinicalRowStampBase64)
     {
-        if (!User.IsInRole("DataEntry"))
+        // Legacy parity: DEFRA Data Entry/Maintenance are always MakeControlsReadOnly on this tab
+        // (VLA-only edit) — matches the same DataEntry+VLAAccess gate already used by every other
+        // handler in this file (Add/Update/Delete/BeginEdit visit row). A plain DataEntry check
+        // alone would let a DEFRA-only POST of blank/disabled clinical-sign fields overwrite them.
+        if (!User.IsInRole("DataEntry") || !User.IsInRole(VlaAccessRole))
             return Forbid();
-
-        var caseRecord = await caseRepository.GetCaseByRbseAsync(Rbse);
-        if (caseRecord is null)
-        {
-            TempData["Warning"] = $"Case '{Rbse}' is not saved yet. Complete Farm first.";
-            return RedirectToPage(new { rbse = Rbse });
-        }
 
         var signs = BindSignsFromForm();
 
@@ -98,32 +101,56 @@ public class ClinicalModel(
             await caseScalarDraftState.SetAsync(draft);
 
             var userId = await currentUser.GetUserIdAsync();
-            EditCaseResult commitResult;
+            var (failureRedirect, commitOutcome) = await CaseCommitHelper.CommitAllAsync(
+                this, caseEditOrchestration, Rbse, userId,
+                result => $"Unable to save clinical signs: {result}.");
+            if (failureRedirect is not null)
+                return failureRedirect;
+
+            if (commitOutcome!.Warnings.Count > 0)
+            {
+                await PersistStagedVisitsAsync();
+                await clinicalDraftState.ClearAsync(Rbse);
+            }
+
+            if (CaseCommitHelper.TryStageWarnings(this, commitOutcome, Rbse) is { } warningRedirect)
+                return warningRedirect;
+        }
+        else if (await caseRepository.GetCaseByRbseAsync(Rbse) is null)
+        {
+            // Legacy parity: a brand-new case lives entirely in the shared session object until
+            // the first Save from any tab — inserting Clinical directly here (as if the Case row
+            // already existed) violates FK_CaseClinical_Case, so route through the orchestrator's
+            // case-creation path instead, same as the staged-edit branch above.
+            var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
+            draft.Clinical = signs.ToEditCommand(Rbse, []);
+            draft.HasPendingChanges = true;
+            await caseScalarDraftState.SetAsync(draft);
+
+            var userId = await currentUser.GetUserIdAsync();
+            CaseCommitOutcome commitOutcome;
             try
             {
-                commitResult = await caseEditOrchestration.CommitAllAsync(Rbse, userId);
+                commitOutcome = await caseEditOrchestration.CommitAllAsync(Rbse, userId);
             }
             catch (MandatoryCaseFieldsMissingException ex)
             {
-                // Legacy parity: CaseEntrySave.aspx shows the consolidated list of missing items with
-                // a "Return" button instead of a single inline banner.
                 SaveResultModel.Stage(TempData, SaveResultMode.MissingMandatoryFields, ex.Errors);
                 return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
             }
 
-            if (commitResult == EditCaseResult.ConcurrencyConflict)
+            if (commitOutcome.Result != EditCaseResult.Success)
             {
-                // Legacy parity: CaseEntrySave.aspx shows the failure and navigates to Home.aspx on
-                // any commit failure, rather than staying on the originating tab.
-                TempData["ErrorMessage"] = "Another user has modified this case since you loaded it. " +
-                                           "Please reload and try again.";
+                TempData["ErrorMessage"] = $"Unable to save clinical signs: {commitOutcome.Result}.";
                 return RedirectToPage("/Home");
             }
 
-            if (commitResult != EditCaseResult.Success)
+            if (commitOutcome.Warnings.Count > 0)
             {
-                TempData["ErrorMessage"] = $"Unable to save clinical signs: {commitResult}.";
-                return RedirectToPage("/Home");
+                await PersistStagedVisitsAsync();
+                await clinicalDraftState.ClearAsync(Rbse);
+                SaveResultModel.Stage(TempData, SaveResultMode.PartialSuccess, commitOutcome.Warnings);
+                return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
             }
         }
         else
@@ -156,18 +183,24 @@ public class ClinicalModel(
         if (string.IsNullOrEmpty(clinicalRowStampBase64))
             return RedirectToPage(targetPage, new { rbse = Rbse });
 
-        var caseRecord = await caseRepository.GetCaseByRbseAsync(Rbse);
-        if (caseRecord is null)
-            return RedirectToPage(targetPage, new { rbse = Rbse });
-
         var signs = BindSignsFromForm();
         var rowStamp = Convert.FromBase64String(clinicalRowStampBase64);
         var edit = signs.ToEditCommand(Rbse, rowStamp);
 
         var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
         draft.ClinicalBaseRowStampBase64 ??= clinicalRowStampBase64;
-        draft.Clinical = edit with { RowStamp = Convert.FromBase64String(draft.ClinicalBaseRowStampBase64) };
-        draft.HasPendingChanges = true;
+        var stagedEdit = edit with { RowStamp = Convert.FromBase64String(draft.ClinicalBaseRowStampBase64) };
+
+        // Legacy parity: merely switching tabs without typing anything must not trip the
+        // cross-tab unsaved-changes exit warning — only flag a genuine edit to the signs.
+        var persistedClinical = await clinicalRepository.GetByRbseAsync(Rbse);
+        var baseline = persistedClinical is not null
+            ? ClinicalSignsViewModel.FromRecord(persistedClinical).ToEditCommand(Rbse, Convert.FromBase64String(draft.ClinicalBaseRowStampBase64))
+            : null;
+
+        draft.Clinical = stagedEdit;
+        if (DraftChangeDetector.IsDifferentFromPersisted(stagedEdit, baseline))
+            draft.HasPendingChanges = true;
         await caseScalarDraftState.SetAsync(draft);
 
         return RedirectToPage(targetPage, new { rbse = Rbse });
@@ -215,6 +248,28 @@ public class ClinicalModel(
             Signs.ApplyStagedCommand(staged.Clinical);
     }
 
+    /// <summary>Re-stages the posted (in-progress, unsaved) clinical signs edit — otherwise a Visits
+    /// grid operation (add/edit/delete) silently discards any not-yet-saved checkbox edit, since
+    /// <c>LoadAsync()</c> always reloads <see cref="Signs"/> from the database and <see cref="Signs"/>
+    /// is never itself model-bound from the post.</summary>
+    private async Task RestoreAndRestageSignsEditAsync(string? clinicalRowStampBase64)
+    {
+        if (string.IsNullOrEmpty(clinicalRowStampBase64))
+            return;
+
+        var signs = BindSignsFromForm();
+        Signs = signs;
+
+        var rowStamp = Convert.FromBase64String(clinicalRowStampBase64);
+        var edit = signs.ToEditCommand(Rbse, rowStamp);
+
+        var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
+        draft.ClinicalBaseRowStampBase64 ??= clinicalRowStampBase64;
+        draft.Clinical = edit with { RowStamp = Convert.FromBase64String(draft.ClinicalBaseRowStampBase64) };
+        draft.HasPendingChanges = true;
+        await caseScalarDraftState.SetAsync(draft);
+    }
+
     /// <summary>Discards all staged visit changes without persisting them.</summary>
     public async Task<IActionResult> OnPostCancelClinicalEditAsync()
     {
@@ -231,7 +286,7 @@ public class ClinicalModel(
     }
 
     /// <summary>Adds a clinical visit to the draft only. Not persisted until Save.</summary>
-    public async Task<IActionResult> OnPostAddVisitRowAsync()
+    public async Task<IActionResult> OnPostAddVisitRowAsync(string? clinicalRowStampBase64)
     {
         if (!User.IsInRole("DataEntry") || !User.IsInRole(VlaAccessRole))
             return Forbid();
@@ -239,6 +294,7 @@ public class ClinicalModel(
         var postedDate = NewVisitDate;
 
         await LoadAsync();
+        await RestoreAndRestageSignsEditAsync(clinicalRowStampBase64);
         var draft = await LoadOrInitializeDraftStateAsync();
 
         ValidateVisitDate(postedDate, nameof(NewVisitDate));
@@ -268,12 +324,13 @@ public class ClinicalModel(
     }
 
     /// <summary>Opens the inline edit view for one staged clinical visit row (no changes saved yet).</summary>
-    public async Task<IActionResult> OnPostBeginEditVisitRowAsync(string clientKey)
+    public async Task<IActionResult> OnPostBeginEditVisitRowAsync(string clientKey, string? clinicalRowStampBase64)
     {
         if (!User.IsInRole("DataEntry") || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         await LoadAsync();
+        await RestoreAndRestageSignsEditAsync(clinicalRowStampBase64);
         var draft = await LoadOrInitializeDraftStateAsync();
 
         var visit = draft.Visits.FirstOrDefault(v => v.ClientKey == clientKey);
@@ -288,7 +345,7 @@ public class ClinicalModel(
     }
 
     /// <summary>Updates a staged clinical visit row in the draft only. Not persisted until Save.</summary>
-    public async Task<IActionResult> OnPostUpdateVisitRowAsync()
+    public async Task<IActionResult> OnPostUpdateVisitRowAsync(string? clinicalRowStampBase64)
     {
         if (!User.IsInRole("DataEntry") || !User.IsInRole(VlaAccessRole))
             return Forbid();
@@ -297,6 +354,7 @@ public class ClinicalModel(
         var postedDate = EditVisitDate;
 
         await LoadAsync();
+        await RestoreAndRestageSignsEditAsync(clinicalRowStampBase64);
         var draft = await LoadOrInitializeDraftStateAsync();
 
         var item = draft.Visits.FirstOrDefault(v => v.ClientKey == clientKey);
@@ -328,12 +386,13 @@ public class ClinicalModel(
     }
 
     /// <summary>Removes a staged clinical visit row from the draft only. Not persisted until Save.</summary>
-    public async Task<IActionResult> OnPostDeleteVisitAsync(string clientKey)
+    public async Task<IActionResult> OnPostDeleteVisitAsync(string clientKey, string? clinicalRowStampBase64)
     {
         if (!User.IsInRole("DataEntry") || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         await LoadAsync();
+        await RestoreAndRestageSignsEditAsync(clinicalRowStampBase64);
         var draft = await LoadOrInitializeDraftStateAsync();
 
         var item = draft.Visits.FirstOrDefault(v => v.ClientKey == clientKey);
@@ -385,7 +444,12 @@ public class ClinicalModel(
         }
 
         _persistedVisits = (await visitsTask).ToList();
-        BirthDate        = (await caseTask)?.BirthDate;
+        var caseRecord = await caseTask;
+        // Legacy parity: the shared session dataset means an unsaved Date of Birth typed on the
+        // DEFRA tab is instantly visible to this tab's visit-date validation bound — not just the
+        // last-persisted value.
+        var stagedCase = (await caseScalarDraftState.GetAsync(Rbse))?.Case;
+        BirthDate        = stagedCase is not null ? stagedCase.BirthDate : caseRecord?.BirthDate;
         BatchNumbers     = (await batchTask).ToList().AsReadOnly();
     }
 

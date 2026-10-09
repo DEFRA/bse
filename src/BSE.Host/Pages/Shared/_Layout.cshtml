@@ -187,6 +187,26 @@
         initAll();
         MOJFrontend.initAll();
 
+        // moj-frontend's date picker inserts its own calendar-icon toggle button and has no
+        // awareness of the paired input's disabled state, so a disabled date field could still
+        // be set via the calendar. Keep every toggle button's disabled state in sync with its
+        // input's — both at load time and whenever a field is later enabled/disabled by script.
+        document.querySelectorAll('.moj-datepicker').forEach((wrapper) => {
+            const input = wrapper.querySelector('.moj-js-datepicker-input');
+            const toggle = wrapper.querySelector('.moj-js-datepicker-toggle');
+            if (!input || !toggle) {
+                return;
+            }
+
+            const syncToggleDisabled = () => {
+                toggle.disabled = input.disabled;
+                toggle.setAttribute('aria-disabled', input.disabled.toString());
+            };
+
+            syncToggleDisabled();
+            new MutationObserver(syncToggleDisabled).observe(input, { attributes: true, attributeFilter: ['disabled'] });
+        });
+
         const headerMenuButton = document.querySelector('.bse-global-header__menu-button');
         const headerNavigation = document.getElementById('global-header-navigation');
 

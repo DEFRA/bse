@@ -37,7 +37,6 @@ public sealed class FarmModelHandlerTests
     private readonly IHerdSizeRepository _herdSizeRepo = Substitute.For<IHerdSizeRepository>();
     private readonly ILookupDataService _lookups = Substitute.For<ILookupDataService>();
     private readonly IBatchRepository _batchRepository = Substitute.For<IBatchRepository>();
-    private readonly IBatchService _batchService = Substitute.For<IBatchService>();
     private readonly ICaseWizardStateService _wizardState = Substitute.For<ICaseWizardStateService>();
     private readonly ICaseFarmDraftStateService _farmDraftState = Substitute.For<ICaseFarmDraftStateService>();
     private readonly ICaseScalarDraftStateService _caseScalarDraftState = Substitute.For<ICaseScalarDraftStateService>();
@@ -66,7 +65,7 @@ public sealed class FarmModelHandlerTests
     {
         var model = new FarmModel(
             _caseService, _farmService, _relationRepo, _herdSizeRepo, _lookups,
-            _batchRepository, _batchService, _wizardState, _farmDraftState,
+            _batchRepository, _wizardState, _farmDraftState,
             _caseScalarDraftState, _caseEditOrchestration, _currentUser,
             NullLogger<FarmModel>.Instance,
             new ConfigurationBuilder().AddInMemoryCollection().Build(),
@@ -164,8 +163,7 @@ public sealed class FarmModelHandlerTests
         _caseService.GetCaseAsync(Rbse).Returns((CaseRecord?)null);
         _farmService.GetByCphhAsync(Cphh).Returns((FarmRecord?)null);
         _currentUser.GetUserIdAsync().Returns(7);
-        _batchService.GetOrCreateBatchNumberAsync().Returns(new BatchRecord(1, 2024, 1));
-        _caseService.CreateCaseAsync(Arg.Any<UpdateCaseDetailsCommand>(), 7).Returns(AddCaseResult.Success);
+        _caseEditOrchestration.CommitAllAsync(Rbse, 7).Returns(CaseCommitOutcome.Success([]));
 
         var model = CreateModel(["DataEntry"]);
         model.EditableFarm = new FarmEditViewModel
@@ -182,9 +180,12 @@ public sealed class FarmModelHandlerTests
         var result = await model.OnPostCreateCaseAsync();
 
         result.Should().BeOfType<RedirectToPageResult>();
-        await _farmService.Received(1).AddAsync(Arg.Any<AddFarmCommand>(), 7);
+        ((RedirectToPageResult)result).PageName.Should().Be("/Home");
+        await _caseScalarDraftState.Received(1).SetAsync(
+            Arg.Is<CaseScalarDraftState>(d => d.Farm != null && d.Farm.CPHH == Cphh), Arg.Any<CancellationToken>());
+        await _caseEditOrchestration.Received(1).CommitAllAsync(Rbse, 7);
         await _farmDraftState.Received(1).ClearAsync(Rbse);
-        model.TempData["SuccessMessage"].Should().Be($"Case {Rbse} created successfully.");
+        model.TempData["SuccessMessage"].Should().BeNull();
     }
 
     [Fact]
@@ -193,8 +194,8 @@ public sealed class FarmModelHandlerTests
         _caseService.GetCaseAsync(Rbse).Returns((CaseRecord?)null);
         _farmService.GetByCphhAsync(Cphh).Returns(MakeFarm());
         _currentUser.GetUserIdAsync().Returns(7);
-        _batchService.GetOrCreateBatchNumberAsync().Returns(new BatchRecord(1, 2024, 1));
-        _caseService.CreateCaseAsync(Arg.Any<UpdateCaseDetailsCommand>(), 7).Returns(AddCaseResult.DuplicateRbse);
+        _caseEditOrchestration.CommitAllAsync(Rbse, 7)
+            .Returns<CaseCommitOutcome>(_ => throw new InvalidOperationException($"Failed to create case {Rbse} (result: DuplicateRbse)."));
 
         var model = CreateModel(["DataEntry"]);
         model.EditableFarm = new FarmEditViewModel { CPHH = Cphh };
@@ -202,7 +203,7 @@ public sealed class FarmModelHandlerTests
         var result = await model.OnPostCreateCaseAsync();
 
         result.Should().BeOfType<PageResult>();
-        model.ModelState[""]!.Errors.Should().Contain(e => e.ErrorMessage.Contains("already exists"));
+        model.ModelState[""]!.Errors.Should().Contain(e => e.ErrorMessage.Contains("Failed to create case"));
     }
 
     // ── OnPostLookupNewCaseAsync ─────────────────────────────────────────────
@@ -486,7 +487,7 @@ public sealed class FarmModelHandlerTests
         _farmService.GetByCphhAsync(Cphh).Returns(farm);
         _farmDraftState.GetAsync(Rbse).Returns(new CaseFarmDraftState { Rbse = Rbse, Cphh = Cphh });
         _currentUser.GetUserIdAsync().Returns(9);
-        _caseEditOrchestration.CommitAllAsync(Rbse, 9).Returns(EditCaseResult.Success);
+        _caseEditOrchestration.CommitAllAsync(Rbse, 9).Returns(CaseCommitOutcome.Success([]));
 
         var model = CreateModel(["DataEntry"]);
         model.EditableFarm = FarmEditViewModel.FromRecord(farm);
@@ -519,60 +520,6 @@ public sealed class FarmModelHandlerTests
 
         result.Should().BeOfType<RedirectToPageResult>();
         ((RedirectToPageResult)result).PageName.Should().Be("/Home");
-    }
-
-    // ── Batch assignment ─────────────────────────────────────────────────────
-
-    [Fact]
-    public async Task OnPostSaveBatchAsync_Forbidden_WhenNotVlaAccess()
-    {
-        var model = CreateModel(["DataEntry"]);
-        var result = await model.OnPostSaveBatchAsync();
-        result.Should().BeOfType<ForbidResult>();
-    }
-
-    [Fact]
-    public async Task OnPostSaveBatchAsync_NoPendingBatch_SetsErrorAndRedirects()
-    {
-        _wizardState.GetAsync().Returns((CaseWizardState?)null);
-
-        var model = CreateModel(["VLAAccess"]);
-        var result = await model.OnPostSaveBatchAsync();
-
-        result.Should().BeOfType<RedirectToPageResult>();
-        model.TempData["ErrorMessage"].Should().Be("No batch was selected. Return to the home page and choose a batch number.");
-    }
-
-    [Fact]
-    public async Task OnPostSaveBatchAsync_Success_AssignsCaseAndRedirects()
-    {
-        var pending = new CaseWizardState(Rbse, "2024/001", 55);
-        _wizardState.GetAsync().Returns(pending);
-        _batchRepository.GetBatchNumbersByRbseAsync(Rbse).Returns(Array.Empty<BatchNumberEntry>());
-        _batchService.AssignCaseToBatchAsync(55, Rbse, "BSE1").Returns(BatchAssignmentResult.Success);
-        _currentUser.GetUserIdAsync().Returns(3);
-
-        var model = CreateModel(["VLAAccess"]);
-        var result = await model.OnPostSaveBatchAsync();
-
-        result.Should().BeOfType<RedirectToPageResult>();
-        await _wizardState.Received(1).ClearAsync();
-        model.TempData["Success"].Should().NotBeNull();
-    }
-
-    [Fact]
-    public async Task OnPostCancelBatchAsync_ClearsPendingAndRedirectsToHome()
-    {
-        _wizardState.GetAsync().Returns(new CaseWizardState(Rbse, "2024/007", 1));
-
-        var model = CreateModel(["VLAAccess"]);
-        var result = await model.OnPostCancelBatchAsync();
-
-        result.Should().BeOfType<RedirectToPageResult>();
-        var redirect = (RedirectToPageResult)result;
-        redirect.PageName.Should().Be("/Home");
-        redirect.RouteValues.Should().ContainKey("batchYear").WhoseValue.Should().Be((short)2024);
-        await _wizardState.Received(1).ClearAsync();
     }
 
     // ── AJAX endpoints ───────────────────────────────────────────────────────
@@ -660,7 +607,7 @@ public sealed class FarmModelHandlerTests
         _farmService.GetByCphhAsync(Cphh).Returns(farm);
         _farmDraftState.GetAsync(Rbse).Returns(new CaseFarmDraftState { Rbse = Rbse, Cphh = Cphh });
         _caseEditOrchestration.CommitAllAsync(Rbse, Arg.Any<int>())
-            .Returns<EditCaseResult>(_ => throw new MandatoryCaseFieldsMissingException(["Owner Name is required."]));
+            .Returns<CaseCommitOutcome>(_ => throw new MandatoryCaseFieldsMissingException(["Owner Name is required."]));
 
         var model = CreateModel(["DataEntry"]);
         model.EditableFarm = new FarmEditViewModel { CPHH = Cphh }; // missing owner/address/parish/aho/adns
@@ -701,6 +648,7 @@ public sealed class FarmModelHandlerTests
             ]
         });
         _currentUser.GetUserIdAsync().Returns(9);
+        _caseEditOrchestration.CommitAllAsync(Rbse, 9).Returns(CaseCommitOutcome.Success([]));
 
         var model = CreateModel(["DataEntry"]);
         model.EditableFarm = FarmEditViewModel.FromRecord(farm);
@@ -867,6 +815,7 @@ public sealed class FarmModelHandlerTests
         _farmService.GetByCphhAsync("00001000101").Returns(farm);
         _farmDraftState.GetAsync(Rbse).Returns(new CaseFarmDraftState { Rbse = Rbse, Cphh = "00001000101" });
         _currentUser.GetUserIdAsync().Returns(9);
+        _caseEditOrchestration.CommitAllAsync(Rbse, 9).Returns(CaseCommitOutcome.Success([]));
 
         var model = CreateModel(["DataEntry"]);
         model.EditableFarm = new FarmEditViewModel

@@ -68,7 +68,9 @@
             <tbody class="govuk-table__body">
                 @foreach (var caseRecord in Model.PagedCases)
                 {
-                    <tr class="govuk-table__row">
+                    var isSelected = !string.IsNullOrWhiteSpace(Model.Rbse)
+                        && string.Equals(caseRecord.Rbse, Model.Rbse, StringComparison.OrdinalIgnoreCase);
+                    <tr class="govuk-table__row @(isSelected ? "bse-casework-report-row--selected" : null)">
                         <th scope="row" class="govuk-table__header">
                             <a asp-page="/CaseWork/Entry" asp-route-rbse="@caseRecord.Rbse" class="govuk-link">@BseFormat.FormatRbse(caseRecord.Rbse)</a>
                         </th>

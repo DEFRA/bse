@@ -29,6 +29,20 @@
     max-width: none;
 }
 
+/* The calendar toggle button is inserted by moj-frontend's JS and has no built-in awareness of
+   the paired input's disabled state (site.js syncs the attribute) — style it to read as
+   unambiguously unavailable once disabled, matching the disabled-button treatment above. */
+.moj-datepicker__toggle:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Legacy parity: CaseWorkOpenReport/ClosedReport's Pager.SelectGridRowForDataRow highlights the
+   row for ?rbse= (e.g. landing back here after Save) so the user can find it on the page it jumped to. */
+.bse-casework-report-row--selected {
+    background-color: #fff7bf;
+}
+
 /* Legacy-style immediate inline validation indicators: a bold asterisk shown next to a field
    as soon as the user changes it, without waiting for Save. Green (#9CCE00) mirrors the legacy
    "are you sure?" advisories; red mirrors the legacy hard validation errors. The message itself
@@ -47,6 +61,41 @@
 
 .bse-star-error {
     color: #FF0000;
+}
+
+/* The message itself is carried in the title attribute, but a native title tooltip renders as
+   one unwrapped line — long messages stretch wide enough to cover neighbouring fields. Layer a
+   wrapping CSS tooltip on top (shown on hover) instead, for every star variant (including the
+   VLA-tab-specific red/green ones, styled separately per-page for size/colour). */
+.bse-star-warning,
+.bse-star-error,
+.bse-vla-star-red,
+.bse-vla-star-green {
+    position: relative;
+}
+
+.bse-star-warning[title]:hover::after,
+.bse-star-error[title]:hover::after,
+.bse-vla-star-red[title]:hover::after,
+.bse-vla-star-green[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    z-index: 100;
+    bottom: 100%;
+    left: 0;
+    margin-bottom: 4px;
+    width: max-content;
+    max-width: 240px;
+    white-space: normal;
+    text-align: left;
+    font-weight: 400;
+    font-size: 0.875rem;
+    line-height: 1.3;
+    color: #fff;
+    background: #0b0c0c;
+    border-radius: 4px;
+    padding: 6px 8px;
+    pointer-events: none;
 }
 
 /* Global RBSE/CPHH autosuggest list */
