@@ -142,7 +142,9 @@ public class FeedsModel(
         var draft = await LoadOrInitializeDraftStateAsync();
 
         var caseRecord = await caseService.GetCaseAsync(RbseHelper.ParseToRaw(Rbse));
-        FieldErrors = FeedValidation.Validate(new FeedValidation.Input(YearFrom, YearTo, RationType, SupplierId), caseRecord);
+        var stagedCase = (await caseScalarDraftState.GetAsync(Rbse))?.Case;
+        var effectiveBirthDate = stagedCase is not null ? stagedCase.BirthDate : caseRecord?.BirthDate;
+        FieldErrors = FeedValidation.Validate(new FeedValidation.Input(YearFrom, YearTo, RationType, SupplierId), effectiveBirthDate);
 
         if (FieldErrors.Count > 0)
             return Page();
@@ -233,7 +235,9 @@ public class FeedsModel(
         }
 
         var caseRecord = await caseService.GetCaseAsync(RbseHelper.ParseToRaw(Rbse));
-        FieldErrors = FeedValidation.Validate(new FeedValidation.Input(YearFrom, YearTo, RationType, SupplierId), caseRecord);
+        var stagedCase = (await caseScalarDraftState.GetAsync(Rbse))?.Case;
+        var effectiveBirthDate = stagedCase is not null ? stagedCase.BirthDate : caseRecord?.BirthDate;
+        FieldErrors = FeedValidation.Validate(new FeedValidation.Input(YearFrom, YearTo, RationType, SupplierId), effectiveBirthDate);
 
         if (FieldErrors.Count > 0)
         {

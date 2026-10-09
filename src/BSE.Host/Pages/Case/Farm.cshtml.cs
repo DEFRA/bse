@@ -4,7 +4,6 @@ using BSE.Host.Models.ViewModels;
 using BSE.Host.Models;
 using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Repositories;
-using BSE.Modules.Batch.Services;
 using BSE.Modules.CaseManagement.Commands;
 using BSE.Modules.CaseManagement.Enums;
 using BSE.Modules.CaseManagement.Models;
@@ -36,7 +35,6 @@ public class FarmModel(
     IHerdSizeRepository herdSizeRepo,
     ILookupDataService lookups,
     IBatchRepository batchRepository,
-    IBatchService batchService,
     ICaseWizardStateService wizardState,
     ICaseFarmDraftStateService farmDraftState,
     ICaseScalarDraftStateService caseScalarDraftState,
@@ -207,10 +205,23 @@ public class FarmModel(
         ApplyLegacyEditPermissions();
         EditableFarm ??= new FarmEditViewModel();
 
+        // Cross-tab staging overlay: OnPostStageAndGotoAsync stages an in-progress Farm tab edit
+        // (CPHH plus every Look Up/typed farm field) into the shared cross-tab scalar draft before
+        // navigating to another tab. LoadAsync()'s own staged-scalar overlay only fires once a Farm
+        // DB row exists to key off — impossible here, since neither the Case nor the Farm exists in
+        // the database yet — so without this, returning to the Farm tab for a brand-new case loses
+        // the Look Up result entirely.
+        var stagedScalars = await caseScalarDraftState.GetAsync(Rbse);
+        if (stagedScalars?.Farm is not null)
+            EditableFarm.ApplyStagedCommand(stagedScalars.Farm);
+
         await ResolveNewCaseCphhAsync(EditableFarm);
 
         if (Farm is null && !string.IsNullOrWhiteSpace(EditableFarm.CPHH))
             await LoadFromFarmCphhAsync(EditableFarm.CPHH);
+
+        if (Farm is null && !string.IsNullOrWhiteSpace(EditableFarm.CPHH))
+            RequireFarmDetails = true;
 
         if (Farm is not null)
             await LoadOrInitializeDraftStateAsync();
@@ -284,6 +295,7 @@ public class FarmModel(
         FarmRecord? farm = null;
         if (!string.IsNullOrWhiteSpace(normalisedCphh))
             farm = await farmService.GetByCphhAsync(normalisedCphh);
+        Farm = farm;
 
         RequireFarmDetails = farm is null;
 
@@ -295,7 +307,9 @@ public class FarmModel(
 
         await ValidateNewFarmMapAndAdnsAsync(EditableFarm);
 
-        if (!ModelState.IsValid)
+        await LoadOrInitializeDraftStateAsync();
+
+        if (!TryValidateStagedCollections() || !ModelState.IsValid)
         {
             await LoadLookupsForEditAsync();
             return Page();
@@ -303,36 +317,70 @@ public class FarmModel(
 
         var userId = await currentUser.GetUserIdAsync();
 
-        if (RequireFarmDetails)
-        {
-            await farmService.AddAsync(EditableFarm.ToAddCommand(), userId);
-        }
-        else
-        {
-            await farmService.UpdateAsync(EditableFarm.ToUpdateCommand(farm?.RowStamp), userId);
-        }
+        // Cross-tab staging (restores legacy's "one session, one commit" model): stage the Farm
+        // fields plus this form's own basic Case fields, then commit *everything* staged for this
+        // RBSE together — including any Case (DEFRA)/BAB/Clinical/Relations edit already staged on
+        // another tab — instead of creating the case from this form's fields in isolation.
+        await StageFarmScalarEditAsync(EditableFarm.ToUpdateCommand(farm?.RowStamp));
+        await StageNewCaseScalarFieldsIfNoneStagedAsync();
 
-        var batchId = await GetOrCreateCaseBatchIdAsync();
-        var command = BuildNewCaseCommand(normalisedCphh, batchId);
-        var result = await caseService.CreateCaseAsync(command, userId);
-
-        if (result != AddCaseResult.Success)
+        IActionResult? failureRedirect;
+        CaseCommitOutcome? commitOutcome;
+        try
         {
-            var message = result switch
-            {
-                AddCaseResult.DuplicateRbse => $"Case '{Rbse}' already exists.",
-                AddCaseResult.InsertError => "Database error during insert.",
-                AddCaseResult.AuditLogError => "Audit log error during create.",
-                _ => $"Failed to create case: {result}"
-            };
-            ModelState.AddModelError("", message);
+            (failureRedirect, commitOutcome) = await CaseCommitHelper.CommitAllAsync(
+                this, caseEditOrchestration, Rbse, userId,
+                result => $"Unable to create case: {result}.");
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Legacy parity: a genuine insert failure (e.g. a race against another user creating
+            // the same RBSE) shows an inline error rather than a raw exception page.
+            ModelState.AddModelError("", ex.Message);
             await LoadLookupsForEditAsync();
             return Page();
         }
+        if (failureRedirect is not null)
+            return failureRedirect;
 
+        await PersistStagedCollectionsAsync();
         await farmDraftState.ClearAsync(Rbse);
-        TempData["SuccessMessage"] = $"Case {Rbse} created successfully.";
-        return RedirectToPage("/Case/Farm", new { rbse = Rbse.Trim() });
+
+        if (CaseCommitHelper.TryStageWarnings(this, commitOutcome!, Rbse) is { } warningRedirect)
+            return warningRedirect;
+
+        // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx on a fully successful save,
+        // clearing the session case state — not back to the Farm tab with a toast message.
+        return RedirectToPage("/Home");
+    }
+
+    /// <summary>Stages this create-mode form's own basic Case-level fields (Eartag, Survey, Sex,
+    /// Breed, Form A Date, Fate, Origin, Notes, Case Type, Date of Birth) into the shared cross-tab
+    /// draft — but only when nothing is staged there yet, so a fuller edit already staged from the
+    /// Case (DEFRA) tab is never overwritten by this form's narrower field set.</summary>
+    private async Task StageNewCaseScalarFieldsIfNoneStagedAsync()
+    {
+        var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
+        if (draft.Case is not null)
+            return;
+
+        draft.Case = new EditCaseCommand(
+            Rbse: Rbse, EartagCountry: NewEartagCountry, EartagHerdmark: NewEartagHerdmark, Eartag: NewEartag,
+            PreviousEartag: null, Bse1ReceivedDate: null, FormADate: NewFormADate,
+            FormAResubmittedDate: null, FormBDate: null, Fate: NewFate, FormCDate: null,
+            IsPurchaserBse1Received: false, IsBreederBse1Received: false,
+            IsVendor1Bse1Received: false, IsHomebredBse1Received: false,
+            IsSummarySheetReceived: false, IsPaperworkComplete: false,
+            ReportedLocation: null, Survey: NewSurvey, Notes: NewNotes,
+            BirthDate: NewBirthDate, IsBirthDateEst: NewBirthDate.HasValue ? false : null, DamStatus: null,
+            BirthDateSource: null, ValuationAge: null, Sex: NewSex, Breed: NewBreed,
+            Origin: NewOrigin, PurchaseDate: null, PurchaseAgeInMonths: null,
+            PurchasedCounty: null, HerdEntryDate: null, OnsetDate: null,
+            IsOnsetDateEst: null, MonthsPregnant: null, MonthsPostCalving: null,
+            OnsetAgeInMonths: null, SlaughterDate: null, RowStamp: [],
+            AlternateDiagnosis: null, LabComment: null, CaseType: NewCaseType);
+        draft.HasPendingChanges = true;
+        await caseScalarDraftState.SetAsync(draft);
     }
 
     private void ValidateNewFarmDetails(FarmEditViewModel editableFarm)
@@ -364,43 +412,6 @@ public class FarmModel(
         {
             ModelState.AddModelError(AdnsRegionField, "ADNS region does not match the selected local authority. Please select ADNS region again.");
         }
-    }
-
-    // Legacy validated the batch on the Home page before redirecting to CaseEntryFarm.aspx.
-    private async Task<int> GetOrCreateCaseBatchIdAsync()
-    {
-        var pendingBatch = await wizardState.GetAsync();
-        if (pendingBatch is not null && string.Equals(pendingBatch.RbseNumber, Rbse, StringComparison.OrdinalIgnoreCase))
-            return pendingBatch.BatchId;
-
-        var batch = await batchService.GetOrCreateBatchNumberAsync();
-        return batch.BatchId;
-    }
-
-    private UpdateCaseDetailsCommand BuildNewCaseCommand(string normalisedCphh, int batchId)
-    {
-        var addCase = new AddCaseCommand(
-            Rbse: Rbse.Trim(), Cphh: normalisedCphh,
-            EartagCountry: NewEartagCountry, EartagHerdmark: NewEartagHerdmark, Eartag: NewEartag,
-            PreviousEartag: null, Bse1ReceivedDate: null, FormADate: NewFormADate,
-            FormAResubmittedDate: null, FormBDate: null, Fate: NewFate, FormCDate: null,
-            IsPurchaserBse1Received: false, IsBreederBse1Received: false,
-            IsVendor1Bse1Received: false, IsHomebredBse1Received: false,
-            IsSummarySheetReceived: false, IsPaperworkComplete: false,
-            ReportedLocation: null, Survey: NewSurvey, Notes: NewNotes,
-            BirthDate: NewBirthDate, IsBirthDateEst: NewBirthDate.HasValue ? false : null, DamStatus: null,
-            BirthDateSource: null, ValuationAge: null, Sex: NewSex, Breed: NewBreed,
-            Origin: NewOrigin, PurchaseDate: null, PurchaseAgeInMonths: null,
-            PurchasedCounty: null, HerdEntryDate: null, OnsetDate: null,
-            IsOnsetDateEst: null, MonthsPregnant: null, MonthsPostCalving: null,
-            OnsetAgeInMonths: null, SlaughterDate: null, AlternateDiagnosis: null,
-            LabComment: null, CaseType: NewCaseType);
-
-        return new UpdateCaseDetailsCommand(
-            addCase, batchId,
-            Clinical: null, Bab: null,
-            Feeds: [], Tests: [], OtherOwners: [],
-            DamSire: null, ClinicalVisits: []);
     }
 
     public async Task<IActionResult> OnPostLookupNewCaseAsync()
@@ -636,13 +647,21 @@ public class FarmModel(
     {
         var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
         draft.FarmBaseRowStampBase64 ??= EditableFarmRowStampBase64;
-        draft.Farm = command;
-        draft.HasPendingChanges = true;
-        await caseScalarDraftState.SetAsync(draft);
+        var baseRowStamp = string.IsNullOrWhiteSpace(draft.FarmBaseRowStampBase64)
+            ? null
+            : Convert.FromBase64String(draft.FarmBaseRowStampBase64);
 
-        logger.LogWarning(
-            "Farm scalar stage WRITE: Rbse={Rbse} OwnerName={OwnerName} County={County} CPHH={Cphh}",
-            Rbse, command.OwnerName, command.County, command.CPHH);
+        // Legacy parity: UpdateSessionWithCaseDetails() runs on every tab-switch too, but legacy's
+        // DataSetHasChanges() only flags a genuine edit — merely switching tabs without typing
+        // anything must not trip the cross-tab unsaved-changes exit warning.
+        var baseline = Farm is not null
+            ? FarmEditViewModel.FromRecord(Farm).ToUpdateCommand(baseRowStamp ?? Farm.RowStamp)
+            : null;
+
+        draft.Farm = command;
+        if (DraftChangeDetector.IsDifferentFromPersisted(command, baseline))
+            draft.HasPendingChanges = true;
+        await caseScalarDraftState.SetAsync(draft);
     }
 
     /// <summary>Undoes <c>LoadAsync()</c>'s overwrite of <see cref="EditableFarm"/> with the

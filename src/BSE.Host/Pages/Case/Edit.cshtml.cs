@@ -127,9 +127,17 @@ public class EditModel(
             Case.Rbse = Rbse;
             var missingCaseBatchTask = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
             SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
-            var missingCaseWork = await caseWorkRepository.GetByRbseAsync(Rbse);
-            HasCaseWorkLink = missingCaseWork is not null
-                              || await caseWorkRepository.GetEntryByRbseAsync(Rbse) is not null;
+
+            // Legacy parity: Common.vb's GetCaseDetailsFromDatabase unconditionally calls
+            // AddEmptyRow against CASEWORK_TABLE for a case not yet in the database — the CaseWork
+            // row (and therefore the Casework button/fields) exists from the moment a new case is
+            // started, not just after the first Save. CaseService.CreateCaseAsync mirrors this by
+            // always inserting a CaseWork row alongside the Case row on first commit, so this just
+            // reflects that guarantee ahead of time instead of querying a row that can't exist yet.
+            Case.HasCaseWork = true;
+            HasCaseWorkLink = true;
+            ApplyLegacyDefraPermissions();
+
             await Task.WhenAll(LoadLookupsAsync(), missingCaseBatchTask, LoadOrInitializeDraftStateAsync());
             BatchNumbers = (await missingCaseBatchTask).ToList().AsReadOnly();
             TempData[string.Format(RowStampKey, Rbse)] = Convert.ToBase64String([]);
@@ -366,6 +374,23 @@ public class EditModel(
         // Save casework fields if the case has a CaseWork row
         if (Case.HasCaseWork)
         {
+            var persistedCaseWork = await caseWorkRepository.GetByRbseAsync(Rbse);
+
+            // Security: Barcode/AHF Reference render readonly (not disabled) to every role except
+            // VLA Maintenance on an open CaseWork row, and unlike legacy's disabled TextBox (never
+            // posted back), a readonly <input> still submits its value. Re-derive the write
+            // permission from the role claim (trustworthy) and the freshly-read CaseWork row
+            // (not the posted Case.IsCaseClosed hidden field, which a crafted POST could forge)
+            // rather than trusting CanEditVlaMaintenanceCaseworkFields, and restore the persisted
+            // values whenever it's false, so a crafted POST can't bypass the client-side readonly.
+            var isVlaMaintenance = User.IsInRole(VlaAccessRole) && User.IsInRole(VlaMaintenanceRole);
+            var canWriteCaseworkFields = isVlaMaintenance && persistedCaseWork is not null && !persistedCaseWork.IsCaseClosed;
+            if (!canWriteCaseworkFields)
+            {
+                Case.Barcode = persistedCaseWork?.Barcode;
+                Case.AhfReference = persistedCaseWork?.AhfReference;
+            }
+
             var cwCommand = new EditCaseWorkCommand(
                 Rbse:                       Rbse,
                 RbseDate:                   Case.RbseDate,
@@ -451,8 +476,19 @@ public class EditModel(
         var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
         draft.CaseBaseRowStampBase64 ??= rowStampBase64;
         var baseRowStamp = Convert.FromBase64String(draft.CaseBaseRowStampBase64);
-        draft.Case = Case.ToEditCommand(baseRowStamp);
-        draft.HasPendingChanges = true;
+        var newCommand = Case.ToEditCommand(baseRowStamp);
+
+        // Legacy parity: UpdateSessionWithCaseDetails() runs on every tab-switch too, but legacy's
+        // DataSetHasChanges() only flags a genuine edit — merely switching tabs without typing
+        // anything must not trip the cross-tab unsaved-changes exit warning.
+        var persistedRecord = await caseService.GetCaseAsync(Rbse);
+        var baseline = persistedRecord is not null
+            ? CaseEditViewModel.FromRecord(persistedRecord).ToEditCommand(baseRowStamp)
+            : null;
+
+        draft.Case = newCommand;
+        if (DraftChangeDetector.IsDifferentFromPersisted(newCommand, baseline))
+            draft.HasPendingChanges = true;
         await caseScalarDraftState.SetAsync(draft);
     }
 
@@ -708,7 +744,14 @@ public class EditModel(
 
         var record = await caseService.GetCaseAsync(Rbse);
         if (record is null)
+        {
+            // Legacy parity: same reasoning as OnGetAsync's missing-record branch — the Casework
+            // button/fields exist from the moment a new case is started, not just after first Save.
+            Case.HasCaseWork = true;
+            HasCaseWorkLink = true;
+            ApplyLegacyDefraPermissions();
             return;
+        }
 
         Case = CaseEditViewModel.FromRecord(record);
         IsNonGbCase = record.IsNonGbCase;

@@ -56,11 +56,6 @@
 }
 
 <form id="edit-vla-form" method="post" novalidate>
-    @if (!Model.CanEditMainCase)
-    {
-        <p class="govuk-body">You can view case details but cannot edit this page.</p>
-    }
-
     @if (Model.CanEditMainCase)
     {
         <input type="hidden" name="Rbse" value="@Model.Rbse" />
@@ -723,6 +718,46 @@
             sexSel.addEventListener('change', applyPregnancyFieldAvailability);
         }
 
+        // Legacy MakeControlsWritable: Date Of Birth/Onset Date Estimated checkboxes (and the
+        // Birth Date Source dropdown) are only enabled while their driving date has a value —
+        // clearing the date disables and unchecks/resets the dependent control too.
+        var birthDateInput = document.getElementById('Case_BirthDate');
+        var birthDateSourceSel = document.getElementById('Case_BirthDateSource');
+        var birthDateEstCheckbox = document.getElementById('Case_IsBirthDateEst');
+
+        function applyBirthDateEstimatedAvailability() {
+            if (!birthDateInput) return;
+            var hasBirthDate = parseUkDate(birthDateInput.value) !== null;
+            if (birthDateSourceSel) birthDateSourceSel.disabled = !hasBirthDate;
+            if (birthDateEstCheckbox) {
+                birthDateEstCheckbox.disabled = !hasBirthDate;
+                if (!hasBirthDate) birthDateEstCheckbox.checked = false;
+            }
+            if (!hasBirthDate && birthDateSourceSel) birthDateSourceSel.value = '';
+        }
+
+        if (birthDateInput) {
+            ['change', 'input', 'blur'].forEach(function (evt) {
+                birthDateInput.addEventListener(evt, applyBirthDateEstimatedAvailability);
+            });
+        }
+
+        var onsetDateInput = document.getElementById('Case_OnsetDate');
+        var onsetDateEstCheckbox = document.getElementById('Case_IsOnsetDateEst');
+
+        function applyOnsetDateEstimatedAvailability() {
+            if (!onsetDateInput || !onsetDateEstCheckbox) return;
+            var hasOnsetDate = parseUkDate(onsetDateInput.value) !== null;
+            onsetDateEstCheckbox.disabled = !hasOnsetDate;
+            if (!hasOnsetDate) onsetDateEstCheckbox.checked = false;
+        }
+
+        if (onsetDateInput) {
+            ['change', 'input', 'blur'].forEach(function (evt) {
+                onsetDateInput.addEventListener(evt, applyOnsetDateEstimatedAvailability);
+            });
+        }
+
         function parseUkDate(value) {
             var text = (value || '').trim();
             if (!text) return null;
@@ -1074,6 +1109,8 @@
         updateDateWarningIndicators();
         updateOnsetWarning();
         applyPregnancyFieldAvailability();
+        applyBirthDateEstimatedAvailability();
+        applyOnsetDateEstimatedAvailability();
 
         var showAddOwnerBtn = document.getElementById('show-add-owner-row');
         var addOwnerRow = document.getElementById('add-owner-row-inline');

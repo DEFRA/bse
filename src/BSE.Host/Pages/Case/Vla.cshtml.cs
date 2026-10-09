@@ -146,15 +146,7 @@ public class VlaModel(
         SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
         await LoadLookupsAsync();
 
-        if (Case.Origin != "P")
-        {
-            Case.PurchaseDate = null;
-            Case.PurchaseAgeInMonths = null;
-            Case.PurchasedCounty = null;
-        }
-
-        if (Case.FormBDate.HasValue && !Case.SlaughterDate.HasValue)
-            Case.SlaughterDate = Case.FormBDate;
+        ApplyLegacyPreSaveNormalizations();
 
         ValidateVlaDomainRules();
 
@@ -218,15 +210,7 @@ public class VlaModel(
         SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
         await LoadLookupsAsync();
 
-        if (Case.Origin != "P")
-        {
-            Case.PurchaseDate = null;
-            Case.PurchaseAgeInMonths = null;
-            Case.PurchasedCounty = null;
-        }
-
-        if (Case.FormBDate.HasValue && !Case.SlaughterDate.HasValue)
-            Case.SlaughterDate = Case.FormBDate;
+        ApplyLegacyPreSaveNormalizations();
 
         ValidateVlaDomainRules();
 
@@ -255,8 +239,19 @@ public class VlaModel(
         var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
         draft.CaseBaseRowStampBase64 ??= rowStampBase64;
         var baseRowStamp = Convert.FromBase64String(draft.CaseBaseRowStampBase64);
-        draft.Case = Case.ToEditCommand(baseRowStamp);
-        draft.HasPendingChanges = true;
+        var newCommand = Case.ToEditCommand(baseRowStamp);
+
+        // Legacy parity: UpdateSessionWithCaseDetails() runs on every tab-switch too, but legacy's
+        // DataSetHasChanges() only flags a genuine edit — merely switching tabs without typing
+        // anything must not trip the cross-tab unsaved-changes exit warning.
+        var persistedRecord = await caseService.GetCaseAsync(Rbse);
+        var baseline = persistedRecord is not null
+            ? VlaEditViewModel.FromRecord(persistedRecord).ToEditCommand(baseRowStamp)
+            : null;
+
+        draft.Case = newCommand;
+        if (DraftChangeDetector.IsDifferentFromPersisted(newCommand, baseline))
+            draft.HasPendingChanges = true;
         await caseScalarDraftState.SetAsync(draft);
     }
 
@@ -634,6 +629,31 @@ public class VlaModel(
                 normalizedName,
                 normalizedCphh), conn, tx);
         }
+    }
+
+    /// <summary>Legacy parity (MakeControlsWritable's Date-of-Birth/Onset-Date-driven gates):
+    /// a date field being cleared also clears/disables whatever depends on it, so a stale
+    /// Estimated flag or Source value never gets saved once its date is blank.</summary>
+    private void ApplyLegacyPreSaveNormalizations()
+    {
+        if (Case.Origin != "P")
+        {
+            Case.PurchaseDate = null;
+            Case.PurchaseAgeInMonths = null;
+            Case.PurchasedCounty = null;
+        }
+
+        if (Case.FormBDate.HasValue && !Case.SlaughterDate.HasValue)
+            Case.SlaughterDate = Case.FormBDate;
+
+        if (!Case.BirthDate.HasValue)
+        {
+            Case.BirthDateSource = null;
+            Case.IsBirthDateEst = false;
+        }
+
+        if (!Case.OnsetDate.HasValue)
+            Case.IsOnsetDateEst = false;
     }
 
     private void ValidateVlaDomainRules()
