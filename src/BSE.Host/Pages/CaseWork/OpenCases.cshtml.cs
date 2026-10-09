@@ -21,7 +21,7 @@ public class OpenCasesModel(ICaseWorkService caseWorkService) : PageModel
 
     public int TotalCount => Cases.Count();
     public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
-    public IReadOnlyList<CaseWorkEntryRecord> PagedCases =>
+    public IReadOnlyList<CaseWorkEntryRecord> GetPagedCases() =>
         Cases.Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
 
     public async Task OnGetAsync()
@@ -45,85 +45,43 @@ public class OpenCasesModel(ICaseWorkService caseWorkService) : PageModel
     {
         var col = string.IsNullOrWhiteSpace(SortColumn) ? "Rbse" : SortColumn;
 
-        if (SortDesc)
-        {
-            return col switch
-            {
-                "Rbse" => source.OrderByDescending(x => x.Rbse, TextComparer),
-                "Survey" => source.OrderByDescending(x => x.Survey ?? string.Empty, TextComparer),
-                "Barcode" => source.OrderByDescending(x => x.Barcode ?? string.Empty, TextComparer),
-                "AhfReference" => source.OrderByDescending(x => x.AhfReference ?? string.Empty, TextComparer),
-                "FormADate" => source.OrderByDescending(x => x.FormADate),
-                "RbseDate" => source.OrderByDescending(x => x.RbseDate),
-                "SlaughterDate" => source.OrderByDescending(x => x.SlaughterDate),
-                "Fate" => source.OrderByDescending(x => x.Fate ?? string.Empty, TextComparer),
-                "ActiveMemoDueDate" => source.OrderByDescending(x => x.ActiveMemoDueDate),
-                "ActiveMemoDate" => source.OrderByDescending(x => x.ActiveMemoDate),
-                "AnnexADueDate" => source.OrderByDescending(x => x.AnnexADueDate),
-                "AnnexADate" => source.OrderByDescending(x => x.AnnexADate),
-                "AnnexBDueDate" => source.OrderByDescending(x => x.AnnexBDueDate),
-                "AnnexBDate" => source.OrderByDescending(x => x.AnnexBDate),
-                "PaperworkCompleteDate" => source.OrderByDescending(x => x.PaperworkCompleteDate),
-                "AnnexCDueDate" => source.OrderByDescending(x => x.AnnexCDueDate),
-                "AnnexCDate" => source.OrderByDescending(x => x.AnnexCDate),
-                "AnnexDDueDate" => source.OrderByDescending(x => x.AnnexDDueDate),
-                "AnnexDDate" => source.OrderByDescending(x => x.AnnexDDate),
-                "RegionalLab" => source.OrderByDescending(x => x.RegionalLab ?? string.Empty, TextComparer),
-                "ReceivedByRegionalLabDate" => source.OrderByDescending(x => x.ReceivedByRegionalLabDate),
-                "InitialReceivedDate" => source.OrderByDescending(x => x.InitialReceivedDate),
-                "FinalReceivedDate" => source.OrderByDescending(x => x.FinalReceivedDate),
-                "FinalSentDate" => source.OrderByDescending(x => x.FinalSentDate),
-                "LabChaseDueDate" => source.OrderByDescending(x => x.LabChaseDueDate),
-                "LabChasedDate" => source.OrderByDescending(x => x.LabChasedDate),
-                "FinalResult" => source.OrderByDescending(x => x.FinalResult ?? string.Empty, TextComparer),
-                "FinalResultDate" => source.OrderByDescending(x => x.FinalResultDate),
-                "BirthDate" => source.OrderByDescending(x => x.BirthDate),
-                "Post2000SentDate" => source.OrderByDescending(x => x.Post2000SentDate),
-                "BarbMemoDue" => source.OrderByDescending(x => x.BarbMemoDue ?? string.Empty, TextComparer),
-                "BarbMinuteSentDate" => source.OrderByDescending(x => x.BarbMinuteSentDate),
-                "DataCompleteDate" => source.OrderByDescending(x => x.DataCompleteDate),
-                "CaseWorkNotes" => source.OrderByDescending(x => x.CaseWorkNotes ?? string.Empty, TextComparer),
-                _ => source.OrderByDescending(x => x.Rbse, TextComparer)
-            };
-        }
-
         return col switch
         {
-            "Rbse" => source.OrderBy(x => x.Rbse, TextComparer),
-            "Survey" => source.OrderBy(x => x.Survey ?? string.Empty, TextComparer),
-            "Barcode" => source.OrderBy(x => x.Barcode ?? string.Empty, TextComparer),
-            "AhfReference" => source.OrderBy(x => x.AhfReference ?? string.Empty, TextComparer),
-            "FormADate" => source.OrderBy(x => x.FormADate),
-            "RbseDate" => source.OrderBy(x => x.RbseDate),
-            "SlaughterDate" => source.OrderBy(x => x.SlaughterDate),
-            "Fate" => source.OrderBy(x => x.Fate ?? string.Empty, TextComparer),
-            "ActiveMemoDueDate" => source.OrderBy(x => x.ActiveMemoDueDate),
-            "ActiveMemoDate" => source.OrderBy(x => x.ActiveMemoDate),
-            "AnnexADueDate" => source.OrderBy(x => x.AnnexADueDate),
-            "AnnexADate" => source.OrderBy(x => x.AnnexADate),
-            "AnnexBDueDate" => source.OrderBy(x => x.AnnexBDueDate),
-            "AnnexBDate" => source.OrderBy(x => x.AnnexBDate),
-            "PaperworkCompleteDate" => source.OrderBy(x => x.PaperworkCompleteDate),
-            "AnnexCDueDate" => source.OrderBy(x => x.AnnexCDueDate),
-            "AnnexCDate" => source.OrderBy(x => x.AnnexCDate),
-            "AnnexDDueDate" => source.OrderBy(x => x.AnnexDDueDate),
-            "AnnexDDate" => source.OrderBy(x => x.AnnexDDate),
-            "RegionalLab" => source.OrderBy(x => x.RegionalLab ?? string.Empty, TextComparer),
-            "ReceivedByRegionalLabDate" => source.OrderBy(x => x.ReceivedByRegionalLabDate),
-            "InitialReceivedDate" => source.OrderBy(x => x.InitialReceivedDate),
-            "FinalReceivedDate" => source.OrderBy(x => x.FinalReceivedDate),
-            "FinalSentDate" => source.OrderBy(x => x.FinalSentDate),
-            "LabChaseDueDate" => source.OrderBy(x => x.LabChaseDueDate),
-            "LabChasedDate" => source.OrderBy(x => x.LabChasedDate),
-            "FinalResult" => source.OrderBy(x => x.FinalResult ?? string.Empty, TextComparer),
-            "FinalResultDate" => source.OrderBy(x => x.FinalResultDate),
-            "BirthDate" => source.OrderBy(x => x.BirthDate),
-            "Post2000SentDate" => source.OrderBy(x => x.Post2000SentDate),
-            "BarbMemoDue" => source.OrderBy(x => x.BarbMemoDue ?? string.Empty, TextComparer),
-            "BarbMinuteSentDate" => source.OrderBy(x => x.BarbMinuteSentDate),
-            "DataCompleteDate" => source.OrderBy(x => x.DataCompleteDate),
-            "CaseWorkNotes" => source.OrderBy(x => x.CaseWorkNotes ?? string.Empty, TextComparer),
-            _ => source.OrderBy(x => x.Rbse, TextComparer)
+            "Rbse" => SortDesc ? source.OrderByDescending(x => x.Rbse, TextComparer) : source.OrderBy(x => x.Rbse, TextComparer),
+            "Survey" => SortDesc ? source.OrderByDescending(x => x.Survey ?? string.Empty, TextComparer) : source.OrderBy(x => x.Survey ?? string.Empty, TextComparer),
+            "Barcode" => SortDesc ? source.OrderByDescending(x => x.Barcode ?? string.Empty, TextComparer) : source.OrderBy(x => x.Barcode ?? string.Empty, TextComparer),
+            "AhfReference" => SortDesc ? source.OrderByDescending(x => x.AhfReference ?? string.Empty, TextComparer) : source.OrderBy(x => x.AhfReference ?? string.Empty, TextComparer),
+            "FormADate" => SortDesc ? source.OrderByDescending(x => x.FormADate) : source.OrderBy(x => x.FormADate),
+            "RbseDate" => SortDesc ? source.OrderByDescending(x => x.RbseDate) : source.OrderBy(x => x.RbseDate),
+            "SlaughterDate" => SortDesc ? source.OrderByDescending(x => x.SlaughterDate) : source.OrderBy(x => x.SlaughterDate),
+            "Fate" => SortDesc ? source.OrderByDescending(x => x.Fate ?? string.Empty, TextComparer) : source.OrderBy(x => x.Fate ?? string.Empty, TextComparer),
+            "ActiveMemoDueDate" => SortDesc ? source.OrderByDescending(x => x.ActiveMemoDueDate) : source.OrderBy(x => x.ActiveMemoDueDate),
+            "ActiveMemoDate" => SortDesc ? source.OrderByDescending(x => x.ActiveMemoDate) : source.OrderBy(x => x.ActiveMemoDate),
+            "AnnexADueDate" => SortDesc ? source.OrderByDescending(x => x.AnnexADueDate) : source.OrderBy(x => x.AnnexADueDate),
+            "AnnexADate" => SortDesc ? source.OrderByDescending(x => x.AnnexADate) : source.OrderBy(x => x.AnnexADate),
+            "AnnexBDueDate" => SortDesc ? source.OrderByDescending(x => x.AnnexBDueDate) : source.OrderBy(x => x.AnnexBDueDate),
+            "AnnexBDate" => SortDesc ? source.OrderByDescending(x => x.AnnexBDate) : source.OrderBy(x => x.AnnexBDate),
+            "PaperworkCompleteDate" => SortDesc ? source.OrderByDescending(x => x.PaperworkCompleteDate) : source.OrderBy(x => x.PaperworkCompleteDate),
+            "AnnexCDueDate" => SortDesc ? source.OrderByDescending(x => x.AnnexCDueDate) : source.OrderBy(x => x.AnnexCDueDate),
+            "AnnexCDate" => SortDesc ? source.OrderByDescending(x => x.AnnexCDate) : source.OrderBy(x => x.AnnexCDate),
+            "AnnexDDueDate" => SortDesc ? source.OrderByDescending(x => x.AnnexDDueDate) : source.OrderBy(x => x.AnnexDDueDate),
+            "AnnexDDate" => SortDesc ? source.OrderByDescending(x => x.AnnexDDate) : source.OrderBy(x => x.AnnexDDate),
+            "RegionalLab" => SortDesc ? source.OrderByDescending(x => x.RegionalLab ?? string.Empty, TextComparer) : source.OrderBy(x => x.RegionalLab ?? string.Empty, TextComparer),
+            "ReceivedByRegionalLabDate" => SortDesc ? source.OrderByDescending(x => x.ReceivedByRegionalLabDate) : source.OrderBy(x => x.ReceivedByRegionalLabDate),
+            "InitialReceivedDate" => SortDesc ? source.OrderByDescending(x => x.InitialReceivedDate) : source.OrderBy(x => x.InitialReceivedDate),
+            "FinalReceivedDate" => SortDesc ? source.OrderByDescending(x => x.FinalReceivedDate) : source.OrderBy(x => x.FinalReceivedDate),
+            "FinalSentDate" => SortDesc ? source.OrderByDescending(x => x.FinalSentDate) : source.OrderBy(x => x.FinalSentDate),
+            "LabChaseDueDate" => SortDesc ? source.OrderByDescending(x => x.LabChaseDueDate) : source.OrderBy(x => x.LabChaseDueDate),
+            "LabChasedDate" => SortDesc ? source.OrderByDescending(x => x.LabChasedDate) : source.OrderBy(x => x.LabChasedDate),
+            "FinalResult" => SortDesc ? source.OrderByDescending(x => x.FinalResult ?? string.Empty, TextComparer) : source.OrderBy(x => x.FinalResult ?? string.Empty, TextComparer),
+            "FinalResultDate" => SortDesc ? source.OrderByDescending(x => x.FinalResultDate) : source.OrderBy(x => x.FinalResultDate),
+            "BirthDate" => SortDesc ? source.OrderByDescending(x => x.BirthDate) : source.OrderBy(x => x.BirthDate),
+            "Post2000SentDate" => SortDesc ? source.OrderByDescending(x => x.Post2000SentDate) : source.OrderBy(x => x.Post2000SentDate),
+            "BarbMemoDue" => SortDesc ? source.OrderByDescending(x => x.BarbMemoDue ?? string.Empty, TextComparer) : source.OrderBy(x => x.BarbMemoDue ?? string.Empty, TextComparer),
+            "BarbMinuteSentDate" => SortDesc ? source.OrderByDescending(x => x.BarbMinuteSentDate) : source.OrderBy(x => x.BarbMinuteSentDate),
+            "DataCompleteDate" => SortDesc ? source.OrderByDescending(x => x.DataCompleteDate) : source.OrderBy(x => x.DataCompleteDate),
+            "CaseWorkNotes" => SortDesc ? source.OrderByDescending(x => x.CaseWorkNotes ?? string.Empty, TextComparer) : source.OrderBy(x => x.CaseWorkNotes ?? string.Empty, TextComparer),
+            _ => SortDesc ? source.OrderByDescending(x => x.Rbse, TextComparer) : source.OrderBy(x => x.Rbse, TextComparer)
         };
     }
 }

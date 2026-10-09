@@ -3,7 +3,7 @@
 <form method="get" novalidate class="govuk-!-margin-bottom-6">
     <div class="bse-date-search-row">
         <div class="govuk-form-group @(Model.StartDateError is not null || Model.EndDateError is not null ? "govuk-form-group--error" : "")">
-            <label class="govuk-label">Log Entries Between</label>
+            <span class="govuk-label">Log Entries Between</span>
             @if (Model.StartDateError is not null || Model.EndDateError is not null)
             {
                 @if (Model.StartDateError is not null)
@@ -17,6 +17,7 @@
             }
             <div class="bse-date-range-input-wrapper">
                 <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                    <label for="audit-start-date" class="govuk-label govuk-visually-hidden">Start date</label>
                     <input id="audit-start-date" name="StartDate" type="text"
                            class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(Model.StartDateError is not null ? "govuk-input--error" : "")"
                            autocomplete="off"
@@ -25,6 +26,7 @@
                 </div>
                 <span class="bse-date-range-separator govuk-label">and</span>
                 <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                    <label for="audit-end-date" class="govuk-label govuk-visually-hidden">End date</label>
                     <input id="audit-end-date" name="EndDate" type="text"
                            class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(Model.EndDateError is not null ? "govuk-input--error" : "")"
                            autocomplete="off"

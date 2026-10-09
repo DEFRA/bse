@@ -382,6 +382,8 @@ try
     builder.Services.AddScoped<BSE.Host.Services.ICaseFeedsDraftStateService, BSE.Host.Services.CaseFeedsDraftStateService>();
     builder.Services.AddScoped<BSE.Host.Services.ICaseRelationsDraftStateService, BSE.Host.Services.CaseRelationsDraftStateService>();
     builder.Services.AddScoped<BSE.Host.Services.ICaseScalarDraftStateService, BSE.Host.Services.CaseScalarDraftStateService>();
+    builder.Services.AddScoped<BSE.Host.Services.CaseEditDraftStores>();
+    builder.Services.AddScoped<BSE.Host.Services.CaseEditRepositories>();
     builder.Services.AddScoped<BSE.Host.Services.ICaseEditOrchestrationService, BSE.Host.Services.CaseEditOrchestrationService>();
 
     // -- Authorisation policies
@@ -537,6 +539,3 @@ finally
 {
     Log.CloseAndFlush();
 }
-
-// Expose Program to integration test projects using WebApplicationFactory<Program>.
-public partial class Program { }

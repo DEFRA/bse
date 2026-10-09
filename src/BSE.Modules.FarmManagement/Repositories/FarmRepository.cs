@@ -15,6 +15,8 @@ namespace BSE.Modules.FarmManagement.Repositories;
 /// </summary>
 public sealed class FarmRepository : DapperRepository, IFarmRepository
 {
+    private const string ReturnValueParam = "RETURN_VALUE";
+
     public FarmRepository(IDbConnectionFactory connectionFactory)
         : base(connectionFactory) { }
 
@@ -82,9 +84,9 @@ public sealed class FarmRepository : DapperRepository, IFarmRepository
     public async Task<string?> UpdateAsync(UpdateFarmCommand command, int userId, IDbConnection connection, IDbTransaction transaction)
     {
         var p = new DynamicParameters(BuildEditFarmParams(command, userId));
-        p.Add("RETURN_VALUE", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+        p.Add(ReturnValueParam, dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
         await ExecuteWithOutputAsync("EditFarm", p, connection, transaction);
-        return (int)p.Get<int>("RETURN_VALUE") switch
+        return p.Get<int>(ReturnValueParam) switch
         {
             0 => null,
             1 => throw new InvalidOperationException($"The farm with CPHH {command.CPHH} has been deleted by another user"),
@@ -131,9 +133,9 @@ public sealed class FarmRepository : DapperRepository, IFarmRepository
         param.Add("OldCPHH", oldCphh, DbType.StringFixedLength, size: 11);
         param.Add("NewCPHH", newCphh, DbType.StringFixedLength, size: 11);
         param.Add("UserID", userId);
-        param.Add("RETURN_VALUE", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+        param.Add(ReturnValueParam, dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
         await ExecuteWithOutputAsync("ChangeCPHH", param);
-        return (ChangeCphhResult)param.Get<int>("RETURN_VALUE");
+        return (ChangeCphhResult)param.Get<int>(ReturnValueParam);
     }
 
     public async Task<int> GetConfirmedCaseCountAsync(string cphh)

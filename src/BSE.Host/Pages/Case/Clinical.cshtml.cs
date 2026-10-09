@@ -30,6 +30,7 @@ public class ClinicalModel(
 {
     private const int PageSize = 10;
     private const string VlaAccessRole = "VLAAccess";
+    private const string DataEntryRole = "DataEntry";
     private List<ClinicalVisitRecord> _persistedVisits = [];
 
     [BindProperty(SupportsGet = true)]
@@ -78,7 +79,7 @@ public class ClinicalModel(
         // (VLA-only edit) — matches the same DataEntry+VLAAccess gate already used by every other
         // handler in this file (Add/Update/Delete/BeginEdit visit row). A plain DataEntry check
         // alone would let a DEFRA-only POST of blank/disabled clinical-sign fields overwrite them.
-        if (!User.IsInRole("DataEntry") || !User.IsInRole(VlaAccessRole))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         var signs = BindSignsFromForm();
@@ -177,7 +178,7 @@ public class ClinicalModel(
     /// </summary>
     public async Task<IActionResult> OnPostStageAndGotoAsync(string targetPage, string? clinicalRowStampBase64)
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole(DataEntryRole))
             return Forbid();
 
         if (string.IsNullOrEmpty(clinicalRowStampBase64))
@@ -288,7 +289,7 @@ public class ClinicalModel(
     /// <summary>Adds a clinical visit to the draft only. Not persisted until Save.</summary>
     public async Task<IActionResult> OnPostAddVisitRowAsync(string? clinicalRowStampBase64)
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole(VlaAccessRole))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         var postedDate = NewVisitDate;
@@ -326,7 +327,7 @@ public class ClinicalModel(
     /// <summary>Opens the inline edit view for one staged clinical visit row (no changes saved yet).</summary>
     public async Task<IActionResult> OnPostBeginEditVisitRowAsync(string clientKey, string? clinicalRowStampBase64)
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole(VlaAccessRole))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         await LoadAsync();
@@ -347,7 +348,7 @@ public class ClinicalModel(
     /// <summary>Updates a staged clinical visit row in the draft only. Not persisted until Save.</summary>
     public async Task<IActionResult> OnPostUpdateVisitRowAsync(string? clinicalRowStampBase64)
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole(VlaAccessRole))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         var clientKey = EditingClientKey;
@@ -388,7 +389,7 @@ public class ClinicalModel(
     /// <summary>Removes a staged clinical visit row from the draft only. Not persisted until Save.</summary>
     public async Task<IActionResult> OnPostDeleteVisitAsync(string clientKey, string? clinicalRowStampBase64)
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole(VlaAccessRole))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         await LoadAsync();

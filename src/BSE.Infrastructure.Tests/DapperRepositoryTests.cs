@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 using BSE.Infrastructure;
 using Dapper;
 using FluentAssertions;
@@ -130,6 +131,7 @@ public sealed class DapperRepositoryTests
         public List<string> CommandTexts { get; } = [];
         public FakeDbCommand? LastCommand { get; private set; }
 
+        [AllowNull]
         public override string ConnectionString { get; set; } = "Server=localhost;Database=BSETest;Trusted_Connection=True;";
         public override string Database => "BSETest";
         public override string DataSource => "localhost";
@@ -170,6 +172,7 @@ public sealed class DapperRepositoryTests
             _resultSet = resultSet;
         }
 
+        [AllowNull]
         public override string CommandText { get; set; } = string.Empty;
         public override int CommandTimeout { get; set; }
         public override CommandType CommandType { get; set; }
@@ -283,7 +286,9 @@ public sealed class DapperRepositoryTests
         public override DbType DbType { get; set; }
         public override ParameterDirection Direction { get; set; }
         public override bool IsNullable { get; set; }
+        [AllowNull]
         public override string ParameterName { get; set; } = string.Empty;
+        [AllowNull]
         public override string SourceColumn { get; set; } = string.Empty;
         public override object? Value { get; set; }
         public override bool SourceColumnNullMapping { get; set; }

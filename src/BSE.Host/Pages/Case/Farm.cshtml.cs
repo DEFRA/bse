@@ -674,7 +674,7 @@ public class FarmModel(
             return;
 
         EditableFarm = postedEditableFarm;
-        EditableFarmRowStampBase64 = postedFarmRowStampBase64;
+        EditableFarmRowStampBase64 = postedFarmRowStampBase64 ?? string.Empty;
 
         byte[]? rowStamp = null;
         if (!string.IsNullOrWhiteSpace(postedFarmRowStampBase64))

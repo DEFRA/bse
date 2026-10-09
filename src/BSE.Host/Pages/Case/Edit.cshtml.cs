@@ -36,6 +36,9 @@ public class EditModel(
     private const string DataEntryRole = "DataEntry";
     private const string VlaAccessRole = "VLAAccess";
     private const string VlaMaintenanceRole = "VLAMaintenance";
+    private const string CaseWorkEntryPage = "/CaseWork/Entry";
+    private const string HomePage = "/Home";
+    private const string BirthDateFieldKey = "Case.BirthDate";
 
     [BindProperty(SupportsGet = true)]
     public string Rbse { get; set; } = string.Empty;
@@ -249,7 +252,7 @@ public class EditModel(
     {
         await caseEditDraftState.ClearAsync(Rbse);
         await caseScalarDraftState.ClearAsync(Rbse);
-        return RedirectToPage("/Home");
+        return RedirectToPage(HomePage);
     }
 
     /// <summary>Live eartag validation for the help tooltip, reusing the server-side rules so the
@@ -290,7 +293,7 @@ public class EditModel(
         return RedirectToTestsAnchor();
     }
 
-    public Task<IActionResult> OnPostAsync() => SaveAsync("/Home");
+    public Task<IActionResult> OnPostAsync() => SaveAsync(HomePage);
 
     /// <summary>
     /// Legacy parity: btnCaseWork_Click (CaseEntryDEFRA.aspx.vb) runs the exact same
@@ -299,7 +302,7 @@ public class EditModel(
     /// it is not a bare navigation link. Reuses the same SaveAsync path so mandatory-field and
     /// concurrency handling behave identically to Save.
     /// </summary>
-    public Task<IActionResult> OnPostSaveAndGotoCaseworkAsync() => SaveAsync("/CaseWork/Entry");
+    public Task<IActionResult> OnPostSaveAndGotoCaseworkAsync() => SaveAsync(CaseWorkEntryPage);
 
     private async Task<IActionResult> SaveAsync(string successRedirectPage)
     {
@@ -324,8 +327,8 @@ public class EditModel(
         // (disabled inputs are never submitted) — redirecting here without touching anything
         // avoids treating that blank post as a real edit and overwriting the persisted record.
         if (!CanEditCaseFields)
-            return RedirectToPage(successRedirectPage == "/CaseWork/Entry" ? successRedirectPage : "/Home",
-                successRedirectPage == "/CaseWork/Entry" ? new { rbse = Rbse } : null);
+            return RedirectToPage(successRedirectPage == CaseWorkEntryPage ? successRedirectPage : HomePage,
+                successRedirectPage == CaseWorkEntryPage ? new { rbse = Rbse } : null);
 
         // Legacy CaseEntryDEFRA behavior: Form A date is read-only for non-GB cases.
         if (IsNonGbCase)
@@ -414,7 +417,7 @@ public class EditModel(
         // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx (or the ?redirect=
         // target, e.g. CaseWorkEntry.aspx, when arrived via the Casework link) on a fully
         // successful save, clearing the session case state — not back to the tab the user was on.
-        return successRedirectPage == "/CaseWork/Entry"
+        return successRedirectPage == CaseWorkEntryPage
             ? RedirectToPage(successRedirectPage, new { rbse = Rbse })
             : RedirectToPage(successRedirectPage);
     }
@@ -649,17 +652,17 @@ public class EditModel(
 
         var birthDate = Case.BirthDate.Value.Date;
         if (birthDate < DateTime.UnixEpoch)
-            ModelState.AddModelError("Case.BirthDate", "Date of Birth must be on or after 01/01/1970.");
+            ModelState.AddModelError(BirthDateFieldKey, "Date of Birth must be on or after 01/01/1970.");
 
         var latestForFormA = Case.FormADate?.Date ?? today;
         if (birthDate > latestForFormA)
-            ModelState.AddModelError("Case.BirthDate", "Date of Birth must be before the Form A Date");
+            ModelState.AddModelError(BirthDateFieldKey, "Date of Birth must be before the Form A Date");
 
         if (Case.PurchaseDate.HasValue && birthDate > Case.PurchaseDate.Value.Date)
-            ModelState.AddModelError("Case.BirthDate", "Date of Birth must be before the Purchase Date");
+            ModelState.AddModelError(BirthDateFieldKey, "Date of Birth must be before the Purchase Date");
 
         if (Case.OnsetDate.HasValue && birthDate > Case.OnsetDate.Value.Date)
-            ModelState.AddModelError("Case.BirthDate", "Date of Birth must be before the Onset Date");
+            ModelState.AddModelError(BirthDateFieldKey, "Date of Birth must be before the Onset Date");
     }
 
     private void ValidateCaseWorkDates(DateTime today)
