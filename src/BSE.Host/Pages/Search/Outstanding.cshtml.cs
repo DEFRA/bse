@@ -58,8 +58,9 @@ public class OutstandingModel : PageModel
             "Results" => await _search.GetOutstandingResultsAsync(query),
             _ => await _search.GetOutstandingBse1sAsync(query)
         };
+        Filter.Results = rows.ToList();
         // Legacy exported all three outstanding-data variants under the same fixed file name.
-        return BuildExcel(rows, "outstandingdatasearchresults.xlsx");
+        return BuildExcel(Filter.SortedResults, "outstandingdatasearchresults.xlsx");
     }
 
     private bool IsKnownSearchType() =>

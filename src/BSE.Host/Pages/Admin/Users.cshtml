@@ -57,6 +57,7 @@
             .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
         var usersSortCol  = Model.SortColumn;
         var usersSortDesc = Model.SortDesc;
+        ViewData["PageNumber"] = Model.PageNumber;
     }
     <form method="post" asp-page-handler="Edit">
         <input type="hidden" asp-for="SortColumn" />

@@ -78,6 +78,7 @@ public class CasesModel : PageModel
         if (!HasAnyFilter() || !Filter.ValidateDates()) return RedirectToPage();
 
         var results = await _search.SearchCasesAsync(Filter.ToQuery());
+        Filter.Results = results.ToList();
 
         using var workbook = new XLWorkbook();
         var ws = workbook.Worksheets.Add("Case Search Results");
@@ -99,7 +100,7 @@ public class CasesModel : PageModel
         }
 
         var row = 2;
-        foreach (var r in results)
+        foreach (var r in Filter.SortedResults)
         {
             ws.Cell(row, 1).Value = r.Rbse;
             ws.Cell(row, 2).Value = r.Cphh;

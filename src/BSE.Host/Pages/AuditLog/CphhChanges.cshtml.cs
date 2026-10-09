@@ -50,7 +50,7 @@ public class CphhChangesModel(IAuditLogService auditLogService) : PageModel
         if (!AuditDateRange.Validate(StartDate, EndDate, out _, out _)) return RedirectToPage();
 
         var entries = (await auditLogService.GetCphhChangesAsync(StartDate!.Value, EndDate!.Value)).Cast<AuditLogCPHHChangeEntry>();
-        return AuditLogExcel.Build(entries, "CPHH Changes", $"CphhChanges_{DateTime.Today:yyyyMMdd}.xlsx",
+        return AuditLogExcel.Build(ApplySorting(entries), "CPHH Changes", $"CphhChanges_{DateTime.Today:yyyyMMdd}.xlsx",
             [("CaseCount", e => e.CaseCount)]);
     }
 

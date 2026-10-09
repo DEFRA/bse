@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using System.Globalization;
 using BSE.Host.Helpers;
 using BSE.Modules.Search.Models;
 
@@ -63,20 +62,21 @@ public class CaseSearchViewModel : SearchViewModelBase<CaseSearchResult>
 
         if (ok)
         {
-            ok &= CheckOrder(formAFrom, formATo, e => EarliestFormADateError = e, e => LatestFormADateError = e);
-            ok &= CheckOrder(finalFrom, finalTo, e => EarliestFinalResultDateError = e, e => LatestFinalResultDateError = e);
-            ok &= CheckOrder(birthFrom, birthTo, e => EarliestBirthDateError = e, e => LatestBirthDateError = e);
+            ok &= CheckOrder(formAFrom, formATo, "Form A Date", e => EarliestFormADateError = e, e => LatestFormADateError = e);
+            ok &= CheckOrder(finalFrom, finalTo, "Final Result Date", e => EarliestFinalResultDateError = e, e => LatestFinalResultDateError = e);
+            ok &= CheckOrder(birthFrom, birthTo, "Birth Date", e => EarliestBirthDateError = e, e => LatestBirthDateError = e);
         }
 
         return ok;
     }
 
-    private static bool CheckOrder(DateTime? from, DateTime? to, Action<string> setFromError, Action<string> setToError)
+    // Mirrors legacy's IsDateRangeValid (Common.vb) exact wording, including the field name.
+    private static bool CheckOrder(DateTime? from, DateTime? to, string fieldName, Action<string> setFromError, Action<string> setToError)
     {
         if (from is null || to is null || from <= to) return true;
 
-        setFromError("Must be earlier than the latest date");
-        setToError("Must be later than the earliest date");
+        setFromError($"Must be earlier than the specified latest {fieldName}");
+        setToError($"Must be later than the specified earliest {fieldName}");
         return false;
     }
 
@@ -143,7 +143,5 @@ public class CaseSearchViewModel : SearchViewModelBase<CaseSearchResult>
         IsImportedCase: IsImportedCase);
 
     private static DateTime? ParseDate(string? value) =>
-        DateTime.TryParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var d)
-            ? d
-            : null;
+        SearchDateField.TryParse(value, out var d, out _) ? d : null;
 }

@@ -5,6 +5,7 @@
      SortColumn   - currently active sort column (string)
      SortDesc     - current sort is descending (bool)
      BaseUrl      - query string base (all params except SortColumn/SortDesc/PageNumber)
+     PageNumber   - the page to stay on after re-sorting (defaults to 1 if not supplied)
      HeaderClass  - optional extra CSS class(es) added to the <th> (e.g. for a shared column width)
 *@
 @{
@@ -18,6 +19,7 @@
     var fragment = (string?)ViewData["Fragment"] ?? "";
     var headerClass = (string?)ViewData["HeaderClass"] ?? "";
     var wrapWords = (bool?)ViewData["WrapWords"] ?? false;
+    var pageNumber = (int?)ViewData["PageNumber"] ?? 1;
 
     bool isActive = string.Equals(sortCol, column, StringComparison.OrdinalIgnoreCase);
     bool nextDesc = isActive && !sortDesc;
@@ -25,10 +27,11 @@
     var joiner = baseUrl.Contains('?') ? "&" : "?";
     if (baseUrl.EndsWith('?') || baseUrl.EndsWith('&')) joiner = "";
 
+    // Re-sorting stays on the current page instead of jumping back to page 1.
     var href = baseUrl
         + joiner + $"{prefix}SortColumn=" + Uri.EscapeDataString(column)
         + $"&{prefix}SortDesc=" + nextDesc.ToString().ToLowerInvariant()
-        + $"&{prefix}PageNumber=1";
+        + $"&{prefix}PageNumber=" + pageNumber;
 
     if (!string.IsNullOrWhiteSpace(fragment))
         href += "#" + Uri.EscapeDataString(fragment);

@@ -73,7 +73,7 @@ public class ByUserModel(IAuditLogService auditLogService, IUserManagementServic
         if (!AuditDateRange.Validate(StartDate, EndDate, out _, out _)) return RedirectToPage();
 
         var entries = await auditLogService.GetByUserAsync(StartDate!.Value, EndDate!.Value, UserId);
-        return AuditLogExcel.Build(entries, "Audit Log By User", $"AuditLogByUser_{DateTime.Today:yyyyMMdd}.xlsx");
+        return AuditLogExcel.Build(ApplySorting(entries), "Audit Log By User", $"AuditLogByUser_{DateTime.Today:yyyyMMdd}.xlsx");
     }
 
     private IEnumerable<AuditLogEntry> ApplySorting(IEnumerable<AuditLogEntry> entries)

@@ -163,7 +163,7 @@ public class FeedsModel(
             SupplierName = SupplierName,
             RowStampBase64 = string.Empty
         });
-        draft.HasPendingChanges = true;
+        draft.HasPendingChanges = IsFeedsDraftDirty(draft.Feeds);
         await feedsDraftState.SetAsync(draft);
 
         return RedirectToPage(new { rbse = Rbse });
@@ -253,7 +253,7 @@ public class FeedsModel(
         item.IsPrePurchase = IsPrePurchase;
         item.SupplierId = SupplierId;
         item.SupplierName = SupplierName;
-        draft.HasPendingChanges = true;
+        draft.HasPendingChanges = IsFeedsDraftDirty(draft.Feeds);
         await feedsDraftState.SetAsync(draft);
 
         return RedirectToPage(new { rbse = Rbse });
@@ -275,7 +275,7 @@ public class FeedsModel(
         if (item is not null)
         {
             draft.Feeds.Remove(item);
-            draft.HasPendingChanges = true;
+            draft.HasPendingChanges = IsFeedsDraftDirty(draft.Feeds);
             await feedsDraftState.SetAsync(draft);
         }
 
@@ -312,7 +312,13 @@ public class FeedsModel(
     }
 
     /// <summary>Discards all staged feed changes without persisting them.</summary>
-    public async Task<IActionResult> OnPostCancelFeedsEditAsync()
+    public async Task<IActionResult> OnPostCancelFeedsEditAsync() => await CancelFeedsEditAsync();
+
+    // The Cancel button is a plain <a> (GET navigation), not a form submit — without this handler
+    // Razor Pages has no matching action for the request and the link silently fails to redirect.
+    public async Task<IActionResult> OnGetCancelFeedsEditAsync() => await CancelFeedsEditAsync();
+
+    private async Task<IActionResult> CancelFeedsEditAsync()
     {
         Rbse = RbseHelper.ParseToRaw(Rbse);
         await feedsDraftState.ClearAsync(Rbse);
@@ -348,6 +354,37 @@ public class FeedsModel(
     }
 
     private string PanelStateTempDataKey => $"FeedsPanelState_{RbseHelper.ParseToRaw(Rbse)}";
+
+    /// <summary>Compares the staged feed list against what's persisted, so opening/closing the
+    /// edit panel, a net-zero add+delete, or an Update that didn't actually change any field
+    /// never trips the cross-tab unsaved-changes exit warning.</summary>
+    private bool IsFeedsDraftDirty(List<CaseFeedsDraftItem> stagedFeeds)
+    {
+        if (stagedFeeds.Count != _persistedFeeds.Count)
+            return true;
+
+        var persistedById = _persistedFeeds.ToDictionary(f => f.Id);
+        foreach (var staged in stagedFeeds)
+        {
+            if (staged.Id is null or <= 0)
+                return true;
+
+            if (!persistedById.TryGetValue(staged.Id.Value, out var persisted))
+                return true;
+
+            if (staged.YearFrom != persisted.YearFrom
+                || staged.YearTo != persisted.YearTo
+                || !string.Equals(staged.RationType, persisted.RationType, StringComparison.Ordinal)
+                || !string.Equals(staged.RationName, persisted.RationName, StringComparison.Ordinal)
+                || staged.IsPrePurchase != persisted.IsPrePurchase
+                || staged.SupplierId != persisted.SupplierId)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     /// <summary>Stashes the shared add/edit panel's posted-but-not-yet-committed values into
     /// TempData before a row operation (e.g. Delete) reloads and redirects — otherwise an

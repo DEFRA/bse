@@ -71,6 +71,7 @@
     @if (Model.Discrepancies.Any())
     {
         var sortBase = $"?StartDate={Uri.EscapeDataString(Model.StartDate?.ToString("dd/MM/yyyy") ?? string.Empty)}&EndDate={Uri.EscapeDataString(Model.EndDate?.ToString("dd/MM/yyyy") ?? string.Empty)}";
+        ViewData["PageNumber"] = Model.PageNumber;
 
         <p class="govuk-body">
             <a href="@($"?StartDate={Uri.EscapeDataString(Model.StartDate?.ToString("dd/MM/yyyy") ?? string.Empty)}&EndDate={Uri.EscapeDataString(Model.EndDate?.ToString("dd/MM/yyyy") ?? string.Empty)}&handler=Export")" class="govuk-link">Export to Excel</a>

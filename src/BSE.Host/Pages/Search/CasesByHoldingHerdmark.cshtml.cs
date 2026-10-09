@@ -77,7 +77,7 @@ public class CasesByHoldingHerdmarkModel : PageModel
         if (!HasAnyFilter()) return RedirectToPage();
         var results = await _search.GetCasesByCphhAsync(
             CphhNormalizer.Normalize(Cphh), (Herdmark ?? "").Trim(), (NumericHerdmark ?? "").Trim(), IncludeNonGb);
-        return BuildExcel(results, "casebycphhsearchresults.xlsx");
+        return BuildExcel(ApplySorting(results.ToList()), "casebycphhsearchresults.xlsx");
     }
 
     private bool HasAnyFilter() =>

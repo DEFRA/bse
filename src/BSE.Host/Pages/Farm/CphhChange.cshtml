@@ -48,7 +48,7 @@
                         <span class="govuk-visually-hidden">Error:</span>@Model.OldCphhError
                     </p>
                 }
-                <input id="old-cphh" name="OldCphh" value="@Model.OldCphh" type="text" inputmode="numeric" autocomplete="off"
+                <input id="old-cphh" name="OldCphh" value="@BseFormat.FormatCphh(Model.OldCphh)" type="text" inputmode="numeric" autocomplete="off"
                        title="CPHH Format: NN[/]NNN[/]NNNN[/NN]" spellcheck="false" autocapitalize="off"
                        class="govuk-input govuk-input--width-20 @(Model.OldCphhError is not null ? "govuk-input--error" : "")" />
             </div>
@@ -98,7 +98,7 @@
                             <span class="govuk-visually-hidden">Error:</span>@Model.NewCphhError
                         </p>
                     }
-                    <input id="new-cphh" name="NewCphh" value="@Model.NewCphh" type="text" inputmode="numeric" autocomplete="off"
+                    <input id="new-cphh" name="NewCphh" value="@BseFormat.FormatCphh(Model.NewCphh)" type="text" inputmode="numeric" autocomplete="off"
                            title="CPHH Format: NN[/]NNN[/]NNNN[/NN]" spellcheck="false" autocapitalize="off"
                            class="govuk-input govuk-input--width-20 @(Model.NewCphhError is not null ? "govuk-input--error" : "")" />
                 </div>
@@ -107,8 +107,12 @@
             <div class="govuk-button-group bse-rbse-action-group">
                 <button type="submit" class="govuk-button govuk-button--warning" data-module="govuk-button"
                         onclick="return confirm('Click OK to confirm change');">OK</button>
-                <a asp-page="/Home" class="govuk-link">Cancel</a>
             </div>
         </div>
     </form>
 }
+
+@* Legacy's Cancel button is always present, enabled regardless of lookup state — only OK/New CPHH are gated. *@
+<p class="govuk-body govuk-!-margin-top-8">
+    <a asp-page="/Home" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">Cancel</a>
+</p>

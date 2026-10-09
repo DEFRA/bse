@@ -13,6 +13,7 @@
                  && !string.Equals(k.Key, "sortDesc", StringComparison.OrdinalIgnoreCase)
                  && !string.Equals(k.Key, "pageNumber", StringComparison.OrdinalIgnoreCase))
         .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
+    ViewData["PageNumber"] = Model.PageNumber;
 }
 
 <h1 class="govuk-heading-l">Pick List Maintenance</h1>

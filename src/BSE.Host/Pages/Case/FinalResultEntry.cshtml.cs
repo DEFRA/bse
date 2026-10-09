@@ -73,9 +73,6 @@ public class FinalResultEntryModel(
 
     // -- Legacy ddlFinalResult_SelectedIndexChanged warnings ------------------
 
-    public bool ShowDnaMismatch =>
-        ShowPositiveWithoutPositiveTest || ShowNegativeWithPositiveTest;
-
     public bool ShowPositiveWithoutPositiveTest =>
         string.Equals(FinalResult, PositiveCode, StringComparison.OrdinalIgnoreCase) && !TestsContainPositive;
 
@@ -85,6 +82,11 @@ public class FinalResultEntryModel(
     public bool ShowPaperworkIncomplete =>
         string.Equals(FinalResult, PositiveCode, StringComparison.OrdinalIgnoreCase)
         && Result is not null && !Result.IsPaperworkComplete;
+
+    /// <summary>Legacy's "DBSE has been cleared" hint only applies once a real DBSE was already
+    /// allocated and displayed (not "TBC"/blank) — the live, client-side half of this is in the
+    /// page's JS; this flag just seeds that comparison on first render.</summary>
+    public bool DbseWasAllocated => HasFinalResult && DisplayDbse != "TBC";
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -128,11 +130,17 @@ public class FinalResultEntryModel(
             return Page();
         }
 
+        // Legacy's lblFinalResultDateValue label (the value actually saved) is reset to today only when
+        // ddlFinalResult_SelectedIndexChanged fires — i.e. only when the user changes Final Result this
+        // round. Leaving an already-saved Final Result untouched must keep its original saved date.
+        var finalResultChangedThisRound =
+            !string.Equals(FinalResult, Result!.FinalResult, StringComparison.OrdinalIgnoreCase);
+        var finalResultDate = finalResultChangedThisRound ? DateTime.Today : (Result.FinalResultDate ?? DateTime.Today);
+
         var command = new EditFinalResultCommand(
             Rbse: RbseHelper.ParseToRaw(Rbse),
             FinalResult: FinalResult,
-            // Legacy stamped today's date when the result was chosen; it is not user-entered.
-            FinalResultDate: Result!.FinalResultDate ?? DateTime.Today,
+            FinalResultDate: finalResultDate,
             RetrospectiveTestType: RetrospectiveTestType,
             RetrospectiveResult: RetrospectiveResult,
             RetrospectiveResultDate: RetrospectiveResultDate,
