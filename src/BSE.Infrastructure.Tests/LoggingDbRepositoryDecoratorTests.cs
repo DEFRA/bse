@@ -11,6 +11,8 @@ namespace BSE.Infrastructure.Tests;
 public sealed class LoggingDbRepositoryDecoratorTests
 {
     private static readonly object ExampleParam = new { Id = 42 };
+    private static readonly string[] AlphaResult = ["alpha"];
+    private static readonly string[] GammaResult = ["gamma"];
 
     [Fact]
     public async Task QueryAsync_WhenBelowThreshold_LogsInformationAndReturnsResults()
@@ -48,7 +50,7 @@ public sealed class LoggingDbRepositoryDecoratorTests
             })
             .Build();
 
-        inner.QueryAsync<string>("GetThing", ExampleParam).Returns(new[] { "alpha" });
+        inner.QueryAsync<string>("GetThing", ExampleParam).Returns(AlphaResult);
 
         var sut = new LoggingDbRepositoryDecorator(inner, logger, threshold);
 
@@ -68,7 +70,7 @@ public sealed class LoggingDbRepositoryDecoratorTests
             ["Logging:DbSlowQueryThresholdMs"] = "500"
         }).Build();
 
-        inner.QueryAsync<string>("GetThing", ExampleParam, 15).Returns(new[] { "gamma" });
+        inner.QueryAsync<string>("GetThing", ExampleParam, 15).Returns(GammaResult);
 
         var sut = new LoggingDbRepositoryDecorator(inner, logger, config);
 

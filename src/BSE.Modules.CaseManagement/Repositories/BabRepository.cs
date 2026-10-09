@@ -24,37 +24,37 @@ public sealed class BabRepository : DapperRepository, IBabRepository
     public Task<CaseBabRecord?> GetByRbseAsync(string rbse)
         => QuerySingleOrDefaultAsync<CaseBabRecord>("GetBABByRBSE", new { RBSE = rbse });
 
-    public async Task AddAsync(AddCaseBabCommand c, string? origin, IDbConnection conn, IDbTransaction tx)
+    public async Task AddAsync(AddCaseBabCommand command, string? origin, IDbConnection connection, IDbTransaction transaction)
     {
         await ExecuteAsync("AddCaseBAB", new
         {
-            RBSE = c.Rbse, NatalCPHH = c.NatalCphh, Notes = c.Notes,
-            TracedName = c.TracedName, TracedAddress1 = c.TracedAddress1,
-            TracedAddress2 = c.TracedAddress2, TracedAddress3 = c.TracedAddress3,
-            TracedPostcode = c.TracedPostcode, FeedRisk = c.FeedRisk,
-            HorizontalRisk = c.HorizontalRisk, MaternalRisk = c.MaternalRisk
-        }, conn, tx);
+            RBSE = command.Rbse, NatalCPHH = command.NatalCphh, Notes = command.Notes,
+            TracedName = command.TracedName, TracedAddress1 = command.TracedAddress1,
+            TracedAddress2 = command.TracedAddress2, TracedAddress3 = command.TracedAddress3,
+            TracedPostcode = command.TracedPostcode, FeedRisk = command.FeedRisk,
+            HorizontalRisk = command.HorizontalRisk, MaternalRisk = command.MaternalRisk
+        }, connection, transaction);
 
-        await UpdateOriginAsync(c.Rbse, origin, conn, tx);
+        await UpdateOriginAsync(command.Rbse, origin, connection, transaction);
     }
 
-    public async Task<string?> EditAsync(EditCaseBabCommand c, string? origin, IDbConnection conn, IDbTransaction tx)
+    public async Task<string?> EditAsync(EditCaseBabCommand command, string? origin, IDbConnection connection, IDbTransaction transaction)
     {
         string? warning = null;
         try
         {
             var p = new DynamicParameters(new
             {
-                RBSE = c.Rbse, NatalCPHH = c.NatalCphh, Notes = c.Notes,
-                TracedName = c.TracedName, TracedAddress1 = c.TracedAddress1,
-                TracedAddress2 = c.TracedAddress2, TracedAddress3 = c.TracedAddress3,
-                TracedPostcode = c.TracedPostcode, FeedRisk = c.FeedRisk,
-                HorizontalRisk = c.HorizontalRisk, MaternalRisk = c.MaternalRisk,
-                RowStamp = c.RowStamp
+                RBSE = command.Rbse, NatalCPHH = command.NatalCphh, Notes = command.Notes,
+                TracedName = command.TracedName, TracedAddress1 = command.TracedAddress1,
+                TracedAddress2 = command.TracedAddress2, TracedAddress3 = command.TracedAddress3,
+                TracedPostcode = command.TracedPostcode, FeedRisk = command.FeedRisk,
+                HorizontalRisk = command.HorizontalRisk, MaternalRisk = command.MaternalRisk,
+                RowStamp = command.RowStamp
             });
             p.Add("RETURN_VALUE", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
-            await ExecuteWithOutputAsync("EditCaseBAB", p, conn, tx);
-            warning = (int)p.Get<int>("RETURN_VALUE") switch
+            await ExecuteWithOutputAsync("EditCaseBAB", p, connection, transaction);
+            warning = p.Get<int>("RETURN_VALUE") switch
             {
                 0 => null,
                 1 => "Failed to update the BAB table.  The data may have been changed by another user.",
@@ -69,19 +69,19 @@ public sealed class BabRepository : DapperRepository, IBabRepository
             warning = ex.Message;
         }
 
-        await UpdateOriginAsync(c.Rbse, origin, conn, tx);
+        await UpdateOriginAsync(command.Rbse, origin, connection, transaction);
         return warning;
     }
 
     // Mirrors legacy EmptyPurchaseFields + Origin save in clsCase:
     // when Origin is not 'P', the CK_Case_PurchaseAgeInMonthsNullable and
     // CK_Case_PurchasedCounty constraints require purchase columns to be NULL.
-    private static Task UpdateOriginAsync(string rbse, string? origin, IDbConnection conn, IDbTransaction tx)
+    private static Task<int> UpdateOriginAsync(string rbse, string? origin, IDbConnection connection, IDbTransaction transaction)
     {
         string? normalisedOrigin = string.IsNullOrEmpty(origin) ? null : origin;
         bool isPurchased = normalisedOrigin == "P";
 
-        return conn.ExecuteAsync(
+        return connection.ExecuteAsync(
             """
             UPDATE [Case]
             SET    [Origin]               = @Origin,
@@ -91,6 +91,6 @@ public sealed class BabRepository : DapperRepository, IBabRepository
             WHERE  [RBSE] = @Rbse
             """,
             new { Origin = normalisedOrigin, IsPurchased = isPurchased ? 1 : 0, Rbse = rbse },
-            tx);
+            transaction);
     }
 }

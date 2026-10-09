@@ -19,15 +19,15 @@
 
 @if (Model.WarningMessage is not null)
 {
-    <div class="govuk-notification-banner" role="region"
-         aria-labelledby="@(Model.IdPrefix)-warning-title" data-module="govuk-notification-banner">
+    <section class="govuk-notification-banner"
+             aria-labelledby="@(Model.IdPrefix)-warning-title" data-module="govuk-notification-banner">
         <div class="govuk-notification-banner__header">
             <h2 class="govuk-notification-banner__title" id="@(Model.IdPrefix)-warning-title">Important</h2>
         </div>
         <div class="govuk-notification-banner__content">
             <p class="govuk-body">@Model.WarningMessage</p>
         </div>
-    </div>
+    </section>
 }
 
 @if (!ViewContext.ModelState.IsValid || Model.ExtraFieldErrors is { Count: > 0 })

@@ -45,43 +45,43 @@ public sealed class AnimalRelationsRepository : DapperRepository, IAnimalRelatio
 
     // ── Writes ─────────────────────────────────────────────────────────────────
 
-    public Task AddRelationAsync(AddCaseRelationCommand c, IDbConnection conn, IDbTransaction tx)
+    public Task AddRelationAsync(AddCaseRelationCommand command, IDbConnection connection, IDbTransaction transaction)
         => ExecuteAsync("AddCaseRelation", new
         {
-            RBSE = c.Rbse,
-            RelationType = c.RelationType,
-            RelationRBSE = c.RelationRbse,
-            Sex = c.Sex,
-            BirthDay = c.BirthDay,
-            BirthMonth = c.BirthMonth,
-            BirthYear = c.BirthYear,
-            RelationFate = c.RelationFate,
-            LeftDate = c.LeftDate,
-            EartagCountry = c.EartagCountry,
-            EartagHerdmark = c.EartagHerdmark,
-            Eartag = c.Eartag,
-            Sire = c.Sire
-        }, conn, tx);
+            RBSE = command.Rbse,
+            RelationType = command.RelationType,
+            RelationRBSE = command.RelationRbse,
+            Sex = command.Sex,
+            BirthDay = command.BirthDay,
+            BirthMonth = command.BirthMonth,
+            BirthYear = command.BirthYear,
+            RelationFate = command.RelationFate,
+            LeftDate = command.LeftDate,
+            EartagCountry = command.EartagCountry,
+            EartagHerdmark = command.EartagHerdmark,
+            Eartag = command.Eartag,
+            Sire = command.Sire
+        }, connection, transaction);
 
-    public Task<int> EditRelationAsync(EditCaseRelationCommand c, IDbConnection conn, IDbTransaction tx)
+    public Task<int> EditRelationAsync(EditCaseRelationCommand command, IDbConnection connection, IDbTransaction transaction)
         => ExecuteWithRowCountAsync("EditCaseRelation", new
         {
-            ID = c.Id,
-            RelationType = c.RelationType,
-            RelationRBSE = c.RelationRbse,
-            Sex = c.Sex,
-            BirthDay = c.BirthDay,
-            BirthMonth = c.BirthMonth,
-            BirthYear = c.BirthYear,
-            RelationFate = c.RelationFate,
-            LeftDate = c.LeftDate,
-            EartagCountry = c.EartagCountry,
-            EartagHerdmark = c.EartagHerdmark,
-            Eartag = c.Eartag,
-            Sire = c.Sire,
-            RowStamp = c.RowStamp
-        }, conn, tx);
+            ID = command.Id,
+            RelationType = command.RelationType,
+            RelationRBSE = command.RelationRbse,
+            Sex = command.Sex,
+            BirthDay = command.BirthDay,
+            BirthMonth = command.BirthMonth,
+            BirthYear = command.BirthYear,
+            RelationFate = command.RelationFate,
+            LeftDate = command.LeftDate,
+            EartagCountry = command.EartagCountry,
+            EartagHerdmark = command.EartagHerdmark,
+            Eartag = command.Eartag,
+            Sire = command.Sire,
+            RowStamp = command.RowStamp
+        }, connection, transaction);
 
-    public Task<int> DeleteRelationAsync(DeleteCaseRelationCommand c, IDbConnection conn, IDbTransaction tx)
-        => ExecuteWithRowCountAsync("DeleteCaseRelation", new { ID = c.Id, RowStamp = c.RowStamp }, conn, tx);
+    public Task<int> DeleteRelationAsync(DeleteCaseRelationCommand command, IDbConnection connection, IDbTransaction transaction)
+        => ExecuteWithRowCountAsync("DeleteCaseRelation", new { ID = command.Id, RowStamp = command.RowStamp }, connection, transaction);
 }

@@ -10,11 +10,11 @@ public interface ITestRepository
 {
     Task<IReadOnlyList<CaseTestRecord>> GetByRbseAsync(string rbse);
     Task AddAsync(AddTestCommand command, IDbConnection connection, IDbTransaction transaction);
-    Task EditAsync(EditTestCommand command, IDbConnection connection, IDbTransaction transaction);
-    Task DeleteAsync(int id, IDbConnection connection, IDbTransaction transaction);
     // Standalone variants for direct Razor Page CRUD handlers (no external transaction)
     Task AddAsync(AddTestCommand command);
+    Task EditAsync(EditTestCommand command, IDbConnection connection, IDbTransaction transaction);
     Task EditAsync(EditTestCommand command);
+    Task DeleteAsync(int id, IDbConnection connection, IDbTransaction transaction);
     Task DeleteAsync(int id, byte[] rowStamp);
 }
 
@@ -25,20 +25,20 @@ public sealed class TestRepository : DapperRepository, ITestRepository
     public async Task<IReadOnlyList<CaseTestRecord>> GetByRbseAsync(string rbse)
         => (await QueryAsync<CaseTestRecord>("GetTestByRBSE", new { RBSE = rbse })).ToList();
 
-    public Task AddAsync(AddTestCommand c, IDbConnection conn, IDbTransaction tx)
-        => ExecuteAsync("AddTest", new { RBSE = c.Rbse, TestType = c.TestType, TestResult = c.TestResult }, conn, tx);
+    public Task AddAsync(AddTestCommand command, IDbConnection connection, IDbTransaction transaction)
+        => ExecuteAsync("AddTest", new { RBSE = command.Rbse, TestType = command.TestType, TestResult = command.TestResult }, connection, transaction);
 
-    public Task EditAsync(EditTestCommand c, IDbConnection conn, IDbTransaction tx)
-        => ExecuteAsync("EditTest", new { ID = c.Id, TestType = c.TestType, TestResult = c.TestResult, RowStamp = c.RowStamp }, conn, tx);
+    public Task AddAsync(AddTestCommand command)
+        => ExecuteAsync("AddTest", new { RBSE = command.Rbse, TestType = command.TestType, TestResult = command.TestResult });
 
-    public Task DeleteAsync(int id, IDbConnection conn, IDbTransaction tx)
-        => ExecuteAsync("DeleteTest", new { ID = id }, conn, tx);
+    public Task EditAsync(EditTestCommand command, IDbConnection connection, IDbTransaction transaction)
+        => ExecuteAsync("EditTest", new { ID = command.Id, TestType = command.TestType, TestResult = command.TestResult, RowStamp = command.RowStamp }, connection, transaction);
 
-    public Task AddAsync(AddTestCommand c)
-        => ExecuteAsync("AddTest", new { RBSE = c.Rbse, TestType = c.TestType, TestResult = c.TestResult });
+    public Task EditAsync(EditTestCommand command)
+        => ExecuteAsync("EditTest", new { ID = command.Id, TestType = command.TestType, TestResult = command.TestResult, RowStamp = command.RowStamp });
 
-    public Task EditAsync(EditTestCommand c)
-        => ExecuteAsync("EditTest", new { ID = c.Id, TestType = c.TestType, TestResult = c.TestResult, RowStamp = c.RowStamp });
+    public Task DeleteAsync(int id, IDbConnection connection, IDbTransaction transaction)
+        => ExecuteAsync("DeleteTest", new { ID = id }, connection, transaction);
 
     public Task DeleteAsync(int id, byte[] rowStamp)
         => ExecuteAsync("DeleteTest", new { ID = id, RowStamp = rowStamp });
@@ -59,14 +59,14 @@ public sealed class OtherOwnerRepository : DapperRepository, IOtherOwnerReposito
     public async Task<IReadOnlyList<OtherOwnerRecord>> GetByRbseAsync(string rbse)
         => (await QueryAsync<OtherOwnerRecord>("GetOtherOwnerByRBSE", new { RBSE = rbse })).ToList();
 
-    public Task AddAsync(AddOtherOwnerCommand c, IDbConnection conn, IDbTransaction tx)
-        => ExecuteAsync("AddOtherOwner", new { RBSE = c.Rbse, Type = c.Type, Name = c.Name, CPHH = c.Cphh }, conn, tx);
+    public Task AddAsync(AddOtherOwnerCommand command, IDbConnection connection, IDbTransaction transaction)
+        => ExecuteAsync("AddOtherOwner", new { RBSE = command.Rbse, Type = command.Type, Name = command.Name, CPHH = command.Cphh }, connection, transaction);
 
-    public Task EditAsync(EditOtherOwnerCommand c, IDbConnection conn, IDbTransaction tx)
-        => ExecuteAsync("EditOtherOwner", new { ID = c.Id, Type = c.Type, Name = c.Name, CPHH = c.Cphh, RowStamp = c.RowStamp }, conn, tx);
+    public Task EditAsync(EditOtherOwnerCommand command, IDbConnection connection, IDbTransaction transaction)
+        => ExecuteAsync("EditOtherOwner", new { ID = command.Id, Type = command.Type, Name = command.Name, CPHH = command.Cphh, RowStamp = command.RowStamp }, connection, transaction);
 
-    public Task DeleteAsync(int id, byte[] rowStamp, IDbConnection conn, IDbTransaction tx)
-        => ExecuteAsync("DeleteOtherOwner", new { ID = id, RowStamp = rowStamp }, conn, tx);
+    public Task DeleteAsync(int id, byte[] rowStamp, IDbConnection connection, IDbTransaction transaction)
+        => ExecuteAsync("DeleteOtherOwner", new { ID = id, RowStamp = rowStamp }, connection, transaction);
 }
 
 public interface IPedigreeRepository
@@ -89,28 +89,28 @@ public sealed class PedigreeRepository : DapperRepository, IPedigreeRepository
     public Task<DamSireDetailRecord?> GetSireByRbseAsync(string rbse)
         => QuerySingleOrDefaultAsync<DamSireDetailRecord>("GetSireDetailsByRBSE", new { RBSE = rbse });
 
-    public async Task<string?> AddEditDamSireAsync(AddEditDamSireCommand c, IDbConnection conn, IDbTransaction tx)
+    public async Task<string?> AddEditDamSireAsync(AddEditDamSireCommand command, IDbConnection connection, IDbTransaction transaction)
     {
         var p = new DynamicParameters(new
         {
-            RBSE = c.Rbse,
-            DamID = c.DamId, DamRBSE = c.DamRbse,
-            DamEartag = c.DamEartag, DamName = c.DamName, DamHerdbook = c.DamHerdbook,
-            DamBirthDay = c.DamBirthDay, DamBirthMonth = c.DamBirthMonth, DamBirthYear = c.DamBirthYear,
-            DamRowStamp = c.DamRowStamp,
-            SireID = c.SireId, SireRBSE = c.SireRbse,
-            SireEartag = c.SireEartag, SireName = c.SireName, SireHerdbook = c.SireHerdbook,
-            SireBirthDay = c.SireBirthDay, SireBirthMonth = c.SireBirthMonth, SireBirthYear = c.SireBirthYear,
-            SireRowStamp = c.SireRowStamp,
-            CaseHerdbook = c.CaseHerdbook, CaseRowStamp = c.CaseRowStamp
+            RBSE = command.Rbse,
+            DamID = command.DamId, DamRBSE = command.DamRbse,
+            DamEartag = command.DamEartag, DamName = command.DamName, DamHerdbook = command.DamHerdbook,
+            DamBirthDay = command.DamBirthDay, DamBirthMonth = command.DamBirthMonth, DamBirthYear = command.DamBirthYear,
+            DamRowStamp = command.DamRowStamp,
+            SireID = command.SireId, SireRBSE = command.SireRbse,
+            SireEartag = command.SireEartag, SireName = command.SireName, SireHerdbook = command.SireHerdbook,
+            SireBirthDay = command.SireBirthDay, SireBirthMonth = command.SireBirthMonth, SireBirthYear = command.SireBirthYear,
+            SireRowStamp = command.SireRowStamp,
+            CaseHerdbook = command.CaseHerdbook, CaseRowStamp = command.CaseRowStamp
         });
         p.Add("ReturnValue", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
-        await ExecuteAsync("AddEditDamSireDetails", p, conn, tx);
+        await ExecuteAsync("AddEditDamSireDetails", p, connection, transaction);
 
         // Legacy parity: clsCase.UpdateDamSireRecords treats every one of these codes as
         // soft/non-fatal (objErrorList.Add), never rolling back the rest of the save.
-        return (int)p.Get<int>("ReturnValue") switch
+        return p.Get<int>("ReturnValue") switch
         {
             0 => null,
             1 => "Failed to create or update a dam record.  The record may have been changed by another user",

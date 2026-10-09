@@ -214,7 +214,7 @@ public class BabModel(
                 currentBab.TracedPostcode, currentBab.FeedRisk, currentBab.HorizontalRisk,
                 currentBab.MaternalRisk, Convert.FromBase64String(draft.BabBaseRowStampBase64))
             : null;
-        var originChanged = !string.Equals(Origin, currentCase?.Origin, StringComparison.Ordinal);
+        var originChanged = !string.Equals(Origin, currentCase.Origin, StringComparison.Ordinal);
 
         draft.Bab = stagedEdit;
         draft.BabOrigin = Origin;

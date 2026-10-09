@@ -63,11 +63,7 @@
     }
     else
     {
-        var sortBase = "?" + string.Join("&", HttpContext.Request.Query
-            .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
-                     && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase)
-                     && !string.Equals(k.Key, "PageNumber", StringComparison.OrdinalIgnoreCase))
-            .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
+        var sortBase = SortUrlHelper.BuildBaseUrl(HttpContext.Request.Query);
         var sortCol  = Model.SortColumn;
         var sortDesc = Model.SortDesc;
         <div class="bse-audit-table-wrap">

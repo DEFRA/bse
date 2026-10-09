@@ -38,11 +38,7 @@
 
     @if (Model.Entries.Any())
     {
-        var sortBase = "?" + string.Join("&", HttpContext.Request.Query
-            .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
-                     && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase)
-                     && !string.Equals(k.Key, "PageNumber", StringComparison.OrdinalIgnoreCase))
-            .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
+        var sortBase = SortUrlHelper.BuildBaseUrl(HttpContext.Request.Query);
         var sortCol  = Model.SortColumn;
         var sortDesc = Model.SortDesc;
         <div class="bse-audit-table-wrap">
@@ -93,13 +89,13 @@
     }
     else if (Model.HasSearched)
     {
-        <div class="govuk-notification-banner" role="region" aria-labelledby="rbse-changes-info-title" data-module="govuk-notification-banner">
+        <section class="govuk-notification-banner" aria-labelledby="rbse-changes-info-title" data-module="govuk-notification-banner">
             <div class="govuk-notification-banner__header">
                 <h2 class="govuk-notification-banner__title" id="rbse-changes-info-title">Information</h2>
             </div>
             <div class="govuk-notification-banner__content">
                 <p class="govuk-notification-banner__heading">No RBSE changes found in this period.</p>
             </div>
-        </div>
+        </section>
     }
 </div>

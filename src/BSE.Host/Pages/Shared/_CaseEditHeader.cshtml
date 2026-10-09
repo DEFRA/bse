@@ -1,0 +1,20 @@
+@* Shared partial — breadcrumb + _CaseTabs + _CaseEditNotifications header block repeated
+   near-identically at the top of every case-edit tab (Farm/Case (DEFRA)/BAB/Case (APHA)/
+   Clinical/Feeds). Usage:
+   @await Html.PartialAsync("_CaseEditHeader", new BSE.Host.Models.CaseEditHeaderViewModel(
+       "Feeds", "Feeds", Model.Rbse, Model.BatchNumbers, viewDocsUrl, canSaveFeeds, "feeds",
+       TempData["Success"] as string, TempData["Warning"] as string, Model.FieldErrors.Values.ToList()))
+*@
+@model BSE.Host.Models.CaseEditHeaderViewModel
+
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">@Model.BreadcrumbLabel</li>
+    </ol>
+</nav>
+
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel(Model.ActiveTab, Model.Rbse, Model.BatchNumbers, Model.ViewDocsUrl, Model.CanEditCurrentTab))
+
+@await Html.PartialAsync("_CaseEditNotifications", new BSE.Host.Models.CaseEditNotificationsViewModel(
+    Model.IdPrefix, Model.SuccessMessage, Model.WarningMessage, Model.ExtraFieldErrors))

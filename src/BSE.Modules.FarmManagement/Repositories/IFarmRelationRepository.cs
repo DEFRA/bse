@@ -10,12 +10,19 @@ namespace BSE.Modules.FarmManagement.Repositories;
 public interface IFarmRelationRepository
 {
     Task<IEnumerable<FarmRelationRecord>> GetRelatedFarmAsync(string cphh);
+
     Task AddAsync(string cphh, string relatedCphh);
+
+    /// <summary>Transactional variant, enlisted in a caller-supplied connection/transaction.</summary>
+    Task AddAsync(string cphh, string relatedCphh, IDbConnection connection, IDbTransaction transaction);
+
     Task UpdateAsync(int id, string relatedCphh, byte[] rowStamp);
+
+    /// <summary>Transactional variant, enlisted in a caller-supplied connection/transaction.</summary>
+    Task UpdateAsync(int id, string relatedCphh, byte[] rowStamp, IDbConnection connection, IDbTransaction transaction);
+
     Task DeleteAsync(int id, byte[] rowStamp);
 
-    // Transactional variants, enlisted in a caller-supplied connection/transaction.
-    Task AddAsync(string cphh, string relatedCphh, IDbConnection connection, IDbTransaction transaction);
-    Task UpdateAsync(int id, string relatedCphh, byte[] rowStamp, IDbConnection connection, IDbTransaction transaction);
+    /// <summary>Transactional variant, enlisted in a caller-supplied connection/transaction.</summary>
     Task DeleteAsync(int id, byte[] rowStamp, IDbConnection connection, IDbTransaction transaction);
 }

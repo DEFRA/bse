@@ -42,7 +42,7 @@
     <form method="get" novalidate class="govuk-!-margin-bottom-6">
         <div class="bse-date-search-row">
             <div class="govuk-form-group @(Model.StartDateError is not null || Model.EndDateError is not null ? "govuk-form-group--error" : "")">
-                <label class="govuk-label">Log Entries Between</label>
+                <span class="govuk-label">Log Entries Between</span>
                 @if (Model.StartDateError is not null || Model.EndDateError is not null)
                 {
                     @if (Model.StartDateError is not null)
@@ -56,6 +56,7 @@
                 }
                 <div class="bse-date-range-input-wrapper">
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                        <label for="StartDate" class="govuk-label govuk-visually-hidden">Start date</label>
                         <input id="StartDate" name="StartDate" type="text"
                                class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(Model.StartDateError is not null ? "govuk-input--error" : "")"
                                autocomplete="off"
@@ -64,6 +65,7 @@
                     </div>
                     <span class="bse-date-range-separator govuk-label">and</span>
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
+                        <label for="EndDate" class="govuk-label govuk-visually-hidden">End date</label>
                         <input id="EndDate" name="EndDate" type="text"
                                class="govuk-input govuk-input--width-10 moj-js-datepicker-input @(Model.EndDateError is not null ? "govuk-input--error" : "")"
                                autocomplete="off"
@@ -94,11 +96,7 @@
 
     @if (Model.Entries.Any())
     {
-        var sortBase = "?" + string.Join("&", HttpContext.Request.Query
-            .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
-                     && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase)
-                     && !string.Equals(k.Key, "PageNumber", StringComparison.OrdinalIgnoreCase))
-            .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
+        var sortBase = SortUrlHelper.BuildBaseUrl(HttpContext.Request.Query);
         var sortCol  = Model.SortColumn;
         var sortDesc = Model.SortDesc;
         <div id="audit-user-results" class="bse-audit-table-wrap">
@@ -154,13 +152,13 @@
     }
     else if (Model.HasSearched)
     {
-        <div class="govuk-notification-banner" role="region" aria-labelledby="audit-user-info-title" data-module="govuk-notification-banner">
+        <section class="govuk-notification-banner" aria-labelledby="audit-user-info-title" data-module="govuk-notification-banner">
             <div class="govuk-notification-banner__header">
                 <h2 class="govuk-notification-banner__title" id="audit-user-info-title">Information</h2>
             </div>
             <div class="govuk-notification-banner__content">
                 <p class="govuk-notification-banner__heading">No entries found.</p>
             </div>
-        </div>
+        </section>
     }
 </div>

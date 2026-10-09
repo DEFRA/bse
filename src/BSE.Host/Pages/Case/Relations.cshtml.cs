@@ -43,6 +43,7 @@ public class RelationsModel(
     public const string SireNotFound = "This RBSE does not exist or is not a male animal";
     private const string DataEntryRole = "DataEntry";
     private const string VlaAccessRole = "VLAAccess";
+    private const string HomePage = "/Home";
     private const string SuccessKey = "Success";
     private const string RelationsWarningKey = "RelationsWarning";
 
@@ -330,7 +331,7 @@ public class RelationsModel(
         return Page();
     }
 
-    private IActionResult RedirectToPickSireDam(bool isDam)
+    private RedirectToPageResult RedirectToPickSireDam(bool isDam)
     {
         var eartag = isDam ? DamSire.DamSearchEartag : DamSire.SireSearchEartag;
         var name = isDam ? DamSire.DamSearchName : DamSire.SireSearchName;
@@ -874,13 +875,13 @@ public class RelationsModel(
                 DamSire.SireRbse);
 
             TempData["ErrorMessage"] = "Unable to update case herdbook. Please reload and try again.";
-            return RedirectToPage("/Home");
+            return RedirectToPage(HomePage);
         }
 
         if (commitOutcome.Result != EditCaseResult.Success)
         {
             TempData["ErrorMessage"] = $"Unable to save related animal changes: {commitOutcome.Result}.";
-            return RedirectToPage("/Home");
+            return RedirectToPage(HomePage);
         }
 
         if (commitOutcome.Warnings.Count > 0)
@@ -894,7 +895,7 @@ public class RelationsModel(
 
         // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx on a fully successful
         // save, clearing the session case state — not back to the tab the user was on.
-        return RedirectToPage("/Home");
+        return RedirectToPage(HomePage);
     }
 
     private void ApplyPendingParentRemovals(CaseRelationsDraftState draft)
@@ -1001,7 +1002,7 @@ public class RelationsModel(
 
         try
         {
-            _ = new DateTime(year.Value, month ?? 1, day ?? 1);
+            _ = new DateTime(year.Value, month ?? 1, day ?? 1, 0, 0, 0, DateTimeKind.Unspecified);
             return null;
         }
         catch (ArgumentOutOfRangeException)
@@ -1265,7 +1266,7 @@ public class RelationsModel(
         var rbse = RbseHelper.ParseToRaw(Rbse);
         await relationsDraftState.ClearAsync(rbse);
         await caseScalarDraftState.ClearAsync(rbse);
-        return RedirectToPage("/Home");
+        return RedirectToPage(HomePage);
     }
 
     /// <summary>
@@ -1346,6 +1347,7 @@ public class RelationsModel(
             new { ID = pedigreeId });
     }
 
+    // Accessors are set by Dapper during materialisation, not by application code.
     private sealed record PedigreeSnapshot
     {
         public string? Eartag { get; init; }
