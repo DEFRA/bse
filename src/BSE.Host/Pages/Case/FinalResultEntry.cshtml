@@ -120,7 +120,7 @@
                     @{ var testTypeDesc = Model.TestSortColumn == "TestType" && !Model.TestSortDesc; }
                     @{ var testResultDesc = Model.TestSortColumn == "TestResult" && !Model.TestSortDesc; }
                     <th scope="col" class="govuk-table__header bse-sortable-table__heading" aria-sort="@(Model.TestSortColumn == "TestType" ? (Model.TestSortDesc ? "descending" : "ascending") : "none")">
-                        <a class="bse-sortable-table__button" href="@Model.TestsPageUrl(1, "TestType", testTypeDesc)">
+                        <a class="bse-sortable-table__button" href="@Model.TestsPageUrl(Model.TestPage, "TestType", testTypeDesc)">
                             Test Type
                             <span class="bse-sortable-table__icons" aria-hidden="true">
                                 <span class="bse-sortable-table__icon bse-sortable-table__icon--up"></span>
@@ -129,7 +129,7 @@
                         </a>
                     </th>
                     <th scope="col" class="govuk-table__header bse-sortable-table__heading" aria-sort="@(Model.TestSortColumn == "TestResult" ? (Model.TestSortDesc ? "descending" : "ascending") : "none")">
-                        <a class="bse-sortable-table__button" href="@Model.TestsPageUrl(1, "TestResult", testResultDesc)">
+                        <a class="bse-sortable-table__button" href="@Model.TestsPageUrl(Model.TestPage, "TestResult", testResultDesc)">
                             Test Result
                             <span class="bse-sortable-table__icons" aria-hidden="true">
                                 <span class="bse-sortable-table__icon bse-sortable-table__icon--up"></span>
@@ -156,47 +156,25 @@
         }
     }
 
-    <form id="final-result-save-form" method="post" asp-page-handler="Save" novalidate>
+    var mismatchTooltip = Model.ShowPositiveWithoutPositiveTest
+        ? "You have chosen a Positive result but none of the Test results have returned Positive."
+        : "You have chosen a Negative result but there is a Positive test result.";
+    var mismatchHidden = !(Model.ShowPositiveWithoutPositiveTest || Model.ShowNegativeWithPositiveTest);
+    <form id="final-result-save-form" method="post" asp-page-handler="Save" novalidate
+          data-original-final-result="@r.FinalResult"
+          data-tests-contain-positive="@(Model.TestsContainPositive ? "true" : "false")"
+          data-paperwork-complete="@(r.IsPaperworkComplete ? "true" : "false")"
+          data-dbse-was-allocated="@(Model.DbseWasAllocated ? "true" : "false")"
+          data-stored-final-result-date="@Model.DisplayFinalResultDate?.ToString("dd/MM/yyyy")"
+          data-stored-dbse-display="@Model.DisplayDbse">
         <input type="hidden" name="Rbse" value="@Model.Rbse" />
-
-        @if (Model.ShowPositiveWithoutPositiveTest)
-        {
-            <div class="govuk-warning-text">
-                <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
-                <strong class="govuk-warning-text__text">
-                    <span class="govuk-warning-text__assistive">Warning</span>
-                    You have a Positive result but none of the Test Results have returned Positive.
-                </strong>
-            </div>
-        }
-        @if (Model.ShowNegativeWithPositiveTest)
-        {
-            <div class="govuk-warning-text">
-                <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
-                <strong class="govuk-warning-text__text">
-                    <span class="govuk-warning-text__assistive">Warning</span>
-                    You have chosen a Negative result but there is a Positive test result.
-                </strong>
-            </div>
-        }
-        @if (Model.ShowPaperworkIncomplete)
-        {
-            <div class="govuk-warning-text">
-                <span class="govuk-warning-text__icon" aria-hidden="true">!</span>
-                <strong class="govuk-warning-text__text">
-                    <span class="govuk-warning-text__assistive">Warning</span>
-                    You have selected positive but no paperwork is complete.
-                </strong>
-            </div>
-        }
 
         <div class="bse-final-result-panel">
             <div class="bse-fre-form-row">
                 <div class="bse-fre-final-result-cell">
-                    @if (Model.ShowDnaMismatch)
-                    {
-                        <div class="bse-fre-dna-warning bse-fre-dna-warning--above">Check DNA match</div>
-                    }
+                    <div class="bse-fre-dna-warning bse-fre-dna-warning--above">Check DNA match</div>
+                    <span id="mismatch-star" class="bse-star-warning" title="@mismatchTooltip" hidden="@mismatchHidden">*</span>
+                    <span id="paperwork-star" class="bse-star-warning" title="You have selected positive but the paperwork is not complete" hidden="@(!Model.ShowPaperworkIncomplete)">*</span>
                     <div class="govuk-form-group @(Model.FinalResultError is not null ? "govuk-form-group--error" : "")">
                         <label class="govuk-label" for="final-result">Final Result</label>
                         <select id="final-result" name="FinalResult"
@@ -245,15 +223,16 @@
                 <div class="govuk-form-group">
                     <label class="govuk-label" for="dbse">DBSE</label>
                     <div id="dbse" class="bse-inline-value">@Model.DisplayDbse</div>
+                    <span id="dbse-cleared-star" class="bse-star-warning" title="The DBSE has been cleared." hidden>*</span>
                 </div>
             </div>
 
             <div class="govuk-button-group govuk-!-margin-top-2">
                 @if (Model.HasFinalResult)
                 {
-                    <a class="govuk-button govuk-button--secondary" data-module="govuk-button"
+                    <a id="download-action" class="govuk-button govuk-button--secondary" data-module="govuk-button"
                        asp-page="/Case/ResultMemo" asp-route-rbse="@r.Rbse">Download</a>
-                    <a class="govuk-button govuk-button--secondary" data-module="govuk-button"
+                    <a id="print-action" class="govuk-button govuk-button--secondary" data-module="govuk-button"
                        asp-page="/Case/ResultMemo" asp-route-rbse="@r.Rbse" asp-route-print="true"
                        target="_blank" rel="noopener">Print Memo</a>
                 }
@@ -318,6 +297,13 @@
 
 }
 
+<style>
+    .bse-fre-action-disabled {
+        pointer-events: none;
+        opacity: 0.5;
+    }
+</style>
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const form = document.getElementById('final-result-save-form');
@@ -330,8 +316,80 @@
             saveButton.disabled = !finalResultSelect.value;
         };
 
+        // Mirrors legacy's ddlFinalResult_SelectedIndexChanged (AutoPostBack) cascade: changing the
+        // Final Result live-updates the Final Result Date/DBSE previews, the two mismatch/paperwork
+        // warning stars, the "DBSE has been cleared" star, and disables Download/Print — all before
+        // Save is ever clicked, exactly as legacy did on every postback of this dropdown.
+        const originalFinalResult = form.dataset.originalFinalResult || '';
+        const testsContainPositive = form.dataset.testsContainPositive === 'true';
+        const paperworkComplete = form.dataset.paperworkComplete === 'true';
+        const dbseWasAllocated = form.dataset.dbseWasAllocated === 'true';
+        const storedFinalResultDate = form.dataset.storedFinalResultDate || '';
+        const storedDbseDisplay = form.dataset.storedDbseDisplay || '';
+
+        const mismatchStar = document.getElementById('mismatch-star');
+        const paperworkStar = document.getElementById('paperwork-star');
+        const dbseClearedStar = document.getElementById('dbse-cleared-star');
+        const dateEl = document.getElementById('final-result-date');
+        const dbseEl = document.getElementById('dbse');
+        const actionLinks = [document.getElementById('download-action'), document.getElementById('print-action')]
+            .filter(Boolean);
+
+        const todayFormatted = function () {
+            const now = new Date();
+            const pad = n => String(n).padStart(2, '0');
+            return `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
+        };
+
+        const applyCascade = function () {
+            const value = finalResultSelect.value;
+            const changedThisRound = value !== originalFinalResult;
+
+            if (mismatchStar) {
+                if (value === 'Pos' && !testsContainPositive) {
+                    mismatchStar.title = 'You have chosen a Positive result but none of the Test results have returned Positive.';
+                    mismatchStar.hidden = false;
+                } else if (value === 'Neg' && testsContainPositive) {
+                    mismatchStar.title = 'You have chosen a Negative result but there is a Positive test result.';
+                    mismatchStar.hidden = false;
+                } else {
+                    mismatchStar.hidden = true;
+                }
+            }
+
+            if (paperworkStar) {
+                paperworkStar.hidden = !(value === 'Pos' && !paperworkComplete);
+            }
+
+            if (dateEl) {
+                dateEl.textContent = changedThisRound ? todayFormatted() : storedFinalResultDate;
+            }
+
+            if (dbseEl) {
+                dbseEl.textContent = changedThisRound ? 'TBC' : storedDbseDisplay;
+            }
+
+            if (dbseClearedStar) {
+                dbseClearedStar.hidden = !(changedThisRound && dbseWasAllocated);
+            }
+
+            actionLinks.forEach(function (link) {
+                link.classList.toggle('bse-fre-action-disabled', changedThisRound);
+                link.setAttribute('aria-disabled', changedThisRound ? 'true' : 'false');
+                if (changedThisRound) {
+                    link.addEventListener('click', preventWhileDirty);
+                } else {
+                    link.removeEventListener('click', preventWhileDirty);
+                }
+            });
+
+            syncSaveButton();
+        };
+
+        const preventWhileDirty = function (e) { e.preventDefault(); };
+
+        finalResultSelect.addEventListener('change', applyCascade);
         form.addEventListener('input', syncSaveButton);
-        form.addEventListener('change', syncSaveButton);
         syncSaveButton();
     });
 </script>

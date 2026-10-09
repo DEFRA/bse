@@ -317,6 +317,7 @@
             .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
         var sortCol  = Model.Filter.SortColumn;
         var sortDesc = Model.Filter.SortDesc;
+        ViewData["PageNumber"] = Model.Filter.PageNumber;
 
         <div class="bse-case-search-table-wrap">
         <table class="govuk-table bse-case-search-table">

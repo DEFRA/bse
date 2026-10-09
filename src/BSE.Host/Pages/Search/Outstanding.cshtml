@@ -127,6 +127,7 @@
             .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
         var sortCol  = Model.Filter.SortColumn;
         var sortDesc = Model.Filter.SortDesc;
+        ViewData["PageNumber"] = Model.Filter.PageNumber;
 
         @await Html.PartialAsync("_ExportLink")
         <div class="bse-outstanding-search-table-wrap">

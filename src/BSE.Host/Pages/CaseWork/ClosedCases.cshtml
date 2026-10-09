@@ -11,6 +11,7 @@
         .ToList();
 
     var sortBaseUrl = "?" + string.Join("&", sortBaseParams);
+    ViewData["PageNumber"] = Model.PageNumber;
 }
 
 <h1 class="govuk-heading-l bse-wide-page">View all closed cases</h1>

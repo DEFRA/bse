@@ -61,7 +61,8 @@ public class FarmsModel : PageModel
     {
         if (!HasAnyFilter()) return RedirectToPage();
         var rows = await _search.SearchFarmsAsync(Filter.ToQuery());
-        return BuildExcel(rows, "farmsearchresults.xlsx");
+        Filter.Results = rows.ToList();
+        return BuildExcel(Filter.SortedResults, "farmsearchresults.xlsx");
     }
 
     private static FileContentResult BuildExcel(IEnumerable<FarmSearchResult> rows, string filename)

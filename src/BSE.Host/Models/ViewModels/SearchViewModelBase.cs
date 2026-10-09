@@ -28,6 +28,10 @@ public abstract class SearchViewModelBase<TResult>
             .Take(PageSize)
             .ToList();
 
+    /// <summary>Full sorted result set, unpaged — Excel export must include every matching row
+    /// in the same order as the on-screen grid, not just the current page.</summary>
+    public IReadOnlyList<TResult> SortedResults => ApplySorting(Results).ToList();
+
     /// <summary>Apply sorting to the full result set before paging.</summary>
     protected abstract IEnumerable<TResult> ApplySorting(IReadOnlyList<TResult> source);
 }

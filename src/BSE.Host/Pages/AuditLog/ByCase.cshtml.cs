@@ -48,27 +48,30 @@ public class ByCaseModel(IAuditLogService auditLogService) : PageModel
         if (PageNumber < 1) PageNumber = 1;
         if (PageNumber > TotalPages && TotalPages > 0) PageNumber = TotalPages;
 
-        IEnumerable<AuditLogEntry> sorted = SortBy switch
-        {
-            "table"   => SortDir == "desc" ? all.OrderByDescending(e => e.TableName)   : all.OrderBy(e => e.TableName),
-            "field"   => SortDir == "desc" ? all.OrderByDescending(e => e.FieldName)   : all.OrderBy(e => e.FieldName),
-            "user"    => SortDir == "desc" ? all.OrderByDescending(e => e.UserName)    : all.OrderBy(e => e.UserName),
-            "before"  => SortDir == "desc" ? all.OrderByDescending(e => e.BeforeValue) : all.OrderBy(e => e.BeforeValue),
-            "after"   => SortDir == "desc" ? all.OrderByDescending(e => e.AfterValue)  : all.OrderBy(e => e.AfterValue),
-            "reason"  => SortDir == "desc" ? all.OrderByDescending(e => e.Reason)      : all.OrderBy(e => e.Reason),
-            "key"     => SortDir == "desc" ? all.OrderByDescending(e => e.Key)         : all.OrderBy(e => e.Key),
-            _         => SortDir == "desc" ? all.OrderByDescending(e => e.DateTime)    : all.OrderBy(e => e.DateTime),
-        };
+        IEnumerable<AuditLogEntry> sorted = ApplySorting(all);
         Entries = sorted.Skip((PageNumber - 1) * PageSize).Take(PageSize);
         return Page();
     }
+
+    private IEnumerable<AuditLogEntry> ApplySorting(IEnumerable<AuditLogEntry> entries) =>
+        SortBy switch
+        {
+            "table"   => SortDir == "desc" ? entries.OrderByDescending(e => e.TableName)   : entries.OrderBy(e => e.TableName),
+            "field"   => SortDir == "desc" ? entries.OrderByDescending(e => e.FieldName)   : entries.OrderBy(e => e.FieldName),
+            "user"    => SortDir == "desc" ? entries.OrderByDescending(e => e.UserName)    : entries.OrderBy(e => e.UserName),
+            "before"  => SortDir == "desc" ? entries.OrderByDescending(e => e.BeforeValue) : entries.OrderBy(e => e.BeforeValue),
+            "after"   => SortDir == "desc" ? entries.OrderByDescending(e => e.AfterValue)  : entries.OrderBy(e => e.AfterValue),
+            "reason"  => SortDir == "desc" ? entries.OrderByDescending(e => e.Reason)      : entries.OrderBy(e => e.Reason),
+            "key"     => SortDir == "desc" ? entries.OrderByDescending(e => e.Key)         : entries.OrderBy(e => e.Key),
+            _         => SortDir == "desc" ? entries.OrderByDescending(e => e.DateTime)    : entries.OrderBy(e => e.DateTime),
+        };
 
     public async Task<IActionResult> OnGetExportAsync()
     {
         if (string.IsNullOrWhiteSpace(Rbse))
             return RedirectToPage();
 
-        var all = await auditLogService.GetByCaseAsync(Rbse.Trim().ToUpperInvariant());
+        var all = ApplySorting(await auditLogService.GetByCaseAsync(Rbse.Trim().ToUpperInvariant()));
 
         var sb = new StringBuilder();
         sb.AppendLine("Table,Field,Date/Time,User,Before,After,Reason,Key");
@@ -101,7 +104,7 @@ public class ByCaseModel(IAuditLogService auditLogService) : PageModel
     public string SortUrl(string col)
     {
         var dir = string.Equals(SortBy, col, StringComparison.OrdinalIgnoreCase) && SortDir == "asc" ? "desc" : "asc";
-        var q = $"?rbse={Uri.EscapeDataString(Rbse)}&sortBy={col}&sortDir={dir}&pageNumber=1";
+        var q = $"?rbse={Uri.EscapeDataString(Rbse)}&sortBy={col}&sortDir={dir}&pageNumber={PageNumber}";
         if (!string.IsNullOrWhiteSpace(ReturnTo))
             q += $"&returnTo={Uri.EscapeDataString(ReturnTo)}";
         return q;

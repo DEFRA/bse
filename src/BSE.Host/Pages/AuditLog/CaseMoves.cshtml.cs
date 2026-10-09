@@ -50,7 +50,7 @@ public class CaseMovesModel(IAuditLogService auditLogService) : PageModel
         if (!AuditDateRange.Validate(StartDate, EndDate, out _, out _)) return RedirectToPage();
 
         var entries = (await auditLogService.GetCaseMovesAsync(StartDate!.Value, EndDate!.Value)).Cast<AuditLogCaseMoveEntry>();
-        return AuditLogExcel.Build(entries, "Case Moves", $"CaseMoves_{DateTime.Today:yyyyMMdd}.xlsx",
+        return AuditLogExcel.Build(ApplySorting(entries), "Case Moves", $"CaseMoves_{DateTime.Today:yyyyMMdd}.xlsx",
             [("HasBatches", e => e.HasBatches)]);
     }
 

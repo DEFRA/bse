@@ -116,6 +116,7 @@ public class RelatedAnimalsModel : PageModel
         if (!HasAnyFilter()) return RedirectToPage();
         var rows = await _search.GetRelatedAnimalsAsync(
             RbseHelper.ParseToRaw(Rbse), Name ?? "", Eartag ?? "", RbseHelper.ParseToRaw(RelationRbse), RelationType ?? "");
+        var sortedRows = ApplySorting(rows.ToList());
 
         using var wb = new XLWorkbook();
         var ws = wb.Worksheets.Add("Results");
@@ -127,7 +128,7 @@ public class RelatedAnimalsModel : PageModel
         // Legacy's exported header row was plain text, not bold.
         for (var c = 1; c <= headers.Length; c++) { ws.Cell(1, c).Value = headers[c - 1]; }
         var row = 2;
-        foreach (var r in rows)
+        foreach (var r in sortedRows)
         {
             ws.Cell(row, 1).Value = r.Rbse;
             ws.Cell(row, 2).Value = r.Cphh;
