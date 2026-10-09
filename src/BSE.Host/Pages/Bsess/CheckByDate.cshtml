@@ -63,7 +63,7 @@
             </div>
             <div class="govuk-button-group bse-rbse-action-group">
                 <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
-                <a asp-page="/Bsess/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button" role="button" draggable="false">TSESS Menu</a>
+                <a asp-page="/Bsess/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button">TSESS Menu</a>
             </div>
         </div>
     </form>
@@ -71,6 +71,7 @@
     @if (Model.Discrepancies.Any())
     {
         var sortBase = $"?StartDate={Uri.EscapeDataString(Model.StartDate?.ToString("dd/MM/yyyy") ?? string.Empty)}&EndDate={Uri.EscapeDataString(Model.EndDate?.ToString("dd/MM/yyyy") ?? string.Empty)}";
+        ViewData["PageNumber"] = Model.PageNumber;
 
         <p class="govuk-body">
             <a href="@($"?StartDate={Uri.EscapeDataString(Model.StartDate?.ToString("dd/MM/yyyy") ?? string.Empty)}&EndDate={Uri.EscapeDataString(Model.EndDate?.ToString("dd/MM/yyyy") ?? string.Empty)}&handler=Export")" class="govuk-link">Export to Excel</a>

@@ -15,6 +15,7 @@ public class OpenCasesModel(ICaseWorkService caseWorkService) : PageModel
     [BindProperty(SupportsGet = true)] public int PageNumber { get; set; } = 1;
     [BindProperty(SupportsGet = true)] public string SortColumn { get; set; } = "Rbse";
     [BindProperty(SupportsGet = true)] public bool SortDesc { get; set; }
+    [BindProperty(SupportsGet = true)] public string? Rbse { get; set; }
 
     public IEnumerable<CaseWorkEntryRecord> Cases { get; private set; } = [];
 
@@ -27,6 +28,14 @@ public class OpenCasesModel(ICaseWorkService caseWorkService) : PageModel
     {
         var openCases = await caseWorkService.GetOpenCasesAsync();
         Cases = ApplySort(openCases).ToList();
+
+        // Legacy parity: CaseWorkOpenReport.aspx's Pager.SelectGridRowForDataRow jumps to the
+        // page containing ?rbse= (e.g. after Save redirects back here) instead of always page 1.
+        if (!string.IsNullOrWhiteSpace(Rbse))
+        {
+            var index = Cases.ToList().FindIndex(c => string.Equals(c.Rbse, Rbse, StringComparison.OrdinalIgnoreCase));
+            if (index >= 0) PageNumber = index / PageSize + 1;
+        }
 
         if (PageNumber < 1) PageNumber = 1;
         if (PageNumber > TotalPages) PageNumber = TotalPages;

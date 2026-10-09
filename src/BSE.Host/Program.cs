@@ -381,6 +381,8 @@ try
     builder.Services.AddScoped<BSE.Host.Services.ICaseClinicalDraftStateService, BSE.Host.Services.CaseClinicalDraftStateService>();
     builder.Services.AddScoped<BSE.Host.Services.ICaseFeedsDraftStateService, BSE.Host.Services.CaseFeedsDraftStateService>();
     builder.Services.AddScoped<BSE.Host.Services.ICaseRelationsDraftStateService, BSE.Host.Services.CaseRelationsDraftStateService>();
+    builder.Services.AddScoped<BSE.Host.Services.ICaseScalarDraftStateService, BSE.Host.Services.CaseScalarDraftStateService>();
+    builder.Services.AddScoped<BSE.Host.Services.ICaseEditOrchestrationService, BSE.Host.Services.CaseEditOrchestrationService>();
 
     // -- Authorisation policies
     // Each policy requires exactly its own name as a role claim.
@@ -486,7 +488,8 @@ try
         ICaseFarmDraftStateService caseFarmDraftState,
         ICaseClinicalDraftStateService caseClinicalDraftState,
         ICaseFeedsDraftStateService caseFeedsDraftState,
-        ICaseRelationsDraftStateService caseRelationsDraftState) =>
+        ICaseRelationsDraftStateService caseRelationsDraftState,
+        ICaseScalarDraftStateService caseScalarDraftState) =>
     {
         var normalizedRbse = RbseHelper.ParseToRaw(rbse);
 
@@ -494,7 +497,8 @@ try
                                 || (await caseFarmDraftState.GetAsync(normalizedRbse))?.HasPendingChanges == true
                                 || (await caseClinicalDraftState.GetAsync(normalizedRbse))?.HasPendingChanges == true
                                 || (await caseFeedsDraftState.GetAsync(normalizedRbse))?.HasPendingChanges == true
-                                || (await caseRelationsDraftState.GetAsync(normalizedRbse))?.HasPendingChanges == true;
+                                || (await caseRelationsDraftState.GetAsync(normalizedRbse))?.HasPendingChanges == true
+                                || (await caseScalarDraftState.GetAsync(normalizedRbse))?.HasPendingChanges == true;
 
         return Results.Json(new { hasUnsavedChanges });
     }).RequireAuthorization();
@@ -505,7 +509,8 @@ try
         ICaseFarmDraftStateService caseFarmDraftState,
         ICaseClinicalDraftStateService caseClinicalDraftState,
         ICaseFeedsDraftStateService caseFeedsDraftState,
-        ICaseRelationsDraftStateService caseRelationsDraftState) =>
+        ICaseRelationsDraftStateService caseRelationsDraftState,
+        ICaseScalarDraftStateService caseScalarDraftState) =>
     {
         var normalizedRbse = RbseHelper.ParseToRaw(rbse);
 
@@ -514,6 +519,7 @@ try
         await caseClinicalDraftState.ClearAsync(normalizedRbse);
         await caseFeedsDraftState.ClearAsync(normalizedRbse);
         await caseRelationsDraftState.ClearAsync(normalizedRbse);
+        await caseScalarDraftState.ClearAsync(normalizedRbse);
 
         return Results.Ok(new { cleared = true });
     }).RequireAuthorization();

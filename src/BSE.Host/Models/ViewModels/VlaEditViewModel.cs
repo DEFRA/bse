@@ -10,7 +10,7 @@ namespace BSE.Host.Models.ViewModels;
 /// VLA-owned fields are bound to visible inputs; DEFRA-owned fields are
 /// round-tripped as hidden fields so the EditCase SP receives the full row.
 /// </summary>
-public class VlaEditViewModel
+public class VlaEditViewModel : ICaseEditFields
 {
     public string Rbse { get; set; } = string.Empty;
 
@@ -58,93 +58,17 @@ public class VlaEditViewModel
     public string? LabComment { get; set; }
     public string? CaseType { get; set; }
 
-    public static VlaEditViewModel FromRecord(CaseRecord r) => new()
+    public static VlaEditViewModel FromRecord(CaseRecord r)
     {
-        Rbse                  = r.Rbse,
-        BirthDate             = r.BirthDate,
-        BirthDateSource       = r.BirthDateSource,
-        IsBirthDateEst        = r.IsBirthDateEst ?? false,
-        Sex                   = r.Sex,
-        Breed                 = r.Breed,
-        Origin                = r.Origin,
-        PurchaseDate          = r.PurchaseDate,
-        PurchaseAgeInMonths   = r.PurchaseAgeInMonths,
-        PurchasedCounty       = r.PurchasedCounty,
-        HerdEntryDate         = r.HerdEntryDate,
-        OnsetDate             = r.OnsetDate,
-        IsOnsetDateEst        = r.IsOnsetDateEst ?? false,
-        MonthsPregnant        = r.MonthsPregnant,
-        MonthsPostCalving     = r.MonthsPostCalving,
-        OnsetAgeInMonths      = r.OnsetAgeInMonths,
-        SlaughterDate         = r.SlaughterDate,
-        // pass-through
-        EartagCountry         = r.EartagCountry,
-        EartagHerdmark        = r.EartagHerdmark,
-        Eartag                = r.Eartag,
-        PreviousEartag        = r.PreviousEartag,
-        Bse1ReceivedDate      = r.Bse1ReceivedDate,
-        FormADate             = r.FormADate,
-        FormAResubmittedDate  = r.FormAResubmittedDate,
-        FormBDate             = r.FormBDate,
-        Fate                  = r.Fate,
-        FormCDate             = r.FormCDate,
-        IsPurchaserBse1Received = r.IsPurchaserBse1Received,
-        IsBreederBse1Received   = r.IsBreederBse1Received,
-        IsVendor1Bse1Received   = r.IsVendor1Bse1Received,
-        IsHomebredBse1Received  = r.IsHomebredBse1Received,
-        IsSummarySheetReceived  = r.IsSummarySheetReceived,
-        IsPaperworkComplete     = r.IsPaperworkComplete,
-        ReportedLocation      = r.ReportedLocation,
-        Survey                = r.Survey,
-        Notes                 = r.Notes,
-        DamStatus             = r.DamStatus,
-        ValuationAge          = r.ValuationAge,
-        AlternateDiagnosis    = r.AlternateDiagnosis,
-        LabComment            = r.LabComment,
-        CaseType              = r.CaseType,
-    };
+        var vm = new VlaEditViewModel();
+        CaseEditFieldMapper.CopyFromRecord(vm, r);
+        return vm;
+    }
 
-    public EditCaseCommand ToEditCommand(byte[] rowStamp) => new(
-        Rbse:                   Rbse,
-        EartagCountry:          EartagCountry,
-        EartagHerdmark:         EartagHerdmark,
-        Eartag:                 Eartag,
-        PreviousEartag:         PreviousEartag,
-        Bse1ReceivedDate:       Bse1ReceivedDate,
-        FormADate:              FormADate,
-        FormAResubmittedDate:   FormAResubmittedDate,
-        FormBDate:              FormBDate,
-        Fate:                   Fate,
-        FormCDate:              FormCDate,
-        IsPurchaserBse1Received: IsPurchaserBse1Received,
-        IsBreederBse1Received:  IsBreederBse1Received,
-        IsVendor1Bse1Received:  IsVendor1Bse1Received,
-        IsHomebredBse1Received: IsHomebredBse1Received,
-        IsSummarySheetReceived: IsSummarySheetReceived,
-        IsPaperworkComplete:    IsPaperworkComplete,
-        ReportedLocation:       ReportedLocation,
-        Survey:                 Survey,
-        Notes:                  Notes,
-        BirthDate:              BirthDate,
-        IsBirthDateEst:         BirthDate.HasValue ? IsBirthDateEst : null,
-        DamStatus:              DamStatus,
-        BirthDateSource:        BirthDateSource,
-        ValuationAge:           ValuationAge,
-        Sex:                    Sex,
-        Breed:                  Breed,
-        Origin:                 Origin,
-        PurchaseDate:           PurchaseDate,
-        PurchaseAgeInMonths:    PurchaseAgeInMonths,
-        PurchasedCounty:        PurchasedCounty,
-        HerdEntryDate:          HerdEntryDate,
-        OnsetDate:              OnsetDate,
-        IsOnsetDateEst:         OnsetDate.HasValue ? IsOnsetDateEst : null,
-        MonthsPregnant:         MonthsPregnant,
-        MonthsPostCalving:      MonthsPostCalving,
-        OnsetAgeInMonths:       OnsetAgeInMonths,
-        SlaughterDate:          SlaughterDate,
-        RowStamp:               rowStamp,
-        AlternateDiagnosis:     AlternateDiagnosis,
-        LabComment:             LabComment,
-        CaseType:               CaseType);
+    public EditCaseCommand ToEditCommand(byte[] rowStamp) => CaseEditFieldMapper.ToEditCommand(this, rowStamp);
+
+    /// <summary>Overlays a staged-but-not-yet-committed Case edit (from another tab's
+    /// cross-tab draft) onto this view model, so revisiting a tab shows pending edits
+    /// made elsewhere instead of silently reverting to the last-committed DB values.</summary>
+    public void ApplyStagedCommand(EditCaseCommand c) => CaseEditFieldMapper.ApplyStagedCommand(this, c);
 }

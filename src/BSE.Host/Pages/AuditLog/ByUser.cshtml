@@ -87,7 +87,7 @@
             </div>
             <div class="govuk-button-group">
                 <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
-                <a asp-page="/AuditLog/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button" role="button" draggable="false">Audit Log Menu</a>
+                <a asp-page="/AuditLog/Menu" class="govuk-button govuk-button--secondary" data-module="govuk-button">Audit Log Menu</a>
             </div>
         </div>
     </form>
@@ -101,6 +101,7 @@
             .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
         var sortCol  = Model.SortColumn;
         var sortDesc = Model.SortDesc;
+        ViewData["PageNumber"] = Model.PageNumber;
         <div id="audit-user-results" class="bse-audit-table-wrap">
             <table class="govuk-table bse-audit-table">
                 <caption class="govuk-visually-hidden">Audit log entries by user</caption>

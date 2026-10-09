@@ -20,6 +20,11 @@ parameters:
     type: boolean
     default: false
 
+  - name: deployDbScripts
+    displayName: Force deploy DB scripts (e.g. fresh infra / no schema yet)
+    type: boolean
+    default: false
+
   - name: runSonar
     displayName: Run SonarCloud analysis
     type: boolean
@@ -115,8 +120,10 @@ stages:
         # covering Deploy/, Migrations/, StoredProcedures/) changed, so downstream
         # deployment stages can skip applying database scripts when there are no
         # script changes to deploy.
+        # TARGET_BRANCH is passed via env: rather than interpolated as a $(...) macro so that
+        # untrusted PR-supplied branch names cannot inject shell commands into this script.
         if [ "$(Build.Reason)" = "PullRequest" ]; then
-          DIFF_RANGE="origin/$(System.PullRequest.TargetBranch)...HEAD"
+          DIFF_RANGE="origin/${TARGET_BRANCH}...HEAD"
         else
           DIFF_RANGE="HEAD~1...HEAD"
         fi
@@ -131,6 +138,8 @@ stages:
           echo "No database script changes detected under $(databaseScriptsPath)."
           echo "##vso[task.setvariable variable=dbScriptsChanged;isOutput=true]false"
         fi
+      env:
+        TARGET_BRANCH: $(System.PullRequest.TargetBranch)
       name: detectDbChanges
       displayName: 'Detect database script changes'
 
@@ -191,15 +200,17 @@ stages:
 
           - script: |
               if [ "$(dbScriptsChanged)" = "true" ]; then
-                echo "Database script changes detected � database deployment WILL be applied for DEV."
+                echo "Database script changes detected — database deployment WILL be applied for DEV."
+              elif [ "${{ parameters.deployDbScripts }}" = "True" ]; then
+                echo "deployDbScripts override enabled — database deployment WILL be applied for DEV (forced)."
               else
-                echo "No database script changes detected � database deployment WILL BE SKIPPED for DEV."
+                echo "No database script changes detected and deployDbScripts not set — database deployment WILL BE SKIPPED for DEV."
               fi
             displayName: 'Log database deployment decision'
 
           - task: AzureCLI@2
             displayName: 'Apply database scripts'
-            condition: and(succeeded(), eq(variables['dbScriptsChanged'], 'true'))
+            condition: and(succeeded(), or(eq(variables['dbScriptsChanged'], 'true'), eq('${{ parameters.deployDbScripts }}', true)))
             inputs:
               azureSubscription: 'AZR-BSE-DEV1'
               scriptType: bash
@@ -209,7 +220,7 @@ stages:
 
                 TOOLS="$(Agent.TempDirectory)/sqlcmd"
                 mkdir -p "$TOOLS"
-                curl -sSL --fail --max-time 60 -o "$TOOLS/sqlcmd.tar.bz2" \
+                curl -sSL --proto '=https' --fail --max-time 60 -o "$TOOLS/sqlcmd.tar.bz2" \
                   https://github.com/microsoft/go-sqlcmd/releases/download/v1.8.2/sqlcmd-linux-amd64.tar.bz2
                 tar -xjf "$TOOLS/sqlcmd.tar.bz2" -C "$TOOLS"
 
@@ -286,15 +297,17 @@ stages:
 
           - script: |
               if [ "$(dbScriptsChanged)" = "true" ]; then
-                echo "Database script changes detected � database deployment WILL be applied for DEV."
+                echo "Database script changes detected — database deployment WILL be applied for TST."
+              elif [ "${{ parameters.deployDbScripts }}" = "True" ]; then
+                echo "deployDbScripts override enabled — database deployment WILL be applied for TST (forced)."
               else
-                echo "No database script changes detected � database deployment WILL BE SKIPPED for DEV."
+                echo "No database script changes detected and deployDbScripts not set — database deployment WILL BE SKIPPED for TST."
               fi
             displayName: 'Log database deployment decision'
 
           - task: AzureCLI@2
             displayName: 'Apply database scripts'
-            condition: and(succeeded(), eq(variables['dbScriptsChanged'], 'true'))
+            condition: and(succeeded(), or(eq(variables['dbScriptsChanged'], 'true'), eq('${{ parameters.deployDbScripts }}', true)))
             inputs:
               azureSubscription: 'AZR-BSE-TST1'
               scriptType: bash
@@ -304,7 +317,7 @@ stages:
 
                 TOOLS="$(Agent.TempDirectory)/sqlcmd"
                 mkdir -p "$TOOLS"
-                curl -sSL --fail --max-time 60 -o "$TOOLS/sqlcmd.tar.bz2" \
+                curl -sSL --proto '=https' --fail --max-time 60 -o "$TOOLS/sqlcmd.tar.bz2" \
                   https://github.com/microsoft/go-sqlcmd/releases/download/v1.8.2/sqlcmd-linux-amd64.tar.bz2
                 tar -xjf "$TOOLS/sqlcmd.tar.bz2" -C "$TOOLS"
 
@@ -420,14 +433,16 @@ stages:
           - script: |
               if [ "$(dbScriptsChanged)" = "true" ]; then
                 echo "Database script changes detected - database deployment WILL be applied for PRE."
+              elif [ "${{ parameters.deployDbScripts }}" = "True" ]; then
+                echo "deployDbScripts override enabled - database deployment WILL be applied for PRE (forced, e.g. fresh infra)."
               else
-                echo "No database script changes detected - database deployment WILL BE SKIPPED for PRE."
+                echo "No database script changes detected and deployDbScripts not set - database deployment WILL BE SKIPPED for PRE."
               fi
             displayName: 'Log database deployment decision'
 
           - task: AzureCLI@2
             displayName: 'Apply database scripts'
-            condition: and(succeeded(), eq(variables['dbScriptsChanged'], 'true'))
+            condition: and(succeeded(), or(eq(variables['dbScriptsChanged'], 'true'), eq('${{ parameters.deployDbScripts }}', true)))
             inputs:
               azureSubscription: 'AZR-BSE-PRE1'
               scriptType: bash
@@ -437,7 +452,7 @@ stages:
 
                 TOOLS="$(Agent.TempDirectory)/sqlcmd"
                 mkdir -p "$TOOLS"
-                curl -sSL --fail --max-time 60 -o "$TOOLS/sqlcmd.tar.bz2" \
+                curl -sSL --proto '=https' --fail --max-time 60 -o "$TOOLS/sqlcmd.tar.bz2" \
                   https://github.com/microsoft/go-sqlcmd/releases/download/v1.8.2/sqlcmd-linux-amd64.tar.bz2
                 tar -xjf "$TOOLS/sqlcmd.tar.bz2" -C "$TOOLS"
 

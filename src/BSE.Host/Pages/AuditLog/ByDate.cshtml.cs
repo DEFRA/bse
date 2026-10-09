@@ -48,7 +48,7 @@ public class ByDateModel(IAuditLogService auditLogService) : PageModel
         if (LogDate is null) return RedirectToPage();
 
         var entries = await auditLogService.GetByDateAsync(LogDate.Value);
-        return AuditLogExcel.Build(entries, "Daily Audit Log", $"DailyAuditLog_{LogDate.Value:yyyyMMdd}.xlsx");
+        return AuditLogExcel.Build(ApplySorting(entries), "Daily Audit Log", $"DailyAuditLog_{LogDate.Value:yyyyMMdd}.xlsx");
     }
 
     private IEnumerable<AuditLogEntry> ApplySorting(IEnumerable<AuditLogEntry> entries)

@@ -78,6 +78,7 @@
             <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState[nameof(Model.RelationRbse)]!.Errors[0].ErrorMessage</p>
         }
         <input id="relation-rbse" asp-for="RelationRbse" class="govuk-input govuk-!-width-one-half @(ViewData.ModelState[nameof(Model.RelationRbse)]?.Errors.Count > 0 ? "govuk-input--error" : "")" />
+        <div id="relation-rbse-status" class="govuk-hint"></div>
     </div>
 
     <div class="govuk-form-group">
@@ -181,3 +182,79 @@
         <a asp-page="/Case/Relations" asp-route-rbse="@Model.Rbse" class="govuk-link">Cancel</a>
     </div>
 </form>
+
+<script>
+(function () {
+    var rbseInput = document.getElementById('relation-rbse');
+    var status = document.getElementById('relation-rbse-status');
+    var relatedFields = ['sex', 'eartag-country', 'eartag-herdmark', 'eartag', 'birth-day', 'birth-month', 'birth-year', 'left-date', 'relation-fate', 'sire']
+        .map(function (id) { return document.getElementById(id); })
+        .filter(Boolean);
+
+    if (!rbseInput) {
+        return;
+    }
+
+    function setField(id, value) {
+        var el = document.getElementById(id);
+        if (el) {
+            el.value = value || '';
+        }
+    }
+
+    function setRelatedFieldsDisabled(disabled) {
+        relatedFields.forEach(function (el) { el.disabled = disabled; });
+    }
+
+    function clearRelatedFields() {
+        ['sex', 'eartag-country', 'eartag-herdmark', 'eartag', 'birth-day', 'birth-month', 'birth-year', 'left-date', 'relation-fate', 'sire']
+            .forEach(function (id) { setField(id, ''); });
+    }
+
+    function applyRelatedCaseDetails(details) {
+        setField('sex', details.sex);
+        setField('eartag-country', details.eartagCountry);
+        setField('eartag-herdmark', details.eartagHerdmark);
+        setField('eartag', details.eartag);
+        setField('birth-day', details.birthDay);
+        setField('birth-month', details.birthMonth);
+        setField('birth-year', details.birthYear);
+        setField('left-date', details.leftDate);
+        setField('relation-fate', details.fate);
+        setField('sire', details.sire);
+    }
+
+    function lookUpRelationRbse() {
+        var rbse = rbseInput.value.trim();
+        if (!rbse) {
+            status.textContent = '';
+            clearRelatedFields();
+            setRelatedFieldsDisabled(false);
+            return;
+        }
+
+        // Mirrors legacy ctlRelationRBSE_RBSEChanged: look up the related case and populate
+        // Sex/Fate/Eartag/birth date/left date/Sire, disabling those fields while an RBSE is set.
+        fetch('?handler=RelationDetails&rbse=' + encodeURIComponent(rbse))
+            .then(function (response) { return response.ok ? response.json() : null; })
+            .then(function (result) {
+                if (!result || !result.found) {
+                    status.textContent = 'RBSE number not found';
+                    clearRelatedFields();
+                    setRelatedFieldsDisabled(false);
+                    return;
+                }
+
+                status.textContent = 'Details loaded from case ' + rbse + '.';
+                applyRelatedCaseDetails(result);
+                setRelatedFieldsDisabled(true);
+            })
+            .catch(function () { /* network error — leave fields as last entered */ });
+    }
+
+    rbseInput.addEventListener('blur', lookUpRelationRbse);
+    if (rbseInput.value.trim()) {
+        lookUpRelationRbse();
+    }
+})();
+</script>

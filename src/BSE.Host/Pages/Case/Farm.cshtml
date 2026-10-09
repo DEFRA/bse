@@ -27,40 +27,24 @@
         && string.IsNullOrWhiteSpace(Model.EditableFarm?.County)
         && string.IsNullOrWhiteSpace(Model.EditableFarm?.AHO)
         && Model.EditableFarm?.ADNSRegionID is null;
-    @await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Farm", Model.Rbse, Model.BatchNumbers, createModeViewDocsUrl))
+    @await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Farm", Model.Rbse, Model.BatchNumbers, createModeViewDocsUrl,
+        CanEditCurrentTab: !createReadOnly, SaveHandlerOverride: "CreateCase", CancelPageOverride: "/Home"))
 
-    @if (!ViewContext.ModelState.IsValid)
-    {
-        <div class="govuk-error-summary" data-module="govuk-error-summary">
-            <div role="alert">
-                <h2 class="govuk-error-summary__title">There is a problem</h2>
-                <div class="govuk-error-summary__body">
-                    <ul class="govuk-list govuk-error-summary__list">
-                        @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
-                        {
-                            <li>@e.ErrorMessage</li>
-                        }
-                    </ul>
-                </div>
-            </div>
-        </div>
-    }
+    @await Html.PartialAsync("_CaseEditNotifications", new BSE.Host.Models.CaseEditNotificationsViewModel("farm-create"))
 
-    <form method="post" novalidate>
+    <form method="post" novalidate id="case-farm-inline-form">
         <input type="hidden" name="Rbse" value="@Model.Rbse" />
-
-        @if (!createReadOnly)
+        @if (!createReadOnly && !Model.RequireFarmDetails && !createDetailsLocked)
         {
-            <div class="govuk-button-group govuk-!-margin-bottom-4">
-                <button type="submit" asp-page-handler="CreateCase" class="govuk-button" data-module="govuk-button">Save</button>
-                <a asp-page="/Home" class="govuk-link">Cancel</a>
-            </div>
+            @* Legacy parity: looking up a CPHH populates the shared session farm dataset immediately,
+               so Cancel/Home must warn about losing it even though nothing has been typed since. *@
+            <input type="hidden" data-force-dirty="true" />
         }
 
         <div class="bse-farm-legacy-top">
             <div class="bse-farm-legacy-top__row bse-farm-legacy-top__row--lookup">
                 <label class="govuk-label" for="create-farm-cphh">CPHH</label>
-                <input id="create-farm-cphh" asp-for="EditableFarm!.CPHH" class="govuk-input bse-farm-legacy-top__input @(!createReadOnly ? "bse-farm-legacy-top__input--editable" : null)" readonly="@(createReadOnly ? "readonly" : null)" />
+                <input id="create-farm-cphh" name="EditableFarm.CPHH" value="@BseFormat.FormatCphh(Model.EditableFarm?.CPHH)" class="govuk-input bse-farm-legacy-top__input @(!createReadOnly ? "bse-farm-legacy-top__input--editable" : null)" readonly="@(createReadOnly ? "readonly" : null)" />
                 @if (!createReadOnly)
                 {
                     <button type="submit" asp-page-handler="LookupNewCase" class="govuk-button govuk-button--secondary bse-farm-legacy-top__lookup" data-module="govuk-button">Look Up</button>
@@ -285,17 +269,7 @@
                                     </span>
                                 }
                             </td>
-                            <td class="govuk-table__cell">@h.Lactation1Size</td>
-                            <td class="govuk-table__cell">@h.Lactation2Size</td>
-                            <td class="govuk-table__cell">@h.Lactation3Size</td>
-                            <td class="govuk-table__cell">@h.Lactation4Size</td>
-                            <td class="govuk-table__cell">@h.Lactation5Size</td>
-                            <td class="govuk-table__cell">@h.Lactation6Size</td>
-                            <td class="govuk-table__cell">@h.Lactation7Size</td>
-                            <td class="govuk-table__cell">@h.Lactation8Size</td>
-                            <td class="govuk-table__cell">@h.Lactation9Size</td>
-                            <td class="govuk-table__cell">@h.Lactation10Size</td>
-                            <td class="govuk-table__cell">@h.Lactation10PlusSize</td>
+                            <partial name="_HerdSizeLactationCells" model="h" />
                         </tr>
                     }
                 </tbody>
@@ -348,50 +322,10 @@
         ? null
         : $"{Model.SpolSiteUrl}{Model.Rbse.Replace("/", "")}";
 }
-@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Farm", Model.Rbse, Model.BatchNumbers, viewDocsUrl))
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Farm", Model.Rbse, Model.BatchNumbers, viewDocsUrl, canEditFarm))
 
-@if (TempData["Success"] is string successMsg)
-{
-    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert"
-         aria-labelledby="farm-success-title" data-module="govuk-notification-banner">
-        <div class="govuk-notification-banner__header">
-            <h2 class="govuk-notification-banner__title" id="farm-success-title">Success</h2>
-        </div>
-        <div class="govuk-notification-banner__content">
-            <p class="govuk-notification-banner__heading">@successMsg</p>
-        </div>
-    </div>
-}
-
-@if (TempData["Warning"] is string warningMsg)
-{
-    <div class="govuk-notification-banner" role="region"
-         aria-labelledby="farm-warning-title" data-module="govuk-notification-banner">
-        <div class="govuk-notification-banner__header">
-            <h2 class="govuk-notification-banner__title" id="farm-warning-title">Important</h2>
-        </div>
-        <div class="govuk-notification-banner__content">
-            <p class="govuk-body">@warningMsg</p>
-        </div>
-    </div>
-}
-
-@if (!ViewContext.ModelState.IsValid)
-{
-    <div class="govuk-error-summary" data-module="govuk-error-summary">
-        <div role="alert">
-            <h2 class="govuk-error-summary__title">There is a problem</h2>
-            <div class="govuk-error-summary__body">
-                <ul class="govuk-list govuk-error-summary__list">
-                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
-                    {
-                        <li>@e.ErrorMessage</li>
-                    }
-                </ul>
-            </div>
-        </div>
-    </div>
-}
+@await Html.PartialAsync("_CaseEditNotifications", new BSE.Host.Models.CaseEditNotificationsViewModel(
+    "farm", TempData["Success"] as string, TempData["Warning"] as string))
 
 @if (Model.ShowBatchAssignment)
 {
@@ -412,18 +346,10 @@
         else
         {
             <p class="govuk-body">
-                Selecting <strong>Save</strong> assigns this case to batch
-                <strong>@Model.PendingBatch!.BatchNumber</strong>. The case is not assigned until you save.
+                This case will be assigned to batch <strong>@Model.PendingBatch!.BatchNumber</strong>
+                when you select Save below.
             </p>
         }
-
-        <form method="post">
-            <input type="hidden" name="Rbse" value="@Model.Rbse" />
-            <div class="govuk-button-group">
-                <button type="submit" asp-page-handler="SaveBatch" class="govuk-button" data-module="govuk-button">Save</button>
-                <button type="submit" asp-page-handler="CancelBatch" class="govuk-button govuk-button--secondary" data-module="govuk-button">Cancel</button>
-            </div>
-        </form>
     </section>
 }
 
@@ -449,20 +375,6 @@
         <input type="hidden" asp-for="EditableFarm.CPHH" />
         <input type="hidden" asp-for="EditableFarmRowStampBase64" />
 
-        @if (canEditFarm)
-        {
-            <output id="case-farm-unsaved-banner"
-                 class="govuk-inset-text bse-unsaved-banner"
-                 hidden="@(!Model.HasUnsavedChanges)">
-                <strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.
-            </output>
-
-            <div class="govuk-button-group govuk-!-margin-bottom-4">
-                <button type="submit" asp-page-handler="SaveFarm" class="govuk-button" data-module="govuk-button">Save</button>
-                <a asp-page="/Case/Farm" asp-page-handler="CancelFarmEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
-            </div>
-        }
-
         <fieldset class="bse-form-fieldset-reset" disabled="@(canEditFarm ? null : "disabled")">
 
         <div class="bse-farm-legacy-top">
@@ -476,6 +388,7 @@
         {
             ["CanEditJointControls"] = Model.CanEditJointControls,
             ["CanEditVlaControls"] = Model.CanEditVlaControls,
+            ["CanEditDefraControls"] = Model.CanEditDefraControls,
             TemplateInfo = { HtmlFieldPrefix = "EditableFarm" }
         })
 
@@ -730,17 +643,7 @@
                                         </span>
                                     }
                                 </td>
-                                <td class="govuk-table__cell">@h.Lactation1Size</td>
-                                <td class="govuk-table__cell">@h.Lactation2Size</td>
-                                <td class="govuk-table__cell">@h.Lactation3Size</td>
-                                <td class="govuk-table__cell">@h.Lactation4Size</td>
-                                <td class="govuk-table__cell">@h.Lactation5Size</td>
-                                <td class="govuk-table__cell">@h.Lactation6Size</td>
-                                <td class="govuk-table__cell">@h.Lactation7Size</td>
-                                <td class="govuk-table__cell">@h.Lactation8Size</td>
-                                <td class="govuk-table__cell">@h.Lactation9Size</td>
-                                <td class="govuk-table__cell">@h.Lactation10Size</td>
-                                <td class="govuk-table__cell">@h.Lactation10PlusSize</td>
+                                <partial name="_HerdSizeLactationCells" model="h" />
                                 <td class="govuk-table__cell">
                                     @if (canEditFarm)
                                     {
@@ -819,28 +722,26 @@
 
         <output aria-live="polite" class="govuk-visually-hidden" id="herd-live-region"></output>
 
-        @if (canEditFarm)
-        {
-            <div class="govuk-button-group govuk-!-margin-top-4">
-                <button type="submit" asp-page-handler="SaveFarm" class="govuk-button" data-module="govuk-button">Save</button>
-                <a asp-page="/Case/Farm" asp-page-handler="CancelFarmEdit" asp-route-rbse="@Model.Rbse" class="govuk-link bse-cancel-link">Cancel</a>
+        <div class="bse-case-bottom-row">
+            <div class="govuk-button-group bse-case-bottom-row__left">
+                <a asp-page="/AuditLog/ByFarm" asp-route-cphh="@Model.Farm.CPHH" asp-route-rbse="@Model.Rbse" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">Farm audit log</a>
             </div>
-        }
 
-        <div class="govuk-!-margin-top-6">
-            <ul class="govuk-list">
-                <li>
-                    <a asp-page="/AuditLog/ByFarm" asp-route-cphh="@Model.Farm.CPHH" asp-route-rbse="@Model.Rbse" class="govuk-link">Farm audit log</a>
-                </li>
-                @if (!string.IsNullOrWhiteSpace(viewDocsUrl))
-                {
-                    <li>
-                        <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" class="govuk-link">
+            <div class="bse-case-bottom-row__right">
+                <div class="govuk-button-group bse-case-bottom-row__actions">
+                    @if (!string.IsNullOrWhiteSpace(viewDocsUrl))
+                    {
+                        <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">
                             View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
                         </a>
-                    </li>
-                }
-            </ul>
+                    }
+                    @if (canEditFarm)
+                    {
+                        <button type="submit" asp-page-handler="SaveFarm" class="govuk-button" data-module="govuk-button">Save</button>
+                    }
+                    <a asp-page="/Case/Farm" asp-page-handler="CancelFarmEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
+                </div>
+            </div>
         </div>
     </form>
 
@@ -849,6 +750,31 @@
         border: 0;
         margin: 0;
         padding: 0;
+    }
+
+    .bse-case-bottom-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .bse-case-bottom-row__left,
+    .bse-case-bottom-row__right {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin: 0;
+    }
+
+    .bse-case-bottom-row__right {
+        gap: 20px;
+        margin-left: auto;
+    }
+
+    .bse-case-bottom-row__actions {
+        margin: 0;
     }
 
     .case-farm-herd-table__group-left {
@@ -898,12 +824,6 @@
     .case-farm-herd-table .govuk-input {
         max-width: 100%;
         box-sizing: border-box;
-    }
-
-    .bse-unsaved-banner {
-        /* <output> defaults to display:inline, which collapses govuk-inset-text's block layout. */
-        display: block;
-        border-left-color: #1d70b8;
     }
 
     .bse-herd-row--unsaved {
@@ -1040,14 +960,27 @@
             });
         });
 
+        // Legacy's Cancel is a postback that captures the current form before checking for
+        // changes, so edits typed on this tab but never staged anywhere must count as unsaved too.
+        var cancelForm = document.getElementById('case-farm-inline-form');
+        var formDirty = false;
+        if (cancelForm) {
+            cancelForm.addEventListener('input', function () { formDirty = true; });
+            cancelForm.addEventListener('change', function () { formDirty = true; });
+        }
+
         // ── Cancel page edits — confirmation before discarding changes ──
         document.querySelectorAll('.bse-cancel-link').forEach(function (lnk) {
             lnk.addEventListener('click', function (e) {
-                var hasUnsaved = document.getElementById('case-farm-unsaved-banner') &&
-                    !document.getElementById('case-farm-unsaved-banner').hidden;
-                if (hasUnsaved && !window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
-                    e.preventDefault();
-                }
+                e.preventDefault();
+                var hasUnsavedHere = formDirty || @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.HasUnsavedChanges));
+                // Legacy's dirty-check spans the whole shared session (every tab), not just this page.
+                (hasUnsavedHere ? Promise.resolve(true) : (window.hasUnsavedChangesAcrossTabs ? window.hasUnsavedChangesAcrossTabs() : Promise.resolve(false)))
+                    .then(function (hasUnsaved) {
+                        if (!hasUnsaved || window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+                            window.location.href = lnk.href;
+                        }
+                    });
             });
         });
 

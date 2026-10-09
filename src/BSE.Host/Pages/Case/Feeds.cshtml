@@ -16,54 +16,10 @@
     </ol>
 </nav>
 
-@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Feeds", Model.Rbse, Model.BatchNumbers, viewDocsUrl))
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Feeds", Model.Rbse, Model.BatchNumbers, viewDocsUrl, canSaveFeeds))
 
-@if (TempData["Success"] is string successMsg)
-{
-    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert"
-         aria-labelledby="feeds-success-title" data-module="govuk-notification-banner">
-        <div class="govuk-notification-banner__header">
-            <h2 class="govuk-notification-banner__title" id="feeds-success-title">Success</h2>
-        </div>
-        <div class="govuk-notification-banner__content">
-            <p class="govuk-notification-banner__heading">@successMsg</p>
-        </div>
-    </div>
-}
-
-@if (TempData["Warning"] is string warningMsg)
-{
-    <div class="govuk-notification-banner" role="region"
-         aria-labelledby="feeds-warning-title" data-module="govuk-notification-banner">
-        <div class="govuk-notification-banner__header">
-            <h2 class="govuk-notification-banner__title" id="feeds-warning-title">Important</h2>
-        </div>
-        <div class="govuk-notification-banner__content">
-            <p class="govuk-body">@warningMsg</p>
-        </div>
-    </div>
-}
-
-@if (!ViewContext.ModelState.IsValid || Model.FieldErrors.Count > 0)
-{
-    <div class="govuk-error-summary" data-module="govuk-error-summary">
-        <div role="alert">
-            <h2 class="govuk-error-summary__title">There is a problem</h2>
-            <div class="govuk-error-summary__body">
-                <ul class="govuk-list govuk-error-summary__list">
-                    @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
-                    {
-                        <li>@e.ErrorMessage</li>
-                    }
-                    @foreach (var e in Model.FieldErrors.Values)
-                    {
-                        <li>@e</li>
-                    }
-                </ul>
-            </div>
-        </div>
-    </div>
-}
+@await Html.PartialAsync("_CaseEditNotifications", new BSE.Host.Models.CaseEditNotificationsViewModel(
+    "feeds", TempData["Success"] as string, TempData["Warning"] as string, Model.FieldErrors.Values.ToList()))
 
 <form method="post" novalidate id="case-feeds-inline-form">
     <input type="hidden" asp-for="Rbse" />
@@ -76,21 +32,6 @@
     }
 
     <fieldset class="bse-form-fieldset-reset" disabled="@(!canEditFeeds ? "disabled" : null)">
-
-    @if (canSaveFeeds)
-    {
-        @if (canEditFeeds)
-        {
-            <div id="case-feeds-unsaved-banner" class="govuk-inset-text bse-unsaved-banner" role="status" hidden="@(!Model.HasUnsavedChanges)">
-                <strong>You have unsaved changes.</strong> Select <strong>Save</strong> to keep them, or <strong>Cancel</strong> to discard them.
-            </div>
-        }
-
-        <div class="govuk-button-group govuk-!-margin-bottom-4">
-            <button type="submit" asp-page-handler="SaveFeeds" class="govuk-button" data-module="govuk-button">Save</button>
-            <button type="submit" asp-page-handler="CancelFeedsEdit" class="govuk-button govuk-button--secondary bse-cancel-button" data-module="govuk-button">Cancel</button>
-        </div>
-    }
 
     @* -- Existing feed records -------------------------------------------------- *@
     <table class="govuk-table">
@@ -120,7 +61,7 @@
                 </tr>
             }
 
-            @foreach (var f in Model.PagedFeeds)
+            @foreach (var f in Model.GetPagedFeeds())
             {
                 <tr class="govuk-table__row bse-feeds-row @(f.IsUnsaved ? "bse-feeds-row--unsaved" : "") @(Model.EditingClientKey == f.ClientKey ? "bse-feeds-row--selected" : "")">
                     <td class="govuk-table__cell">@f.YearFrom</td>
@@ -233,14 +174,23 @@
         </div>
     </div>
 
-    @if (viewDocsUrl is not null)
-    {
-        <div class="govuk-button-group govuk-!-margin-top-4">
-            <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" class="govuk-link">
-                View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
-            </a>
+    <div class="bse-case-bottom-row">
+        <div class="bse-case-bottom-row__right">
+            <div class="govuk-button-group bse-case-bottom-row__actions">
+                @if (viewDocsUrl is not null)
+                {
+                    <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">
+                        View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
+                    </a>
+                }
+                @if (canSaveFeeds)
+                {
+                    <button type="submit" asp-page-handler="SaveFeeds" class="govuk-button" data-module="govuk-button">Save</button>
+                }
+                <a asp-page="/Case/Feeds" asp-page-handler="CancelFeedsEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
+            </div>
         </div>
-    }
+    </div>
     </fieldset>
 </form>
 
@@ -252,8 +202,23 @@
         min-width: 0;
     }
 
-    .bse-unsaved-banner {
-        border-left-color: #1d70b8;
+    .bse-case-bottom-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .bse-case-bottom-row__right {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin: 0 0 0 auto;
+    }
+
+    .bse-case-bottom-row__actions {
+        margin: 0;
     }
 
     .bse-feeds-row--unsaved {
@@ -326,13 +291,28 @@
 
 <script>
     (function () {
-        document.querySelectorAll('.bse-cancel-button').forEach(function (b) {
-            b.addEventListener('click', function (e) {
-                var banner = document.getElementById('case-feeds-unsaved-banner');
-                var hasUnsaved = banner && !banner.hidden;
-                if (hasUnsaved && !window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
-                    e.preventDefault();
-                }
+        // Legacy's Cancel is a postback that captures the current form before checking for
+        // changes, so edits typed on this tab but never staged anywhere must count as unsaved too.
+        var cancelForm = document.getElementById('case-feeds-inline-form');
+        var formDirty = false;
+        if (cancelForm) {
+            cancelForm.addEventListener('input', function () { formDirty = true; });
+            cancelForm.addEventListener('change', function () { formDirty = true; });
+        }
+
+        // Was '.bse-cancel-button', which never matched the Cancel link's actual class
+        // ('.bse-cancel-link') — the confirm prompt never fired. Fixed as part of this pass.
+        document.querySelectorAll('.bse-cancel-link').forEach(function (lnk) {
+            lnk.addEventListener('click', function (e) {
+                e.preventDefault();
+                var hasUnsavedHere = formDirty || @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.HasUnsavedChanges));
+                // Legacy's dirty-check spans the whole shared session (every tab), not just this page.
+                (hasUnsavedHere ? Promise.resolve(true) : (window.hasUnsavedChangesAcrossTabs ? window.hasUnsavedChangesAcrossTabs() : Promise.resolve(false)))
+                    .then(function (hasUnsaved) {
+                        if (!hasUnsaved || window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+                            window.location.href = lnk.href;
+                        }
+                    });
             });
         });
     })();

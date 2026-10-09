@@ -54,7 +54,7 @@ public class CasesByHerdmarkModel : PageModel
     public async Task<IActionResult> OnGetExportAsync()
     {
         var results = await _search.GetCasesByEartagHerdmarkAsync((Herdmark ?? "").Trim(), IncludeNonGb);
-        return BuildExcel(results, "casebyherdmarksearchresults.xlsx");
+        return BuildExcel(ApplySorting(results.ToList()), "casebyherdmarksearchresults.xlsx");
     }
 
     private static FileContentResult BuildExcel(IEnumerable<CaseDetailSearchResult> rows, string filename)

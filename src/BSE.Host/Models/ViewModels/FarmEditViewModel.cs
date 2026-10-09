@@ -44,6 +44,11 @@ public class FarmEditViewModel
     public int? AuthorityID { get; set; }
     public int? AuthorityCountyID { get; set; }
 
+    /// <summary>Authoritative, stored non-GB flag (not re-derived from the CPHH prefix) — must match
+    /// what CaseEditOrchestrationService's mandatory-fields check uses, so the UI never locks/excludes
+    /// a field (e.g. ADNS Region) that the backend still requires.</summary>
+    public bool IsNonGBFarm { get; set; }
+
     public AddFarmCommand ToAddCommand() => new(
         CPHH, OwnerName, Address1, Address2, Address3, Postcode,
         Parish, District, County,
@@ -57,7 +62,42 @@ public class FarmEditViewModel
         CorrespondenceAddress1, CorrespondenceAddress2, CorrespondenceAddress3, CorrespondencePostcode,
         MapReference, Herdmark1, Herdmark2, Herdmark3, NumericHerdmark1, NumericHerdmark2,
         AHO, HerdType, PedigreeType, IsDealer, ADNSRegionID,
-        rowStamp);
+        rowStamp, AuthorityID, AuthorityCountyID);
+
+    /// <summary>Overlays a staged-but-not-yet-committed Farm edit (from another tab's
+    /// cross-tab draft) onto this view model, so revisiting the Farm tab shows pending
+    /// edits made elsewhere instead of silently reverting to the last-committed DB values.</summary>
+    public void ApplyStagedCommand(UpdateFarmCommand c)
+    {
+        CPHH = c.CPHH;
+        OwnerName = c.OwnerName;
+        Address1 = c.Address1;
+        Address2 = c.Address2;
+        Address3 = c.Address3;
+        Postcode = c.Postcode;
+        Parish = c.Parish;
+        District = c.District;
+        County = c.County;
+        CorrespondenceAddress1 = c.CorrespondenceAddress1;
+        CorrespondenceAddress2 = c.CorrespondenceAddress2;
+        CorrespondenceAddress3 = c.CorrespondenceAddress3;
+        CorrespondencePostcode = c.CorrespondencePostcode;
+        MapRef1 = c.MapReference?.Length >= 2 ? c.MapReference[..2]  : c.MapReference;
+        MapRef2 = c.MapReference?.Length >= 5 ? c.MapReference[2..5] : null;
+        MapRef3 = c.MapReference?.Length >= 8 ? c.MapReference[5..8] : null;
+        Herdmark1 = c.Herdmark1;
+        Herdmark2 = c.Herdmark2;
+        Herdmark3 = c.Herdmark3;
+        NumericHerdmark1 = c.NumericHerdmark1;
+        NumericHerdmark2 = c.NumericHerdmark2;
+        AHO = c.AHO;
+        HerdType = c.HerdType;
+        PedigreeType = c.PedigreeType;
+        IsDealer = c.IsDealer;
+        ADNSRegionID = c.ADNSRegionID;
+        AuthorityID = c.AuthorityID;
+        AuthorityCountyID = c.AuthorityCountyID;
+    }
 
     public static FarmEditViewModel FromRecord(FarmRecord r) => new()
     {
@@ -89,6 +129,7 @@ public class FarmEditViewModel
         IsDealer               = r.IsDealer,
         ADNSRegionID           = r.ADNSRegionID,
         AuthorityID            = r.AuthorityID,
-        AuthorityCountyID      = r.AuthorityCountyID
+        AuthorityCountyID      = r.AuthorityCountyID,
+        IsNonGBFarm            = r.IsNonGBFarm
     };
 }

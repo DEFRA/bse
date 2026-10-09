@@ -13,7 +13,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Configuration;
-using System.Text.RegularExpressions;
 
 namespace BSE.Host.Pages.Case;
 
@@ -203,16 +202,18 @@ public class DefraEditModel(
         {
             ModelState.AddModelError("Case.EartagCountry", "Enter an eartag.");
         }
+        else
+        {
+            // Mirrors BSELib.Eartag.GetEartag + .ErrorCode check from ThreePartEartag.Validate()
+            var eartagError = EartagValidator.Validate(Case.EartagCountry, Case.EartagHerdmark, Case.Eartag);
+            if (eartagError is not null)
+                ModelState.AddModelError("Case.EartagCountry", eartagError);
+        }
 
         if (!IsNonGbCase && !Case.FormADate.HasValue)
         {
             ModelState.AddModelError("Case.FormADate", "Enter a Form A date.");
         }
-
-        // Eartag: mirrors BSELib.Eartag.GetEartag + .ErrorCode check from ThreePartEartag.Validate()
-        var eartagError = ValidateEartagFormat(Case.EartagCountry, Case.EartagHerdmark, Case.Eartag);
-        if (eartagError is not null)
-            ModelState.AddModelError("Case.EartagCountry", eartagError);
 
         var today = DateTime.Today;
 
@@ -318,70 +319,4 @@ public class DefraEditModel(
         }
     }
 
-    // Mirrors BSELib.Eartag.GetEartag routing and each format's Validate() method.
-    private static string? ValidateEartagFormat(string? country, string? herdmark, string? animal)
-    {
-        var c = (country  ?? "").Trim().ToUpperInvariant();
-        var h = (herdmark ?? "").Trim().ToUpperInvariant();
-        var a = (animal   ?? "").Trim().ToUpperInvariant();
-
-        if (c == "" && h == "" && a == "") return null; // eartag is optional
-
-        // ISO EID format: country code longer than 2 chars (IsoNumericCountryEartagFormat / IsoAlphaNumericCountryEartagFormat)
-        if (c.Length > 2)
-        {
-            if (c.Length > 0 && char.IsDigit(c[0]))
-            {
-                if (!Regex.IsMatch(c, @"^\d{3}[012_ ]?$"))
-                    return "Country component is invalid: It should contain 3 numerical digits followed by 0, 1, 2, _ or space character.";
-            }
-            if (!Regex.IsMatch(h, @"^\d{6}$"))
-                return "Herd component is invalid: It should contain 6 numerical digits.";
-            if (!Regex.IsMatch(a, @"^\d{5}$"))
-                return "Animal component is invalid: It should contain 5 numerical digits.";
-            return null;
-        }
-
-        // UK electoral eartag (Format 9): 6-digit herd (2-digit electoral code + 4-digit herd number)
-        // + 9-char animal (8 digits + 1 alpha check from modulo-23 table) — ports legacy checkCheckDigitFormat9
-        if (c == "UK")
-        {
-            if (h.Length == 6 && h.All(char.IsDigit) &&
-                a.Length == 9 && a[..8].All(char.IsDigit) && char.IsLetter(a[8]))
-            {
-                if (!CheckDigitFormat9(h, a))
-                    return "Eartag check digit is invalid.";
-            }
-            return null;
-        }
-
-        // EC non-UK country codes: ECEartagFormat.Validate checks animal is 1–12 uppercase alphanumeric chars
-        string[] ecCodes = ["AT", "BE", "DE", "DK", "EL", "ES", "FI", "FR", "IE", "IT", "LU", "NL", "PT", "SE"];
-        if (ecCodes.Contains(c))
-        {
-            if (!Regex.IsMatch(a, @"^[0-9A-Z]{1,12}$"))
-                return "Animal component is invalid: It should contain 1 to 12 numerical or uppercase alphabetical characters.";
-            return null;
-        }
-
-        // Unknown / no country (NoCountryEartag): FreeEartagFormat / PreBarimoEartagFormat return empty — no blocking error
-        return null;
-    }
-
-    // Ports BSELib.EartagValidation.checkCheckDigitFormat9: modulo-23 alpha check for UK electoral eartags.
-    private static bool CheckDigitFormat9(string herd, string animal)
-    {
-        var electoralId = herd[..2];
-        var herdNum     = herd[2..].PadLeft(4, '0');
-        var animalNum   = animal[..^1];
-
-        if (!long.TryParse(electoralId + herdNum, out long electoralHerd) ||
-            !long.TryParse(animalNum,             out long animalPart))
-            return true; // non-numeric — cannot verify, pass through
-
-        var check    = electoralHerd * 10000 + animalPart;
-        var mod      = (int)(check % 23);
-        var alphabet = "ABCDEFHIKLMNOPRSTUVWXYZ"; // 23 chars — no G, J, Q (mirrors legacy Split array)
-        return mod < alphabet.Length && animal[^1] == alphabet[mod];
-    }
 }

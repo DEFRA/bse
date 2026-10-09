@@ -73,7 +73,10 @@ public interface IPedigreeRepository
 {
     Task<DamSireDetailRecord?> GetDamByRbseAsync(string rbse);
     Task<DamSireDetailRecord?> GetSireByRbseAsync(string rbse);
-    Task AddEditDamSireAsync(AddEditDamSireCommand command, IDbConnection connection, IDbTransaction transaction);
+    /// <summary>Returns null on success, or a legacy-parity warning message if the
+    /// AddEditDamSireDetails SP reports the dam, sire, or case pedigree row couldn't be updated
+    /// (RowStamp mismatch) — soft/non-fatal, matching legacy's <c>UpdateDamSireRecords</c> exactly.</summary>
+    Task<string?> AddEditDamSireAsync(AddEditDamSireCommand command, IDbConnection connection, IDbTransaction transaction);
 }
 
 public sealed class PedigreeRepository : DapperRepository, IPedigreeRepository
@@ -86,7 +89,7 @@ public sealed class PedigreeRepository : DapperRepository, IPedigreeRepository
     public Task<DamSireDetailRecord?> GetSireByRbseAsync(string rbse)
         => QuerySingleOrDefaultAsync<DamSireDetailRecord>("GetSireDetailsByRBSE", new { RBSE = rbse });
 
-    public async Task AddEditDamSireAsync(AddEditDamSireCommand c, IDbConnection conn, IDbTransaction tx)
+    public async Task<string?> AddEditDamSireAsync(AddEditDamSireCommand c, IDbConnection conn, IDbTransaction tx)
     {
         var p = new DynamicParameters(new
         {
@@ -105,13 +108,16 @@ public sealed class PedigreeRepository : DapperRepository, IPedigreeRepository
 
         await ExecuteAsync("AddEditDamSireDetails", p, conn, tx);
 
-        // SP returns 1/2/3 (dam/sire/case pedigree) when the update affected 0 rows — almost
-        // always a stale RowStamp. Dapper's ExecuteAsync never surfaces this on its own.
-        var returnCode = p.Get<int>("ReturnValue");
-        if (returnCode != 0)
+        // Legacy parity: clsCase.UpdateDamSireRecords treats every one of these codes as
+        // soft/non-fatal (objErrorList.Add), never rolling back the rest of the save.
+        return (int)p.Get<int>("ReturnValue") switch
         {
-            throw new InvalidOperationException(
-                $"AddEditDamSireDetails returned code {returnCode} — the dam, sire or case pedigree record was changed by someone else.");
-        }
+            0 => null,
+            1 => "Failed to create or update a dam record.  The record may have been changed by another user",
+            2 => "Failed to create or update a sire record.  The record may have been changed by another user",
+            3 => "Failed to create a pedigree record for the case.",
+            4 => "Failed to update the case's pedigree record with pointers to the dam and sire information.  The record may have been changed by another user.",
+            var code => $"AddEditDamSireDetails returned unexpected code {code}."
+        };
     }
 }

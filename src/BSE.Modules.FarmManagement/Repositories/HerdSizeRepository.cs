@@ -1,3 +1,4 @@
+using System.Data;
 using BSE.Infrastructure;
 using BSE.Modules.FarmManagement.Models;
 
@@ -18,45 +19,58 @@ public sealed class HerdSizeRepository : DapperRepository, IHerdSizeRepository
     public Task<IEnumerable<HerdDetailRecord>> GetByBatchIdAsync(int batchId)
         => QueryAsync<HerdDetailRecord>("GetHerdDetailByBatchID", new { BatchID = batchId });
 
-    public Task AddAsync(AddHerdSizeCommand c)
-        => ExecuteAsync("AddHerdSize", new
-        {
-            c.CPHH,
-            c.HerdYear,
-            c.TotalSize,
-            c.Lactation1Size,
-            c.Lactation2Size,
-            c.Lactation3Size,
-            c.Lactation4Size,
-            c.Lactation5Size,
-            c.Lactation6Size,
-            c.Lactation7Size,
-            c.Lactation8Size,
-            c.Lactation9Size,
-            c.Lactation10Size,
-            c.Lactation10PlusSize
-        });
+    public Task AddAsync(AddHerdSizeCommand command)
+        => ExecuteAsync("AddHerdSize", BuildAddParams(command));
 
-    public Task UpdateAsync(UpdateHerdSizeCommand c)
-        => ExecuteAsync("EditHerdSize", new
-        {
-            c.ID,
-            c.HerdYear,
-            c.TotalSize,
-            c.Lactation1Size,
-            c.Lactation2Size,
-            c.Lactation3Size,
-            c.Lactation4Size,
-            c.Lactation5Size,
-            c.Lactation6Size,
-            c.Lactation7Size,
-            c.Lactation8Size,
-            c.Lactation9Size,
-            c.Lactation10Size,
-            c.Lactation10PlusSize,
-            c.RowStamp
-        });
+    public Task AddAsync(AddHerdSizeCommand command, IDbConnection connection, IDbTransaction transaction)
+        => ExecuteAsync("AddHerdSize", BuildAddParams(command), connection, transaction);
+
+    public Task UpdateAsync(UpdateHerdSizeCommand command)
+        => ExecuteAsync("EditHerdSize", BuildUpdateParams(command));
+
+    public Task UpdateAsync(UpdateHerdSizeCommand command, IDbConnection connection, IDbTransaction transaction)
+        => ExecuteAsync("EditHerdSize", BuildUpdateParams(command), connection, transaction);
 
     public Task DeleteAsync(int id, byte[] rowStamp)
         => ExecuteAsync("DeleteHerdSize", new { ID = id, RowStamp = rowStamp });
+
+    public Task DeleteAsync(int id, byte[] rowStamp, IDbConnection connection, IDbTransaction transaction)
+        => ExecuteAsync("DeleteHerdSize", new { ID = id, RowStamp = rowStamp }, connection, transaction);
+
+    private static object BuildAddParams(AddHerdSizeCommand command) => new
+    {
+        command.CPHH,
+        command.HerdYear,
+        command.TotalSize,
+        command.Lactation1Size,
+        command.Lactation2Size,
+        command.Lactation3Size,
+        command.Lactation4Size,
+        command.Lactation5Size,
+        command.Lactation6Size,
+        command.Lactation7Size,
+        command.Lactation8Size,
+        command.Lactation9Size,
+        command.Lactation10Size,
+        command.Lactation10PlusSize
+    };
+
+    private static object BuildUpdateParams(UpdateHerdSizeCommand command) => new
+    {
+        command.ID,
+        command.HerdYear,
+        command.TotalSize,
+        command.Lactation1Size,
+        command.Lactation2Size,
+        command.Lactation3Size,
+        command.Lactation4Size,
+        command.Lactation5Size,
+        command.Lactation6Size,
+        command.Lactation7Size,
+        command.Lactation8Size,
+        command.Lactation9Size,
+        command.Lactation10Size,
+        command.Lactation10PlusSize,
+        command.RowStamp
+    };
 }

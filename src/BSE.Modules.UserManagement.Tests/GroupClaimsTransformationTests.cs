@@ -1,9 +1,11 @@
+using System.Runtime.Serialization;
 using System.Security.Claims;
 using BSE.Modules.UserManagement.Identity;
 using BSE.Modules.UserManagement.Models;
 using BSE.Modules.UserManagement.Repositories;
 using BSE.SharedKernel;
 using FluentAssertions;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Xunit;
@@ -12,6 +14,19 @@ namespace BSE.Modules.UserManagement.Tests;
 
 public sealed class GroupClaimsTransformationTests
 {
+    private static readonly string[] DataEntryExpectedRoles = { "ReadOnly", "DataEntry", "FarmCreation", "DEFRAAccess" };
+    private static readonly string[] ReadOnlyExpectedRoles = { "ReadOnly", "DEFRAAccess" };
+    private static readonly string[] VlaMaintenanceExpectedRoles =
+    {
+        "ReadOnly",
+        "DataEntry",
+        "DEFRAMaintenance",
+        "VLAAccess",
+        "VLAMaintenance",
+        "PickListAccess",
+        "FarmCreation"
+    };
+
     private readonly IUserRepository _repo = Substitute.For<IUserRepository>();
     private readonly ILogger<GroupClaimsTransformation> _logger = Substitute.For<ILogger<GroupClaimsTransformation>>();
     private readonly GroupClaimsTransformation _sut;
@@ -168,5 +183,123 @@ public sealed class GroupClaimsTransformationTests
               .Should().Be(GroupDisplayName(group));
         result.FindFirst(ClaimsUserContext.BseGroupIdClaimType)!.Value
               .Should().Be(((int)group).ToString());
+    }
+
+    [Fact]
+    public async Task TransformAsync_WhenEmailAddressClaimIsPresent_UsesCanonicalEmailClaimAndReplacesExistingRoles()
+    {
+        const string upn = "email.claim@domain.com";
+        var user = new User(7, "ntlogin", upn, "Email User", upn, true, (int)UserGroup.DataEntry, UserGroup.DataEntry, "DEFRA Data Entry");
+        _repo.GetByEmailAsync(upn).Returns(user);
+
+        var principal = AuthenticatedPrincipal(
+            new Claim(ClaimsUserContext.EmailClaimType, upn),
+            new Claim(ClaimTypes.Role, "LegacyRole"),
+            new Claim(ClaimTypes.Name, "Legacy Name"));
+
+        var result = await _sut.TransformAsync(principal);
+
+        await _repo.Received(1).GetByEmailAsync(upn);
+        result.FindFirst(ClaimTypes.Name)!.Value.Should().Be(user.UserName);
+        result.FindFirst(ClaimsUserContext.BseGroupClaimType)!.Value.Should().Be("DEFRA Data Entry");
+        result.FindFirst(ClaimsUserContext.BseGroupIdClaimType)!.Value.Should().Be(((int)UserGroup.DataEntry).ToString());
+        result.FindAll(ClaimTypes.Role).Select(c => c.Value)
+              .Should().BeEquivalentTo(DataEntryExpectedRoles);
+        result.HasClaim(c => c.Type == ClaimTypes.Role && c.Value == "LegacyRole").Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task TransformAsync_WhenPrincipalContainsStaleAuthoritativeClaims_OverwritesThemWithDatabaseValues()
+    {
+        const string upn = "replace@domain.com";
+        var user = MakeUser(UserGroup.ReadOnly);
+        _repo.GetByEmailAsync(upn).Returns(user);
+
+        var principal = AuthenticatedPrincipal(
+            new Claim(ClaimsUserContext.EmailClaimType, upn),
+            new Claim(ClaimTypes.Name, "Upstream name"),
+            new Claim(ClaimTypes.Role, "UpstreamRole"),
+            new Claim(ClaimsUserContext.BseGroupClaimType, "WrongGroup"),
+            new Claim(ClaimsUserContext.BseGroupIdClaimType, "999"));
+
+        // This scenario is intentionally crafted without the short-circuit guard being present,
+        // because the production code returns early as soon as an authoritative group id exists.
+        var principalWithoutGuard = AuthenticatedPrincipal(
+            new Claim(ClaimsUserContext.EmailClaimType, upn),
+            new Claim(ClaimTypes.Name, "Upstream name"),
+            new Claim(ClaimTypes.Role, "UpstreamRole"),
+            new Claim(ClaimsUserContext.BseGroupClaimType, "WrongGroup"));
+
+        var result = await _sut.TransformAsync(principalWithoutGuard);
+
+        result.FindFirst(ClaimTypes.Name)!.Value.Should().Be(user.UserName);
+        result.FindFirst(ClaimsUserContext.BseGroupClaimType)!.Value.Should().Be("DEFRA Viewer");
+        result.FindFirst(ClaimsUserContext.BseGroupIdClaimType)!.Value.Should().Be(((int)UserGroup.ReadOnly).ToString());
+        result.FindAll(ClaimTypes.Role).Select(c => c.Value)
+              .Should().BeEquivalentTo(ReadOnlyExpectedRoles);
+    }
+
+    [Fact]
+    public async Task TransformAsync_WhenUserGroupNameIsNull_EmitsEmptyGroupValueAndNoPolicyClaims()
+    {
+        const string upn = "nullgroup@domain.com";
+        var user = new User(12, "ntlogin", upn, "No Group User", upn, true, (int)UserGroup.ReadOnly, UserGroup.ReadOnly, GroupName: null);
+        _repo.GetByEmailAsync(upn).Returns(user);
+
+        var principal = AuthenticatedPrincipal(new Claim(ClaimsUserContext.EmailClaimType, upn));
+
+        var result = await _sut.TransformAsync(principal);
+
+        result.FindFirst(ClaimsUserContext.BseGroupClaimType)!.Value.Should().BeEmpty();
+        result.FindFirst(ClaimsUserContext.BseGroupIdClaimType)!.Value.Should().Be(((int)UserGroup.ReadOnly).ToString());
+        result.FindAll(ClaimTypes.Role).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task TransformAsync_WhenGroupNameIsUnknown_LeavesRoleClaimSetEmpty()
+    {
+        const string upn = "unknown.group@domain.com";
+        var user = new User(13, "ntlogin", upn, "Unknown Group User", upn, true, (int)UserGroup.None, UserGroup.None, "Not a real group");
+        _repo.GetByEmailAsync(upn).Returns(user);
+
+        var principal = AuthenticatedPrincipal(new Claim(ClaimsUserContext.EmailClaimType, upn));
+
+        var result = await _sut.TransformAsync(principal);
+
+        result.FindFirst(ClaimsUserContext.BseGroupClaimType)!.Value.Should().Be("Not a real group");
+        result.FindAll(ClaimTypes.Role).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task TransformAsync_WhenGroupNameMapsToVlaMaintenance_EmitsExpectedPolicyClaims()
+    {
+        const string upn = "vla.maint@domain.com";
+        var user = new User(99, "ntlogin", upn, "VLA Maintenance User", upn, true, 99, UserGroup.None, "VLA Maintenance");
+        _repo.GetByEmailAsync(upn).Returns(user);
+
+        var principal = AuthenticatedPrincipal(new Claim(ClaimsUserContext.EmailClaimType, upn));
+
+        var result = await _sut.TransformAsync(principal);
+
+        result.FindAll(ClaimTypes.Role).Select(c => c.Value)
+              .Should().BeEquivalentTo(VlaMaintenanceExpectedRoles);
+    }
+
+    [Fact]
+    public async Task TransformAsync_WhenSqlExceptionOccurs_ReturnsOriginalPrincipalAndDoesNotThrow()
+    {
+        const string upn = "sql.fail@domain.com";
+#pragma warning disable SYSLIB0050
+        var sqlException = (SqlException)FormatterServices.GetUninitializedObject(typeof(SqlException));
+#pragma warning restore SYSLIB0050
+        _repo.GetByEmailAsync(upn).Returns(Task.FromException<User?>(sqlException));
+
+        var principal = AuthenticatedPrincipal(new Claim(ClaimsUserContext.EmailClaimType, upn));
+
+        var result = await _sut.TransformAsync(principal);
+
+        result.Should().BeSameAs(principal);
+        await _repo.Received(1).GetByEmailAsync(upn);
+        _logger.ReceivedCalls().Should().Contain(call => call.GetMethodInfo().Name == nameof(ILogger.Log));
     }
 }

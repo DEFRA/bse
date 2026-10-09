@@ -4,6 +4,7 @@ using BSE.Infrastructure;
 using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Repositories;
 using BSE.Modules.CaseManagement.Commands;
+using BSE.Modules.CaseManagement.Enums;
 using BSE.Modules.CaseManagement.Models;
 using BSE.Modules.CaseManagement.Repositories;
 using BSE.Modules.CaseManagement.Services;
@@ -32,7 +33,9 @@ public class FeedsModel(
     ILookupRepository lookupRepository,
     IBatchRepository batchRepository,
     ICaseFeedsDraftStateService feedsDraftState,
-    IDbConnectionFactory connectionFactory,
+    ICaseScalarDraftStateService caseScalarDraftState,
+    ICaseEditOrchestrationService caseEditOrchestration,
+    ICurrentUserService currentUser,
     IConfiguration configuration) : PageModel
 {
     private List<CaseFeedRecord> _persistedFeeds = [];
@@ -53,8 +56,8 @@ public class FeedsModel(
     public const int PageSize = 10;
     public int TotalPages => Math.Max(1, (int)Math.Ceiling(Feeds.Count / (double)PageSize));
     public int CurrentPage => Math.Clamp(PageNumber, 1, TotalPages);
-    public IReadOnlyList<StagedFeedItem> PagedFeeds =>
-        Feeds.Skip((CurrentPage - 1) * PageSize).Take(PageSize).ToList();
+    public IReadOnlyList<StagedFeedItem> GetPagedFeeds() =>
+        [.. Feeds.Skip((CurrentPage - 1) * PageSize).Take(PageSize)];
     public IEnumerable<LookupItem> RationTypes { get; private set; } = [];
     public string SpolSiteUrl { get; private set; } = string.Empty;
     public IReadOnlyList<BatchNumberEntry> BatchNumbers { get; private set; } = [];
@@ -82,10 +85,16 @@ public class FeedsModel(
 
     public async Task<IActionResult> OnGetAsync()
     {
+        // Legacy parity: CaseEntryFeeds.aspx.vb's Page_Load redirects to SessionError.aspx when
+        // Session(SV_RBSENumber) is missing (session timeout, direct URL access, stale back-button).
+        if (string.IsNullOrWhiteSpace(Rbse))
+            return RedirectToPage("/SessionError");
+
         Rbse = RbseHelper.ParseToRaw(Rbse);
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadAsync();
         await LoadOrInitializeDraftStateAsync();
+        RestorePostedPanelState();
 
         if (ResetSupplier)
         {
@@ -133,7 +142,9 @@ public class FeedsModel(
         var draft = await LoadOrInitializeDraftStateAsync();
 
         var caseRecord = await caseService.GetCaseAsync(RbseHelper.ParseToRaw(Rbse));
-        FieldErrors = FeedValidation.Validate(new FeedValidation.Input(YearFrom, YearTo, RationType, SupplierId), caseRecord);
+        var stagedCase = (await caseScalarDraftState.GetAsync(Rbse))?.Case;
+        var effectiveBirthDate = stagedCase is not null ? stagedCase.BirthDate : caseRecord?.BirthDate;
+        FieldErrors = FeedValidation.Validate(new FeedValidation.Input(YearFrom, YearTo, RationType, SupplierId), effectiveBirthDate);
 
         if (FieldErrors.Count > 0)
             return Page();
@@ -152,7 +163,7 @@ public class FeedsModel(
             SupplierName = SupplierName,
             RowStampBase64 = string.Empty
         });
-        draft.HasPendingChanges = true;
+        draft.HasPendingChanges = IsFeedsDraftDirty(draft.Feeds);
         await feedsDraftState.SetAsync(draft);
 
         return RedirectToPage(new { rbse = Rbse });
@@ -224,7 +235,9 @@ public class FeedsModel(
         }
 
         var caseRecord = await caseService.GetCaseAsync(RbseHelper.ParseToRaw(Rbse));
-        FieldErrors = FeedValidation.Validate(new FeedValidation.Input(YearFrom, YearTo, RationType, SupplierId), caseRecord);
+        var stagedCase = (await caseScalarDraftState.GetAsync(Rbse))?.Case;
+        var effectiveBirthDate = stagedCase is not null ? stagedCase.BirthDate : caseRecord?.BirthDate;
+        FieldErrors = FeedValidation.Validate(new FeedValidation.Input(YearFrom, YearTo, RationType, SupplierId), effectiveBirthDate);
 
         if (FieldErrors.Count > 0)
         {
@@ -240,7 +253,7 @@ public class FeedsModel(
         item.IsPrePurchase = IsPrePurchase;
         item.SupplierId = SupplierId;
         item.SupplierName = SupplierName;
-        draft.HasPendingChanges = true;
+        draft.HasPendingChanges = IsFeedsDraftDirty(draft.Feeds);
         await feedsDraftState.SetAsync(draft);
 
         return RedirectToPage(new { rbse = Rbse });
@@ -253,6 +266,7 @@ public class FeedsModel(
             return Forbid();
 
         Rbse = RbseHelper.ParseToRaw(Rbse);
+        StashPostedPanelState();
 
         await LoadAsync();
         var draft = await LoadOrInitializeDraftStateAsync();
@@ -261,7 +275,7 @@ public class FeedsModel(
         if (item is not null)
         {
             draft.Feeds.Remove(item);
-            draft.HasPendingChanges = true;
+            draft.HasPendingChanges = IsFeedsDraftDirty(draft.Feeds);
             await feedsDraftState.SetAsync(draft);
         }
 
@@ -276,29 +290,40 @@ public class FeedsModel(
 
         Rbse = RbseHelper.ParseToRaw(Rbse);
 
-        var caseRecord = await caseService.GetCaseAsync(Rbse);
-        if (caseRecord is null)
-        {
-            TempData["Warning"] = $"Case '{Rbse}' is not saved yet. Complete Farm first.";
-            return RedirectToPage(new { rbse = Rbse });
-        }
-
         await LoadAsync();
         await LoadOrInitializeDraftStateAsync();
 
-        await PersistStagedFeedsAsync();
-        await feedsDraftState.ClearAsync(Rbse);
+        // Cross-tab commit (restores legacy's "one session, one commit" model): the staged feed
+        // rows are committed together with whatever else is staged for this RBSE (Case/Farm/Bab/
+        // Clinical), not in isolation, so Save from any tab commits everything together.
+        var userId = await currentUser.GetUserIdAsync();
+        var (failureRedirect, commitOutcome) = await CaseCommitHelper.CommitAllAsync(
+            this, caseEditOrchestration, Rbse, userId,
+            result => $"Unable to save feed records: {result}.");
+        if (failureRedirect is not null)
+            return failureRedirect;
 
-        TempData["Success"] = "Feed records saved.";
-        return RedirectToPage(new { rbse = Rbse });
+        if (CaseCommitHelper.TryStageWarnings(this, commitOutcome!, Rbse) is { } warningRedirect)
+            return warningRedirect;
+
+        // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx on a fully successful
+        // save, clearing the session case state — not back to the tab the user was on.
+        return RedirectToPage("/Home");
     }
 
     /// <summary>Discards all staged feed changes without persisting them.</summary>
-    public async Task<IActionResult> OnPostCancelFeedsEditAsync()
+    public async Task<IActionResult> OnPostCancelFeedsEditAsync() => await CancelFeedsEditAsync();
+
+    // The Cancel button is a plain <a> (GET navigation), not a form submit — without this handler
+    // Razor Pages has no matching action for the request and the link silently fails to redirect.
+    public async Task<IActionResult> OnGetCancelFeedsEditAsync() => await CancelFeedsEditAsync();
+
+    private async Task<IActionResult> CancelFeedsEditAsync()
     {
         Rbse = RbseHelper.ParseToRaw(Rbse);
         await feedsDraftState.ClearAsync(Rbse);
-        return RedirectToPage(new { rbse = Rbse });
+        await caseScalarDraftState.ClearAsync(Rbse);
+        return RedirectToPage("/Home");
     }
 
     public async Task<IActionResult> OnPostValidateSupplierNavigateAsync()
@@ -307,6 +332,7 @@ public class FeedsModel(
             return Forbid();
 
         Rbse = RbseHelper.ParseToRaw(Rbse);
+        StashPostedPanelState();
         var postedLookupName = Request.Form[nameof(SupplierLookupName)].ToString();
         var supplierName = (SupplierLookupName ?? postedLookupName ?? SupplierName ?? string.Empty).Trim();
 
@@ -326,6 +352,77 @@ public class FeedsModel(
         BatchNumbers = (await batchTask).ToList().AsReadOnly();
         RationTypes = await rtTask;
     }
+
+    private string PanelStateTempDataKey => $"FeedsPanelState_{RbseHelper.ParseToRaw(Rbse)}";
+
+    /// <summary>Compares the staged feed list against what's persisted, so opening/closing the
+    /// edit panel, a net-zero add+delete, or an Update that didn't actually change any field
+    /// never trips the cross-tab unsaved-changes exit warning.</summary>
+    private bool IsFeedsDraftDirty(List<CaseFeedsDraftItem> stagedFeeds)
+    {
+        if (stagedFeeds.Count != _persistedFeeds.Count)
+            return true;
+
+        var persistedById = _persistedFeeds.ToDictionary(f => f.Id);
+        foreach (var staged in stagedFeeds)
+        {
+            if (staged.Id is null or <= 0)
+                return true;
+
+            if (!persistedById.TryGetValue(staged.Id.Value, out var persisted))
+                return true;
+
+            if (staged.YearFrom != persisted.YearFrom
+                || staged.YearTo != persisted.YearTo
+                || !string.Equals(staged.RationType, persisted.RationType, StringComparison.Ordinal)
+                || !string.Equals(staged.RationName, persisted.RationName, StringComparison.Ordinal)
+                || staged.IsPrePurchase != persisted.IsPrePurchase
+                || staged.SupplierId != persisted.SupplierId)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>Stashes the shared add/edit panel's posted-but-not-yet-committed values into
+    /// TempData before a row operation (e.g. Delete) reloads and redirects — otherwise an
+    /// in-progress selection for a not-yet-added/updated row is silently discarded, since none
+    /// of these fields round-trip through the GET that follows the redirect.</summary>
+    private void StashPostedPanelState()
+    {
+        var panel = new FeedsPanelState(
+            EditingClientKey, EditingFeedId, YearFrom, YearTo, RationType, RationName,
+            IsPrePurchase, SupplierId, SupplierName);
+        TempData[PanelStateTempDataKey] = System.Text.Json.JsonSerializer.Serialize(panel);
+    }
+
+    /// <summary>Restores whatever OnPostDeleteFeedRowAsync (or similar) stashed, so the follow-up
+    /// GET redisplays the panel exactly as the user left it rather than blank.</summary>
+    private void RestorePostedPanelState()
+    {
+        if (TempData[PanelStateTempDataKey] is not string json)
+            return;
+
+        var panel = System.Text.Json.JsonSerializer.Deserialize<FeedsPanelState>(json);
+        if (panel is null)
+            return;
+
+        EditingClientKey = panel.EditingClientKey;
+        EditingFeedId = panel.EditingFeedId;
+        YearFrom = panel.YearFrom;
+        YearTo = panel.YearTo;
+        RationType = panel.RationType;
+        RationName = panel.RationName;
+        IsPrePurchase = panel.IsPrePurchase;
+        SupplierId = panel.SupplierId;
+        SupplierName = panel.SupplierName;
+    }
+
+    private sealed record FeedsPanelState(
+        string? EditingClientKey, int? EditingFeedId, short? YearFrom, short? YearTo,
+        string? RationType, string? RationName, bool IsPrePurchase, int? SupplierId, string? SupplierName);
 
     private async Task<CaseFeedsDraftState> LoadOrInitializeDraftStateAsync()
     {
@@ -391,59 +488,6 @@ public class FeedsModel(
             _                   => q.OrderBy(f => f.YearFrom).ThenBy(f => f.YearTo)
         };
         return q.ToList().AsReadOnly();
-    }
-
-    private async Task PersistStagedFeedsAsync()
-    {
-        var rbse = RbseHelper.ParseToRaw(Rbse);
-        var persistedById = _persistedFeeds.ToDictionary(f => f.Id);
-        var stagedByExistingId = Feeds.Where(f => f.Id is > 0).ToDictionary(f => f.Id!.Value);
-
-        using var conn = connectionFactory.CreateConnection();
-        conn.Open();
-        using var tx = conn.BeginTransaction();
-
-        foreach (var removed in _persistedFeeds.Where(f => !stagedByExistingId.ContainsKey(f.Id)))
-        {
-            if (removed.RowStamp is null)
-                continue;
-
-            await feedRepository.DeleteAsync(removed.Id, removed.RowStamp, conn, tx);
-        }
-
-        foreach (var staged in Feeds)
-        {
-            if (staged.Id is null or <= 0)
-            {
-                await feedRepository.AddAsync(new AddFeedCommand(
-                    rbse, staged.YearFrom, staged.YearTo, staged.RationType!,
-                    staged.SupplierId, staged.RationName, staged.IsPrePurchase), conn, tx);
-                continue;
-            }
-
-            if (!persistedById.TryGetValue(staged.Id.Value, out var persisted))
-                continue;
-
-            var changed = persisted.YearFrom != staged.YearFrom
-                          || persisted.YearTo != staged.YearTo
-                          || !string.Equals(persisted.RationType, staged.RationType, StringComparison.OrdinalIgnoreCase)
-                          || !string.Equals(persisted.RationName ?? "", staged.RationName ?? "", StringComparison.OrdinalIgnoreCase)
-                          || persisted.IsPrePurchase != staged.IsPrePurchase
-                          || persisted.SupplierId != staged.SupplierId;
-
-            if (!changed)
-                continue;
-
-            var rowStamp = string.IsNullOrWhiteSpace(staged.RowStampBase64)
-                ? persisted.RowStamp ?? []
-                : Convert.FromBase64String(staged.RowStampBase64);
-
-            await feedRepository.EditAsync(new EditFeedCommand(
-                staged.Id.Value, staged.YearFrom, staged.YearTo, staged.RationType!,
-                staged.SupplierId, staged.RationName, staged.IsPrePurchase, rowStamp), conn, tx);
-        }
-
-        tx.Commit();
     }
 
     public sealed class StagedFeedItem

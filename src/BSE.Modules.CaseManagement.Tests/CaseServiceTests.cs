@@ -313,8 +313,10 @@ public sealed class CaseServiceTests
         var cmd = new EditCaseDetailsCommand(editCmd, clinical, Bab: null, DamSire: null);
         _caseRepo.EditCaseAsync(editCmd, 1, _connection, _transaction)
                  .Returns(EditCaseResult.Success);
+        Func<NSubstitute.Core.CallInfo, string?> throwSimulatedFailure =
+            _ => throw new InvalidOperationException("simulated failure");
         _clinicalRepo.EditAsync(clinical, _connection, _transaction)
-                     .Returns(Task.FromException(new InvalidOperationException("simulated failure")));
+                     .Returns(throwSimulatedFailure);
 
         var act = async () => await _sut.EditCaseAsync(cmd, 1);
 

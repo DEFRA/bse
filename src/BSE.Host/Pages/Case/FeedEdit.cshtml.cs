@@ -68,7 +68,7 @@ public class FeedEditModel(
 
         FieldErrors = FeedValidation.Validate(
             new FeedValidation.Input(Feed.YearFrom, Feed.YearTo, Feed.RationType, Feed.SupplierId),
-            caseRecord);
+            caseRecord?.BirthDate);
 
         if (FieldErrors.Count > 0)
             return Page();

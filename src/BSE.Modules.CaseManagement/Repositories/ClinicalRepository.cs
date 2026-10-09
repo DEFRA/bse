@@ -11,7 +11,11 @@ public interface IClinicalRepository
     Task<CaseClinicalRecord?> GetByRbseAsync(string rbse);
     Task<IReadOnlyList<ClinicalVisitRecord>> GetVisitsByRbseAsync(string rbse);
     Task AddAsync(AddCaseClinicalCommand command, IDbConnection connection, IDbTransaction transaction);
-    Task EditAsync(EditCaseClinicalCommand command, IDbConnection connection, IDbTransaction transaction);
+    /// <summary>Returns null on success, or a legacy-parity warning message if the EditCaseClinical SP
+    /// reports the row couldn't be updated — legacy wraps this whole update in a blanket try/catch and
+    /// always treats failures here as soft/non-fatal, so this method never throws for an SP-level
+    /// failure.</summary>
+    Task<string?> EditAsync(EditCaseClinicalCommand command, IDbConnection connection, IDbTransaction transaction);
     Task AddVisitAsync(AddClinicalVisitCommand command, IDbConnection connection, IDbTransaction transaction);
     Task EditVisitAsync(EditClinicalVisitCommand command, IDbConnection connection, IDbTransaction transaction);
     Task DeleteVisitAsync(int id, byte[] rowStamp, IDbConnection connection, IDbTransaction transaction);
@@ -30,11 +34,28 @@ public sealed class ClinicalRepository : DapperRepository, IClinicalRepository
     public Task AddAsync(AddCaseClinicalCommand c, IDbConnection conn, IDbTransaction tx)
         => ExecuteAsync("AddCaseClinical", BuildClinicalParams(c.Rbse, c), conn, tx);
 
-    public Task EditAsync(EditCaseClinicalCommand c, IDbConnection conn, IDbTransaction tx)
+    public async Task<string?> EditAsync(EditCaseClinicalCommand c, IDbConnection conn, IDbTransaction tx)
     {
-        var p = new DynamicParameters(BuildClinicalParams(c.Rbse, c));
-        p.Add("@RowStamp", c.RowStamp, DbType.Binary);
-        return ExecuteAsync("EditCaseClinical", p, conn, tx);
+        try
+        {
+            var p = new DynamicParameters(BuildClinicalParams(c.Rbse, c));
+            p.Add("@RowStamp", c.RowStamp, DbType.Binary);
+            p.Add("RETURN_VALUE", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+            await ExecuteWithOutputAsync("EditCaseClinical", p, conn, tx);
+            return (int)p.Get<int>("RETURN_VALUE") switch
+            {
+                0 => null,
+                1 => "Failed to update the Clinical table.  The data may have been changed by another user.",
+                2 => "Failed to update the Clinical table.",
+                var code => $"Failed to update the Clinical table (code {code})."
+            };
+        }
+        catch (Exception ex)
+        {
+            // Legacy parity: clsCase.UpdateClinicalRecord wraps the whole update in a try/catch and
+            // treats any failure here as soft/non-fatal — never rolls back the rest of the save.
+            return ex.Message;
+        }
     }
 
     public Task AddVisitAsync(AddClinicalVisitCommand c, IDbConnection conn, IDbTransaction tx)

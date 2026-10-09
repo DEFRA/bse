@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.AuditLog;
 
-[Authorize(Policy = "Authenticated")]
+[Authorize(Policy = "AuditAccess")]
 public class ByFarmModel(IAuditLogService auditLogService) : PageModel
 {
     private const int PageSize = 10;
@@ -78,7 +78,7 @@ public class ByFarmModel(IAuditLogService auditLogService) : PageModel
         }
 
         var row = 2;
-        foreach (var e in entries)
+        foreach (var e in ApplySorting(entries))
         {
             ws.Cell(row, 1).Value = e.TableName;
             ws.Cell(row, 2).Value = e.FieldName;

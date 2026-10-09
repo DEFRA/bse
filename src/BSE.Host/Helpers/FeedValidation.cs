@@ -1,5 +1,3 @@
-using BSE.Modules.CaseManagement.Models;
-
 namespace BSE.Host.Helpers;
 
 /// <summary>
@@ -18,7 +16,7 @@ public static class FeedValidation
     public sealed record Input(short? YearFrom, short? YearTo, string? RationType, int? SupplierId);
 
     /// <summary>Returns field-keyed messages; an empty dictionary means the record is valid.</summary>
-    public static IDictionary<string, string> Validate(Input input, CaseRecord? caseRecord)
+    public static IDictionary<string, string> Validate(Input input, DateTime? birthDate)
     {
         var errors = new Dictionary<string, string>();
 
@@ -26,7 +24,7 @@ public static class FeedValidation
         {
             errors["YearFrom"] = YearFromEmpty;
         }
-        else if (caseRecord?.BirthDate is { } birthDate && input.YearFrom < birthDate.Year)
+        else if (birthDate is { } dob && input.YearFrom < dob.Year)
         {
             errors["YearFrom"] = YearFromBeforeBirth;
         }

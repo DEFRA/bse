@@ -42,7 +42,7 @@
     </div>
 }
 
-<form method="post" asp-page="/Case/NewNonGb" asp-route-rbse="@Model.Rbse" novalidate>
+<form method="post" asp-page="/Case/NewNonGb" asp-route-rbse="@Model.Rbse" novalidate id="new-non-gb-case-form">
     <input type="hidden" asp-for="Rbse" />
 
     <div class="bse-farm-legacy bse-non-gb-case-form">
@@ -230,6 +230,43 @@
 
     <div class="govuk-button-group bse-non-gb-case-form__actions">
         <button type="submit" class="govuk-button govuk-!-margin-bottom-0" data-module="govuk-button">Save</button>
-        <a asp-page="/Home" class="govuk-link">Cancel</a>
+        <a id="cancel-link" asp-page="/Home" class="govuk-link">Cancel</a>
     </div>
 </form>
+
+<script>
+    // Legacy parity: NonGBCaseCreation.aspx's CancelCaseEdit() only shows an exit-confirmation
+    // prompt when at least one field has been touched away from its blank/default state —
+    // otherwise Cancel navigates straight to Home with no prompt.
+    (function () {
+        var form = document.getElementById('new-non-gb-case-form');
+        var cancelLink = document.getElementById('cancel-link');
+        if (!form || !cancelLink) {
+            return;
+        }
+
+        function serialize() {
+            var payload = {};
+            form.querySelectorAll('input, select, textarea').forEach(function (el) {
+                if (!el.name || el.type === 'hidden' || el.type === 'submit') {
+                    return;
+                }
+                payload[el.name] = el.value;
+            });
+            return JSON.stringify(payload);
+        }
+
+        var initialSnapshot = serialize();
+
+        cancelLink.addEventListener('click', function (event) {
+            if (serialize() === initialSnapshot) {
+                return;
+            }
+
+            event.preventDefault();
+            if (window.confirm('Modifications have been made to this page. Are you sure you wish to exit without saving?')) {
+                window.location.href = cancelLink.href;
+            }
+        });
+    })();
+</script>

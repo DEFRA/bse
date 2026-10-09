@@ -45,6 +45,7 @@
             .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
         var sortCol  = Model.SortColumn;
         var sortDesc = Model.SortDesc;
+        ViewData["PageNumber"] = Model.PageNumber;
         <div id="new-farms-results" class="bse-audit-table-wrap">
             <table class="govuk-table bse-audit-table">
             <caption class="govuk-visually-hidden">New farms audit log entries</caption>

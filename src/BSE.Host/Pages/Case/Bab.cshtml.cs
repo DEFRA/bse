@@ -1,7 +1,10 @@
 ﻿using BSE.Infrastructure;
+using BSE.Host.Helpers;
+using BSE.Host.Services;
 using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Repositories;
 using BSE.Modules.CaseManagement.Commands;
+using BSE.Modules.CaseManagement.Enums;
 using BSE.Modules.CaseManagement.Models;
 using BSE.Modules.CaseManagement.Repositories;
 using BSE.Modules.ReferenceData.Models;
@@ -21,9 +24,12 @@ public class BabModel(
     ILookupDataService lookups,
     IBatchRepository batchRepository,
     IDbConnectionFactory connectionFactory,
+    ICaseScalarDraftStateService caseScalarDraftState,
+    ICaseEditOrchestrationService caseEditOrchestration,
+    ICurrentUserService currentUser,
     IConfiguration configuration) : PageModel
 {
-    private static readonly DateTime BabBirthDateThreshold = new(1988, 7, 18);
+    private static readonly DateTime BabBirthDateThreshold = new(1988, 7, 18, 0, 0, 0, DateTimeKind.Unspecified);
 
     [BindProperty(SupportsGet = true)]
     public string Rbse { get; set; } = string.Empty;
@@ -47,8 +53,15 @@ public class BabModel(
 
     public async Task<IActionResult> OnGetAsync()
     {
+        // Legacy parity: CaseEntryBAB.aspx.vb's Page_Load redirects to SessionError.aspx when
+        // Session(SV_RBSENumber) is missing (session timeout, direct URL access, stale back-button).
+        if (string.IsNullOrWhiteSpace(Rbse))
+            return RedirectToPage("/SessionError");
+
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+
         await LoadAsync();
+        await ApplyStagedBabOverlayAsync();
         return Page();
     }
 
@@ -63,14 +76,12 @@ public class BabModel(
 
         var currentBab = await currentBabTask;
         var currentCase = await currentCaseTask;
+        var (currentBirthDate, _, _) = await ResolveEffectiveCaseScalarsAsync(currentCase);
 
-        if (currentCase is null)
-        {
-            TempData["Warning"] = $"Case '{Rbse}' is not saved yet. Complete Farm first.";
-            return RedirectToPage(new { rbse = Rbse });
-        }
-
-        var canEdit = EvaluateLegacyBabEditPermission(currentCase, currentBab);
+        // Legacy parity: BAB only ever becomes editable once Date of Birth is set (or a BAB row
+        // already exists) — EvaluateLegacyBabEditPermission already covers "case doesn't exist yet"
+        // the same way it covers "no Date of Birth yet", so no separate block is needed here.
+        var canEdit = EvaluateLegacyBabEditPermission(currentBirthDate, currentBab);
         if (!canEdit)
             return RedirectToPage(new { rbse = Rbse });
 
@@ -92,10 +103,9 @@ public class BabModel(
                 Bab.TracedAddress2 = Bab.TracedAddress3 = Bab.TracedPostcode = null;
         }
 
-        using var conn = connectionFactory.CreateConnection();
-        conn.Open();
-        using var tx = conn.BeginTransaction();
-
+        // Cross-tab staging (restores legacy's "one session, one commit" model): only the edit
+        // path (an existing BAB row) stages — first-time creation keeps committing immediately,
+        // since there is no earlier row for another tab's save to silently discard.
         if (!string.IsNullOrEmpty(rowStampBase64))
         {
             var rowStamp = Convert.FromBase64String(rowStampBase64);
@@ -104,24 +114,127 @@ public class BabModel(
                 Bab.TracedName, Bab.TracedAddress1, Bab.TracedAddress2, Bab.TracedAddress3,
                 Bab.TracedPostcode, Bab.FeedRisk, Bab.HorizontalRisk, Bab.MaternalRisk,
                 rowStamp);
-            await babRepository.EditAsync(edit, Origin, conn, tx);
+
+            var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
+            draft.BabBaseRowStampBase64 ??= rowStampBase64;
+            draft.Bab = edit with { RowStamp = Convert.FromBase64String(draft.BabBaseRowStampBase64) };
+            draft.BabOrigin = Origin;
+            draft.HasPendingChanges = true;
+            await caseScalarDraftState.SetAsync(draft);
+
+            var userId = await currentUser.GetUserIdAsync();
+            var (failureRedirect, commitOutcome) = await CaseCommitHelper.CommitAllAsync(
+                this, caseEditOrchestration, Rbse, userId,
+                result => $"Unable to save BAB changes: {result}.");
+            if (failureRedirect is not null)
+                return failureRedirect;
+
+            if (CaseCommitHelper.TryStageWarnings(this, commitOutcome!, Rbse) is { } warningRedirect)
+                return warningRedirect;
         }
         else
         {
+            using var conn = connectionFactory.CreateConnection();
+            conn.Open();
+            using var tx = conn.BeginTransaction();
+
             var add = new AddCaseBabCommand(
                 Rbse, Bab.NatalCphh, Bab.Notes,
                 Bab.TracedName, Bab.TracedAddress1, Bab.TracedAddress2, Bab.TracedAddress3,
                 Bab.TracedPostcode, Bab.FeedRisk, Bab.HorizontalRisk, Bab.MaternalRisk);
             await babRepository.AddAsync(add, Origin, conn, tx);
+
+            tx.Commit();
         }
 
-        tx.Commit();
-        TempData["Success"] = "BAB details saved.";
-        return RedirectToPage(new { rbse = Rbse });
+        // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx on a fully successful
+        // save, clearing the session case state — not back to the tab the user was on.
+        return RedirectToPage("/Home");
     }
 
-    public IActionResult OnGetCancelBabEdit()
+    /// <summary>
+    /// Validates this tab's fields and, if valid, stages them into the shared cross-tab
+    /// draft (without committing) before navigating to another tab. Only applies once a
+    /// BAB row already exists — there is nothing to stage before the row is first created.
+    /// </summary>
+    public async Task<IActionResult> OnPostStageAndGotoAsync(string targetPage, string? rowStampBase64)
     {
+        if (!User.IsInRole("DataEntry"))
+            return Forbid();
+
+        if (string.IsNullOrEmpty(rowStampBase64))
+            return RedirectToPage(targetPage, new { rbse = Rbse });
+
+        var currentBabTask = babRepository.GetByRbseAsync(Rbse);
+        var currentCaseTask = caseRepository.GetCaseByRbseAsync(Rbse);
+        await Task.WhenAll(currentBabTask, currentCaseTask);
+
+        var currentBab = await currentBabTask;
+        var currentCase = await currentCaseTask;
+        var (currentBirthDate, _, _) = await ResolveEffectiveCaseScalarsAsync(currentCase);
+
+        if (currentCase is null || !EvaluateLegacyBabEditPermission(currentBirthDate, currentBab))
+            return RedirectToPage(targetPage, new { rbse = Rbse });
+
+        var normalisedNatalCphh = CphhNormalizer.Normalize(Bab.NatalCphh);
+        if (!string.IsNullOrWhiteSpace(normalisedNatalCphh) && normalisedNatalCphh.Length != 11)
+        {
+            ModelState.AddModelError("Bab.NatalCphh", "Enter CPHH as 11 digits in the format NN/NNN/NNNN/NN.");
+            SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+            await LoadAsync();
+            Bab.NatalCphh = normalisedNatalCphh;
+            return Page();
+        }
+
+        Bab.NatalCphh = string.IsNullOrWhiteSpace(normalisedNatalCphh) ? null : normalisedNatalCphh;
+
+        if (Origin != "P")
+        {
+            Bab.NatalCphh = Bab.TracedName = Bab.TracedAddress1 =
+                Bab.TracedAddress2 = Bab.TracedAddress3 = Bab.TracedPostcode = null;
+        }
+
+        var rowStamp = Convert.FromBase64String(rowStampBase64);
+        var edit = new EditCaseBabCommand(
+            Rbse, Bab.NatalCphh, Bab.Notes,
+            Bab.TracedName, Bab.TracedAddress1, Bab.TracedAddress2, Bab.TracedAddress3,
+            Bab.TracedPostcode, Bab.FeedRisk, Bab.HorizontalRisk, Bab.MaternalRisk,
+            rowStamp);
+
+        var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
+        draft.BabBaseRowStampBase64 ??= rowStampBase64;
+        var stagedEdit = edit with { RowStamp = Convert.FromBase64String(draft.BabBaseRowStampBase64) };
+
+        // Legacy parity: merely switching tabs without typing anything must not trip the
+        // cross-tab unsaved-changes exit warning — only flag a genuine edit to BAB fields or Origin.
+        var baseline = currentBab is not null
+            ? new EditCaseBabCommand(
+                Rbse, currentBab.NatalCphh, currentBab.Notes, currentBab.TracedName,
+                currentBab.TracedAddress1, currentBab.TracedAddress2, currentBab.TracedAddress3,
+                currentBab.TracedPostcode, currentBab.FeedRisk, currentBab.HorizontalRisk,
+                currentBab.MaternalRisk, Convert.FromBase64String(draft.BabBaseRowStampBase64))
+            : null;
+        var originChanged = !string.Equals(Origin, currentCase?.Origin, StringComparison.Ordinal);
+
+        draft.Bab = stagedEdit;
+        draft.BabOrigin = Origin;
+        if (originChanged || DraftChangeDetector.IsDifferentFromPersisted(stagedEdit, baseline))
+            draft.HasPendingChanges = true;
+        await caseScalarDraftState.SetAsync(draft);
+
+        return RedirectToPage(targetPage, new { rbse = Rbse });
+    }
+
+    private async Task ApplyStagedBabOverlayAsync()
+    {
+        var staged = await caseScalarDraftState.GetAsync(Rbse);
+        if (staged?.Bab is not null)
+            Bab.ApplyStagedCommand(staged.Bab);
+    }
+
+    public async Task<IActionResult> OnGetCancelBabEdit()
+    {
+        await caseScalarDraftState.ClearAsync(Rbse);
         return RedirectToPage("/Home");
     }
 
@@ -141,12 +254,11 @@ public class BabModel(
         var caseRecord = await caseTask;
         Bab            = bab is not null ? BabFormViewModel.FromRecord(bab) : new BabFormViewModel();
         RowStampBase64 = bab?.RowStamp is not null ? Convert.ToBase64String(bab.RowStamp) : null;
-        Origin         = caseRecord?.Origin;
-        HasPurchaseData = caseRecord is not null
-            && (caseRecord.PurchaseDate.HasValue
-                || !string.IsNullOrWhiteSpace(caseRecord.PurchasedCounty)
-                || caseRecord.PurchaseAgeInMonths.HasValue);
-        CanEditBabControls = EvaluateLegacyBabEditPermission(caseRecord, bab);
+
+        var (effectiveBirthDate, effectiveOrigin, hasPurchaseData) = await ResolveEffectiveCaseScalarsAsync(caseRecord);
+        Origin              = effectiveOrigin;
+        HasPurchaseData     = hasPurchaseData;
+        CanEditBabControls  = EvaluateLegacyBabEditPermission(effectiveBirthDate, bab);
         BatchNumbers   = (await batchTask).ToList().AsReadOnly();
         AnimalOrigins  = (await originsTask).Select(x => new LookupItem(x.Id, x.Code, x.Description)).ToList();
         FeedRisks      = await frTask;
@@ -154,7 +266,7 @@ public class BabModel(
         MaternalRisks  = await mrTask;
     }
 
-    private bool EvaluateLegacyBabEditPermission(CaseRecord? caseRecord, CaseBabRecord? babRecord)
+    private bool EvaluateLegacyBabEditPermission(DateTime? birthDate, CaseBabRecord? babRecord)
     {
         if (!User.IsInRole("DataEntry"))
             return false;
@@ -165,10 +277,35 @@ public class BabModel(
 
         // Legacy MakeControlsWritable: editable only when BirthDate exists and
         // BirthDate >= 18/07/1988 OR a BAB row already exists.
-        if (caseRecord?.BirthDate is not DateTime birthDate)
+        if (birthDate is not { } dob)
             return false;
 
-        return birthDate.Date >= BabBirthDateThreshold || babRecord is not null;
+        return dob.Date >= BabBirthDateThreshold || babRecord is not null;
+    }
+
+    /// <summary>Effective Case-level scalars (Date of Birth, Origin, Purchase fields) used by
+    /// BAB's cascading display rules — overlays the shared cross-tab scalar draft (e.g. an
+    /// unsaved Date of Birth just typed on the DEFRA tab, or Purchase data staged from the
+    /// APHA/VLA tab) on top of the persisted record, matching legacy's single shared session
+    /// dataset where every tab reads the same in-progress values. Only falls back to the
+    /// persisted record when nothing at all has been staged yet for this case — never per field,
+    /// since a staged Case snapshot represents a full replace, and a field left blank there is a
+    /// deliberate clear, not a gap to fill from the stale DB value.</summary>
+    private async Task<(DateTime? BirthDate, string? Origin, bool HasPurchaseData)> ResolveEffectiveCaseScalarsAsync(CaseRecord? caseRecord)
+    {
+        var staged = (await caseScalarDraftState.GetAsync(Rbse))?.Case;
+
+        var birthDate           = staged is not null ? staged.BirthDate : caseRecord?.BirthDate;
+        var origin               = staged is not null ? staged.Origin : caseRecord?.Origin;
+        var purchaseDate         = staged is not null ? staged.PurchaseDate : caseRecord?.PurchaseDate;
+        var purchasedCounty      = staged is not null ? staged.PurchasedCounty : caseRecord?.PurchasedCounty;
+        var purchaseAgeInMonths  = staged is not null ? staged.PurchaseAgeInMonths : caseRecord?.PurchaseAgeInMonths;
+
+        var hasPurchaseData = purchaseDate.HasValue
+            || !string.IsNullOrWhiteSpace(purchasedCounty)
+            || purchaseAgeInMonths.HasValue;
+
+        return (birthDate, origin, hasPurchaseData);
     }
 
     public class BabFormViewModel
@@ -192,5 +329,22 @@ public class BabModel(
             TracedPostcode = r.TracedPostcode,  FeedRisk       = r.FeedRisk,
             HorizontalRisk = r.HorizontalRisk,  MaternalRisk   = r.MaternalRisk
         };
+
+        /// <summary>Overlays a staged-but-not-yet-committed BAB edit (from another tab's
+        /// cross-tab draft) so revisiting this tab shows the pending edit instead of the
+        /// last-committed DB values.</summary>
+        public void ApplyStagedCommand(EditCaseBabCommand c)
+        {
+            NatalCphh = c.NatalCphh;
+            Notes = c.Notes;
+            TracedName = c.TracedName;
+            TracedAddress1 = c.TracedAddress1;
+            TracedAddress2 = c.TracedAddress2;
+            TracedAddress3 = c.TracedAddress3;
+            TracedPostcode = c.TracedPostcode;
+            FeedRisk = c.FeedRisk;
+            HorizontalRisk = c.HorizontalRisk;
+            MaternalRisk = c.MaternalRisk;
+        }
     }
 }

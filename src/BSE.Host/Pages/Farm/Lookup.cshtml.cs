@@ -6,7 +6,10 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.Farm;
 
-[Authorize]
+// Legacy parity: PickFarm.aspx's EnableControls blocks DEFRA Viewer and VLA Data Entry (Home
+// redirect), allowing only DEFRA Data Entry, DEFRA Maintenance and VLA Maintenance — the same
+// group set as the FarmCreation claim.
+[Authorize(Policy = "FarmCreation")]
 public class LookupModel : PageModel
 {
     private readonly IFarmService _farm;

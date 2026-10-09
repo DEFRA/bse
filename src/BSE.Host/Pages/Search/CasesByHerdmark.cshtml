@@ -62,6 +62,7 @@
             .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
         var sortCol  = Model.SortColumn;
         var sortDesc = Model.SortDesc;
+        ViewData["PageNumber"] = Model.PageNumber;
 
         @await Html.PartialAsync("_ExportLink")
         <div class="bse-herdmark-search-table-wrap">

@@ -50,7 +50,7 @@ public class RbseChangesModel(IAuditLogService auditLogService) : PageModel
         if (!AuditDateRange.Validate(StartDate, EndDate, out _, out _)) return RedirectToPage();
 
         var entries = (await auditLogService.GetRbseChangesAsync(StartDate!.Value, EndDate!.Value)).Cast<AuditLogRBSEChangeEntry>();
-        return AuditLogExcel.Build(entries, "RBSE Changes", $"RbseChanges_{DateTime.Today:yyyyMMdd}.xlsx",
+        return AuditLogExcel.Build(ApplySorting(entries), "RBSE Changes", $"RbseChanges_{DateTime.Today:yyyyMMdd}.xlsx",
             [("HasBatches", e => e.HasBatches)]);
     }
 
