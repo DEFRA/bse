@@ -34,6 +34,12 @@
 
     <form method="post" novalidate id="case-farm-inline-form">
         <input type="hidden" name="Rbse" value="@Model.Rbse" />
+        @if (!createReadOnly && !Model.RequireFarmDetails && !createDetailsLocked)
+        {
+            @* Legacy parity: looking up a CPHH populates the shared session farm dataset immediately,
+               so Cancel/Home must warn about losing it even though nothing has been typed since. *@
+            <input type="hidden" data-force-dirty="true" />
+        }
 
         <div class="bse-farm-legacy-top">
             <div class="bse-farm-legacy-top__row bse-farm-legacy-top__row--lookup">

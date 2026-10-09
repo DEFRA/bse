@@ -281,6 +281,13 @@
                 return false;
             }
 
+            // Some actions (e.g. a successful CPHH lookup on a brand-new case) populate real data
+            // into the very first render the user sees, so there is no "before" snapshot to diff
+            // against. Pages that need Cancel/Home to still warn about this render a marker instead.
+            if (form.querySelector('[data-force-dirty="true"]')) {
+                return true;
+            }
+
             return JSON.stringify(serializeForm(form)) !== initialSnapshot;
         }
 
