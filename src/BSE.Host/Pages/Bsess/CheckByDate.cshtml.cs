@@ -67,10 +67,10 @@ public class CheckByDateModel(IBsessCheckService bsessCheckService) : PageModel
             ws.Cell(row, 1).Value = d.Rbse;
             ws.Cell(row, 2).Value = d.BsessBirthDate?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) ?? string.Empty;
             ws.Cell(row, 3).Value = d.BseBirthDate?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) ?? string.Empty;
-            ws.Cell(row, 4).Value = d.BsessEartag ?? string.Empty;
-            ws.Cell(row, 5).Value = d.BseEartag ?? string.Empty;
-            ws.Cell(row, 6).Value = d.BsessTestGroup ?? string.Empty;
-            ws.Cell(row, 7).Value = d.BseTestGroup ?? string.Empty;
+            ws.Cell(row, 4).Value = SortKey(d.BsessEartag);
+            ws.Cell(row, 5).Value = SortKey(d.BseEartag);
+            ws.Cell(row, 6).Value = SortKey(d.BsessTestGroup);
+            ws.Cell(row, 7).Value = SortKey(d.BseTestGroup);
             row++;
         }
 
@@ -95,20 +95,30 @@ public class CheckByDateModel(IBsessCheckService bsessCheckService) : PageModel
         PagedDiscrepancies = ordered.Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList().AsReadOnly();
     }
 
+    /// <summary>Legacy fixed-width columns pad eartags and test groups, which would otherwise dominate the sort.</summary>
+    private static string SortKey(string? value) => value?.Trim() ?? string.Empty;
+
     private IReadOnlyList<BsessDiscrepancyRecord> ApplySort(IReadOnlyList<BsessDiscrepancyRecord> source)
     {
-        var ordered = SortColumn?.ToLowerInvariant() switch
-        {
-            "rbse" => SortDesc ? source.OrderByDescending(x => x.Rbse).ToList() : source.OrderBy(x => x.Rbse).ToList(),
-            "bsessbirthdate" => SortDesc ? source.OrderByDescending(x => x.BsessBirthDate ?? DateTime.MinValue).ToList() : source.OrderBy(x => x.BsessBirthDate ?? DateTime.MinValue).ToList(),
-            "bsebirthdate" => SortDesc ? source.OrderByDescending(x => x.BseBirthDate ?? DateTime.MinValue).ToList() : source.OrderBy(x => x.BseBirthDate ?? DateTime.MinValue).ToList(),
-            "bsesseartag" => SortDesc ? source.OrderByDescending(x => x.BsessEartag ?? string.Empty).ToList() : source.OrderBy(x => x.BsessEartag ?? string.Empty).ToList(),
-            "bseeartag" => SortDesc ? source.OrderByDescending(x => x.BseEartag ?? string.Empty).ToList() : source.OrderBy(x => x.BseEartag ?? string.Empty).ToList(),
-            "bsesstestgroup" => SortDesc ? source.OrderByDescending(x => x.BsessTestGroup ?? string.Empty).ToList() : source.OrderBy(x => x.BsessTestGroup ?? string.Empty).ToList(),
-            "bsetestgroup" => SortDesc ? source.OrderByDescending(x => x.BseTestGroup ?? string.Empty).ToList() : source.OrderBy(x => x.BseTestGroup ?? string.Empty).ToList(),
-            _ => SortDesc ? source.OrderByDescending(x => x.Rbse).ToList() : source.OrderBy(x => x.Rbse).ToList(),
-        };
+        List<BsessDiscrepancyRecord> ByText(Func<BsessDiscrepancyRecord, string?> selector) =>
+            (SortDesc
+                ? source.OrderByDescending(x => SortKey(selector(x)), StringComparer.OrdinalIgnoreCase)
+                : source.OrderBy(x => SortKey(selector(x)), StringComparer.OrdinalIgnoreCase)).ToList();
 
-        return ordered;
+        List<BsessDiscrepancyRecord> ByDate(Func<BsessDiscrepancyRecord, DateTime?> selector) =>
+            (SortDesc
+                ? source.OrderByDescending(x => selector(x) ?? DateTime.MinValue)
+                : source.OrderBy(x => selector(x) ?? DateTime.MinValue)).ToList();
+
+        return SortColumn?.ToLowerInvariant() switch
+        {
+            "bsessbirthdate" => ByDate(x => x.BsessBirthDate),
+            "bsebirthdate" => ByDate(x => x.BseBirthDate),
+            "bsesseartag" => ByText(x => x.BsessEartag),
+            "bseeartag" => ByText(x => x.BseEartag),
+            "bsesstestgroup" => ByText(x => x.BsessTestGroup),
+            "bsetestgroup" => ByText(x => x.BseTestGroup),
+            _ => ByText(x => x.Rbse),
+        };
     }
 }

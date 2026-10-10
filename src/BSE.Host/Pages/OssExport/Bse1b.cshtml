@@ -21,18 +21,25 @@
 @* Validation Messages *@
 @if (!string.IsNullOrEmpty(Model.ValidationMessage))
 {
-    <div class="govuk-error-message" role="alert">
-        <span class="govuk-visually-hidden">Error: </span>@Model.ValidationMessage
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    <li><a href="#RbseInput">@Model.ValidationMessage</a></li>
+                </ul>
+            </div>
+        </div>
     </div>
 }
 
 @* RBSE Input Form *@
 <form method="post" asp-page-handler="AddToGrid" novalidate>
-    <div class="govuk-form-group">
+    <div class="govuk-form-group @(!string.IsNullOrEmpty(Model.ValidationMessage) ? "govuk-form-group--error" : "")">
         <label asp-for="RbseInput" class="govuk-label">
             <strong>RBSE</strong>
         </label>
-        <input asp-for="RbseInput" class="govuk-input govuk-input--width-10" autocomplete="off"
+        <input asp-for="RbseInput" class="govuk-input govuk-input--width-10 @(!string.IsNullOrEmpty(Model.ValidationMessage) ? "govuk-input--error" : "")" autocomplete="off"
                title="RBSE Format: NN/NN/NNNNN" spellcheck="false" autocapitalize="off" />
     </div>
     <button type="submit" class="govuk-button" data-module="govuk-button">Add to grid</button>
