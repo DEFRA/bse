@@ -31,7 +31,9 @@ public class OpenCasesModel(ICaseWorkService caseWorkService) : PageModel
 
         // Legacy parity: CaseWorkOpenReport.aspx's Pager.SelectGridRowForDataRow jumps to the
         // page containing ?rbse= (e.g. after Save redirects back here) instead of always page 1.
-        if (!string.IsNullOrWhiteSpace(Rbse))
+        // Pagination links carry ?rbse= forward to keep the row highlighted, so an explicit page
+        // number always wins — otherwise every page link snaps straight back to the selected row.
+        if (HttpContext?.Request.Query.ContainsKey(nameof(PageNumber)) != true && !string.IsNullOrWhiteSpace(Rbse))
         {
             var index = Cases.ToList().FindIndex(c => string.Equals(c.Rbse, Rbse, StringComparison.OrdinalIgnoreCase));
             if (index >= 0) PageNumber = index / PageSize + 1;
