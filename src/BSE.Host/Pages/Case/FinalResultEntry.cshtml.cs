@@ -68,8 +68,10 @@ public class FinalResultEntryModel(
 
     public bool HasFinalResult => !string.IsNullOrWhiteSpace(Result?.FinalResult);
 
-    public bool TestsContainPositive =>
-        Tests.Any(t => string.Equals(t.TestResult, PositiveCode, StringComparison.OrdinalIgnoreCase));
+    /// <summary>Legacy's ResultsContainPositive() scans the full session test table, not just the
+    /// currently displayed grid page — this must do the same or the mismatch warning silently
+    /// disappears once a case has more than one page of tests.</summary>
+    public bool TestsContainPositive { get; private set; }
 
     // -- Legacy ddlFinalResult_SelectedIndexChanged warnings ------------------
 
@@ -184,6 +186,7 @@ public class FinalResultEntryModel(
                 ? $"DBSE {RbseHelper.FormatDbse(saved?.Dbse)} has been allocated to this case."
                 : "No DBSE is allocated because the final result is not positive.";
         TempData[MaintenanceConfirmationModel.AddAnotherResultKey] = "/Case/FinalResultEntry";
+        TempData[MaintenanceConfirmationModel.MemoRbseKey] = command.Rbse;
 
         return RedirectToPage("/MaintenanceConfirmation");
     }
@@ -270,6 +273,8 @@ public class FinalResultEntryModel(
 
     private void ApplyTestsPaging(IReadOnlyList<CaseTestRecord> allTests)
     {
+        TestsContainPositive = allTests.Any(t => string.Equals(t.TestResult, PositiveCode, StringComparison.OrdinalIgnoreCase));
+
         IEnumerable<CaseTestRecord> ordered = allTests;
 
         ordered = TestSortColumn switch
