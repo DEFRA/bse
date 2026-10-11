@@ -1494,3 +1494,23 @@ Files changed: `Edit.cshtml.cs` (`HasPersistedCaseWork`, `CanEditPaperworkComple
 `ApplyLegacyDefraPermissions`), `Edit.cshtml` (Paperwork Complete Date's `disabled` attribute).
 `get_errors` clean on both.
 
+## New GB case: Herd Size grid empty after Look Up for an existing farm (2026-10-11)
+
+User-reported: for new case creation, looking up a CPHH that already has a farm with Herd Size records
+shows an empty Herd Size grid, where legacy shows the existing rows.
+
+Root cause: `OnPostLookupNewCaseAsync`'s "farm found" branch set `EditableFarm` from the resolved
+`FarmRecord` but never set `Farm` itself, and never called `LoadFromFarmCphhAsync` (which populates
+`PersistedLinkedFarms`/`PersistedHerdSizes`/`ConfirmedCaseCount`) or `LoadOrInitializeDraftStateAsync`
+(which seeds `StagedLinkedFarms`/`StagedHerdSizes` — the collections the view actually renders — from
+those persisted lists). Both grids were therefore guaranteed empty in the `Page()` response returned
+directly from Look Up, regardless of what the farm actually has in the database; only a *subsequent*
+full page reload (e.g. `OnGetNewCaseAsync`, which already calls both) would show the real data. Herd
+Size and Linked Farms are affected identically by this gap — Herd Size was the one observed, Linked
+Farms would show the same empty-until-reload symptom for an existing farm with related-farm rows.
+
+Fix: `OnPostLookupNewCaseAsync`'s farm-found branch now also calls `LoadFromFarmCphhAsync(normalisedCphh)`
+and `LoadOrInitializeDraftStateAsync()`, matching what the GET new-case path already does.
+
+Files changed: `Farm.cshtml.cs` (`OnPostLookupNewCaseAsync`). `get_errors` clean.
+
