@@ -245,12 +245,7 @@
                                     <label class="govuk-label" for="TseTestingSite">TSE Testing Site</label>
                                     @if (Err("TseTestingSite") is not null) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @Err("TseTestingSite")</p> }
                                     <input id="TseTestingSite" asp-for="TseTestingSite" class="govuk-input" autocomplete="off" list="tse-testing-site-options" />
-                                    <datalist id="tse-testing-site-options">
-                                        @foreach (var site in Model.TseTestingSiteOptions)
-                                        {
-                                            <option value="@site.Value"></option>
-                                        }
-                                    </datalist>
+                                    <datalist id="tse-testing-site-options"></datalist>
                                 </div>
                                 <div class="govuk-form-group @(Err("SamplingDate") is not null ? "govuk-form-group--error" : "")">
                                     <label class="govuk-label" for="SamplingDate">Sampling Date</label>
@@ -776,3 +771,38 @@
         max-width: 8.5em;
     }
 </style>
+
+@if (Model.ShowTseFields)
+{
+    <script>
+        (function () {
+            // Legacy's TSE Testing Site lookup matches sites whose name STARTS WITH the typed
+            // text (SQL "Ma%"); the browser's native <datalist> instead highlights any option
+            // that merely CONTAINS the typed text anywhere ("%Ma%"). Rebuilding the <datalist>
+            // on every keystroke so it only ever contains prefix matches restores legacy parity
+            // without needing a fully custom autocomplete widget.
+            var allSites = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TseTestingSiteOptions.Select(s => s.Value)));
+            var input = document.getElementById('TseTestingSite');
+            var list = document.getElementById('tse-testing-site-options');
+            if (!input || !list) return;
+
+            function renderOptions(matches) {
+                list.innerHTML = '';
+                matches.forEach(function (site) {
+                    var option = document.createElement('option');
+                    option.value = site;
+                    list.appendChild(option);
+                });
+            }
+
+            renderOptions(allSites);
+
+            input.addEventListener('input', function () {
+                var term = input.value.trim().toLowerCase();
+                renderOptions(term === '' ? allSites : allSites.filter(function (site) {
+                    return site.toLowerCase().startsWith(term);
+                }));
+            });
+        })();
+    </script>
+}

@@ -28,6 +28,7 @@ public class EditModel(
     ITestRepository testRepository,
     ICaseEditDraftStateService caseEditDraftState,
     ICaseScalarDraftStateService caseScalarDraftState,
+    ICaseDraftDiscardService caseDraftDiscard,
     ICaseEditOrchestrationService caseEditOrchestration,
     IBatchRepository batchRepository,
     IConfiguration configuration) : PageModel
@@ -56,11 +57,26 @@ public class EditModel(
     /// <summary>Legacy VLAMaintenanceEnable's 3-way gate: Barcode/AHF Reference are writable only
     /// for VLA Maintenance, only when a CaseWork row exists, and only while the case isn't closed.
     /// DEFRA Data Entry/Maintenance never get these two fields (always disabled there, unambiguous
-    /// in legacy). Paperwork Complete Date's own DEFRA-role gating is left as the existing
-    /// HasCaseWork-only check — legacy's own behaviour there is genuinely ambiguous/ViewState-
-    /// dependent (see Field-level parity review, sixth follow-up) and migrated's simpler, more
-    /// consistent rule was a deliberate choice, not revisited here.</summary>
+    /// in legacy).</summary>
     public bool CanEditVlaMaintenanceCaseworkFields { get; private set; }
+
+    /// <summary>Legacy parity: ctlPaperworkCompleteDate.Enabled is never touched by
+    /// DEFRADataEntryEnable/DEFRAMaintenanceEnable/MakeControlsWritable, so it keeps its control
+    /// default (always enabled, including for a brand-new case) for those two roles — unlike
+    /// Barcode/AHF Reference, which they explicitly disable. VLA Maintenance instead enables it
+    /// via the exact same 3-way gate as Barcode/AHF Reference (same If/Else block in
+    /// VLAMaintenanceEnable), so it shares <see cref="CanEditVlaMaintenanceCaseworkFields"/>.</summary>
+    public bool CanEditPaperworkCompleteDate { get; private set; }
+
+    /// <summary>True once an actual CaseWork row has been loaded from the database. A brand-new
+    /// case's <see cref="BSE.Host.Models.ViewModels.CaseEditViewModel.HasCaseWork"/>/IsCaseClosed
+    /// are forced-true/default-false purely so the Casework button/fields render from the moment
+    /// creation starts (legacy's AddEmptyRow placeholder row) — legacy's own CaseWork row in that
+    /// state has IsCaseClosed as DBNull, which fails VLAMaintenanceEnable's "Not IsDBNull(...)"
+    /// check and disables Barcode/AHF Reference/Paperwork Complete Date for VLA Maintenance until
+    /// the case is actually saved. Without this distinct flag, Case.IsCaseClosed's C# bool default
+    /// of false would wrongly satisfy "!IsCaseClosed" and enable them immediately for a new case.</summary>
+    private bool HasPersistedCaseWork { get; set; }
 
     public bool IsNonGbCase { get; private set; }
 
@@ -135,6 +151,11 @@ public class EditModel(
             // always inserting a CaseWork row alongside the Case row on first commit, so this just
             // reflects that guarantee ahead of time instead of querying a row that can't exist yet.
             Case.HasCaseWork = true;
+            // Legacy parity: Common.vb sets the new in-memory CaseWork row's RBSEDate to Today
+            // immediately — without this, ValidateCaseWorkDates silently skips all BSE1/Paperwork
+            // date range checks for the lifetime of the new-case-creation flow (it early-returns
+            // whenever RbseDate is null).
+            Case.RbseDate ??= DateTime.Today;
             HasCaseWorkLink = true;
             ApplyLegacyDefraPermissions();
 
@@ -151,7 +172,10 @@ public class EditModel(
 
         var caseWork = await caseWorkRepository.GetByRbseAsync(Rbse);
         if (caseWork is not null)
+        {
             Case.ApplyCaseWork(caseWork);
+            HasPersistedCaseWork = true;
+        }
 
         // Re-run now that Case.HasCaseWork/IsCaseClosed reflect the freshly-loaded record (the
         // earlier call near the top of this method only had the role-based flags available).
@@ -241,14 +265,12 @@ public class EditModel(
 
         await PersistStagedTestsAsync();
         await caseEditDraftState.ClearAsync(Rbse);
-        TempData["Success"] = "Case test changes saved.";
         return RedirectToPage(new { rbse = Rbse });
     }
 
     public async Task<IActionResult> OnGetCancelEditAsync()
     {
-        await caseEditDraftState.ClearAsync(Rbse);
-        await caseScalarDraftState.ClearAsync(Rbse);
+        await caseDraftDiscard.DiscardAllAsync(Rbse);
         return RedirectToPage("/Home");
     }
 
@@ -357,6 +379,7 @@ public class EditModel(
         // tab's edit into the shared draft, then commit *everything* staged for this RBSE
         // (this tab and/or Farm) together, rather than committing only this page's fields.
         await StageCaseScalarEditAsync(rowStampBase64);
+        await StageCaseWorkEditAsync();
 
         var userId = await currentUserService.GetUserIdAsync();
         var (failureRedirect, commitOutcome) = await CaseCommitHelper.CommitAllAsync(
@@ -370,41 +393,6 @@ public class EditModel(
             });
         if (failureRedirect is not null)
             return failureRedirect;
-
-        // Save casework fields if the case has a CaseWork row
-        if (Case.HasCaseWork)
-        {
-            var persistedCaseWork = await caseWorkRepository.GetByRbseAsync(Rbse);
-
-            // Security: Barcode/AHF Reference render readonly (not disabled) to every role except
-            // VLA Maintenance on an open CaseWork row, and unlike legacy's disabled TextBox (never
-            // posted back), a readonly <input> still submits its value. Re-derive the write
-            // permission from the role claim (trustworthy) and the freshly-read CaseWork row
-            // (not the posted Case.IsCaseClosed hidden field, which a crafted POST could forge)
-            // rather than trusting CanEditVlaMaintenanceCaseworkFields, and restore the persisted
-            // values whenever it's false, so a crafted POST can't bypass the client-side readonly.
-            var isVlaMaintenance = User.IsInRole(VlaAccessRole) && User.IsInRole(VlaMaintenanceRole);
-            var canWriteCaseworkFields = isVlaMaintenance && persistedCaseWork is not null && !persistedCaseWork.IsCaseClosed;
-            if (!canWriteCaseworkFields)
-            {
-                Case.Barcode = persistedCaseWork?.Barcode;
-                Case.AhfReference = persistedCaseWork?.AhfReference;
-            }
-
-            var cwCommand = new EditCaseWorkCommand(
-                Rbse:                       Rbse,
-                RbseDate:                   Case.RbseDate,
-                Barcode:                    Case.Barcode,
-                AhfReference:               Case.AhfReference,
-                PurchaserBse1ReceivedDate:  Case.PurchaserBse1ReceivedDate,
-                BreederBse1ReceivedDate:    Case.BreederBse1ReceivedDate,
-                Vendor1Bse1ReceivedDate:    Case.Vendor1Bse1ReceivedDate,
-                HomebredBse1ReceivedDate:   Case.HomebredBse1ReceivedDate,
-                SummarySheetReceivedDate:   Case.SummarySheetReceivedDate,
-                PaperworkCompleteDate:      Case.PaperworkCompleteDate);
-
-            await caseWorkRepository.EditAsync(cwCommand);
-        }
 
         await caseEditDraftState.ClearAsync(Rbse);
 
@@ -465,6 +453,7 @@ public class EditModel(
         }
 
         await StageCaseScalarEditAsync(rowStampBase64);
+        await StageCaseWorkEditAsync();
 
         return RedirectToPage(targetPage, new { rbse = Rbse });
     }
@@ -492,11 +481,91 @@ public class EditModel(
         await caseScalarDraftState.SetAsync(draft);
     }
 
+    /// <summary>Writes this tab's current CaseWork fields (Barcode/AHF Reference/BSE1 dates/
+    /// Paperwork Complete/RbseDate) into the shared cross-tab draft, without committing to the
+    /// database. These live outside <see cref="EditCaseCommand"/> entirely (CaseWork is a separate
+    /// table from Case), so without this they are silently lost on tab-switch or when Save is
+    /// triggered from a different tab — legacy keeps Case and CaseWork in the same shared session
+    /// DataSet, written together by every tab-switch.</summary>
+    private async Task StageCaseWorkEditAsync()
+    {
+        if (!Case.HasCaseWork)
+            return;
+
+        var persistedCaseWork = await caseWorkRepository.GetByRbseAsync(Rbse);
+
+        // Security: Barcode/AHF Reference render readonly (not disabled) to every role except
+        // VLA Maintenance on an open CaseWork row, and unlike legacy's disabled TextBox (never
+        // posted back), a readonly <input> still submits its value. Re-derive the write
+        // permission from the role claim (trustworthy) and the freshly-read CaseWork row (not the
+        // posted Case.IsCaseClosed hidden field, which a crafted POST could forge) rather than
+        // trusting CanEditVlaMaintenanceCaseworkFields, and restore the persisted values whenever
+        // it's false, so a crafted POST can't bypass the client-side readonly.
+        var isVlaMaintenance = User.IsInRole(VlaAccessRole) && User.IsInRole(VlaMaintenanceRole);
+        var canWriteCaseworkFields = isVlaMaintenance && persistedCaseWork is not null && !persistedCaseWork.IsCaseClosed;
+        if (!canWriteCaseworkFields)
+        {
+            Case.Barcode = persistedCaseWork?.Barcode;
+            Case.AhfReference = persistedCaseWork?.AhfReference;
+        }
+
+        // Legacy parity: Common.vb sets a brand-new case's in-memory RBSEDate to Today immediately
+        // — if it somehow wasn't set yet by this point, fall back to the persisted value or Today
+        // rather than staging a null that would disable all BSE1/Paperwork date validation.
+        Case.RbseDate ??= persistedCaseWork?.RbseDate ?? DateTime.Today;
+
+        var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
+        var newCommand = new EditCaseWorkCommand(
+            Rbse:                       Rbse,
+            RbseDate:                   Case.RbseDate,
+            Barcode:                    Case.Barcode,
+            AhfReference:               Case.AhfReference,
+            PurchaserBse1ReceivedDate:  Case.PurchaserBse1ReceivedDate,
+            BreederBse1ReceivedDate:    Case.BreederBse1ReceivedDate,
+            Vendor1Bse1ReceivedDate:    Case.Vendor1Bse1ReceivedDate,
+            HomebredBse1ReceivedDate:   Case.HomebredBse1ReceivedDate,
+            SummarySheetReceivedDate:   Case.SummarySheetReceivedDate,
+            PaperworkCompleteDate:      Case.PaperworkCompleteDate);
+
+        var baseline = persistedCaseWork is not null
+            ? new EditCaseWorkCommand(
+                Rbse:                       Rbse,
+                RbseDate:                   persistedCaseWork.RbseDate,
+                Barcode:                    persistedCaseWork.Barcode,
+                AhfReference:               persistedCaseWork.AhfReference,
+                PurchaserBse1ReceivedDate:  persistedCaseWork.PurchaserBse1ReceivedDate,
+                BreederBse1ReceivedDate:    persistedCaseWork.BreederBse1ReceivedDate,
+                Vendor1Bse1ReceivedDate:    persistedCaseWork.Vendor1Bse1ReceivedDate,
+                HomebredBse1ReceivedDate:   persistedCaseWork.HomebredBse1ReceivedDate,
+                SummarySheetReceivedDate:   persistedCaseWork.SummarySheetReceivedDate,
+                PaperworkCompleteDate:      persistedCaseWork.PaperworkCompleteDate)
+            : null;
+
+        draft.CaseWork = newCommand;
+        if (DraftChangeDetector.IsDifferentFromPersisted(newCommand, baseline))
+            draft.HasPendingChanges = true;
+        await caseScalarDraftState.SetAsync(draft);
+    }
+
     private async Task ApplyStagedCaseOverlayAsync()
     {
         var staged = await caseScalarDraftState.GetAsync(Rbse);
         if (staged?.Case is not null)
             Case.ApplyStagedCommand(staged.Case);
+
+        if (staged?.CaseWork is not null)
+        {
+            var cw = staged.CaseWork;
+            Case.RbseDate = cw.RbseDate;
+            Case.Barcode = cw.Barcode;
+            Case.AhfReference = cw.AhfReference;
+            Case.PurchaserBse1ReceivedDate = cw.PurchaserBse1ReceivedDate;
+            Case.BreederBse1ReceivedDate = cw.BreederBse1ReceivedDate;
+            Case.Vendor1Bse1ReceivedDate = cw.Vendor1Bse1ReceivedDate;
+            Case.HomebredBse1ReceivedDate = cw.HomebredBse1ReceivedDate;
+            Case.SummarySheetReceivedDate = cw.SummarySheetReceivedDate;
+            Case.PaperworkCompleteDate = cw.PaperworkCompleteDate;
+        }
     }
 
     /// <summary>Undoes <c>LoadReadonlyPageAsync()</c>'s overwrite of <see cref="Case"/> with the
@@ -513,6 +582,8 @@ public class EditModel(
         var rowStampBase64 = TempData[string.Format(RowStampKey, Rbse)]?.ToString();
         if (rowStampBase64 is not null)
             await StageCaseScalarEditAsync(rowStampBase64);
+
+        await StageCaseWorkEditAsync();
     }
 
     private void ApplyLegacyPreSaveNormalizations()
@@ -748,6 +819,7 @@ public class EditModel(
             // Legacy parity: same reasoning as OnGetAsync's missing-record branch — the Casework
             // button/fields exist from the moment a new case is started, not just after first Save.
             Case.HasCaseWork = true;
+            Case.RbseDate ??= DateTime.Today;
             HasCaseWorkLink = true;
             ApplyLegacyDefraPermissions();
             return;
@@ -757,7 +829,10 @@ public class EditModel(
         IsNonGbCase = record.IsNonGbCase;
         var caseWork = await caseWorkRepository.GetByRbseAsync(Rbse);
         if (caseWork is not null)
+        {
             Case.ApplyCaseWork(caseWork);
+            HasPersistedCaseWork = true;
+        }
 
         ApplyLegacyDefraPermissions();
 
@@ -791,7 +866,8 @@ public class EditModel(
 
         CanEditDefraNotes = isDefraDataEntry;
         CanEditCaseFields = isDefraDataEntry || isVlaMaintenance;
-        CanEditVlaMaintenanceCaseworkFields = isVlaMaintenance && Case.HasCaseWork && !Case.IsCaseClosed;
+        CanEditVlaMaintenanceCaseworkFields = isVlaMaintenance && HasPersistedCaseWork && !Case.IsCaseClosed;
+        CanEditPaperworkCompleteDate = isDefraDataEntry || CanEditVlaMaintenanceCaseworkFields;
     }
 
     /// <summary>Legacy parity: every group except DEFRA Viewer holds the "DataEntry" role claim

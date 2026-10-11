@@ -22,7 +22,7 @@
 @await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("BAB", Model.Rbse, Model.BatchNumbers, viewDocsUrl, Model.CanEditBabControls))
 
 @await Html.PartialAsync("_CaseEditNotifications", new BSE.Host.Models.CaseEditNotificationsViewModel(
-    "bab", TempData["Success"] as string, TempData["Warning"] as string))
+    "bab", WarningMessage: TempData["Warning"] as string))
 
 <form method="post" asp-page-handler="SaveBab" novalidate id="case-bab-inline-form">
         <input type="hidden" asp-for="Rbse" />
@@ -353,11 +353,9 @@
         if (!form || cancelLinks.length === 0) return;
 
         var dirty = false;
-        var submitting = false;
 
         form.addEventListener('change', function () { dirty = true; });
         form.addEventListener('input', function () { dirty = true; });
-        form.addEventListener('submit', function () { submitting = true; });
 
         cancelLinks.forEach(function (cancel) {
             cancel.addEventListener('click', function (e) {
@@ -366,19 +364,10 @@
                 (dirty ? Promise.resolve(true) : (window.hasUnsavedChangesAcrossTabs ? window.hasUnsavedChangesAcrossTabs() : Promise.resolve(false)))
                     .then(function (hasUnsaved) {
                         if (!hasUnsaved || window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
-                            submitting = true; // suppress the beforeunload prompt firing again on this navigation
                             window.location.href = cancel.href;
                         }
                     });
             });
-        });
-
-        window.addEventListener('beforeunload', function (e) {
-            if (window.__bseCaseTabNavigationInProgress) return;
-            if (dirty && !submitting) {
-                e.preventDefault();
-                e.returnValue = '';
-            }
         });
     })();
 </script>

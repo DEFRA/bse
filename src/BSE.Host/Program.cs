@@ -382,6 +382,7 @@ try
     builder.Services.AddScoped<BSE.Host.Services.ICaseFeedsDraftStateService, BSE.Host.Services.CaseFeedsDraftStateService>();
     builder.Services.AddScoped<BSE.Host.Services.ICaseRelationsDraftStateService, BSE.Host.Services.CaseRelationsDraftStateService>();
     builder.Services.AddScoped<BSE.Host.Services.ICaseScalarDraftStateService, BSE.Host.Services.CaseScalarDraftStateService>();
+    builder.Services.AddScoped<BSE.Host.Services.ICaseDraftDiscardService, BSE.Host.Services.CaseDraftDiscardService>();
     builder.Services.AddScoped<BSE.Host.Services.ICaseEditOrchestrationService, BSE.Host.Services.CaseEditOrchestrationService>();
 
     // -- Authorisation policies
@@ -398,6 +399,9 @@ try
     authorizationBuilder.AddPolicy("ReadOnly", p => p.RequireRole("ReadOnly"));
     authorizationBuilder.AddPolicy("DataEntry", p => p.RequireRole("DataEntry"));
     authorizationBuilder.AddPolicy("DEFRAMaintenance", p => p.RequireRole("DEFRAMaintenance"));
+    // Legacy MoveCase.aspx/MoveCaseNewFarm.aspx EnableControls(): DEFRA Maintenance OR VLA Maintenance
+    // (docs/Legacy-Page-Level-Access-Control.md section 5.9 "Case Maintenance Operations").
+    authorizationBuilder.AddPolicy("DEFRAOrVLAMaintenance", p => p.RequireRole("DEFRAMaintenance", "VLAMaintenance"));
     authorizationBuilder.AddPolicy("DEFRAAccess", p => p.RequireRole("DEFRAAccess"));
     authorizationBuilder.AddPolicy("VLAAccess", p => p.RequireRole("VLAAccess"));
     authorizationBuilder.AddPolicy("VLAMaintenance", p => p.RequireRole("VLAMaintenance"));
@@ -505,21 +509,11 @@ try
 
     app.MapPost("/case/{rbse}/discard-unsaved", async (
         string rbse,
-        ICaseEditDraftStateService caseEditDraftState,
-        ICaseFarmDraftStateService caseFarmDraftState,
-        ICaseClinicalDraftStateService caseClinicalDraftState,
-        ICaseFeedsDraftStateService caseFeedsDraftState,
-        ICaseRelationsDraftStateService caseRelationsDraftState,
-        ICaseScalarDraftStateService caseScalarDraftState) =>
+        ICaseDraftDiscardService caseDraftDiscard) =>
     {
         var normalizedRbse = RbseHelper.ParseToRaw(rbse);
 
-        await caseEditDraftState.ClearAsync(normalizedRbse);
-        await caseFarmDraftState.ClearAsync(normalizedRbse);
-        await caseClinicalDraftState.ClearAsync(normalizedRbse);
-        await caseFeedsDraftState.ClearAsync(normalizedRbse);
-        await caseRelationsDraftState.ClearAsync(normalizedRbse);
-        await caseScalarDraftState.ClearAsync(normalizedRbse);
+        await caseDraftDiscard.DiscardAllAsync(normalizedRbse);
 
         return Results.Ok(new { cleared = true });
     }).RequireAuthorization();

@@ -90,8 +90,11 @@
                             <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/Case/FinalResultEntry">Final result entry</a></li>
                             <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/Farm/CphhChange">CPHH change</a></li>
                             <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/Case/RbseChange">RBSE change</a></li>
-                            <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/Case/MoveCase">Move case</a></li>
                             <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/Case/Delete">Delete case</a></li>
+                        }
+                        @if (User.IsInRole("DEFRAMaintenance") || User.IsInRole("VLAMaintenance"))
+                        {
+                            <li class="bse-global-header-nav__item"><a class="govuk-link" asp-page="/Case/MoveCase">Move case</a></li>
                         }
                         @if (User.IsInRole("VLAAccess"))
                         {

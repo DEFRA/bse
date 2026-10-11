@@ -1,0 +1,269 @@
+@model BSE.Host.Pages.Case.FarmModel
+@* Shared styles + inline-grid JS for the Farm tab's Herd Size / Linked Farms sections.
+   Must be rendered from BOTH the create-mode (brand-new case) and existing-case markup
+   blocks in Farm.cshtml — those two blocks are mutually exclusive via an early `return;`,
+   so this cannot simply live once at the bottom of the page after both of them. *@
+<style>
+    .bse-form-fieldset-reset {
+        border: 0;
+        margin: 0;
+        padding: 0;
+    }
+
+    .bse-case-bottom-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+
+    .bse-case-bottom-row__left,
+    .bse-case-bottom-row__right {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin: 0;
+    }
+
+    .bse-case-bottom-row__right {
+        gap: 20px;
+        margin-left: auto;
+    }
+
+    .bse-case-bottom-row__actions {
+        margin: 0;
+    }
+
+    .case-farm-herd-table__group-left {
+        background: #fff;
+        color: #0b0c0c;
+        border-bottom: 1px solid #b1b4b6;
+        font-size: 1.5rem;
+        font-weight: 700;
+    }
+
+    .case-farm-herd-table__group-mid {
+        background: #fff;
+        color: #0b0c0c;
+        text-align: center;
+        border-bottom: 1px solid #b1b4b6;
+    }
+
+    .case-farm-herd-table__group-right {
+        background: #fff;
+        color: #0b0c0c;
+        text-align: left;
+        white-space: nowrap;
+        border-bottom: 1px solid #b1b4b6;
+    }
+
+    /* Legacy CaseEntryFarm.aspx grdHerdSize used 81px/50px columns with plain 64px/35px
+       textboxes. GOV.UK inputs (govuk-input--width-4/3) need more room to comfortably fit
+       the acceptable ranges without clipping: Year (4 digits, up to current year),
+       Total size (up to 2000, 4 digits) and each Lactation value (up to 999, 3 digits). */
+    .case-farm-herd-table {
+        table-layout: fixed;
+    }
+
+    .case-farm-herd-table__col-year,
+    .case-farm-herd-table__col-size {
+        width: 110px;
+    }
+
+    .case-farm-herd-table__col-lac {
+        width: 68px;
+    }
+
+    .case-farm-herd-table__col-action {
+        width: 200px;
+    }
+
+    .case-farm-herd-table .govuk-input {
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .bse-herd-row--unsaved {
+        background: #fffbf2;
+    }
+
+    .bse-mismatch-warning {
+        display: inline-block;
+        margin-left: 6px;
+        color: #00703c;
+        font-weight: 700;
+        font-size: 1.15rem;
+        line-height: 1;
+        cursor: help;
+    }
+
+    .bse-row-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: nowrap;
+        gap: 8px;
+    }
+
+    .case-farm-herd-table td .govuk-input {
+        margin-bottom: 0;
+    }
+
+    .bse-inline-row-button {
+        border: 1px solid #0b0c0c;
+        background: #fff;
+        color: #0b0c0c;
+        padding: 4px 8px;
+        min-height: 36px;
+        font-size: 1rem;
+        line-height: 1.1;
+        cursor: pointer;
+    }
+
+    .bse-inline-row-button:hover {
+        background: #f3f2f1;
+    }
+
+    .bse-inline-row-button:focus {
+        outline: 3px solid #ffdd00;
+        outline-offset: 0;
+    }
+
+    .bse-inline-row-button--secondary {
+        border-color: #505a5f;
+    }
+
+    .bse-inline-row-button--confirm {
+        background: #00703c;
+        border-color: #00703c;
+        color: #fff;
+    }
+
+    .bse-inline-row-button--confirm:hover {
+        background: #005a30;
+        border-color: #005a30;
+    }
+
+    .bse-farm-legacy-top__input.bse-farm-legacy-top__input--editable {
+        background: #ffffff !important;
+        color: #0b0c0c;
+        cursor: text;
+    }
+</style>
+
+<script>
+    (function () {
+        var liveRegion = document.getElementById('herd-live-region');
+        var announce = function (message) {
+            if (liveRegion) { liveRegion.textContent = message; }
+        };
+
+        // ── Add herd size row toggle ──────────────────────────────────────
+        var showAddBtn = document.getElementById('show-add-herd-row');
+        var addRow = document.getElementById('add-herd-row-inline');
+        var cancelAddBtn = document.getElementById('cancel-add-herd-row');
+        var showAddLinkedBtn = document.getElementById('show-add-linked-row');
+        var addLinkedRow = document.getElementById('add-linked-row-inline');
+        var cancelAddLinkedBtn = document.getElementById('cancel-add-linked-row');
+
+        if (showAddBtn && addRow) {
+            showAddBtn.addEventListener('click', function () {
+                addRow.hidden = false;
+                showAddBtn.hidden = true;
+                var firstInput = addRow.querySelector('input');
+                if (firstInput) { firstInput.focus(); }
+                announce('Add herd size row opened.');
+            });
+        }
+
+        document.querySelectorAll('.js-cancel-edit-linked-row').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                window.location.href = window.location.pathname + window.location.search;
+            });
+        });
+
+        if (cancelAddBtn && addRow && showAddBtn) {
+            cancelAddBtn.addEventListener('click', function () {
+                addRow.hidden = true;
+                showAddBtn.hidden = false;
+                addRow.querySelectorAll('input[type="number"]').forEach(function (input) { input.value = ''; });
+                cancelAddBtn.blur();
+                announce('Add herd size row cancelled.');
+            });
+        }
+
+        if (showAddLinkedBtn && addLinkedRow) {
+            showAddLinkedBtn.addEventListener('click', function () {
+                addLinkedRow.hidden = false;
+                showAddLinkedBtn.hidden = true;
+                var linkedInput = addLinkedRow.querySelector('input');
+                if (linkedInput) { linkedInput.focus(); }
+            });
+        }
+
+        if (cancelAddLinkedBtn && addLinkedRow && showAddLinkedBtn) {
+            cancelAddLinkedBtn.addEventListener('click', function () {
+                addLinkedRow.hidden = true;
+                showAddLinkedBtn.hidden = false;
+                addLinkedRow.querySelectorAll('input').forEach(function (input) { input.value = ''; });
+                cancelAddLinkedBtn.blur();
+            });
+        }
+
+        // "Cancel row" while editing discards the transient edit view (nothing was
+        // saved yet) by reloading the page without the edit marker.
+        document.querySelectorAll('.js-cancel-edit-row').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                window.location.href = window.location.pathname + window.location.search;
+            });
+        });
+
+        // Legacy's Cancel dirty-check (UpdateSessionWithCaseDetails) only ever writes the main
+        // Farm fields into dsFarm — the Herd Size and Linked Farms grids are separate session
+        // tables never inspected there (only checked for InEditMode to block Save), so typing in
+        // either grid (before Add/Update) must not count here; a committed row change is already
+        // tracked separately via Model.HasUnsavedChanges.
+        var cancelForm = document.getElementById('case-farm-inline-form');
+        var formDirty = false;
+        if (cancelForm) {
+            var isGridRowField = function (target) { return !!(target && target.closest && target.closest('table')); };
+            cancelForm.addEventListener('input', function (e) { if (!isGridRowField(e.target)) formDirty = true; });
+            cancelForm.addEventListener('change', function (e) { if (!isGridRowField(e.target)) formDirty = true; });
+        }
+
+        // ── Cancel page edits — confirmation before discarding changes ──
+        document.querySelectorAll('.bse-cancel-link').forEach(function (lnk) {
+            lnk.addEventListener('click', function (e) {
+                e.preventDefault();
+                var hasUnsavedHere = formDirty || @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.HasUnsavedChanges));
+                // Legacy's dirty-check spans the whole shared session (every tab), not just this page.
+                (hasUnsavedHere ? Promise.resolve(true) : (window.hasUnsavedChangesAcrossTabs ? window.hasUnsavedChangesAcrossTabs() : Promise.resolve(false)))
+                    .then(function (hasUnsaved) {
+                        if (!hasUnsaved || window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
+                            window.location.href = lnk.href;
+                        }
+                    });
+            });
+        });
+
+        var reopenHerdClientKey = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ReopenEditClientKey));
+        if (reopenHerdClientKey) {
+            var herdRow = document.querySelector('.bse-herd-row[data-client-key="' + reopenHerdClientKey + '"]');
+            if (herdRow) {
+                herdRow.scrollIntoView({ behavior: 'auto', block: 'center' });
+                var herdInput = herdRow.querySelector('input');
+                if (herdInput) { herdInput.focus(); }
+            }
+        }
+
+        var reopenLinkedClientKey = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ReopenLinkedEditClientKey));
+        if (reopenLinkedClientKey) {
+            var linkedRow = document.querySelector('.bse-linked-row[data-client-key="' + reopenLinkedClientKey + '"]');
+            if (linkedRow) {
+                linkedRow.scrollIntoView({ behavior: 'auto', block: 'center' });
+                var linkedInput = linkedRow.querySelector('input');
+                if (linkedInput) { linkedInput.focus(); }
+            }
+        }
+    })();
+</script>

@@ -19,16 +19,7 @@ public class PrintBatchModel(IBatchService batchService) : PageModel
     // DateTime.Now follows the host OS's local timezone, which defaults to UTC on typical
     // Linux/container deployments and would show "Date Run" an hour behind the real UK
     // wall-clock time during BST. Convert explicitly instead of relying on host configuration.
-    private static readonly TimeZoneInfo UkTimeZone = ResolveUkTimeZone();
-
-    private static TimeZoneInfo ResolveUkTimeZone()
-    {
-        try { return TimeZoneInfo.FindSystemTimeZoneById("GMT Standard Time"); } // Windows ID
-        catch (TimeZoneNotFoundException)
-        {
-            return TimeZoneInfo.FindSystemTimeZoneById("Europe/London"); // Linux/IANA ID
-        }
-    }
+    private static DateTime UkNow => UkClock.Now;
 
     public enum ReportType
     {
@@ -142,7 +133,7 @@ public class PrintBatchModel(IBatchService batchService) : PageModel
         sb.AppendLine($"<h1>{HtmlEncoder.Default.Encode(title)}</h1>");
         sb.AppendLine("<table class=\"report-table\">");
         sb.AppendLine("<tr><th>Batch No.</th><th>Date Run</th><th>Number In Batch</th></tr>");
-        sb.AppendLine($"<tr><td>{HtmlEncoder.Default.Encode(batchLabel)}</td><td>{TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, UkTimeZone):dd/MM/yyyy HH:mm}</td><td>{rows.Count}</td></tr>");
+        sb.AppendLine($"<tr><td>{HtmlEncoder.Default.Encode(batchLabel)}</td><td>{UkNow:dd/MM/yyyy HH:mm}</td><td>{rows.Count}</td></tr>");
         sb.AppendLine("</table><hr/>");
 
         if (rows.Count == 0)

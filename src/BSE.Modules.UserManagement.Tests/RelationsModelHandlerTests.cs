@@ -56,7 +56,7 @@ public sealed class RelationsModelHandlerTests
     {
         var model = new RelationsModel(
             _relationsRepository, _caseService, _lookups,
-            _batchRepository, _relationsDraftState, Substitute.For<ICaseScalarDraftStateService>(), Substitute.For<ICaseEditOrchestrationService>(), _connectionFactory, _currentUser,
+            _batchRepository, _relationsDraftState, Substitute.For<ICaseScalarDraftStateService>(), Substitute.For<ICaseDraftDiscardService>(), Substitute.For<ICaseEditOrchestrationService>(), _connectionFactory, _currentUser,
             NullLogger<RelationsModel>.Instance,
             new ConfigurationBuilder().AddInMemoryCollection().Build())
         {
@@ -134,7 +134,10 @@ public sealed class RelationsModelHandlerTests
 
         var result = await model.OnPostLookUpDamAsync();
 
-        result.Should().BeOfType<PageResult>();
+        // Post-Redirect-Get: a successful match redirects to a fresh GET so it isn't left as a
+        // POST response in browser history (previously caused a resubmission prompt / ERR_CACHE_MISS
+        // when navigating to "View Dam's Relations" then pressing Back).
+        result.Should().BeOfType<RedirectToPageResult>();
         model.DamSire.HasDam.Should().BeTrue();
         model.DamSire.DamId.Should().Be(42);
         model.DamSire.DamEartag.Should().Be("UK123");
@@ -269,7 +272,10 @@ public sealed class RelationsModelHandlerTests
 
         var result = await model.OnPostLookUpSireAsync();
 
-        result.Should().BeOfType<PageResult>();
+        // Post-Redirect-Get: a successful match redirects to a fresh GET so it isn't left as a
+        // POST response in browser history (previously caused a resubmission prompt / ERR_CACHE_MISS
+        // when navigating to "View Sire's Relations" then pressing Back).
+        result.Should().BeOfType<RedirectToPageResult>();
         model.DamSire.HasSire.Should().BeTrue();
         model.DamSire.SireId.Should().Be(7);
         model.DamSire.SireEartag.Should().Be("UK777");

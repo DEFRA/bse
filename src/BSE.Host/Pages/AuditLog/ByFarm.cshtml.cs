@@ -101,7 +101,7 @@ public class ByFarmModel(IAuditLogService auditLogService) : PageModel
         workbook.SaveAs(stream);
         stream.Position = 0;
 
-        var fileName = $"FarmAuditLog_{NormaliseCphh(Cphh)}_{DateTime.Now:yyyyMMdd}.xlsx";
+        var fileName = $"FarmAuditLog_{NormaliseCphh(Cphh)}_{BSE.SharedKernel.UkClock.Today:yyyyMMdd}.xlsx";
         return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
     }
 

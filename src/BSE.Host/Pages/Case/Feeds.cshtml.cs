@@ -34,6 +34,7 @@ public class FeedsModel(
     IBatchRepository batchRepository,
     ICaseFeedsDraftStateService feedsDraftState,
     ICaseScalarDraftStateService caseScalarDraftState,
+    ICaseDraftDiscardService caseDraftDiscard,
     ICaseEditOrchestrationService caseEditOrchestration,
     ICurrentUserService currentUser,
     IConfiguration configuration) : PageModel
@@ -321,8 +322,7 @@ public class FeedsModel(
     private async Task<IActionResult> CancelFeedsEditAsync()
     {
         Rbse = RbseHelper.ParseToRaw(Rbse);
-        await feedsDraftState.ClearAsync(Rbse);
-        await caseScalarDraftState.ClearAsync(Rbse);
+        await caseDraftDiscard.DiscardAllAsync(Rbse);
         return RedirectToPage("/Home");
     }
 
