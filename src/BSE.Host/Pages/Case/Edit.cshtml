@@ -71,7 +71,7 @@
 @await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Case (DEFRA)", Model.Case.Rbse, Model.BatchNumbers, viewDocsUrl, Model.CanEditCaseFields))
 
 @await Html.PartialAsync("_CaseEditNotifications", new BSE.Host.Models.CaseEditNotificationsViewModel(
-    "defra", TempData["Success"] as string, TempData["Warning"] as string))
+    "defra", WarningMessage: TempData["Warning"] as string))
 
 @if (!string.IsNullOrEmpty(Model.ConcurrencyError))
 {
@@ -542,7 +542,7 @@
                     <label for="Case_IsPaperworkComplete" class="govuk-label defra-legacy-receipt-label">Is Paperwork Complete?</label>
                     <input asp-for="Case.IsPaperworkComplete" id="Case_IsPaperworkComplete" type="checkbox" class="defra-legacy-receipt-check" />
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input asp-for="Case.PaperworkCompleteDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(ePaperwork is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.PaperworkCompleteDate)" aria-label="Paperwork complete date" disabled="@(!Model.Case.HasCaseWork)" />
+                        <input asp-for="Case.PaperworkCompleteDate" type="text" class="govuk-input defra-legacy-date moj-js-datepicker-input @(ePaperwork is not null ? "govuk-input--error" : "")" autocomplete="off" placeholder="dd/mm/yyyy" value="@DateVal(Model.Case.PaperworkCompleteDate)" aria-label="Paperwork complete date" disabled="@(!Model.CanEditPaperworkCompleteDate)" />
                     </div>
                 </div>
             </div>
@@ -1266,13 +1266,16 @@
             });
         });
 
-        // Legacy's Cancel is a postback that captures the current form before checking for
-        // changes, so edits typed on this tab but never staged anywhere must count as unsaved too.
+        // Legacy's Cancel dirty-check (UpdateSessionWithCaseDetails) only ever writes the main
+        // Case fields into dsCase — the Test records grid (#test-records) is a separate session
+        // table never inspected there, so typing in it (before Add/Update) must not count here;
+        // a committed test row is already tracked separately via Model.HasUnsavedChanges.
         var cancelForm = document.getElementById('case-edit-inline-form');
         var formDirty = false;
         if (cancelForm) {
-            cancelForm.addEventListener('input', function () { formDirty = true; });
-            cancelForm.addEventListener('change', function () { formDirty = true; });
+            var isGridRowField = function (target) { return !!(target && target.closest && target.closest('table')); };
+            cancelForm.addEventListener('input', function (e) { if (!isGridRowField(e.target)) formDirty = true; });
+            cancelForm.addEventListener('change', function (e) { if (!isGridRowField(e.target)) formDirty = true; });
         }
 
         document.querySelectorAll('.bse-cancel-link').forEach(function (lnk) {

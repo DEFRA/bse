@@ -89,7 +89,7 @@ public class ByCaseModel(IAuditLogService auditLogService) : PageModel
         }
 
         var bytes = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
-        var fileName = $"AuditLog_{Rbse.Trim().ToUpperInvariant()}_{DateTime.Now:yyyyMMdd}.csv";
+        var fileName = $"AuditLog_{Rbse.Trim().ToUpperInvariant()}_{BSE.SharedKernel.UkClock.Today:yyyyMMdd}.csv";
         return File(bytes, "text/csv", fileName);
     }
 

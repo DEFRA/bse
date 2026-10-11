@@ -27,6 +27,7 @@ public class VlaModel(
     ICaseWizardStateService wizardState,
     ICaseEditDraftStateService caseEditDraftState,
     ICaseScalarDraftStateService caseScalarDraftState,
+    ICaseDraftDiscardService caseDraftDiscard,
     ICaseEditOrchestrationService caseEditOrchestration,
     ILookupDataService lookups,
     IBatchRepository batchRepository,
@@ -278,8 +279,7 @@ public class VlaModel(
     public async Task<IActionResult> OnGetCancelVlaEditAsync()
     {
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
-        await caseEditDraftState.ClearAsync(caseRbse);
-        await caseScalarDraftState.ClearAsync(caseRbse);
+        await caseDraftDiscard.DiscardAllAsync(caseRbse);
         return RedirectToPage("/Home");
     }
 

@@ -30,6 +30,7 @@ public class PickListsAddModel(
     public EditableLookup? Lookup { get; private set; }
     public EditableLookupProcs? Procs { get; private set; }
     public IReadOnlyList<LuBSERegion> BseRegionOptions { get; private set; } = [];
+    public IReadOnlyList<BSE.SharedKernel.ILookupItem> AhoOptions { get; private set; } = [];
     public IReadOnlyList<PickListsEditModel.FieldSpec> DisplayFields { get; private set; } = [];
 
     public bool CanEdit => User.IsInRole("VLAMaintenance");
@@ -80,6 +81,9 @@ public class PickListsAddModel(
 
         if (DisplayFields.Any(f => f.IsRegionLookup))
             BseRegionOptions = (await lookupDataService.GetBSERegionsAsync()).ToList();
+
+        if (DisplayFields.Any(f => f.IsAhoLookup))
+            AhoOptions = (await lookupDataService.GetLookupAsync(BSE.SharedKernel.LookupTableId.AHO)).ToList();
     }
 
     private IActionResult RedirectToTable() =>
@@ -114,7 +118,7 @@ public class PickListsAddModel(
                 ModelState.AddModelError(field.Column, $"Enter a {field.Label.ToLowerInvariant()}");
         }
 
-        foreach (var field in DisplayFields.Where(f => f.IsRegionLookup))
+        foreach (var field in DisplayFields.Where(f => f.IsRegionLookup || f.IsAhoLookup))
         {
             if (string.IsNullOrWhiteSpace(Field(field.Column)))
                 ModelState.AddModelError(field.Column, $"Select a {field.Label.ToLowerInvariant()}");
@@ -169,7 +173,7 @@ public class PickListsAddModel(
             new("CPH", "CPH"),
             new("Name", "Name"),
             new("Address", "Address"),
-            new("AHO", "AHO")
+            new("AHO", "AHO", IsAhoLookup: true)
         ],
         AhroId => [new("Name", "Name")],
         _ =>

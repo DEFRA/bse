@@ -13,7 +13,9 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace BSE.Host.Pages.Farm;
 
 [Authorize(Policy = "FarmCreation")]
-public class NewModel(IFarmService farmService, ICurrentUserService currentUserService, ILookupDataService lookups, IGeoLookupService geoLookup) : PageModel
+public class NewModel(
+    IFarmService farmService, ICurrentUserService currentUserService, ILookupDataService lookups,
+    IGeoLookupService geoLookup, BSE.Host.Services.IGeoLookupService mapReferenceGeoLookup) : PageModel
 {
     private const string VetnetNotFoundMessage = "The CPHH you entered was not Found on Vetnet";
     private const string BrusselsWarningMessage = "Local authority not on file – case won’t be notifiable to Brussels.  Please investigate.";
@@ -235,22 +237,24 @@ public class NewModel(IFarmService farmService, ICurrentUserService currentUserS
         if (string.IsNullOrEmpty(cphh) || cphh.Length < 5)
             return new JsonResult(new { error = "CPHH must be at least 5 characters to estimate a map reference." });
 
-        var county = cphh[..2];
-        var parish = cphh[2..5];
+        var estimate = await mapReferenceGeoLookup.EstimateMapReferenceAsync(cphh);
+        if (estimate.Error is not null)
+            return new JsonResult(new { error = estimate.Error });
 
-        var geo = await geoLookup.GetMapReferenceAsync(county, parish);
-        if (geo is null)
-            return new JsonResult(new { error = "No map reference data found for the parish associated with this CPHH." });
+        return new JsonResult(new { mapRef1 = estimate.MapRef1, mapRef2 = estimate.MapRef2, mapRef3 = estimate.MapRef3 });
+    }
 
-        var centreX = (int.Parse(geo.XReference1) + int.Parse(geo.XReference2)) / 2;
-        var centreY = (int.Parse(geo.YReference1) + int.Parse(geo.YReference2)) / 2;
-        var mapRef = centreX.ToString("D4") + centreY.ToString("D4");
+    /// <summary>AJAX handler: returns whether the supplied map reference lies within the parish boundaries.</summary>
+    public async Task<IActionResult> OnGetValidateMapReferenceAsync(string? cphh, string? mapRef)
+    {
+        cphh = CphhNormalizer.Normalize(cphh);
+        mapRef = (mapRef ?? "").Trim().ToUpperInvariant();
+        if (cphh.Length < 5 || mapRef.Length < 8)
+            return new JsonResult(new { valid = true });
 
-        return new JsonResult(new
-        {
-            mapRef1 = mapRef[..2],
-            mapRef2 = mapRef[2..5],
-            mapRef3 = mapRef[5..8]
-        });
+        var valid = await mapReferenceGeoLookup.IsMapReferenceWithinParishAsync(cphh, mapRef);
+        return valid
+            ? new JsonResult(new { valid = true })
+            : new JsonResult(new { valid = false, message = "Map reference does not lie within the parish boundaries for this CPHH." });
     }
 }

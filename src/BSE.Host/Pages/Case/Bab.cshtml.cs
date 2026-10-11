@@ -25,6 +25,7 @@ public class BabModel(
     IBatchRepository batchRepository,
     IDbConnectionFactory connectionFactory,
     ICaseScalarDraftStateService caseScalarDraftState,
+    ICaseDraftDiscardService caseDraftDiscard,
     ICaseEditOrchestrationService caseEditOrchestration,
     ICurrentUserService currentUser,
     IConfiguration configuration) : PageModel
@@ -234,7 +235,7 @@ public class BabModel(
 
     public async Task<IActionResult> OnGetCancelBabEdit()
     {
-        await caseScalarDraftState.ClearAsync(Rbse);
+        await caseDraftDiscard.DiscardAllAsync(Rbse);
         return RedirectToPage("/Home");
     }
 

@@ -48,6 +48,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     private readonly IBatchRepository _batchRepository = Substitute.For<IBatchRepository>();
     private readonly IOtherOwnerRepository _ownerRepository = Substitute.For<IOtherOwnerRepository>();
     private readonly IDbConnectionFactory _connectionFactory = Substitute.For<IDbConnectionFactory>();
+    private readonly ICaseDraftDiscardService _vlaCaseDraftDiscard = Substitute.For<ICaseDraftDiscardService>();
 
     private VlaModel CreateVlaModel(string[]? roles = null)
     {
@@ -63,7 +64,7 @@ public sealed class ClinicalVlaUsersHandlerTests
 
         var model = new VlaModel(
             _caseService, _babRepository, _currentUserService, _wizardState, _caseEditDraftState,
-            _caseScalarDraftState, _caseEditOrchestration,
+            _caseScalarDraftState, _vlaCaseDraftDiscard, _caseEditOrchestration,
             _lookups, _batchRepository, _ownerRepository, _connectionFactory,
             new ConfigurationBuilder().AddInMemoryCollection().Build())
         {
@@ -188,7 +189,7 @@ public sealed class ClinicalVlaUsersHandlerTests
 
         result.Should().BeOfType<RedirectToPageResult>();
         ((RedirectToPageResult)result).PageName.Should().Be("/Home");
-        await _caseEditDraftState.Received(1).ClearAsync(Rbse);
+        await _vlaCaseDraftDiscard.Received(1).DiscardAllAsync(Rbse);
     }
 
     [Fact]
@@ -469,6 +470,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     private readonly IDbConnectionFactory _clinicalConnectionFactory = Substitute.For<IDbConnectionFactory>();
     private readonly ICaseScalarDraftStateService _clinicalScalarDraftState = Substitute.For<ICaseScalarDraftStateService>();
     private readonly ICaseEditOrchestrationService _clinicalEditOrchestration = Substitute.For<ICaseEditOrchestrationService>();
+    private readonly ICaseDraftDiscardService _clinicalCaseDraftDiscard = Substitute.For<ICaseDraftDiscardService>();
 
     private ClinicalModel CreateClinicalModel(string[]? roles = null)
     {
@@ -484,7 +486,7 @@ public sealed class ClinicalVlaUsersHandlerTests
 
         var model = new ClinicalModel(
             _clinicalRepository, _caseRepository, _batchRepository, _clinicalDraftState,
-            _clinicalScalarDraftState, _clinicalEditOrchestration,
+            _clinicalScalarDraftState, _clinicalCaseDraftDiscard, _clinicalEditOrchestration,
             _currentUserService, _clinicalConnectionFactory, new ConfigurationBuilder().AddInMemoryCollection().Build())
         {
             Rbse = Rbse
@@ -493,6 +495,8 @@ public sealed class ClinicalVlaUsersHandlerTests
         var httpContext = new DefaultHttpContext();
         httpContext.User = new ClaimsPrincipal(new ClaimsIdentity(
             (roles ?? []).Select(r => new Claim(ClaimTypes.Role, r)), "TestAuth"));
+        httpContext.Request.ContentType = "application/x-www-form-urlencoded";
+        httpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>());
         model.PageContext = new PageContext { HttpContext = httpContext };
         model.PageContext.ViewData = new ViewDataDictionary(new EmptyModelMetadataProvider(), model.ModelState);
         model.TempData = new TempDataDictionary(httpContext, Substitute.For<ITempDataProvider>());
@@ -577,7 +581,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         var result = await model.OnPostCancelClinicalEditAsync();
 
         result.Should().BeOfType<RedirectToPageResult>();
-        await _clinicalDraftState.Received(1).ClearAsync(Rbse);
+        await _clinicalCaseDraftDiscard.Received(1).DiscardAllAsync(Rbse);
     }
 
     [Fact]
@@ -626,6 +630,59 @@ public sealed class ClinicalVlaUsersHandlerTests
         result.Should().BeOfType<RedirectToPageResult>();
         await _clinicalDraftState.Received(1).SetAsync(Arg.Is<CaseClinicalDraftState>(d =>
             d.Visits.Any(v => v.VisitDate == new DateTime(2024, 1, 10))));
+    }
+
+    /// <summary>Regression test: a checkbox edit typed into the Signs panel but not yet saved must
+    /// survive an Add/Edit/Delete Visit-row postback — it must be re-read from the posted form and
+    /// re-staged, not silently dropped back to the last-persisted (unchecked) DB value.</summary>
+    [Fact]
+    public async Task ClinicalModel_OnPostAddVisitRowAsync_PreservesPostedSignsCheckboxEdit()
+    {
+        _clinicalDraftState.GetAsync(Rbse).Returns(new CaseClinicalDraftState { Rbse = Rbse });
+        _clinicalRepository.GetByRbseAsync(Rbse).Returns(new CaseClinicalRecord
+        {
+            Rbse = Rbse,
+            Apprehension = false,
+            RowStamp = [1, 2, 3]
+        });
+
+        var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
+        model.NewVisitDate = new DateTime(2024, 1, 10);
+        model.PageContext.HttpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>
+        {
+            ["Signs.Apprehension"] = "true"
+        });
+
+        var rowStampBase64 = Convert.ToBase64String([1, 2, 3]);
+        var result = await model.OnPostAddVisitRowAsync(rowStampBase64);
+
+        result.Should().BeOfType<RedirectToPageResult>();
+        await _clinicalScalarDraftState.Received(1).SetAsync(Arg.Is<CaseScalarDraftState>(d =>
+            d.Clinical != null && d.Clinical.Apprehension == true));
+    }
+
+    /// <summary>Regression test: the bug above also applied, more severely, to a brand-new clinical
+    /// record with no Clinical row yet — RestoreAndRestageSignsEditAsync used to bail out entirely
+    /// whenever clinicalRowStampBase64 was blank, so no checkbox edit was ever staged at all for a
+    /// case still being created.</summary>
+    [Fact]
+    public async Task ClinicalModel_OnPostAddVisitRowAsync_PreservesPostedSignsCheckboxEdit_ForBrandNewClinicalRecord()
+    {
+        _clinicalDraftState.GetAsync(Rbse).Returns(new CaseClinicalDraftState { Rbse = Rbse });
+        _clinicalRepository.GetByRbseAsync(Rbse).Returns((CaseClinicalRecord?)null);
+
+        var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
+        model.NewVisitDate = new DateTime(2024, 1, 10);
+        model.PageContext.HttpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>
+        {
+            ["Signs.Apprehension"] = "true"
+        });
+
+        var result = await model.OnPostAddVisitRowAsync(null);
+
+        result.Should().BeOfType<RedirectToPageResult>();
+        await _clinicalScalarDraftState.Received(1).SetAsync(Arg.Is<CaseScalarDraftState>(d =>
+            d.Clinical != null && d.Clinical.Apprehension == true));
     }
 
     [Fact]

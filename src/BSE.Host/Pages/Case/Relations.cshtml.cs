@@ -31,6 +31,7 @@ public class RelationsModel(
     IBatchRepository batchRepository,
     ICaseRelationsDraftStateService relationsDraftState,
     ICaseScalarDraftStateService caseScalarDraftState,
+    ICaseDraftDiscardService caseDraftDiscard,
     ICaseEditOrchestrationService caseEditOrchestration,
     IDbConnectionFactory connectionFactory,
     ICurrentUserService currentUser,
@@ -1276,8 +1277,7 @@ public class RelationsModel(
     private async Task<IActionResult> CancelRelationsEditAsync()
     {
         var rbse = RbseHelper.ParseToRaw(Rbse);
-        await relationsDraftState.ClearAsync(rbse);
-        await caseScalarDraftState.ClearAsync(rbse);
+        await caseDraftDiscard.DiscardAllAsync(rbse);
         return RedirectToPage("/Home");
     }
 

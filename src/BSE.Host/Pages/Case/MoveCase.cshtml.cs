@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.Case;
 
-[Authorize(Policy = "DEFRAMaintenance")]
+[Authorize(Policy = "DEFRAOrVLAMaintenance")]
 public class MoveCaseModel(
     ICaseService caseService,
     IFarmService farmService,

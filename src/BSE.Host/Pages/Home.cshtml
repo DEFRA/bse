@@ -205,8 +205,11 @@
                 <li><a asp-page="/Case/FinalResultEntry" class="govuk-link">Final result entry</a></li>
                 <li><a asp-page="/Farm/CphhChange" class="govuk-link">CPHH change</a></li>
                 <li><a asp-page="/Case/RbseChange" class="govuk-link">RBSE change</a></li>
-                <li><a asp-page="/Case/MoveCase" class="govuk-link">Move case</a></li>
                 <li><a asp-page="/Case/Delete" class="govuk-link">Delete case</a></li>
+            }
+            @if (User.IsInRole("DEFRAMaintenance") || User.IsInRole("VLAMaintenance"))
+            {
+                <li><a asp-page="/Case/MoveCase" class="govuk-link">Move case</a></li>
             }
         </ul>
     </div>

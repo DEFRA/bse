@@ -23,6 +23,7 @@ public class ClinicalModel(
     IBatchRepository batchRepository,
     ICaseClinicalDraftStateService clinicalDraftState,
     ICaseScalarDraftStateService caseScalarDraftState,
+    ICaseDraftDiscardService caseDraftDiscard,
     ICaseEditOrchestrationService caseEditOrchestration,
     ICurrentUserService currentUser,
     IDbConnectionFactory connectionFactory,
@@ -251,21 +252,28 @@ public class ClinicalModel(
     /// <summary>Re-stages the posted (in-progress, unsaved) clinical signs edit — otherwise a Visits
     /// grid operation (add/edit/delete) silently discards any not-yet-saved checkbox edit, since
     /// <c>LoadAsync()</c> always reloads <see cref="Signs"/> from the database and <see cref="Signs"/>
-    /// is never itself model-bound from the post.</summary>
+    /// is never itself model-bound from the post. Also applies when no Clinical row exists yet
+    /// (blank <paramref name="clinicalRowStampBase64"/>) — a brand-new, not-yet-saved clinical
+    /// entry must survive a grid operation too, same as legacy's shared session DataSet would.</summary>
     private async Task RestoreAndRestageSignsEditAsync(string? clinicalRowStampBase64)
     {
-        if (string.IsNullOrEmpty(clinicalRowStampBase64))
-            return;
-
         var signs = BindSignsFromForm();
         Signs = signs;
 
-        var rowStamp = Convert.FromBase64String(clinicalRowStampBase64);
-        var edit = signs.ToEditCommand(Rbse, rowStamp);
-
         var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
-        draft.ClinicalBaseRowStampBase64 ??= clinicalRowStampBase64;
-        draft.Clinical = edit with { RowStamp = Convert.FromBase64String(draft.ClinicalBaseRowStampBase64) };
+
+        if (string.IsNullOrEmpty(clinicalRowStampBase64))
+        {
+            draft.Clinical = signs.ToEditCommand(Rbse, []);
+        }
+        else
+        {
+            var rowStamp = Convert.FromBase64String(clinicalRowStampBase64);
+            var edit = signs.ToEditCommand(Rbse, rowStamp);
+            draft.ClinicalBaseRowStampBase64 ??= clinicalRowStampBase64;
+            draft.Clinical = edit with { RowStamp = Convert.FromBase64String(draft.ClinicalBaseRowStampBase64) };
+        }
+
         draft.HasPendingChanges = true;
         await caseScalarDraftState.SetAsync(draft);
     }
@@ -273,15 +281,13 @@ public class ClinicalModel(
     /// <summary>Discards all staged visit changes without persisting them.</summary>
     public async Task<IActionResult> OnPostCancelClinicalEditAsync()
     {
-        await clinicalDraftState.ClearAsync(Rbse);
-        await caseScalarDraftState.ClearAsync(Rbse);
-        return RedirectToPage(new { rbse = Rbse });
+        await caseDraftDiscard.DiscardAllAsync(Rbse);
+        return RedirectToPage("/Home");
     }
 
     public async Task<IActionResult> OnGetCancelClinicalEditAsync()
     {
-        await clinicalDraftState.ClearAsync(Rbse);
-        await caseScalarDraftState.ClearAsync(Rbse);
+        await caseDraftDiscard.DiscardAllAsync(Rbse);
         return RedirectToPage("/Home");
     }
 

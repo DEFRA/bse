@@ -21,18 +21,6 @@
     var genericWarningMsg = TempData["Warning"] as string;
 }
 
-@if (TempData["Success"] is string successMsg)
-{
-    <div class="govuk-notification-banner govuk-notification-banner--success" role="alert"
-         aria-labelledby="relations-success-title" data-module="govuk-notification-banner">
-        <div class="govuk-notification-banner__header">
-            <h2 class="govuk-notification-banner__title" id="relations-success-title">Success</h2>
-        </div>
-        <div class="govuk-notification-banner__content">
-            <p class="govuk-notification-banner__heading">@successMsg</p>
-        </div>
-    </div>
-}
 
 @if (!string.IsNullOrWhiteSpace(relationsWarningMsg))
 {
@@ -939,13 +927,22 @@
     </style>
 
     <script>
-        // Legacy's Cancel is a postback that captures the current form before checking for
-        // changes, so edits typed on this tab but never staged anywhere must count as unsaved too.
+        // Legacy's Cancel dirty-check (CancelCaseEdit/UpdateSessionWithCaseDetails) only ever
+        // writes Case Herdbook, Dam Status and the Dam/Sire fields into dsCase before comparing —
+        // it never looks at the Other Relations grid/panel (ctlRelationRBSE_RBSEChanged just does
+        // a lookup, nothing session-level). So typing in the Other Relations panel (RBSE, Sex,
+        // Fate, Eartag, dates, Sire — inside .bse-relations-grid) must NOT count as unsaved here;
+        // only an actual Add As New/Update Selected commit does, already reflected by
+        // Model.HasUnsavedChanges. Edits to Case Herdbook/Dam/Sire fields still count, matching
+        // legacy.
         var cancelForm = document.getElementById('case-relations-inline-form');
         var formDirty = false;
         if (cancelForm) {
-            cancelForm.addEventListener('input', function () { formDirty = true; });
-            cancelForm.addEventListener('change', function () { formDirty = true; });
+            var isOtherRelationsPanelField = function (target) {
+                return !!(target && target.closest && target.closest('.bse-relations-grid'));
+            };
+            cancelForm.addEventListener('input', function (e) { if (!isOtherRelationsPanelField(e.target)) formDirty = true; });
+            cancelForm.addEventListener('change', function (e) { if (!isOtherRelationsPanelField(e.target)) formDirty = true; });
         }
 
         document.querySelectorAll('.bse-cancel-link').forEach(function (lnk) {

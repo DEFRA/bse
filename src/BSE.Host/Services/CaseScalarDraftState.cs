@@ -1,4 +1,5 @@
 using BSE.Modules.CaseManagement.Commands;
+using BSE.Modules.CaseWork.Commands;
 using BSE.Modules.FarmManagement.Models;
 
 namespace BSE.Host.Services;
@@ -18,6 +19,13 @@ public sealed class CaseScalarDraftState
     /// edit different columns of the same underlying Case row (each round-trips the other's
     /// columns via hidden fields, so whichever tab staged last always carries a complete row).</summary>
     public EditCaseCommand? Case { get; set; }
+
+    /// <summary>Staged CaseWork-row edit (Barcode/AHF Reference/BSE1 dates/Paperwork Complete),
+    /// from the Case (DEFRA) tab. Legacy keeps the Case and CaseWork rows in the exact same shared
+    /// session DataSet, written together on every tab-switch — without this, typing a BSE1 date
+    /// then switching tabs (or saving from a different tab) silently discards it, because CaseWork
+    /// fields live outside <see cref="EditCaseCommand"/> entirely.</summary>
+    public EditCaseWorkCommand? CaseWork { get; set; }
 
     /// <summary>RowStamp captured the first time this draft staged a Case edit, used as the
     /// concurrency token for the eventual commit — mirrors legacy holding one row in session
