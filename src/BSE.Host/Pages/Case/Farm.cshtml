@@ -287,7 +287,8 @@
             <div class="govuk-button-group bse-case-bottom-row__left">
                 @if (Model.HasResolvedCphh)
                 {
-                    <a asp-page="/AuditLog/ByFarm" asp-route-cphh="@Model.EditableFarm?.CPHH" asp-route-rbse="@Model.Rbse" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">Farm audit log</a>
+                    <button type="submit" form="case-farm-inline-form" formmethod="post" formaction="?handler=StageAndGoToAuditLog"
+                            draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">Farm audit log</button>
                 }
             </div>
 
@@ -728,7 +729,8 @@
 
         <div class="bse-case-bottom-row">
             <div class="govuk-button-group bse-case-bottom-row__left">
-                <a asp-page="/AuditLog/ByFarm" asp-route-cphh="@Model.Farm.CPHH" asp-route-rbse="@Model.Rbse" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">Farm audit log</a>
+                <button type="submit" form="case-farm-inline-form" formmethod="post" formaction="?handler=StageAndGoToAuditLog"
+                        draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">Farm audit log</button>
             </div>
 
             <div class="bse-case-bottom-row__right">

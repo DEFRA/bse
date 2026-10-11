@@ -415,6 +415,32 @@ public class EditModel(
     /// </summary>
     public async Task<IActionResult> OnPostStageAndGotoAsync(string targetPage)
     {
+        var stagingResult = await StageCaseEditForNavigationAsync();
+        if (stagingResult is not null)
+            return stagingResult;
+
+        return RedirectToPage(targetPage, new { rbse = Rbse });
+    }
+
+    /// <summary>Case audit log link: legacy stages the in-progress edit before redirecting to the
+    /// audit log report the same way every tab-switch does, so this must too — a plain navigation
+    /// link here would silently discard an unsaved edit instead.</summary>
+    public async Task<IActionResult> OnPostStageAndGoToAuditLogAsync()
+    {
+        var stagingResult = await StageCaseEditForNavigationAsync();
+        if (stagingResult is not null)
+            return stagingResult;
+
+        return RedirectToPage("/AuditLog/ByCase", new { rbse = Rbse, returnTo = "/Case/Edit" });
+    }
+
+    /// <summary>Validates and stages the posted Case edit into the shared cross-tab draft, shared
+    /// by every handler that navigates away from this tab (tab switch, Case Audit Log link).
+    /// Returns a non-null result the caller must return immediately (Forbid/validation Page());
+    /// returns null once staging has succeeded (or was correctly skipped), meaning the caller
+    /// should proceed with its own redirect.</summary>
+    private async Task<IActionResult?> StageCaseEditForNavigationAsync()
+    {
         if (!CanUserEditCase())
             return Forbid();
 
@@ -433,7 +459,7 @@ public class EditModel(
         // posted Case fields are blank — staging them into the shared cross-tab draft would risk
         // a later Save (on any tab) committing blanked-out DEFRA fields.
         if (!CanEditCaseFields)
-            return RedirectToPage(targetPage, new { rbse = Rbse });
+            return null;
 
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadLookupsAsync();
@@ -455,7 +481,7 @@ public class EditModel(
         await StageCaseScalarEditAsync(rowStampBase64);
         await StageCaseWorkEditAsync();
 
-        return RedirectToPage(targetPage, new { rbse = Rbse });
+        return null;
     }
 
     /// <summary>Writes this tab's current field values into the shared cross-tab scalar

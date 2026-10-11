@@ -181,23 +181,26 @@ public class ClinicalModel(
         if (!User.IsInRole("DataEntry"))
             return Forbid();
 
-        if (string.IsNullOrEmpty(clinicalRowStampBase64))
-            return RedirectToPage(targetPage, new { rbse = Rbse });
-
+        // Signs checkboxes are editable from the very start of brand-new-case creation (no
+        // existing Clinical row required) — a blank rowstamp means "no DB row yet", not "nothing
+        // to stage"; bailing out here silently discarded in-progress Signs edits on tab switch.
         var signs = BindSignsFromForm();
-        var rowStamp = Convert.FromBase64String(clinicalRowStampBase64);
+        var rowStamp = string.IsNullOrEmpty(clinicalRowStampBase64) ? [] : Convert.FromBase64String(clinicalRowStampBase64);
         var edit = signs.ToEditCommand(Rbse, rowStamp);
 
         var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
-        draft.ClinicalBaseRowStampBase64 ??= clinicalRowStampBase64;
+        draft.ClinicalBaseRowStampBase64 ??= clinicalRowStampBase64 ?? string.Empty;
         var stagedEdit = edit with { RowStamp = Convert.FromBase64String(draft.ClinicalBaseRowStampBase64) };
 
         // Legacy parity: merely switching tabs without typing anything must not trip the
-        // cross-tab unsaved-changes exit warning — only flag a genuine edit to the signs.
+        // cross-tab unsaved-changes exit warning — only flag a genuine edit to the signs. For a
+        // brand-new case there is no persisted Clinical row yet, but that must compare against an
+        // all-unchecked baseline, not an automatic "different" (which would falsely flag every tab
+        // visit, edited or not, as unsaved).
         var persistedClinical = await clinicalRepository.GetByRbseAsync(Rbse);
-        var baseline = persistedClinical is not null
-            ? ClinicalSignsViewModel.FromRecord(persistedClinical).ToEditCommand(Rbse, Convert.FromBase64String(draft.ClinicalBaseRowStampBase64))
-            : null;
+        var baseline = (persistedClinical is not null
+            ? ClinicalSignsViewModel.FromRecord(persistedClinical)
+            : new ClinicalSignsViewModel()).ToEditCommand(Rbse, Convert.FromBase64String(draft.ClinicalBaseRowStampBase64));
 
         draft.Clinical = stagedEdit;
         if (DraftChangeDetector.IsDifferentFromPersisted(stagedEdit, baseline))
