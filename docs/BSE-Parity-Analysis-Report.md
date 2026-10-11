@@ -1562,3 +1562,269 @@ Files changed: `MaintenanceConfirmation.cshtml.cs` (`MemoRbseKey`, `MemoRbse`), 
 (Download/Print Memo buttons), `FinalResultEntry.cshtml.cs` (`OnPostSaveAsync` sets `MemoRbseKey`).
 `get_errors` clean. Not independently test-run-verified — no DB/runtime access in this session.
 
+## New GB case: Herd Size grid stayed empty after Look Up if an earlier blank-CPHH Save was attempted first (2026-10-11)
+
+User-reported: a colleague first clicked Save on a brand-new case's Farm tab with no CPHH entered
+(failed validation, as expected), then entered a real CPHH and did Look Up — the farm's details
+loaded, but the Herd Size grid stayed empty, even though the CPHH's farm genuinely has Herd Size rows
+in the database. Not reproducible by simply doing Look Up first with no prior failed Save.
+
+Root cause: `OnPostCreateCaseAsync` calls `LoadOrInitializeDraftStateAsync()` unconditionally, before
+checking `ModelState.IsValid` — so even a Save that fails on "enter a CPHH" still runs it, with `Farm`
+still null. `LoadOrInitializeDraftStateAsync()` only ever seeds `CaseFarmDraftState` from the database
+`if (draft is null)` — so this failed attempt permanently caches an **empty shell** draft (no CPHH, no
+`LinkedFarms`, no `HerdSizes`) for that user+RBSE cache key. The subsequent, successful Look Up calls
+`LoadFromFarmCphhAsync` (correctly refreshing `PersistedHerdSizes` from the DB) and then
+`LoadOrInitializeDraftStateAsync()` again — but this time a draft already exists (the empty shell), so
+the `if (draft is null)` seed branch is skipped entirely, and the freshly-loaded persisted data is never
+copied into `StagedHerdSizes`/`StagedLinkedFarms` (what the view actually renders). The grid looks
+empty even though the farm has real data.
+
+Fix: `LoadOrInitializeDraftStateAsync()` now also re-seeds when it finds an existing draft that is
+exactly this kind of stale empty shell — `Farm is not null` (a real farm has since been resolved) but
+`draft.Cphh` is blank and both `LinkedFarms`/`HerdSizes` are empty. A draft that already has genuinely
+staged rows is never touched by this change.
+
+**Checked whether the same gap exists on the other 6 case tabs — it doesn't, except one which already
+had its own independent guard.** Edit (Test records), Clinical (Visits), Feeds, and Relations (Other
+Relations) all seed their drafts purely from `Rbse`, which is fixed and known from the very first page
+load — there is no "learn the key partway through the flow" step like Farm's CPHH/Look Up, so an early
+failed Save on those tabs can't cache a premature empty shell. Vla's Other Owners draft
+(`GetOrCreateOwnersDraftAsync`) already has its own pre-existing `else if (!draft.HasPendingChanges &&
+... Count == 0)` re-seed branch guarding against exactly this class of staleness — no change needed
+there.
+
+Files changed: `Farm.cshtml.cs` (`LoadOrInitializeDraftStateAsync`). `get_errors` clean. Not
+independently test-run-verified — `dotnet test` in this session was blocked by `BSE.Host.exe` being
+locked by another running process, unrelated to this change.
+
+## New case creation: audit of every tab's editable fields for cross-tab-switch data loss (2026-10-11)
+
+User-reported: in new case creation, edited values are getting discarded when switching tabs. Asked to
+check every possibility a value can be edited on every tab, and ensure none of them are discarded on
+tab switch.
+
+Audited every editable field on all 7 tabs against the shared `_CaseTabs.cshtml` tab-switch mechanism
+(`stageAndGotoFormId`/`OnPostStageAndGotoAsync`, staging into `CaseScalarDraftState`/each tab's own
+grid draft service before navigating). Found 3 tabs with a genuine gap; 4 were already correct.
+
+**Farm, Edit (Case DEFRA), Vla (Case APHA) — already correct.** All three stage their scalar fields
+unconditionally, including for a brand-new case with no persisted row yet (Farm's `Case is null`
+branch; Edit/Vla's `TempData`-sourced base rowstamp, which is seeded even for a new case rather than
+left absent). No change needed.
+
+**Feeds — genuinely has no scalar fields at risk.** Every editable value on this tab lives inside a
+grid row, committed to its own draft the moment Add/Update is clicked (same as Farm's Herd Size/Linked
+Farms grids) — there is nothing else to lose on tab switch, matching legacy's own
+`UpdateSessionWithCaseDetails` no-op for this tab.
+
+**Bug found and fixed — Bab tab silently discarded Notes/Traced*/risk-dropdown edits for a brand-new
+case.** `OnPostStageAndGotoAsync` had `if (string.IsNullOrEmpty(rowStampBase64)) return
+RedirectToPage(...)` — for a brand-new case there is no BAB DB row yet, so the view never even renders
+the hidden rowstamp field (`@if (Model.RowStampBase64 is not null)`), meaning this guard always fired
+and skipped staging entirely, discarding any typed field. BAB only becomes editable once a birth date
+has been staged (`EvaluateLegacyBabEditPermission`), so this was genuinely reachable mid-new-case
+creation. **Fixed:** removed the blank-rowstamp bail-out and the redundant `currentCase is null` check
+(already correctly covered by `EvaluateLegacyBabEditPermission`, per the existing comment on
+`OnPostSaveBabAsync`); a missing rowstamp is now treated as "no DB row yet" (empty byte array baseline)
+instead of "nothing to stage", mirroring how `OnPostSaveBabAsync` already handles first-time creation.
+
+**Bug found and fixed — Clinical tab silently discarded Signs checkbox edits for a brand-new case.**
+Identical bug shape to Bab: `OnPostStageAndGotoAsync` bailed out whenever `clinicalRowStampBase64` was
+blank. Unlike Bab, Signs checkboxes have no gating condition at all (editable from the very first
+moment of new-case creation), making this the most directly reachable instance of the bug. **Fixed:**
+same treatment — blank rowstamp now means "no DB row yet", not "skip staging".
+
+**Bug found and fixed — Relations tab's Case Herdbook/Dam Status/Dam-Sire fields were never staged on
+tab switch at all, new case or existing.** Two compounding issues: (1) `_CaseTabs.cshtml` had Relations
+hard-coded into the `stageAndGotoFormId` "no scalar state" bucket alongside Feeds — incorrect, since
+Relations' Case Herdbook/Dam Status/Dam/Sire fields *are* scalar fields (confirmed against legacy's own
+`UpdateSessionWithCaseDetails` for this tab, which writes exactly these fields), so switching tabs from
+Relations was a plain `<a>` navigation with no staging call whatsoever. (2) Even this tab's own inline
+"Save" buttons (`OnPostSaveDamSireAsync`/`OnPostSaveCaseHerdbookAsync`) didn't actually stage these
+fields — `MarkDraftPendingAndRedirectAsync` only flagged the *unrelated* Other-Relations-grid draft as
+pending, never calling the `StageCaseDamStatusAsync`/`StageHerdbookAsync` helpers that the grid-row
+Add/Update/Delete handlers already correctly call via `RestoreAndRestageDamSireEditAsync`. So typing
+into Case Herdbook/Dam Status/Dam-Sire and clicking that tab's own Save button looked like it worked
+but silently discarded the fields on the very next reload. **Fixed:** `MarkDraftPendingAndRedirectAsync`
+now calls `RestoreAndRestageDamSireEditAsync` before marking the grid draft pending; added a new
+`OnPostStageAndGotoAsync(string targetPage)` handler (mirroring every other scalar-field tab) that does
+the same staging before navigating away; wired it into `_CaseTabs.cshtml`'s `stageAndGotoFormId` switch
+so Relations tab-switch links now submit-and-stage instead of plain-navigating.
+
+Files changed: `Bab.cshtml.cs` (`OnPostStageAndGotoAsync`), `Clinical.cshtml.cs`
+(`OnPostStageAndGotoAsync`), `Relations.cshtml.cs` (`MarkDraftPendingAndRedirectAsync`, new
+`OnPostStageAndGotoAsync`), `_CaseTabs.cshtml` (`stageAndGotoFormId` switch + comment). `get_errors`
+clean on all four. Not independently test-run-verified — `dotnet test` in this session was repeatedly
+blocked by `BSE.Host.exe` being locked by another running process (the app appears to be running live
+in another terminal/debugger), unrelated to these changes.
+
+### Self-review correction: the fix above initially risked a false "unsaved changes" regression (2026-10-11)
+
+Asked directly whether the fix above could break existing (not just new-case) flow. Re-reviewing found
+two genuine regression risks, both now corrected before shipping:
+
+**Relations' new `OnPostStageAndGotoAsync` would have flagged every tab visit as unsaved, edited or
+not.** `StageCaseDamStatusAsync`/`StageHerdbookAsync` unconditionally set `HasPendingChanges = true`
+whenever called — correct for their existing call sites (an Add/Update/Delete relation-row action, or
+an explicit "Save Dam/Sire"/"Save Case Herdbook" click, are themselves deliberate actions worth
+flagging), but my new tab-switch handler called them on *every* navigation away from Relations,
+including a mere visit with zero edits. **Fixed:** `OnPostStageAndGotoAsync` now computes the same
+persisted-or-already-staged baseline `PopulateCaseAncillaryStateAsync` overlays on every GET, and only
+calls the staging helpers when the posted Case Herdbook/Dam Status actually differ from it — matching
+every other tab's `DraftChangeDetector.IsDifferentFromPersisted` pattern, just inlined (Relations
+doesn't build a single comparable command record the way the others do).
+
+**Bab/Clinical's existing `DraftChangeDetector.IsDifferentFromPersisted(staged, null)` call always
+returns true for a null baseline — previously unreachable for a brand-new case (the old blank-rowstamp
+bail-out exited before this line), now exposed by removing that bail-out.** This meant every tab switch
+away from Bab/Clinical before their first DB row existed — true for a brand-new case, but *also* true
+for an already-existing case that has simply never had a BAB/Clinical row created — would flag
+`HasPendingChanges = true` regardless of whether anything was typed. **Fixed:** both now build an
+explicit blank baseline (`EditCaseBabCommand` with every field null / a default `ClinicalSignsViewModel`
+with every sign unchecked) instead of passing `null`, so the comparison is meaningful in both the
+brand-new-case case and the existing-case-with-no-row-yet case, not just "always different".
+
+**Confirmed safe for ordinary existing-case flow in all three tabs:** for an existing BAB/Clinical row,
+`rowStampBase64`/`clinicalRowStampBase64` is always posted non-blank (the view only omits the hidden
+field when there's no row), so the removed bail-out never actually fired for that path either way — no
+behavioural change there. For Relations, an existing case's Case Herdbook/Dam Status are already
+non-null in the DB, so the new baseline comparison behaves identically to before whenever a genuine
+edit is made; it only changes the previously-nonexistent "visited the tab, changed nothing" case.
+
+Files changed (additional correction): `Bab.cshtml.cs`, `Clinical.cshtml.cs`, `Relations.cshtml.cs`.
+`get_errors` clean on all three. Still not independently test-run-verified — `dotnet test` continues to
+be blocked by `BSE.Host.exe` being locked by another running process.
+
+## BAB/Case (APHA) tabs: Origin "Purchased" cascading field-clear was per-tab only, not cross-tab (2026-10-11)
+
+Compared legacy `CaseEntryBAB.aspx.vb`/`CaseEntryVLA.aspx.vb`'s `ddlOrigin_SelectedIndexChanged`
+against migrated `Bab.cshtml.cs`/`Vla.cshtml.cs` for Origin = Purchased cascading behaviour.
+
+Legacy: **both** pages' `ddlOrigin_SelectedIndexChanged` call **both** `EmptyPurchaseFields` (clears
+Purchase Date/County/Age-in-Months) **and** `EmptyTracedFields` (clears Traced CPHH/Name/Address 1-3/
+Postcode) whenever Origin changes away from "P" — regardless of which tab the change was made on.
+Purchase fields live on the Case row (VLA's own fields); Traced fields live on the BAB row. Since both
+tabs share one session `DataSet`, each page's copy of these two methods operates on whichever table
+isn't rendered on that page via direct `DataSet` row access (e.g. BAB's `EmptyPurchaseFields` edits
+`dsData.Tables(CASE_TABLE).Rows(0)` directly, since Purchase Date/County/Age controls don't exist on
+the BAB page) — so changing Origin on *either* tab clears *both* sets of fields everywhere.
+
+Migrated only had half of this: `Bab.cshtml.cs`'s `if (Origin != "P")` block already cleared BAB's own
+Traced fields, and `Vla.cshtml.cs`'s `ApplyLegacyPreSaveNormalizations` already cleared VLA's own
+Purchase fields — but neither reached across to clear the *other* tab's fields in the shared
+`CaseScalarDraftState`. Migrated's Bab view even already shows a client-side warning message
+("Purchase data has been entered on this Case. If you do not Cancel then this data will be lost.")
+computed from a `HasPurchaseData` flag — but since nothing server-side ever actually cleared it, the
+warning was misleading: proceeding past it left the Purchase data fully intact, contradicting the
+message shown.
+
+Fix: added `ClearPurchaseFieldsIfPresentAsync()` to `Bab.cshtml.cs` (merges a Purchase-fields-null
+patch into whatever Case command is already staged, or a fresh baseline from the persisted Case row if
+nothing is staged yet — matching the already-established `StageCaseDamStatusAsync`-style merge pattern
+from the Relations tab) and the mirror `ClearTracedFieldsIfPresentAsync()` on `Vla.cshtml.cs` (same
+merge pattern against the BAB row/command). Both no-op when there is nothing to clear, matching
+legacy's own row-exists guards. Wired into both of Bab's `Origin != "P"` blocks
+(`OnPostSaveBabAsync`/`OnPostStageAndGotoAsync`) and into Vla's `ApplyLegacyPreSaveNormalizations`
+(renamed `...Async`, called from `OnPostAsync`/`OnPostStageAndGotoAsync`) — so Save *or* a tab switch
+from either tab now correctly cascades the clear to the other tab's fields, matching legacy exactly.
+
+Files changed: `Bab.cshtml.cs` (`ClearPurchaseFieldsIfPresentAsync`, both `Origin != "P"` blocks),
+`Vla.cshtml.cs` (`ApplyLegacyPreSaveNormalizationsAsync`, `ClearTracedFieldsIfPresentAsync`, both call
+sites). `get_errors` clean on both. Not independently test-run-verified — `dotnet test` continues to be
+blocked by `BSE.Host.exe` being locked by another running process.
+
+## Audit log links (Farm/Case DEFRA/Case APHA) silently discarded in-progress edits (2026-10-12)
+
+User-reported: new case creation, editing Farm tab fields then clicking "Farm audit log" and
+returning discards the edit.
+
+Root cause: legacy's `btnFarmAuditLog_Click` (`CaseEntryFarm.aspx.vb`) calls
+`UpdateSessionWithCaseDetails()` — the same staging function every tab switch and Save already uses —
+**before** `Response.Redirect("FarmAuditLogReport.aspx")`. Migrated's "Farm audit log" link
+(`Farm.cshtml`, both create-mode and existing-case markup) was a plain `asp-page` anchor: a GET
+navigation with no staging call at all, unlike every tab-switch link on the same page which already
+posts through `OnPostStageAndGotoAsync`. Returning to the Farm tab afterwards reloads fresh from the
+DB plus whatever *was* staged earlier, which never included the edit made just before clicking the
+audit log link. Searching for the same pattern found two more instances: Edit (Case DEFRA) and Vla
+(Case APHA) tabs' "Case audit log" links had the identical plain-anchor gap (`VlaEdit.cshtml` has a
+similar-looking link too, but is a separate, non-tabbed legacy-compat page with no cross-tab staging
+mechanism at all — out of scope, nothing to stage there).
+
+Fix: on all three pages, extracted the existing `OnPostStageAndGotoAsync`'s validate-and-stage logic
+into a shared private helper (`StageFarmEditForNavigationAsync` / `StageCaseEditForNavigationAsync` /
+`StageVlaEditForNavigationAsync`) returning null on success or a result the caller must return
+immediately (Forbid/validation `Page()`), then added a new `OnPostStageAndGoToAuditLogAsync` handler
+on each that calls the same helper before redirecting to `/AuditLog/ByFarm` or `/AuditLog/ByCase`
+instead of `targetPage`. Changed all three "...audit log" links from `<a asp-page="...">` to
+`<button type="submit" form="..." formaction="?handler=StageAndGoToAuditLog">`, matching the existing
+tab-switch buttons' submission pattern exactly.
+
+Files changed: `Farm.cshtml.cs` (`StageFarmEditForNavigationAsync`, `OnPostStageAndGoToAuditLogAsync`),
+`Farm.cshtml` (2 link sites), `Edit.cshtml.cs` (`StageCaseEditForNavigationAsync`,
+`OnPostStageAndGoToAuditLogAsync`), `Edit.cshtml`, `Vla.cshtml.cs` (`StageVlaEditForNavigationAsync`,
+`OnPostStageAndGoToAuditLogAsync`), `Vla.cshtml`. `get_errors` clean on all six. Not independently
+test-run-verified — `dotnet test` continues to be blocked by `BSE.Host.exe` being locked by another
+running process.
+
+## BAB tab: selecting Origin = Purchased didn't cascade live into Case (APHA)'s Origin field (2026-10-12)
+
+User-reported: in legacy, selecting Origin as "Purchased" on the BAB tab is immediately reflected in
+the Origin field on the Case (APHA)/VLA tab (before Save). Migrated didn't show this until after a
+full Save and reload.
+
+Root cause: legacy keeps `Origin` on a single shared session `CASE_TABLE` row — both BAB's and VLA's
+own `ddlOrigin_SelectedIndexChanged`/`UpdateSessionWithCaseDetails` read and write the exact same
+field, so a change on either page is visible on the other immediately via the shared `DataSet`.
+Migrated's `Bab.cshtml.cs` only ever staged the typed Origin into a separate `CaseScalarDraftState.
+BabOrigin` field — consumed *only* at commit time, passed straight through to
+`IBabRepository.AddAsync`/`EditAsync`, which both call an internal `UpdateOriginAsync` SQL statement
+against `[Case].[Origin]` directly. That path is correct for the final saved result (it runs after the
+main Case-table update in `CaseEditOrchestrationService.CommitAllAsync`, so the DB ends up right
+either way) — but `BabOrigin` never flows into `CaseScalarDraftState.Case.Origin`, which is what Vla's
+own `ApplyStagedCaseOverlayAsync`/`ResolveEffectiveCaseScalarsAsync`-style overlay reads for display.
+So switching from BAB to Vla (or Edit) *before* Save showed the stale, pre-change Origin value. The
+reverse direction already worked correctly: Vla always stages a full `Case` command including Origin,
+and Bab's own `ResolveEffectiveCaseScalarsAsync` already overlays `draft.Case?.Origin` on load — only
+the BAB-to-other-tabs direction was missing.
+
+Fix: added `StageCaseOrigin(draft, caseRecord)` to `Bab.cshtml.cs`, merging the typed Origin into
+whichever `EditCaseCommand` is already staged in `draft.Case` (or a fresh baseline from the persisted
+Case row / a blank command for a not-yet-created case), only flagging `HasPendingChanges` when Origin
+actually differs from that baseline. Called alongside the existing `draft.BabOrigin = Origin;` in both
+`OnPostSaveBabAsync` and `OnPostStageAndGotoAsync`, so a tab switch *or* a Save from BAB now correctly
+cascades Origin into whatever the other tabs display, matching legacy exactly in both directions.
+
+Files changed: `Bab.cshtml.cs` (`StageCaseOrigin`, both staging call sites). `get_errors` clean. Not
+independently test-run-verified — `dotnet test` continues to be blocked by `BSE.Host.exe` being locked
+by another running process.
+
+## Follow-up: BAB→VLA Origin cascade reported as still not working in new-case flow specifically (2026-10-12)
+
+User follow-up: the fix above works for an existing case, but not for new-case creation, where Case
+(APHA) is non-editable (no batch selected yet) — the user correctly expects the Origin *value* to still
+display even though the field is disabled.
+
+Investigation found and fixed one concrete, confirmed gap: every other Case-level field rendered on
+`Vla.cshtml` has a hidden-input fallback so its value survives a POST while the fieldset is disabled
+(`Case.Rbse`, `Case.EartagCountry`, `Case.FormADate`, `Case.DamStatus`, etc. are all unconditional
+hidden inputs; `HerdType`/`PedigreeType` on the Farm tab use the identical
+`@if (!canEditVlaControls) { <input type="hidden" ... /> }` pattern) — `Case.Origin`'s `<select>` had
+no such fallback. Without it, if VLA's own form ever posts while read-only (disabled `<select>` values
+are never included in a browser's POST body), `Case.Origin` binds to `null` server-side, a correctness
+gap even though it doesn't fully explain a first-view (GET) display issue on its own. Fixed by adding
+the same conditional hidden input, gated on `vlaReadOnly` so it never duplicates the visible select's
+`name` attribute when editable.
+
+**Not yet fully confirmed as the complete root cause.** Traced `OnGetAsync`'s overlay path
+(`ApplyStagedCaseOverlayAsync` → `Case.ApplyStagedCommand(staged.Case)`, which does copy `Origin`) and
+found no code-level reason a plain GET after a BAB→VLA tab switch would fail to show the staged Origin
+value — this part appears structurally correct in both new-case and existing-case flows. Since I can't
+run the app in this session (`dotnet test`/`BSE.Host.exe` still locked by another process), I can't
+empirically confirm whether the hidden-input fix above fully resolves what you're seeing. If it
+doesn't, the next most useful detail would be the exact click sequence (Save vs. tab-switch button,
+and whether Origin was re-checked after any other action on VLA/BAB in between) so the GET-time overlay
+itself can be re-traced with that specific sequence in mind.
+
+Files changed: `Vla.cshtml` (`Case.Origin` hidden-input fallback). `get_errors` clean.
+

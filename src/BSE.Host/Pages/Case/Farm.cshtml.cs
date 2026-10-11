@@ -613,6 +613,37 @@ public class FarmModel(
         if (!User.IsInRole(DataEntryRole))
             return Forbid();
 
+        var stagingResult = await StageFarmEditForNavigationAsync();
+        if (stagingResult is not null)
+            return stagingResult;
+
+        return RedirectToPage(targetPage, new { rbse = Rbse });
+    }
+
+    /// <summary>Farm audit log link: legacy's btnFarmAuditLog_Click calls
+    /// UpdateSessionWithCaseDetails() before redirecting to FarmAuditLogReport.aspx, so an
+    /// in-progress edit survives the round trip — this must stage the same way every other
+    /// cross-tab navigation does, not just plain-navigate and silently discard it.</summary>
+    public async Task<IActionResult> OnPostStageAndGoToAuditLogAsync()
+    {
+        if (!User.IsInRole(DataEntryRole))
+            return Forbid();
+
+        var stagingResult = await StageFarmEditForNavigationAsync();
+        if (stagingResult is not null)
+            return stagingResult;
+
+        var cphh = CphhNormalizer.Normalize(EditableFarm?.CPHH ?? Farm?.CPHH);
+        return RedirectToPage("/AuditLog/ByFarm", new { rbse = Rbse, cphh });
+    }
+
+    /// <summary>Validates and stages the posted Farm edit into the shared cross-tab draft, shared
+    /// by every handler that navigates away from this tab (tab switch, Farm Audit Log link).
+    /// Returns a non-null result (a validation Page() or Forbid-equivalent redirect) the caller
+    /// must return immediately; returns null once staging has succeeded (or was correctly skipped
+    /// for a not-yet-looked-up new case), meaning the caller should proceed with its own redirect.</summary>
+    private async Task<IActionResult?> StageFarmEditForNavigationAsync()
+    {
         var postedEditableFarm = EditableFarm;
         var postedFarmRowStamp = EditableFarmRowStampBase64;
 
@@ -624,7 +655,7 @@ public class FarmModel(
             logger.LogWarning(
                 "Farm StageAndGoto for RBSE {Rbse}: posted EditableFarm was null — no fields were staged.",
                 Rbse);
-            return RedirectToPage(targetPage, new { rbse = Rbse });
+            return null;
         }
 
         SpolSiteUrl = configuration[SpolSiteUrlConfigKey] ?? string.Empty;
@@ -645,9 +676,9 @@ public class FarmModel(
         {
             // Legacy parity: CaseEntryFarm.aspx's UpdateSessionWithCaseDetails() returns True with
             // no validation at all when SV_FarmDetails hasn't been populated yet (i.e. Look Up was
-            // never run for this brand-new case) — tab navigation proceeds untouched instead of
-            // being blocked by a "CPHH is required" error that legacy never shows at this point.
-            return RedirectToPage(targetPage, new { rbse = Rbse });
+            // never run for this brand-new case) — navigation proceeds untouched instead of being
+            // blocked by a "CPHH is required" error that legacy never shows at this point.
+            return null;
         }
 
         BatchNumbers = (await batchRepository.GetBatchNumbersByRbseAsync(Rbse)).ToList().AsReadOnly();
@@ -673,7 +704,7 @@ public class FarmModel(
 
         await StageFarmScalarEditAsync(EditableFarm.ToUpdateCommand(rowStamp));
 
-        return RedirectToPage(targetPage, new { rbse = Rbse });
+        return null;
     }
 
     /// <summary>Writes the Farm tab's current field values into the shared cross-tab scalar
@@ -1562,7 +1593,16 @@ public class FarmModel(
         // the farm itself is saved are written to farmDraftState but never read back for display,
         // which looks exactly like the Add button silently doing nothing.
         var draft = await farmDraftState.GetAsync(Rbse);
-        if (draft is null)
+
+        // A failed Save attempt before any CPHH was entered (OnPostCreateCaseAsync calls this method
+        // even when ModelState is invalid) caches an empty shell draft with no CPHH/linked farms/herd
+        // sizes. Once a real farm is later resolved via Look Up, that stale empty shell must not mask
+        // the farm's actual persisted data forever — reseed it exactly as a brand-new draft would.
+        var needsSeedFromPersisted = draft is null
+            || (Farm is not null && string.IsNullOrEmpty(draft.Cphh)
+                && draft.LinkedFarms.Count == 0 && draft.HerdSizes.Count == 0);
+
+        if (needsSeedFromPersisted)
         {
             draft = Farm is null
                 ? new CaseFarmDraftState { Rbse = Rbse }

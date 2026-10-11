@@ -147,7 +147,7 @@ public class VlaModel(
         SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
         await LoadLookupsAsync();
 
-        ApplyLegacyPreSaveNormalizations();
+        await ApplyLegacyPreSaveNormalizationsAsync();
 
         ValidateVlaDomainRules();
 
@@ -199,38 +199,63 @@ public class VlaModel(
     /// </summary>
     public async Task<IActionResult> OnPostStageAndGotoAsync(string targetPage)
     {
+        var (stagingResult, caseRbse) = await StageVlaEditForNavigationAsync();
+        if (stagingResult is not null)
+            return stagingResult;
+
+        return RedirectToPage(targetPage, new { rbse = caseRbse });
+    }
+
+    /// <summary>Case audit log link: legacy stages the in-progress edit before redirecting to the
+    /// audit log report the same way every tab-switch does, so this must too — a plain navigation
+    /// link here would silently discard an unsaved edit instead.</summary>
+    public async Task<IActionResult> OnPostStageAndGoToAuditLogAsync()
+    {
+        var (stagingResult, caseRbse) = await StageVlaEditForNavigationAsync();
+        if (stagingResult is not null)
+            return stagingResult;
+
+        return RedirectToPage("/AuditLog/ByCase", new { rbse = caseRbse, returnTo = "/Case/Vla" });
+    }
+
+    /// <summary>Validates and stages the posted VLA edit into the shared cross-tab draft, shared
+    /// by every handler that navigates away from this tab (tab switch, Case Audit Log link).
+    /// Returns a non-null result the caller must return immediately; returns null once staging has
+    /// succeeded, meaning the caller should proceed with its own redirect using the returned Rbse.</summary>
+    private async Task<(IActionResult? Result, string Rbse)> StageVlaEditForNavigationAsync()
+    {
         if (!User.IsInRole(DataEntryRole))
-            return Forbid();
+            return (Forbid(), Rbse);
 
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
         Rbse = caseRbse;
 
         if (!await LoadBatchContextAndCheckEditPermissionAsync(caseRbse))
-            return RedirectToPage(targetPage, new { rbse = caseRbse });
+            return (null, caseRbse);
 
         SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
         await LoadLookupsAsync();
 
-        ApplyLegacyPreSaveNormalizations();
+        await ApplyLegacyPreSaveNormalizationsAsync();
 
         ValidateVlaDomainRules();
 
         if (!ModelState.IsValid)
         {
             await LoadOrInitializeOwnersDraftAsync();
-            return Page();
+            return (Page(), caseRbse);
         }
 
         var rowStampBase64 = TempData[string.Format(RowStampKey, Rbse)]?.ToString();
         if (rowStampBase64 is null)
         {
             ConcurrencyError = "Session expired — please reload the page and try again.";
-            return Page();
+            return (Page(), caseRbse);
         }
 
         await StageCaseScalarEditAsync(rowStampBase64);
 
-        return RedirectToPage(targetPage, new { rbse = caseRbse });
+        return (null, caseRbse);
     }
 
     /// <summary>Writes this tab's current field values into the shared cross-tab scalar
@@ -634,13 +659,18 @@ public class VlaModel(
     /// <summary>Legacy parity (MakeControlsWritable's Date-of-Birth/Onset-Date-driven gates):
     /// a date field being cleared also clears/disables whatever depends on it, so a stale
     /// Estimated flag or Source value never gets saved once its date is blank.</summary>
-    private void ApplyLegacyPreSaveNormalizations()
+    private async Task ApplyLegacyPreSaveNormalizationsAsync()
     {
         if (Case.Origin != "P")
         {
             Case.PurchaseDate = null;
             Case.PurchaseAgeInMonths = null;
             Case.PurchasedCounty = null;
+
+            // Legacy EmptyTracedFields: changing Origin away from Purchased on this tab also
+            // clears the BAB tab's Traced CPHH/Name/Address/Postcode fields, even though they
+            // aren't rendered here — both pages clear the same shared session BAB row.
+            await ClearTracedFieldsIfPresentAsync();
         }
 
         if (Case.FormBDate.HasValue && !Case.SlaughterDate.HasValue)
@@ -654,6 +684,48 @@ public class VlaModel(
 
         if (!Case.OnsetDate.HasValue)
             Case.IsOnsetDateEst = false;
+    }
+
+    /// <summary>Legacy EmptyTracedFields (CaseEntryVLA.aspx.vb): clears the BAB row's Traced
+    /// fields, merging with whatever another tab may already have staged for it rather than
+    /// overwriting it. No-ops when there is nothing to clear, same as legacy's own row-exists
+    /// guard.</summary>
+    private async Task ClearTracedFieldsIfPresentAsync()
+    {
+        var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
+
+        var baseCommand = draft.Bab;
+        if (baseCommand is null)
+        {
+            var babRecord = await babRepository.GetByRbseAsync(Rbse);
+            if (babRecord is null)
+                return;
+            if (string.IsNullOrWhiteSpace(babRecord.NatalCphh) && string.IsNullOrWhiteSpace(babRecord.TracedName)
+                && string.IsNullOrWhiteSpace(babRecord.TracedAddress1) && string.IsNullOrWhiteSpace(babRecord.TracedAddress2)
+                && string.IsNullOrWhiteSpace(babRecord.TracedAddress3) && string.IsNullOrWhiteSpace(babRecord.TracedPostcode))
+                return;
+
+            draft.BabBaseRowStampBase64 ??= Convert.ToBase64String(babRecord.RowStamp ?? []);
+            baseCommand = new EditCaseBabCommand(
+                Rbse, babRecord.NatalCphh, babRecord.Notes, babRecord.TracedName, babRecord.TracedAddress1,
+                babRecord.TracedAddress2, babRecord.TracedAddress3, babRecord.TracedPostcode,
+                babRecord.FeedRisk, babRecord.HorizontalRisk, babRecord.MaternalRisk,
+                Convert.FromBase64String(draft.BabBaseRowStampBase64));
+        }
+        else if (string.IsNullOrWhiteSpace(baseCommand.NatalCphh) && string.IsNullOrWhiteSpace(baseCommand.TracedName)
+            && string.IsNullOrWhiteSpace(baseCommand.TracedAddress1) && string.IsNullOrWhiteSpace(baseCommand.TracedAddress2)
+            && string.IsNullOrWhiteSpace(baseCommand.TracedAddress3) && string.IsNullOrWhiteSpace(baseCommand.TracedPostcode))
+        {
+            return;
+        }
+
+        draft.Bab = baseCommand with
+        {
+            NatalCphh = null, TracedName = null, TracedAddress1 = null,
+            TracedAddress2 = null, TracedAddress3 = null, TracedPostcode = null
+        };
+        draft.HasPendingChanges = true;
+        await caseScalarDraftState.SetAsync(draft);
     }
 
     private void ValidateVlaDomainRules()
