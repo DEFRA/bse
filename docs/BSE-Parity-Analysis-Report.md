@@ -1494,3 +1494,71 @@ Files changed: `Edit.cshtml.cs` (`HasPersistedCaseWork`, `CanEditPaperworkComple
 `ApplyLegacyDefraPermissions`), `Edit.cshtml` (Paperwork Complete Date's `disabled` attribute).
 `get_errors` clean on both.
 
+## New GB case: Herd Size grid empty after Look Up for an existing farm (2026-10-11)
+
+User-reported: for new case creation, looking up a CPHH that already has a farm with Herd Size records
+shows an empty Herd Size grid, where legacy shows the existing rows.
+
+Root cause: `OnPostLookupNewCaseAsync`'s "farm found" branch set `EditableFarm` from the resolved
+`FarmRecord` but never set `Farm` itself, and never called `LoadFromFarmCphhAsync` (which populates
+`PersistedLinkedFarms`/`PersistedHerdSizes`/`ConfirmedCaseCount`) or `LoadOrInitializeDraftStateAsync`
+(which seeds `StagedLinkedFarms`/`StagedHerdSizes` — the collections the view actually renders — from
+those persisted lists). Both grids were therefore guaranteed empty in the `Page()` response returned
+directly from Look Up, regardless of what the farm actually has in the database; only a *subsequent*
+full page reload (e.g. `OnGetNewCaseAsync`, which already calls both) would show the real data. Herd
+Size and Linked Farms are affected identically by this gap — Herd Size was the one observed, Linked
+Farms would show the same empty-until-reload symptom for an existing farm with related-farm rows.
+
+Fix: `OnPostLookupNewCaseAsync`'s farm-found branch now also calls `LoadFromFarmCphhAsync(normalisedCphh)`
+and `LoadOrInitializeDraftStateAsync()`, matching what the GET new-case path already does.
+
+Files changed: `Farm.cshtml.cs` (`OnPostLookupNewCaseAsync`). `get_errors` clean.
+
+## Final Result Entry: mismatch/"DBSE cleared" warnings missing when changing Final Result (2026-10-11)
+
+User-reported: on Final Result Entry, after Look Up, changing Final Result from Positive to Negative
+shows no green-asterisk hint messages in migrated ("You have chosen a Negative result but there is a
+Positive test result" / "The DBSE has been cleared"), where legacy shows both.
+
+Root cause: legacy's `ResultsContainPositive()` (called from `ddlFinalResult_SelectedIndexChanged`)
+scans the full test data held in `Session.Item(SV_FinalResultTestTable)` — i.e. every test for the
+case, independent of which page of the results grid is currently displayed. Migrated's
+`TestsContainPositive` was instead computed as `Tests.Any(...)` against the already-paginated `Tests`
+property (10 rows per page), so as soon as a case's positive test fell outside the currently displayed
+grid page, `TestsContainPositive` went false, silently disabling both the client-side mismatch-star
+cascade (`bse-fre-form-row` JS reads this via `data-tests-contain-positive`) and the equivalent
+`ShowNegativeWithPositiveTest`/`ShowPositiveWithoutPositiveTest` server-side flags on first render — the
+"DBSE has been cleared" star is driven by a separate `dbseWasAllocated`/`changedThisRound` check and was
+not itself broken by this bug, but is reported here too since it shares the same user-observed moment
+and is covered by the same regression risk if `Tests` is ever relied on again for whole-case state.
+
+Fix: `TestsContainPositive` is now a plain settable property computed once in `ApplyTestsPaging` from
+the full `allTests` list (before the `Skip`/`Take` truncation to the current page), matching legacy's
+whole-table scan instead of the paginated grid subset.
+
+Files changed: `FinalResultEntry.cshtml.cs` (`TestsContainPositive`, `ApplyTestsPaging`). `get_errors`
+clean. Not independently test-run-verified — no DB/runtime access in this session.
+
+## Final Result Entry confirmation page missing Download/Print Memo buttons (2026-10-11)
+
+User-reported: after saving a Final Result, legacy's confirmation page (`FinalResultConfirmation.aspx`)
+shows Download and Print Memo buttons; migrated's confirmation page does not.
+
+Root cause: legacy has a dedicated `FinalResultConfirmation.aspx` with its own `hlDownload` hyperlink
+and `btnPrintMemo` button, both wired to `ResultMemo.aspx?RBSE=...` (enabled whenever `FinalResult` is
+non-null, which it always is immediately after a successful save). Migrated's `/MaintenanceConfirmation`
+page is a single generic confirmation view shared by five maintenance flows (Final Result Entry, Delete
+Case, Move Case, RBSE Change, CPHH Change, Move Case New Farm) and had no concept of memo links — none
+of the other flows have memo buttons in legacy either, so the fix had to be opt-in per flow rather than
+added unconditionally.
+
+Fix: added an optional `MaintenanceConfirmationModel.MemoRbseKey` TempData key (`MemoRbse` property);
+only `FinalResultEntry.cshtml.cs`'s `OnPostSaveAsync` sets it (to the just-saved RBSE), so the other four
+flows are unaffected. `MaintenanceConfirmation.cshtml` renders Download/Print Memo links to the existing
+`/Case/ResultMemo` page (already present and used by the Final Result Entry page itself) only when
+`MemoRbse` is set.
+
+Files changed: `MaintenanceConfirmation.cshtml.cs` (`MemoRbseKey`, `MemoRbse`), `MaintenanceConfirmation.cshtml`
+(Download/Print Memo buttons), `FinalResultEntry.cshtml.cs` (`OnPostSaveAsync` sets `MemoRbseKey`).
+`get_errors` clean. Not independently test-run-verified — no DB/runtime access in this session.
+

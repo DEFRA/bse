@@ -466,6 +466,14 @@ public class FarmModel(
             {
                 RequireFarmDetails = false;
                 EditableFarm = FarmEditViewModel.FromRecord(farm);
+
+                // Without this, Farm/PersistedLinkedFarms/PersistedHerdSizes all stay null/empty
+                // and LoadOrInitializeDraftStateAsync has nothing to seed the staged grids from —
+                // Linked Farms/Herd Size both render empty immediately after Look Up even though
+                // the farm has real persisted rows, until the next full page reload re-fetches them.
+                await LoadFromFarmCphhAsync(normalisedCphh);
+                await LoadOrInitializeDraftStateAsync();
+
                 await LoadLookupsForEditAsync();
                 return Page();
             }
