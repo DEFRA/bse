@@ -135,16 +135,14 @@ public class HomeModel(
         // the RBSE box, so a simultaneously-invalid batch wins over an empty-RBSE error — matched
         // here by running this check first too. A batch is optional: blank year+number is valid.
         int? batchId = null;
-        if (BatchYear.HasValue || BatchNumber.HasValue)
+        if (BatchNumber.HasValue)
         {
-            if (BatchYear is null || BatchNumber is null)
-            {
-                ModelState.AddModelError(nameof(BatchYear), "Enter both a batch year and a batch number.");
-                await OnGetAsync();
-                return Page();
-            }
-
-            batchId = await batchService.GetBatchIdAsync(BatchYear.Value, BatchNumber.Value);
+            // Legacy parity: BatchNumber.ascx's Validate() still calls GetBatchIDForBatch with a
+            // blank year when only the number is entered (the Batch table's BatchYear column is
+            // nullable, so a batch can genuinely exist with no year) — confirmed by legacy saving
+            // "/3001" as the case's batch number for a year-less lookup. GetBatchIdAsync already
+            // accepts a null year and passes it straight through to the same stored procedure.
+            batchId = await batchService.GetBatchIdAsync(BatchYear, BatchNumber.Value);
             if (batchId is null)
             {
                 BatchNotFound = true;
@@ -152,6 +150,15 @@ public class HomeModel(
                 await OnGetAsync();
                 return Page();
             }
+        }
+        else if (BatchYear.HasValue)
+        {
+            // Legacy parity: BatchNumber.ascx's Validate() only ever looks up a batch when the
+            // number is present — a year with no number doesn't attempt a lookup at all, it just
+            // silently fails validation, so the user is still told what's missing here.
+            ModelState.AddModelError(nameof(BatchNumber), "Enter a batch number.");
+            await OnGetAsync();
+            return Page();
         }
 
         if (string.IsNullOrWhiteSpace(LookupRbse))
@@ -234,7 +241,7 @@ public class HomeModel(
     public async Task<IActionResult> OnPostCreateBatchAsync()
     {
         var batch = await batchService.GetOrCreateBatchNumberAsync();
-        TempData["SuccessMessage"] = $"Batch {batch.BatchYear}/{batch.BatchNumber} has been assigned. Enter the year and number above and select Go to add cases to this batch.";
+        TempData["SuccessMessage"] = $"Batch {batch.BatchYear}/{batch.BatchNumber} has been assigned. Enter RBSE and select Go to add cases to this batch.";
         return RedirectToPage("/Home", new { batchYear = batch.BatchYear, batchNumber = batch.BatchNumber });
     }
 }

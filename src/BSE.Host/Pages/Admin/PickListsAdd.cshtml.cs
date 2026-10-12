@@ -64,9 +64,35 @@ public class PickListsAddModel(
             await AddAsync();
             TempData["SuccessMessage"] = "Record added.";
         }
-        catch (Exception ex)
+        catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 2627 or 2601)
         {
-            TempData["ErrorMessage"] = $"Add failed: {ex.Message}";
+            if (KeyColumn == "ID")
+            {
+                // No pre-check runs for ID-keyed tables (Supplier/AHRO) — the database's own
+                // PK/unique constraint is the only thing that ever catches a genuine duplicate here.
+                ModelState.AddModelError(KeyColumn, PickListsModel.DuplicateCodeMessage);
+            }
+            else
+            {
+                // HasDuplicateKeyAsync above already ruled out an exact-value match against this
+                // KeyColumn, so reaching a duplicate-key error here means the database silently
+                // truncated an oversized value until it collided with a shorter existing row (e.g.
+                // entering "77" into a column that only holds one digit) — not a genuine typed dupe.
+                ModelState.AddModelError(KeyColumn, "Unable to add entered row.");
+            }
+            return Page();
+        }
+        catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 8152 or 2628 or 547)
+        {
+            // e.g. luValuationAge's Code column only accepts a single digit — entering "12" trips
+            // a truncation (8152/2628) or CHECK constraint (547) error, not a duplicate key.
+            var label = DisplayFields.FirstOrDefault(f => f.Column == KeyColumn)?.Label ?? KeyColumn;
+            ModelState.AddModelError(KeyColumn, $"Unable to add — the {label.ToLowerInvariant()} entered is not valid for this field.");
+            return Page();
+        }
+        catch (Exception)
+        {
+            TempData["ErrorMessage"] = "Unable to add. Please check the entered values and try again.";
             return Page();
         }
 

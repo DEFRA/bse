@@ -164,9 +164,7 @@
           data-original-final-result="@r.FinalResult"
           data-tests-contain-positive="@(Model.TestsContainPositive ? "true" : "false")"
           data-paperwork-complete="@(r.IsPaperworkComplete ? "true" : "false")"
-          data-dbse-was-allocated="@(Model.DbseWasAllocated ? "true" : "false")"
-          data-stored-final-result-date="@Model.DisplayFinalResultDate?.ToString("dd/MM/yyyy")"
-          data-stored-dbse-display="@Model.DisplayDbse">
+          data-dbse-was-allocated="@(Model.DbseWasAllocated ? "true" : "false")">
         <input type="hidden" name="Rbse" value="@Model.Rbse" />
 
         <div class="bse-final-result-panel">
@@ -313,7 +311,12 @@
         if (!form || !finalResultSelect || !saveButton) return;
 
         const syncSaveButton = function () {
-            saveButton.disabled = !finalResultSelect.value;
+            // Legacy parity (FinalResultEntry.aspx.vb CheckControlState): Save only enables once
+            // the Final Result actually differs from what was loaded for this RBSE — not merely
+            // because the dropdown has a value. A case that already has a stored result shows it
+            // pre-selected straight after Look Up, so a blank-check alone would wrongly enable
+            // Save with zero user interaction.
+            saveButton.disabled = finalResultSelect.value === originalFinalResult;
         };
 
         // Mirrors legacy's ddlFinalResult_SelectedIndexChanged (AutoPostBack) cascade: changing the
@@ -324,8 +327,11 @@
         const testsContainPositive = form.dataset.testsContainPositive === 'true';
         const paperworkComplete = form.dataset.paperworkComplete === 'true';
         const dbseWasAllocated = form.dataset.dbseWasAllocated === 'true';
-        const storedFinalResultDate = form.dataset.storedFinalResultDate || '';
-        const storedDbseDisplay = form.dataset.storedDbseDisplay || '';
+        // Legacy parity: ddlFinalResult_SelectedIndexChanged unconditionally resets the Final
+        // Result Date, DBSE and Download/Print state on every raise of this event — none of them
+        // ever revert to the originally loaded values, even if the dropdown is changed back to its
+        // original selection. Once true, this never resets for the rest of this page view.
+        let dbseCleared = false;
 
         const mismatchStar = document.getElementById('mismatch-star');
         const paperworkStar = document.getElementById('paperwork-star');
@@ -343,7 +349,6 @@
 
         const applyCascade = function () {
             const value = finalResultSelect.value;
-            const changedThisRound = value !== originalFinalResult;
 
             if (mismatchStar) {
                 if (value === 'Pos' && !testsContainPositive) {
@@ -362,25 +367,23 @@
             }
 
             if (dateEl) {
-                dateEl.textContent = changedThisRound ? todayFormatted() : storedFinalResultDate;
-            }
-
-            if (dbseEl) {
-                dbseEl.textContent = changedThisRound ? 'TBC' : storedDbseDisplay;
+                dateEl.textContent = todayFormatted();
             }
 
             if (dbseClearedStar) {
-                dbseClearedStar.hidden = !(changedThisRound && dbseWasAllocated);
+                dbseClearedStar.hidden = !(!dbseCleared && dbseWasAllocated);
             }
 
+            if (dbseEl) {
+                dbseEl.textContent = 'TBC';
+            }
+
+            dbseCleared = true;
+
             actionLinks.forEach(function (link) {
-                link.classList.toggle('bse-fre-action-disabled', changedThisRound);
-                link.setAttribute('aria-disabled', changedThisRound ? 'true' : 'false');
-                if (changedThisRound) {
-                    link.addEventListener('click', preventWhileDirty);
-                } else {
-                    link.removeEventListener('click', preventWhileDirty);
-                }
+                link.classList.add('bse-fre-action-disabled');
+                link.setAttribute('aria-disabled', 'true');
+                link.addEventListener('click', preventWhileDirty);
             });
 
             syncSaveButton();

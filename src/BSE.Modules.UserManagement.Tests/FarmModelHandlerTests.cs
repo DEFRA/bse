@@ -381,8 +381,9 @@ public sealed class FarmModelHandlerTests
             HerdSizes = [new CaseFarmDraftHerdSizeItem { ClientKey = "h1", HerdYear = 2024, TotalSize = 20 }]
         };
         _farmDraftState.GetAsync(Rbse).Returns(draft);
+        _batchRepository.GetBatchNumbersByRbseAsync(Rbse).Returns([new BatchNumberEntry(1, "2024/001", Rbse, "BSE1")]);
 
-        var model = CreateModel(["DataEntry"]);
+        var model = CreateModel(["DataEntry", "VLAAccess"]);
         model.EditingClientKey = "h1";
 
         var result = await model.OnPostBeginEditHerdRowAsync();
@@ -398,8 +399,9 @@ public sealed class FarmModelHandlerTests
         _caseService.GetCaseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = Cphh });
         _farmService.GetByCphhAsync(Cphh).Returns(MakeFarm());
         _farmDraftState.GetAsync(Rbse).Returns(new CaseFarmDraftState { Rbse = Rbse, Cphh = Cphh });
+        _batchRepository.GetBatchNumbersByRbseAsync(Rbse).Returns([new BatchNumberEntry(1, "2024/001", Rbse, "BSE1")]);
 
-        var model = CreateModel(["DataEntry"]);
+        var model = CreateModel(["DataEntry", "VLAAccess"]);
         model.NewHerdRow = new FarmModel.HerdSizeRowInput { HerdYear = 1900, TotalSize = 0 };
 
         var result = await model.OnPostAddHerdSizeRowAsync();
@@ -415,8 +417,9 @@ public sealed class FarmModelHandlerTests
         _caseService.GetCaseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = Cphh });
         _farmService.GetByCphhAsync(Cphh).Returns(MakeFarm());
         _farmDraftState.GetAsync(Rbse).Returns(new CaseFarmDraftState { Rbse = Rbse, Cphh = Cphh });
+        _batchRepository.GetBatchNumbersByRbseAsync(Rbse).Returns([new BatchNumberEntry(1, "2024/001", Rbse, "BSE1")]);
 
-        var model = CreateModel(["DataEntry"]);
+        var model = CreateModel(["DataEntry", "VLAAccess"]);
         model.NewHerdRow = new FarmModel.HerdSizeRowInput { HerdYear = 2024, TotalSize = 20 };
 
         var result = await model.OnPostAddHerdSizeRowAsync();
@@ -438,8 +441,9 @@ public sealed class FarmModelHandlerTests
             HerdSizes = [new CaseFarmDraftHerdSizeItem { ClientKey = "h1", HerdYear = 2023, TotalSize = 10 }]
         };
         _farmDraftState.GetAsync(Rbse).Returns(draft);
+        _batchRepository.GetBatchNumbersByRbseAsync(Rbse).Returns([new BatchNumberEntry(1, "2024/001", Rbse, "BSE1")]);
 
-        var model = CreateModel(["DataEntry"]);
+        var model = CreateModel(["DataEntry", "VLAAccess"]);
         model.EditingClientKey = "h1";
         model.EditHerdRow = new FarmModel.HerdSizeRowInput { HerdYear = 2024, TotalSize = 30 };
 
@@ -462,8 +466,9 @@ public sealed class FarmModelHandlerTests
             HerdSizes = [new CaseFarmDraftHerdSizeItem { ClientKey = "h1", HerdYear = 2023, TotalSize = 10 }]
         };
         _farmDraftState.GetAsync(Rbse).Returns(draft);
+        _batchRepository.GetBatchNumbersByRbseAsync(Rbse).Returns([new BatchNumberEntry(1, "2024/001", Rbse, "BSE1")]);
 
-        var model = CreateModel(["DataEntry"]);
+        var model = CreateModel(["DataEntry", "VLAAccess"]);
         var result = await model.OnPostDeleteHerdSizeAsync("h1");
 
         result.Should().BeOfType<RedirectToPageResult>();
@@ -861,8 +866,9 @@ public sealed class FarmModelHandlerTests
         _caseService.GetCaseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = Cphh });
         _farmService.GetByCphhAsync(Cphh).Returns(MakeFarm());
         _farmDraftState.GetAsync(Rbse).Returns(new CaseFarmDraftState { Rbse = Rbse, Cphh = Cphh });
+        _batchRepository.GetBatchNumbersByRbseAsync(Rbse).Returns([new BatchNumberEntry(1, "2024/001", Rbse, "BSE1")]);
 
-        var model = CreateModel(["DataEntry"]);
+        var model = CreateModel(["DataEntry", "VLAAccess"]);
         model.NewHerdRow = new FarmModel.HerdSizeRowInput { HerdYear = 2024, TotalSize = 20, Lactation1Size = 1000 };
 
         var result = await model.OnPostAddHerdSizeRowAsync();

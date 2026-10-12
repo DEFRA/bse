@@ -357,10 +357,17 @@ public class EditModel(
         await LoadLookupsAsync();
         await LoadOrInitializeDraftStateAsync();
 
-        // Test rows are confirmed individually and live in their own table, so they commit here
-        // rather than after the Case row. A validation, mandatory-field or concurrency failure
-        // below must not silently discard tests the user has already confirmed.
-        await PersistStagedTestsAndResyncDraftAsync();
+        // Test rows are confirmed individually and live in their own table, so they normally
+        // commit here rather than after the Case row, so a validation, mandatory-field or
+        // concurrency failure below doesn't silently discard tests the user has already
+        // confirmed. However, for a brand-new case the Case row doesn't exist in the database
+        // yet (it only lives in the shared session/draft until CommitAllAsync below creates
+        // it), so persisting tests now would violate FK_CaseTest_Case. In that scenario the
+        // staged tests are committed further down, immediately after the Case row itself is
+        // created.
+        var isNewCase = persistedRecord is null;
+        if (!isNewCase)
+            await PersistStagedTestsAndResyncDraftAsync();
 
         ApplyLegacyPreSaveNormalizations();
         ValidateLegacyParityRules(isSaveButton: true);
@@ -393,6 +400,11 @@ public class EditModel(
             });
         if (failureRedirect is not null)
             return failureRedirect;
+
+        // The Case row now exists (either it already did, or CommitAllAsync just created it),
+        // so it's now safe to persist any staged test rows for a brand-new case.
+        if (isNewCase)
+            await PersistStagedTestsAndResyncDraftAsync();
 
         await caseEditDraftState.ClearAsync(Rbse);
 
@@ -1062,6 +1074,17 @@ public class EditModel(
         }
 
         return RedirectToTestsAnchor();
+    }
+
+    /// <summary>Test records sort-header link: a plain same-page query-string link, which — unlike
+    /// Save/tab-switch/Audit Log — never staged the in-progress Case edit, silently discarding it.
+    /// StageCaseEditForNavigationAsync already reloads the Tests draft (sorted/paged from the
+    /// TSort/TDir/TPage the link itself carries) as part of its own staging, so nothing else is
+    /// needed here.</summary>
+    public async Task<IActionResult> OnPostResortTestsAsync()
+    {
+        var stagingResult = await StageCaseEditForNavigationAsync();
+        return stagingResult ?? Page();
     }
 
     private RedirectToPageResult RedirectToTestsAnchor() =>
