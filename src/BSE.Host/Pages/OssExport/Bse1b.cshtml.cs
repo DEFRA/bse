@@ -22,13 +22,34 @@ public class OssExportBse1bModel(IOssExportService ossExportService) : PageModel
     [BindProperty(SupportsGet = true)]
     public int PageNumber { get; set; } = 1;
 
+    [BindProperty(SupportsGet = true)]
+    public string SortColumn { get; set; } = "Rbse";
+
+    [BindProperty(SupportsGet = true)]
+    public bool SortDesc { get; set; }
+
     public List<OssExportBatchEntryRecord> GridEntries { get; private set; } = new();
     public string? ValidationMessage { get; private set; }
     public BatchNumber1989Result? BatchResult { get; private set; }
     public bool IsGridEmpty => GridEntries.Count == 0;
     public int TotalPages => (int)Math.Ceiling(GridEntries.Count / (double)PageSize);
     public IEnumerable<OssExportBatchEntryRecord> PagedGridEntries
-        => GridEntries.Skip((PageNumber - 1) * PageSize).Take(PageSize);
+        => ApplySorting(GridEntries).Skip((PageNumber - 1) * PageSize).Take(PageSize);
+
+    private IEnumerable<OssExportBatchEntryRecord> ApplySorting(IEnumerable<OssExportBatchEntryRecord> source)
+    {
+        Func<OssExportBatchEntryRecord, string?> keySelector = SortColumn switch
+        {
+            "Cphh" => e => e.Cphh,
+            "OwnerName" => e => e.OwnerName,
+            "Address1" => e => e.Address1,
+            _ => e => e.Rbse,
+        };
+
+        return SortDesc
+            ? source.OrderByDescending(keySelector, StringComparer.OrdinalIgnoreCase)
+            : source.OrderBy(keySelector, StringComparer.OrdinalIgnoreCase);
+    }
 
     public Task<IActionResult> OnGetAsync()
     {
