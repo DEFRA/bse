@@ -911,6 +911,26 @@ public sealed class ClinicalVlaUsersHandlerTests
         model.EditUserGroupId.Should().Be(0);
     }
 
+    [Fact]
+    public async Task UsersModel_OnGetAsync_SortByGroupAscending_OrdersByGroupNameNotId()
+    {
+        var vla = new User(1, "v", "v@bse.local", "V User", "v@example.com", true, 5, UserGroup.ReadOnly);
+        var defra = new User(2, "d", "d@bse.local", "D User", "d@example.com", true, 7, UserGroup.DataEntry);
+        _userService.GetAllUsersAsync().Returns([vla, defra]);
+        _userLookups.GetUserGroupsAsync().Returns(
+        [
+            new LuUserGroup { Id = 5, Name = "VLA Maintenance" },
+            new LuUserGroup { Id = 7, Name = "DEFRA AHO User" }
+        ]);
+
+        var model = CreateUsersModel();
+        model.SortColumn = "Group";
+
+        await model.OnGetAsync();
+
+        model.Users.First().UserId.Should().Be(defra.UserId);
+    }
+
     [Theory]
     [InlineData("NTLogin", false)]
     [InlineData("NTLogin", true)]

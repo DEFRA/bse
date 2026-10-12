@@ -257,6 +257,12 @@
             return;
         }
 
+        var dataRow = e.target.closest('tbody tr[data-user-id]');
+        if (dataRow && !e.target.closest('a, button, input, select, label') && !editingRow && !dataRow.classList.contains(EDITING_CLASS)) {
+            selectRow(dataRow);
+            return;
+        }
+
         var action = e.target.closest('[data-action]');
         if (action) {
             e.preventDefault();
