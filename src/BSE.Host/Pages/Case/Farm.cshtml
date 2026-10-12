@@ -583,7 +583,7 @@
 
                     @foreach (var h in Model.PagedSortedStagedHerdSizes())
                     {
-                        var isEditing = canEditFarm && Model.ReopenEditClientKey == h.ClientKey;
+                        var isEditing = Model.CanEditVlaControls && Model.ReopenEditClientKey == h.ClientKey;
                         var editRow = isEditing ? Model.EditHerdRow : null;
                         var yearRepeated = Model.SortedStagedHerdSizes().Count(x => x.HerdYear == h.HerdYear) > 1;
 
@@ -650,7 +650,7 @@
                                 </td>
                                 <partial name="_HerdSizeLactationCells" model="h" />
                                 <td class="govuk-table__cell">
-                                    @if (canEditFarm)
+                                    @if (Model.CanEditVlaControls)
                                     {
                                         <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
                                             <button type="submit"
@@ -716,7 +716,7 @@
             ["Fragment"] = "herd-size-section"
         })
 
-        @if (canEditFarm)
+        @if (Model.CanEditVlaControls)
         {
             <div class="govuk-button-group govuk-!-margin-bottom-6">
                 <button type="button" id="show-add-herd-row" class="govuk-button govuk-button--secondary" data-module="govuk-button">Add herd size record</button>

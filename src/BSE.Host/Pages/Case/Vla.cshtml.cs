@@ -843,6 +843,20 @@ public class VlaModel(
         ModelState.AddModelError(key, "Please enter a valid date");
     }
 
+    /// <summary>Other Owners sort-header link: a plain same-page query-string link, which — unlike
+    /// Save/tab-switch/Audit Log — never staged the in-progress VLA edit, silently discarding it.
+    /// Unlike the ModelState-invalid branch inside StageVlaEditForNavigationAsync, the success path
+    /// doesn't reload the Owners draft itself, so it's done explicitly here with the new sort applied.</summary>
+    public async Task<IActionResult> OnPostResortOwnersAsync()
+    {
+        var (stagingResult, _) = await StageVlaEditForNavigationAsync();
+        if (stagingResult is not null)
+            return stagingResult;
+
+        await LoadOrInitializeOwnersDraftAsync();
+        return Page();
+    }
+
     public string OwnersSortUrl(string col)
     {
         var dir = string.Equals(OSort, col, StringComparison.OrdinalIgnoreCase) && ODir == "asc" ? "desc" : "asc";

@@ -1799,32 +1799,163 @@ Files changed: `Bab.cshtml.cs` (`StageCaseOrigin`, both staging call sites). `ge
 independently test-run-verified — `dotnet test` continues to be blocked by `BSE.Host.exe` being locked
 by another running process.
 
-## Follow-up: BAB→VLA Origin cascade reported as still not working in new-case flow specifically (2026-10-12)
+## Herd Size grid: Add/Edit/Delete wrongly available to DEFRA roles after creating a case (2026-10-12)
 
-User follow-up: the fix above works for an existing case, but not for new-case creation, where Case
-(APHA) is non-editable (no batch selected yet) — the user correctly expects the Origin *value* to still
-display even though the field is disabled.
+User-reported: after creating and saving a new case, the Herd Size grid shows Add/Change/Delete
+actions in migrated; legacy shows it as read-only at this point.
 
-Investigation found and fixed one concrete, confirmed gap: every other Case-level field rendered on
-`Vla.cshtml` has a hidden-input fallback so its value survives a POST while the fieldset is disabled
-(`Case.Rbse`, `Case.EartagCountry`, `Case.FormADate`, `Case.DamStatus`, etc. are all unconditional
-hidden inputs; `HerdType`/`PedigreeType` on the Farm tab use the identical
-`@if (!canEditVlaControls) { <input type="hidden" ... /> }` pattern) — `Case.Origin`'s `<select>` had
-no such fallback. Without it, if VLA's own form ever posts while read-only (disabled `<select>` values
-are never included in a browser's POST body), `Case.Origin` binds to `null` server-side, a correctness
-gap even though it doesn't fully explain a first-view (GET) display issue on its own. Fixed by adding
-the same conditional hidden input, gated on `vlaReadOnly` so it never duplicates the visible select's
-`name` attribute when editable.
+Root cause: legacy's role dispatch (`EnableControls`/`DEFRADataEntryEnable`/`DEFRAMaintenanceEnable`)
+always calls `MakeVLAControlsReadOnly()` for DEFRA Data Entry and DEFRA Maintenance — `HerdSizePager.
+AllowAddNew/AllowEdit/AllowDelete` are **unconditionally** `False` for these roles, regardless of CPHH
+or anything else; only VLA Data Entry/VLA Maintenance ever get `MakeVLAControlsWritable()`, and even
+then only when `IsVLAAllowedMainCaseEdit(Session)` (a batch-selected check) passes. Migrated's
+`FarmModel` already computes this exact rule correctly as `CanEditVlaControls` (`ApplyLegacyEditPermissions`)
+— used correctly for HerdType/Pedigree/IsDealer — but the existing-case Herd Size grid's row Change/
+Delete buttons, its `isEditing` row state, and its "Add herd size record" button were all gated on
+`canEditFarm` (a page-local variable = `User.IsInRole("DataEntry")`, true for **any** Data Entry role
+including plain DEFRA) instead of `Model.CanEditVlaControls`. The four server-side handlers
+(`OnPostBeginEditHerdRowAsync`, `OnPostAddHerdSizeRowAsync`, `OnPostUpdateHerdSizeRowAsync`,
+`OnPostDeleteHerdSizeAsync`) had the same gap — only checking `User.IsInRole(DataEntryRole)`, so a
+direct POST (bypassing the now-hidden buttons) would still have succeeded for a DEFRA role.
 
-**Not yet fully confirmed as the complete root cause.** Traced `OnGetAsync`'s overlay path
-(`ApplyStagedCaseOverlayAsync` → `Case.ApplyStagedCommand(staged.Case)`, which does copy `Origin`) and
-found no code-level reason a plain GET after a BAB→VLA tab switch would fail to show the staged Origin
-value — this part appears structurally correct in both new-case and existing-case flows. Since I can't
-run the app in this session (`dotnet test`/`BSE.Host.exe` still locked by another process), I can't
-empirically confirm whether the hidden-input fix above fully resolves what you're seeing. If it
-doesn't, the next most useful detail would be the exact click sequence (Save vs. tab-switch button,
-and whether Origin was re-checked after any other action on VLA/BAB in between) so the GET-time overlay
-itself can be re-traced with that specific sequence in mind.
+Fix: changed the three Herd Size view gates (`isEditing`, row Change/Delete buttons, "Add herd size
+record" button) from `canEditFarm` to `Model.CanEditVlaControls`, and added a `!CanEditVlaControls`
+check (redirecting back to the tab) to all four Herd Size POST handlers as defence in depth. Linked
+Farms' own `canEditFarm`/`CanEditDefraControls` gating (correctly DEFRA-inclusive per legacy's
+`MakeDEFRAControlsWritable`) and the outer form fieldset/Save button were left untouched.
 
-Files changed: `Vla.cshtml` (`Case.Origin` hidden-input fallback). `get_errors` clean.
+Files changed: `Farm.cshtml` (3 Herd Size gating conditions), `Farm.cshtml.cs` (4 Herd Size handlers).
+`get_errors` clean on both. Not independently test-run-verified — `dotnet test` continues to be
+blocked by `BSE.Host.exe` being locked by another running process.
+
+## Farm tab: Herd Size grid showed the previous CPHH's data after looking up a different CPHH (2026-10-12)
+
+User-reported: on `/Case/Farm`, looking up one CPHH correctly shows its Herd Size rows; looking up a
+*different* CPHH afterwards (same session, no Save in between) still shows the first CPHH's rows.
+
+Root cause: `LoadOrInitializeDraftStateAsync`'s reseed guard (fixed earlier this session for a
+different, narrower repro — a blank-CPHH failed Save caching an empty shell) only reseeded when the
+cached draft was completely empty (`Cphh` blank and both grids empty). It never reseeded for the much
+more common case of a draft already populated from a **previous, different** CPHH — once any CPHH had
+been looked up and cached for this RBSE, every subsequent Look Up for a different CPHH found a
+non-empty cached draft and reused its (now-wrong) Linked Farms/Herd Size rows as-is, regardless of
+`LoadFromFarmCphhAsync` having just loaded the *new* CPHH's actual data into `PersistedHerdSizes`.
+
+Fix: broadened the reseed condition from "draft is an empty shell" to "the staged `Cphh` no longer
+matches the just-resolved `Farm.CPHH`" — this single check also subsumes the original empty-shell case
+(a blank `Cphh` never matches a real one), so the two fixes are now one. Matches legacy's
+`GetFarmDetailsFromDatabase`/`LoadFarmDetails` always replacing the session's farm dataset wholesale on
+every successful Look Up, regardless of what farm was previously loaded.
+
+Files changed: `Farm.cshtml.cs` (`LoadOrInitializeDraftStateAsync`). `get_errors` clean. Not
+independently test-run-verified — `dotnet test` continues to be blocked by `BSE.Host.exe` being locked
+by another running process.
+
+## Farm tab: the same stale-CPHH bug also affected the scalar fields, not just the two grids (2026-10-12)
+
+User-observed: the grid staleness fix above addresses Herd Size/Linked Farms, but the same principle —
+all farm data should reflect whichever CPHH was most recently looked up — also applies to the ordinary
+scalar fields (Owner Name, Address, Parish, County, AHO, etc.), which are staged separately in
+`CaseScalarDraftState.Farm`, not `CaseFarmDraftState`.
+
+Root cause: `OnPostLookupNewCaseAsync`'s farm-found branch only ever updated the **in-memory**
+`EditableFarm` for that one response (`EditableFarm = FarmEditViewModel.FromRecord(farm)`) — it never
+called `StageFarmScalarEditAsync`, so the shared cross-tab scalar draft was only ever refreshed by an
+explicit tab switch. Looking up CPHH-A, switching tabs (staging A), then looking up a *different*
+CPHH-B without tab-switching again left `CaseScalarDraftState.Farm` holding CPHH-A's scalar snapshot.
+`OnGetNewCaseAsync`'s staged-scalar overlay (`EditableFarm.ApplyStagedCommand(stagedScalars.Farm)`)
+applies unconditionally on every GET reload of this tab, so revisiting Farm in between would silently
+show CPHH-A's Owner Name/Address/etc. instead of CPHH-B's. A second, related bug: `StageFarmScalarEditAsync`
+only ever set `FarmBaseRowStampBase64` once (`??=`) and never reset it — once CPHH-A's rowstamp was
+cached as the baseline, staging CPHH-B's edit would still compare/commit against CPHH-A's stale
+concurrency token.
+
+Fix: `OnPostLookupNewCaseAsync` now calls `StageFarmScalarEditAsync(EditableFarm.ToUpdateCommand(farm.RowStamp))`
+immediately after every successful Look Up (mirroring how the grid draft is now kept in sync on every
+Look Up too), so there is no window where the scalar draft can go stale relative to the last-resolved
+CPHH. `StageFarmScalarEditAsync` also now resets `FarmBaseRowStampBase64` whenever the already-staged
+`draft.Farm`'s CPHH differs from the CPHH being staged this round, so a genuinely different farm never
+inherits the previous farm's baseline rowstamp.
+
+Files changed: `Farm.cshtml.cs` (`OnPostLookupNewCaseAsync`, `StageFarmScalarEditAsync`). `get_errors`
+clean. Not independently test-run-verified — `dotnet test` continues to be blocked by `BSE.Host.exe`
+being locked by another running process.
+
+## Farm tab: re-editing the CPHH box and looking up again reverted to the previous CPHH (2026-10-12)
+
+User-reported: look up CPHH-A (farm data loads correctly), then edit the CPHH box to CPHH-B and click
+Look Up again — the CPHH field itself gets overwritten back to CPHH-A instead of looking up B.
+
+Root cause: a side effect of the immediately-preceding fix. `OnPostLookupNewCaseAsync` calls the
+general `LoadAsync()` first, which (a) correctly resolves `Farm` from the *posted* CPHH-B, but then
+(b) unconditionally overlays `stagedScalars.Farm` from `CaseScalarDraftState` onto the freshly-built
+`EditableFarm` — and since the previous fix now stages the scalar draft immediately on every Look Up,
+that draft still held CPHH-A (staged during the *first* Look Up) at the point the *second* Look Up's
+`LoadAsync()` call runs, before `OnPostLookupNewCaseAsync` itself gets a chance to re-stage CPHH-B.
+The overlay clobbered `EditableFarm.CPHH` back to "A" *before* `OnPostLookupNewCaseAsync` even read it
+to decide which CPHH to look up — so the method ended up re-looking-up the old CPHH instead of the
+newly typed one. This bug already existed before the previous fix (triggered only after at least one
+tab switch, since that was the only way the scalar draft got populated); the previous fix widened the
+window to every second Look Up, with or without a tab switch in between.
+
+Fix: `LoadAsync()`'s staged-scalar overlay now only applies when the staged `Farm` command's CPHH
+matches the CPHH that was just resolved (`Farm.CPHH`) — a staged edit for a *different* CPHH is no
+longer applied over the freshly loaded record, matching the same "don't let a different farm's stale
+data mask what was just looked up" principle as the two fixes immediately above.
+
+Files changed: `Farm.cshtml.cs` (`LoadAsync`). `get_errors` clean. Not independently test-run-verified
+— `dotnet test` continues to be blocked by `BSE.Host.exe` being locked by another running process.
+
+## Farm tab: Owner Name/Address/etc. still showed the previous CPHH's values after the CPHH-overwrite fix (2026-10-12)
+
+Follow-up to the fix above. After correcting the CPHH field itself, the *other* scalar fields (Owner
+Name, Address 1-3, Parish, County, AHO, etc.) still showed the previous CPHH's values even though the
+CPHH field now correctly showed the new one.
+
+Root cause: not a data bug at all — a rendering-layer one. The CPHH box uses a plain `value="@(...)"`
+attribute, which always reflects whatever the C# model property currently holds. `_FarmFormFields.cshtml`'s
+Owner Name/Address/etc. inputs use `asp-for="OwnerName"` (the ASP.NET Core input tag helper), which
+renders from **ModelState** (the value originally posted in the request) in preference to the model's
+current value whenever a ModelState entry exists for that key. Since the user only edited the CPHH box
+before clicking Look Up again, the browser still posted the *previous* CPHH's Owner Name/Address/etc.
+(nothing had changed those fields on screen) — `OnPostLookupNewCaseAsync` correctly reassigns
+`EditableFarm` to the freshly resolved farm's record server-side, but the tag helper ignored that
+reassignment and rendered the stale posted values from ModelState instead.
+
+Fix: added `ModelState.Clear()` in `OnPostLookupNewCaseAsync`'s farm-found branch, immediately after
+`EditableFarm` is reassigned to the fresh record — forcing every `asp-for`-bound field to render from
+the (now correct) model instead of the stale posted values. Safe here specifically because this is the
+unconditional-success branch; no validation errors are ever added before this point in that branch.
+
+Files changed: `Farm.cshtml.cs` (`OnPostLookupNewCaseAsync`). `get_errors` clean. Not independently
+test-run-verified — `dotnet test` continues to be blocked by `BSE.Host.exe` being locked by another
+running process.
+
+## Farm tab: clicking a grid sortable header discarded in-progress edits (2026-10-12)
+
+User-reported: typing into Farm tab fields, then clicking a Herd Size/Linked Farms column header to
+sort, discards the edit.
+
+Root cause: the sort header links (`HerdSizeSortUrl`/`LinkedFarmsSortUrl`) and their accompanying
+pagination links are plain same-page `?HSort=...`/`?LPage=...` `<a href>` links — a GET navigation,
+unlike every other action on this tab (Save, tab-switch, Add/Edit/Delete row, Farm Audit Log), all of
+which already stage the in-progress edit first. A GET carries no form data at all, so sorting/paging
+silently reloaded the page using only what was already persisted/staged, discarding anything typed but
+not yet confirmed.
+
+Fix: added `OnPostResortGridsAsync()` (stages the posted edit via the existing
+`RestoreAndRestageFarmEditAsync` helper, then re-renders — `HSort`/`HDir`/`HPage`/`LSort`/`LDir`/`LPage`
+already bind from the query string the link carries, so no other server-side change was needed). In
+the view, rather than converting all 30 individual sort/pagination links to buttons, added one scoped
+click handler in `_FarmGridScripts.cshtml` targeting every `a[href^="?"]` inside
+`#case-farm-inline-form` — it prevents the normal navigation and submits the form with
+`?handler=ResortGrids&` plus the link's own query string instead, covering every sort header and
+pagination link in both the create-mode and existing-case markup blocks from one place. No role gate
+on the new handler — sorting/paging must remain available to read-only roles exactly as the GET links
+already were; `RestoreAndRestageFarmEditAsync` itself still gates any actual persistence of what's
+staged at Save time.
+
+Files changed: `Farm.cshtml.cs` (`OnPostResortGridsAsync`), `_FarmGridScripts.cshtml` (click handler).
+`get_errors` clean on both. Not independently test-run-verified — `dotnet test` continues to be
+blocked by `BSE.Host.exe` being locked by another running process.
 

@@ -161,10 +161,6 @@
                             <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.Origin)">@o.Description</option>
                         }
                     </select>
-                    @if (vlaReadOnly)
-                    {
-                        <input type="hidden" asp-for="Case.Origin" />
-                    }
                 </div>
             </div>
         </div>
@@ -1159,6 +1155,18 @@
                 herdWarningArmed = false;
                 onsetWarningArmed = false;
                 clearDateWarningIndicators();
+            });
+
+            // Other Owners sort-header link is a plain same-page "?..." link — navigating it as a
+            // normal GET discards whatever the user had typed but not yet confirmed via Save/tab-switch.
+            // Submit the form instead so the in-progress edit is staged first.
+            form.querySelectorAll('a[href^="?"]').forEach(function (link) {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    var query = link.getAttribute('href').replace(/^\?/, '');
+                    form.action = '?handler=ResortOwners&' + query;
+                    form.submit();
+                });
             });
         }
 
