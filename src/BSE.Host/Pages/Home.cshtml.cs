@@ -131,16 +131,10 @@ public class HomeModel(
     /// </summary>
     public async Task<IActionResult> OnPostRbseLookupAsync()
     {
-        if (string.IsNullOrWhiteSpace(LookupRbse))
-        {
-            ModelState.AddModelError(nameof(LookupRbse), "You must enter a RBSE number");
-            await OnGetAsync();
-            return Page();
-        }
-
-        var normalized = RbseHelper.ParseToRaw(LookupRbse);
-
-        // A batch is optional. When one is supplied it must exist before the case is opened.
+        // Legacy btnGo_Click validates the batch (BatchNumber1.Validate) before ever looking at
+        // the RBSE box, so a simultaneously-invalid batch wins over an empty-RBSE error — matched
+        // here by running this check first too. A batch is optional: blank year+number is valid.
+        int? batchId = null;
         if (BatchYear.HasValue || BatchNumber.HasValue)
         {
             if (BatchYear is null || BatchNumber is null)
@@ -150,7 +144,7 @@ public class HomeModel(
                 return Page();
             }
 
-            var batchId = await batchService.GetBatchIdAsync(BatchYear.Value, BatchNumber.Value);
+            batchId = await batchService.GetBatchIdAsync(BatchYear.Value, BatchNumber.Value);
             if (batchId is null)
             {
                 BatchNotFound = true;
@@ -158,7 +152,19 @@ public class HomeModel(
                 await OnGetAsync();
                 return Page();
             }
+        }
 
+        if (string.IsNullOrWhiteSpace(LookupRbse))
+        {
+            ModelState.AddModelError(nameof(LookupRbse), "You must enter a RBSE number");
+            await OnGetAsync();
+            return Page();
+        }
+
+        var normalized = RbseHelper.ParseToRaw(LookupRbse);
+
+        if (batchId.HasValue)
+        {
             await wizardState.SetAsync(new CaseWizardState(
                 RbseNumber: normalized,
                 BatchNumber: $"{BatchYear}/{BatchNumber}",

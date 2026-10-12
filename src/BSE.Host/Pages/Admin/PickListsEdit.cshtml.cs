@@ -1,5 +1,6 @@
 using BSE.Modules.ReferenceData.Models;
 using BSE.Modules.ReferenceData.Services;
+using BSE.SharedKernel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -25,7 +26,8 @@ public class PickListsEditModel(
         string Label,
         bool IsBoolean = false,
         bool IsNumeric = false,
-        bool IsRegionLookup = false);
+        bool IsRegionLookup = false,
+        bool IsAhoLookup = false);
 
     [BindProperty(SupportsGet = true)] public int TableId { get; set; }
     [BindProperty(SupportsGet = true)] public string Key { get; set; } = string.Empty;
@@ -39,6 +41,7 @@ public class PickListsEditModel(
     public EditableLookup? Lookup { get; private set; }
     public EditableLookupProcs? Procs { get; private set; }
     public IReadOnlyList<LuBSERegion> BseRegionOptions { get; private set; } = [];
+    public IReadOnlyList<ILookupItem> AhoOptions { get; private set; } = [];
     public IReadOnlyList<FieldSpec> DisplayFields { get; private set; } = [];
 
     public bool CanEdit => User.IsInRole("VLAMaintenance");
@@ -99,6 +102,9 @@ public class PickListsEditModel(
 
         if (DisplayFields.Any(f => f.IsRegionLookup))
             BseRegionOptions = (await lookupDataService.GetBSERegionsAsync()).ToList();
+
+        if (DisplayFields.Any(f => f.IsAhoLookup))
+            AhoOptions = (await lookupDataService.GetLookupAsync(BSE.SharedKernel.LookupTableId.AHO)).ToList();
     }
 
     private IActionResult RedirectToTable() =>
@@ -137,7 +143,7 @@ public class PickListsEditModel(
                 ModelState.AddModelError(field.Column, $"Enter a {field.Label.ToLowerInvariant()}");
         }
 
-        foreach (var field in DisplayFields.Where(f => f.IsRegionLookup))
+        foreach (var field in DisplayFields.Where(f => f.IsRegionLookup || f.IsAhoLookup))
         {
             if (string.IsNullOrWhiteSpace(Field(field.Column)))
                 ModelState.AddModelError(field.Column, $"Select a {field.Label.ToLowerInvariant()}");
@@ -202,7 +208,7 @@ public class PickListsEditModel(
             new("CPH", "CPH"),
             new("Name", "Name"),
             new("Address", "Address"),
-            new("AHO", "AHO")
+            new("AHO", "AHO", IsAhoLookup: true)
         ],
         AhroId => [new("Name", "Name")],
         _ =>

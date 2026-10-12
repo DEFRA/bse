@@ -50,7 +50,7 @@
 @await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Clinical", Model.Rbse, Model.BatchNumbers, viewDocsUrl, canSaveClinical))
 
 @await Html.PartialAsync("_CaseEditNotifications", new BSE.Host.Models.CaseEditNotificationsViewModel(
-    "clinical", TempData["Success"] as string, TempData["Warning"] as string))
+    "clinical", WarningMessage: TempData["Warning"] as string))
 
 <form method="post" novalidate id="case-clinical-inline-form">
     <input type="hidden" asp-for="Rbse" />
@@ -369,11 +369,16 @@
 
         // Legacy's Cancel is a postback that captures the current form before checking for
         // changes, so edits typed on this tab but never staged anywhere must count as unsaved too.
+        // Legacy's Cancel dirty-check (UpdateSessionWithCaseDetails) only ever writes the Signs
+        // checkboxes into dsCase's CLINICAL_TABLE — the Visits grid is a separate session table
+        // never inspected there, so typing a visit date (before Add/Update) must not count here;
+        // a committed visit row change is already tracked separately via Model.HasUnsavedChanges.
         var cancelForm = document.getElementById('case-clinical-inline-form');
         var formDirty = false;
         if (cancelForm) {
-            cancelForm.addEventListener('input', function () { formDirty = true; });
-            cancelForm.addEventListener('change', function () { formDirty = true; });
+            var isGridRowField = function (target) { return !!(target && target.closest && target.closest('table')); };
+            cancelForm.addEventListener('input', function (e) { if (!isGridRowField(e.target)) formDirty = true; });
+            cancelForm.addEventListener('change', function (e) { if (!isGridRowField(e.target)) formDirty = true; });
         }
 
         document.querySelectorAll('.bse-cancel-link').forEach(function (lnk) {

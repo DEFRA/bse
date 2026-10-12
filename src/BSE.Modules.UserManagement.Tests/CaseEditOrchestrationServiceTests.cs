@@ -205,4 +205,62 @@ public sealed class CaseEditOrchestrationServiceTests
         await _caseRepository.DidNotReceive().EditCaseAsync(Arg.Any<EditCaseCommand>(), Arg.Any<int>(), Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>());
         transaction.Received(1).Commit();
     }
+
+    [Fact]
+    public async Task CommitAllAsync_WhenNewGbCaseStagesAnExistingNonGbFarmsCphh_ThrowsNoFarmSpecifiedError()
+    {
+        // Reported bug: Farm.cshtml's own Look Up button (OnPostLookupNewCaseAsync) rejects a
+        // "00"-prefixed CPHH via IsNonGbFarmCphh, but OnPostCreateCaseAsync/CommitAllAsync never
+        // re-checked it. If the non-GB farm already exists in the DB with every mandatory field
+        // filled in (as a real one would), every check above passes and the case silently saves
+        // with a non-GB farm attached. Confirmed against running legacy: CaseEntrySave.aspx shows
+        // "No farm has been specified for the case." in this exact scenario (dsCase.CPHH is never
+        // populated for a rejected CPHH, since GetFarmDetailsFromDatabase never ran) — not a
+        // dedicated non-GB message.
+        const string nonGbCphh = "00999900001";
+
+        _scalarDraftState.GetAsync(Rbse).Returns(new CaseScalarDraftState
+        {
+            Rbse = Rbse,
+            HasPendingChanges = true,
+            Farm = new UpdateFarmCommand(
+                CPHH: nonGbCphh, OwnerName: "Existing Non-GB Owner", Address1: "1 Farm Lane", Address2: null, Address3: null,
+                Postcode: null, Parish: null, District: null, County: "Some County",
+                CorrespondenceAddress1: null, CorrespondenceAddress2: null, CorrespondenceAddress3: null,
+                CorrespondencePostcode: null, MapReference: null, Herdmark1: null, Herdmark2: null,
+                Herdmark3: null, NumericHerdmark1: null, NumericHerdmark2: null, AHO: null,
+                HerdType: null, PedigreeType: null, IsDealer: false, ADNSRegionID: null, RowStamp: [1]),
+            Case = new EditCaseCommand(
+                Rbse: Rbse, EartagCountry: "UK", EartagHerdmark: "12345", Eartag: "1", PreviousEartag: null,
+                Bse1ReceivedDate: null, FormADate: DateTime.Today, FormAResubmittedDate: null, FormBDate: null,
+                Fate: null, FormCDate: null, IsPurchaserBse1Received: false, IsBreederBse1Received: false,
+                IsVendor1Bse1Received: false, IsHomebredBse1Received: false, IsSummarySheetReceived: false,
+                IsPaperworkComplete: false, ReportedLocation: null, Survey: null, Notes: null, BirthDate: null,
+                IsBirthDateEst: null, DamStatus: null, BirthDateSource: null, ValuationAge: null, Sex: null,
+                Breed: null, Origin: null, PurchaseDate: null, PurchaseAgeInMonths: null, PurchasedCounty: null,
+                HerdEntryDate: null, OnsetDate: null, IsOnsetDateEst: null, MonthsPregnant: null,
+                MonthsPostCalving: null, OnsetAgeInMonths: null, SlaughterDate: null, RowStamp: [],
+                AlternateDiagnosis: null, LabComment: null, CaseType: null)
+        });
+        _feedsDraftState.GetAsync(Rbse).Returns((CaseFeedsDraftState?)null);
+        _relationsDraftState.GetAsync(Rbse).Returns((CaseRelationsDraftState?)null);
+
+        _caseRepository.GetCaseByRbseAsync(Rbse).Returns((CaseRecord?)null);
+        _farmRepository.GetByCphhAsync(nonGbCphh).Returns(new FarmRecord
+        {
+            CPHH = nonGbCphh,
+            IsNonGBFarm = true,
+            OwnerName = "Existing Non-GB Owner",
+            Address1 = "1 Farm Lane",
+            County = "Some County",
+            RowStamp = [1, 2, 3]
+        });
+
+        var sut = CreateService();
+
+        var act = () => sut.CommitAllAsync(Rbse, userId: 1);
+
+        var thrown = await act.Should().ThrowAsync<MandatoryCaseFieldsMissingException>();
+        thrown.Which.Errors.Should().BeEquivalentTo(["No farm has been specified for the case."]);
+    }
 }

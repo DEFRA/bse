@@ -75,7 +75,7 @@ public sealed class CaseEditOrchestrationService(
         var pendingBatch = await wizardState.GetAsync();
 
         var hasScalarWork = draft is not null && draft.HasPendingChanges
-            && (draft.Case is not null || draft.Farm is not null || draft.Bab is not null || draft.Clinical is not null || draft.DamSire is not null);
+            && (draft.Case is not null || draft.Farm is not null || draft.Bab is not null || draft.Clinical is not null || draft.DamSire is not null || draft.CaseWork is not null);
         var hasFeedsWork = feedsDraft is not null && feedsDraft.HasPendingChanges;
         var hasRelationsWork = relationsDraft is not null && relationsDraft.HasPendingChanges;
         // Legacy parity: Session("BatchID") rides along with whichever tab's Save is clicked next —
@@ -139,8 +139,21 @@ public sealed class CaseEditOrchestrationService(
                 // against CASEWORK_TABLE for a brand-new case — without this, a case created via
                 // this cross-tab Save path (as opposed to Farm's own dedicated create-case form,
                 // which already does this via CaseService.CreateCaseAsync) never gets a CaseWork row.
+                // Uses whatever BSE1/Paperwork fields were staged from the Case (DEFRA) tab before
+                // the case itself existed, rather than hardcoding every optional field to null.
+                var cw = draft.CaseWork;
                 await caseWorkRepository.AddAsync(
-                    new AddCaseWorkCommand(rbse, DateTime.Today, null, null, null, null, null, null, null, null),
+                    new AddCaseWorkCommand(
+                        rbse,
+                        cw?.RbseDate ?? DateTime.Today,
+                        cw?.Barcode,
+                        cw?.AhfReference,
+                        cw?.PurchaserBse1ReceivedDate,
+                        cw?.BreederBse1ReceivedDate,
+                        cw?.Vendor1Bse1ReceivedDate,
+                        cw?.HomebredBse1ReceivedDate,
+                        cw?.SummarySheetReceivedDate,
+                        cw?.PaperworkCompleteDate),
                     connection, transaction);
 
                 if (draft.Bab is not null)
@@ -186,6 +199,9 @@ public sealed class CaseEditOrchestrationService(
                     if (clinicalWarning is not null)
                         warnings.Add(clinicalWarning);
                 }
+
+                if (draft?.CaseWork is not null)
+                    await caseWorkRepository.EditAsync(draft.CaseWork, connection, transaction);
             }
 
             if (draft?.DamSire is not null)
@@ -368,6 +384,20 @@ public sealed class CaseEditOrchestrationService(
         var isNonGbCase = currentCase?.IsNonGbCase ?? false;
 
         var cphh = isNewCase ? stagedFarm?.CPHH : currentCase!.Cphh;
+
+        // Legacy parity: for a brand-new case, CaseEntryFarm.aspx's btnLookUp_Click never links a
+        // "00"-prefixed CPHH to the case at all — it skips GetFarmDetailsFromDatabase entirely, so
+        // dsCase's CPHH stays null and CheckMandatoryFields falls straight into its generic "No farm
+        // has been specified for the case." message, never reaching the farm-field checks below.
+        // Reproduce that exact outcome: a non-GB farm CPHH on a new (GB) case counts as no CPHH here.
+        if (isNewCase && !string.IsNullOrWhiteSpace(cphh) && !isNonGbCase)
+        {
+            var isNonGbCphh = (await farmRepository.GetByCphhAsync(cphh))?.IsNonGBFarm
+                ?? CphhNormalizer.Normalize(cphh).StartsWith("00", StringComparison.Ordinal);
+            if (isNonGbCphh)
+                cphh = null;
+        }
+
         if (string.IsNullOrWhiteSpace(cphh))
         {
             errors.Add("No farm has been specified for the case.");

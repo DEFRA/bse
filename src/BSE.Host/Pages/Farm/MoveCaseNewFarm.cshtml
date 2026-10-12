@@ -43,7 +43,7 @@
     <input type="hidden" asp-for="ReturnCphh" />
     <input type="hidden" asp-for="Farm.CPHH" />
 
-    @await Html.PartialAsync("_FarmFormFields", Model.Farm, new ViewDataDictionary(ViewData) { TemplateInfo = { HtmlFieldPrefix = "Farm" } })
+    @await Html.PartialAsync("_FarmFormFields", Model.Farm, new ViewDataDictionary(ViewData) { TemplateInfo = { HtmlFieldPrefix = "Farm" }, ["ShowVlaFields"] = false })
 
     <div class="govuk-button-group">
         <button type="submit" class="govuk-button" data-module="govuk-button">Save farm</button>

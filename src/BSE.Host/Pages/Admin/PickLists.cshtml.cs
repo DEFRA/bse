@@ -32,7 +32,8 @@ public class PickListsModel(
         string Label,
         bool IsBoolean = false,
         bool IsNumeric = false,
-        bool IsRegionLookup = false);
+        bool IsRegionLookup = false,
+        bool IsAhoLookup = false);
 
     [BindProperty(SupportsGet = true)] public int TableId { get; set; }
     [BindProperty(SupportsGet = true)] public string SortColumn { get; set; } = string.Empty;
@@ -46,6 +47,7 @@ public class PickListsModel(
     public EditableLookupProcs? Procs { get; private set; }
     public IReadOnlyList<IDictionary<string, object?>> Rows { get; private set; } = [];
     public IReadOnlyList<LuBSERegion> BseRegionOptions { get; private set; } = [];
+    public IReadOnlyList<BSE.SharedKernel.ILookupItem> AhoOptions { get; private set; } = [];
 
     /// <summary>Columns rendered in the grid, in the order returned by the table's select procedure.</summary>
     public IReadOnlyList<FieldSpec> DisplayFields { get; private set; } = [];
@@ -103,6 +105,11 @@ public class PickListsModel(
             BseRegionOptions = (await lookupDataService.GetBSERegionsAsync()).ToList();
         }
 
+        if (DisplayFields.Any(f => f.IsAhoLookup))
+        {
+            AhoOptions = (await lookupDataService.GetLookupAsync(BSE.SharedKernel.LookupTableId.AHO)).ToList();
+        }
+
         if (Procs is null) return;
 
         Rows = (await lookupAdminService.GetLookupRowsAsync(Procs.SelectStoredProcedure)).ToList();
@@ -122,7 +129,7 @@ public class PickListsModel(
         }
 
         var field = DisplayFields.First(f => f.Column == SortColumn);
-        if (field.IsRegionLookup)
+        if (field.IsRegionLookup || field.IsAhoLookup)
         {
             return SortDesc
                 ? source.OrderByDescending(r => DisplayValue(r, field), StringComparer.OrdinalIgnoreCase)
@@ -183,7 +190,7 @@ public class PickListsModel(
             new("CPH", "CPH"),
             new("Name", "Name"),
             new("Address", "Address"),
-            new("AHO", "AHO")
+            new("AHO", "AHO", IsAhoLookup: true)
         ],
         AhroId => [new("Name", "Name")],
         _ =>
@@ -249,15 +256,27 @@ public class PickListsModel(
         return value is bool flag ? (flag ? "Yes" : "No") : value.ToString() ?? "";
     }
 
-    /// <summary>Legacy rendered the BSE Region as its name, not the stored ID.</summary>
+    /// <summary>Legacy rendered the BSE Region as its name, not the stored ID — and, for the TSE
+    /// Testing Site grid specifically, the AHO column as its resolved Name, not the stored Code
+    /// (grdLookup_ItemDataBound's lblAHOCode.Text = GetAHOEditList(drv("AHO"))).</summary>
     public string DisplayValue(IDictionary<string, object?> row, FieldSpec field)
     {
         var raw = RowValue(row, field.Column);
-        if (!field.IsRegionLookup || string.IsNullOrEmpty(raw)) return raw;
+        if (string.IsNullOrEmpty(raw)) return raw;
 
-        return int.TryParse(raw, out var id)
-            ? BseRegionOptions.FirstOrDefault(r => r.Id == id)?.Name ?? ""
-            : raw;
+        if (field.IsRegionLookup)
+        {
+            return int.TryParse(raw, out var id)
+                ? BseRegionOptions.FirstOrDefault(r => r.Id == id)?.Name ?? ""
+                : raw;
+        }
+
+        if (field.IsAhoLookup)
+        {
+            return AhoOptions.FirstOrDefault(a => string.Equals(a.Code, raw, StringComparison.OrdinalIgnoreCase))?.Description ?? "";
+        }
+
+        return raw;
     }
 
     public static bool RowBool(IDictionary<string, object?> row, string column) =>

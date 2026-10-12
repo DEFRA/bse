@@ -31,6 +31,7 @@ public class RelationsModel(
     IBatchRepository batchRepository,
     ICaseRelationsDraftStateService relationsDraftState,
     ICaseScalarDraftStateService caseScalarDraftState,
+    ICaseDraftDiscardService caseDraftDiscard,
     ICaseEditOrchestrationService caseEditOrchestration,
     IDbConnectionFactory connectionFactory,
     ICurrentUserService currentUser,
@@ -164,12 +165,53 @@ public class RelationsModel(
         if (!User.IsInRole(DataEntryRole))
             return Forbid();
 
+        var postedCaseHerdbook = CaseHerdbook;
+        var postedDamStatus = DamSire.DamStatus;
+
         await LoadAsync();
+        // Was previously only marking the (unrelated) relations-grid draft pending, without ever
+        // staging CaseHerdbook/DamStatus/Dam-Sire themselves — this button looked like it saved the
+        // fields, but they were silently discarded on the next reload/tab switch.
+        await RestoreAndRestageDamSireEditAsync(postedCaseHerdbook, postedDamStatus);
         var draft = await LoadOrInitializeRelationsDraftAsync();
         draft.HasPendingChanges = true;
         await relationsDraftState.SetAsync(draft);
         TempData.Remove(SuccessKey);
         return RedirectToPage(new { rbse = Rbse });
+    }
+
+    /// <summary>Stages Case Herdbook/Dam Status/Dam-Sire edits into the shared cross-tab draft
+    /// before navigating to another tab — mirrors every other scalar-field tab's StageAndGoto
+    /// handler. Without this, typed-but-not-yet-saved values here were lost on tab switch, since
+    /// Relations previously used a plain navigation link with no staging call at all.</summary>
+    public async Task<IActionResult> OnPostStageAndGotoAsync(string targetPage)
+    {
+        if (!User.IsInRole(DataEntryRole))
+            return RedirectToPage(targetPage, new { rbse = Rbse });
+
+        var postedCaseHerdbook = CaseHerdbook;
+        var postedDamStatus = DamSire.DamStatus;
+
+        await LoadAsync();
+
+        // Legacy parity: merely switching tabs without typing anything must not trip the
+        // cross-tab unsaved-changes warning or make CommitAllAsync think there is scalar work
+        // pending — StageCaseDamStatusAsync/StageHerdbookAsync always set HasPendingChanges,
+        // so only call them when Case Herdbook/Dam Status actually differ from what's already
+        // known (persisted, or already staged by an earlier action this session), same baseline
+        // PopulateCaseAncillaryStateAsync itself overlays on every GET.
+        var caseRecord = await caseService.GetCaseAsync(RbseHelper.ParseToRaw(Rbse));
+        var staged = await caseScalarDraftState.GetAsync(Rbse);
+        var baselineDamStatus = staged?.Case?.DamStatus ?? caseRecord?.DamStatus;
+        var baselineCaseHerdbook = staged?.DamSire?.CaseHerdbook ?? caseRecord?.Herdbook;
+
+        if (!string.Equals(postedCaseHerdbook, baselineCaseHerdbook, StringComparison.Ordinal)
+            || !string.Equals(postedDamStatus, baselineDamStatus, StringComparison.Ordinal))
+        {
+            await RestoreAndRestageDamSireEditAsync(postedCaseHerdbook, postedDamStatus);
+        }
+
+        return RedirectToPage(targetPage, new { rbse = Rbse });
     }
 
     public IActionResult OnPostDeleteRelationAsync(int relationId, string rowStampBase64)
@@ -1276,8 +1318,7 @@ public class RelationsModel(
     private async Task<IActionResult> CancelRelationsEditAsync()
     {
         var rbse = RbseHelper.ParseToRaw(Rbse);
-        await relationsDraftState.ClearAsync(rbse);
-        await caseScalarDraftState.ClearAsync(rbse);
+        await caseDraftDiscard.DiscardAllAsync(rbse);
         return RedirectToPage("/Home");
     }
 

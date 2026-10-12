@@ -61,7 +61,7 @@ public sealed class EditModelHandlerTests
     {
         var model = new EditModel(
             _caseService, _currentUserService, _lookups, _caseWorkRepository,
-            _testRepository, _caseEditDraftState, _caseScalarDraftState, _caseEditOrchestration, _batchRepository,
+            _testRepository, _caseEditDraftState, _caseScalarDraftState, Substitute.For<ICaseDraftDiscardService>(), _caseEditOrchestration, _batchRepository,
             new ConfigurationBuilder().AddInMemoryCollection().Build())
         {
             Rbse = Rbse

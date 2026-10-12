@@ -25,6 +25,7 @@ public class BabModel(
     IBatchRepository batchRepository,
     IDbConnectionFactory connectionFactory,
     ICaseScalarDraftStateService caseScalarDraftState,
+    ICaseDraftDiscardService caseDraftDiscard,
     ICaseEditOrchestrationService caseEditOrchestration,
     ICurrentUserService currentUser,
     IConfiguration configuration) : PageModel
@@ -101,6 +102,11 @@ public class BabModel(
         {
             Bab.NatalCphh = Bab.TracedName = Bab.TracedAddress1 =
                 Bab.TracedAddress2 = Bab.TracedAddress3 = Bab.TracedPostcode = null;
+
+            // Legacy EmptyPurchaseFields: changing Origin away from Purchased on this tab also
+            // clears the VLA tab's Purchase Date/County/Age fields, even though they aren't
+            // rendered here — both pages clear the same shared session Case row.
+            await ClearPurchaseFieldsIfPresentAsync();
         }
 
         // Cross-tab staging (restores legacy's "one session, one commit" model): only the edit
@@ -119,6 +125,7 @@ public class BabModel(
             draft.BabBaseRowStampBase64 ??= rowStampBase64;
             draft.Bab = edit with { RowStamp = Convert.FromBase64String(draft.BabBaseRowStampBase64) };
             draft.BabOrigin = Origin;
+            StageCaseOrigin(draft, currentCase);
             draft.HasPendingChanges = true;
             await caseScalarDraftState.SetAsync(draft);
 
@@ -154,16 +161,15 @@ public class BabModel(
 
     /// <summary>
     /// Validates this tab's fields and, if valid, stages them into the shared cross-tab
-    /// draft (without committing) before navigating to another tab. Only applies once a
-    /// BAB row already exists — there is nothing to stage before the row is first created.
+    /// draft (without committing) before navigating to another tab. Applies even before a BAB
+    /// row (or the Case itself) exists yet — EvaluateLegacyBabEditPermission already covers
+    /// "case doesn't exist yet" the same way OnPostSaveBabAsync does, so an edit made on this
+    /// tab during brand-new-case creation is staged instead of silently discarded on tab switch.
     /// </summary>
     public async Task<IActionResult> OnPostStageAndGotoAsync(string targetPage, string? rowStampBase64)
     {
         if (!User.IsInRole("DataEntry"))
             return Forbid();
-
-        if (string.IsNullOrEmpty(rowStampBase64))
-            return RedirectToPage(targetPage, new { rbse = Rbse });
 
         var currentBabTask = babRepository.GetByRbseAsync(Rbse);
         var currentCaseTask = caseRepository.GetCaseByRbseAsync(Rbse);
@@ -173,7 +179,7 @@ public class BabModel(
         var currentCase = await currentCaseTask;
         var (currentBirthDate, _, _) = await ResolveEffectiveCaseScalarsAsync(currentCase);
 
-        if (currentCase is null || !EvaluateLegacyBabEditPermission(currentBirthDate, currentBab))
+        if (!EvaluateLegacyBabEditPermission(currentBirthDate, currentBab))
             return RedirectToPage(targetPage, new { rbse = Rbse });
 
         var normalisedNatalCphh = CphhNormalizer.Normalize(Bab.NatalCphh);
@@ -192,9 +198,14 @@ public class BabModel(
         {
             Bab.NatalCphh = Bab.TracedName = Bab.TracedAddress1 =
                 Bab.TracedAddress2 = Bab.TracedAddress3 = Bab.TracedPostcode = null;
+
+            // Legacy EmptyPurchaseFields: changing Origin away from Purchased on this tab also
+            // clears the VLA tab's Purchase Date/County/Age fields, even though they aren't
+            // rendered here — both pages clear the same shared session Case row.
+            await ClearPurchaseFieldsIfPresentAsync();
         }
 
-        var rowStamp = Convert.FromBase64String(rowStampBase64);
+        var rowStamp = string.IsNullOrEmpty(rowStampBase64) ? [] : Convert.FromBase64String(rowStampBase64);
         var edit = new EditCaseBabCommand(
             Rbse, Bab.NatalCphh, Bab.Notes,
             Bab.TracedName, Bab.TracedAddress1, Bab.TracedAddress2, Bab.TracedAddress3,
@@ -202,22 +213,28 @@ public class BabModel(
             rowStamp);
 
         var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
-        draft.BabBaseRowStampBase64 ??= rowStampBase64;
+        draft.BabBaseRowStampBase64 ??= rowStampBase64 ?? string.Empty;
         var stagedEdit = edit with { RowStamp = Convert.FromBase64String(draft.BabBaseRowStampBase64) };
 
         // Legacy parity: merely switching tabs without typing anything must not trip the
         // cross-tab unsaved-changes exit warning — only flag a genuine edit to BAB fields or Origin.
+        // For a brand-new case there is no persisted BAB row to compare against, but "nothing to
+        // compare against" must mean a blank baseline, not an automatic "different" (which would
+        // falsely flag every tab visit, edited or not, as unsaved).
         var baseline = currentBab is not null
             ? new EditCaseBabCommand(
                 Rbse, currentBab.NatalCphh, currentBab.Notes, currentBab.TracedName,
                 currentBab.TracedAddress1, currentBab.TracedAddress2, currentBab.TracedAddress3,
                 currentBab.TracedPostcode, currentBab.FeedRisk, currentBab.HorizontalRisk,
                 currentBab.MaternalRisk, Convert.FromBase64String(draft.BabBaseRowStampBase64))
-            : null;
+            : new EditCaseBabCommand(
+                Rbse, null, null, null, null, null, null, null, null, null, null,
+                Convert.FromBase64String(draft.BabBaseRowStampBase64));
         var originChanged = !string.Equals(Origin, currentCase?.Origin, StringComparison.Ordinal);
 
         draft.Bab = stagedEdit;
         draft.BabOrigin = Origin;
+        StageCaseOrigin(draft, currentCase);
         if (originChanged || DraftChangeDetector.IsDifferentFromPersisted(stagedEdit, baseline))
             draft.HasPendingChanges = true;
         await caseScalarDraftState.SetAsync(draft);
@@ -232,9 +249,65 @@ public class BabModel(
             Bab.ApplyStagedCommand(staged.Bab);
     }
 
+    /// <summary>Legacy keeps Origin on the single shared Case row (both ddlOrigin_SelectedIndexChanged
+    /// handlers write to the same session CASE_TABLE row) — selecting a new Origin here must be
+    /// visible on Case (APHA)/Case (DEFRA) immediately on tab switch, not just after Save. BabOrigin
+    /// alone (only read at commit time by the BAB repository calls) never reached the shared Case
+    /// draft those other tabs' overlay logic reads, so the cascade was invisible until a full
+    /// Save-and-reload.</summary>
+    private void StageCaseOrigin(CaseScalarDraftState draft, CaseRecord? caseRecord)
+    {
+        var baseCommand = draft.Case;
+        if (baseCommand is null)
+        {
+            draft.CaseBaseRowStampBase64 ??= Convert.ToBase64String(caseRecord?.RowStamp ?? []);
+            var baseRowStamp = Convert.FromBase64String(draft.CaseBaseRowStampBase64);
+            baseCommand = caseRecord is not null
+                ? BSE.Host.Models.ViewModels.CaseEditViewModel.FromRecord(caseRecord).ToEditCommand(baseRowStamp)
+                : new BSE.Host.Models.ViewModels.CaseEditViewModel { Rbse = Rbse }.ToEditCommand(baseRowStamp);
+        }
+
+        if (!string.Equals(baseCommand.Origin, Origin, StringComparison.Ordinal))
+        {
+            draft.Case = baseCommand with { Origin = Origin };
+            draft.HasPendingChanges = true;
+        }
+    }
+
+    /// <summary>Legacy EmptyPurchaseFields (CaseEntryBAB.aspx.vb): clears Purchase Date/County/Age
+    /// in the shared Case row, merging with whatever another tab may already have staged for it
+    /// rather than overwriting it. No-ops when there is nothing to clear, same as legacy's own
+    /// row-exists guard.</summary>
+    private async Task ClearPurchaseFieldsIfPresentAsync()
+    {
+        var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
+
+        var baseCommand = draft.Case;
+        if (baseCommand is null)
+        {
+            var caseRecord = await caseRepository.GetCaseByRbseAsync(Rbse);
+            if (caseRecord is null)
+                return;
+            if (caseRecord.PurchaseDate is null && string.IsNullOrWhiteSpace(caseRecord.PurchasedCounty) && caseRecord.PurchaseAgeInMonths is null)
+                return;
+
+            draft.CaseBaseRowStampBase64 ??= Convert.ToBase64String(caseRecord.RowStamp ?? []);
+            baseCommand = BSE.Host.Models.ViewModels.CaseEditViewModel.FromRecord(caseRecord)
+                .ToEditCommand(Convert.FromBase64String(draft.CaseBaseRowStampBase64));
+        }
+        else if (baseCommand.PurchaseDate is null && string.IsNullOrWhiteSpace(baseCommand.PurchasedCounty) && baseCommand.PurchaseAgeInMonths is null)
+        {
+            return;
+        }
+
+        draft.Case = baseCommand with { PurchaseDate = null, PurchasedCounty = null, PurchaseAgeInMonths = null };
+        draft.HasPendingChanges = true;
+        await caseScalarDraftState.SetAsync(draft);
+    }
+
     public async Task<IActionResult> OnGetCancelBabEdit()
     {
-        await caseScalarDraftState.ClearAsync(Rbse);
+        await caseDraftDiscard.DiscardAllAsync(Rbse);
         return RedirectToPage("/Home");
     }
 

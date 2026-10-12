@@ -5,15 +5,15 @@ using BSE.Modules.CaseManagement.Services;
 using BSE.Modules.FarmManagement.Services;
 using BSE.Modules.ReferenceData.Models;
 using BSE.Modules.ReferenceData.Services;
-using IGeoLookupService = BSE.Modules.ReferenceData.Services.IGeoLookupService;
 using BSE.SharedKernel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using IGeoLookupService = BSE.Host.Services.IGeoLookupService;
 
 namespace BSE.Host.Pages.Farm;
 
-[Authorize(Policy = "DEFRAMaintenance")]
+[Authorize(Policy = "DEFRAOrVLAMaintenance")]
 public class MoveCaseNewFarmModel(ICaseService caseService, IFarmService farmService, ICurrentUserService currentUserService, ILookupDataService lookups, IGeoLookupService geoLookup) : PageModel
 {
     private const string FarmAlreadyExistsMessage = "A farm with this CPHH already exists.";
@@ -46,7 +46,37 @@ public class MoveCaseNewFarmModel(ICaseService caseService, IFarmService farmSer
         if (string.IsNullOrWhiteSpace(Farm.CPHH) || Farm.CPHH.Length != 11)
             ModelState.AddModelError("Farm.CPHH", InvalidCphhMessage);
 
+        // Legacy MoveCaseNewFarm.aspx.vb CheckMandatoryFields — OwnerName, Address1, AHO, Parish,
+        // County and ADNSRegionID, previously not validated here at all.
+        if (string.IsNullOrWhiteSpace(Farm.OwnerName))
+            ModelState.AddModelError("Farm.OwnerName", "Enter an owner name for the farm.");
+        if (string.IsNullOrWhiteSpace(Farm.Address1))
+            ModelState.AddModelError("Farm.Address1", "Enter the first line of the farm address.");
+        if (string.IsNullOrWhiteSpace(Farm.AHO))
+            ModelState.AddModelError("Farm.AHO", "Specify an AHO for the farm.");
+        if (string.IsNullOrWhiteSpace(Farm.Parish))
+            ModelState.AddModelError("Farm.Parish", "Enter a parish for the farm.");
+        if (string.IsNullOrWhiteSpace(Farm.County))
+            ModelState.AddModelError("Farm.County", "Specify a county for the farm.");
+        if (Farm.ADNSRegionID is null)
+            ModelState.AddModelError("Farm.ADNSRegionID", "Specify an ADNS region for the farm.");
+
         await LoadLookupsAsync();
+
+        // Legacy parity: PopulateControls() copies AuthorityCountyID/AuthorityID/ADNSRegionID
+        // straight from the old farm, then rebuilds the Local Authority/ADNS Region dropdowns from
+        // that AuthorityCountyID/AuthorityID and re-selects the copied value only if it's still
+        // present in the freshly-rebuilt list — if the old farm's ADNS Region is no longer valid for
+        // its Authority, the dropdown silently resets to blank and CheckMandatoryFields then rejects
+        // the save with "You have not entered an ADNS Region." Reproduce that same rejection here
+        // (never ported to this page) instead of silently moving the case with a now-stale ADNS Region.
+        if (Farm.AuthorityID is > 0 && Farm.ADNSRegionID is > 0
+            && ViewData["AdnsOptions"] is IEnumerable<LuADNSRegion> adnsOptions
+            && !adnsOptions.Any(x => x.Id == Farm.ADNSRegionID.Value))
+        {
+            ModelState.AddModelError("Farm.ADNSRegionID", "Specify an ADNS region for the farm.");
+        }
+
         if (!ModelState.IsValid)
             return Page();
 
@@ -60,7 +90,10 @@ public class MoveCaseNewFarmModel(ICaseService caseService, IFarmService farmSer
         try
         {
             var userId = await currentUserService.GetUserIdAsync();
-            var command = Farm.ToAddCommand();
+            // Legacy parity: MoveCaseNewFarm.aspx has no HerdType/Pedigree/IsDealer controls at all —
+            // its SP call always hardcodes HerdType=NULL, PedigreeType=NULL, IsDealer=False. Enforced
+            // here too (not just by hiding the fields in the view) in case of a crafted POST.
+            var command = Farm.ToAddCommand() with { HerdType = null, PedigreeType = null, IsDealer = false };
             await farmService.AddAsync(command, userId);
         }
         catch
@@ -123,23 +156,24 @@ public class MoveCaseNewFarmModel(ICaseService caseService, IFarmService farmSer
         if (string.IsNullOrEmpty(cphh) || cphh.Length < 5)
             return new JsonResult(new { error = "CPHH must be at least 5 characters to estimate a map reference." });
 
-        var county = cphh[..2];
-        var parish = cphh[2..5];
+        var estimate = await geoLookup.EstimateMapReferenceAsync(cphh);
+        if (estimate.Error is not null)
+            return new JsonResult(new { error = estimate.Error });
 
-        var geo = await geoLookup.GetMapReferenceAsync(county, parish);
-        if (geo is null)
-            return new JsonResult(new { error = "No map reference data found for the parish associated with this CPHH." });
+        return new JsonResult(new { mapRef1 = estimate.MapRef1, mapRef2 = estimate.MapRef2, mapRef3 = estimate.MapRef3 });
+    }
 
-        var centreX = (int.Parse(geo.XReference1) + int.Parse(geo.XReference2)) / 2;
-        var centreY = (int.Parse(geo.YReference1) + int.Parse(geo.YReference2)) / 2;
-        var mapRef = centreX.ToString("D4") + centreY.ToString("D4");
+    public async Task<IActionResult> OnGetValidateMapReferenceAsync(string? cphh, string? mapRef)
+    {
+        cphh = CphhNormalizer.Normalize(cphh);
+        mapRef = (mapRef ?? "").Trim().ToUpperInvariant();
+        if (cphh.Length < 5 || mapRef.Length < 8)
+            return new JsonResult(new { valid = true });
 
-        return new JsonResult(new
-        {
-            mapRef1 = mapRef[..2],
-            mapRef2 = mapRef[2..5],
-            mapRef3 = mapRef[5..8]
-        });
+        var valid = await geoLookup.IsMapReferenceWithinParishAsync(cphh, mapRef);
+        return valid
+            ? new JsonResult(new { valid = true })
+            : new JsonResult(new { valid = false, message = "Map reference does not lie within the parish boundaries for this CPHH." });
     }
 
     private async Task PrepopulateFromExistingCaseFarmAsync()

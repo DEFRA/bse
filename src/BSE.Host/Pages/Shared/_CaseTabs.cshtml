@@ -22,8 +22,9 @@
     // Farm, Case (DEFRA), Case (APHA), BAB and Clinical stage their scalar fields into the
     // shared cross-tab draft (BSE.Host.Services.CaseScalarDraftState) before navigating away,
     // so an invalid field blocks the tab switch, and the edit is not silently lost when Save
-    // is eventually pressed on a different tab. Feeds and Relations are pure row-editing grids
-    // with no scalar "form" state at risk, so their tab links are unchanged (plain navigation).
+    // is eventually pressed on a different tab. Relations has its own scalar fields (Case
+    // Herdbook/Dam Status/Dam-Sire) and stages them too. Feeds is the only tab that is a pure
+    // row-editing grid with no scalar "form" state at risk, so its tab link is plain navigation.
     string? stageAndGotoFormId = Model.ActiveTab switch
     {
         "Farm" => "case-farm-inline-form",
@@ -31,6 +32,7 @@
         "Case (APHA)" => "edit-vla-form",
         "BAB" => "case-bab-inline-form",
         "Clinical" => "case-clinical-inline-form",
+        "Relations" => "case-relations-inline-form",
         _ => null
     };
 

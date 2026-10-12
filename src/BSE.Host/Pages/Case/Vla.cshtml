@@ -42,7 +42,7 @@
 @await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Case (APHA)", Model.Case.Rbse, Model.BatchNumbers, viewDocsUrl, Model.CanEditMainCase))
 
 @await Html.PartialAsync("_CaseEditNotifications", new BSE.Host.Models.CaseEditNotificationsViewModel(
-    "vla", TempData["Success"] as string, TempData["Warning"] as string))
+    "vla", WarningMessage: TempData["Warning"] as string))
 
 @if (!string.IsNullOrEmpty(Model.ConcurrencyError))
 {
@@ -161,6 +161,10 @@
                             <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.Origin)">@o.Description</option>
                         }
                     </select>
+                    @if (vlaReadOnly)
+                    {
+                        <input type="hidden" asp-for="Case.Origin" />
+                    }
                 </div>
             </div>
         </div>
@@ -451,7 +455,8 @@
 
         <div class="bse-case-bottom-row">
             <div class="govuk-button-group bse-case-bottom-row__left">
-                <a asp-page="/AuditLog/ByCase" asp-route-rbse="@Model.Case.Rbse" asp-route-returnTo="/Case/Vla" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">Case audit log</a>
+                <button type="submit" form="edit-vla-form" formmethod="post" formaction="?handler=StageAndGoToAuditLog"
+                        draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">Case audit log</button>
             </div>
 
             <div class="bse-case-bottom-row__right">
@@ -1139,17 +1144,21 @@
             });
         });
 
+        // Legacy's Cancel dirty-check (UpdateSessionWithCaseDetails) only ever writes the main
+        // VLA case fields into dsCase — the Other Owners grid is a separate session table never
+        // inspected there (only checked for InEditMode to block Save), so typing in it (before
+        // Add/Update) must not count here; a committed owner row change is already tracked
+        // separately via Model.HasUnsavedOwnerChanges.
         var form = document.getElementById('edit-vla-form');
         var dirty = false;
-        var submitting = false;
+        var isOwnerGridField = function (target) { return !!(target && target.closest && target.closest('table')); };
         if (form) {
-            form.addEventListener('change', function () { dirty = true; });
-            form.addEventListener('input', function () { dirty = true; });
+            form.addEventListener('change', function (e) { if (!isOwnerGridField(e.target)) dirty = true; });
+            form.addEventListener('input', function (e) { if (!isOwnerGridField(e.target)) dirty = true; });
             form.addEventListener('submit', function () {
                 herdWarningArmed = false;
                 onsetWarningArmed = false;
                 clearDateWarningIndicators();
-                submitting = true;
             });
         }
 
@@ -1161,20 +1170,10 @@
                 (hasUnsavedHere ? Promise.resolve(true) : (window.hasUnsavedChangesAcrossTabs ? window.hasUnsavedChangesAcrossTabs() : Promise.resolve(false)))
                     .then(function (hasUnsaved) {
                         if (!hasUnsaved || window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
-                            submitting = true; // suppress the beforeunload prompt firing again on this navigation
                             window.location.href = lnk.href;
                         }
                     });
             });
-        });
-
-        window.addEventListener('beforeunload', function (e) {
-            if (window.__bseCaseTabNavigationInProgress) return;
-            var hasUnsaved = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.HasUnsavedOwnerChanges));
-            if ((dirty || hasUnsaved) && !submitting) {
-                e.preventDefault();
-                e.returnValue = '';
-            }
         });
     })();
 </script>

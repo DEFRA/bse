@@ -43,6 +43,7 @@ public sealed class FarmModelHandlerTests
     private readonly ICaseEditOrchestrationService _caseEditOrchestration = Substitute.For<ICaseEditOrchestrationService>();
     private readonly ICurrentUserService _currentUser = Substitute.For<ICurrentUserService>();
     private readonly BSE.Host.Services.IGeoLookupService _geoLookup = Substitute.For<BSE.Host.Services.IGeoLookupService>();
+    private readonly ICaseDraftDiscardService _caseDraftDiscard = Substitute.For<ICaseDraftDiscardService>();
 
     private const string Rbse = "002600001";
     private const string Cphh = "01001000101";
@@ -66,7 +67,7 @@ public sealed class FarmModelHandlerTests
         var model = new FarmModel(
             _caseService, _farmService, _relationRepo, _herdSizeRepo, _lookups,
             _batchRepository, _wizardState, _farmDraftState,
-            _caseScalarDraftState, _caseEditOrchestration, _currentUser,
+            _caseScalarDraftState, _caseDraftDiscard, _caseEditOrchestration, _currentUser,
             NullLogger<FarmModel>.Instance,
             new ConfigurationBuilder().AddInMemoryCollection().Build(),
             _geoLookup)
@@ -509,7 +510,7 @@ public sealed class FarmModelHandlerTests
 
         result.Should().BeOfType<RedirectToPageResult>();
         ((RedirectToPageResult)result).PageName.Should().Be("/Home");
-        await _farmDraftState.Received(1).ClearAsync(Rbse);
+        await _caseDraftDiscard.Received(1).DiscardAllAsync(Rbse);
     }
 
     [Fact]
@@ -581,7 +582,8 @@ public sealed class FarmModelHandlerTests
     [Fact]
     public async Task OnGetEstimateMapReferenceAsync_NoParishData_ReturnsError()
     {
-        _geoLookup.GetAllParishMapReferencesAsync("01", "001").Returns(Array.Empty<ParishMapReferenceRow>());
+        _geoLookup.EstimateMapReferenceAsync("01001000101").Returns(
+            new BSE.Host.Services.MapReferenceEstimate(null, null, null, "No map reference data found for the parish associated with this CPHH."));
 
         var model = CreateModel();
         var result = (JsonResult)await model.OnGetEstimateMapReferenceAsync("01001000101");
@@ -666,11 +668,8 @@ public sealed class FarmModelHandlerTests
     [Fact]
     public async Task OnGetEstimateMapReferenceAsync_Success_ReturnsMapReferenceParts()
     {
-        _geoLookup.GetAllParishMapReferencesAsync("01", "001").Returns(
-        [
-            new ParishMapReferenceRow { XReference1 = "1234", YReference1 = "0100", YReference2 = "0200" }
-        ]);
-        _geoLookup.GetPrefixCodeAsync(Arg.Any<string>(), Arg.Any<string>()).Returns("SO");
+        _geoLookup.EstimateMapReferenceAsync("01001000101").Returns(
+            new BSE.Host.Services.MapReferenceEstimate("SO", "345", "125", null));
 
         var model = CreateModel();
         var result = (JsonResult)await model.OnGetEstimateMapReferenceAsync("01001000101");
@@ -681,7 +680,7 @@ public sealed class FarmModelHandlerTests
     [Fact]
     public async Task OnGetValidateMapReferenceAsync_NoParishData_ReturnsValidTrue()
     {
-        _geoLookup.GetXYCoordsByPrefixCodeAsync(Arg.Any<string>()).Returns((MapPrefixXY?)null);
+        _geoLookup.IsMapReferenceWithinParishAsync("01001000101", "SO123450").Returns(true);
 
         var model = CreateModel();
         var result = (JsonResult)await model.OnGetValidateMapReferenceAsync("01001000101", "SO123450");

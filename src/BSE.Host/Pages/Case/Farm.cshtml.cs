@@ -38,6 +38,7 @@ public class FarmModel(
     ICaseWizardStateService wizardState,
     ICaseFarmDraftStateService farmDraftState,
     ICaseScalarDraftStateService caseScalarDraftState,
+    ICaseDraftDiscardService caseDraftDiscard,
     ICaseEditOrchestrationService caseEditOrchestration,
     ICurrentUserService currentUser,
     ILogger<FarmModel> logger,
@@ -112,10 +113,16 @@ public class FarmModel(
     /// <summary>Legacy DEFRAViewerEnable(): shows the "CONFIDENTIAL DATA" banner and locks every field.</summary>
     public bool IsConfidentialViewOnly => !CanEditDefraControls;
 
+    /// <summary>Legacy MakeDEFRAControlsWritable: Session(SV_CPHHNumber) &lt;&gt; "" gate. Always true
+    /// for an existing case (CPHH is already persisted); for a brand-new case (create mode) this is
+    /// false until the user has looked up/confirmed a CPHH — legacy hides (not just disables) the
+    /// Linked Farms grid's New/Edit/Delete buttons (imbtnNewRec/cmdEdit/cmdDel.Visible) until then.</summary>
+    public bool HasResolvedCphh => !string.IsNullOrWhiteSpace(EditableFarm?.CPHH);
+
     /// <summary>Legacy CPHH1.Enabled: DEFRA Data Entry/Maintenance and VLA Maintenance can look up a
     /// different farm for this case (VLA Data Entry and DEFRA Viewer cannot). Routed via the existing,
     /// validated /Case/MoveCase page rather than re-implementing farm-reassignment inline.</summary>
-    public bool CanChangeCphh => User.IsInRole("DEFRAMaintenance");
+    public bool CanChangeCphh => User.IsInRole("DEFRAMaintenance") || User.IsInRole("VLAMaintenance");
     private List<FarmRelationRecord> PersistedLinkedFarms { get; set; } = [];
     private List<HerdSizeRecord> PersistedHerdSizes { get; set; } = [];
 
@@ -223,7 +230,9 @@ public class FarmModel(
         if (Farm is null && !string.IsNullOrWhiteSpace(EditableFarm.CPHH))
             RequireFarmDetails = true;
 
-        if (Farm is not null)
+        // Load even when Farm is null (CPHH resolved to a brand-new, not-yet-saved farm) — otherwise
+        // linked farms/herd sizes staged before the farm itself is saved never render back.
+        if (Farm is not null || RequireFarmDetails)
             await LoadOrInitializeDraftStateAsync();
 
         await LoadLookupsForEditAsync();
@@ -292,12 +301,21 @@ public class FarmModel(
         if (string.IsNullOrWhiteSpace(normalisedCphh))
             normalisedCphh = CphhNormalizer.Normalize(NewCphh);
 
+        // Legacy parity: CaseEntryFarm.aspx's btnLookUp_Click never links a "00"-prefixed CPHH to a
+        // brand-new case at all, so a non-GB CPHH never resolves to a farm and the farm-detail fields
+        // (Owner/Address/Parish/County/AHO) that only matter for a to-be-created farm are irrelevant —
+        // skip requiring them. The CPHH itself is left exactly as typed (staged and redisplayed
+        // unchanged): CaseEditOrchestrationService.CheckMandatoryFieldsAsync already has its own
+        // internal non-GB detection that reports the correct consolidated "No farm has been specified
+        // for the case." message without needing this page to blank anything out first.
+        var isNonGbCphh = IsNonGbFarmCphh(normalisedCphh);
+
         FarmRecord? farm = null;
-        if (!string.IsNullOrWhiteSpace(normalisedCphh))
+        if (!string.IsNullOrWhiteSpace(normalisedCphh) && !isNonGbCphh)
             farm = await farmService.GetByCphhAsync(normalisedCphh);
         Farm = farm;
 
-        RequireFarmDetails = farm is null;
+        RequireFarmDetails = farm is null && !isNonGbCphh;
 
         EditableFarm ??= new FarmEditViewModel();
         EditableFarm.CPHH = normalisedCphh;
@@ -305,7 +323,14 @@ public class FarmModel(
         if (RequireFarmDetails)
             ValidateNewFarmDetails(EditableFarm);
 
-        await ValidateNewFarmMapAndAdnsAsync(EditableFarm);
+        if (!isNonGbCphh)
+            ValidateNewFarmAdns(EditableFarm);
+
+        // Legacy parity: if the resolved CPHH matches an existing farm, this user's role may not be
+        // allowed to edit its VLA/Joint-tier fields (HerdType/Pedigree/IsDealer, Herdmarks) even though
+        // they can edit the DEFRA fields and create the case itself — same guard OnPostSaveFarmAsync
+        // applies for an existing case, previously missing here entirely for the brand-new-case path.
+        ApplyLegacyJointAndVlaEditGuards();
 
         await LoadOrInitializeDraftStateAsync();
 
@@ -342,6 +367,12 @@ public class FarmModel(
         }
         if (failureRedirect is not null)
             return failureRedirect;
+
+        // For a brand-new farm, Farm was null when the method started (nothing to fetch by CPHH
+        // yet) — CommitAllAsync has just created its DB row, so without re-fetching here,
+        // PersistStagedCollectionsAsync's own Farm-is-null guard would silently drop every linked
+        // farm/herd size staged while the farm itself was still unsaved.
+        Farm ??= await farmService.GetByCphhAsync(normalisedCphh);
 
         await PersistStagedCollectionsAsync();
         await farmDraftState.ClearAsync(Rbse);
@@ -399,15 +430,11 @@ public class FarmModel(
             ModelState.AddModelError(AdnsRegionField, "Specify an ADNS region for the farm.");
     }
 
-    private async Task ValidateNewFarmMapAndAdnsAsync(FarmEditViewModel editableFarm)
+    // Legacy parity: ValidateMapReference is only ever called by the cosmetic green-star toggle
+    // (MapReference1_MapReferenceChanged) — UpdateSessionWithCaseDetails never calls it, so a new
+    // case's Save must not check it either, not even as a non-blocking warning.
+    private void ValidateNewFarmAdns(FarmEditViewModel editableFarm)
     {
-        if (editableFarm.MapReference is { Length: >= 8 } mapRef
-            && editableFarm.CPHH.Length >= 5
-            && !await MapReferenceWithinParishAsync(editableFarm.CPHH, mapRef))
-        {
-            TempData["Warning"] = "Map reference does not lie within the parish boundaries for this CPHH.";
-        }
-
         if (!IsAdnsCompatibleWithAuthoritySelection(editableFarm))
         {
             ModelState.AddModelError(AdnsRegionField, "ADNS region does not match the selected local authority. Please select ADNS region again.");
@@ -439,6 +466,14 @@ public class FarmModel(
             {
                 RequireFarmDetails = false;
                 EditableFarm = FarmEditViewModel.FromRecord(farm);
+
+                // Without this, Farm/PersistedLinkedFarms/PersistedHerdSizes all stay null/empty
+                // and LoadOrInitializeDraftStateAsync has nothing to seed the staged grids from —
+                // Linked Farms/Herd Size both render empty immediately after Look Up even though
+                // the farm has real persisted rows, until the next full page reload re-fetches them.
+                await LoadFromFarmCphhAsync(normalisedCphh);
+                await LoadOrInitializeDraftStateAsync();
+
                 await LoadLookupsForEditAsync();
                 return Page();
             }
@@ -468,7 +503,7 @@ public class FarmModel(
         await LoadAsync();
         await RestoreAndRestageFarmEditAsync(postedEditableFarm, postedFarmRowStamp);
 
-        if (!CanEditDefraControls)
+        if (!CanEditDefraControls || !HasResolvedCphh)
             return RedirectToPage(new { rbse = Rbse });
 
         var draft = await LoadOrInitializeDraftStateAsync();
@@ -578,6 +613,37 @@ public class FarmModel(
         if (!User.IsInRole(DataEntryRole))
             return Forbid();
 
+        var stagingResult = await StageFarmEditForNavigationAsync();
+        if (stagingResult is not null)
+            return stagingResult;
+
+        return RedirectToPage(targetPage, new { rbse = Rbse });
+    }
+
+    /// <summary>Farm audit log link: legacy's btnFarmAuditLog_Click calls
+    /// UpdateSessionWithCaseDetails() before redirecting to FarmAuditLogReport.aspx, so an
+    /// in-progress edit survives the round trip — this must stage the same way every other
+    /// cross-tab navigation does, not just plain-navigate and silently discard it.</summary>
+    public async Task<IActionResult> OnPostStageAndGoToAuditLogAsync()
+    {
+        if (!User.IsInRole(DataEntryRole))
+            return Forbid();
+
+        var stagingResult = await StageFarmEditForNavigationAsync();
+        if (stagingResult is not null)
+            return stagingResult;
+
+        var cphh = CphhNormalizer.Normalize(EditableFarm?.CPHH ?? Farm?.CPHH);
+        return RedirectToPage("/AuditLog/ByFarm", new { rbse = Rbse, cphh });
+    }
+
+    /// <summary>Validates and stages the posted Farm edit into the shared cross-tab draft, shared
+    /// by every handler that navigates away from this tab (tab switch, Farm Audit Log link).
+    /// Returns a non-null result (a validation Page() or Forbid-equivalent redirect) the caller
+    /// must return immediately; returns null once staging has succeeded (or was correctly skipped
+    /// for a not-yet-looked-up new case), meaning the caller should proceed with its own redirect.</summary>
+    private async Task<IActionResult?> StageFarmEditForNavigationAsync()
+    {
         var postedEditableFarm = EditableFarm;
         var postedFarmRowStamp = EditableFarmRowStampBase64;
 
@@ -589,7 +655,7 @@ public class FarmModel(
             logger.LogWarning(
                 "Farm StageAndGoto for RBSE {Rbse}: posted EditableFarm was null — no fields were staged.",
                 Rbse);
-            return RedirectToPage(targetPage, new { rbse = Rbse });
+            return null;
         }
 
         SpolSiteUrl = configuration[SpolSiteUrlConfigKey] ?? string.Empty;
@@ -610,9 +676,9 @@ public class FarmModel(
         {
             // Legacy parity: CaseEntryFarm.aspx's UpdateSessionWithCaseDetails() returns True with
             // no validation at all when SV_FarmDetails hasn't been populated yet (i.e. Look Up was
-            // never run for this brand-new case) — tab navigation proceeds untouched instead of
-            // being blocked by a "CPHH is required" error that legacy never shows at this point.
-            return RedirectToPage(targetPage, new { rbse = Rbse });
+            // never run for this brand-new case) — navigation proceeds untouched instead of being
+            // blocked by a "CPHH is required" error that legacy never shows at this point.
+            return null;
         }
 
         BatchNumbers = (await batchRepository.GetBatchNumbersByRbseAsync(Rbse)).ToList().AsReadOnly();
@@ -638,7 +704,7 @@ public class FarmModel(
 
         await StageFarmScalarEditAsync(EditableFarm.ToUpdateCommand(rowStamp));
 
-        return RedirectToPage(targetPage, new { rbse = Rbse });
+        return null;
     }
 
     /// <summary>Writes the Farm tab's current field values into the shared cross-tab scalar
@@ -694,7 +760,6 @@ public class FarmModel(
         if (EditableFarm is null)
             return Page();
 
-        await ValidateFarmMapReferenceAsync(EditableFarm);
         ValidateRequiredFarmFields(EditableFarm);
 
         if (!ModelState.IsValid)
@@ -712,16 +777,6 @@ public class FarmModel(
         }
 
         return null;
-    }
-
-    private async Task ValidateFarmMapReferenceAsync(FarmEditViewModel editableFarm)
-    {
-        if (editableFarm.MapReference is { Length: >= 8 } mapRef && editableFarm.CPHH.Length >= 5
-            && !await MapReferenceWithinParishAsync(editableFarm.CPHH, mapRef))
-        {
-            ModelState.AddModelError("EditableFarm.MapRef1",
-                "Map reference does not lie within the parish boundaries for this CPHH.");
-        }
     }
 
     private void ValidateRequiredFarmFields(FarmEditViewModel editableFarm)
@@ -751,8 +806,7 @@ public class FarmModel(
 
     private async Task<IActionResult> CancelFarmEditAsync()
     {
-        await farmDraftState.ClearAsync(Rbse);
-        await caseScalarDraftState.ClearAsync(Rbse);
+        await caseDraftDiscard.DiscardAllAsync(Rbse);
         return RedirectToPage(HomePagePath);
     }
 
@@ -771,7 +825,7 @@ public class FarmModel(
         await LoadAsync();
         await RestoreAndRestageFarmEditAsync(postedEditableFarm, postedFarmRowStamp);
 
-        if (!CanEditDefraControls)
+        if (!CanEditDefraControls || !HasResolvedCphh)
             return RedirectToPage(new { rbse = Rbse });
 
         var draft = await LoadOrInitializeDraftStateAsync();
@@ -800,7 +854,7 @@ public class FarmModel(
         await LoadAsync();
         await RestoreAndRestageFarmEditAsync(postedEditableFarm, postedFarmRowStamp);
 
-        if (!CanEditDefraControls)
+        if (!CanEditDefraControls || !HasResolvedCphh)
             return RedirectToPage(new { rbse = Rbse });
 
         var draft = await LoadOrInitializeDraftStateAsync();
@@ -854,7 +908,7 @@ public class FarmModel(
         await LoadAsync();
         await RestoreAndRestageFarmEditAsync(postedEditableFarm, postedFarmRowStamp);
 
-        if (!CanEditDefraControls)
+        if (!CanEditDefraControls || !HasResolvedCphh)
             return RedirectToPage(new { rbse = Rbse });
 
         var draft = await LoadOrInitializeDraftStateAsync();
@@ -1147,35 +1201,11 @@ public class FarmModel(
         if (string.IsNullOrEmpty(cphh) || cphh.Length < 5)
             return new JsonResult(new { error = "CPHH must be at least 5 characters to estimate a map reference." });
 
-        var county = cphh[..2];
-        var parish = cphh[2..5];
+        var estimate = await geoLookup.EstimateMapReferenceAsync(cphh);
+        if (estimate.Error is not null)
+            return new JsonResult(new { error = estimate.Error });
 
-        var rows = await geoLookup.GetAllParishMapReferencesAsync(county, parish);
-        if (rows.Count == 0)
-            return new JsonResult(new { error = "No map reference data found for the parish associated with this CPHH." });
-
-        double rowCount = rows.Count;
-        double middleIdx = rowCount % 2 != 0 ? rowCount / 2 + 0.5 : rowCount / 2;
-        middleIdx -= 1;
-        var row = rows[(int)middleIdx];
-
-        var xCoord = row.XReference1;
-        var centreY = CentreCoordinate(row.YReference1, row.YReference2);
-
-        var xPrefixCoord = xCoord[1].ToString();
-        var yPrefixRaw = centreY[..2];
-        var yPrefixCoord = yPrefixRaw[0] == '0' ? yPrefixRaw[1].ToString() : yPrefixRaw;
-
-        var code = await geoLookup.GetPrefixCodeAsync(xPrefixCoord, yPrefixCoord);
-        if (code is null)
-            return new JsonResult(new { error = "Could not determine OS grid square for this parish." });
-
-        return new JsonResult(new
-        {
-            mapRef1 = code,
-            mapRef2 = xCoord[2..4] + "5",
-            mapRef3 = centreY[2..4] + "5"
-        });
+        return new JsonResult(new { mapRef1 = estimate.MapRef1, mapRef2 = estimate.MapRef2, mapRef3 = estimate.MapRef3 });
     }
 
     public async Task<IActionResult> OnGetValidateMapReferenceAsync(string? cphh, string? mapRef)
@@ -1189,7 +1219,7 @@ public class FarmModel(
         if (cphh.Length < 5 || mapRef.Length < 8)
             return new JsonResult(new { valid = true });
 
-        var valid = await MapReferenceWithinParishAsync(cphh, mapRef);
+        var valid = await geoLookup.IsMapReferenceWithinParishAsync(cphh, mapRef);
         return valid
             ? new JsonResult(new { valid = true })
             : new JsonResult(new { valid = false, message = "Map reference is outside the parish boundaries." });
@@ -1295,6 +1325,7 @@ public class FarmModel(
         if (!CanEditVlaControls)
         {
             EditableFarm.PedigreeType = Farm.PedigreeType;
+            EditableFarm.IsDealer = Farm.IsDealer;
         }
     }
 
@@ -1477,28 +1508,6 @@ public class FarmModel(
             : (IEnumerable<LuADNSRegion>)[];
     }
 
-    private async Task<bool> MapReferenceWithinParishAsync(string cphh, string mapRef)
-    {
-        if (cphh.Length < 5 || mapRef.Length < 8) return true;
-
-        var county = cphh[..2];
-        var parish = cphh[2..5];
-
-        var prefixData = await geoLookup.GetXYCoordsByPrefixCodeAsync(mapRef[..2].ToUpperInvariant());
-        if (prefixData is null) return false;
-
-        var rows = await geoLookup.GetAllParishMapReferencesAsync(county, parish);
-        if (rows.Count == 0) return true;
-
-        var sXCoord = prefixData.XCoordPrefix + mapRef[2..4];
-        var sYCoord = prefixData.YCoordPrefix + mapRef[5..7];
-
-        return rows.Any(r =>
-            sXCoord == r.XReference1
-            && string.Compare(sYCoord, r.YReference1, StringComparison.Ordinal) >= 0
-            && string.Compare(sYCoord, r.YReference2, StringComparison.Ordinal) <= 0);
-    }
-
     private bool TryValidateStagedCollections()
     {
         var hasLinkedErrors = ValidateLinkedFarmCollection();
@@ -1579,43 +1588,55 @@ public class FarmModel(
 
     private async Task<CaseFarmDraftState> LoadOrInitializeDraftStateAsync()
     {
-        if (Farm is null)
-            return new CaseFarmDraftState { Rbse = Rbse };
-
+        // Must still read any already-staged draft even when Farm is null (a brand-new case's
+        // farm has no DB row yet) — otherwise linked farms/herd sizes added via Add/Confirm before
+        // the farm itself is saved are written to farmDraftState but never read back for display,
+        // which looks exactly like the Add button silently doing nothing.
         var draft = await farmDraftState.GetAsync(Rbse);
-        if (draft is null)
+
+        // A failed Save attempt before any CPHH was entered (OnPostCreateCaseAsync calls this method
+        // even when ModelState is invalid) caches an empty shell draft with no CPHH/linked farms/herd
+        // sizes. Once a real farm is later resolved via Look Up, that stale empty shell must not mask
+        // the farm's actual persisted data forever — reseed it exactly as a brand-new draft would.
+        var needsSeedFromPersisted = draft is null
+            || (Farm is not null && string.IsNullOrEmpty(draft.Cphh)
+                && draft.LinkedFarms.Count == 0 && draft.HerdSizes.Count == 0);
+
+        if (needsSeedFromPersisted)
         {
-            draft = new CaseFarmDraftState
-            {
-                Rbse = Rbse,
-                Cphh = Farm.CPHH,
-                LinkedFarms = PersistedLinkedFarms.Select(x => new CaseFarmDraftLinkedFarmItem
+            draft = Farm is null
+                ? new CaseFarmDraftState { Rbse = Rbse }
+                : new CaseFarmDraftState
                 {
-                    Id = x.ID,
-                    RelatedCphh = x.RelatedCPHH,
-                    RowStampBase64 = x.RowStamp is null ? string.Empty : Convert.ToBase64String(x.RowStamp),
-                    Status = x.Status ?? string.Empty
-                }).ToList(),
-                HerdSizes = PersistedHerdSizes.Select(x => new CaseFarmDraftHerdSizeItem
-                {
-                    ClientKey = Guid.NewGuid().ToString("N"),
-                    Id = x.ID,
-                    HerdYear = x.HerdYear,
-                    TotalSize = x.TotalSize,
-                    Lactation1Size = x.Lactation1Size,
-                    Lactation2Size = x.Lactation2Size,
-                    Lactation3Size = x.Lactation3Size,
-                    Lactation4Size = x.Lactation4Size,
-                    Lactation5Size = x.Lactation5Size,
-                    Lactation6Size = x.Lactation6Size,
-                    Lactation7Size = x.Lactation7Size,
-                    Lactation8Size = x.Lactation8Size,
-                    Lactation9Size = x.Lactation9Size,
-                    Lactation10Size = x.Lactation10Size,
-                    Lactation10PlusSize = x.Lactation10PlusSize,
-                    RowStampBase64 = x.RowStamp is null ? string.Empty : Convert.ToBase64String(x.RowStamp)
-                }).ToList()
-            };
+                    Rbse = Rbse,
+                    Cphh = Farm.CPHH,
+                    LinkedFarms = PersistedLinkedFarms.Select(x => new CaseFarmDraftLinkedFarmItem
+                    {
+                        Id = x.ID,
+                        RelatedCphh = x.RelatedCPHH,
+                        RowStampBase64 = x.RowStamp is null ? string.Empty : Convert.ToBase64String(x.RowStamp),
+                        Status = x.Status ?? string.Empty
+                    }).ToList(),
+                    HerdSizes = PersistedHerdSizes.Select(x => new CaseFarmDraftHerdSizeItem
+                    {
+                        ClientKey = Guid.NewGuid().ToString("N"),
+                        Id = x.ID,
+                        HerdYear = x.HerdYear,
+                        TotalSize = x.TotalSize,
+                        Lactation1Size = x.Lactation1Size,
+                        Lactation2Size = x.Lactation2Size,
+                        Lactation3Size = x.Lactation3Size,
+                        Lactation4Size = x.Lactation4Size,
+                        Lactation5Size = x.Lactation5Size,
+                        Lactation6Size = x.Lactation6Size,
+                        Lactation7Size = x.Lactation7Size,
+                        Lactation8Size = x.Lactation8Size,
+                        Lactation9Size = x.Lactation9Size,
+                        Lactation10Size = x.Lactation10Size,
+                        Lactation10PlusSize = x.Lactation10PlusSize,
+                        RowStampBase64 = x.RowStamp is null ? string.Empty : Convert.ToBase64String(x.RowStamp)
+                    }).ToList()
+                };
             await farmDraftState.SetAsync(draft);
         }
 
@@ -1768,13 +1789,6 @@ public class FarmModel(
         || persisted.Lactation9Size != staged.Lactation9Size
         || persisted.Lactation10Size != staged.Lactation10Size
         || persisted.Lactation10PlusSize != staged.Lactation10PlusSize;
-
-    private static string CentreCoordinate(string start, string end)
-    {
-        if (!int.TryParse(start, out var s) || !int.TryParse(end, out var e)) return start;
-        var middle = (int)Math.Round((s + e) / 2.0, MidpointRounding.AwayFromZero);
-        return middle.ToString("0000");
-    }
 
     // ── Sort / pagination URL builders ─────────────────────────────────────────
 
