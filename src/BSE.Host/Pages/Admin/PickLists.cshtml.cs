@@ -27,6 +27,16 @@ public class PickListsModel(
 
     public const string DuplicateCodeMessage = "The Code you have selected is already used";
 
+    // Legacy DataGridPager.DisplayRowError(blnShowFullError:=False) shows only this for a failed edit of a Modified row.
+    public const string SaveFailedMessage = "Unable to save the selected row";
+    public const string AddFailedMessage = "Unable to add the selected row";
+    public const string DuplicateNameMessage = "The Name you have selected is already used";
+    public const int AhroTableId = 28;
+
+    // luAHRO.Name is varchar(100); the input must not accept more than the column holds.
+    public static int? MaxLengthFor(int tableId, string column) =>
+        tableId == AhroTableId && column == "Name" ? 100 : null;
+
     public sealed record FieldSpec(
         string Column,
         string Label,
