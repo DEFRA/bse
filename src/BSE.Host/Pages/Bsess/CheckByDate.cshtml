@@ -74,7 +74,7 @@
         ViewData["PageNumber"] = Model.PageNumber;
 
         <p class="govuk-body">
-            <a href="@($"?StartDate={Uri.EscapeDataString(Model.StartDate?.ToString("dd/MM/yyyy") ?? string.Empty)}&EndDate={Uri.EscapeDataString(Model.EndDate?.ToString("dd/MM/yyyy") ?? string.Empty)}&handler=Export")" class="govuk-link">Export to Excel</a>
+            <a href="@($"{sortBase}&SortColumn={Uri.EscapeDataString(Model.SortColumn ?? string.Empty)}&SortDesc={Model.SortDesc.ToString().ToLowerInvariant()}&handler=Export")" class="govuk-link">Export to Excel</a>
         </p>
 
         <table class="govuk-table">

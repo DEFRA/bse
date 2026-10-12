@@ -181,6 +181,31 @@ public class ClinicalModel(
         if (!User.IsInRole("DataEntry"))
             return Forbid();
 
+        await StageSignsEditAsync(clinicalRowStampBase64);
+
+        return RedirectToPage(targetPage, new { rbse = Rbse });
+    }
+
+    /// <summary>Visits sort-header link: a plain same-page query-string link, which — unlike
+    /// Save/tab-switch — never staged the in-progress Signs edit, silently discarding it.</summary>
+    public async Task<IActionResult> OnPostResortVisitsAsync(string? clinicalRowStampBase64)
+    {
+        if (!User.IsInRole("DataEntry"))
+            return Forbid();
+
+        await StageSignsEditAsync(clinicalRowStampBase64);
+
+        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+        await LoadAsync();
+        await LoadOrInitializeDraftStateAsync();
+        await ApplyStagedSignsOverlayAsync();
+        return Page();
+    }
+
+    /// <summary>Stages the posted Signs edit into the shared cross-tab draft, shared by every
+    /// handler that navigates away from (or stays on, re-sorting) this tab.</summary>
+    private async Task StageSignsEditAsync(string? clinicalRowStampBase64)
+    {
         // Signs checkboxes are editable from the very start of brand-new-case creation (no
         // existing Clinical row required) — a blank rowstamp means "no DB row yet", not "nothing
         // to stage"; bailing out here silently discarded in-progress Signs edits on tab switch.
@@ -206,8 +231,6 @@ public class ClinicalModel(
         if (DraftChangeDetector.IsDifferentFromPersisted(stagedEdit, baseline))
             draft.HasPendingChanges = true;
         await caseScalarDraftState.SetAsync(draft);
-
-        return RedirectToPage(targetPage, new { rbse = Rbse });
     }
 
     /// <summary>Manually bound from the posted form — avoids ambiguous binding with the Signs property.</summary>

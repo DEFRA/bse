@@ -25,6 +25,7 @@
         <div class="govuk-button-group govuk-!-margin-bottom-4">
             <a asp-page="/AuditLog/ByCase" asp-page-handler="Export" asp-route-rbse="@Model.Rbse"
                asp-route-returnTo="@Model.ReturnTo"
+               asp-route-sortBy="@Model.SortBy" asp-route-sortDir="@Model.SortDir"
                class="govuk-button govuk-button--secondary">Export to CSV</a>
         </div>
 

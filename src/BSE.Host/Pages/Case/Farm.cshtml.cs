@@ -217,10 +217,26 @@ public class FarmModel(
         // navigating to another tab. LoadAsync()'s own staged-scalar overlay only fires once a Farm
         // DB row exists to key off — impossible here, since neither the Case nor the Farm exists in
         // the database yet — so without this, returning to the Farm tab for a brand-new case loses
-        // the Look Up result entirely.
+        // the Look Up result entirely. Only applied when the staged CPHH still matches what this
+        // request is actually resolving — otherwise a stale earlier CPHH's Owner Name/Address/etc.
+        // would overwrite a freshly resolved, different farm. EditableFarm.CPHH is always still
+        // blank at this point (resolved below by ResolveNewCaseCphhAsync), so the "what is this
+        // request actually resolving to" check must come from the raw navigation parameters
+        // instead — e.g. the Farm/New "Create Farm" redirect for an unmatched CPHH, which carries
+        // NewCphh/ForceNewFarmDetails for a *different* CPHH than whatever was staged earlier.
+        var requestedCphh = !string.IsNullOrWhiteSpace(SelectedCphh)
+            ? CphhNormalizer.Normalize(SelectedCphh)
+            : !string.IsNullOrWhiteSpace(NewCphh)
+                ? CphhNormalizer.Normalize(NewCphh)
+                : null;
+
         var stagedScalars = await caseScalarDraftState.GetAsync(Rbse);
-        if (stagedScalars?.Farm is not null)
+        if (stagedScalars?.Farm is not null
+            && (requestedCphh is null
+                || string.Equals(CphhNormalizer.Normalize(stagedScalars.Farm.CPHH), requestedCphh, StringComparison.OrdinalIgnoreCase)))
+        {
             EditableFarm.ApplyStagedCommand(stagedScalars.Farm);
+        }
 
         await ResolveNewCaseCphhAsync(EditableFarm);
 
@@ -466,6 +482,14 @@ public class FarmModel(
             {
                 RequireFarmDetails = false;
                 EditableFarm = FarmEditViewModel.FromRecord(farm);
+                EditableFarmRowStampBase64 = farm.RowStamp is null ? string.Empty : Convert.ToBase64String(farm.RowStamp);
+
+                // asp-for renders from ModelState (the originally posted value) in preference to the
+                // model's current value — since the browser re-posts whatever was last on screen for
+                // every field the user didn't touch (the previous CPHH's Owner Name/Address/etc.),
+                // those stale entries would otherwise keep showing even though EditableFarm itself was
+                // just correctly reassigned above.
+                ModelState.Clear();
 
                 // Without this, Farm/PersistedLinkedFarms/PersistedHerdSizes all stay null/empty
                 // and LoadOrInitializeDraftStateAsync has nothing to seed the staged grids from —
@@ -473,6 +497,13 @@ public class FarmModel(
                 // the farm has real persisted rows, until the next full page reload re-fetches them.
                 await LoadFromFarmCphhAsync(normalisedCphh);
                 await LoadOrInitializeDraftStateAsync();
+
+                // Keeps the shared cross-tab scalar draft (Owner Name/Address/Parish/etc.) in sync
+                // with whichever CPHH was just looked up — without this, looking up a second, different
+                // CPHH left the earlier CPHH's scalar fields staged until the next tab switch, so a
+                // GET reload of this tab in between (OnGetNewCaseAsync's unconditional overlay) would
+                // still show the first CPHH's Owner Name/Address/etc. instead of the one just resolved.
+                await StageFarmScalarEditAsync(EditableFarm.ToUpdateCommand(farm.RowStamp));
 
                 await LoadLookupsForEditAsync();
                 return Page();
@@ -712,6 +743,17 @@ public class FarmModel(
     private async Task StageFarmScalarEditAsync(UpdateFarmCommand command)
     {
         var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
+
+        // Looking up a *different* CPHH after an earlier one was already staged must not keep the
+        // previous farm's baseline rowstamp (wrong farm's concurrency token) or treat its scalar
+        // fields as the comparison baseline for "has this round's edit actually changed anything" —
+        // same staleness class already fixed for the Linked Farms/Herd Size grid draft.
+        if (draft.Farm is not null
+            && !string.Equals(CphhNormalizer.Normalize(draft.Farm.CPHH), CphhNormalizer.Normalize(command.CPHH), StringComparison.OrdinalIgnoreCase))
+        {
+            draft.FarmBaseRowStampBase64 = null;
+        }
+
         draft.FarmBaseRowStampBase64 ??= EditableFarmRowStampBase64;
         var baseRowStamp = string.IsNullOrWhiteSpace(draft.FarmBaseRowStampBase64)
             ? null
@@ -923,6 +965,24 @@ public class FarmModel(
         return RedirectToPage(new { rbse = Rbse });
     }
 
+    /// <summary>Herd Size/Linked Farms sort-header and pagination links: these are plain same-page
+    /// query-string links (?HSort=...&amp;LPage=...), which — unlike every other action on this tab —
+    /// never went through staging, silently discarding whatever the user had typed but not yet
+    /// confirmed via Look Up/Save/tab-switch. HSort/HDir/HPage/LSort/LDir/LPage are themselves bound
+    /// from the query string the link already carries, so nothing else needs to change here besides
+    /// staging the posted edit before re-rendering with the new sort/page.</summary>
+    public async Task<IActionResult> OnPostResortGridsAsync()
+    {
+        var postedEditableFarm = EditableFarm;
+        var postedFarmRowStamp = EditableFarmRowStampBase64;
+
+        SpolSiteUrl = configuration[SpolSiteUrlConfigKey] ?? string.Empty;
+        await LoadAsync();
+        await RestoreAndRestageFarmEditAsync(postedEditableFarm, postedFarmRowStamp);
+        await LoadOrInitializeDraftStateAsync();
+
+        return Page();
+    }
 
     // ── POST: Herd sizes (inline editable grid — GDS pattern) ─────────────────
 
@@ -939,6 +999,10 @@ public class FarmModel(
         SpolSiteUrl = configuration[SpolSiteUrlConfigKey] ?? string.Empty;
         await LoadAsync();
         await RestoreAndRestageFarmEditAsync(postedEditableFarm, postedFarmRowStamp);
+
+        if (!CanEditVlaControls)
+            return RedirectToPage(new { rbse = Rbse });
+
         var draft = await LoadOrInitializeDraftStateAsync();
 
         var item = draft.HerdSizes.FirstOrDefault(x => x.ClientKey == clientKey);
@@ -979,6 +1043,10 @@ public class FarmModel(
         SpolSiteUrl = configuration[SpolSiteUrlConfigKey] ?? string.Empty;
         await LoadAsync();
         await RestoreAndRestageFarmEditAsync(postedEditableFarm, postedFarmRowStamp);
+
+        if (!CanEditVlaControls)
+            return RedirectToPage(new { rbse = Rbse });
+
         var draft = await LoadOrInitializeDraftStateAsync();
 
         ValidateHerdRow(postedRow, prefix: nameof(NewHerdRow));
@@ -1030,6 +1098,10 @@ public class FarmModel(
         SpolSiteUrl = configuration[SpolSiteUrlConfigKey] ?? string.Empty;
         await LoadAsync();
         await RestoreAndRestageFarmEditAsync(postedEditableFarm, postedFarmRowStamp);
+
+        if (!CanEditVlaControls)
+            return RedirectToPage(new { rbse = Rbse });
+
         var draft = await LoadOrInitializeDraftStateAsync();
 
         var item = draft.HerdSizes.FirstOrDefault(x => x.ClientKey == clientKey);
@@ -1079,6 +1151,10 @@ public class FarmModel(
         SpolSiteUrl = configuration[SpolSiteUrlConfigKey] ?? string.Empty;
         await LoadAsync();
         await RestoreAndRestageFarmEditAsync(postedEditableFarm, postedFarmRowStamp);
+
+        if (!CanEditVlaControls)
+            return RedirectToPage(new { rbse = Rbse });
+
         var draft = await LoadOrInitializeDraftStateAsync();
         var item = draft.HerdSizes.FirstOrDefault(x => x.ClientKey == clientKey);
         if (item is not null)
@@ -1259,8 +1335,16 @@ public class FarmModel(
             logger.LogWarning(
                 "Farm scalar stage READ: Rbse={Rbse} found={Found} OwnerName={OwnerName} County={County}",
                 Rbse, stagedScalars?.Farm is not null, stagedScalars?.Farm?.OwnerName, stagedScalars?.Farm?.County);
-            if (stagedScalars?.Farm is not null)
+
+            // A staged scalar edit for a *different* CPHH than the one just resolved (e.g. the user
+            // edited the CPHH box to look up a different farm) must not overwrite the freshly loaded
+            // record — applying it here is exactly what clobbered the newly typed CPHH back to the
+            // previous one.
+            if (stagedScalars?.Farm is not null
+                && string.Equals(CphhNormalizer.Normalize(stagedScalars.Farm.CPHH), CphhNormalizer.Normalize(Farm.CPHH), StringComparison.OrdinalIgnoreCase))
+            {
                 EditableFarm.ApplyStagedCommand(stagedScalars.Farm);
+            }
 
             await LoadLookupsForEditAsync();
         }
@@ -1596,11 +1680,12 @@ public class FarmModel(
 
         // A failed Save attempt before any CPHH was entered (OnPostCreateCaseAsync calls this method
         // even when ModelState is invalid) caches an empty shell draft with no CPHH/linked farms/herd
-        // sizes. Once a real farm is later resolved via Look Up, that stale empty shell must not mask
-        // the farm's actual persisted data forever — reseed it exactly as a brand-new draft would.
+        // sizes. Likewise, looking up one CPHH, then looking up a *different* CPHH in the same
+        // session, must not keep showing the first farm's already-cached Linked Farms/Herd Size rows
+        // — reseed from the newly resolved farm's own persisted data whenever the staged Cphh no
+        // longer matches it, exactly as a brand-new draft would.
         var needsSeedFromPersisted = draft is null
-            || (Farm is not null && string.IsNullOrEmpty(draft.Cphh)
-                && draft.LinkedFarms.Count == 0 && draft.HerdSizes.Count == 0);
+            || (Farm is not null && !string.Equals(draft.Cphh, Farm.CPHH, StringComparison.OrdinalIgnoreCase));
 
         if (needsSeedFromPersisted)
         {

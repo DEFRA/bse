@@ -193,13 +193,35 @@ public class RelationsModel(
         var postedDamStatus = DamSire.DamStatus;
 
         await LoadAsync();
+        await StageDamSireIfChangedAsync(postedCaseHerdbook, postedDamStatus);
 
-        // Legacy parity: merely switching tabs without typing anything must not trip the
-        // cross-tab unsaved-changes warning or make CommitAllAsync think there is scalar work
-        // pending — StageCaseDamStatusAsync/StageHerdbookAsync always set HasPendingChanges,
-        // so only call them when Case Herdbook/Dam Status actually differ from what's already
-        // known (persisted, or already staged by an earlier action this session), same baseline
-        // PopulateCaseAncillaryStateAsync itself overlays on every GET.
+        return RedirectToPage(targetPage, new { rbse = Rbse });
+    }
+
+    /// <summary>Other Relations sort-header/pagination links: plain same-page query-string links
+    /// which, unlike every other action on this tab, never staged the in-progress Case Herdbook/
+    /// Dam Status edit, silently discarding it.</summary>
+    public async Task<IActionResult> OnPostResortRelationsAsync()
+    {
+        if (!User.IsInRole(DataEntryRole))
+            return RedirectToPage(new { rbse = Rbse });
+
+        var postedCaseHerdbook = CaseHerdbook;
+        var postedDamStatus = DamSire.DamStatus;
+
+        await LoadAsync();
+        await StageDamSireIfChangedAsync(postedCaseHerdbook, postedDamStatus);
+        await LoadOrInitializeRelationsDraftAsync();
+
+        return Page();
+    }
+
+    /// <summary>Only stages Case Herdbook/Dam Status/Dam-Sire when they actually differ from what's
+    /// already known (persisted, or already staged) — merely switching tabs or re-sorting the grid
+    /// without typing anything must not trip the cross-tab unsaved-changes warning or make
+    /// CommitAllAsync think there is scalar work pending.</summary>
+    private async Task StageDamSireIfChangedAsync(string? postedCaseHerdbook, string? postedDamStatus)
+    {
         var caseRecord = await caseService.GetCaseAsync(RbseHelper.ParseToRaw(Rbse));
         var staged = await caseScalarDraftState.GetAsync(Rbse);
         var baselineDamStatus = staged?.Case?.DamStatus ?? caseRecord?.DamStatus;
@@ -210,8 +232,6 @@ public class RelationsModel(
         {
             await RestoreAndRestageDamSireEditAsync(postedCaseHerdbook, postedDamStatus);
         }
-
-        return RedirectToPage(targetPage, new { rbse = Rbse });
     }
 
     public IActionResult OnPostDeleteRelationAsync(int relationId, string rowStampBase64)
