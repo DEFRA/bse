@@ -35,13 +35,13 @@
                 <label asp-for="Filter.Cphh" class="govuk-label">CPH(H)</label>
                 <div class="govuk-form-group">
                     <input asp-for="Filter.Cphh" class="govuk-input bse-farm-legacy__input"
-                           title="CPHH Format: NN[/]NNN[/]NNNN[/NN]" spellcheck="false" autocapitalize="off" />
+                           maxlength="14" title="CPHH Format: NN[/]NNN[/]NNNN[/NN]" spellcheck="false" autocapitalize="off" />
                 </div>
             </div>
             <div class="bse-farm-legacy__field">
                 <label asp-for="Filter.OwnerName" class="govuk-label">Owner Name (partial search)</label>
                 <div class="govuk-form-group">
-                    <input asp-for="Filter.OwnerName" class="govuk-input bse-farm-legacy__input" />
+                    <input asp-for="Filter.OwnerName" class="govuk-input bse-farm-legacy__input" maxlength="100" />
                 </div>
             </div>
         </div>
@@ -50,13 +50,13 @@
             <div class="bse-farm-legacy__field">
                 <label asp-for="Filter.Herdmark" class="govuk-label">Herdmark</label>
                 <div class="govuk-form-group">
-                    <input asp-for="Filter.Herdmark" class="govuk-input bse-farm-legacy__input" />
+                    <input asp-for="Filter.Herdmark" class="govuk-input bse-farm-legacy__input" maxlength="8" />
                 </div>
             </div>
             <div class="bse-farm-legacy__field">
                 <label asp-for="Filter.Address" class="govuk-label">Address (partial search)</label>
                 <div class="govuk-form-group">
-                    <input asp-for="Filter.Address" class="govuk-input bse-farm-legacy__input" />
+                    <input asp-for="Filter.Address" class="govuk-input bse-farm-legacy__input" maxlength="160" />
                 </div>
             </div>
         </div>
@@ -65,7 +65,7 @@
             <div class="bse-farm-legacy__field">
                 <label asp-for="Filter.NumericHerdmark" class="govuk-label">Numeric Herdmark</label>
                 <div class="govuk-form-group">
-                    <input asp-for="Filter.NumericHerdmark" class="govuk-input bse-farm-legacy__input" />
+                    <input asp-for="Filter.NumericHerdmark" class="govuk-input bse-farm-legacy__input" maxlength="6" />
                 </div>
             </div>
             <div class="bse-farm-legacy__field">
