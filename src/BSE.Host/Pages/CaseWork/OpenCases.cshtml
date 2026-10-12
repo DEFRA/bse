@@ -119,7 +119,9 @@
                         <td class="govuk-table__cell">@(caseRecord.FinalResultDate?.ToString("dd/MM/yyyy") ?? "—")</td>
                         <td class="govuk-table__cell">@(caseRecord.BirthDate?.ToString("dd/MM/yyyy") ?? "—")</td>
                         <td class="govuk-table__cell">@(caseRecord.Post2000SentDate?.ToString("dd/MM/yyyy") ?? "—")</td>
-                        <td class="govuk-table__cell">@(caseRecord.BarbMemoDue ?? "—")</td>
+                        <td class="govuk-table__cell">
+                            <input type="checkbox" disabled aria-label="Barb memo due" checked="@(string.Equals(caseRecord.BarbMemoDue, "Yes", StringComparison.OrdinalIgnoreCase) ? "checked" : null)" />
+                        </td>
                         <td class="govuk-table__cell">@(caseRecord.BarbMinuteSentDate?.ToString("dd/MM/yyyy") ?? "—")</td>
                         <td class="govuk-table__cell">@(caseRecord.DataCompleteDate?.ToString("dd/MM/yyyy") ?? "—")</td>
                         <td class="govuk-table__cell">@(caseRecord.CaseWorkNotes ?? "—")</td>
