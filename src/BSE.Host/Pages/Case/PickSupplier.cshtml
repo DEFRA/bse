@@ -39,6 +39,7 @@
 else
 {
     var pickBase = Url.Page("/Case/PickSupplier", new { rbse = Model.Rbse, name = Model.Name });
+    ViewData["PageNumber"] = Model.PageNumber;
 
     <table class="govuk-table">
         <caption class="govuk-visually-hidden">Matching suppliers</caption>
