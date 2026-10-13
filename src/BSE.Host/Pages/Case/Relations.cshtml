@@ -515,6 +515,7 @@
                 <tr class="govuk-table__row">
                     @{
                         var relBase = Url.Page("/Case/Relations", new { rbse = Model.Rbse });
+                        ViewData["PageNumber"] = Model.PageNumber;
                     }
                     @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Relation Type", ["Column"]="RelationType", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
                     @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="RBSE", ["Column"]="RelationRbse", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })

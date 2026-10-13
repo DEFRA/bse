@@ -29,6 +29,7 @@
     {
         rbse = Model.Rbse, sex = Model.Sex, eartag = Model.Eartag, name = Model.Name, herdbook = Model.Herdbook, returnTo = Model.ReturnTo
     });
+    ViewData["PageNumber"] = Model.PageNumber;
 
     <table class="govuk-table">
         <caption class="govuk-visually-hidden">Matching @(Model.IsDam ? "dams" : "sires")</caption>

@@ -336,6 +336,23 @@ public class FeedsModel(
         var postedLookupName = Request.Form[nameof(SupplierLookupName)].ToString();
         var supplierName = (SupplierLookupName ?? postedLookupName ?? SupplierName ?? string.Empty).Trim();
 
+        // Legacy parity: an exact match shows the validated name on this page; only otherwise pick from close matches.
+        if (supplierName.Length > 0)
+        {
+            var exact = await lookupRepository.GetSupplierByNameAsync(supplierName.ToUpperInvariant());
+            if (exact is not null)
+            {
+                await LoadAsync();
+                await LoadOrInitializeDraftStateAsync();
+                SupplierId = exact.Id;
+                SupplierName = exact.Name;
+                ModelState.Remove(nameof(SupplierId));
+                ModelState.Remove(nameof(SupplierName));
+                ModelState.Remove(nameof(SupplierLookupName));
+                return Page();
+            }
+        }
+
         return RedirectToPage("/Case/PickSupplier", new { rbse = Rbse, name = supplierName });
     }
 

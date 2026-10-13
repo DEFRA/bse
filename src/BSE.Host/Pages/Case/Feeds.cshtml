@@ -40,6 +40,7 @@
             <tr class="govuk-table__row">
                 @{
                     var feedsBase = Url.Page("/Case/Feeds", new { rbse = Model.Rbse });
+                    ViewData["PageNumber"] = Model.CurrentPage;
                 }
                 @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Year From", ["Column"]="YearFrom", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=feedsBase })
                 @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Year To", ["Column"]="YearTo", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=feedsBase })
