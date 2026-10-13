@@ -38,7 +38,7 @@ public class VlaEditViewModel : ICaseEditFields
     public string? Eartag { get; set; }
     public string? PreviousEartag { get; set; }
     public DateTime? Bse1ReceivedDate { get; set; }
-    public DateTime? FormADate { get; set; }
+    [ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? FormADate { get; set; }
     public DateTime? FormAResubmittedDate { get; set; }
     public DateTime? FormBDate { get; set; }
     public string? Fate { get; set; }
