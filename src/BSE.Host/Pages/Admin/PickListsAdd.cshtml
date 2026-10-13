@@ -98,7 +98,7 @@
                     <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @error</p>
                 }
                 <input class="govuk-input govuk-!-width-two-thirds @(error is not null ? "govuk-input--error" : "")"
-                       id="field-@field.Column" name="Fields[@field.Column]" value="@current" />
+                       id="field-@field.Column" name="Fields[@field.Column]" value="@current" maxlength="@PickListsModel.MaxLengthFor(Model.TableId, field.Column)" />
             }
         </div>
     }

@@ -59,6 +59,7 @@ public class PickListsAddModel(
         {
             ValidateRequired();
             if (await HasDuplicateKeyAsync()) ModelState.AddModelError(KeyColumn, PickListsModel.DuplicateCodeMessage);
+            if (TableId == AhroId && await HasDuplicateAhroNameAsync()) ModelState.AddModelError("Name", PickListsModel.DuplicateNameMessage);
             if (!ModelState.IsValid) return Page();
 
             await AddAsync();
@@ -78,7 +79,7 @@ public class PickListsAddModel(
                 // KeyColumn, so reaching a duplicate-key error here means the database silently
                 // truncated an oversized value until it collided with a shorter existing row (e.g.
                 // entering "77" into a column that only holds one digit) — not a genuine typed dupe.
-                ModelState.AddModelError(KeyColumn, "Unable to add entered row.");
+                ModelState.AddModelError(KeyColumn, PickListsModel.AddFailedMessage);
             }
             return Page();
         }
@@ -86,13 +87,12 @@ public class PickListsAddModel(
         {
             // e.g. luValuationAge's Code column only accepts a single digit — entering "12" trips
             // a truncation (8152/2628) or CHECK constraint (547) error, not a duplicate key.
-            var label = DisplayFields.FirstOrDefault(f => f.Column == KeyColumn)?.Label ?? KeyColumn;
-            ModelState.AddModelError(KeyColumn, $"Unable to add — the {label.ToLowerInvariant()} entered is not valid for this field.");
+            ModelState.AddModelError(KeyColumn, PickListsModel.AddFailedMessage);
             return Page();
         }
         catch (Exception)
         {
-            TempData["ErrorMessage"] = "Unable to add. Please check the entered values and try again.";
+            TempData["ErrorMessage"] = PickListsModel.AddFailedMessage;
             return Page();
         }
 
@@ -149,6 +149,15 @@ public class PickListsAddModel(
             if (string.IsNullOrWhiteSpace(Field(field.Column)))
                 ModelState.AddModelError(field.Column, $"Select a {field.Label.ToLowerInvariant()}");
         }
+    }
+
+    private async Task<bool> HasDuplicateAhroNameAsync()
+    {
+        var candidate = Field("Name");
+        if (string.IsNullOrWhiteSpace(candidate) || Procs is null) return false;
+
+        var rows = await lookupAdminService.GetLookupRowsAsync(Procs.SelectStoredProcedure);
+        return rows.Any(r => string.Equals(PickListsModel.RowValue(r, "Name"), candidate, StringComparison.OrdinalIgnoreCase));
     }
 
     private async Task<bool> HasDuplicateKeyAsync()

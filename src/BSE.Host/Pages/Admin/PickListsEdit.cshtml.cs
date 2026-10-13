@@ -80,10 +80,16 @@ public class PickListsEditModel(
         {
             ValidateRequired();
             if (await HasDuplicateKeyAsync(OriginalKey)) ModelState.AddModelError(KeyColumn, PickListsModel.DuplicateCodeMessage);
+            if (TableId == AhroId && await HasDuplicateAhroNameAsync(OriginalKey)) ModelState.AddModelError("Name", PickListsModel.DuplicateNameMessage);
             if (!ModelState.IsValid) return Page();
 
             await EditAsync();
             TempData["SuccessMessage"] = "Record updated.";
+        }
+        catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Number is 2627 or 2601 or 8152 or 2628 or 547)
+        {
+            ModelState.AddModelError(KeyColumn, PickListsModel.SaveFailedMessage);
+            return Page();
         }
         catch (Exception ex)
         {
@@ -148,6 +154,17 @@ public class PickListsEditModel(
             if (string.IsNullOrWhiteSpace(Field(field.Column)))
                 ModelState.AddModelError(field.Column, $"Select a {field.Label.ToLowerInvariant()}");
         }
+    }
+
+    private async Task<bool> HasDuplicateAhroNameAsync(string originalKey)
+    {
+        var candidate = Field("Name");
+        if (string.IsNullOrWhiteSpace(candidate) || Procs is null) return false;
+
+        var rows = await lookupAdminService.GetLookupRowsAsync(Procs.SelectStoredProcedure);
+        return rows.Any(r =>
+            string.Equals(RowValue(r, "Name"), candidate, StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(RowValue(r, KeyColumn), originalKey, StringComparison.OrdinalIgnoreCase));
     }
 
     private async Task<bool> HasDuplicateKeyAsync(string originalKey)
