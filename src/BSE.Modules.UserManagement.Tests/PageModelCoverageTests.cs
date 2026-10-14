@@ -363,8 +363,7 @@ public sealed class PageModelCoverageTests
         var babRepository = Substitute.For<IBabRepository>();
         var currentUserService = Substitute.For<ICurrentUserService>();
         var wizardState = Substitute.For<ICaseWizardStateService>();
-        var caseEditDraftState = Substitute.For<ICaseEditDraftStateService>();
-        var caseScalarDraftState = Substitute.For<ICaseScalarDraftStateService>();
+        var caseEditDraftState = Substitute.For<ICaseEditSessionStateService>();
         var caseEditOrchestration = Substitute.For<ICaseEditOrchestrationService>();
         var lookupService = Substitute.For<ILookupDataService>();
         var batchRepository = Substitute.For<IBatchRepository>();
@@ -378,7 +377,6 @@ public sealed class PageModelCoverageTests
             currentUserService,
             wizardState,
             caseEditDraftState,
-            caseScalarDraftState,
             Substitute.For<ICaseDraftDiscardService>(),
             caseEditOrchestration,
             lookupService,
@@ -413,8 +411,7 @@ public sealed class PageModelCoverageTests
         var lookups = Substitute.For<ILookupDataService>();
         var batchRepository = Substitute.For<IBatchRepository>();
         var wizardState = Substitute.For<ICaseWizardStateService>();
-        var farmDraftState = Substitute.For<ICaseFarmDraftStateService>();
-        var caseScalarDraftState = Substitute.For<ICaseScalarDraftStateService>();
+        var farmDraftState = Substitute.For<ICaseEditSessionStateService>();
         var caseEditOrchestration = Substitute.For<ICaseEditOrchestrationService>();
         var currentUser = Substitute.For<ICurrentUserService>();
         var geoLookup = Substitute.For<BSE.Host.Services.IGeoLookupService>();
@@ -428,7 +425,6 @@ public sealed class PageModelCoverageTests
             batchRepository,
             wizardState,
             farmDraftState,
-            caseScalarDraftState,
             Substitute.For<ICaseDraftDiscardService>(),
             caseEditOrchestration,
             currentUser,

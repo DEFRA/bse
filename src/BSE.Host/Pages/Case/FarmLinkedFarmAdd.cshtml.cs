@@ -13,7 +13,7 @@ namespace BSE.Host.Pages.Case;
 public class FarmLinkedFarmAddModel(
     ICaseService caseService,
     IFarmService farmService,
-    ICaseFarmDraftStateService farmDraftState) : PageModel
+    ICaseEditSessionStateService sessionState) : PageModel
 {
     [BindProperty(SupportsGet = true)] public string Rbse { get; set; } = string.Empty;
     [BindProperty] public string? RelatedCphh { get; set; }
@@ -44,7 +44,7 @@ public class FarmLinkedFarmAddModel(
         if (string.Equals(CphhNormalizer.Normalize(cphh), normalisedCphh, StringComparison.OrdinalIgnoreCase))
             ModelState.AddModelError(nameof(RelatedCphh), "Cannot link a farm to itself.");
 
-        var draft = await farmDraftState.GetAsync(Rbse);
+        var draft = await sessionState.GetAsync(Rbse);
         var existing = draft?.LinkedFarms.Select(f => f.RelatedCphh).ToList() ??
                        (await farmService.GetRelatedFarmsAsync(cphh)).Select(x => x.RelatedCPHH).ToList();
         if (existing.Any(f => string.Equals(CphhNormalizer.Normalize(f), normalisedCphh, StringComparison.OrdinalIgnoreCase)))
@@ -53,7 +53,7 @@ public class FarmLinkedFarmAddModel(
         if (!ModelState.IsValid)
             return Page();
 
-        draft ??= new CaseFarmDraftState { Rbse = Rbse, Cphh = cphh };
+        draft ??= new CaseEditSessionState { Rbse = Rbse, Cphh = cphh };
         draft.LinkedFarms.Add(new CaseFarmDraftLinkedFarmItem
         {
             Id = 0,
@@ -62,7 +62,7 @@ public class FarmLinkedFarmAddModel(
             Status = string.Empty
         });
 
-        await farmDraftState.SetAsync(draft);
+        await sessionState.SetAsync(draft);
         TempData["Success"] = $"Linked farm {normalisedCphh} added to pending changes.";
         return RedirectToPage("/Case/Farm", new { rbse = Rbse });
     }

@@ -39,8 +39,7 @@ public sealed class EditModelHandlerTests
     private readonly ILookupDataService _lookups = Substitute.For<ILookupDataService>();
     private readonly ICaseWorkRepository _caseWorkRepository = Substitute.For<ICaseWorkRepository>();
     private readonly ITestRepository _testRepository = Substitute.For<ITestRepository>();
-    private readonly ICaseEditDraftStateService _caseEditDraftState = Substitute.For<ICaseEditDraftStateService>();
-    private readonly ICaseScalarDraftStateService _caseScalarDraftState = Substitute.For<ICaseScalarDraftStateService>();
+    private readonly ICaseEditSessionStateService _sessionState = Substitute.For<ICaseEditSessionStateService>();
     private readonly ICaseEditOrchestrationService _caseEditOrchestration = Substitute.For<ICaseEditOrchestrationService>();
     private readonly IBatchRepository _batchRepository = Substitute.For<IBatchRepository>();
 
@@ -53,7 +52,7 @@ public sealed class EditModelHandlerTests
         _batchRepository.GetBatchNumbersByRbseAsync(Arg.Any<string>()).Returns(Array.Empty<BatchNumberEntry>());
         _caseWorkRepository.GetByRbseAsync(Arg.Any<string>()).Returns((BSE.Modules.CaseWork.Models.CaseWorkRecord?)null);
         _caseWorkRepository.GetEntryByRbseAsync(Arg.Any<string>()).Returns((BSE.Modules.CaseWork.Models.CaseWorkEntryRecord?)null);
-        _caseEditDraftState.GetAsync(Arg.Any<string>()).Returns(new CaseEditDraftState { Rbse = Rbse });
+        _sessionState.GetAsync(Arg.Any<string>()).Returns(new CaseEditSessionState { Rbse = Rbse });
         _currentUserService.GetUserIdAsync().Returns(7);
     }
 
@@ -61,7 +60,7 @@ public sealed class EditModelHandlerTests
     {
         var model = new EditModel(
             _caseService, _currentUserService, _lookups, _caseWorkRepository,
-            _testRepository, _caseEditDraftState, _caseScalarDraftState, Substitute.For<ICaseDraftDiscardService>(), _caseEditOrchestration, _batchRepository,
+            _testRepository, _sessionState, Substitute.For<ICaseDraftDiscardService>(), _caseEditOrchestration, _batchRepository,
             new ConfigurationBuilder().AddInMemoryCollection().Build())
         {
             Rbse = Rbse
@@ -218,7 +217,7 @@ public sealed class EditModelHandlerTests
 
         var redirect = result.Should().BeOfType<RedirectToPageResult>().Subject;
         redirect.PageName.Should().Be("/Home");
-        await _caseEditDraftState.Received(1).ClearAsync(Rbse, Arg.Any<CancellationToken>());
+        await _caseEditOrchestration.Received(1).CommitAllAsync(Rbse, 7);
     }
 
     // Uncovered path: OnPostAsync's commit-outcome-has-warnings branch (lines ~343-348) —

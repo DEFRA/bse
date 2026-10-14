@@ -1,12 +1,5 @@
 namespace BSE.SharedKernel;
 
-public sealed class CaseFeedsDraftState
-{
-    public string Rbse { get; set; } = string.Empty;
-    public List<CaseFeedsDraftItem> Feeds { get; set; } = [];
-    public bool HasPendingChanges { get; set; }
-}
-
 public sealed class CaseFeedsDraftItem
 {
     // Stable identifier for this draft row, used by the inline add/edit/delete handlers

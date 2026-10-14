@@ -3,18 +3,6 @@ namespace BSE.SharedKernel.Tests;
 public sealed class CaseFarmDraftStateTests
 {
     [Fact]
-    public void CaseFarmDraftState_Defaults_AreEmptyAndNotDirty()
-    {
-        var state = new CaseFarmDraftState();
-
-        state.Rbse.Should().BeEmpty();
-        state.Cphh.Should().BeEmpty();
-        state.LinkedFarms.Should().BeEmpty();
-        state.HerdSizes.Should().BeEmpty();
-        state.HasPendingChanges.Should().BeFalse();
-    }
-
-    [Fact]
     public void CaseFarmDraftLinkedFarmItem_InitialisesStableDefaults()
     {
         var item = new CaseFarmDraftLinkedFarmItem();

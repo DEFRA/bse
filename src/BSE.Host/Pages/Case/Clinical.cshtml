@@ -6,6 +6,11 @@
     var viewDocsUrl = string.IsNullOrWhiteSpace(Model.SpolSiteUrl) ? null : $"{Model.SpolSiteUrl}{rbseNoSlash}";
     var canSaveClinical = User.IsInRole("DataEntry");
     var canEditClinical = canSaveClinical && User.IsInRole("VLAAccess");
+    // Prefer the raw text the user typed (preserved on failed/invalid binding) so it is
+    // redisplayed unchanged, matching legacy CalendarDate behaviour; otherwise fall back to
+    // formatting the successfully bound value.
+    string DateDisplay(string key, DateTime? d) =>
+        ViewData.ModelState[key]?.AttemptedValue ?? d?.ToString("dd/MM/yyyy") ?? string.Empty;
     var s = Model.Signs;
     var checkedSigns = new List<string>();
     if (s.Apprehension) checkedSigns.Add("Apprehension");
@@ -154,7 +159,7 @@
                         <td class="govuk-table__cell">
                             <label class="govuk-visually-hidden" for="edit-visit-date-@v.ClientKey">Visit date</label>
                             <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                                <input id="edit-visit-date-@v.ClientKey" name="EditVisitDate" type="text" value="@(Model.EditVisitDate?.ToString("dd/MM/yyyy"))"
+                                <input id="edit-visit-date-@v.ClientKey" name="EditVisitDate" type="text" value="@DateDisplay(nameof(Model.EditVisitDate), Model.EditVisitDate)"
                                        class="govuk-input govuk-input--width-10 moj-js-datepicker-input" autocomplete="off" placeholder="dd/mm/yyyy" />
                             </div>
                         </td>
@@ -199,7 +204,7 @@
                     <div class="govuk-form-group govuk-!-margin-bottom-0">
                         <label class="govuk-visually-hidden" for="new-visit-date">Visit date</label>
                         <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                            <input id="new-visit-date" name="NewVisitDate" type="text" value="@(Model.NewVisitDate?.ToString("dd/MM/yyyy"))"
+                            <input id="new-visit-date" name="NewVisitDate" type="text" value="@DateDisplay(nameof(Model.NewVisitDate), Model.NewVisitDate)"
                                    class="govuk-input govuk-input--width-10 moj-js-datepicker-input" autocomplete="off" placeholder="dd/mm/yyyy" />
                         </div>
                     </div>

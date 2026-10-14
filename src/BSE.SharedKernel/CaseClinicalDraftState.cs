@@ -1,12 +1,5 @@
 namespace BSE.SharedKernel;
 
-public sealed class CaseClinicalDraftState
-{
-    public string Rbse { get; set; } = string.Empty;
-    public List<CaseClinicalDraftVisitItem> Visits { get; set; } = [];
-    public bool HasPendingChanges { get; set; }
-}
-
 public sealed class CaseClinicalDraftVisitItem
 {
     // Stable identifier for this draft row, used by the inline add/edit/delete handlers

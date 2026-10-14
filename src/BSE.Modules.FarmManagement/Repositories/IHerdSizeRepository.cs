@@ -15,9 +15,11 @@ public interface IHerdSizeRepository
     /// <summary>Transactional variant, enlisted in a caller-supplied connection/transaction.</summary>
     Task AddAsync(AddHerdSizeCommand command, IDbConnection connection, IDbTransaction transaction);
     Task UpdateAsync(UpdateHerdSizeCommand command);
-    /// <summary>Transactional variant, enlisted in a caller-supplied connection/transaction.</summary>
-    Task UpdateAsync(UpdateHerdSizeCommand command, IDbConnection connection, IDbTransaction transaction);
+    /// <summary>Transactional variant, enlisted in a caller-supplied connection/transaction. Returns
+    /// rows affected — 0 means the row's RowStamp was stale (changed by another user).</summary>
+    Task<int> UpdateAsync(UpdateHerdSizeCommand command, IDbConnection connection, IDbTransaction transaction);
     Task DeleteAsync(int id, byte[] rowStamp);
-    /// <summary>Transactional variant, enlisted in a caller-supplied connection/transaction.</summary>
-    Task DeleteAsync(int id, byte[] rowStamp, IDbConnection connection, IDbTransaction transaction);
+    /// <summary>Transactional variant, enlisted in a caller-supplied connection/transaction. Returns
+    /// rows affected — 0 means the row's RowStamp was stale (changed by another user).</summary>
+    Task<int> DeleteAsync(int id, byte[] rowStamp, IDbConnection connection, IDbTransaction transaction);
 }

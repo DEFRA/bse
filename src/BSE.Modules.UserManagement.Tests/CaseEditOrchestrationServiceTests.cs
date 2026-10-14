@@ -26,9 +26,7 @@ public sealed class CaseEditOrchestrationServiceTests
     private const string Rbse = "002600001";
     private const string Cphh = "01001000101";
 
-    private readonly ICaseScalarDraftStateService _scalarDraftState = Substitute.For<ICaseScalarDraftStateService>();
-    private readonly ICaseFeedsDraftStateService _feedsDraftState = Substitute.For<ICaseFeedsDraftStateService>();
-    private readonly ICaseRelationsDraftStateService _relationsDraftState = Substitute.For<ICaseRelationsDraftStateService>();
+    private readonly ICaseEditSessionStateService _sessionState = Substitute.For<ICaseEditSessionStateService>();
     private readonly ICaseWizardStateService _wizardState = Substitute.For<ICaseWizardStateService>();
     private readonly ICaseRepository _caseRepository = Substitute.For<ICaseRepository>();
     private readonly IFarmRepository _farmRepository = Substitute.For<IFarmRepository>();
@@ -39,12 +37,17 @@ public sealed class CaseEditOrchestrationServiceTests
     private readonly IPedigreeRepository _pedigreeRepository = Substitute.For<IPedigreeRepository>();
     private readonly BSE.Modules.CaseWork.Repositories.ICaseWorkRepository _caseWorkRepository = Substitute.For<BSE.Modules.CaseWork.Repositories.ICaseWorkRepository>();
     private readonly IBatchRepository _batchRepository = Substitute.For<IBatchRepository>();
+    private readonly ITestRepository _testRepository = Substitute.For<ITestRepository>();
+    private readonly IOtherOwnerRepository _otherOwnerRepository = Substitute.For<IOtherOwnerRepository>();
+    private readonly IHerdSizeRepository _herdSizeRepository = Substitute.For<IHerdSizeRepository>();
+    private readonly IFarmRelationRepository _farmRelationRepository = Substitute.For<IFarmRelationRepository>();
     private readonly IDbConnectionFactory _connectionFactory = Substitute.For<IDbConnectionFactory>();
 
     private CaseEditOrchestrationService CreateService() => new(
-        _scalarDraftState, _feedsDraftState, _relationsDraftState, _wizardState,
+        _sessionState, _wizardState,
         _caseRepository, _farmRepository, _babRepository, _clinicalRepository,
-        _feedRepository, _relationsRepository, _pedigreeRepository, _caseWorkRepository, _batchRepository, _connectionFactory,
+        _feedRepository, _relationsRepository, _pedigreeRepository, _caseWorkRepository, _batchRepository,
+        _testRepository, _otherOwnerRepository, _herdSizeRepository, _farmRelationRepository, _connectionFactory,
         NullLogger<CaseEditOrchestrationService>.Instance);
 
     private static CaseRecord ValidCaseRecord() => new()
@@ -63,7 +66,7 @@ public sealed class CaseEditOrchestrationServiceTests
     [Fact]
     public async Task CommitAllAsync_WithMultipleMissingFarmFields_ThrowsExceptionListingAllOfThem()
     {
-        _scalarDraftState.GetAsync(Rbse).Returns(new CaseScalarDraftState
+        _sessionState.GetAsync(Rbse).Returns(new CaseEditSessionState
         {
             Rbse = Rbse,
             HasPendingChanges = true,
@@ -75,8 +78,6 @@ public sealed class CaseEditOrchestrationServiceTests
                 Herdmark3: null, NumericHerdmark1: null, NumericHerdmark2: null, AHO: "Some AHO",
                 HerdType: null, PedigreeType: null, IsDealer: false, ADNSRegionID: null, RowStamp: [1])
         });
-        _feedsDraftState.GetAsync(Rbse).Returns((CaseFeedsDraftState?)null);
-        _relationsDraftState.GetAsync(Rbse).Returns((CaseRelationsDraftState?)null);
 
         _caseRepository.GetCaseByRbseAsync(Rbse).Returns(ValidCaseRecord());
         _farmRepository.GetByCphhAsync(Cphh).Returns(new FarmRecord
@@ -112,7 +113,7 @@ public sealed class CaseEditOrchestrationServiceTests
         // resolution must use the staged (now-null) value, not silently fall back to the stale DB value
         // — otherwise the mandatory check passes incorrectly and a NULL reaches the database's NOT NULL
         // OwnerName column, causing a SQL exception instead of the expected SaveResult screen.
-        _scalarDraftState.GetAsync(Rbse).Returns(new CaseScalarDraftState
+        _sessionState.GetAsync(Rbse).Returns(new CaseEditSessionState
         {
             Rbse = Rbse,
             HasPendingChanges = true,
@@ -124,8 +125,6 @@ public sealed class CaseEditOrchestrationServiceTests
                 Herdmark3: null, NumericHerdmark1: null, NumericHerdmark2: null, AHO: "Some AHO",
                 HerdType: null, PedigreeType: null, IsDealer: false, ADNSRegionID: 5, RowStamp: [1])
         });
-        _feedsDraftState.GetAsync(Rbse).Returns((CaseFeedsDraftState?)null);
-        _relationsDraftState.GetAsync(Rbse).Returns((CaseRelationsDraftState?)null);
 
         _caseRepository.GetCaseByRbseAsync(Rbse).Returns(ValidCaseRecord());
         _farmRepository.GetByCphhAsync(Cphh).Returns(new FarmRecord
@@ -155,7 +154,7 @@ public sealed class CaseEditOrchestrationServiceTests
         // Legacy parity: a brand-new case lives only in the shared session DataSet until the first
         // Save from any tab — CommitAllAsync must insert both Farm and Case rows together rather
         // than trying (and failing) to UPDATE rows that don't exist yet.
-        _scalarDraftState.GetAsync(Rbse).Returns(new CaseScalarDraftState
+        _sessionState.GetAsync(Rbse).Returns(new CaseEditSessionState
         {
             Rbse = Rbse,
             HasPendingChanges = true,
@@ -178,8 +177,6 @@ public sealed class CaseEditOrchestrationServiceTests
                 MonthsPostCalving: null, OnsetAgeInMonths: null, SlaughterDate: null, RowStamp: [],
                 AlternateDiagnosis: null, LabComment: null, CaseType: null)
         });
-        _feedsDraftState.GetAsync(Rbse).Returns((CaseFeedsDraftState?)null);
-        _relationsDraftState.GetAsync(Rbse).Returns((CaseRelationsDraftState?)null);
         _wizardState.GetAsync().Returns((CaseWizardState?)null);
 
         _caseRepository.GetCaseByRbseAsync(Rbse).Returns((CaseRecord?)null);
@@ -219,7 +216,7 @@ public sealed class CaseEditOrchestrationServiceTests
         // dedicated non-GB message.
         const string nonGbCphh = "00999900001";
 
-        _scalarDraftState.GetAsync(Rbse).Returns(new CaseScalarDraftState
+        _sessionState.GetAsync(Rbse).Returns(new CaseEditSessionState
         {
             Rbse = Rbse,
             HasPendingChanges = true,
@@ -242,8 +239,6 @@ public sealed class CaseEditOrchestrationServiceTests
                 MonthsPostCalving: null, OnsetAgeInMonths: null, SlaughterDate: null, RowStamp: [],
                 AlternateDiagnosis: null, LabComment: null, CaseType: null)
         });
-        _feedsDraftState.GetAsync(Rbse).Returns((CaseFeedsDraftState?)null);
-        _relationsDraftState.GetAsync(Rbse).Returns((CaseRelationsDraftState?)null);
 
         _caseRepository.GetCaseByRbseAsync(Rbse).Returns((CaseRecord?)null);
         _farmRepository.GetByCphhAsync(nonGbCphh).Returns(new FarmRecord
