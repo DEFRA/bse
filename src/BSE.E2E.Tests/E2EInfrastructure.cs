@@ -37,7 +37,8 @@ public sealed class BrowserFixture : IAsyncLifetime
         Browser = await _playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
         {
             Channel = E2EConfig.BrowserChannel,
-            Headless = true
+            Headless = Environment.GetEnvironmentVariable("BSE_E2E_HEADED") != "true",
+            SlowMo = Environment.GetEnvironmentVariable("BSE_E2E_HEADED") == "true" ? 250 : 0
         });
         Api = await _playwright.APIRequest.NewContextAsync(new APIRequestNewContextOptions
         {
