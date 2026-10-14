@@ -25,8 +25,7 @@ public class VlaModel(
     IBabRepository babRepository,
     ICurrentUserService currentUserService,
     ICaseWizardStateService wizardState,
-    ICaseEditDraftStateService caseEditDraftState,
-    ICaseScalarDraftStateService caseScalarDraftState,
+    ICaseEditSessionStateService sessionState,
     ICaseDraftDiscardService caseDraftDiscard,
     ICaseEditOrchestrationService caseEditOrchestration,
     ILookupDataService lookups,
@@ -133,8 +132,13 @@ public class VlaModel(
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
         Rbse = caseRbse;
 
+        // Legacy parity: btnSave_Click always calls UpdateSessionWithCaseDetails() then redirects
+        // to CaseEntrySave.aspx, even when this tab's own fields are read-only (e.g. VLA Data Entry
+        // with no batch selected) — the disabled fieldset means the browser never posts this tab's
+        // field values anyway, so only this tab's own staging is skipped; whatever other tabs have
+        // staged is still committed, matching legacy's "one session, one commit" model exactly.
         if (!await LoadBatchContextAndCheckEditPermissionAsync(caseRbse))
-            return RedirectToPage(new { rbse = caseRbse });
+            return await CommitStagedChangesOnlyAsync(caseRbse);
 
         // Legacy parity: a brand-new case lives entirely in the shared session object until the
         // first Save from *any* tab — CaseEditOrchestrationService.CommitAllAsync can create the
@@ -169,6 +173,14 @@ public class VlaModel(
         // (this tab and/or Farm/BAB/Clinical) together, rather than committing only this page's fields.
         await StageCaseScalarEditAsync(rowStampBase64);
 
+        return await CommitStagedChangesOnlyAsync(caseRbse);
+    }
+
+    /// <summary>Commits whatever is already staged for this RBSE across every tab, without
+    /// touching this tab's own fields — shared by the normal save path and the read-only-tab
+    /// path (see <see cref="OnPostAsync"/>).</summary>
+    private async Task<IActionResult> CommitStagedChangesOnlyAsync(string caseRbse)
+    {
         var userId = await currentUserService.GetUserIdAsync();
         var (failureRedirect, commitOutcome) = await CaseCommitHelper.CommitAllAsync(
             this, caseEditOrchestration, caseRbse, userId,
@@ -181,9 +193,6 @@ public class VlaModel(
             });
         if (failureRedirect is not null)
             return failureRedirect;
-
-        await PersistStagedOwnersAsync(caseRbse);
-        await caseEditDraftState.ClearAsync(caseRbse);
 
         if (CaseCommitHelper.TryStageWarnings(this, commitOutcome!, caseRbse) is { } warningRedirect)
             return warningRedirect;
@@ -259,11 +268,13 @@ public class VlaModel(
     }
 
     /// <summary>Writes this tab's current field values into the shared cross-tab scalar
-    /// draft (BSE.Host.Services.CaseScalarDraftState), without committing to the database.</summary>
+    /// draft (BSE.Host.Services.CaseEditSessionState), without committing to the database.</summary>
     private async Task StageCaseScalarEditAsync(string rowStampBase64)
     {
-        var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
-        draft.CaseBaseRowStampBase64 ??= rowStampBase64;
+        var draft = await sessionState.GetAsync(Rbse) ?? new CaseEditSessionState { Rbse = Rbse };
+        // Always trust the freshly posted rowstamp over any earlier-pinned one — see Edit.cshtml.cs's
+        // StageCaseScalarEditAsync for why a stale pin causes a false concurrency conflict.
+        draft.CaseBaseRowStampBase64 = rowStampBase64;
         var baseRowStamp = Convert.FromBase64String(draft.CaseBaseRowStampBase64);
         var newCommand = Case.ToEditCommand(baseRowStamp);
 
@@ -278,12 +289,12 @@ public class VlaModel(
         draft.Case = newCommand;
         if (DraftChangeDetector.IsDifferentFromPersisted(newCommand, baseline))
             draft.HasPendingChanges = true;
-        await caseScalarDraftState.SetAsync(draft);
+        await sessionState.SetAsync(draft);
     }
 
     private async Task ApplyStagedCaseOverlayAsync()
     {
-        var staged = await caseScalarDraftState.GetAsync(Rbse);
+        var staged = await sessionState.GetAsync(Rbse);
         if (staged?.Case is not null)
             Case.ApplyStagedCommand(staged.Case);
     }
@@ -370,8 +381,8 @@ public class VlaModel(
             Cphh = string.IsNullOrWhiteSpace(normalizedCphh) ? null : normalizedCphh,
             RowStampBase64 = string.Empty
         });
-        draft.HasPendingChanges = true;
-        await caseEditDraftState.SetAsync(draft);
+        draft.HasCaseEditChanges = true;
+        await sessionState.SetAsync(draft);
         await StagePostedCaseScalarsBeforeRedirectAsync();
 
         return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
@@ -411,8 +422,8 @@ public class VlaModel(
         owner.Type = EditOwnerType!;
         owner.Name = string.IsNullOrWhiteSpace(EditOwnerName) ? null : EditOwnerName;
         owner.Cphh = string.IsNullOrWhiteSpace(normalizedCphh) ? null : normalizedCphh;
-        draft.HasPendingChanges = true;
-        await caseEditDraftState.SetAsync(draft);
+        draft.HasCaseEditChanges = true;
+        await sessionState.SetAsync(draft);
         await StagePostedCaseScalarsBeforeRedirectAsync();
 
         return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
@@ -437,8 +448,8 @@ public class VlaModel(
         }
 
         draft.OtherOwners.Remove(owner);
-        draft.HasPendingChanges = true;
-        await caseEditDraftState.SetAsync(draft);
+        draft.HasCaseEditChanges = true;
+        await sessionState.SetAsync(draft);
         await StagePostedCaseScalarsBeforeRedirectAsync();
         return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
     }
@@ -462,7 +473,7 @@ public class VlaModel(
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
         var draft = await GetOrCreateOwnersDraftAsync(caseRbse);
         StagedOtherOwners = draft.OtherOwners.ToList();
-        HasUnsavedOwnerChanges = draft.HasPendingChanges;
+        HasUnsavedOwnerChanges = draft.HasCaseEditChanges;
         var allOwners = StagedOtherOwners.Select(ToOwnerRecord).ToList();
         OtherOwnersTotalCount = allOwners.Count;
         OtherOwnersTotalPages = Math.Max(1, (int)Math.Ceiling(allOwners.Count / (double)OwnersPageSize));
@@ -510,28 +521,10 @@ public class VlaModel(
         return CanEditMainCase;
     }
 
-    private async Task<CaseEditDraftState> GetOrCreateOwnersDraftAsync(string caseRbse)
+    private async Task<CaseEditSessionState> GetOrCreateOwnersDraftAsync(string caseRbse)
     {
-        var draft = await caseEditDraftState.GetAsync(caseRbse);
-        if (draft is null)
-        {
-            var owners = (await ownerRepository.GetByRbseAsync(caseRbse)).ToList();
-            draft = new CaseEditDraftState
-            {
-                Rbse = caseRbse,
-                OtherOwners = owners.Select(o => new CaseEditDraftOtherOwnerItem
-                {
-                    Id = o.Id,
-                    Type = o.Type ?? string.Empty,
-                    Name = o.Name,
-                    Cphh = o.Cphh,
-                    RowStampBase64 = Convert.ToBase64String(o.RowStamp ?? [])
-                }).ToList(),
-                HasPendingChanges = false
-            };
-            await caseEditDraftState.SetAsync(draft);
-        }
-        else if (!draft.HasPendingChanges && (draft.OtherOwners is null || draft.OtherOwners.Count == 0))
+        var draft = await sessionState.GetAsync(caseRbse) ?? new CaseEditSessionState { Rbse = caseRbse };
+        if (!draft.HasCaseEditChanges && draft.OtherOwners.Count == 0)
         {
             var owners = (await ownerRepository.GetByRbseAsync(caseRbse)).ToList();
             draft.OtherOwners = owners.Select(o => new CaseEditDraftOtherOwnerItem
@@ -542,7 +535,7 @@ public class VlaModel(
                 Cphh = o.Cphh,
                 RowStampBase64 = Convert.ToBase64String(o.RowStamp ?? [])
             }).ToList();
-            await caseEditDraftState.SetAsync(draft);
+            await sessionState.SetAsync(draft);
         }
 
         draft.OtherOwners ??= [];
@@ -558,7 +551,7 @@ public class VlaModel(
         return new OtherOwnerRecord(owner.Id ?? 0, string.Empty, owner.Type, owner.Name, owner.Cphh, rowStamp);
     }
 
-    private static int NextTemporaryOwnerId(CaseEditDraftState draft)
+    private static int NextTemporaryOwnerId(CaseEditSessionState draft)
     {
         var minId = draft.OtherOwners.Select(o => o.Id ?? 0).DefaultIfEmpty(0).Min();
         return minId <= 0 ? minId - 1 : -1;
@@ -590,70 +583,6 @@ public class VlaModel(
                    && (!editingOwnerId.HasValue || (o.Id ?? 0) != editingOwnerId.Value));
         if (duplicateExists)
             ModelState.AddModelError(editingOwnerId.HasValue ? nameof(EditOwnerType) : nameof(NewOwnerType), "You can only have one owner of type Previous.");
-    }
-
-    private async Task PersistStagedOwnersAsync(string caseRbse)
-    {
-        var draft = await caseEditDraftState.GetAsync(caseRbse);
-        if (draft is null || !draft.HasPendingChanges)
-            return;
-
-        var staged = draft.OtherOwners ?? [];
-        var persisted = (await ownerRepository.GetByRbseAsync(caseRbse)).ToList();
-        var persistedById = persisted.ToDictionary(x => x.Id);
-        var stagedExistingIds = staged.Where(x => x.Id is > 0).Select(x => x.Id!.Value).ToHashSet();
-
-        using var conn = connectionFactory.CreateConnection();
-        conn.Open();
-        using var tx = conn.BeginTransaction();
-
-        foreach (var removed in persisted.Where(x => !stagedExistingIds.Contains(x.Id)))
-            await ownerRepository.DeleteAsync(removed.Id, removed.RowStamp ?? [], conn, tx);
-
-        foreach (var owner in staged)
-            await SaveStagedOwnerAsync(owner, persistedById, caseRbse, conn, tx);
-
-        tx.Commit();
-    }
-
-    private async Task SaveStagedOwnerAsync(
-        CaseEditDraftOtherOwnerItem owner,
-        Dictionary<int, OtherOwnerRecord> persistedById,
-        string caseRbse,
-        System.Data.IDbConnection conn,
-        System.Data.IDbTransaction tx)
-    {
-        var normalizedName = string.IsNullOrWhiteSpace(owner.Name) ? null : owner.Name;
-        var normalizedCphh = string.IsNullOrWhiteSpace(owner.Cphh) ? null : owner.Cphh;
-
-        if (owner.Id is > 0 && persistedById.TryGetValue(owner.Id.Value, out var persistedOwner))
-        {
-            var hasChanges = !string.Equals(owner.Type, persistedOwner.Type, StringComparison.Ordinal)
-                             || !string.Equals(normalizedName, persistedOwner.Name, StringComparison.Ordinal)
-                             || !string.Equals(normalizedCphh, persistedOwner.Cphh, StringComparison.Ordinal);
-
-            if (!hasChanges)
-                return;
-
-            var rowStamp = string.IsNullOrWhiteSpace(owner.RowStampBase64)
-                ? persistedOwner.RowStamp ?? []
-                : Convert.FromBase64String(owner.RowStampBase64);
-
-            await ownerRepository.EditAsync(new EditOtherOwnerCommand(
-                owner.Id.Value,
-                owner.Type,
-                normalizedName,
-                normalizedCphh,
-                rowStamp), conn, tx);
-        }
-        else
-        {
-            await ownerRepository.AddAsync(new AddOtherOwnerCommand(
-                caseRbse,
-                owner.Type,
-                normalizedName,
-                normalizedCphh), conn, tx);
-        }
     }
 
     /// <summary>Legacy parity (MakeControlsWritable's Date-of-Birth/Onset-Date-driven gates):
@@ -692,7 +621,7 @@ public class VlaModel(
     /// guard.</summary>
     private async Task ClearTracedFieldsIfPresentAsync()
     {
-        var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
+        var draft = await sessionState.GetAsync(Rbse) ?? new CaseEditSessionState { Rbse = Rbse };
 
         var baseCommand = draft.Bab;
         if (baseCommand is null)
@@ -725,23 +654,13 @@ public class VlaModel(
             TracedAddress2 = null, TracedAddress3 = null, TracedPostcode = null
         };
         draft.HasPendingChanges = true;
-        await caseScalarDraftState.SetAsync(draft);
+        await sessionState.SetAsync(draft);
     }
 
     private void ValidateVlaDomainRules()
     {
         var today = DateTime.Today;
         var formADate = Case.FormADate?.Date;
-
-        // Legacy's CalendarDate.ascx control shows "Please enter a valid date" for
-        // unparseable text and only uses the field-specific business-rule message once
-        // the text parses but fails the earliest/latest range check. Match that: replace
-        // the binder's generic format message with the same wording legacy used, without
-        // altering the value the user typed.
-        ReplaceUnparseableDateMessage("Case.BirthDate", Case.BirthDate);
-        ReplaceUnparseableDateMessage("Case.PurchaseDate", Case.PurchaseDate);
-        ReplaceUnparseableDateMessage("Case.HerdEntryDate", Case.HerdEntryDate);
-        ReplaceUnparseableDateMessage("Case.OnsetDate", Case.OnsetDate);
 
         ValidateBirthDate(formADate, today);
         ValidatePurchaseDate(formADate, today);
@@ -829,18 +748,6 @@ public class VlaModel(
         {
             ModelState.AddModelError("Case.SlaughterDate", "You have entered a future date for the slaughter date");
         }
-    }
-
-    private void ReplaceUnparseableDateMessage(string key, DateTime? boundValue)
-    {
-        if (boundValue.HasValue)
-            return;
-
-        if (!ModelState.TryGetValue(key, out var entry) || entry.ValidationState != Microsoft.AspNetCore.Mvc.ModelBinding.ModelValidationState.Invalid)
-            return;
-
-        entry.Errors.Clear();
-        ModelState.AddModelError(key, "Please enter a valid date");
     }
 
     /// <summary>Other Owners sort-header link: a plain same-page query-string link, which — unlike

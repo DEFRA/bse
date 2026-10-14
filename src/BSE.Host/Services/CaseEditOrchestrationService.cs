@@ -49,9 +49,7 @@ public sealed record CaseCommitOutcome(EditCaseResult Result, IReadOnlyList<stri
 
 
 public sealed class CaseEditOrchestrationService(
-    ICaseScalarDraftStateService scalarDraftState,
-    ICaseFeedsDraftStateService feedsDraftState,
-    ICaseRelationsDraftStateService relationsDraftState,
+    ICaseEditSessionStateService sessionState,
     ICaseWizardStateService wizardState,
     ICaseRepository caseRepository,
     IFarmRepository farmRepository,
@@ -62,6 +60,10 @@ public sealed class CaseEditOrchestrationService(
     IPedigreeRepository pedigreeRepository,
     ICaseWorkRepository caseWorkRepository,
     IBatchRepository batchRepository,
+    ITestRepository testRepository,
+    IOtherOwnerRepository otherOwnerRepository,
+    IHerdSizeRepository herdSizeRepository,
+    IFarmRelationRepository farmRelationRepository,
     IDbConnectionFactory connectionFactory,
     ILogger<CaseEditOrchestrationService> logger) : ICaseEditOrchestrationService
 {
@@ -69,21 +71,25 @@ public sealed class CaseEditOrchestrationService(
 
     public async Task<CaseCommitOutcome> CommitAllAsync(string rbse, int userId)
     {
-        var draft = await scalarDraftState.GetAsync(rbse);
-        var feedsDraft = await feedsDraftState.GetAsync(rbse);
-        var relationsDraft = await relationsDraftState.GetAsync(rbse);
+        var session = await sessionState.GetAsync(rbse);
         var pendingBatch = await wizardState.GetAsync();
 
-        var hasScalarWork = draft is not null && draft.HasPendingChanges
-            && (draft.Case is not null || draft.Farm is not null || draft.Bab is not null || draft.Clinical is not null || draft.DamSire is not null || draft.CaseWork is not null);
-        var hasFeedsWork = feedsDraft is not null && feedsDraft.HasPendingChanges;
-        var hasRelationsWork = relationsDraft is not null && relationsDraft.HasPendingChanges;
+        var hasScalarWork = session is not null && session.HasPendingChanges
+            && (session.Case is not null || session.Farm is not null || session.Bab is not null || session.Clinical is not null || session.DamSire is not null || session.CaseWork is not null);
+        var hasFeedsWork = session is not null && session.HasFeedsChanges;
+        var hasRelationsWork = session is not null && session.HasRelationsChanges;
+        // Folded in alongside Feeds/Relations for the same reason: legacy's UpdateCaseDetails
+        // persists Tests/Other Owners/Visits/Herd Size/Linked Farms in the exact same transaction
+        // as everything else, regardless of which tab's Save button triggered it.
+        var hasCaseEditWork = session is not null && session.HasCaseEditChanges;
+        var hasClinicalVisitsWork = session is not null && session.HasClinicalVisitsChanges;
+        var hasFarmCollectionsWork = session is not null && session.HasFarmCollectionsChanges;
         // Legacy parity: Session("BatchID") rides along with whichever tab's Save is clicked next —
         // CreateBatchLink runs inside UpdateCaseDetails regardless of whether the case itself changed.
         var hasBatchWork = pendingBatch is not null
             && string.Equals(pendingBatch.RbseNumber, rbse, StringComparison.OrdinalIgnoreCase);
 
-        if (!hasScalarWork && !hasFeedsWork && !hasRelationsWork && !hasBatchWork)
+        if (!hasScalarWork && !hasFeedsWork && !hasRelationsWork && !hasCaseEditWork && !hasClinicalVisitsWork && !hasFarmCollectionsWork && !hasBatchWork)
             return CaseCommitOutcome.Success([]);
 
         // Legacy parity: a brand-new case lives entirely in the shared in-memory session DataSet
@@ -95,7 +101,7 @@ public sealed class CaseEditOrchestrationService(
         // Legacy parity: CaseEntrySave.aspx always runs CheckMandatoryFields across the whole case
         // (Case + Farm) before committing, regardless of which tab's Save triggered it, and regardless
         // of whether the case is being created or edited. Nothing is written if this fails.
-        var mandatoryErrors = await CheckMandatoryFieldsAsync(rbse, draft?.Case, draft?.Farm, existingCase);
+        var mandatoryErrors = await CheckMandatoryFieldsAsync(rbse, session?.Case, session?.Farm, existingCase);
         if (mandatoryErrors.Count > 0)
             throw new MandatoryCaseFieldsMissingException(mandatoryErrors);
 
@@ -103,13 +109,13 @@ public sealed class CaseEditOrchestrationService(
         // whole Case row in the shared session DataSet regardless of which tab is being saved).
         // If no tab staged a Case-scalar edit this round, pass the current row through unchanged
         // so the Bab/Clinical commit still has a valid Case row in the same transaction.
-        var caseCommand = draft?.Case;
-        if (!isNewCase && caseCommand is null && draft is not null && (draft.Bab is not null || draft.Clinical is not null))
+        var caseCommand = session?.Case;
+        if (!isNewCase && caseCommand is null && session is not null && (session.Bab is not null || session.Clinical is not null))
             caseCommand = CaseEditViewModel.FromRecord(existingCase!).ToEditCommand(existingCase!.RowStamp ?? []);
 
         // A brand-new case can only be created from the Farm tab's own staged fields — mirrors
         // legacy requiring CaseEntryFarm.aspx as the mandatory first stop for a new RBSE.
-        if (isNewCase && draft?.Farm is null)
+        if (isNewCase && session?.Farm is null)
             return CaseCommitOutcome.Failure(EditCaseResult.RbseNotFound);
 
         using var connection = connectionFactory.CreateConnection();
@@ -121,15 +127,20 @@ public sealed class CaseEditOrchestrationService(
         // only a genuinely hard SP failure (thrown exception) aborts the whole save.
         var warnings = new List<string>();
 
+        // Needed by the Linked Farms/Herd Size persistence further down, which is CPHH-keyed, not
+        // RBSE-keyed — resolved once here (staged CPHH in preference to the persisted Case's CPHH
+        // FK) rather than re-deriving it separately for every grid.
+        var cphh = isNewCase
+            ? CphhNormalizer.Normalize(session!.Farm!.CPHH)
+            : CphhNormalizer.Normalize(session?.Farm?.CPHH is { Length: > 0 } stagedCphh ? stagedCphh : existingCase!.Cphh);
+
         try
         {
-            string cphh;
             if (isNewCase)
             {
-                cphh = CphhNormalizer.Normalize(draft!.Farm!.CPHH);
                 var existingFarm = await farmRepository.GetByCphhAsync(cphh);
                 if (existingFarm is null)
-                    await farmRepository.AddAsync(MapToAddFarm(draft.Farm, cphh), userId, connection, transaction);
+                    await farmRepository.AddAsync(MapToAddFarm(session.Farm, cphh), userId, connection, transaction);
 
                 var addResult = await caseRepository.AddCaseAsync(MapToAddCase(rbse, cphh, caseCommand), userId, connection, transaction);
                 if (addResult != AddCaseResult.Success)
@@ -141,7 +152,7 @@ public sealed class CaseEditOrchestrationService(
                 // which already does this via CaseService.CreateCaseAsync) never gets a CaseWork row.
                 // Uses whatever BSE1/Paperwork fields were staged from the Case (DEFRA) tab before
                 // the case itself existed, rather than hardcoding every optional field to null.
-                var cw = draft.CaseWork;
+                var cw = session.CaseWork;
                 await caseWorkRepository.AddAsync(
                     new AddCaseWorkCommand(
                         rbse,
@@ -156,11 +167,11 @@ public sealed class CaseEditOrchestrationService(
                         cw?.PaperworkCompleteDate),
                     connection, transaction);
 
-                if (draft.Bab is not null)
-                    await babRepository.AddAsync(MapToAddBab(draft.Bab), draft.BabOrigin, connection, transaction);
+                if (session.Bab is not null)
+                    await babRepository.AddAsync(MapToAddBab(session.Bab), session.BabOrigin, connection, transaction);
 
-                if (draft.Clinical is not null)
-                    await clinicalRepository.AddAsync(MapToAddClinical(draft.Clinical), connection, transaction);
+                if (session.Clinical is not null)
+                    await clinicalRepository.AddAsync(MapToAddClinical(session.Clinical), connection, transaction);
             }
             else
             {
@@ -179,43 +190,72 @@ public sealed class CaseEditOrchestrationService(
                     }
                 }
 
-                if (draft?.Farm is not null)
+                if (session?.Farm is not null)
                 {
-                    var farmWarning = await farmRepository.UpdateAsync(draft.Farm, userId, connection, transaction);
+                    var farmWarning = await farmRepository.UpdateAsync(session.Farm, userId, connection, transaction);
                     if (farmWarning is not null)
                         warnings.Add(farmWarning);
                 }
 
-                if (draft?.Bab is not null)
+                if (session?.Bab is not null)
                 {
-                    var babWarning = await babRepository.EditAsync(draft.Bab, draft.BabOrigin, connection, transaction);
-                    if (babWarning is not null)
-                        warnings.Add(babWarning);
+                    // An existing case can still have no Bab row yet (the tab was never saved
+                    // before) — EditAsync would then compare against a RowStamp that belongs to
+                    // no real row, always reporting a false "modified by another user".
+                    var existingBab = await babRepository.GetByRbseAsync(rbse);
+                    if (existingBab is null)
+                    {
+                        await babRepository.AddAsync(MapToAddBab(session.Bab), session.BabOrigin, connection, transaction);
+                    }
+                    else
+                    {
+                        var babWarning = await babRepository.EditAsync(session.Bab, session.BabOrigin, connection, transaction);
+                        if (babWarning is not null)
+                            warnings.Add(babWarning);
+                    }
                 }
 
-                if (draft?.Clinical is not null)
+                if (session?.Clinical is not null)
                 {
-                    var clinicalWarning = await clinicalRepository.EditAsync(draft.Clinical, connection, transaction);
-                    if (clinicalWarning is not null)
-                        warnings.Add(clinicalWarning);
+                    // Same reasoning as Bab above: the case may exist with no Clinical row yet.
+                    var existingClinical = await clinicalRepository.GetByRbseAsync(rbse);
+                    if (existingClinical is null)
+                    {
+                        await clinicalRepository.AddAsync(MapToAddClinical(session.Clinical), connection, transaction);
+                    }
+                    else
+                    {
+                        var clinicalWarning = await clinicalRepository.EditAsync(session.Clinical, connection, transaction);
+                        if (clinicalWarning is not null)
+                            warnings.Add(clinicalWarning);
+                    }
                 }
 
-                if (draft?.CaseWork is not null)
-                    await caseWorkRepository.EditAsync(draft.CaseWork, connection, transaction);
+                if (session?.CaseWork is not null)
+                    await caseWorkRepository.EditAsync(session.CaseWork, connection, transaction);
             }
 
-            if (draft?.DamSire is not null)
+            if (session?.DamSire is not null)
             {
-                var damSireWarning = await pedigreeRepository.AddEditDamSireAsync(draft.DamSire, connection, transaction);
+                var damSireWarning = await pedigreeRepository.AddEditDamSireAsync(session.DamSire, connection, transaction);
                 if (damSireWarning is not null)
                     warnings.Add(damSireWarning);
             }
 
+            if (hasCaseEditWork)
+                await PersistStagedCaseEditAsync(rbse, session!, connection, transaction, warnings);
+
+            if (hasClinicalVisitsWork)
+                await PersistStagedClinicalVisitsAsync(rbse, session!, connection, transaction, warnings);
+
+            if (hasFarmCollectionsWork)
+                await PersistStagedFarmCollectionsAsync(cphh, session!, connection, transaction, warnings);
+
             if (hasFeedsWork)
-                await PersistStagedFeedsAsync(rbse, feedsDraft!, connection, transaction, warnings);
+                await PersistStagedFeedsAsync(rbse, session!, connection, transaction, warnings);
 
             if (hasRelationsWork)
-                await PersistStagedRelationsAsync(rbse, relationsDraft!, connection, transaction, warnings);
+                await PersistStagedRelationsAsync(rbse, session!, connection, transaction, warnings);
 
             if (hasBatchWork)
             {
@@ -235,11 +275,7 @@ public sealed class CaseEditOrchestrationService(
             throw;
         }
 
-        await scalarDraftState.ClearAsync(rbse);
-        if (hasFeedsWork)
-            await feedsDraftState.ClearAsync(rbse);
-        if (hasRelationsWork)
-            await relationsDraftState.ClearAsync(rbse);
+        await sessionState.ClearAsync(rbse);
         if (hasBatchWork)
             await wizardState.ClearAsync();
 
@@ -247,12 +283,12 @@ public sealed class CaseEditOrchestrationService(
     }
 
     private async Task PersistStagedFeedsAsync(
-        string rbse, CaseFeedsDraftState feedsDraft, System.Data.IDbConnection connection, System.Data.IDbTransaction transaction,
+        string rbse, CaseEditSessionState session, System.Data.IDbConnection connection, System.Data.IDbTransaction transaction,
         List<string> warnings)
     {
         var persisted = (await feedRepository.GetByRbseAsync(rbse)).ToList();
         var persistedById = persisted.ToDictionary(f => f.Id);
-        var stagedByExistingId = feedsDraft.Feeds.Where(f => f.Id is > 0).ToDictionary(f => f.Id!.Value);
+        var stagedByExistingId = session.Feeds.Where(f => f.Id is > 0).ToDictionary(f => f.Id!.Value);
 
         foreach (var removed in persisted.Where(f => !stagedByExistingId.ContainsKey(f.Id)))
         {
@@ -264,7 +300,7 @@ public sealed class CaseEditOrchestrationService(
                 warnings.Add($"Failed to delete feed with Ration Name \"{removed.RationName}\" - Data was changed by another user");
         }
 
-        foreach (var staged in feedsDraft.Feeds)
+        foreach (var staged in session.Feeds)
         {
             if (staged.Id is null or <= 0)
             {
@@ -303,12 +339,12 @@ public sealed class CaseEditOrchestrationService(
     /// clsCase.OnRelationRowUpdated's RecordsAffected = 0 check) — it does not abort the rest of the
     /// save, it just adds a warning and leaves that one row as it was.</summary>
     private async Task PersistStagedRelationsAsync(
-        string rbse, CaseRelationsDraftState relationsDraft, System.Data.IDbConnection connection, System.Data.IDbTransaction transaction,
+        string rbse, CaseEditSessionState session, System.Data.IDbConnection connection, System.Data.IDbTransaction transaction,
         List<string> warnings)
     {
         var persisted = (await relationsRepository.GetRelationsByRbseAsync(rbse)).ToList();
         var persistedById = persisted.ToDictionary(r => r.Id);
-        var stagedByExistingId = relationsDraft.Relations.Where(r => r.Id is > 0).ToDictionary(r => r.Id!.Value);
+        var stagedByExistingId = session.Relations.Where(r => r.Id is > 0).ToDictionary(r => r.Id!.Value);
 
         foreach (var removed in persisted.Where(r => !stagedByExistingId.ContainsKey(r.Id)))
         {
@@ -320,7 +356,7 @@ public sealed class CaseEditOrchestrationService(
                 warnings.Add($"Failed to delete relation with RBSE \"{removed.RelationRbse}\" - Data was changed by another user");
         }
 
-        foreach (var staged in relationsDraft.Relations)
+        foreach (var staged in session.Relations)
         {
             if (staged.Id is null or <= 0)
             {
@@ -359,6 +395,263 @@ public sealed class CaseEditOrchestrationService(
                 warnings.Add($"Failed to update relation with RBSE \"{staged.RelationRbse}\" - Data was changed by another user");
         }
     }
+
+    /// <summary>Legacy parity: a stale RowStamp on a Test or Other Owner row is a soft, per-row skip
+    /// (matching clsCase.OnOtherOwnerRowUpdated's RecordsAffected = 0 check, applied the same way to
+    /// Tests) — it does not abort the rest of the save, it just adds a warning and leaves that one
+    /// row as it was. Tests and Other Owners share one HasCaseEditChanges flag on CaseEditSessionState,
+    /// so both lists are always processed together here.</summary>
+    private async Task PersistStagedCaseEditAsync(
+        string rbse, CaseEditSessionState session, System.Data.IDbConnection connection, System.Data.IDbTransaction transaction,
+        List<string> warnings)
+    {
+        var normalizedRbse = rbse.Replace("/", "");
+
+        var persistedTests = (await testRepository.GetByRbseAsync(rbse)).ToList();
+        var persistedTestsById = persistedTests.ToDictionary(t => t.Id);
+        var stagedTestsByExistingId = session.Tests.Where(t => t.Id is > 0).ToDictionary(t => t.Id!.Value);
+
+        foreach (var removed in persistedTests.Where(p => !stagedTestsByExistingId.ContainsKey(p.Id)))
+        {
+            if (removed.RowStamp is null)
+                continue;
+
+            var deletedRows = await testRepository.DeleteAsync(removed.Id, removed.RowStamp, connection, transaction);
+            if (deletedRows == 0)
+                warnings.Add($"Failed to delete test \"{removed.TestTypeDescription}\" - Data was changed by another user");
+        }
+
+        foreach (var staged in session.Tests)
+        {
+            if (staged.Id is null or <= 0)
+            {
+                await testRepository.AddAsync(new AddTestCommand(normalizedRbse, staged.TestType, staged.TestResult), connection, transaction);
+                continue;
+            }
+
+            if (!persistedTestsById.TryGetValue(staged.Id.Value, out var current))
+                continue;
+
+            var changed = !string.Equals(current.TestType, staged.TestType, StringComparison.OrdinalIgnoreCase)
+                          || !string.Equals(current.TestResult ?? "", staged.TestResult ?? "", StringComparison.OrdinalIgnoreCase);
+            if (!changed)
+                continue;
+
+            var rowStamp = string.IsNullOrWhiteSpace(staged.RowStampBase64)
+                ? current.RowStamp ?? []
+                : Convert.FromBase64String(staged.RowStampBase64);
+
+            var updatedRows = await testRepository.EditAsync(new EditTestCommand(staged.Id.Value, normalizedRbse, staged.TestType, staged.TestResult, rowStamp), connection, transaction);
+            if (updatedRows == 0)
+                warnings.Add($"Failed to update test \"{staged.TestType}\" - Data was changed by another user");
+        }
+
+        var persistedOwners = (await otherOwnerRepository.GetByRbseAsync(rbse)).ToList();
+        var persistedOwnersById = persistedOwners.ToDictionary(o => o.Id);
+        var stagedOwnersByExistingId = session.OtherOwners.Where(o => o.Id is > 0).ToDictionary(o => o.Id!.Value);
+
+        foreach (var removed in persistedOwners.Where(p => !stagedOwnersByExistingId.ContainsKey(p.Id)))
+        {
+            var deletedRows = await otherOwnerRepository.DeleteAsync(removed.Id, removed.RowStamp ?? [], connection, transaction);
+            if (deletedRows == 0)
+                warnings.Add($"Failed to delete owner \"{removed.Name}\" - Data was changed by another user");
+        }
+
+        foreach (var staged in session.OtherOwners)
+        {
+            var normalizedName = string.IsNullOrWhiteSpace(staged.Name) ? null : staged.Name;
+            var normalizedCphh = string.IsNullOrWhiteSpace(staged.Cphh) ? null : staged.Cphh;
+
+            if (staged.Id is > 0 && persistedOwnersById.TryGetValue(staged.Id.Value, out var persisted))
+            {
+                var changed = !string.Equals(staged.Type, persisted.Type, StringComparison.Ordinal)
+                              || !string.Equals(normalizedName, persisted.Name, StringComparison.Ordinal)
+                              || !string.Equals(normalizedCphh, persisted.Cphh, StringComparison.Ordinal);
+                if (!changed)
+                    continue;
+
+                var rowStamp = string.IsNullOrWhiteSpace(staged.RowStampBase64)
+                    ? persisted.RowStamp ?? []
+                    : Convert.FromBase64String(staged.RowStampBase64);
+
+                var updatedRows = await otherOwnerRepository.EditAsync(new EditOtherOwnerCommand(staged.Id.Value, staged.Type, normalizedName, normalizedCphh, rowStamp), connection, transaction);
+                if (updatedRows == 0)
+                    warnings.Add($"Failed to update owner \"{normalizedName}\" - Data was changed by another user");
+            }
+            else
+            {
+                await otherOwnerRepository.AddAsync(new AddOtherOwnerCommand(rbse, staged.Type, normalizedName, normalizedCphh), connection, transaction);
+            }
+        }
+    }
+
+    /// <summary>Legacy parity: a stale RowStamp on a Clinical Visit row is a soft, per-row skip
+    /// (matching clsCase.OnClinicalVisitRowUpdated's RecordsAffected = 0 check) — it does not abort
+    /// the rest of the save, it just adds a warning and leaves that one row as it was.</summary>
+    private async Task PersistStagedClinicalVisitsAsync(
+        string rbse, CaseEditSessionState session, System.Data.IDbConnection connection, System.Data.IDbTransaction transaction,
+        List<string> warnings)
+    {
+        var persisted = (await clinicalRepository.GetVisitsByRbseAsync(rbse)).ToList();
+        var persistedById = persisted.ToDictionary(v => v.Id);
+        var stagedByExistingId = session.Visits.Where(v => v.Id is > 0).ToDictionary(v => v.Id!.Value);
+
+        foreach (var removed in persisted.Where(v => !stagedByExistingId.ContainsKey(v.Id)))
+        {
+            if (removed.RowStamp is null)
+                continue;
+
+            var deletedRows = await clinicalRepository.DeleteVisitAsync(removed.Id, removed.RowStamp, connection, transaction);
+            if (deletedRows == 0)
+                warnings.Add($"Failed to delete visit dated \"{removed.VisitDate:dd/MM/yyyy}\" - Data was changed by another user");
+        }
+
+        foreach (var staged in session.Visits)
+        {
+            if (staged.Id is null or <= 0)
+            {
+                await clinicalRepository.AddVisitAsync(new AddClinicalVisitCommand(rbse, staged.VisitDate), connection, transaction);
+                continue;
+            }
+
+            if (!persistedById.TryGetValue(staged.Id.Value, out var persistedVisit))
+                continue;
+
+            if (persistedVisit.VisitDate?.Date == staged.VisitDate?.Date)
+                continue;
+
+            var rowStamp = string.IsNullOrWhiteSpace(staged.RowStampBase64)
+                ? persistedVisit.RowStamp ?? []
+                : Convert.FromBase64String(staged.RowStampBase64);
+
+            var updatedRows = await clinicalRepository.EditVisitAsync(new EditClinicalVisitCommand(staged.Id.Value, staged.VisitDate, rowStamp), connection, transaction);
+            if (updatedRows == 0)
+                warnings.Add($"Failed to update visit dated \"{staged.VisitDate:dd/MM/yyyy}\" - Data was changed by another user");
+        }
+    }
+
+    /// <summary>Legacy parity: a stale RowStamp on a Linked Farm or Herd Size row is a soft, per-row
+    /// skip (matching clsFarm.OnHerdSizeRowUpdated's RecordsAffected = 0 check, applied the same way
+    /// to Linked Farms) — it does not abort the rest of the save, it just adds a warning and leaves
+    /// that one row as it was. Keyed by CPHH, not RBSE, unlike every other grid persisted here.</summary>
+    private async Task PersistStagedFarmCollectionsAsync(
+        string cphh, CaseEditSessionState session, System.Data.IDbConnection connection, System.Data.IDbTransaction transaction,
+        List<string> warnings)
+    {
+        var persistedLinked = (await farmRelationRepository.GetRelatedFarmAsync(cphh)).ToList();
+        var persistedLinkedById = persistedLinked.ToDictionary(x => x.ID);
+        var stagedLinkedByExistingId = session.LinkedFarms.Where(x => x.Id is > 0).ToDictionary(x => x.Id!.Value);
+
+        foreach (var removed in persistedLinked.Where(x => !stagedLinkedByExistingId.ContainsKey(x.ID) && x.RowStamp is not null))
+        {
+            var deletedRows = await farmRelationRepository.DeleteAsync(removed.ID, removed.RowStamp!, connection, transaction);
+            if (deletedRows == 0)
+                warnings.Add($"Failed to delete linked farm \"{removed.RelatedCPHH}\" - Data was changed by another user");
+        }
+
+        foreach (var newRow in session.LinkedFarms.Where(x => x.Id is null or <= 0))
+            await farmRelationRepository.AddAsync(cphh, CphhNormalizer.Normalize(newRow.RelatedCphh), connection, transaction);
+
+        foreach (var staged in session.LinkedFarms.Where(x => x.Id is > 0))
+        {
+            if (!persistedLinkedById.TryGetValue(staged.Id!.Value, out var persistedLink))
+                continue;
+
+            var persistedCphh = CphhNormalizer.Normalize(persistedLink.RelatedCPHH);
+            var stagedCphh = CphhNormalizer.Normalize(staged.RelatedCphh);
+            if (string.Equals(persistedCphh, stagedCphh, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var rowStamp = string.IsNullOrWhiteSpace(staged.RowStampBase64)
+                ? persistedLink.RowStamp
+                : Convert.FromBase64String(staged.RowStampBase64);
+            if (rowStamp is null)
+                continue;
+
+            var updatedRows = await farmRelationRepository.UpdateAsync(staged.Id.Value, stagedCphh, rowStamp, connection, transaction);
+            if (updatedRows == 0)
+                warnings.Add($"Failed to update linked farm \"{stagedCphh}\" - Data was changed by another user");
+        }
+
+        var persistedHerd = (await herdSizeRepository.GetByCphhAsync(cphh)).ToList();
+        var persistedHerdById = persistedHerd.ToDictionary(x => x.ID);
+        var stagedHerdByExistingId = session.HerdSizes.Where(x => x.Id is > 0).ToDictionary(x => x.Id!.Value);
+
+        foreach (var removed in persistedHerd.Where(x => !stagedHerdByExistingId.ContainsKey(x.ID) && x.RowStamp is not null))
+        {
+            var deletedRows = await herdSizeRepository.DeleteAsync(removed.ID, removed.RowStamp!, connection, transaction);
+            if (deletedRows == 0)
+                warnings.Add($"Failed to delete herd size for {removed.HerdYear} - Data was changed by another user");
+        }
+
+        foreach (var newRow in session.HerdSizes.Where(x => x.Id is null or <= 0))
+        {
+            await herdSizeRepository.AddAsync(new AddHerdSizeCommand(
+                cphh,
+                (short)newRow.HerdYear,
+                (short)newRow.TotalSize,
+                (short?)newRow.Lactation1Size,
+                (short?)newRow.Lactation2Size,
+                (short?)newRow.Lactation3Size,
+                (short?)newRow.Lactation4Size,
+                (short?)newRow.Lactation5Size,
+                (short?)newRow.Lactation6Size,
+                (short?)newRow.Lactation7Size,
+                (short?)newRow.Lactation8Size,
+                (short?)newRow.Lactation9Size,
+                (short?)newRow.Lactation10Size,
+                (short?)newRow.Lactation10PlusSize), connection, transaction);
+        }
+
+        foreach (var staged in session.HerdSizes.Where(x => x.Id is > 0))
+        {
+            if (!persistedHerdById.TryGetValue(staged.Id!.Value, out var persistedHerdRow))
+                continue;
+
+            if (!HasHerdSizeChanges(persistedHerdRow, staged))
+                continue;
+
+            var rowStamp = string.IsNullOrWhiteSpace(staged.RowStampBase64)
+                ? persistedHerdRow.RowStamp
+                : Convert.FromBase64String(staged.RowStampBase64);
+            if (rowStamp is null)
+                continue;
+
+            var updatedRows = await herdSizeRepository.UpdateAsync(new UpdateHerdSizeCommand(
+                staged.Id.Value,
+                (short)staged.HerdYear,
+                (short)staged.TotalSize,
+                (short?)staged.Lactation1Size,
+                (short?)staged.Lactation2Size,
+                (short?)staged.Lactation3Size,
+                (short?)staged.Lactation4Size,
+                (short?)staged.Lactation5Size,
+                (short?)staged.Lactation6Size,
+                (short?)staged.Lactation7Size,
+                (short?)staged.Lactation8Size,
+                (short?)staged.Lactation9Size,
+                (short?)staged.Lactation10Size,
+                (short?)staged.Lactation10PlusSize,
+                rowStamp), connection, transaction);
+            if (updatedRows == 0)
+                warnings.Add($"Failed to update herd size for {staged.HerdYear} - Data was changed by another user");
+        }
+    }
+
+    private static bool HasHerdSizeChanges(HerdSizeRecord persisted, CaseFarmDraftHerdSizeItem staged) =>
+        persisted.HerdYear != staged.HerdYear
+        || persisted.TotalSize != staged.TotalSize
+        || persisted.Lactation1Size != staged.Lactation1Size
+        || persisted.Lactation2Size != staged.Lactation2Size
+        || persisted.Lactation3Size != staged.Lactation3Size
+        || persisted.Lactation4Size != staged.Lactation4Size
+        || persisted.Lactation5Size != staged.Lactation5Size
+        || persisted.Lactation6Size != staged.Lactation6Size
+        || persisted.Lactation7Size != staged.Lactation7Size
+        || persisted.Lactation8Size != staged.Lactation8Size
+        || persisted.Lactation9Size != staged.Lactation9Size
+        || persisted.Lactation10Size != staged.Lactation10Size
+        || persisted.Lactation10PlusSize != staged.Lactation10PlusSize;
 
     /// <summary>Mirrors legacy BSELib.clsCase.CheckMandatoryFields: validates the Case and Farm rows
     /// together, using whatever is staged this round in preference to the currently persisted value.

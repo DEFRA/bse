@@ -7,6 +7,7 @@
     // Request.Query — doing so would leak ?handler=Delete/AddToGrid into them after a postback.
     var sortBaseUrl = "?";
     ViewData["PageNumber"] = Model.PageNumber;
+    ViewData["Fragment"] = "rbse-grid";
 }
 
 
@@ -54,7 +55,7 @@
 </form>
 
 @* Grid Display *@
-<h3 class="govuk-heading-s govuk-!-margin-top-6">RBSE records in batch</h3>
+<h3 id="rbse-grid" class="govuk-heading-s govuk-!-margin-top-6">RBSE records in batch</h3>
 <table class="govuk-table">
     <thead class="govuk-table__head">
         <tr class="govuk-table__row">

@@ -1,13 +1,5 @@
 namespace BSE.SharedKernel;
 
-public sealed class CaseEditDraftState
-{
-    public string Rbse { get; set; } = string.Empty;
-    public List<CaseEditDraftTestItem> Tests { get; set; } = [];
-    public List<CaseEditDraftOtherOwnerItem> OtherOwners { get; set; } = [];
-    public bool HasPendingChanges { get; set; }
-}
-
 public sealed class CaseEditDraftTestItem
 {
     public string ClientKey { get; set; } = Guid.NewGuid().ToString("N");

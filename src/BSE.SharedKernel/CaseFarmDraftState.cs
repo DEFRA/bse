@@ -1,16 +1,5 @@
 namespace BSE.SharedKernel;
 
-public sealed class CaseFarmDraftState
-{
-    public string Rbse { get; set; } = string.Empty;
-    public string Cphh { get; set; } = string.Empty;
-    public List<CaseFarmDraftLinkedFarmItem> LinkedFarms { get; set; } = [];
-    public List<CaseFarmDraftHerdSizeItem> HerdSizes { get; set; } = [];
-
-    // True once any add/edit/delete has been staged since the draft was created from the DB.
-    public bool HasPendingChanges { get; set; }
-}
-
 public sealed class CaseFarmDraftLinkedFarmItem
 {
     public string ClientKey { get; set; } = Guid.NewGuid().ToString("N");

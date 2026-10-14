@@ -17,8 +17,10 @@ public interface IClinicalRepository
     /// failure.</summary>
     Task<string?> EditAsync(EditCaseClinicalCommand command, IDbConnection connection, IDbTransaction transaction);
     Task AddVisitAsync(AddClinicalVisitCommand command, IDbConnection connection, IDbTransaction transaction);
-    Task EditVisitAsync(EditClinicalVisitCommand command, IDbConnection connection, IDbTransaction transaction);
-    Task DeleteVisitAsync(int id, byte[] rowStamp, IDbConnection connection, IDbTransaction transaction);
+    /// <summary>Returns rows affected — 0 means the row's RowStamp was stale (changed by another user).</summary>
+    Task<int> EditVisitAsync(EditClinicalVisitCommand command, IDbConnection connection, IDbTransaction transaction);
+    /// <summary>Returns rows affected — 0 means the row's RowStamp was stale (changed by another user).</summary>
+    Task<int> DeleteVisitAsync(int id, byte[] rowStamp, IDbConnection connection, IDbTransaction transaction);
 }
 
 public sealed class ClinicalRepository : DapperRepository, IClinicalRepository
@@ -61,11 +63,11 @@ public sealed class ClinicalRepository : DapperRepository, IClinicalRepository
     public Task AddVisitAsync(AddClinicalVisitCommand c, IDbConnection conn, IDbTransaction tx)
         => ExecuteAsync("AddClinicalVisit", new { RBSE = c.Rbse, VisitDate = c.VisitDate }, conn, tx);
 
-    public Task EditVisitAsync(EditClinicalVisitCommand c, IDbConnection conn, IDbTransaction tx)
-        => ExecuteAsync("EditClinicalVisit", new { ID = c.Id, VisitDate = c.VisitDate, RowStamp = c.RowStamp }, conn, tx);
+    public Task<int> EditVisitAsync(EditClinicalVisitCommand c, IDbConnection conn, IDbTransaction tx)
+        => ExecuteWithRowCountAsync("EditClinicalVisit", new { ID = c.Id, VisitDate = c.VisitDate, RowStamp = c.RowStamp }, conn, tx);
 
-    public Task DeleteVisitAsync(int id, byte[] rowStamp, IDbConnection conn, IDbTransaction tx)
-        => ExecuteAsync("DeleteClinicalVisit", new { ID = id, RowStamp = rowStamp }, conn, tx);
+    public Task<int> DeleteVisitAsync(int id, byte[] rowStamp, IDbConnection conn, IDbTransaction tx)
+        => ExecuteWithRowCountAsync("DeleteClinicalVisit", new { ID = id, RowStamp = rowStamp }, conn, tx);
 
     private static object BuildClinicalParams(string rbse, dynamic c) => new
     {

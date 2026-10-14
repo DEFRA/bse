@@ -24,7 +24,7 @@ public class BabModel(
     ILookupDataService lookups,
     IBatchRepository batchRepository,
     IDbConnectionFactory connectionFactory,
-    ICaseScalarDraftStateService caseScalarDraftState,
+    ICaseEditSessionStateService sessionState,
     ICaseDraftDiscardService caseDraftDiscard,
     ICaseEditOrchestrationService caseEditOrchestration,
     ICurrentUserService currentUser,
@@ -82,9 +82,13 @@ public class BabModel(
         // Legacy parity: BAB only ever becomes editable once Date of Birth is set (or a BAB row
         // already exists) — EvaluateLegacyBabEditPermission already covers "case doesn't exist yet"
         // the same way it covers "no Date of Birth yet", so no separate block is needed here.
+        // btnSave_Click still runs unconditionally in legacy even when this tab's own fields are
+        // read-only (e.g. VLA Data Entry) — the disabled fieldset means the browser never posts
+        // this tab's field values anyway, so only this tab's own staging is skipped here; whatever
+        // other tabs have staged is still committed.
         var canEdit = EvaluateLegacyBabEditPermission(currentBirthDate, currentBab);
         if (!canEdit)
-            return RedirectToPage(new { rbse = Rbse });
+            return await CommitStagedChangesOnlyAsync();
 
         var normalisedNatalCphh = CphhNormalizer.Normalize(Bab.NatalCphh);
         if (!string.IsNullOrWhiteSpace(normalisedNatalCphh) && normalisedNatalCphh.Length != 11)
@@ -121,13 +125,16 @@ public class BabModel(
                 Bab.TracedPostcode, Bab.FeedRisk, Bab.HorizontalRisk, Bab.MaternalRisk,
                 rowStamp);
 
-            var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
-            draft.BabBaseRowStampBase64 ??= rowStampBase64;
+            var draft = await sessionState.GetAsync(Rbse) ?? new CaseEditSessionState { Rbse = Rbse };
+            // Always trust the freshly posted rowstamp over any earlier-pinned one — a stale pin
+            // left over from an earlier stage this session causes a false "modified by another
+            // user" error on the very next Save even with a single user involved.
+            draft.BabBaseRowStampBase64 = rowStampBase64;
             draft.Bab = edit with { RowStamp = Convert.FromBase64String(draft.BabBaseRowStampBase64) };
             draft.BabOrigin = Origin;
             StageCaseOrigin(draft, currentCase);
             draft.HasPendingChanges = true;
-            await caseScalarDraftState.SetAsync(draft);
+            await sessionState.SetAsync(draft);
 
             var userId = await currentUser.GetUserIdAsync();
             var (failureRedirect, commitOutcome) = await CaseCommitHelper.CommitAllAsync(
@@ -156,6 +163,24 @@ public class BabModel(
 
         // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx on a fully successful
         // save, clearing the session case state — not back to the tab the user was on.
+        return RedirectToPage("/Home");
+    }
+
+    /// <summary>Commits whatever is already staged for this RBSE across every tab, without
+    /// touching BAB's own fields — used when this tab's own fields are read-only (see
+    /// <see cref="OnPostSaveBabAsync"/>).</summary>
+    private async Task<IActionResult> CommitStagedChangesOnlyAsync()
+    {
+        var userId = await currentUser.GetUserIdAsync();
+        var (failureRedirect, commitOutcome) = await CaseCommitHelper.CommitAllAsync(
+            this, caseEditOrchestration, Rbse, userId,
+            result => $"Unable to save BAB changes: {result}.");
+        if (failureRedirect is not null)
+            return failureRedirect;
+
+        if (CaseCommitHelper.TryStageWarnings(this, commitOutcome!, Rbse) is { } warningRedirect)
+            return warningRedirect;
+
         return RedirectToPage("/Home");
     }
 
@@ -212,8 +237,10 @@ public class BabModel(
             Bab.TracedPostcode, Bab.FeedRisk, Bab.HorizontalRisk, Bab.MaternalRisk,
             rowStamp);
 
-        var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
-        draft.BabBaseRowStampBase64 ??= rowStampBase64 ?? string.Empty;
+        var draft = await sessionState.GetAsync(Rbse) ?? new CaseEditSessionState { Rbse = Rbse };
+        // Always trust the freshly posted rowstamp over any earlier-pinned one — see the Save
+        // handler above for why a stale pin causes a false concurrency conflict.
+        draft.BabBaseRowStampBase64 = rowStampBase64 ?? string.Empty;
         var stagedEdit = edit with { RowStamp = Convert.FromBase64String(draft.BabBaseRowStampBase64) };
 
         // Legacy parity: merely switching tabs without typing anything must not trip the
@@ -237,14 +264,14 @@ public class BabModel(
         StageCaseOrigin(draft, currentCase);
         if (originChanged || DraftChangeDetector.IsDifferentFromPersisted(stagedEdit, baseline))
             draft.HasPendingChanges = true;
-        await caseScalarDraftState.SetAsync(draft);
+        await sessionState.SetAsync(draft);
 
         return RedirectToPage(targetPage, new { rbse = Rbse });
     }
 
     private async Task ApplyStagedBabOverlayAsync()
     {
-        var staged = await caseScalarDraftState.GetAsync(Rbse);
+        var staged = await sessionState.GetAsync(Rbse);
         if (staged?.Bab is not null)
             Bab.ApplyStagedCommand(staged.Bab);
     }
@@ -255,7 +282,7 @@ public class BabModel(
     /// alone (only read at commit time by the BAB repository calls) never reached the shared Case
     /// draft those other tabs' overlay logic reads, so the cascade was invisible until a full
     /// Save-and-reload.</summary>
-    private void StageCaseOrigin(CaseScalarDraftState draft, CaseRecord? caseRecord)
+    private void StageCaseOrigin(CaseEditSessionState draft, CaseRecord? caseRecord)
     {
         var baseCommand = draft.Case;
         if (baseCommand is null)
@@ -280,7 +307,7 @@ public class BabModel(
     /// row-exists guard.</summary>
     private async Task ClearPurchaseFieldsIfPresentAsync()
     {
-        var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
+        var draft = await sessionState.GetAsync(Rbse) ?? new CaseEditSessionState { Rbse = Rbse };
 
         var baseCommand = draft.Case;
         if (baseCommand is null)
@@ -302,7 +329,7 @@ public class BabModel(
 
         draft.Case = baseCommand with { PurchaseDate = null, PurchasedCounty = null, PurchaseAgeInMonths = null };
         draft.HasPendingChanges = true;
-        await caseScalarDraftState.SetAsync(draft);
+        await sessionState.SetAsync(draft);
     }
 
     public async Task<IActionResult> OnGetCancelBabEdit()
@@ -366,7 +393,7 @@ public class BabModel(
     /// deliberate clear, not a gap to fill from the stale DB value.</summary>
     private async Task<(DateTime? BirthDate, string? Origin, bool HasPurchaseData)> ResolveEffectiveCaseScalarsAsync(CaseRecord? caseRecord)
     {
-        var staged = (await caseScalarDraftState.GetAsync(Rbse))?.Case;
+        var staged = (await sessionState.GetAsync(Rbse))?.Case;
 
         var birthDate           = staged is not null ? staged.BirthDate : caseRecord?.BirthDate;
         var origin               = staged is not null ? staged.Origin : caseRecord?.Origin;

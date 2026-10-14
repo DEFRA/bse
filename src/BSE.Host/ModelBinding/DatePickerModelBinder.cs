@@ -10,7 +10,7 @@ namespace BSE.Host.ModelBinding;
 /// </summary>
 public sealed class DatePickerModelBinder : IModelBinder
 {
-    public const string InvalidFormatMessage = "Enter a date in the format 17/05/2024.";
+    public const string InvalidFormatMessage = "Please enter a valid date";
 
     // yyyy-MM-dd is also accepted so hidden pass-through fields on the same view model
     // (rendered with an explicit ISO value, not via the MOJ picker) keep round-tripping.

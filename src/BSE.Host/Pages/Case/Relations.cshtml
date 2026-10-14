@@ -84,6 +84,11 @@
     var canEditDamSection = canEditRelations;
     var canEditSireSection = canEditRelations && User.IsInRole("VLAAccess") && !isDefraGroup;
     var canEditOtherRelations = canEditSireSection;
+    var relationRbseIsValid = !string.IsNullOrWhiteSpace(Model.RelationRbse) && !Model.RelationFieldErrors.ContainsKey("RelationRbse");
+    // Legacy EnableRelationsControlsForRBSE: once a relation RBSE is set, Sex/Fate/Eartag/birth
+    // date/left date/Sire are derived from the related case and must render disabled immediately
+    // on the server round-trip from Change — not only after the client-side blur lookup re-applies it.
+    var relatedFieldsDisabled = !string.IsNullOrWhiteSpace(Model.RelationRbse);
     var d = Model.DamSire;
     var damLinked = !string.IsNullOrWhiteSpace(d.DamRbse);
     var sireLinked = !string.IsNullOrWhiteSpace(d.SireRbse);
@@ -228,7 +233,7 @@
                 }
                 @if (sireLinked)
                 {
-                    <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationsView" asp-route-rbse="@d.SireRbse">View Sire's Relations</a>
+                    <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationsView" asp-route-rbse="@d.SireRbse" asp-route-returnUrl="@(HttpContext.Request.Path + HttpContext.Request.QueryString)">View Sire's Relations</a>
                 }
             </div>
         }
@@ -415,7 +420,7 @@
                 }
                 @if (damLinked)
                 {
-                    <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationsView" asp-route-rbse="@d.DamRbse">View Dam's Relations</a>
+                    <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationsView" asp-route-rbse="@d.DamRbse" asp-route-returnUrl="@(HttpContext.Request.Path + HttpContext.Request.QueryString)">View Dam's Relations</a>
                 }
             </div>
         }
@@ -515,6 +520,7 @@
                 <tr class="govuk-table__row">
                     @{
                         var relBase = Url.Page("/Case/Relations", new { rbse = Model.Rbse });
+                        ViewData["PageNumber"] = Model.PageNumber;
                     }
                     @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Relation Type", ["Column"]="RelationType", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
                     @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="RBSE", ["Column"]="RelationRbse", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
@@ -556,7 +562,7 @@
                                     <div class="bse-row-actions">
                                         <button type="submit" asp-page-handler="BeginEditRelationRow" asp-route-clientKey="@r.ClientKey"
                                                 class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">
-                                            Change<span class="govuk-visually-hidden"> relation @(r.RelationTypeDesc ?? r.RelationType)</span>
+                                            Select<span class="govuk-visually-hidden"> relation @(r.RelationTypeDesc ?? r.RelationType)</span>
                                         </button>
                                         <button type="submit" asp-page-handler="DeleteRelationRow" asp-route-clientKey="@r.ClientKey"
                                                 class="govuk-button govuk-button--warning govuk-!-margin-bottom-0" data-module="govuk-button">
@@ -607,7 +613,7 @@
                 <div class="govuk-form-group bse-relations-field-row govuk-!-margin-bottom-3 @(Model.RelationFieldErrors.ContainsKey("Sex") ? "govuk-form-group--error" : "")">
                     <label class="govuk-label" for="sex">Sex</label>
                     @if (Model.RelationFieldErrors.TryGetValue("Sex", out var sexError)) { <p class="govuk-error-message bse-relations-field-error"><span class="govuk-visually-hidden">Error:</span> @sexError</p> }
-                    <select id="sex" name="Sex" class="govuk-select bse-relations-field-input @(Model.RelationFieldErrors.ContainsKey("Sex") ? "govuk-select--error" : "")">
+                    <select id="sex" name="Sex" class="govuk-select bse-relations-field-input @(Model.RelationFieldErrors.ContainsKey("Sex") ? "govuk-select--error" : "")" disabled="@(relatedFieldsDisabled ? "disabled" : null)">
                         <option value=""></option>
                         @foreach (var s in Model.Sexes)
                         {
@@ -617,7 +623,7 @@
                 </div>
                 <div class="govuk-form-group bse-relations-field-row govuk-!-margin-bottom-3">
                     <label class="govuk-label" for="relation-fate">Fate</label>
-                    <select id="relation-fate" name="RelationFate" class="govuk-select bse-relations-field-input">
+                    <select id="relation-fate" name="RelationFate" class="govuk-select bse-relations-field-input" disabled="@(relatedFieldsDisabled ? "disabled" : null)">
                         <option value=""></option>
                         @foreach (var f in Model.RelationFates)
                         {
@@ -628,18 +634,26 @@
                 <div class="govuk-form-group bse-relations-field-row govuk-!-margin-bottom-3">
                     <label class="govuk-label" for="eartag-country">Eartag</label>
                     <div class="bse-relations-eartag-inputs">
-                        <input id="eartag-country" name="EartagCountry" type="text" maxlength="5" value="@Model.EartagCountry" class="govuk-input bse-relations-eartag-country" />
+                        <input id="eartag-country" name="EartagCountry" type="text" maxlength="5" value="@Model.EartagCountry" class="govuk-input bse-relations-eartag-country" disabled="@(relatedFieldsDisabled ? "disabled" : null)" />
                         <label class="govuk-visually-hidden" for="eartag-herdmark">Eartag herdmark</label>
-                        <input id="eartag-herdmark" name="EartagHerdmark" type="text" value="@Model.EartagHerdmark" class="govuk-input bse-relations-eartag-herdmark" />
+                        <input id="eartag-herdmark" name="EartagHerdmark" type="text" value="@Model.EartagHerdmark" class="govuk-input bse-relations-eartag-herdmark" disabled="@(relatedFieldsDisabled ? "disabled" : null)" />
                         <label class="govuk-visually-hidden" for="eartag">Eartag number</label>
-                        <input id="eartag" name="Eartag" type="text" value="@Model.Eartag" class="govuk-input bse-relations-eartag-number" />
+                        <input id="eartag" name="Eartag" type="text" value="@Model.Eartag" class="govuk-input bse-relations-eartag-number" disabled="@(relatedFieldsDisabled ? "disabled" : null)" />
                     </div>
                 </div>
 
                 @if (canEditOtherRelations)
                 {
                     <div class="govuk-button-group govuk-!-margin-top-2 govuk-!-margin-bottom-0">
-                        <button type="submit" asp-page-handler="AddRelationRow" class="govuk-button govuk-button--secondary" data-module="govuk-button">Add As New</button>
+                        @* Only rendered for a selected row with a valid RBSE — not shown at all otherwise. *@
+                        @if (isEditingRelation && relationRbseIsValid)
+                        {
+                            <a id="view-relation-rbse-link" class="govuk-button govuk-button--secondary"
+                               href="@Url.Page("/Case/RelationsView", new { rbse = Model.RelationRbse, returnUrl = HttpContext.Request.Path + HttpContext.Request.QueryString })"
+                               role="button" draggable="false" data-module="govuk-button">View Relations</a>
+                        }
+                        @* Legacy disables btnAddAsNew once a grid row is selected (grdRelations_SelectedIndexChanged). *@
+                        <button type="submit" asp-page-handler="AddRelationRow" class="govuk-button govuk-button--secondary" data-module="govuk-button" disabled="@isEditingRelation">Add As New</button>
                         @if (isEditingRelation)
                         {
                             <button type="submit" asp-page-handler="UpdateRelationRow" class="govuk-button govuk-button--secondary" data-module="govuk-button">Update Selected</button>
@@ -663,19 +677,19 @@
                     @if (Model.RelationFieldErrors.TryGetValue("BirthMonth", out var birthMonthError)) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @birthMonthError</p> }
                     @if (Model.RelationFieldErrors.TryGetValue("BirthYear", out var birthYearError)) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @birthYearError</p> }
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input id="birth-date" name="BirthDate" type="text" value="@(Model.BirthDate?.ToString("dd/MM/yyyy"))" class="govuk-input bse-relations-field-input moj-js-datepicker-input" autocomplete="off" placeholder="dd/mm/yyyy" />
+                        <input id="birth-date" name="BirthDate" type="text" value="@(Model.BirthDate?.ToString("dd/MM/yyyy"))" class="govuk-input bse-relations-field-input moj-js-datepicker-input" autocomplete="off" placeholder="dd/mm/yyyy" disabled="@(relatedFieldsDisabled ? "disabled" : null)" />
                     </div>
                 </div>
                 <div class="govuk-form-group bse-relations-field-row govuk-!-margin-bottom-3 @(Model.RelationFieldErrors.ContainsKey("LeftDate") ? "govuk-form-group--error" : "")">
                     <label class="govuk-label" for="left-date">Date Left</label>
                     @if (Model.RelationFieldErrors.TryGetValue("LeftDate", out var leftDateError)) { <p class="govuk-error-message bse-relations-field-error"><span class="govuk-visually-hidden">Error:</span> @leftDateError</p> }
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input id="left-date" name="LeftDate" type="text" value="@(Model.LeftDate?.ToString("dd/MM/yyyy"))" class="govuk-input bse-relations-field-input moj-js-datepicker-input" autocomplete="off" placeholder="dd/mm/yyyy" />
+                        <input id="left-date" name="LeftDate" type="text" value="@(Model.LeftDate?.ToString("dd/MM/yyyy"))" class="govuk-input bse-relations-field-input moj-js-datepicker-input" autocomplete="off" placeholder="dd/mm/yyyy" disabled="@(relatedFieldsDisabled ? "disabled" : null)" />
                     </div>
                 </div>
                 <div class="govuk-form-group bse-relations-field-row govuk-!-margin-bottom-3">
                     <label class="govuk-label" for="sire">Sire</label>
-                    <input id="sire" name="Sire" type="text" maxlength="5" value="@Model.Sire" class="govuk-input bse-relations-field-input" />
+                    <input id="sire" name="Sire" type="text" maxlength="5" value="@Model.Sire" class="govuk-input bse-relations-field-input" disabled="@(relatedFieldsDisabled ? "disabled" : null)" />
                 </div>
             </div>
         </div>
@@ -978,12 +992,34 @@
             var rbseInput = document.getElementById('relation-rbse');
             var rbseGroup = document.getElementById('relation-rbse-group');
             var rbseStar = document.getElementById('relation-rbse-star');
+            var viewRelationsLink = document.getElementById('view-relation-rbse-link');
             var relatedFields = ['sex', 'relation-fate', 'eartag-country', 'eartag-herdmark', 'eartag', 'birth-date', 'left-date', 'sire']
                 .map(function (id) { return document.getElementById(id); })
                 .filter(Boolean);
 
             if (!rbseInput) {
                 return;
+            }
+
+            function setViewRelationsLink(rbse, enabled) {
+                if (!viewRelationsLink) return;
+                viewRelationsLink.classList.toggle('govuk-button--disabled', !enabled);
+                viewRelationsLink.setAttribute('aria-disabled', enabled ? 'false' : 'true');
+                if (enabled) {
+                    viewRelationsLink.removeAttribute('tabindex');
+                    viewRelationsLink.href = '@Url.Page("/Case/RelationsView")?rbse=' + encodeURIComponent(rbse) + '&returnUrl=' + encodeURIComponent(window.location.pathname + window.location.search);
+                } else {
+                    viewRelationsLink.setAttribute('tabindex', '-1');
+                    viewRelationsLink.href = '#';
+                }
+            }
+
+            if (viewRelationsLink) {
+                viewRelationsLink.addEventListener('click', function (e) {
+                    if (viewRelationsLink.getAttribute('aria-disabled') === 'true') {
+                        e.preventDefault();
+                    }
+                });
             }
 
             function setField(id, value) {
@@ -1021,6 +1057,7 @@
                     clearRelatedFields();
                     setRelatedFieldsDisabled(false);
                     setInvalidIndicator(false);
+                    setViewRelationsLink(rbse, false);
                     return;
                 }
 
@@ -1031,6 +1068,7 @@
                             clearRelatedFields();
                             setRelatedFieldsDisabled(false);
                             setInvalidIndicator(true);
+                            setViewRelationsLink(rbse, false);
                             return;
                         }
 
@@ -1044,6 +1082,7 @@
                         setField('sire', result.sire);
                         setRelatedFieldsDisabled(true);
                         setInvalidIndicator(false);
+                        setViewRelationsLink(rbse, true);
                     })
                     .catch(function () { /* network error — leave fields/indicator as last entered */ });
             }

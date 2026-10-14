@@ -36,8 +36,7 @@ public class FarmModel(
     ILookupDataService lookups,
     IBatchRepository batchRepository,
     ICaseWizardStateService wizardState,
-    ICaseFarmDraftStateService farmDraftState,
-    ICaseScalarDraftStateService caseScalarDraftState,
+    ICaseEditSessionStateService sessionState,
     ICaseDraftDiscardService caseDraftDiscard,
     ICaseEditOrchestrationService caseEditOrchestration,
     ICurrentUserService currentUser,
@@ -230,7 +229,7 @@ public class FarmModel(
                 ? CphhNormalizer.Normalize(NewCphh)
                 : null;
 
-        var stagedScalars = await caseScalarDraftState.GetAsync(Rbse);
+        var stagedScalars = await sessionState.GetAsync(Rbse);
         if (stagedScalars?.Farm is not null
             && (requestedCphh is null
                 || string.Equals(CphhNormalizer.Normalize(stagedScalars.Farm.CPHH), requestedCphh, StringComparison.OrdinalIgnoreCase)))
@@ -262,7 +261,7 @@ public class FarmModel(
     {
         if (string.IsNullOrWhiteSpace(editableFarm.CPHH))
         {
-            var existingDraft = await farmDraftState.GetAsync(Rbse);
+            var existingDraft = await sessionState.GetAsync(Rbse);
             if (!string.IsNullOrWhiteSpace(existingDraft?.Cphh))
                 editableFarm.CPHH = CphhNormalizer.Normalize(existingDraft.Cphh);
         }
@@ -384,15 +383,8 @@ public class FarmModel(
         if (failureRedirect is not null)
             return failureRedirect;
 
-        // For a brand-new farm, Farm was null when the method started (nothing to fetch by CPHH
-        // yet) — CommitAllAsync has just created its DB row, so without re-fetching here,
-        // PersistStagedCollectionsAsync's own Farm-is-null guard would silently drop every linked
-        // farm/herd size staged while the farm itself was still unsaved.
-        Farm ??= await farmService.GetByCphhAsync(normalisedCphh);
-
-        await PersistStagedCollectionsAsync();
-        await farmDraftState.ClearAsync(Rbse);
-
+        // Herd Size/Linked Farms now persist inside CommitAllAsync itself (same transaction as the
+        // brand-new Farm/Case rows), so no separate step or Farm-refetch guard is needed here.
         if (CaseCommitHelper.TryStageWarnings(this, commitOutcome!, Rbse) is { } warningRedirect)
             return warningRedirect;
 
@@ -407,7 +399,7 @@ public class FarmModel(
     /// Case (DEFRA) tab is never overwritten by this form's narrower field set.</summary>
     private async Task StageNewCaseScalarFieldsIfNoneStagedAsync()
     {
-        var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
+        var draft = await sessionState.GetAsync(Rbse) ?? new CaseEditSessionState { Rbse = Rbse };
         if (draft.Case is not null)
             return;
 
@@ -427,7 +419,7 @@ public class FarmModel(
             OnsetAgeInMonths: null, SlaughterDate: null, RowStamp: [],
             AlternateDiagnosis: null, LabComment: null, CaseType: NewCaseType);
         draft.HasPendingChanges = true;
-        await caseScalarDraftState.SetAsync(draft);
+        await sessionState.SetAsync(draft);
     }
 
     private void ValidateNewFarmDetails(FarmEditViewModel editableFarm)
@@ -570,8 +562,8 @@ public class FarmModel(
             Status = await GetLinkedFarmStatusAsync(normalisedCphh)
         });
 
-        draft.HasPendingChanges = true;
-        await farmDraftState.SetAsync(draft);
+        draft.HasFarmCollectionsChanges = true;
+        await sessionState.SetAsync(draft);
 
         return RedirectToPage(new { rbse = Rbse });
     }
@@ -623,8 +615,7 @@ public class FarmModel(
         if (failureRedirect is not null)
             return failureRedirect;
 
-        await PersistStagedCollectionsAsync();
-        await farmDraftState.ClearAsync(Rbse);
+        // Herd Size/Linked Farms now persist inside CommitAllAsync itself.
 
         if (CaseCommitHelper.TryStageWarnings(this, commitOutcome!, Rbse) is { } warningRedirect)
             return warningRedirect;
@@ -739,22 +730,15 @@ public class FarmModel(
     }
 
     /// <summary>Writes the Farm tab's current field values into the shared cross-tab scalar
-    /// draft (BSE.Host.Services.CaseScalarDraftState), without committing to the database.</summary>
+    /// draft (BSE.Host.Services.CaseEditSessionState), without committing to the database.</summary>
     private async Task StageFarmScalarEditAsync(UpdateFarmCommand command)
     {
-        var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
+        var draft = await sessionState.GetAsync(Rbse) ?? new CaseEditSessionState { Rbse = Rbse };
 
-        // Looking up a *different* CPHH after an earlier one was already staged must not keep the
-        // previous farm's baseline rowstamp (wrong farm's concurrency token) or treat its scalar
-        // fields as the comparison baseline for "has this round's edit actually changed anything" —
-        // same staleness class already fixed for the Linked Farms/Herd Size grid draft.
-        if (draft.Farm is not null
-            && !string.Equals(CphhNormalizer.Normalize(draft.Farm.CPHH), CphhNormalizer.Normalize(command.CPHH), StringComparison.OrdinalIgnoreCase))
-        {
-            draft.FarmBaseRowStampBase64 = null;
-        }
-
-        draft.FarmBaseRowStampBase64 ??= EditableFarmRowStampBase64;
+        // Always trust the freshly posted rowstamp over any earlier-pinned one — this also
+        // subsumes the old CPHH-mismatch-only reset, since a stale pin is now never kept
+        // regardless of whether the CPHH changed.
+        draft.FarmBaseRowStampBase64 = EditableFarmRowStampBase64;
         var baseRowStamp = string.IsNullOrWhiteSpace(draft.FarmBaseRowStampBase64)
             ? null
             : Convert.FromBase64String(draft.FarmBaseRowStampBase64);
@@ -769,7 +753,7 @@ public class FarmModel(
         draft.Farm = command;
         if (DraftChangeDetector.IsDifferentFromPersisted(command, baseline))
             draft.HasPendingChanges = true;
-        await caseScalarDraftState.SetAsync(draft);
+        await sessionState.SetAsync(draft);
     }
 
     /// <summary>Undoes <c>LoadAsync()</c>'s overwrite of <see cref="EditableFarm"/> with the
@@ -932,8 +916,8 @@ public class FarmModel(
 
         item.RelatedCphh = normalisedCphh;
         item.Status = await GetLinkedFarmStatusAsync(normalisedCphh);
-        draft.HasPendingChanges = true;
-        await farmDraftState.SetAsync(draft);
+        draft.HasFarmCollectionsChanges = true;
+        await sessionState.SetAsync(draft);
 
         return RedirectToPage(new { rbse = Rbse });
     }
@@ -958,8 +942,8 @@ public class FarmModel(
         if (item is not null)
         {
             draft.LinkedFarms.Remove(item);
-            draft.HasPendingChanges = true;
-            await farmDraftState.SetAsync(draft);
+            draft.HasFarmCollectionsChanges = true;
+            await sessionState.SetAsync(draft);
         }
 
         return RedirectToPage(new { rbse = Rbse });
@@ -1078,8 +1062,8 @@ public class FarmModel(
             Lactation10Size = postedRow.Lactation10Size,
             Lactation10PlusSize = postedRow.Lactation10PlusSize
         });
-        draft.HasPendingChanges = true;
-        await farmDraftState.SetAsync(draft);
+        draft.HasFarmCollectionsChanges = true;
+        await sessionState.SetAsync(draft);
 
         return RedirectToPage(new { rbse = Rbse });
     }
@@ -1134,8 +1118,8 @@ public class FarmModel(
         item.Lactation9Size = postedRow.Lactation9Size;
         item.Lactation10Size = postedRow.Lactation10Size;
         item.Lactation10PlusSize = postedRow.Lactation10PlusSize;
-        draft.HasPendingChanges = true;
-        await farmDraftState.SetAsync(draft);
+        draft.HasFarmCollectionsChanges = true;
+        await sessionState.SetAsync(draft);
 
         return RedirectToPage(new { rbse = Rbse });
     }
@@ -1160,8 +1144,8 @@ public class FarmModel(
         if (item is not null)
         {
             draft.HerdSizes.Remove(item);
-            draft.HasPendingChanges = true;
-            await farmDraftState.SetAsync(draft);
+            draft.HasFarmCollectionsChanges = true;
+            await sessionState.SetAsync(draft);
         }
 
         return RedirectToPage(new { rbse = Rbse });
@@ -1331,7 +1315,7 @@ public class FarmModel(
             // AuthorityID, so building it from the stale DB-loaded IDs (before this overlay)
             // leaves the restored County/Local Authority/ADNS Region with no matching <option>,
             // which renders as if the edit had been silently discarded.
-            var stagedScalars = await caseScalarDraftState.GetAsync(Rbse);
+            var stagedScalars = await sessionState.GetAsync(Rbse);
             logger.LogWarning(
                 "Farm scalar stage READ: Rbse={Rbse} found={Found} OwnerName={OwnerName} County={County}",
                 Rbse, stagedScalars?.Farm is not null, stagedScalars?.Farm?.OwnerName, stagedScalars?.Farm?.County);
@@ -1670,13 +1654,13 @@ public class FarmModel(
         return hasHerdErrors;
     }
 
-    private async Task<CaseFarmDraftState> LoadOrInitializeDraftStateAsync()
+    private async Task<CaseEditSessionState> LoadOrInitializeDraftStateAsync()
     {
         // Must still read any already-staged draft even when Farm is null (a brand-new case's
         // farm has no DB row yet) — otherwise linked farms/herd sizes added via Add/Confirm before
-        // the farm itself is saved are written to farmDraftState but never read back for display,
+        // the farm itself is saved are written to the session but never read back for display,
         // which looks exactly like the Add button silently doing nothing.
-        var draft = await farmDraftState.GetAsync(Rbse);
+        var draft = await sessionState.GetAsync(Rbse) ?? new CaseEditSessionState { Rbse = Rbse };
 
         // A failed Save attempt before any CPHH was entered (OnPostCreateCaseAsync calls this method
         // even when ModelState is invalid) caches an empty shell draft with no CPHH/linked farms/herd
@@ -1684,45 +1668,48 @@ public class FarmModel(
         // session, must not keep showing the first farm's already-cached Linked Farms/Herd Size rows
         // — reseed from the newly resolved farm's own persisted data whenever the staged Cphh no
         // longer matches it, exactly as a brand-new draft would.
-        var needsSeedFromPersisted = draft is null
+        var needsSeedFromPersisted = (draft.LinkedFarms.Count == 0 && draft.HerdSizes.Count == 0 && !draft.HasFarmCollectionsChanges)
             || (Farm is not null && !string.Equals(draft.Cphh, Farm.CPHH, StringComparison.OrdinalIgnoreCase));
 
         if (needsSeedFromPersisted)
         {
-            draft = Farm is null
-                ? new CaseFarmDraftState { Rbse = Rbse }
-                : new CaseFarmDraftState
+            if (Farm is null)
+            {
+                draft.Cphh = string.Empty;
+                draft.LinkedFarms = [];
+                draft.HerdSizes = [];
+            }
+            else
+            {
+                draft.Cphh = Farm.CPHH;
+                draft.LinkedFarms = PersistedLinkedFarms.Select(x => new CaseFarmDraftLinkedFarmItem
                 {
-                    Rbse = Rbse,
-                    Cphh = Farm.CPHH,
-                    LinkedFarms = PersistedLinkedFarms.Select(x => new CaseFarmDraftLinkedFarmItem
-                    {
-                        Id = x.ID,
-                        RelatedCphh = x.RelatedCPHH,
-                        RowStampBase64 = x.RowStamp is null ? string.Empty : Convert.ToBase64String(x.RowStamp),
-                        Status = x.Status ?? string.Empty
-                    }).ToList(),
-                    HerdSizes = PersistedHerdSizes.Select(x => new CaseFarmDraftHerdSizeItem
-                    {
-                        ClientKey = Guid.NewGuid().ToString("N"),
-                        Id = x.ID,
-                        HerdYear = x.HerdYear,
-                        TotalSize = x.TotalSize,
-                        Lactation1Size = x.Lactation1Size,
-                        Lactation2Size = x.Lactation2Size,
-                        Lactation3Size = x.Lactation3Size,
-                        Lactation4Size = x.Lactation4Size,
-                        Lactation5Size = x.Lactation5Size,
-                        Lactation6Size = x.Lactation6Size,
-                        Lactation7Size = x.Lactation7Size,
-                        Lactation8Size = x.Lactation8Size,
-                        Lactation9Size = x.Lactation9Size,
-                        Lactation10Size = x.Lactation10Size,
-                        Lactation10PlusSize = x.Lactation10PlusSize,
-                        RowStampBase64 = x.RowStamp is null ? string.Empty : Convert.ToBase64String(x.RowStamp)
-                    }).ToList()
-                };
-            await farmDraftState.SetAsync(draft);
+                    Id = x.ID,
+                    RelatedCphh = x.RelatedCPHH,
+                    RowStampBase64 = x.RowStamp is null ? string.Empty : Convert.ToBase64String(x.RowStamp),
+                    Status = x.Status ?? string.Empty
+                }).ToList();
+                draft.HerdSizes = PersistedHerdSizes.Select(x => new CaseFarmDraftHerdSizeItem
+                {
+                    ClientKey = Guid.NewGuid().ToString("N"),
+                    Id = x.ID,
+                    HerdYear = x.HerdYear,
+                    TotalSize = x.TotalSize,
+                    Lactation1Size = x.Lactation1Size,
+                    Lactation2Size = x.Lactation2Size,
+                    Lactation3Size = x.Lactation3Size,
+                    Lactation4Size = x.Lactation4Size,
+                    Lactation5Size = x.Lactation5Size,
+                    Lactation6Size = x.Lactation6Size,
+                    Lactation7Size = x.Lactation7Size,
+                    Lactation8Size = x.Lactation8Size,
+                    Lactation9Size = x.Lactation9Size,
+                    Lactation10Size = x.Lactation10Size,
+                    Lactation10PlusSize = x.Lactation10PlusSize,
+                    RowStampBase64 = x.RowStamp is null ? string.Empty : Convert.ToBase64String(x.RowStamp)
+                }).ToList();
+            }
+            await sessionState.SetAsync(draft);
         }
 
         StagedLinkedFarms = draft.LinkedFarms.Select(x => new StagedLinkedFarmItem
@@ -1754,126 +1741,10 @@ public class FarmModel(
             RowStampBase64 = x.RowStampBase64
         }).ToList();
 
-        HasUnsavedChanges = draft.HasPendingChanges;
+        HasUnsavedChanges = draft.HasFarmCollectionsChanges;
 
         return draft;
     }
-
-    private async Task PersistStagedCollectionsAsync()
-    {
-        if (Farm is null)
-            return;
-
-        await PersistLinkedFarmsAsync(Farm);
-        await PersistHerdSizesAsync(Farm);
-    }
-
-    private async Task PersistLinkedFarmsAsync(FarmRecord farm)
-    {
-        var persistedLinkedById = PersistedLinkedFarms.ToDictionary(x => x.ID);
-        var stagedLinkedByExistingId = StagedLinkedFarms.Where(x => x.Id is > 0).ToDictionary(x => x.Id!.Value);
-
-        foreach (var removed in PersistedLinkedFarms.Where(x => !stagedLinkedByExistingId.ContainsKey(x.ID) && x.RowStamp is not null))
-            await relationRepo.DeleteAsync(removed.ID, removed.RowStamp!);
-
-        foreach (var newRow in StagedLinkedFarms.Where(x => x.Id is null || x.Id <= 0))
-            await relationRepo.AddAsync(farm.CPHH, newRow.RelatedCphh);
-
-        foreach (var staged in StagedLinkedFarms.Where(x => x.Id is > 0))
-        {
-            if (!persistedLinkedById.TryGetValue(staged.Id!.Value, out var persisted))
-                continue;
-
-            var persistedCphh = CphhNormalizer.Normalize(persisted.RelatedCPHH);
-            var stagedCphh = CphhNormalizer.Normalize(staged.RelatedCphh);
-
-            if (string.Equals(persistedCphh, stagedCphh, StringComparison.OrdinalIgnoreCase))
-                continue;
-
-            var rowStamp = string.IsNullOrWhiteSpace(staged.RowStampBase64)
-                ? persisted.RowStamp
-                : Convert.FromBase64String(staged.RowStampBase64);
-
-            if (rowStamp is not null)
-                await relationRepo.UpdateAsync(staged.Id.Value, stagedCphh, rowStamp);
-        }
-    }
-
-    private async Task PersistHerdSizesAsync(FarmRecord farm)
-    {
-        var persistedHerdById = PersistedHerdSizes.ToDictionary(x => x.ID);
-        var stagedHerdByExistingId = StagedHerdSizes.Where(x => x.Id is > 0).ToDictionary(x => x.Id!.Value);
-
-        foreach (var removed in PersistedHerdSizes.Where(x => !stagedHerdByExistingId.ContainsKey(x.ID) && x.RowStamp is not null))
-            await herdSizeRepo.DeleteAsync(removed.ID, removed.RowStamp!);
-
-        foreach (var newRow in StagedHerdSizes.Where(x => x.Id is null || x.Id <= 0))
-        {
-            await herdSizeRepo.AddAsync(new AddHerdSizeCommand(
-                farm.CPHH,
-                (short)newRow.HerdYear,
-                (short)newRow.TotalSize,
-                (short?)newRow.Lactation1Size,
-                (short?)newRow.Lactation2Size,
-                (short?)newRow.Lactation3Size,
-                (short?)newRow.Lactation4Size,
-                (short?)newRow.Lactation5Size,
-                (short?)newRow.Lactation6Size,
-                (short?)newRow.Lactation7Size,
-                (short?)newRow.Lactation8Size,
-                (short?)newRow.Lactation9Size,
-                (short?)newRow.Lactation10Size,
-                (short?)newRow.Lactation10PlusSize));
-        }
-
-        foreach (var staged in StagedHerdSizes.Where(x => x.Id is > 0))
-        {
-            if (!persistedHerdById.TryGetValue(staged.Id!.Value, out var persisted))
-                continue;
-
-            if (!HasHerdSizeChanges(persisted, staged))
-                continue;
-
-            var rowStamp = string.IsNullOrWhiteSpace(staged.RowStampBase64)
-                ? persisted.RowStamp
-                : Convert.FromBase64String(staged.RowStampBase64);
-
-            if (rowStamp is null)
-                continue;
-
-            await herdSizeRepo.UpdateAsync(new UpdateHerdSizeCommand(
-                staged.Id.Value,
-                (short)staged.HerdYear,
-                (short)staged.TotalSize,
-                (short?)staged.Lactation1Size,
-                (short?)staged.Lactation2Size,
-                (short?)staged.Lactation3Size,
-                (short?)staged.Lactation4Size,
-                (short?)staged.Lactation5Size,
-                (short?)staged.Lactation6Size,
-                (short?)staged.Lactation7Size,
-                (short?)staged.Lactation8Size,
-                (short?)staged.Lactation9Size,
-                (short?)staged.Lactation10Size,
-                (short?)staged.Lactation10PlusSize,
-                rowStamp));
-        }
-    }
-
-    private static bool HasHerdSizeChanges(HerdSizeRecord persisted, StagedHerdSizeItem staged) =>
-        persisted.HerdYear != staged.HerdYear
-        || persisted.TotalSize != staged.TotalSize
-        || persisted.Lactation1Size != staged.Lactation1Size
-        || persisted.Lactation2Size != staged.Lactation2Size
-        || persisted.Lactation3Size != staged.Lactation3Size
-        || persisted.Lactation4Size != staged.Lactation4Size
-        || persisted.Lactation5Size != staged.Lactation5Size
-        || persisted.Lactation6Size != staged.Lactation6Size
-        || persisted.Lactation7Size != staged.Lactation7Size
-        || persisted.Lactation8Size != staged.Lactation8Size
-        || persisted.Lactation9Size != staged.Lactation9Size
-        || persisted.Lactation10Size != staged.Lactation10Size
-        || persisted.Lactation10PlusSize != staged.Lactation10PlusSize;
 
     // ── Sort / pagination URL builders ─────────────────────────────────────────
 

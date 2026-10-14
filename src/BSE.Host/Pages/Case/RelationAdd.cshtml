@@ -177,7 +177,7 @@
         <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
         @if (!string.IsNullOrWhiteSpace(Model.RelationRbse))
         {
-            <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationsView" asp-route-rbse="@Model.RelationRbse">View Relations</a>
+            <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationsView" asp-route-rbse="@Model.RelationRbse" asp-route-returnUrl="@(HttpContext.Request.Path + HttpContext.Request.QueryString)">View Relations</a>
         }
         <a asp-page="/Case/Relations" asp-route-rbse="@Model.Rbse" class="govuk-link">Cancel</a>
     </div>

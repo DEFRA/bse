@@ -14,6 +14,7 @@
                  && !string.Equals(k.Key, "pageNumber", StringComparison.OrdinalIgnoreCase))
         .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
     ViewData["PageNumber"] = Model.PageNumber;
+    ViewData["Fragment"] = "pick-list-records";
 }
 
 <h1 class="govuk-heading-l">Pick List Maintenance</h1>
@@ -85,7 +86,7 @@ else
         </div>
     }
 
-    <h2 class="govuk-heading-m">@(Model.Lookup?.Description ?? "Records")</h2>
+    <h2 id="pick-list-records" class="govuk-heading-m">@(Model.Lookup?.Description ?? "Records")</h2>
     <p class="govuk-body">@Model.TotalCount record(s).</p>
 
     @if (Model.TotalCount > 0)

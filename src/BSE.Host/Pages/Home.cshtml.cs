@@ -52,6 +52,36 @@ public class HomeModel(
 
     public async Task OnGetAsync()
     {
+        await RestoreBatchFromWizardStateAsync();
+        await LoadPageDataAsync();
+    }
+
+    /// <summary>Legacy Home.aspx.vb's Page_Load (Not IsPostBack) re-shows the batch number from
+    /// session then immediately clears it — a batch picked on an earlier visit is shown exactly
+    /// once when the user lands back on Home (e.g. the breadcrumb after visiting a case), then
+    /// forgotten. Only runs on a genuine fresh navigation, not the internal re-renders POST
+    /// handlers do after a validation failure (those must keep showing what was just submitted).</summary>
+    private async Task RestoreBatchFromWizardStateAsync()
+    {
+        if (BatchYear is not null || BatchNumber is not null)
+            return;
+
+        var pending = await wizardState.GetAsync();
+        if (pending is null)
+            return;
+
+        var parts = pending.BatchNumber.Split('/', 2);
+        if (parts.Length == 2 && int.TryParse(parts[1], out var number))
+        {
+            BatchYear = short.TryParse(parts[0], out var year) ? year : null;
+            BatchNumber = number;
+        }
+
+        await wizardState.ClearAsync();
+    }
+
+    private async Task LoadPageDataAsync()
+    {
         var currentYear  = (short)DateTime.Today.Year;
         var previousYear = (short)(currentYear - 1);
 
@@ -105,7 +135,7 @@ public class HomeModel(
 
         if (!ModelState.IsValid)
         {
-            await OnGetAsync();
+            await LoadPageDataAsync();
             return Page();
         }
 
@@ -114,7 +144,7 @@ public class HomeModel(
         {
             BatchNotFound = true;
             ModelState.AddModelError(nameof(BatchYear), $"Batch {BatchYear}/{BatchNumber} was not found.");
-            await OnGetAsync();
+            await LoadPageDataAsync();
             return Page();
         }
 
@@ -147,7 +177,7 @@ public class HomeModel(
             {
                 BatchNotFound = true;
                 ModelState.AddModelError(nameof(BatchYear), $"Batch {BatchYear}/{BatchNumber} was not found.");
-                await OnGetAsync();
+                await LoadPageDataAsync();
                 return Page();
             }
         }
@@ -157,14 +187,14 @@ public class HomeModel(
             // number is present — a year with no number doesn't attempt a lookup at all, it just
             // silently fails validation, so the user is still told what's missing here.
             ModelState.AddModelError(nameof(BatchNumber), "Enter a batch number.");
-            await OnGetAsync();
+            await LoadPageDataAsync();
             return Page();
         }
 
         if (string.IsNullOrWhiteSpace(LookupRbse))
         {
             ModelState.AddModelError(nameof(LookupRbse), "You must enter a RBSE number");
-            await OnGetAsync();
+            await LoadPageDataAsync();
             return Page();
         }
 
@@ -194,7 +224,7 @@ public class HomeModel(
             if (existing.IsNonGbCase && !isVlaMaintenance && !isVlaDataEntry)
             {
                 ModelState.AddModelError(nameof(LookupRbse), "This is not a GB case");
-                await OnGetAsync();
+                await LoadPageDataAsync();
                 return Page();
             }
 
@@ -213,7 +243,7 @@ public class HomeModel(
             ModelState.AddModelError(nameof(LookupRbse), isVlaDataEntry
                 ? "This case does not exist"
                 : "This is not a GB case");
-            await OnGetAsync();
+            await LoadPageDataAsync();
             return Page();
         }
 
@@ -221,7 +251,7 @@ public class HomeModel(
         if (isDefraViewer || isVlaDataEntry)
         {
             ModelState.AddModelError(nameof(LookupRbse), "This case does not exist");
-            await OnGetAsync();
+            await LoadPageDataAsync();
             return Page();
         }
 
@@ -229,7 +259,7 @@ public class HomeModel(
         if (normalized.Length >= 4 && (normalized[2] is 'X' or 'x' || normalized[3] is 'X' or 'x'))
         {
             ModelState.AddModelError(nameof(LookupRbse), "This RBSE is not valid for a new case");
-            await OnGetAsync();
+            await LoadPageDataAsync();
             return Page();
         }
 
@@ -241,7 +271,7 @@ public class HomeModel(
     public async Task<IActionResult> OnPostCreateBatchAsync()
     {
         var batch = await batchService.GetOrCreateBatchNumberAsync();
-        TempData["SuccessMessage"] = $"Batch {batch.BatchYear}/{batch.BatchNumber} has been assigned. Enter RBSE and select Go to add cases to this batch.";
+        TempData["SuccessMessage"] = $"Batch {batch.BatchYear}/{batch.BatchNumber} has been created. Enter an RBSE number and press Go to assign the Batch to the case.";
         return RedirectToPage("/Home", new { batchYear = batch.BatchYear, batchNumber = batch.BatchNumber });
     }
 }

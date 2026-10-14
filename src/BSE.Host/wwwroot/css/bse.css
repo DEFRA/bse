@@ -456,8 +456,13 @@
     background-color: #d2e2f1;
 }
 
+/* Legacy GridSelectedItem colour; the previous GOV.UK light grey was barely distinguishable from white. */
 .bse-user-maintenance-table .bse-row-selected {
-    background-color: #f3f2f1;
+    background-color: #33ccff;
+}
+
+.bse-user-maintenance-table tbody tr:not(.bse-row-editing) {
+    cursor: pointer;
 }
 
 .bse-user-maintenance-table .bse-row-editing .govuk-input,

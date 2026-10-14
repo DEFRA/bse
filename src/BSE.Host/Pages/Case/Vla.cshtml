@@ -11,6 +11,10 @@
 
     string? E(string key) => ViewData.ModelState[key]?.Errors.FirstOrDefault()?.ErrorMessage;
     string DateVal(DateTime? d) => d?.ToString("dd/MM/yyyy") ?? string.Empty;
+    // Legacy VLADataEntryEnable/VLAMaintenanceEnable: btnSave stays enabled for any Data Entry
+    // role even when this tab's own fields are read-only — only a pure viewer disables Save,
+    // since Save commits the one shared cross-tab transaction, not just this tab's fields.
+    var canSaveVla = User.IsInRole("DataEntry");
     string OwnersSortAria(string column)
     {
         if (Model.OSort != column) return "none";
@@ -348,7 +352,7 @@
                         @if (editing)
                         {
                             <td class="govuk-table__cell">
-                                <label class="govuk-label" for="EditOwnerType_@ownerEditKey">Owner type</label>
+                                <label class="govuk-label govuk-visually-hidden" for="EditOwnerType_@ownerEditKey">Owner type</label>
                                 <select id="EditOwnerType_@ownerEditKey" name="EditOwnerType" class="govuk-select govuk-!-width-one-half">
                                     <option value="">-- Select --</option>
                                     @foreach (var t in Model.OwnerTypeOptions)
@@ -362,7 +366,7 @@
                                 }
                             </td>
                             <td class="govuk-table__cell">
-                                <label class="govuk-label" for="EditOwnerName_@ownerEditKey">Owner name</label>
+                                <label class="govuk-label govuk-visually-hidden" for="EditOwnerName_@ownerEditKey">Owner name</label>
                                 <input id="EditOwnerName_@ownerEditKey" name="EditOwnerName" class="govuk-input govuk-!-width-two-thirds" maxlength="255" value="@Model.EditOwnerName" />
                                 @if (E("EditOwnerName") is not null)
                                 {
@@ -370,7 +374,7 @@
                                 }
                             </td>
                             <td class="govuk-table__cell">
-                                <label class="govuk-label" for="EditOwnerCphh_@ownerEditKey">CPHH</label>
+                                <label class="govuk-label govuk-visually-hidden" for="EditOwnerCphh_@ownerEditKey">CPHH</label>
                                 <input id="EditOwnerCphh_@ownerEditKey" name="EditOwnerCphh" class="govuk-input vla-owner-cphh-input" maxlength="14" value="@Model.EditOwnerCphh" autocomplete="off"
                                        title="CPHH Format: NN[/]NNN[/]NNNN[/NN]" spellcheck="false" autocapitalize="off" />
                             </td>
@@ -403,7 +407,7 @@
 
                 <tr id="add-owner-row-inline" class="govuk-table__row bse-herd-row--unsaved" hidden="@(!Model.CanEditMainCase || !Model.ShowAddOwnerRow)">
                     <td class="govuk-table__cell">
-                        <label class="govuk-label" for="NewOwnerType">Owner type</label>
+                        <label class="govuk-label govuk-visually-hidden" for="NewOwnerType">Owner type</label>
                         <select id="NewOwnerType" name="NewOwnerType" class="govuk-select govuk-!-width-one-half">
                             <option value="">-- Select --</option>
                             @foreach (var t in Model.OwnerTypeOptions)
@@ -417,7 +421,7 @@
                         }
                     </td>
                     <td class="govuk-table__cell">
-                        <label class="govuk-label" for="NewOwnerName">Owner name</label>
+                        <label class="govuk-label govuk-visually-hidden" for="NewOwnerName">Owner name</label>
                         <input id="NewOwnerName" name="NewOwnerName" class="govuk-input govuk-!-width-two-thirds" maxlength="255" value="@Model.NewOwnerName" />
                         @if (E("NewOwnerName") is not null)
                         {
@@ -425,7 +429,7 @@
                         }
                     </td>
                     <td class="govuk-table__cell">
-                        <label class="govuk-label" for="NewOwnerCphh">CPHH</label>
+                        <label class="govuk-label govuk-visually-hidden" for="NewOwnerCphh">CPHH</label>
                         <input id="NewOwnerCphh" name="NewOwnerCphh" class="govuk-input vla-owner-cphh-input" maxlength="14" value="@Model.NewOwnerCphh" autocomplete="off"
                                title="CPHH Format: NN[/]NNN[/]NNNN[/NN]" spellcheck="false" autocapitalize="off" />
                     </td>
@@ -463,7 +467,7 @@
                             View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
                         </a>
                     }
-                    @if (Model.CanEditMainCase)
+                    @if (canSaveVla)
                     {
                         <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
                     }

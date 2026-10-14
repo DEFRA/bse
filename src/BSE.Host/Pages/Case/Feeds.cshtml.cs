@@ -32,8 +32,7 @@ public class FeedsModel(
     ILookupDataService lookups,
     ILookupRepository lookupRepository,
     IBatchRepository batchRepository,
-    ICaseFeedsDraftStateService feedsDraftState,
-    ICaseScalarDraftStateService caseScalarDraftState,
+    ICaseEditSessionStateService sessionState,
     ICaseDraftDiscardService caseDraftDiscard,
     ICaseEditOrchestrationService caseEditOrchestration,
     ICurrentUserService currentUser,
@@ -143,7 +142,7 @@ public class FeedsModel(
         var draft = await LoadOrInitializeDraftStateAsync();
 
         var caseRecord = await caseService.GetCaseAsync(RbseHelper.ParseToRaw(Rbse));
-        var stagedCase = (await caseScalarDraftState.GetAsync(Rbse))?.Case;
+        var stagedCase = (await sessionState.GetAsync(Rbse))?.Case;
         var effectiveBirthDate = stagedCase is not null ? stagedCase.BirthDate : caseRecord?.BirthDate;
         FieldErrors = FeedValidation.Validate(new FeedValidation.Input(YearFrom, YearTo, RationType, SupplierId), effectiveBirthDate);
 
@@ -164,8 +163,8 @@ public class FeedsModel(
             SupplierName = SupplierName,
             RowStampBase64 = string.Empty
         });
-        draft.HasPendingChanges = IsFeedsDraftDirty(draft.Feeds);
-        await feedsDraftState.SetAsync(draft);
+        draft.HasFeedsChanges = IsFeedsDraftDirty(draft.Feeds);
+        await sessionState.SetAsync(draft);
 
         return RedirectToPage(new { rbse = Rbse });
     }
@@ -236,7 +235,7 @@ public class FeedsModel(
         }
 
         var caseRecord = await caseService.GetCaseAsync(RbseHelper.ParseToRaw(Rbse));
-        var stagedCase = (await caseScalarDraftState.GetAsync(Rbse))?.Case;
+        var stagedCase = (await sessionState.GetAsync(Rbse))?.Case;
         var effectiveBirthDate = stagedCase is not null ? stagedCase.BirthDate : caseRecord?.BirthDate;
         FieldErrors = FeedValidation.Validate(new FeedValidation.Input(YearFrom, YearTo, RationType, SupplierId), effectiveBirthDate);
 
@@ -254,8 +253,8 @@ public class FeedsModel(
         item.IsPrePurchase = IsPrePurchase;
         item.SupplierId = SupplierId;
         item.SupplierName = SupplierName;
-        draft.HasPendingChanges = IsFeedsDraftDirty(draft.Feeds);
-        await feedsDraftState.SetAsync(draft);
+        draft.HasFeedsChanges = IsFeedsDraftDirty(draft.Feeds);
+        await sessionState.SetAsync(draft);
 
         return RedirectToPage(new { rbse = Rbse });
     }
@@ -276,8 +275,8 @@ public class FeedsModel(
         if (item is not null)
         {
             draft.Feeds.Remove(item);
-            draft.HasPendingChanges = IsFeedsDraftDirty(draft.Feeds);
-            await feedsDraftState.SetAsync(draft);
+            draft.HasFeedsChanges = IsFeedsDraftDirty(draft.Feeds);
+            await sessionState.SetAsync(draft);
         }
 
         return RedirectToPage(new { rbse = Rbse });
@@ -335,6 +334,23 @@ public class FeedsModel(
         StashPostedPanelState();
         var postedLookupName = Request.Form[nameof(SupplierLookupName)].ToString();
         var supplierName = (SupplierLookupName ?? postedLookupName ?? SupplierName ?? string.Empty).Trim();
+
+        // Legacy parity: an exact match shows the validated name on this page; only otherwise pick from close matches.
+        if (supplierName.Length > 0)
+        {
+            var exact = await lookupRepository.GetSupplierByNameAsync(supplierName.ToUpperInvariant());
+            if (exact is not null)
+            {
+                await LoadAsync();
+                await LoadOrInitializeDraftStateAsync();
+                SupplierId = exact.Id;
+                SupplierName = exact.Name;
+                ModelState.Remove(nameof(SupplierId));
+                ModelState.Remove(nameof(SupplierName));
+                ModelState.Remove(nameof(SupplierLookupName));
+                return Page();
+            }
+        }
 
         return RedirectToPage("/Case/PickSupplier", new { rbse = Rbse, name = supplierName });
     }
@@ -424,32 +440,27 @@ public class FeedsModel(
         string? EditingClientKey, int? EditingFeedId, short? YearFrom, short? YearTo,
         string? RationType, string? RationName, bool IsPrePurchase, int? SupplierId, string? SupplierName);
 
-    private async Task<CaseFeedsDraftState> LoadOrInitializeDraftStateAsync()
+    private async Task<CaseEditSessionState> LoadOrInitializeDraftStateAsync()
     {
         var rbse = RbseHelper.ParseToRaw(Rbse);
-        var draft = await feedsDraftState.GetAsync(rbse);
-        if (draft is null)
+        var draft = await sessionState.GetAsync(rbse) ?? new CaseEditSessionState { Rbse = rbse };
+        if (draft.Feeds.Count == 0 && !draft.HasFeedsChanges)
         {
-            draft = new CaseFeedsDraftState
+            draft.Feeds = _persistedFeeds.Select(f => new CaseFeedsDraftItem
             {
-                Rbse = rbse,
-                Feeds = _persistedFeeds.Select(f => new CaseFeedsDraftItem
-                {
-                    ClientKey = Guid.NewGuid().ToString("N"),
-                    Id = f.Id,
-                    YearFrom = f.YearFrom,
-                    YearTo = f.YearTo,
-                    RationType = f.RationType,
-                    RationDescription = f.RationDescription,
-                    RationName = f.RationName,
-                    IsPrePurchase = f.IsPrePurchase,
-                    SupplierId = f.SupplierId,
-                    SupplierName = f.SupplierName,
-                    RowStampBase64 = f.RowStamp is null ? string.Empty : Convert.ToBase64String(f.RowStamp)
-                }).ToList(),
-                HasPendingChanges = false
-            };
-            await feedsDraftState.SetAsync(draft);
+                ClientKey = Guid.NewGuid().ToString("N"),
+                Id = f.Id,
+                YearFrom = f.YearFrom,
+                YearTo = f.YearTo,
+                RationType = f.RationType,
+                RationDescription = f.RationDescription,
+                RationName = f.RationName,
+                IsPrePurchase = f.IsPrePurchase,
+                SupplierId = f.SupplierId,
+                SupplierName = f.SupplierName,
+                RowStampBase64 = f.RowStamp is null ? string.Empty : Convert.ToBase64String(f.RowStamp)
+            }).ToList();
+            await sessionState.SetAsync(draft);
         }
 
         var staged = draft.Feeds.Select(f => new StagedFeedItem
@@ -469,7 +480,7 @@ public class FeedsModel(
 
         Feeds = SortFeeds(staged.ToList());
         PageNumber = Math.Clamp(PageNumber, 1, TotalPages);
-        HasUnsavedChanges = draft.HasPendingChanges;
+        HasUnsavedChanges = draft.HasFeedsChanges;
 
         return draft;
     }

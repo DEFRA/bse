@@ -376,12 +376,7 @@ try
     builder.Services.AddScoped<BSE.Host.Services.ICurrentUserService, BSE.Host.Services.CurrentUserService>();
     builder.Services.AddScoped<BSE.Host.Services.IGeoLookupService, BSE.Host.Services.GeoLookupService>();
     builder.Services.AddScoped<BSE.Host.Services.ICaseWizardStateService, BSE.Host.Services.CaseWizardStateService>();
-    builder.Services.AddScoped<BSE.Host.Services.ICaseEditDraftStateService, BSE.Host.Services.CaseEditDraftStateService>();
-    builder.Services.AddScoped<BSE.Host.Services.ICaseFarmDraftStateService, BSE.Host.Services.CaseFarmDraftStateService>();
-    builder.Services.AddScoped<BSE.Host.Services.ICaseClinicalDraftStateService, BSE.Host.Services.CaseClinicalDraftStateService>();
-    builder.Services.AddScoped<BSE.Host.Services.ICaseFeedsDraftStateService, BSE.Host.Services.CaseFeedsDraftStateService>();
-    builder.Services.AddScoped<BSE.Host.Services.ICaseRelationsDraftStateService, BSE.Host.Services.CaseRelationsDraftStateService>();
-    builder.Services.AddScoped<BSE.Host.Services.ICaseScalarDraftStateService, BSE.Host.Services.CaseScalarDraftStateService>();
+    builder.Services.AddScoped<BSE.Host.Services.ICaseEditSessionStateService, BSE.Host.Services.CaseEditSessionStateService>();
     builder.Services.AddScoped<BSE.Host.Services.ICaseDraftDiscardService, BSE.Host.Services.CaseDraftDiscardService>();
     builder.Services.AddScoped<BSE.Host.Services.ICaseEditOrchestrationService, BSE.Host.Services.CaseEditOrchestrationService>();
 
@@ -488,21 +483,14 @@ try
 
     app.MapGet("/case/{rbse}/unsaved-status", async (
         string rbse,
-        ICaseEditDraftStateService caseEditDraftState,
-        ICaseFarmDraftStateService caseFarmDraftState,
-        ICaseClinicalDraftStateService caseClinicalDraftState,
-        ICaseFeedsDraftStateService caseFeedsDraftState,
-        ICaseRelationsDraftStateService caseRelationsDraftState,
-        ICaseScalarDraftStateService caseScalarDraftState) =>
+        ICaseEditSessionStateService sessionState) =>
     {
         var normalizedRbse = RbseHelper.ParseToRaw(rbse);
 
-        var hasUnsavedChanges = (await caseEditDraftState.GetAsync(normalizedRbse))?.HasPendingChanges == true
-                                || (await caseFarmDraftState.GetAsync(normalizedRbse))?.HasPendingChanges == true
-                                || (await caseClinicalDraftState.GetAsync(normalizedRbse))?.HasPendingChanges == true
-                                || (await caseFeedsDraftState.GetAsync(normalizedRbse))?.HasPendingChanges == true
-                                || (await caseRelationsDraftState.GetAsync(normalizedRbse))?.HasPendingChanges == true
-                                || (await caseScalarDraftState.GetAsync(normalizedRbse))?.HasPendingChanges == true;
+        var session = await sessionState.GetAsync(normalizedRbse);
+        var hasUnsavedChanges = session is not null
+            && (session.HasPendingChanges || session.HasCaseEditChanges || session.HasClinicalVisitsChanges
+                || session.HasFarmCollectionsChanges || session.HasFeedsChanges || session.HasRelationsChanges);
 
         return Results.Json(new { hasUnsavedChanges });
     }).RequireAuthorization();
