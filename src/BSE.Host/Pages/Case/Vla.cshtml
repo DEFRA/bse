@@ -43,7 +43,7 @@
     </ol>
 </nav>
 
-@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Case (APHA)", Model.Case.Rbse, Model.BatchNumbers, viewDocsUrl, Model.CanEditMainCase))
+@await Html.PartialAsync("_CaseTabs", new BSE.Host.Models.CaseTabsViewModel("Case (APHA)", Model.Case.Rbse, Model.BatchNumbers, viewDocsUrl, canSaveVla))
 
 @await Html.PartialAsync("_CaseEditNotifications", new BSE.Host.Models.CaseEditNotificationsViewModel(
     "vla", WarningMessage: TempData["Warning"] as string))
