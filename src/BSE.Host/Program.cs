@@ -44,6 +44,7 @@ try
 {
     const string UnauthorizedPath = "/Unauthorized";
     const string SessionCookieName = "BSE.Session";
+    const string AuthCookieName = "BSE.Auth";
 
     var builder = WebApplication.CreateBuilder(args);
 
@@ -223,7 +224,7 @@ try
             {
                 options.ExpireTimeSpan = idleTimeout;
                 options.SlidingExpiration = true;
-                options.Cookie.Name = "BSE.Auth";
+                options.Cookie.Name = AuthCookieName;
                 options.Cookie.HttpOnly = true;
                 options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
 
@@ -236,6 +237,14 @@ try
                         "Authentication challenge redirect for {Path}. ReturnUrl={ReturnUrl}",
                         ctx.Request.Path.Value,
                         ctx.Request.Query["ReturnUrl"].ToString());
+
+                    // A stale auth cookie means the sign-in timed out: tell the user instead of jumping straight to Entra.
+                    if (ctx.Request.Cookies.ContainsKey(AuthCookieName)
+                        && ctx.Request.Headers.Accept.ToString().Contains("text/html", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ctx.Response.Redirect("/SessionError");
+                        return;
+                    }
 
                     // Return to the page that triggered the challenge after re-authentication (GET only).
                     var returnUri = HttpMethods.IsGet(ctx.Request.Method)
@@ -577,6 +586,21 @@ try
     }).RequireAuthorization();
 
     app.MapGet("/", () => Results.Redirect("/Home"));
+
+    // Target of "Sign in again" on the session-timeout page: drops stale cookies, then starts Entra sign-in.
+    app.MapGet("/signin", (HttpContext ctx) =>
+    {
+        ctx.Response.Cookies.Delete(AuthCookieName);
+        ctx.Response.Cookies.Delete(SessionCookieName);
+
+        if (bypassAuthentication)
+            return Results.Redirect("/Home");
+
+        return Results.Challenge(
+            new AuthenticationProperties { RedirectUri = "/Home" },
+            [Saml2Defaults.Scheme]);
+    }).AllowAnonymous();
+
     app.MapRazorPages();
 
     app.Run();
