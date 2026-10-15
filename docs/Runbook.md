@@ -192,7 +192,7 @@ All configuration is in `legacy/BSESystem/Web.config`.
 | `IsoEarTagAnimalPartExpression` | `^[0-9][0-9][0-9][0-9][0-9]$` | Regex for ISO ear tag animal number |
 | `IsoEarTagHerdmarkPartExpression` | `^[0-9][0-9][0-9][0-9][0-9][0-9]$` | Regex for ISO ear tag herdmark |
 
-Session timeout: 20 minutes (`<sessionState timeout="20"/>`).
+Session timeout: configurable via `Session:IdleTimeoutMinutes` (default 20; 5 for UAT testing). Applies to both the auth cookie and the ASP.NET session.
 
 ---
 
