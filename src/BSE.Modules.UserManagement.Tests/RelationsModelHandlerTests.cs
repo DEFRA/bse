@@ -6,6 +6,7 @@ using BSE.Modules.AnimalRelations.Models;
 using BSE.Modules.AnimalRelations.Repositories;
 using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Repositories;
+using BSE.Modules.CaseManagement.Models;
 using BSE.Modules.CaseManagement.Repositories;
 using BSE.Modules.CaseManagement.Services;
 using BSE.Modules.ReferenceData.Models;
@@ -21,6 +22,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
+using CaseRelationRecord = BSE.Modules.AnimalRelations.Models.CaseRelationRecord;
+using DamSireDetailRecord = BSE.Modules.AnimalRelations.Models.DamSireDetailRecord;
 
 namespace BSE.Modules.UserManagement.Tests;
 
@@ -48,7 +51,7 @@ public sealed class RelationsModelHandlerTests
         _lookups.GetSexesAsync().Returns(Array.Empty<LuSex>());
         _batchRepository.GetBatchNumbersByRbseAsync(Arg.Any<string>()).Returns(Array.Empty<BatchNumberEntry>());
         _relationsRepository.GetRelationsDetailsByRbseAsync(Arg.Any<string>())
-            .Returns(new RelationDetailsRecord(null, null, Array.Empty<CaseRelationRecord>()));
+            .Returns(new RelationDetailsRecord(null, null, (IReadOnlyList<CaseRelationRecord>)Array.Empty<CaseRelationRecord>()));
         _sessionState.GetAsync(Arg.Any<string>()).Returns((CaseEditSessionState?)null);
     }
 
@@ -375,6 +378,48 @@ public sealed class RelationsModelHandlerTests
         model.ModelState.ContainsKey(nameof(model.RelationFate)).Should().BeFalse();
         model.ModelState.ContainsKey(nameof(model.Sire)).Should().BeFalse();
         model.ModelState.ContainsKey(nameof(model.EditingClientKey)).Should().BeFalse();
+    }
+
+    // ── OnPostRemoveDamAsync: legacy RemoveDam() clears Case.DamStatus alongside the dam row ──
+
+    [Fact]
+    public async Task OnPostRemoveDamAsync_ClearsCaseDamStatus_AlongsideDamRow()
+    {
+        var model = CreateModel(["DataEntry"]);
+        model.DamSire.DamStatus = "ALIVE";
+
+        CaseEditSessionState? stored = null;
+        _sessionState.GetAsync(Arg.Any<string>()).Returns(_ => stored);
+        _sessionState.SetAsync(Arg.Do<CaseEditSessionState>(d => stored = d)).Returns(Task.CompletedTask);
+        _caseService.GetCaseAsync(Arg.Any<string>()).Returns((CaseRecord?)null);
+
+        var result = await model.OnPostRemoveDamAsync();
+
+        result.Should().BeOfType<RedirectToPageResult>();
+        stored.Should().NotBeNull();
+        stored!.RemoveDamPending.Should().BeTrue();
+        stored.Case.Should().NotBeNull();
+        stored.Case!.DamStatus.Should().BeNull();
+    }
+
+    // ── OnPostSaveRelationsAsync: future/current-year Sire DOB rejected before it can hit
+    // CK_Pedigree_BirthYear ──────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task OnPostSaveRelationsAsync_WhenSireBirthYearIsNotInThePast_ReturnsPageWithSireError()
+    {
+        var model = CreateModel(["DataEntry"]);
+        model.DamSire.HasSire = true;
+        model.DamSire.SireId = 1;
+        model.DamSire.SireRowStamp = Convert.ToBase64String([1, 2, 3]);
+        model.DamSire.SireBirthYear = DateTime.Today.Year;
+        _lookups.GetAnimalStatusesAsync().Returns(Array.Empty<LuAnimalStatus>());
+        _caseService.GetCaseAsync(Arg.Any<string>()).Returns((CaseRecord?)null);
+
+        var result = await model.OnPostSaveRelationsAsync();
+
+        result.Should().BeOfType<PageResult>();
+        model.SireError.Should().Be("Date of birth must not be in future.");
     }
 }
 

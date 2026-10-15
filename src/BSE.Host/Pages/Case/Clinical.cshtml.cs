@@ -1,4 +1,3 @@
-using BSE.Infrastructure;
 using BSE.Host.Helpers;
 using BSE.Host.Services;
 using BSE.Host.ModelBinding;
@@ -25,7 +24,6 @@ public class ClinicalModel(
     ICaseDraftDiscardService caseDraftDiscard,
     ICaseEditOrchestrationService caseEditOrchestration,
     ICurrentUserService currentUser,
-    IDbConnectionFactory connectionFactory,
     IConfiguration configuration) : PageModel
 {
     private const int PageSize = 10;
@@ -86,97 +84,39 @@ public class ClinicalModel(
         await LoadAsync();
         await LoadOrInitializeDraftStateAsync();
 
-        // Cross-tab staging (restores legacy's "one session, one commit" model): only the edit
-        // path (an existing Clinical row) stages — first-time creation keeps committing
-        // immediately, since there is no earlier row for another tab's save to silently discard.
-        if (!string.IsNullOrEmpty(clinicalRowStampBase64))
-        {
-            var rowStamp = Convert.FromBase64String(clinicalRowStampBase64);
-            var edit = signs.ToEditCommand(Rbse, rowStamp);
+        // Cross-tab staging (restores legacy's "one session, one commit" model): stage this
+        // tab's fields and commit through CommitAllAsync regardless of whether a Clinical row
+        // or even the Case itself already exists — its isNewCase/no-existing-Clinical-row
+        // branches already Add vs Edit correctly, and Visits persist in the same transaction via
+        // PersistStagedClinicalVisitsAsync. A missing-Clinical-row save used to bypass staging and
+        // insert directly in its own transaction instead — safe only once the Case row already
+        // existed, but for a genuinely new case this ran before Case/Farm/CaseWork were created
+        // (CommitAllAsync is the only thing that creates them) and violated FK_CaseClinical_Case;
+        // even when the case did already exist, it silently left any other tab's staged-but-
+        // uncommitted edits behind while still redirecting Home as if the whole save succeeded.
+        var rowStamp = string.IsNullOrEmpty(clinicalRowStampBase64) ? [] : Convert.FromBase64String(clinicalRowStampBase64);
+        var edit = signs.ToEditCommand(Rbse, rowStamp);
 
-            var draft = await sessionState.GetAsync(Rbse) ?? new CaseEditSessionState { Rbse = Rbse };
-            // Always trust the freshly posted rowstamp over any earlier-pinned one — a stale pin
-            // left over from an earlier stage this session causes a false "modified by another
-            // user" error on the very next Save even with a single user involved.
-            draft.ClinicalBaseRowStampBase64 = clinicalRowStampBase64;
-            draft.Clinical = edit with { RowStamp = Convert.FromBase64String(draft.ClinicalBaseRowStampBase64) };
-            draft.HasPendingChanges = true;
-            await sessionState.SetAsync(draft);
+        var draft = await sessionState.GetAsync(Rbse) ?? new CaseEditSessionState { Rbse = Rbse };
+        // Always trust the freshly posted rowstamp over any earlier-pinned one — a stale pin
+        // left over from an earlier stage this session causes a false "modified by another
+        // user" error on the very next Save even with a single user involved.
+        draft.ClinicalBaseRowStampBase64 = clinicalRowStampBase64 ?? string.Empty;
+        draft.Clinical = edit with { RowStamp = string.IsNullOrEmpty(draft.ClinicalBaseRowStampBase64) ? [] : Convert.FromBase64String(draft.ClinicalBaseRowStampBase64) };
+        draft.HasPendingChanges = true;
+        await sessionState.SetAsync(draft);
 
-            var userId = await currentUser.GetUserIdAsync();
-            var (failureRedirect, commitOutcome) = await CaseCommitHelper.CommitAllAsync(
-                this, caseEditOrchestration, Rbse, userId,
-                result => $"Unable to save clinical signs: {result}.");
-            if (failureRedirect is not null)
-                return failureRedirect;
+        var userId = await currentUser.GetUserIdAsync();
+        var (failureRedirect, commitOutcome) = await CaseCommitHelper.CommitAllAsync(
+            this, caseEditOrchestration, Rbse, userId,
+            result => $"Unable to save clinical signs: {result}.");
+        if (failureRedirect is not null)
+            return failureRedirect;
 
-            // Visits now persist inside CommitAllAsync itself (same transaction as the Clinical
-            // scalar row), so no separate step is needed here regardless of warnings.
-            if (CaseCommitHelper.TryStageWarnings(this, commitOutcome!, Rbse) is { } warningRedirect)
-                return warningRedirect;
-
-            return RedirectToPage("/Home");
-        }
-
-        if (await caseRepository.GetCaseByRbseAsync(Rbse) is null)
-        {
-            // Legacy parity: a brand-new case lives entirely in the shared session object until
-            // the first Save from any tab — inserting Clinical directly here (as if the Case row
-            // already existed) violates FK_CaseClinical_Case, so route through the orchestrator's
-            // case-creation path instead, same as the staged-edit branch above.
-            var draft = await sessionState.GetAsync(Rbse) ?? new CaseEditSessionState { Rbse = Rbse };
-            draft.Clinical = signs.ToEditCommand(Rbse, []);
-            draft.HasPendingChanges = true;
-            await sessionState.SetAsync(draft);
-
-            var userId = await currentUser.GetUserIdAsync();
-            CaseCommitOutcome commitOutcome;
-            try
-            {
-                commitOutcome = await caseEditOrchestration.CommitAllAsync(Rbse, userId);
-            }
-            catch (MandatoryCaseFieldsMissingException ex)
-            {
-                SaveResultModel.Stage(TempData, SaveResultMode.MissingMandatoryFields, ex.Errors);
-                return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
-            }
-
-            if (commitOutcome.Result != EditCaseResult.Success)
-            {
-                TempData["ErrorMessage"] = $"Unable to save clinical signs: {commitOutcome.Result}.";
-                return RedirectToPage("/Home");
-            }
-
-            // Visits now persist inside CommitAllAsync itself (same transaction as the brand-new
-            // Case/Clinical rows), so no separate step is needed here regardless of warnings.
-            if (commitOutcome.Warnings.Count > 0)
-            {
-                SaveResultModel.Stage(TempData, SaveResultMode.PartialSuccess, commitOutcome.Warnings);
-                return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
-            }
-
-            return RedirectToPage("/Home");
-        }
-
-        // Legacy parity: a pre-existing Clinical row reached with no incoming rowstamp (case
-        // already existed, but no Clinical row did yet) never goes through CommitAllAsync, so
-        // Visits still need their own persist step here, unlike the two branches above.
-        using (var conn = connectionFactory.CreateConnection())
-        {
-            conn.Open();
-            using var tx = conn.BeginTransaction();
-            await clinicalRepository.AddAsync(signs.ToAddCommand(Rbse), conn, tx);
-            tx.Commit();
-        }
-
-        await PersistStagedVisitsAsync();
-        // Partial reset: only the Visits portion of this save was handled by the direct insert
-        // above (not CommitAllAsync), so only clear the Visits staging — other tabs' scalar work
-        // staged in this same session object must survive for a later Save to still commit.
-        var sessionAfterDirectInsert = await sessionState.GetAsync(Rbse) ?? new CaseEditSessionState { Rbse = Rbse };
-        sessionAfterDirectInsert.Visits = [];
-        sessionAfterDirectInsert.HasClinicalVisitsChanges = false;
-        await sessionState.SetAsync(sessionAfterDirectInsert);
+        // Visits persist inside CommitAllAsync itself (same transaction as the Clinical scalar
+        // row), so no separate step is needed here regardless of warnings.
+        if (CaseCommitHelper.TryStageWarnings(this, commitOutcome!, Rbse) is { } warningRedirect)
+            return warningRedirect;
 
         // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx on a fully successful
         // save, clearing the session case state — not back to the tab the user was on.
@@ -539,47 +479,6 @@ public class ClinicalModel(
         Visits = sorted.Skip((VPage - 1) * PageSize).Take(PageSize).ToList();
 
         return draft;
-    }
-
-    private async Task PersistStagedVisitsAsync()
-    {
-        var persistedById = _persistedVisits.ToDictionary(v => v.Id);
-        var stagedByExistingId = StagedVisits.Where(v => v.Id is > 0).ToDictionary(v => v.Id!.Value);
-
-        using var conn = connectionFactory.CreateConnection();
-        conn.Open();
-        using var tx = conn.BeginTransaction();
-
-        foreach (var removed in _persistedVisits.Where(v => !stagedByExistingId.ContainsKey(v.Id)))
-        {
-            if (removed.RowStamp is null)
-                continue;
-
-            await clinicalRepository.DeleteVisitAsync(removed.Id, removed.RowStamp, conn, tx);
-        }
-
-        foreach (var staged in StagedVisits)
-        {
-            if (staged.Id is null || staged.Id <= 0)
-            {
-                await clinicalRepository.AddVisitAsync(new AddClinicalVisitCommand(Rbse, staged.VisitDate), conn, tx);
-                continue;
-            }
-
-            if (!persistedById.TryGetValue(staged.Id.Value, out var persisted))
-                continue;
-
-            if (persisted.VisitDate?.Date == staged.VisitDate?.Date)
-                continue;
-
-            var rowStamp = string.IsNullOrWhiteSpace(staged.RowStampBase64)
-                ? persisted.RowStamp ?? []
-                : Convert.FromBase64String(staged.RowStampBase64);
-
-            await clinicalRepository.EditVisitAsync(new EditClinicalVisitCommand(staged.Id.Value, staged.VisitDate, rowStamp), conn, tx);
-        }
-
-        tx.Commit();
     }
 
     public string VisitsSortUrl() =>

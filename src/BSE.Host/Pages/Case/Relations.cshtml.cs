@@ -240,7 +240,8 @@ public class RelationsModel(
         return RedirectToPage(new { rbse = Rbse });
     }
 
-    /// <summary>Legacy RemoveDam: disassociates the dam without touching the sire.</summary>
+    /// <summary>Legacy RemoveDam: disassociates the dam, clears Case.DamStatus (ddlDamStatus)
+    /// alongside it, and does not touch the sire.</summary>
     public async Task<IActionResult> OnPostRemoveDamAsync()
     {
         if (!User.IsInRole(DataEntryRole))
@@ -252,6 +253,10 @@ public class RelationsModel(
         draft.PendingDam = null;
         draft.HasRelationsChanges = true;
         await sessionState.SetAsync(draft);
+
+        DamSire.DamStatus = null;
+        var caseRecord = await caseService.GetCaseAsync(RbseHelper.ParseToRaw(Rbse));
+        await StageCaseDamStatusAsync(caseRecord);
 
         TempData.Remove(SuccessKey);
         TempData.Remove(PendingDamSireKeys.Dam);
@@ -892,6 +897,9 @@ public class RelationsModel(
 
         TempData.Remove(RelationsWarningKey);
 
+        var postedCaseHerdbook = CaseHerdbook;
+        var postedDamStatus = DamSire.DamStatus;
+
         await LoadAsync();
         var draft = await LoadOrInitializeRelationsDraftAsync();
 
@@ -899,6 +907,15 @@ public class RelationsModel(
 
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
         var caseRecord = await caseService.GetCaseAsync(caseRbse);
+
+        // Populate SpolSiteUrl/DamStatusOptions/etc. up front so every validation-failure
+        // return below (bare "return Page()"/"return validationResult") re-renders a complete
+        // page instead of one with an empty Dam Status dropdown and blank "View docs" link —
+        // previously this only ran on the success path, so a rejected Save (e.g. a future DOB)
+        // silently produced a degraded page that looked like clicking Save had done nothing.
+        await PopulateCaseAncillaryStateAsync();
+        CaseHerdbook = string.IsNullOrWhiteSpace(postedCaseHerdbook) ? CaseHerdbook : postedCaseHerdbook;
+        DamSire.DamStatus = string.IsNullOrWhiteSpace(postedDamStatus) ? DamSire.DamStatus : postedDamStatus;
 
         // Legacy parity: a brand-new case lives entirely in the shared session object until the
         // first Save from *any* tab — CaseEditOrchestrationService.CommitAllAsync can create the
@@ -955,8 +972,13 @@ public class RelationsModel(
                 DamSire.DamRbse,
                 DamSire.SireRbse);
 
-            TempData["ErrorMessage"] = "Unable to update case herdbook. Please reload and try again.";
-            return RedirectToPage("/Home");
+            // Legacy parity: CaseEntrySave.aspx shows this same "database has not been updated"
+            // screen for any save-time DB failure (e.g. a CK_Pedigree_BirthYear violation) — full
+            // exception detail is logged above, never shown to the user (OWASP information
+            // disclosure), unlike legacy's raw SQL error text.
+            SaveResultModel.Stage(TempData, SaveResultMode.Failure,
+                ["Unable to save the case due to an unexpected database error. Please check the data entered and try again."]);
+            return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
         }
 
         if (commitOutcome.Result != EditCaseResult.Success)
@@ -1077,6 +1099,13 @@ public class RelationsModel(
 
         if (!year.HasValue)
             return null;
+
+        // Legacy has no app-level check for this — a future (or current-year) Dam/Sire birth
+        // year reaches the DB and fails CK_Pedigree_BirthYear ([BirthYear] < current year),
+        // surfacing as a raw SQL error on CaseEntrySave rather than a field-level validation
+        // message. Caught here instead so Save never reaches that constraint violation.
+        if (year.Value >= DateTime.Today.Year)
+            return "Date of birth must not be in future.";
 
         if (day.HasValue && !month.HasValue)
             return "Please enter a month, or remove the day.";
