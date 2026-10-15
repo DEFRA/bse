@@ -59,6 +59,19 @@
                     <input asp-for="EartagHerdmark" class="govuk-input bse-non-gb-case-form__eartag-herdmark" maxlength="8" />
                     <label asp-for="Eartag" class="govuk-visually-hidden">Eartag animal number</label>
                     <input asp-for="Eartag" class="govuk-input bse-non-gb-case-form__eartag-animal" maxlength="25" />
+                    <span class="bse-eartag-help-inline">
+                        <button type="button"
+                                class="bse-eartag-help__icon"
+                                data-eartag-tooltip-trigger
+                                aria-label="Help about eartag format"
+                                aria-controls="non-gb-eartag-help-tooltip"
+                                aria-expanded="false">
+                            <span aria-hidden="true">*</span>
+                        </button>
+                        <span id="non-gb-eartag-help-tooltip" class="bse-eartag-help__tooltip" role="tooltip" hidden>
+                            Enter the animal eartag in parts: country, herdmark and animal number.
+                        </span>
+                    </span>
                 </div>
             </div>
                 </div>
@@ -270,3 +283,187 @@
         });
     })();
 </script>
+
+<style>
+    .bse-eartag-help-inline {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        position: relative;
+    }
+
+    .bse-eartag-help__icon {
+        border: 0;
+        background: transparent;
+        color: #00703c;
+        font-size: 2rem;
+        line-height: 1;
+        font-weight: 700;
+        padding: 0 2px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: help;
+    }
+
+    .bse-eartag-help__icon:focus {
+        outline: 3px solid #ffdd00;
+        outline-offset: 2px;
+    }
+
+    .bse-eartag-help__icon--invalid {
+        color: #d4351c;
+    }
+
+    .bse-eartag-help__tooltip {
+        position: absolute;
+        left: calc(100% + 0.35rem);
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 20;
+        max-width: 24rem;
+        background: #ffffff;
+        border: 1px solid #b1b4b6;
+        box-shadow: 0 2px 6px rgba(11, 12, 12, 0.15);
+        padding: 0.5rem 0.65rem;
+        font-size: 0.95rem;
+        line-height: 1.3;
+    }
+</style>
+
+<script>
+    // Eartag help tooltip (green when a recognised format, red when the server-side
+    // BSELib.Eartag rules reject it) — matches Case/Edit's identical tooltip exactly.
+    (function () {
+        var trigger = document.querySelector('[data-eartag-tooltip-trigger]');
+        var tooltip = document.getElementById('non-gb-eartag-help-tooltip');
+        var countryInput = document.getElementById('EartagCountry');
+        var herdmarkInput = document.getElementById('EartagHerdmark');
+        var animalInput = document.getElementById('Eartag');
+        var validateTimer = null;
+        var validateController = null;
+
+        if (!trigger || !tooltip) {
+            return;
+        }
+
+        function norm(value) {
+            return (value || '').trim();
+        }
+
+        // Local, best-effort format name shown immediately while the authoritative check
+        // (OnGetValidateEartag) confirms it — this never reports errors itself.
+        function resolveHintText(country, herdmark, animal) {
+            if (!country && !herdmark && !animal) {
+                return 'Enter the animal eartag in parts: country, herdmark and animal number.';
+            }
+
+            if (!country) {
+                return herdmark ? 'PRE-Barimo' : 'Free format';
+            }
+
+            if (country.length > 2) {
+                return /^\d/.test(country) ? 'ISO Numeric Country' : 'ISO Alpha Country';
+            }
+
+            if (country === 'UK') {
+                return 'Mainland GB Numeric';
+            }
+
+            var ecCodes = ['AT', 'BE', 'DE', 'DK', 'EL', 'ES', 'FI', 'FR', 'IE', 'IT', 'LU', 'NL', 'PT', 'SE'];
+            if (ecCodes.indexOf(country) >= 0) {
+                return 'EC non-UK';
+            }
+
+            return 'Unknown format';
+        }
+
+        function setInvalid(isInvalid) {
+            trigger.classList.toggle('bse-eartag-help__icon--invalid', !!isInvalid);
+        }
+
+        function updateTooltipText() {
+            var country = norm(countryInput ? countryInput.value : '');
+            var herdmark = norm(herdmarkInput ? herdmarkInput.value : '');
+            var animal = norm(animalInput ? animalInput.value : '');
+
+            tooltip.textContent = resolveHintText(country, herdmark, animal);
+            setInvalid(false);
+
+            if (!country && !herdmark && !animal) {
+                return;
+            }
+
+            if (validateTimer) {
+                clearTimeout(validateTimer);
+            }
+            if (validateController) {
+                validateController.abort();
+            }
+
+            validateTimer = setTimeout(function () {
+                validateController = new AbortController();
+                var url = window.location.pathname + '?handler=ValidateEartag'
+                    + '&country=' + encodeURIComponent(country)
+                    + '&herdmark=' + encodeURIComponent(herdmark)
+                    + '&animal=' + encodeURIComponent(animal);
+
+                fetch(url, { signal: validateController.signal })
+                    .then(function (response) { return response.ok ? response.json() : null; })
+                    .then(function (result) {
+                        if (!result) {
+                            return;
+                        }
+                        if (result.error) {
+                            tooltip.textContent = result.error;
+                            setInvalid(true);
+                        } else {
+                            tooltip.textContent = resolveHintText(country, herdmark, animal);
+                            setInvalid(false);
+                        }
+                    })
+                    .catch(function () { /* request aborted or failed — local guess stands */ });
+            }, 250);
+        }
+
+        function showTooltip() {
+            updateTooltipText();
+            tooltip.hidden = false;
+            trigger.setAttribute('aria-expanded', 'true');
+        }
+
+        function hideTooltip() {
+            tooltip.hidden = true;
+            trigger.setAttribute('aria-expanded', 'false');
+        }
+
+        trigger.addEventListener('mouseenter', showTooltip);
+        trigger.addEventListener('mouseleave', hideTooltip);
+        trigger.addEventListener('focus', showTooltip);
+        trigger.addEventListener('blur', hideTooltip);
+        trigger.addEventListener('click', function (e) {
+            e.preventDefault();
+            if (tooltip.hidden) {
+                showTooltip();
+            } else {
+                hideTooltip();
+            }
+        });
+        tooltip.addEventListener('mouseenter', showTooltip);
+        tooltip.addEventListener('mouseleave', hideTooltip);
+
+        [countryInput, herdmarkInput, animalInput].forEach(function (el) {
+            if (el) {
+                el.addEventListener('input', updateTooltipText);
+                el.addEventListener('change', updateTooltipText);
+            }
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!trigger.contains(e.target) && !tooltip.contains(e.target)) {
+                hideTooltip();
+            }
+        });
+    })();
+</script>
+

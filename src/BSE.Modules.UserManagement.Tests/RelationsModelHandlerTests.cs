@@ -380,6 +380,35 @@ public sealed class RelationsModelHandlerTests
         model.ModelState.ContainsKey(nameof(model.EditingClientKey)).Should().BeFalse();
     }
 
+    // ── OnPostAddRelationRowAsync: related case's Fate (luCaseFate) has no matching code in
+    // RelationFates (luRelationFate) — RelationFateDesc must still show the real text ──────
+
+    [Fact]
+    public async Task OnPostAddRelationRowAsync_WhenRelatedCaseFateCodeNotInRelationFatesLookup_StillStagesFateDescription()
+    {
+        var model = CreateModel(["DataEntry", "VLAAccess"]);
+        model.RelationType = "Offspring";
+        model.RelationRbse = "002700012";
+        _relationsRepository.GetRelationDetailsOfRelatedCaseAsync("002700012").Returns(new RelatedCaseDetailsRecord
+        {
+            RelationRbse = "002700012",
+            Sex = "F",
+            Fate = "CASE-ONLY-CODE",
+            FateDesc = "Died on farm",
+            Name = "Some Sire"
+        });
+
+        CaseEditSessionState? savedDraft = null;
+        _sessionState.SetAsync(Arg.Do<CaseEditSessionState>(d => savedDraft = d)).Returns(Task.CompletedTask);
+
+        var result = await model.OnPostAddRelationRowAsync();
+
+        result.Should().BeOfType<RedirectToPageResult>();
+        model.RelationFieldErrors.Should().BeEmpty();
+        savedDraft.Should().NotBeNull();
+        savedDraft!.Relations.Should().ContainSingle(r => r.RelationFate == "CASE-ONLY-CODE" && r.RelationFateDesc == "Died on farm");
+    }
+
     // ── OnPostRemoveDamAsync: legacy RemoveDam() clears Case.DamStatus alongside the dam row ──
 
     [Fact]

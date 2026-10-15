@@ -640,6 +640,14 @@
                         {
                             <option value="@f.Code" selected="@(Model.RelationFate == f.Code)">@f.Description</option>
                         }
+                        @* Legacy swaps ddlRelationFate's selection for lblRelationFateValue's raw text once
+                           an RBSE is set — the related case's Fate code belongs to luCaseFate, a different
+                           code set to this dropdown's luRelationFate options, so it never matches an
+                           option above. Add it as a synthetic option instead of leaving the field blank. *@
+                        @if (relatedFieldsDisabled && !string.IsNullOrWhiteSpace(Model.RelationFateDesc) && !Model.RelationFates.Any(f => f.Code == Model.RelationFate))
+                        {
+                            <option value="@Model.RelationFate" selected>@Model.RelationFateDesc</option>
+                        }
                     </select>
                 </div>
                 <div class="govuk-form-group bse-relations-field-row govuk-!-margin-bottom-3">
@@ -1040,13 +1048,38 @@
                 }
             }
 
+            // The related case's Fate code belongs to luCaseFate, a different code set to this
+            // dropdown's luRelationFate options, so it often won't match any option here — add it
+            // as a synthetic option instead of leaving the field blank (mirrors the server-rendered
+            // fallback for the same reason).
+            function setFateField(code, desc) {
+                var select = document.getElementById('relation-fate');
+                if (!select) return;
+                var stale = select.querySelector('option[data-synthetic="true"]');
+                if (stale) stale.remove();
+                if (!code) {
+                    select.value = '';
+                    return;
+                }
+                select.value = code;
+                if (select.value !== code) {
+                    var opt = document.createElement('option');
+                    opt.value = code;
+                    opt.textContent = desc || code;
+                    opt.setAttribute('data-synthetic', 'true');
+                    select.appendChild(opt);
+                    select.value = code;
+                }
+            }
+
             function setRelatedFieldsDisabled(disabled) {
                 relatedFields.forEach(function (el) { el.disabled = disabled; });
             }
 
             function clearRelatedFields() {
-                ['sex', 'relation-fate', 'eartag-country', 'eartag-herdmark', 'eartag', 'birth-date', 'left-date', 'sire']
+                ['sex', 'eartag-country', 'eartag-herdmark', 'eartag', 'birth-date', 'left-date', 'sire']
                     .forEach(function (id) { setField(id, ''); });
+                setFateField('', '');
             }
 
             // Mirrors legacy's lblInvalid asterisk + red border on the RBSE field, toggled as
@@ -1084,7 +1117,7 @@
                         }
 
                         setField('sex', result.sex);
-                        setField('relation-fate', result.fate);
+                        setFateField(result.fate, result.fateDesc);
                         setField('eartag-country', result.eartagCountry);
                         setField('eartag-herdmark', result.eartagHerdmark);
                         setField('eartag', result.eartag);
