@@ -29,8 +29,7 @@ public class RelationsModel(
     ICaseService caseService,
     ILookupDataService lookups,
     IBatchRepository batchRepository,
-    ICaseRelationsDraftStateService relationsDraftState,
-    ICaseScalarDraftStateService caseScalarDraftState,
+    ICaseEditSessionStateService sessionState,
     ICaseDraftDiscardService caseDraftDiscard,
     ICaseEditOrchestrationService caseEditOrchestration,
     IDbConnectionFactory connectionFactory,
@@ -77,7 +76,7 @@ public class RelationsModel(
     public int TotalPages { get; private set; } = 1;
     public IReadOnlyList<StagedRelationItem> PagedRelations { get; private set; } = [];
     private List<StagedRelationItem> _stagedRelations = [];
-    private CaseRelationsDraftState? _draft;
+    private CaseEditSessionState? _draft;
 
     // ── Shared add/edit field panel state (mirrors legacy's single panel used for both
     // "Add As New" and "Update Selected"; the related-animals list is staged and only
@@ -99,6 +98,10 @@ public class RelationsModel(
     public int? BirthYear { get; set; }
     [BindProperty, ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? LeftDate { get; set; }
     [BindProperty] public string? RelationFate { get; set; }
+    /// <summary>Populated from the related case's Fate (a luCaseFate code/description) whenever an
+    /// RBSE is set — that vocabulary is distinct from this panel's luRelationFate options, so
+    /// RelationFate alone can't be matched back to a description via the RelationFates lookup.</summary>
+    [BindProperty] public string? RelationFateDesc { get; set; }
     [BindProperty] public string? Sire { get; set; }
 
     public IDictionary<string, string> RelationFieldErrors { get; private set; } = new Dictionary<string, string>();
@@ -174,8 +177,8 @@ public class RelationsModel(
         // fields, but they were silently discarded on the next reload/tab switch.
         await RestoreAndRestageDamSireEditAsync(postedCaseHerdbook, postedDamStatus);
         var draft = await LoadOrInitializeRelationsDraftAsync();
-        draft.HasPendingChanges = true;
-        await relationsDraftState.SetAsync(draft);
+        draft.HasRelationsChanges = true;
+        await sessionState.SetAsync(draft);
         TempData.Remove(SuccessKey);
         return RedirectToPage(new { rbse = Rbse });
     }
@@ -223,7 +226,7 @@ public class RelationsModel(
     private async Task StageDamSireIfChangedAsync(string? postedCaseHerdbook, string? postedDamStatus)
     {
         var caseRecord = await caseService.GetCaseAsync(RbseHelper.ParseToRaw(Rbse));
-        var staged = await caseScalarDraftState.GetAsync(Rbse);
+        var staged = await sessionState.GetAsync(Rbse);
         var baselineDamStatus = staged?.Case?.DamStatus ?? caseRecord?.DamStatus;
         var baselineCaseHerdbook = staged?.DamSire?.CaseHerdbook ?? caseRecord?.Herdbook;
 
@@ -241,7 +244,8 @@ public class RelationsModel(
         return RedirectToPage(new { rbse = Rbse });
     }
 
-    /// <summary>Legacy RemoveDam: disassociates the dam without touching the sire.</summary>
+    /// <summary>Legacy RemoveDam: disassociates the dam, clears Case.DamStatus (ddlDamStatus)
+    /// alongside it, and does not touch the sire.</summary>
     public async Task<IActionResult> OnPostRemoveDamAsync()
     {
         if (!User.IsInRole(DataEntryRole))
@@ -251,8 +255,12 @@ public class RelationsModel(
 
         draft.RemoveDamPending = true;
         draft.PendingDam = null;
-        draft.HasPendingChanges = true;
-        await relationsDraftState.SetAsync(draft);
+        draft.HasRelationsChanges = true;
+        await sessionState.SetAsync(draft);
+
+        DamSire.DamStatus = null;
+        var caseRecord = await caseService.GetCaseAsync(RbseHelper.ParseToRaw(Rbse));
+        await StageCaseDamStatusAsync(caseRecord);
 
         TempData.Remove(SuccessKey);
         TempData.Remove(PendingDamSireKeys.Dam);
@@ -269,8 +277,8 @@ public class RelationsModel(
 
         draft.RemoveSirePending = true;
         draft.PendingSire = null;
-        draft.HasPendingChanges = true;
-        await relationsDraftState.SetAsync(draft);
+        draft.HasRelationsChanges = true;
+        await sessionState.SetAsync(draft);
 
         TempData.Remove(SuccessKey);
         TempData.Remove(PendingDamSireKeys.Sire);
@@ -586,7 +594,7 @@ public class RelationsModel(
             {
                 _draft.PendingDam = pending;
                 _draft.RemoveDamPending = false;
-                await relationsDraftState.SetAsync(_draft);
+                await sessionState.SetAsync(_draft);
             }
         }
         else
@@ -608,7 +616,7 @@ public class RelationsModel(
             {
                 _draft.PendingSire = pending;
                 _draft.RemoveSirePending = false;
-                await relationsDraftState.SetAsync(_draft);
+                await sessionState.SetAsync(_draft);
             }
         }
     }
@@ -641,41 +649,36 @@ public class RelationsModel(
     }
 
     /// <summary>Loads (or initialises from the DB on first visit) the staged relations draft.</summary>
-    private async Task<CaseRelationsDraftState> LoadOrInitializeRelationsDraftAsync()
+    private async Task<CaseEditSessionState> LoadOrInitializeRelationsDraftAsync()
     {
         var rbse = RbseHelper.ParseToRaw(Rbse);
-        var draft = await relationsDraftState.GetAsync(rbse);
-        if (draft is null)
+        var draft = await sessionState.GetAsync(rbse) ?? new CaseEditSessionState { Rbse = rbse };
+        if (draft.Relations.Count == 0 && !draft.HasRelationsChanges)
         {
-            draft = new CaseRelationsDraftState
+            draft.Relations = (Details?.Relations ?? []).Select(r => new CaseRelationsDraftItem
             {
-                Rbse = rbse,
-                Relations = (Details?.Relations ?? []).Select(r => new CaseRelationsDraftItem
-                {
-                    ClientKey = Guid.NewGuid().ToString("N"),
-                    Id = r.Id,
-                    RelationType = r.RelationType ?? string.Empty,
-                    RelationTypeDesc = r.RelationTypeDesc,
-                    RelationRbse = r.RelationRbse,
-                    Sex = r.Sex,
-                    SexDesc = r.SexDesc,
-                    BirthDay = r.BirthDay,
-                    BirthMonth = r.BirthMonth,
-                    BirthYear = r.BirthYear,
-                    RelationFate = r.RelationFate,
-                    RelationFateDesc = r.RelationFateDesc,
-                    LeftDate = r.LeftDate,
-                    EartagCountry = r.EartagCountry,
-                    EartagHerdmark = r.EartagHerdmark,
-                    Eartag = r.Eartag,
-                    Sire = r.Sire,
-                    RowStampBase64 = r.RowStamp is null ? string.Empty : Convert.ToBase64String(r.RowStamp)
-                }).ToList(),
-                RemoveDamPending = false,
-                RemoveSirePending = false,
-                HasPendingChanges = false
-            };
-            await relationsDraftState.SetAsync(draft);
+                ClientKey = Guid.NewGuid().ToString("N"),
+                Id = r.Id,
+                RelationType = r.RelationType ?? string.Empty,
+                RelationTypeDesc = r.RelationTypeDesc,
+                RelationRbse = r.RelationRbse,
+                Sex = r.Sex,
+                SexDesc = r.SexDesc,
+                BirthDay = r.BirthDay,
+                BirthMonth = r.BirthMonth,
+                BirthYear = r.BirthYear,
+                RelationFate = r.RelationFate,
+                RelationFateDesc = r.RelationFateDesc,
+                LeftDate = r.LeftDate,
+                EartagCountry = r.EartagCountry,
+                EartagHerdmark = r.EartagHerdmark,
+                Eartag = r.Eartag,
+                Sire = r.Sire,
+                RowStampBase64 = r.RowStamp is null ? string.Empty : Convert.ToBase64String(r.RowStamp)
+            }).ToList();
+            draft.RemoveDamPending = false;
+            draft.RemoveSirePending = false;
+            await sessionState.SetAsync(draft);
         }
 
         RemoveDamPending = draft.RemoveDamPending;
@@ -703,7 +706,7 @@ public class RelationsModel(
             RowStampBase64 = r.RowStampBase64
         }).ToList();
 
-        HasUnsavedChanges = draft.HasPendingChanges;
+        HasUnsavedChanges = draft.HasRelationsChanges;
 
         var sorted = SortStagedRelations(_stagedRelations);
         TotalRelationsCount = sorted.Count;
@@ -749,7 +752,7 @@ public class RelationsModel(
             BirthMonth = BirthMonth,
             BirthYear = BirthYear,
             RelationFate = RelationFate,
-            RelationFateDesc = RelationFates.FirstOrDefault(f => f.Code == RelationFate)?.Description,
+            RelationFateDesc = RelationFateDesc ?? RelationFates.FirstOrDefault(f => f.Code == RelationFate)?.Description,
             LeftDate = LeftDate,
             EartagCountry = EartagCountry,
             EartagHerdmark = EartagHerdmark,
@@ -757,8 +760,8 @@ public class RelationsModel(
             Sire = Sire,
             RowStampBase64 = string.Empty
         });
-        draft.HasPendingChanges = true;
-        await relationsDraftState.SetAsync(draft);
+        draft.HasRelationsChanges = true;
+        await sessionState.SetAsync(draft);
         TempData.Remove(SuccessKey);
 
         return RedirectToPage(new { rbse = Rbse });
@@ -787,11 +790,29 @@ public class RelationsModel(
                 ? new DateTime(item.BirthYear.Value, item.BirthMonth.Value, item.BirthDay.Value, 0, 0, 0, DateTimeKind.Unspecified)
                 : null;
             RelationFate = item.RelationFate;
+            RelationFateDesc = item.RelationFateDesc;
             LeftDate = item.LeftDate;
             EartagCountry = item.EartagCountry;
             EartagHerdmark = item.EartagHerdmark;
             Eartag = item.Eartag;
             Sire = item.Sire;
+
+            // asp-for renders from ModelState (the just-posted panel values) in preference to the
+            // model property when both exist — without clearing it here, the panel keeps showing
+            // whatever was posted (e.g. a different row's values, or blanks) instead of this row's
+            // actual data, and a subsequent Update Selected then saves that stale display back over it.
+            ModelState.Remove(nameof(EditingClientKey));
+            ModelState.Remove(nameof(RelationType));
+            ModelState.Remove(nameof(RelationRbse));
+            ModelState.Remove(nameof(Sex));
+            ModelState.Remove(nameof(BirthDate));
+            ModelState.Remove(nameof(RelationFate));
+            ModelState.Remove(nameof(RelationFateDesc));
+            ModelState.Remove(nameof(LeftDate));
+            ModelState.Remove(nameof(EartagCountry));
+            ModelState.Remove(nameof(EartagHerdmark));
+            ModelState.Remove(nameof(Eartag));
+            ModelState.Remove(nameof(Sire));
         }
 
         return Page();
@@ -836,14 +857,14 @@ public class RelationsModel(
         item.BirthMonth = BirthMonth;
         item.BirthYear = BirthYear;
         item.RelationFate = RelationFate;
-        item.RelationFateDesc = RelationFates.FirstOrDefault(f => f.Code == RelationFate)?.Description;
+        item.RelationFateDesc = RelationFateDesc ?? RelationFates.FirstOrDefault(f => f.Code == RelationFate)?.Description;
         item.LeftDate = LeftDate;
         item.EartagCountry = EartagCountry;
         item.EartagHerdmark = EartagHerdmark;
         item.Eartag = Eartag;
         item.Sire = Sire;
-        draft.HasPendingChanges = true;
-        await relationsDraftState.SetAsync(draft);
+        draft.HasRelationsChanges = true;
+        await sessionState.SetAsync(draft);
         TempData.Remove(SuccessKey);
 
         return RedirectToPage(new { rbse = Rbse });
@@ -866,8 +887,8 @@ public class RelationsModel(
         if (item is not null)
         {
             draft.Relations.Remove(item);
-            draft.HasPendingChanges = true;
-            await relationsDraftState.SetAsync(draft);
+            draft.HasRelationsChanges = true;
+            await sessionState.SetAsync(draft);
             TempData.Remove(SuccessKey);
         }
 
@@ -882,6 +903,9 @@ public class RelationsModel(
 
         TempData.Remove(RelationsWarningKey);
 
+        var postedCaseHerdbook = CaseHerdbook;
+        var postedDamStatus = DamSire.DamStatus;
+
         await LoadAsync();
         var draft = await LoadOrInitializeRelationsDraftAsync();
 
@@ -889,6 +913,15 @@ public class RelationsModel(
 
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
         var caseRecord = await caseService.GetCaseAsync(caseRbse);
+
+        // Populate SpolSiteUrl/DamStatusOptions/etc. up front so every validation-failure
+        // return below (bare "return Page()"/"return validationResult") re-renders a complete
+        // page instead of one with an empty Dam Status dropdown and blank "View docs" link —
+        // previously this only ran on the success path, so a rejected Save (e.g. a future DOB)
+        // silently produced a degraded page that looked like clicking Save had done nothing.
+        await PopulateCaseAncillaryStateAsync();
+        CaseHerdbook = string.IsNullOrWhiteSpace(postedCaseHerdbook) ? CaseHerdbook : postedCaseHerdbook;
+        DamSire.DamStatus = string.IsNullOrWhiteSpace(postedDamStatus) ? DamSire.DamStatus : postedDamStatus;
 
         // Legacy parity: a brand-new case lives entirely in the shared session object until the
         // first Save from *any* tab — CaseEditOrchestrationService.CommitAllAsync can create the
@@ -945,8 +978,13 @@ public class RelationsModel(
                 DamSire.DamRbse,
                 DamSire.SireRbse);
 
-            TempData["ErrorMessage"] = "Unable to update case herdbook. Please reload and try again.";
-            return RedirectToPage("/Home");
+            // Legacy parity: CaseEntrySave.aspx shows this same "database has not been updated"
+            // screen for any save-time DB failure (e.g. a CK_Pedigree_BirthYear violation) — full
+            // exception detail is logged above, never shown to the user (OWASP information
+            // disclosure), unlike legacy's raw SQL error text.
+            SaveResultModel.Stage(TempData, SaveResultMode.Failure,
+                ["Unable to save the case due to an unexpected database error. Please check the data entered and try again."]);
+            return RedirectToPage("/Case/SaveResult", new { rbse = Rbse });
         }
 
         if (commitOutcome.Result != EditCaseResult.Success)
@@ -969,7 +1007,7 @@ public class RelationsModel(
         return RedirectToPage("/Home");
     }
 
-    private void ApplyPendingParentRemovals(CaseRelationsDraftState draft)
+    private void ApplyPendingParentRemovals(CaseEditSessionState draft)
     {
         if (draft.RemoveDamPending && !HasDamInputStaged())
         {
@@ -1067,6 +1105,13 @@ public class RelationsModel(
 
         if (!year.HasValue)
             return null;
+
+        // Legacy has no app-level check for this — a future (or current-year) Dam/Sire birth
+        // year reaches the DB and fails CK_Pedigree_BirthYear ([BirthYear] < current year),
+        // surfacing as a raw SQL error on CaseEntrySave rather than a field-level validation
+        // message. Caught here instead so Save never reaches that constraint violation.
+        if (year.Value >= DateTime.Today.Year)
+            return "Date of birth must not be in future.";
 
         if (day.HasValue && !month.HasValue)
             return "Please enter a month, or remove the day.";
@@ -1192,7 +1237,7 @@ public class RelationsModel(
     /// with whatever another tab may already have staged for the Case row rather than overwriting it.</summary>
     private async Task StageCaseDamStatusAsync(BSE.Modules.CaseManagement.Models.CaseRecord? caseRecord)
     {
-        var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new BSE.Host.Services.CaseScalarDraftState { Rbse = Rbse };
+        var draft = await sessionState.GetAsync(Rbse) ?? new CaseEditSessionState { Rbse = Rbse };
 
         EditCaseCommand baseCommand;
         if (draft.Case is not null)
@@ -1217,7 +1262,7 @@ public class RelationsModel(
 
         draft.Case = baseCommand with { DamStatus = DamSire.DamStatus };
         draft.HasPendingChanges = true;
-        await caseScalarDraftState.SetAsync(draft);
+        await sessionState.SetAsync(draft);
     }
 
     /// <summary>
@@ -1275,10 +1320,10 @@ public class RelationsModel(
             CaseHerdbook: NullIfBlank(CaseHerdbook),
             CaseRowStamp: caseRecord?.PedigreeRowStamp);
 
-        var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new BSE.Host.Services.CaseScalarDraftState { Rbse = Rbse };
+        var draft = await sessionState.GetAsync(Rbse) ?? new CaseEditSessionState { Rbse = Rbse };
         draft.DamSire = herdbookCommand;
         draft.HasPendingChanges = true;
-        await caseScalarDraftState.SetAsync(draft);
+        await sessionState.SetAsync(draft);
     }
 
     /// <summary>Re-stages the posted (in-progress, unsaved) Case Herdbook / Dam Status edits before a
@@ -1326,6 +1371,7 @@ public class RelationsModel(
             found = true,
             sex = related.Sex,
             fate = related.Fate,
+            fateDesc = related.FateDesc,
             eartagCountry = related.EartagCountry,
             eartagHerdmark = related.EartagHerdmark,
             eartag = related.Eartag,
@@ -1390,6 +1436,7 @@ public class RelationsModel(
 
         Sex = related.Sex;
         RelationFate = related.Fate;
+        RelationFateDesc = related.FateDesc;
         EartagCountry = related.EartagCountry;
         EartagHerdmark = related.EartagHerdmark;
         Eartag = related.Eartag;
@@ -1542,7 +1589,7 @@ public class RelationsModel(
             {
                 _draft.PendingDam = pendingDraft;
                 _draft.RemoveDamPending = false;
-                await relationsDraftState.SetAsync(_draft);
+                await sessionState.SetAsync(_draft);
             }
             return true;
         }
@@ -1564,7 +1611,7 @@ public class RelationsModel(
         {
             _draft.PendingSire = pendingDraft;
             _draft.RemoveSirePending = false;
-            await relationsDraftState.SetAsync(_draft);
+            await sessionState.SetAsync(_draft);
         }
         return true;
     }
@@ -1598,8 +1645,8 @@ public class RelationsModel(
 
         if (draftChanged)
         {
-            draft.HasPendingChanges = true;
-            await relationsDraftState.SetAsync(draft);
+            draft.HasRelationsChanges = true;
+            await sessionState.SetAsync(draft);
             RemoveDamPending = draft.RemoveDamPending;
             RemoveSirePending = draft.RemoveSirePending;
         }
@@ -1635,7 +1682,7 @@ public class RelationsModel(
         // Overlay whatever another action in this same browsing session already staged (e.g. a
         // relation-row grid operation re-staging the Case Herdbook / Dam Status the user had just
         // typed/selected), so it survives the redirect this request is about to return.
-        var staged = await caseScalarDraftState.GetAsync(Rbse);
+        var staged = await sessionState.GetAsync(Rbse);
         if (staged?.Case is not null)
             DamSire.DamStatus = staged.Case.DamStatus;
         if (staged?.DamSire is not null)

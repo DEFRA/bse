@@ -9,7 +9,6 @@
 <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
     <ol class="govuk-breadcrumbs__list">
         <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Search/Menu">Search Menu</a></li>
         <li class="govuk-breadcrumbs__list-item" aria-current="page">List Of Cases For A Given Holding/Herdmark</li>
     </ol>
 </nav>
@@ -36,14 +35,14 @@
                 <label asp-for="Cphh" class="govuk-label">CPH(H)</label>
                 <div class="govuk-form-group">
                     <input asp-for="Cphh" class="govuk-input bse-farm-legacy__input"
-                           title="CPHH Format: NN[/]NNN[/]NNNN[/NN]" spellcheck="false" autocapitalize="off" />
+                           maxlength="14" title="CPHH Format: NN[/]NNN[/]NNNN[/NN]" spellcheck="false" autocapitalize="off" />
                     <span asp-validation-for="Cphh" class="govuk-error-message"></span>
                 </div>
             </div>
             <div class="bse-farm-legacy__field">
                 <label asp-for="Herdmark" class="govuk-label">Herdmark</label>
                 <div class="govuk-form-group">
-                    <input asp-for="Herdmark" class="govuk-input bse-farm-legacy__input" />
+                    <input asp-for="Herdmark" class="govuk-input bse-farm-legacy__input" maxlength="8" />
                     <span asp-validation-for="Herdmark" class="govuk-error-message"></span>
                 </div>
             </div>
@@ -53,7 +52,7 @@
             <div class="bse-farm-legacy__field">
                 <label asp-for="NumericHerdmark" class="govuk-label">Numeric Herdmark</label>
                 <div class="govuk-form-group">
-                    <input asp-for="NumericHerdmark" class="govuk-input bse-farm-legacy__input" />
+                    <input asp-for="NumericHerdmark" class="govuk-input bse-farm-legacy__input" maxlength="6" />
                     <span asp-validation-for="NumericHerdmark" class="govuk-error-message"></span>
                 </div>
             </div>

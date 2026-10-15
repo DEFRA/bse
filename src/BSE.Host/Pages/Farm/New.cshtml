@@ -25,30 +25,6 @@
     <p class="govuk-body">@Model.VetnetMessage</p>
 }
 
-@if (Model.ReturnToCaseFarm && Model.VetnetFound)
-{
-    <p class="govuk-body">Found on Vetnet</p>
-    <dl class="govuk-summary-list govuk-!-margin-bottom-4">
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Herdmark</dt>
-            <dd class="govuk-summary-list__value">@Model.VetnetHerdmark</dd>
-        </div>
-        <div class="govuk-summary-list__row">
-            <dt class="govuk-summary-list__key">Numeric Herdmark</dt>
-            <dd class="govuk-summary-list__value">@Model.VetnetNumericHerdmark</dd>
-        </div>
-    </dl>
-
-    <div class="govuk-form-group">
-        <div class="govuk-checkboxes" data-module="govuk-checkboxes">
-            <div class="govuk-checkboxes__item">
-                <input asp-for="AcceptVetnetDetails" class="govuk-checkboxes__input" />
-                <label asp-for="AcceptVetnetDetails" class="govuk-label govuk-checkboxes__label">Accept Vetnet Details?</label>
-            </div>
-        </div>
-    </div>
-}
-
 @if (Model.ShowBrusselsWarning)
 {
     <p class="govuk-body govuk-!-font-weight-bold">@Model.BrusselsWarningText</p>
@@ -79,6 +55,30 @@
     @if (Model.ReturnToCaseFarm)
     {
         <input type="hidden" asp-for="Farm.CPHH" />
+
+        if (Model.VetnetFound)
+        {
+            <p class="govuk-body">Found on Vetnet</p>
+            <dl class="govuk-summary-list govuk-!-margin-bottom-4">
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">Herdmark</dt>
+                    <dd class="govuk-summary-list__value">@Model.VetnetHerdmark</dd>
+                </div>
+                <div class="govuk-summary-list__row">
+                    <dt class="govuk-summary-list__key">Numeric Herdmark</dt>
+                    <dd class="govuk-summary-list__value">@Model.VetnetNumericHerdmark</dd>
+                </div>
+            </dl>
+
+            <div class="govuk-form-group">
+                <div class="govuk-checkboxes" data-module="govuk-checkboxes">
+                    <div class="govuk-checkboxes__item">
+                        <input asp-for="AcceptVetnetDetails" class="govuk-checkboxes__input" />
+                        <label asp-for="AcceptVetnetDetails" class="govuk-label govuk-checkboxes__label">Accept Vetnet Details?</label>
+                    </div>
+                </div>
+            </div>
+        }
     }
     else
     {

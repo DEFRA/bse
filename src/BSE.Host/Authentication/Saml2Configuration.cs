@@ -57,4 +57,10 @@ public sealed class Saml2Configuration
     /// Leave null to let Sustainsys infer from the incoming request.
     /// </summary>
     public string? PublicOrigin { get; init; }
+
+    /// <summary>
+    /// When true, every SAML AuthnRequest sets ForceAuthn so Entra ID prompts for credentials
+    /// instead of reusing its SSO session (needed for the idle timeout to force re-login).
+    /// </summary>
+    public bool ForceAuthn { get; init; }
 }

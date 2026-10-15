@@ -38,8 +38,7 @@ public sealed class FarmModelHandlerTests
     private readonly ILookupDataService _lookups = Substitute.For<ILookupDataService>();
     private readonly IBatchRepository _batchRepository = Substitute.For<IBatchRepository>();
     private readonly ICaseWizardStateService _wizardState = Substitute.For<ICaseWizardStateService>();
-    private readonly ICaseFarmDraftStateService _farmDraftState = Substitute.For<ICaseFarmDraftStateService>();
-    private readonly ICaseScalarDraftStateService _caseScalarDraftState = Substitute.For<ICaseScalarDraftStateService>();
+    private readonly ICaseEditSessionStateService _sessionState = Substitute.For<ICaseEditSessionStateService>();
     private readonly ICaseEditOrchestrationService _caseEditOrchestration = Substitute.For<ICaseEditOrchestrationService>();
     private readonly ICurrentUserService _currentUser = Substitute.For<ICurrentUserService>();
     private readonly BSE.Host.Services.IGeoLookupService _geoLookup = Substitute.For<BSE.Host.Services.IGeoLookupService>();
@@ -66,8 +65,8 @@ public sealed class FarmModelHandlerTests
     {
         var model = new FarmModel(
             _caseService, _farmService, _relationRepo, _herdSizeRepo, _lookups,
-            _batchRepository, _wizardState, _farmDraftState,
-            _caseScalarDraftState, _caseDraftDiscard, _caseEditOrchestration, _currentUser,
+            _batchRepository, _wizardState, _sessionState,
+            _caseDraftDiscard, _caseEditOrchestration, _currentUser,
             NullLogger<FarmModel>.Instance,
             new ConfigurationBuilder().AddInMemoryCollection().Build(),
             _geoLookup)
@@ -182,10 +181,9 @@ public sealed class FarmModelHandlerTests
 
         result.Should().BeOfType<RedirectToPageResult>();
         ((RedirectToPageResult)result).PageName.Should().Be("/Home");
-        await _caseScalarDraftState.Received(1).SetAsync(
-            Arg.Is<CaseScalarDraftState>(d => d.Farm != null && d.Farm.CPHH == Cphh), Arg.Any<CancellationToken>());
+        await _sessionState.Received().SetAsync(
+            Arg.Is<CaseEditSessionState>(d => d.Farm != null && d.Farm.CPHH == Cphh), Arg.Any<CancellationToken>());
         await _caseEditOrchestration.Received(1).CommitAllAsync(Rbse, 7);
-        await _farmDraftState.Received(1).ClearAsync(Rbse);
         model.TempData["SuccessMessage"].Should().BeNull();
     }
 
@@ -269,7 +267,7 @@ public sealed class FarmModelHandlerTests
     {
         _caseService.GetCaseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = Cphh });
         _farmService.GetByCphhAsync(Cphh).Returns(MakeFarm());
-        _farmDraftState.GetAsync(Rbse).Returns(new CaseFarmDraftState { Rbse = Rbse, Cphh = Cphh });
+        _sessionState.GetAsync(Rbse).Returns(new CaseEditSessionState { Rbse = Rbse, Cphh = Cphh });
 
         var model = CreateModel(["DataEntry"]);
         model.NewLinkedCphh = "123";
@@ -286,7 +284,7 @@ public sealed class FarmModelHandlerTests
     {
         _caseService.GetCaseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = Cphh });
         _farmService.GetByCphhAsync(Cphh).Returns(MakeFarm());
-        _farmDraftState.GetAsync(Rbse).Returns(new CaseFarmDraftState { Rbse = Rbse, Cphh = Cphh });
+        _sessionState.GetAsync(Rbse).Returns(new CaseEditSessionState { Rbse = Rbse, Cphh = Cphh });
         _farmService.GetByCphhAsync("02002000202").Returns((FarmRecord?)null);
 
         var model = CreateModel(["DataEntry"]);
@@ -295,7 +293,7 @@ public sealed class FarmModelHandlerTests
         var result = await model.OnPostAddLinkedFarmRowAsync();
 
         result.Should().BeOfType<RedirectToPageResult>();
-        await _farmDraftState.Received(1).SetAsync(Arg.Is<CaseFarmDraftState>(d =>
+        await _sessionState.Received().SetAsync(Arg.Is<CaseEditSessionState>(d =>
             d.LinkedFarms.Any(x => x.RelatedCphh == "02002000202")));
     }
 
@@ -304,19 +302,19 @@ public sealed class FarmModelHandlerTests
     {
         _caseService.GetCaseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = Cphh });
         _farmService.GetByCphhAsync(Cphh).Returns(MakeFarm());
-        var draft = new CaseFarmDraftState
+        var draft = new CaseEditSessionState
         {
             Rbse = Rbse,
             Cphh = Cphh,
             LinkedFarms = [new CaseFarmDraftLinkedFarmItem { ClientKey = "k1", RelatedCphh = "02002000202" }]
         };
-        _farmDraftState.GetAsync(Rbse).Returns(draft);
+        _sessionState.GetAsync(Rbse).Returns(draft);
 
         var model = CreateModel(["DataEntry"]);
         var result = await model.OnPostDeleteLinkedFarmAsync("k1");
 
         result.Should().BeOfType<RedirectToPageResult>();
-        await _farmDraftState.Received(1).SetAsync(Arg.Is<CaseFarmDraftState>(d => d.LinkedFarms.Count == 0));
+        await _sessionState.Received(1).SetAsync(Arg.Is<CaseEditSessionState>(d => d.LinkedFarms.Count == 0));
     }
 
     [Fact]
@@ -324,13 +322,13 @@ public sealed class FarmModelHandlerTests
     {
         _caseService.GetCaseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = Cphh });
         _farmService.GetByCphhAsync(Cphh).Returns(MakeFarm());
-        var draft = new CaseFarmDraftState
+        var draft = new CaseEditSessionState
         {
             Rbse = Rbse,
             Cphh = Cphh,
             LinkedFarms = [new CaseFarmDraftLinkedFarmItem { ClientKey = "k1", RelatedCphh = "02002000202" }]
         };
-        _farmDraftState.GetAsync(Rbse).Returns(draft);
+        _sessionState.GetAsync(Rbse).Returns(draft);
 
         var model = CreateModel(["DataEntry"]);
         model.EditingLinkedClientKey = "k1";
@@ -348,13 +346,13 @@ public sealed class FarmModelHandlerTests
         _caseService.GetCaseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = Cphh });
         _farmService.GetByCphhAsync(Cphh).Returns(MakeFarm());
         _farmService.GetByCphhAsync("03003000303").Returns((FarmRecord?)null);
-        var draft = new CaseFarmDraftState
+        var draft = new CaseEditSessionState
         {
             Rbse = Rbse,
             Cphh = Cphh,
             LinkedFarms = [new CaseFarmDraftLinkedFarmItem { ClientKey = "k1", RelatedCphh = "02002000202" }]
         };
-        _farmDraftState.GetAsync(Rbse).Returns(draft);
+        _sessionState.GetAsync(Rbse).Returns(draft);
 
         var model = CreateModel(["DataEntry"]);
         model.EditingLinkedClientKey = "k1";
@@ -363,7 +361,7 @@ public sealed class FarmModelHandlerTests
         var result = await model.OnPostUpdateLinkedFarmRowAsync();
 
         result.Should().BeOfType<RedirectToPageResult>();
-        await _farmDraftState.Received(1).SetAsync(Arg.Is<CaseFarmDraftState>(d =>
+        await _sessionState.Received(1).SetAsync(Arg.Is<CaseEditSessionState>(d =>
             d.LinkedFarms.Single().RelatedCphh == "03003000303"));
     }
 
@@ -374,13 +372,13 @@ public sealed class FarmModelHandlerTests
     {
         _caseService.GetCaseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = Cphh });
         _farmService.GetByCphhAsync(Cphh).Returns(MakeFarm());
-        var draft = new CaseFarmDraftState
+        var draft = new CaseEditSessionState
         {
             Rbse = Rbse,
             Cphh = Cphh,
             HerdSizes = [new CaseFarmDraftHerdSizeItem { ClientKey = "h1", HerdYear = 2024, TotalSize = 20 }]
         };
-        _farmDraftState.GetAsync(Rbse).Returns(draft);
+        _sessionState.GetAsync(Rbse).Returns(draft);
         _batchRepository.GetBatchNumbersByRbseAsync(Rbse).Returns([new BatchNumberEntry(1, "2024/001", Rbse, "BSE1")]);
 
         var model = CreateModel(["DataEntry", "VLAAccess"]);
@@ -398,7 +396,7 @@ public sealed class FarmModelHandlerTests
     {
         _caseService.GetCaseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = Cphh });
         _farmService.GetByCphhAsync(Cphh).Returns(MakeFarm());
-        _farmDraftState.GetAsync(Rbse).Returns(new CaseFarmDraftState { Rbse = Rbse, Cphh = Cphh });
+        _sessionState.GetAsync(Rbse).Returns(new CaseEditSessionState { Rbse = Rbse, Cphh = Cphh });
         _batchRepository.GetBatchNumbersByRbseAsync(Rbse).Returns([new BatchNumberEntry(1, "2024/001", Rbse, "BSE1")]);
 
         var model = CreateModel(["DataEntry", "VLAAccess"]);
@@ -416,7 +414,7 @@ public sealed class FarmModelHandlerTests
     {
         _caseService.GetCaseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = Cphh });
         _farmService.GetByCphhAsync(Cphh).Returns(MakeFarm());
-        _farmDraftState.GetAsync(Rbse).Returns(new CaseFarmDraftState { Rbse = Rbse, Cphh = Cphh });
+        _sessionState.GetAsync(Rbse).Returns(new CaseEditSessionState { Rbse = Rbse, Cphh = Cphh });
         _batchRepository.GetBatchNumbersByRbseAsync(Rbse).Returns([new BatchNumberEntry(1, "2024/001", Rbse, "BSE1")]);
 
         var model = CreateModel(["DataEntry", "VLAAccess"]);
@@ -425,7 +423,7 @@ public sealed class FarmModelHandlerTests
         var result = await model.OnPostAddHerdSizeRowAsync();
 
         result.Should().BeOfType<RedirectToPageResult>();
-        await _farmDraftState.Received(1).SetAsync(Arg.Is<CaseFarmDraftState>(d =>
+        await _sessionState.Received().SetAsync(Arg.Is<CaseEditSessionState>(d =>
             d.HerdSizes.Any(h => h.HerdYear == 2024 && h.TotalSize == 20)));
     }
 
@@ -434,13 +432,13 @@ public sealed class FarmModelHandlerTests
     {
         _caseService.GetCaseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = Cphh });
         _farmService.GetByCphhAsync(Cphh).Returns(MakeFarm());
-        var draft = new CaseFarmDraftState
+        var draft = new CaseEditSessionState
         {
             Rbse = Rbse,
             Cphh = Cphh,
             HerdSizes = [new CaseFarmDraftHerdSizeItem { ClientKey = "h1", HerdYear = 2023, TotalSize = 10 }]
         };
-        _farmDraftState.GetAsync(Rbse).Returns(draft);
+        _sessionState.GetAsync(Rbse).Returns(draft);
         _batchRepository.GetBatchNumbersByRbseAsync(Rbse).Returns([new BatchNumberEntry(1, "2024/001", Rbse, "BSE1")]);
 
         var model = CreateModel(["DataEntry", "VLAAccess"]);
@@ -450,7 +448,7 @@ public sealed class FarmModelHandlerTests
         var result = await model.OnPostUpdateHerdSizeRowAsync();
 
         result.Should().BeOfType<RedirectToPageResult>();
-        await _farmDraftState.Received(1).SetAsync(Arg.Is<CaseFarmDraftState>(d =>
+        await _sessionState.Received(1).SetAsync(Arg.Is<CaseEditSessionState>(d =>
             d.HerdSizes.Single().HerdYear == 2024 && d.HerdSizes.Single().TotalSize == 30));
     }
 
@@ -459,20 +457,20 @@ public sealed class FarmModelHandlerTests
     {
         _caseService.GetCaseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = Cphh });
         _farmService.GetByCphhAsync(Cphh).Returns(MakeFarm());
-        var draft = new CaseFarmDraftState
+        var draft = new CaseEditSessionState
         {
             Rbse = Rbse,
             Cphh = Cphh,
             HerdSizes = [new CaseFarmDraftHerdSizeItem { ClientKey = "h1", HerdYear = 2023, TotalSize = 10 }]
         };
-        _farmDraftState.GetAsync(Rbse).Returns(draft);
+        _sessionState.GetAsync(Rbse).Returns(draft);
         _batchRepository.GetBatchNumbersByRbseAsync(Rbse).Returns([new BatchNumberEntry(1, "2024/001", Rbse, "BSE1")]);
 
         var model = CreateModel(["DataEntry", "VLAAccess"]);
         var result = await model.OnPostDeleteHerdSizeAsync("h1");
 
         result.Should().BeOfType<RedirectToPageResult>();
-        await _farmDraftState.Received(1).SetAsync(Arg.Is<CaseFarmDraftState>(d => d.HerdSizes.Count == 0));
+        await _sessionState.Received(1).SetAsync(Arg.Is<CaseEditSessionState>(d => d.HerdSizes.Count == 0));
     }
 
     // ── Save / Cancel farm edit ──────────────────────────────────────────────
@@ -491,7 +489,7 @@ public sealed class FarmModelHandlerTests
         var farm = MakeFarm();
         _caseService.GetCaseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = Cphh });
         _farmService.GetByCphhAsync(Cphh).Returns(farm);
-        _farmDraftState.GetAsync(Rbse).Returns(new CaseFarmDraftState { Rbse = Rbse, Cphh = Cphh });
+        _sessionState.GetAsync(Rbse).Returns(new CaseEditSessionState { Rbse = Rbse, Cphh = Cphh });
         _currentUser.GetUserIdAsync().Returns(9);
         _caseEditOrchestration.CommitAllAsync(Rbse, 9).Returns(CaseCommitOutcome.Success([]));
 
@@ -504,7 +502,6 @@ public sealed class FarmModelHandlerTests
         var redirect = result.Should().BeOfType<RedirectToPageResult>().Subject;
         redirect.PageName.Should().Be("/Home");
         await _caseEditOrchestration.Received(1).CommitAllAsync(Rbse, 9);
-        await _farmDraftState.Received(1).ClearAsync(Rbse);
     }
 
     [Fact]
@@ -612,7 +609,7 @@ public sealed class FarmModelHandlerTests
         var farm = MakeFarm();
         _caseService.GetCaseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = Cphh });
         _farmService.GetByCphhAsync(Cphh).Returns(farm);
-        _farmDraftState.GetAsync(Rbse).Returns(new CaseFarmDraftState { Rbse = Rbse, Cphh = Cphh });
+        _sessionState.GetAsync(Rbse).Returns(new CaseEditSessionState { Rbse = Rbse, Cphh = Cphh });
         _caseEditOrchestration.CommitAllAsync(Rbse, Arg.Any<int>())
             .Returns<CaseCommitOutcome>(_ => throw new MandatoryCaseFieldsMissingException(["Owner Name is required."]));
 
@@ -638,11 +635,11 @@ public sealed class FarmModelHandlerTests
             [new HerdSizeRecord { ID = 1, CPHH = Cphh, HerdYear = 2020, TotalSize = 10, RowStamp = [2] }]);
         // An existing draft (rather than null) means LoadOrInitializeDraftStateAsync uses these
         // staged values as-is instead of re-seeding fresh ones from the persisted DB rows.
-        _farmDraftState.GetAsync(Rbse).Returns(new CaseFarmDraftState
+        _sessionState.GetAsync(Rbse).Returns(new CaseEditSessionState
         {
             Rbse = Rbse,
             Cphh = Cphh,
-            HasPendingChanges = true,
+            HasFarmCollectionsChanges = true,
             LinkedFarms =
             [
                 new CaseFarmDraftLinkedFarmItem { Id = 1, RelatedCphh = "04004000404", RowStampBase64 = Convert.ToBase64String([1]) },
@@ -663,11 +660,12 @@ public sealed class FarmModelHandlerTests
 
         var result = await model.OnPostSaveFarmAsync();
 
-        result.Should().BeOfType<RedirectToPageResult>();
-        await _relationRepo.Received(1).AddAsync(Cphh, "03003000303");
-        await _relationRepo.Received(1).UpdateAsync(1, "04004000404", Arg.Any<byte[]>());
-        await _herdSizeRepo.Received(1).AddAsync(Arg.Is<AddHerdSizeCommand>(c => c.HerdYear == 2022 && c.TotalSize == 25));
-        await _herdSizeRepo.Received(1).UpdateAsync(Arg.Is<UpdateHerdSizeCommand>(c => c.ID == 1 && c.HerdYear == 2021));
+        var redirect = result.Should().BeOfType<RedirectToPageResult>().Subject;
+        redirect.PageName.Should().Be("/Home");
+        // Herd Size/Linked Farms now persist inside CaseEditOrchestrationService.CommitAllAsync
+        // itself (same transaction as the Farm row), so the page model only needs to delegate to
+        // it with the staged collections intact, not call the repositories directly.
+        await _caseEditOrchestration.Received(1).CommitAllAsync(Rbse, 9);
     }
 
     [Fact]
@@ -817,7 +815,7 @@ public sealed class FarmModelHandlerTests
         var farm = MakeFarm() with { CPHH = "00001000101" };
         _caseService.GetCaseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = "00001000101" });
         _farmService.GetByCphhAsync("00001000101").Returns(farm);
-        _farmDraftState.GetAsync(Rbse).Returns(new CaseFarmDraftState { Rbse = Rbse, Cphh = "00001000101" });
+        _sessionState.GetAsync(Rbse).Returns(new CaseEditSessionState { Rbse = Rbse, Cphh = "00001000101" });
         _currentUser.GetUserIdAsync().Returns(9);
         _caseEditOrchestration.CommitAllAsync(Rbse, 9).Returns(CaseCommitOutcome.Success([]));
 
@@ -845,7 +843,7 @@ public sealed class FarmModelHandlerTests
         var farm = MakeFarm();
         _caseService.GetCaseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = Cphh });
         _farmService.GetByCphhAsync(Cphh).Returns(farm);
-        _farmDraftState.GetAsync(Rbse).Returns(new CaseFarmDraftState { Rbse = Rbse, Cphh = Cphh });
+        _sessionState.GetAsync(Rbse).Returns(new CaseEditSessionState { Rbse = Rbse, Cphh = Cphh });
 
         var model = CreateModel(["DataEntry"]);
         model.EditableFarm = FarmEditViewModel.FromRecord(farm);
@@ -865,7 +863,7 @@ public sealed class FarmModelHandlerTests
     {
         _caseService.GetCaseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, Cphh = Cphh });
         _farmService.GetByCphhAsync(Cphh).Returns(MakeFarm());
-        _farmDraftState.GetAsync(Rbse).Returns(new CaseFarmDraftState { Rbse = Rbse, Cphh = Cphh });
+        _sessionState.GetAsync(Rbse).Returns(new CaseEditSessionState { Rbse = Rbse, Cphh = Cphh });
         _batchRepository.GetBatchNumbersByRbseAsync(Rbse).Returns([new BatchNumberEntry(1, "2024/001", Rbse, "BSE1")]);
 
         var model = CreateModel(["DataEntry", "VLAAccess"]);

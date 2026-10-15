@@ -53,7 +53,7 @@
     // (matching legacy's RBSE.ascx), not repeated in the page-level summary.
     var summaryFieldErrors = Model.RelationFieldErrors.Where(e => e.Key != "RelationRbse").ToList();
 }
-@if (!ViewContext.ModelState.IsValid || summaryFieldErrors.Count > 0)
+@if (!ViewContext.ModelState.IsValid || summaryFieldErrors.Count > 0 || !string.IsNullOrWhiteSpace(Model.DamError) || !string.IsNullOrWhiteSpace(Model.SireError))
 {
     <div class="govuk-error-summary" data-module="govuk-error-summary">
         <div role="alert">
@@ -63,6 +63,14 @@
                     @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
                     {
                         <li>@e.ErrorMessage</li>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.DamError))
+                    {
+                        <li>Dam: @Model.DamError</li>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.SireError))
+                    {
+                        <li>Sire: @Model.SireError</li>
                     }
                     @foreach (var e in summaryFieldErrors)
                     {
@@ -84,6 +92,11 @@
     var canEditDamSection = canEditRelations;
     var canEditSireSection = canEditRelations && User.IsInRole("VLAAccess") && !isDefraGroup;
     var canEditOtherRelations = canEditSireSection;
+    var relationRbseIsValid = !string.IsNullOrWhiteSpace(Model.RelationRbse) && !Model.RelationFieldErrors.ContainsKey("RelationRbse");
+    // Legacy EnableRelationsControlsForRBSE: once a relation RBSE is set, Sex/Fate/Eartag/birth
+    // date/left date/Sire are derived from the related case and must render disabled immediately
+    // on the server round-trip from Change — not only after the client-side blur lookup re-applies it.
+    var relatedFieldsDisabled = !string.IsNullOrWhiteSpace(Model.RelationRbse);
     var d = Model.DamSire;
     var damLinked = !string.IsNullOrWhiteSpace(d.DamRbse);
     var sireLinked = !string.IsNullOrWhiteSpace(d.SireRbse);
@@ -95,6 +108,9 @@
             return "";
         return id > 0 ? id.ToString() : "(New)";
     }
+
+    // (New) is shown in bold to draw attention to an unsaved Sire/Dam pedigree row.
+    bool IsNewParent(bool hasParent, int id) => hasParent && id <= 0;
 }
 
 @if (canEditRelations)
@@ -119,7 +135,7 @@
         <div class="bse-relations-parent-column">
             <div class="bse-relations-parent-field-row">
                 <span class="govuk-label bse-relations-parent-label-strong">Sire Details</span>
-                <span class="govuk-body bse-relations-parent-static">@ParentIdDisplay(d.HasSire, d.SireId)</span>
+                <span class="govuk-body bse-relations-parent-static @(IsNewParent(d.HasSire, d.SireId) ? "govuk-!-font-weight-bold" : "")">@ParentIdDisplay(d.HasSire, d.SireId)</span>
             </div>
         </div>
         <div class="bse-relations-parent-column">
@@ -228,7 +244,7 @@
                 }
                 @if (sireLinked)
                 {
-                    <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationsView" asp-route-rbse="@d.SireRbse">View Sire's Relations</a>
+                    <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationsView" asp-route-rbse="@d.SireRbse" asp-route-returnUrl="@(HttpContext.Request.Path + HttpContext.Request.QueryString)">View Sire's Relations</a>
                 }
             </div>
         }
@@ -303,7 +319,7 @@
         <div class="bse-relations-parent-column">
             <div class="bse-relations-parent-field-row">
                 <span class="govuk-label bse-relations-parent-label-strong">Dam Details</span>
-                <span class="govuk-body bse-relations-parent-static">@ParentIdDisplay(d.HasDam, d.DamId)</span>
+                <span class="govuk-body bse-relations-parent-static @(IsNewParent(d.HasDam, d.DamId) ? "govuk-!-font-weight-bold" : "")">@ParentIdDisplay(d.HasDam, d.DamId)</span>
             </div>
         </div>
         <div class="bse-relations-parent-column">
@@ -415,7 +431,7 @@
                 }
                 @if (damLinked)
                 {
-                    <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationsView" asp-route-rbse="@d.DamRbse">View Dam's Relations</a>
+                    <a class="govuk-button govuk-button--secondary" asp-page="/Case/RelationsView" asp-route-rbse="@d.DamRbse" asp-route-returnUrl="@(HttpContext.Request.Path + HttpContext.Request.QueryString)">View Dam's Relations</a>
                 }
             </div>
         }
@@ -515,6 +531,7 @@
                 <tr class="govuk-table__row">
                     @{
                         var relBase = Url.Page("/Case/Relations", new { rbse = Model.Rbse });
+                        ViewData["PageNumber"] = Model.PageNumber;
                     }
                     @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="Relation Type", ["Column"]="RelationType", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
                     @await Html.PartialAsync("_SortableHeader", null, new ViewDataDictionary(ViewData) { ["Label"]="RBSE", ["Column"]="RelationRbse", ["SortColumn"]=Model.SortColumn, ["SortDesc"]=Model.SortDesc, ["BaseUrl"]=relBase })
@@ -556,7 +573,7 @@
                                     <div class="bse-row-actions">
                                         <button type="submit" asp-page-handler="BeginEditRelationRow" asp-route-clientKey="@r.ClientKey"
                                                 class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">
-                                            Change<span class="govuk-visually-hidden"> relation @(r.RelationTypeDesc ?? r.RelationType)</span>
+                                            Select<span class="govuk-visually-hidden"> relation @(r.RelationTypeDesc ?? r.RelationType)</span>
                                         </button>
                                         <button type="submit" asp-page-handler="DeleteRelationRow" asp-route-clientKey="@r.ClientKey"
                                                 class="govuk-button govuk-button--warning govuk-!-margin-bottom-0" data-module="govuk-button">
@@ -607,7 +624,7 @@
                 <div class="govuk-form-group bse-relations-field-row govuk-!-margin-bottom-3 @(Model.RelationFieldErrors.ContainsKey("Sex") ? "govuk-form-group--error" : "")">
                     <label class="govuk-label" for="sex">Sex</label>
                     @if (Model.RelationFieldErrors.TryGetValue("Sex", out var sexError)) { <p class="govuk-error-message bse-relations-field-error"><span class="govuk-visually-hidden">Error:</span> @sexError</p> }
-                    <select id="sex" name="Sex" class="govuk-select bse-relations-field-input @(Model.RelationFieldErrors.ContainsKey("Sex") ? "govuk-select--error" : "")">
+                    <select id="sex" name="Sex" class="govuk-select bse-relations-field-input @(Model.RelationFieldErrors.ContainsKey("Sex") ? "govuk-select--error" : "")" disabled="@(relatedFieldsDisabled ? "disabled" : null)">
                         <option value=""></option>
                         @foreach (var s in Model.Sexes)
                         {
@@ -617,29 +634,45 @@
                 </div>
                 <div class="govuk-form-group bse-relations-field-row govuk-!-margin-bottom-3">
                     <label class="govuk-label" for="relation-fate">Fate</label>
-                    <select id="relation-fate" name="RelationFate" class="govuk-select bse-relations-field-input">
+                    <select id="relation-fate" name="RelationFate" class="govuk-select bse-relations-field-input" disabled="@(relatedFieldsDisabled ? "disabled" : null)">
                         <option value=""></option>
                         @foreach (var f in Model.RelationFates)
                         {
                             <option value="@f.Code" selected="@(Model.RelationFate == f.Code)">@f.Description</option>
+                        }
+                        @* Legacy swaps ddlRelationFate's selection for lblRelationFateValue's raw text once
+                           an RBSE is set — the related case's Fate code belongs to luCaseFate, a different
+                           code set to this dropdown's luRelationFate options, so it never matches an
+                           option above. Add it as a synthetic option instead of leaving the field blank. *@
+                        @if (relatedFieldsDisabled && !string.IsNullOrWhiteSpace(Model.RelationFateDesc) && !Model.RelationFates.Any(f => f.Code == Model.RelationFate))
+                        {
+                            <option value="@Model.RelationFate" selected>@Model.RelationFateDesc</option>
                         }
                     </select>
                 </div>
                 <div class="govuk-form-group bse-relations-field-row govuk-!-margin-bottom-3">
                     <label class="govuk-label" for="eartag-country">Eartag</label>
                     <div class="bse-relations-eartag-inputs">
-                        <input id="eartag-country" name="EartagCountry" type="text" maxlength="5" value="@Model.EartagCountry" class="govuk-input bse-relations-eartag-country" />
+                        <input id="eartag-country" name="EartagCountry" type="text" maxlength="5" value="@Model.EartagCountry" class="govuk-input bse-relations-eartag-country" disabled="@(relatedFieldsDisabled ? "disabled" : null)" />
                         <label class="govuk-visually-hidden" for="eartag-herdmark">Eartag herdmark</label>
-                        <input id="eartag-herdmark" name="EartagHerdmark" type="text" value="@Model.EartagHerdmark" class="govuk-input bse-relations-eartag-herdmark" />
+                        <input id="eartag-herdmark" name="EartagHerdmark" type="text" value="@Model.EartagHerdmark" class="govuk-input bse-relations-eartag-herdmark" disabled="@(relatedFieldsDisabled ? "disabled" : null)" />
                         <label class="govuk-visually-hidden" for="eartag">Eartag number</label>
-                        <input id="eartag" name="Eartag" type="text" value="@Model.Eartag" class="govuk-input bse-relations-eartag-number" />
+                        <input id="eartag" name="Eartag" type="text" value="@Model.Eartag" class="govuk-input bse-relations-eartag-number" disabled="@(relatedFieldsDisabled ? "disabled" : null)" />
                     </div>
                 </div>
 
                 @if (canEditOtherRelations)
                 {
                     <div class="govuk-button-group govuk-!-margin-top-2 govuk-!-margin-bottom-0">
-                        <button type="submit" asp-page-handler="AddRelationRow" class="govuk-button govuk-button--secondary" data-module="govuk-button">Add As New</button>
+                        @* Only rendered for a selected row with a valid RBSE — not shown at all otherwise. *@
+                        @if (isEditingRelation && relationRbseIsValid)
+                        {
+                            <a id="view-relation-rbse-link" class="govuk-button govuk-button--secondary"
+                               href="@Url.Page("/Case/RelationsView", new { rbse = Model.RelationRbse, returnUrl = HttpContext.Request.Path + HttpContext.Request.QueryString })"
+                               role="button" draggable="false" data-module="govuk-button">View Relations</a>
+                        }
+                        @* Legacy disables btnAddAsNew once a grid row is selected (grdRelations_SelectedIndexChanged). *@
+                        <button type="submit" asp-page-handler="AddRelationRow" class="govuk-button govuk-button--secondary" data-module="govuk-button" disabled="@isEditingRelation">Add As New</button>
                         @if (isEditingRelation)
                         {
                             <button type="submit" asp-page-handler="UpdateRelationRow" class="govuk-button govuk-button--secondary" data-module="govuk-button">Update Selected</button>
@@ -663,19 +696,19 @@
                     @if (Model.RelationFieldErrors.TryGetValue("BirthMonth", out var birthMonthError)) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @birthMonthError</p> }
                     @if (Model.RelationFieldErrors.TryGetValue("BirthYear", out var birthYearError)) { <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @birthYearError</p> }
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input id="birth-date" name="BirthDate" type="text" value="@(Model.BirthDate?.ToString("dd/MM/yyyy"))" class="govuk-input bse-relations-field-input moj-js-datepicker-input" autocomplete="off" placeholder="dd/mm/yyyy" />
+                        <input id="birth-date" name="BirthDate" type="text" value="@(Model.BirthDate?.ToString("dd/MM/yyyy"))" class="govuk-input bse-relations-field-input moj-js-datepicker-input" autocomplete="off" placeholder="dd/mm/yyyy" disabled="@(relatedFieldsDisabled ? "disabled" : null)" />
                     </div>
                 </div>
                 <div class="govuk-form-group bse-relations-field-row govuk-!-margin-bottom-3 @(Model.RelationFieldErrors.ContainsKey("LeftDate") ? "govuk-form-group--error" : "")">
                     <label class="govuk-label" for="left-date">Date Left</label>
                     @if (Model.RelationFieldErrors.TryGetValue("LeftDate", out var leftDateError)) { <p class="govuk-error-message bse-relations-field-error"><span class="govuk-visually-hidden">Error:</span> @leftDateError</p> }
                     <div class="moj-datepicker" data-module="moj-date-picker" data-leading-zeros="true">
-                        <input id="left-date" name="LeftDate" type="text" value="@(Model.LeftDate?.ToString("dd/MM/yyyy"))" class="govuk-input bse-relations-field-input moj-js-datepicker-input" autocomplete="off" placeholder="dd/mm/yyyy" />
+                        <input id="left-date" name="LeftDate" type="text" value="@(Model.LeftDate?.ToString("dd/MM/yyyy"))" class="govuk-input bse-relations-field-input moj-js-datepicker-input" autocomplete="off" placeholder="dd/mm/yyyy" disabled="@(relatedFieldsDisabled ? "disabled" : null)" />
                     </div>
                 </div>
                 <div class="govuk-form-group bse-relations-field-row govuk-!-margin-bottom-3">
                     <label class="govuk-label" for="sire">Sire</label>
-                    <input id="sire" name="Sire" type="text" maxlength="5" value="@Model.Sire" class="govuk-input bse-relations-field-input" />
+                    <input id="sire" name="Sire" type="text" maxlength="5" value="@Model.Sire" class="govuk-input bse-relations-field-input" disabled="@(relatedFieldsDisabled ? "disabled" : null)" />
                 </div>
             </div>
         </div>
@@ -978,12 +1011,34 @@
             var rbseInput = document.getElementById('relation-rbse');
             var rbseGroup = document.getElementById('relation-rbse-group');
             var rbseStar = document.getElementById('relation-rbse-star');
+            var viewRelationsLink = document.getElementById('view-relation-rbse-link');
             var relatedFields = ['sex', 'relation-fate', 'eartag-country', 'eartag-herdmark', 'eartag', 'birth-date', 'left-date', 'sire']
                 .map(function (id) { return document.getElementById(id); })
                 .filter(Boolean);
 
             if (!rbseInput) {
                 return;
+            }
+
+            function setViewRelationsLink(rbse, enabled) {
+                if (!viewRelationsLink) return;
+                viewRelationsLink.classList.toggle('govuk-button--disabled', !enabled);
+                viewRelationsLink.setAttribute('aria-disabled', enabled ? 'false' : 'true');
+                if (enabled) {
+                    viewRelationsLink.removeAttribute('tabindex');
+                    viewRelationsLink.href = '@Url.Page("/Case/RelationsView")?rbse=' + encodeURIComponent(rbse) + '&returnUrl=' + encodeURIComponent(window.location.pathname + window.location.search);
+                } else {
+                    viewRelationsLink.setAttribute('tabindex', '-1');
+                    viewRelationsLink.href = '#';
+                }
+            }
+
+            if (viewRelationsLink) {
+                viewRelationsLink.addEventListener('click', function (e) {
+                    if (viewRelationsLink.getAttribute('aria-disabled') === 'true') {
+                        e.preventDefault();
+                    }
+                });
             }
 
             function setField(id, value) {
@@ -993,13 +1048,38 @@
                 }
             }
 
+            // The related case's Fate code belongs to luCaseFate, a different code set to this
+            // dropdown's luRelationFate options, so it often won't match any option here — add it
+            // as a synthetic option instead of leaving the field blank (mirrors the server-rendered
+            // fallback for the same reason).
+            function setFateField(code, desc) {
+                var select = document.getElementById('relation-fate');
+                if (!select) return;
+                var stale = select.querySelector('option[data-synthetic="true"]');
+                if (stale) stale.remove();
+                if (!code) {
+                    select.value = '';
+                    return;
+                }
+                select.value = code;
+                if (select.value !== code) {
+                    var opt = document.createElement('option');
+                    opt.value = code;
+                    opt.textContent = desc || code;
+                    opt.setAttribute('data-synthetic', 'true');
+                    select.appendChild(opt);
+                    select.value = code;
+                }
+            }
+
             function setRelatedFieldsDisabled(disabled) {
                 relatedFields.forEach(function (el) { el.disabled = disabled; });
             }
 
             function clearRelatedFields() {
-                ['sex', 'relation-fate', 'eartag-country', 'eartag-herdmark', 'eartag', 'birth-date', 'left-date', 'sire']
+                ['sex', 'eartag-country', 'eartag-herdmark', 'eartag', 'birth-date', 'left-date', 'sire']
                     .forEach(function (id) { setField(id, ''); });
+                setFateField('', '');
             }
 
             // Mirrors legacy's lblInvalid asterisk + red border on the RBSE field, toggled as
@@ -1021,6 +1101,7 @@
                     clearRelatedFields();
                     setRelatedFieldsDisabled(false);
                     setInvalidIndicator(false);
+                    setViewRelationsLink(rbse, false);
                     return;
                 }
 
@@ -1031,11 +1112,12 @@
                             clearRelatedFields();
                             setRelatedFieldsDisabled(false);
                             setInvalidIndicator(true);
+                            setViewRelationsLink(rbse, false);
                             return;
                         }
 
                         setField('sex', result.sex);
-                        setField('relation-fate', result.fate);
+                        setFateField(result.fate, result.fateDesc);
                         setField('eartag-country', result.eartagCountry);
                         setField('eartag-herdmark', result.eartagHerdmark);
                         setField('eartag', result.eartag);
@@ -1044,6 +1126,7 @@
                         setField('sire', result.sire);
                         setRelatedFieldsDisabled(true);
                         setInvalidIndicator(false);
+                        setViewRelationsLink(rbse, true);
                     })
                     .catch(function () { /* network error — leave fields/indicator as last entered */ });
             }

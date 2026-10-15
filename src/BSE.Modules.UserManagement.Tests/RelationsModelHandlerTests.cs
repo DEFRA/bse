@@ -6,6 +6,7 @@ using BSE.Modules.AnimalRelations.Models;
 using BSE.Modules.AnimalRelations.Repositories;
 using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Repositories;
+using BSE.Modules.CaseManagement.Models;
 using BSE.Modules.CaseManagement.Repositories;
 using BSE.Modules.CaseManagement.Services;
 using BSE.Modules.ReferenceData.Models;
@@ -21,6 +22,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Xunit;
+using CaseRelationRecord = BSE.Modules.AnimalRelations.Models.CaseRelationRecord;
+using DamSireDetailRecord = BSE.Modules.AnimalRelations.Models.DamSireDetailRecord;
 
 namespace BSE.Modules.UserManagement.Tests;
 
@@ -36,7 +39,7 @@ public sealed class RelationsModelHandlerTests
     private readonly ICaseService _caseService = Substitute.For<ICaseService>();
     private readonly ILookupDataService _lookups = Substitute.For<ILookupDataService>();
     private readonly IBatchRepository _batchRepository = Substitute.For<IBatchRepository>();
-    private readonly ICaseRelationsDraftStateService _relationsDraftState = Substitute.For<ICaseRelationsDraftStateService>();
+    private readonly ICaseEditSessionStateService _sessionState = Substitute.For<ICaseEditSessionStateService>();
     private readonly IDbConnectionFactory _connectionFactory = Substitute.For<IDbConnectionFactory>();
     private readonly ICurrentUserService _currentUser = Substitute.For<ICurrentUserService>();
 
@@ -48,15 +51,15 @@ public sealed class RelationsModelHandlerTests
         _lookups.GetSexesAsync().Returns(Array.Empty<LuSex>());
         _batchRepository.GetBatchNumbersByRbseAsync(Arg.Any<string>()).Returns(Array.Empty<BatchNumberEntry>());
         _relationsRepository.GetRelationsDetailsByRbseAsync(Arg.Any<string>())
-            .Returns(new RelationDetailsRecord(null, null, Array.Empty<CaseRelationRecord>()));
-        _relationsDraftState.GetAsync(Arg.Any<string>()).Returns((CaseRelationsDraftState?)null);
+            .Returns(new RelationDetailsRecord(null, null, (IReadOnlyList<CaseRelationRecord>)Array.Empty<CaseRelationRecord>()));
+        _sessionState.GetAsync(Arg.Any<string>()).Returns((CaseEditSessionState?)null);
     }
 
     private RelationsModel CreateModel(string[]? roles = null)
     {
         var model = new RelationsModel(
             _relationsRepository, _caseService, _lookups,
-            _batchRepository, _relationsDraftState, Substitute.For<ICaseScalarDraftStateService>(), Substitute.For<ICaseDraftDiscardService>(), Substitute.For<ICaseEditOrchestrationService>(), _connectionFactory, _currentUser,
+            _batchRepository, _sessionState, Substitute.For<ICaseDraftDiscardService>(), Substitute.For<ICaseEditOrchestrationService>(), _connectionFactory, _currentUser,
             NullLogger<RelationsModel>.Instance,
             new ConfigurationBuilder().AddInMemoryCollection().Build())
         {
@@ -319,8 +322,8 @@ public sealed class RelationsModelHandlerTests
             Name = "Derived Sire"
         });
 
-        CaseRelationsDraftState? savedDraft = null;
-        _relationsDraftState.SetAsync(Arg.Do<CaseRelationsDraftState>(d => savedDraft = d)).Returns(Task.CompletedTask);
+        CaseEditSessionState? savedDraft = null;
+        _sessionState.SetAsync(Arg.Do<CaseEditSessionState>(d => savedDraft = d)).Returns(Task.CompletedTask);
 
         var result = await model.OnPostAddRelationRowAsync();
 
@@ -330,6 +333,122 @@ public sealed class RelationsModelHandlerTests
         model.Sire.Should().Be("Derived Sire");
         savedDraft.Should().NotBeNull();
         savedDraft!.Relations.Should().ContainSingle(r => r.RelationType == "Offspring" && r.Sex == "F");
+    }
+
+    // ── OnPostBeginEditRelationRowAsync: must clear stale ModelState so asp-for renders the
+    // newly-selected row, not whatever was posted from a previously-edited/Add-As-New panel ──
+
+    [Fact]
+    public async Task OnPostBeginEditRelationRowAsync_ClearsStaleModelStateForPanelFields()
+    {
+        var model = CreateModel(["DataEntry", "VLAAccess"]);
+        var existingDraft = new CaseEditSessionState
+        {
+            Rbse = Rbse,
+            HasRelationsChanges = true,
+            Relations =
+            [
+                new CaseRelationsDraftItem
+                {
+                    ClientKey = "row-1",
+                    RelationType = "Twin",
+                    Sex = "F",
+                    RelationFate = "Alive",
+                    Sire = "New Sire"
+                }
+            ]
+        };
+        _sessionState.GetAsync(Arg.Any<string>()).Returns(existingDraft);
+
+        // Simulate stale posted values from a different (or blank Add-As-New) panel submission —
+        // asp-for prefers these ModelState entries over the model property unless cleared.
+        foreach (var staleField in new[] { "EditingClientKey", "RelationType", "RelationRbse", "Sex", "BirthDate", "RelationFate", "LeftDate", "EartagCountry", "EartagHerdmark", "Eartag", "Sire" })
+        {
+            model.ModelState.SetModelValue(staleField, new[] { "stale" }, "stale");
+        }
+
+        var result = await model.OnPostBeginEditRelationRowAsync("row-1");
+
+        result.Should().BeOfType<PageResult>();
+        model.RelationType.Should().Be("Twin");
+        model.Sex.Should().Be("F");
+        model.Sire.Should().Be("New Sire");
+        model.ModelState.ContainsKey(nameof(model.RelationType)).Should().BeFalse();
+        model.ModelState.ContainsKey(nameof(model.Sex)).Should().BeFalse();
+        model.ModelState.ContainsKey(nameof(model.RelationFate)).Should().BeFalse();
+        model.ModelState.ContainsKey(nameof(model.Sire)).Should().BeFalse();
+        model.ModelState.ContainsKey(nameof(model.EditingClientKey)).Should().BeFalse();
+    }
+
+    // ── OnPostAddRelationRowAsync: related case's Fate (luCaseFate) has no matching code in
+    // RelationFates (luRelationFate) — RelationFateDesc must still show the real text ──────
+
+    [Fact]
+    public async Task OnPostAddRelationRowAsync_WhenRelatedCaseFateCodeNotInRelationFatesLookup_StillStagesFateDescription()
+    {
+        var model = CreateModel(["DataEntry", "VLAAccess"]);
+        model.RelationType = "Offspring";
+        model.RelationRbse = "002700012";
+        _relationsRepository.GetRelationDetailsOfRelatedCaseAsync("002700012").Returns(new RelatedCaseDetailsRecord
+        {
+            RelationRbse = "002700012",
+            Sex = "F",
+            Fate = "CASE-ONLY-CODE",
+            FateDesc = "Died on farm",
+            Name = "Some Sire"
+        });
+
+        CaseEditSessionState? savedDraft = null;
+        _sessionState.SetAsync(Arg.Do<CaseEditSessionState>(d => savedDraft = d)).Returns(Task.CompletedTask);
+
+        var result = await model.OnPostAddRelationRowAsync();
+
+        result.Should().BeOfType<RedirectToPageResult>();
+        model.RelationFieldErrors.Should().BeEmpty();
+        savedDraft.Should().NotBeNull();
+        savedDraft!.Relations.Should().ContainSingle(r => r.RelationFate == "CASE-ONLY-CODE" && r.RelationFateDesc == "Died on farm");
+    }
+
+    // ── OnPostRemoveDamAsync: legacy RemoveDam() clears Case.DamStatus alongside the dam row ──
+
+    [Fact]
+    public async Task OnPostRemoveDamAsync_ClearsCaseDamStatus_AlongsideDamRow()
+    {
+        var model = CreateModel(["DataEntry"]);
+        model.DamSire.DamStatus = "ALIVE";
+
+        CaseEditSessionState? stored = null;
+        _sessionState.GetAsync(Arg.Any<string>()).Returns(_ => stored);
+        _sessionState.SetAsync(Arg.Do<CaseEditSessionState>(d => stored = d)).Returns(Task.CompletedTask);
+        _caseService.GetCaseAsync(Arg.Any<string>()).Returns((CaseRecord?)null);
+
+        var result = await model.OnPostRemoveDamAsync();
+
+        result.Should().BeOfType<RedirectToPageResult>();
+        stored.Should().NotBeNull();
+        stored!.RemoveDamPending.Should().BeTrue();
+        stored.Case.Should().NotBeNull();
+        stored.Case!.DamStatus.Should().BeNull();
+    }
+
+    // ── OnPostSaveRelationsAsync: future/current-year Sire DOB rejected before it can hit
+    // CK_Pedigree_BirthYear ──────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task OnPostSaveRelationsAsync_WhenSireBirthYearIsNotInThePast_ReturnsPageWithSireError()
+    {
+        var model = CreateModel(["DataEntry"]);
+        model.DamSire.HasSire = true;
+        model.DamSire.SireId = 1;
+        model.DamSire.SireRowStamp = Convert.ToBase64String([1, 2, 3]);
+        model.DamSire.SireBirthYear = DateTime.Today.Year;
+        _lookups.GetAnimalStatusesAsync().Returns(Array.Empty<LuAnimalStatus>());
+        _caseService.GetCaseAsync(Arg.Any<string>()).Returns((CaseRecord?)null);
+
+        var result = await model.OnPostSaveRelationsAsync();
+
+        result.Should().BeOfType<PageResult>();
+        model.SireError.Should().Be("Date of birth must not be in future.");
     }
 }
 

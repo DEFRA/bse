@@ -26,8 +26,7 @@ public class EditModel(
     ILookupDataService lookups,
     ICaseWorkRepository caseWorkRepository,
     ITestRepository testRepository,
-    ICaseEditDraftStateService caseEditDraftState,
-    ICaseScalarDraftStateService caseScalarDraftState,
+    ICaseEditSessionStateService sessionState,
     ICaseDraftDiscardService caseDraftDiscard,
     ICaseEditOrchestrationService caseEditOrchestration,
     IBatchRepository batchRepository,
@@ -252,21 +251,6 @@ public class EditModel(
         return RedirectToTestsAnchor();
     }
 
-    public async Task<IActionResult> OnPostSaveAsync()
-    {
-        if (!CanUserEditCase())
-            return Forbid();
-
-        var postedCase = Case;
-
-        await LoadReadonlyPageAsync();
-        await RestoreAndRestageCaseEditAsync(postedCase);
-        await LoadOrInitializeDraftStateAsync();
-
-        await PersistStagedTestsAsync();
-        await caseEditDraftState.ClearAsync(Rbse);
-        return RedirectToPage(new { rbse = Rbse });
-    }
 
     public async Task<IActionResult> OnGetCancelEditAsync()
     {
@@ -340,6 +324,13 @@ public class EditModel(
         Case.Rbse = Rbse;
         IsNonGbCase = persistedRecord?.IsNonGbCase ?? false;
 
+        // Unlike Case.HasCaseWork (bound from a posted hidden field), this is server-only and
+        // must be recomputed on every render that returns Page() directly — otherwise a
+        // validation failure here silently defaults it to false and hides the Casework button.
+        HasCaseWorkLink = persistedRecord is null
+            || await caseWorkRepository.GetByRbseAsync(Rbse) is not null
+            || await caseWorkRepository.GetEntryByRbseAsync(Rbse) is not null;
+
         // Legacy parity: VLA Data Entry's Save button is technically enabled (btnSave.Enabled =
         // True in VLADataEntryEnable) but every field is read-only, so Save is always a no-op for
         // this group. The fieldset being disabled means the posted Case fields are blank/default
@@ -357,18 +348,9 @@ public class EditModel(
         await LoadLookupsAsync();
         await LoadOrInitializeDraftStateAsync();
 
-        // Test rows are confirmed individually and live in their own table, so they normally
-        // commit here rather than after the Case row, so a validation, mandatory-field or
-        // concurrency failure below doesn't silently discard tests the user has already
-        // confirmed. However, for a brand-new case the Case row doesn't exist in the database
-        // yet (it only lives in the shared session/draft until CommitAllAsync below creates
-        // it), so persisting tests now would violate FK_CaseTest_Case. In that scenario the
-        // staged tests are committed further down, immediately after the Case row itself is
-        // created.
-        var isNewCase = persistedRecord is null;
-        if (!isNewCase)
-            await PersistStagedTestsAndResyncDraftAsync();
-
+        // Test rows now commit inside CaseEditOrchestrationService.CommitAllAsync itself (same
+        // transaction as the Case row), so no separate pre/post-commit persistence step is needed
+        // here regardless of whether this is a brand-new case.
         ApplyLegacyPreSaveNormalizations();
         ValidateLegacyParityRules(isSaveButton: true);
 
@@ -400,13 +382,6 @@ public class EditModel(
             });
         if (failureRedirect is not null)
             return failureRedirect;
-
-        // The Case row now exists (either it already did, or CommitAllAsync just created it),
-        // so it's now safe to persist any staged test rows for a brand-new case.
-        if (isNewCase)
-            await PersistStagedTestsAndResyncDraftAsync();
-
-        await caseEditDraftState.ClearAsync(Rbse);
 
         if (CaseCommitHelper.TryStageWarnings(this, commitOutcome!, Rbse) is { } warningRedirect)
             return warningRedirect;
@@ -467,6 +442,12 @@ public class EditModel(
         if (IsNonGbCase)
             Case.FormADate = persistedRecord!.FormADate;
 
+        // See SaveAsync's identical comment — must be recomputed here too, since this also
+        // renders Page() directly on a validation failure.
+        HasCaseWorkLink = persistedRecord is null
+            || await caseWorkRepository.GetByRbseAsync(Rbse) is not null
+            || await caseWorkRepository.GetEntryByRbseAsync(Rbse) is not null;
+
         // Same no-op guard as SaveAsync: VLA Data Entry's fieldset is fully disabled, so the
         // posted Case fields are blank — staging them into the shared cross-tab draft would risk
         // a later Save (on any tab) committing blanked-out DEFRA fields.
@@ -497,11 +478,14 @@ public class EditModel(
     }
 
     /// <summary>Writes this tab's current field values into the shared cross-tab scalar
-    /// draft (BSE.Host.Services.CaseScalarDraftState), without committing to the database.</summary>
+    /// draft (BSE.Host.Services.CaseEditSessionState), without committing to the database.</summary>
     private async Task StageCaseScalarEditAsync(string rowStampBase64)
     {
-        var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
-        draft.CaseBaseRowStampBase64 ??= rowStampBase64;
+        var draft = await sessionState.GetAsync(Rbse) ?? new CaseEditSessionState { Rbse = Rbse };
+        // Always trust the freshly posted rowstamp over any earlier-pinned one — a stale pin left
+        // over from an earlier stage this session causes a false "modified by another user" error
+        // on the very next Save even with a single user involved.
+        draft.CaseBaseRowStampBase64 = rowStampBase64;
         var baseRowStamp = Convert.FromBase64String(draft.CaseBaseRowStampBase64);
         var newCommand = Case.ToEditCommand(baseRowStamp);
 
@@ -516,7 +500,7 @@ public class EditModel(
         draft.Case = newCommand;
         if (DraftChangeDetector.IsDifferentFromPersisted(newCommand, baseline))
             draft.HasPendingChanges = true;
-        await caseScalarDraftState.SetAsync(draft);
+        await sessionState.SetAsync(draft);
     }
 
     /// <summary>Writes this tab's current CaseWork fields (Barcode/AHF Reference/BSE1 dates/
@@ -552,7 +536,7 @@ public class EditModel(
         // rather than staging a null that would disable all BSE1/Paperwork date validation.
         Case.RbseDate ??= persistedCaseWork?.RbseDate ?? DateTime.Today;
 
-        var draft = await caseScalarDraftState.GetAsync(Rbse) ?? new CaseScalarDraftState { Rbse = Rbse };
+        var draft = await sessionState.GetAsync(Rbse) ?? new CaseEditSessionState { Rbse = Rbse };
         var newCommand = new EditCaseWorkCommand(
             Rbse:                       Rbse,
             RbseDate:                   Case.RbseDate,
@@ -582,12 +566,12 @@ public class EditModel(
         draft.CaseWork = newCommand;
         if (DraftChangeDetector.IsDifferentFromPersisted(newCommand, baseline))
             draft.HasPendingChanges = true;
-        await caseScalarDraftState.SetAsync(draft);
+        await sessionState.SetAsync(draft);
     }
 
     private async Task ApplyStagedCaseOverlayAsync()
     {
-        var staged = await caseScalarDraftState.GetAsync(Rbse);
+        var staged = await sessionState.GetAsync(Rbse);
         if (staged?.Case is not null)
             Case.ApplyStagedCommand(staged.Case);
 
@@ -860,6 +844,11 @@ public class EditModel(
             Case.RbseDate ??= DateTime.Today;
             HasCaseWorkLink = true;
             ApplyLegacyDefraPermissions();
+            // Every dropdown on the page (including Test type/result) sources its options from
+            // here — without it, a POST handler that renders Page() directly (rather than
+            // redirecting into a fresh OnGetAsync) shows every select as empty for a case that
+            // hasn't been saved yet.
+            await LoadLookupsAsync();
             return;
         }
 
@@ -915,28 +904,23 @@ public class EditModel(
     /// also checked before applying any posted field values (see the no-op guard in SaveAsync).</summary>
     private bool CanUserEditCase() => User.IsInRole(DataEntryRole);
 
-    private async Task<CaseEditDraftState> LoadOrInitializeDraftStateAsync()
+    private async Task<CaseEditSessionState> LoadOrInitializeDraftStateAsync()
     {
-        var draft = await caseEditDraftState.GetAsync(Rbse);
-        if (draft is null)
+        var draft = await sessionState.GetAsync(Rbse) ?? new CaseEditSessionState { Rbse = Rbse };
+        if (draft.Tests.Count == 0 && !draft.HasCaseEditChanges)
         {
             var persistedTests = (await testRepository.GetByRbseAsync(Rbse)).OrderBy(t => t.Id).ToList();
-            draft = new CaseEditDraftState
+            draft.Tests = persistedTests.Select(t => new CaseEditDraftTestItem
             {
-                Rbse = Rbse,
-                Tests = persistedTests.Select(t => new CaseEditDraftTestItem
-                {
-                    Id = t.Id,
-                    TestType = t.TestType,
-                    TestTypeDescription = t.TestTypeDescription,
-                    TestResult = t.TestResult,
-                    TestResultDescription = t.TestResultDescription,
-                    RowStampBase64 = t.RowStamp is null ? string.Empty : Convert.ToBase64String(t.RowStamp)
-                }).ToList(),
-                HasPendingChanges = false
-            };
+                Id = t.Id,
+                TestType = t.TestType,
+                TestTypeDescription = t.TestTypeDescription,
+                TestResult = t.TestResult,
+                TestResultDescription = t.TestResultDescription,
+                RowStampBase64 = t.RowStamp is null ? string.Empty : Convert.ToBase64String(t.RowStamp)
+            }).ToList();
 
-            await caseEditDraftState.SetAsync(draft);
+            await sessionState.SetAsync(draft);
         }
 
         StagedTests = draft.Tests.Select(t => new StagedTestItem
@@ -950,7 +934,7 @@ public class EditModel(
             RowStampBase64 = t.RowStampBase64
         }).ToList();
 
-        HasUnsavedChanges = draft.HasPendingChanges;
+        HasUnsavedChanges = draft.HasCaseEditChanges;
         await LoadTestsAsync();
         return draft;
     }
@@ -960,102 +944,24 @@ public class EditModel(
         var testTypeByCode = (await lookups.GetLookupAsync(LookupTableId.TestType)).ToDictionary(x => x.Code, x => x.Description, StringComparer.OrdinalIgnoreCase);
         var testResultByCode = (await lookups.GetLookupAsync(LookupTableId.TestResult)).ToDictionary(x => x.Code, x => x.Description, StringComparer.OrdinalIgnoreCase);
 
-        var draft = new CaseEditDraftState
-        {
-            Rbse = Rbse,
-            HasPendingChanges = hasPendingChanges,
-            Tests = StagedTests.Select(t => new CaseEditDraftTestItem
-            {
-                ClientKey = t.ClientKey,
-                Id = t.Id,
-                TestType = t.TestType,
-                TestTypeDescription = testTypeByCode.GetValueOrDefault(t.TestType),
-                TestResult = t.TestResult,
-                TestResultDescription = string.IsNullOrWhiteSpace(t.TestResult) ? null : testResultByCode.GetValueOrDefault(t.TestResult),
-                RowStampBase64 = t.RowStampBase64
-            }).ToList()
-        };
-
-        await caseEditDraftState.SetAsync(draft);
-        HasUnsavedChanges = hasPendingChanges;
-    }
-
-    /// <summary>
-    /// Commits the staged test rows, then replaces the draft's test list with what is now in the
-    /// database so the temporary negative ids are replaced by real ones. Without the resync a
-    /// second Save would re-insert the same rows. Other staged collections on the shared draft
-    /// (the Case (APHA) tab's other-owner rows) are left untouched.
-    /// </summary>
-    private async Task PersistStagedTestsAndResyncDraftAsync()
-    {
-        await PersistStagedTestsAsync();
-
-        var draft = await caseEditDraftState.GetAsync(Rbse);
-        if (draft is null)
-            return;
-
-        draft.Tests = (await testRepository.GetByRbseAsync(Rbse)).OrderBy(t => t.Id).Select(t => new CaseEditDraftTestItem
-        {
-            Id = t.Id,
-            TestType = t.TestType,
-            TestTypeDescription = t.TestTypeDescription,
-            TestResult = t.TestResult,
-            TestResultDescription = t.TestResultDescription,
-            RowStampBase64 = t.RowStamp is null ? string.Empty : Convert.ToBase64String(t.RowStamp)
-        }).ToList();
-
-        await caseEditDraftState.SetAsync(draft);
-
-        StagedTests = draft.Tests.Select(t => new StagedTestItem
+        // Load-and-mutate, not construct-fresh: Tests and Other Owners (VLA tab) share this same
+        // session object, so overwriting it wholesale here would silently wipe any Other Owners
+        // (or any other tab's) staged work rather than just this tab's own Tests grid.
+        var draft = await sessionState.GetAsync(Rbse) ?? new CaseEditSessionState { Rbse = Rbse };
+        draft.Tests = StagedTests.Select(t => new CaseEditDraftTestItem
         {
             ClientKey = t.ClientKey,
             Id = t.Id,
             TestType = t.TestType,
-            TestTypeDescription = t.TestTypeDescription,
+            TestTypeDescription = testTypeByCode.GetValueOrDefault(t.TestType),
             TestResult = t.TestResult,
-            TestResultDescription = t.TestResultDescription,
+            TestResultDescription = string.IsNullOrWhiteSpace(t.TestResult) ? null : testResultByCode.GetValueOrDefault(t.TestResult),
             RowStampBase64 = t.RowStampBase64
         }).ToList();
+        draft.HasCaseEditChanges = hasPendingChanges;
 
-        await LoadTestsAsync();
-    }
-
-    private async Task PersistStagedTestsAsync()
-    {
-        var persisted = (await testRepository.GetByRbseAsync(Rbse)).ToList();
-        var persistedById = persisted.ToDictionary(t => t.Id);
-        var stagedByExistingId = StagedTests.Where(t => t.Id is > 0).ToDictionary(t => t.Id!.Value);
-
-        foreach (var removed in persisted.Where(p => !stagedByExistingId.ContainsKey(p.Id)))
-        {
-            if (removed.RowStamp is null)
-                continue;
-
-            await testRepository.DeleteAsync(removed.Id, removed.RowStamp);
-        }
-
-        foreach (var staged in StagedTests)
-        {
-            if (staged.Id is null || staged.Id <= 0)
-            {
-                await testRepository.AddAsync(new AddTestCommand(Rbse.Replace("/", ""), staged.TestType, staged.TestResult));
-                continue;
-            }
-
-            if (!persistedById.TryGetValue(staged.Id.Value, out var current))
-                continue;
-
-            var changed = !string.Equals(current.TestType, staged.TestType, StringComparison.OrdinalIgnoreCase)
-                          || !string.Equals(current.TestResult ?? string.Empty, staged.TestResult ?? string.Empty, StringComparison.OrdinalIgnoreCase);
-            if (!changed)
-                continue;
-
-            var rowStamp = string.IsNullOrWhiteSpace(staged.RowStampBase64)
-                ? current.RowStamp ?? []
-                : Convert.FromBase64String(staged.RowStampBase64);
-
-            await testRepository.EditAsync(new EditTestCommand(staged.Id.Value, Rbse.Replace("/", ""), staged.TestType, staged.TestResult, rowStamp));
-        }
+        await sessionState.SetAsync(draft);
+        HasUnsavedChanges = hasPendingChanges;
     }
 
     public async Task<IActionResult> OnPostDeleteTestAsync(int id, string? rowStampBase64)

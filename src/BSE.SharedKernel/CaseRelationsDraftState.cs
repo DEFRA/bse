@@ -1,22 +1,6 @@
 namespace BSE.SharedKernel;
 
-public sealed class CaseRelationsDraftState
-{
-    public string Rbse { get; set; } = string.Empty;
-    public List<CaseRelationsDraftItem> Relations { get; set; } = [];
-    public bool RemoveDamPending { get; set; }
-    public bool RemoveSirePending { get; set; }
-    public bool HasPendingChanges { get; set; }
-
-    // Staged dam/sire match from Look Up, not yet committed to the database. Needed because
-    // Look Up for the dam and the sire post to two separate forms — without staging here, a
-    // match found for one parent is lost from the next request (another Look Up, or Save)
-    // since that request only posts the fields belonging to whichever form was submitted.
-    public PendingParentDraft? PendingDam { get; set; }
-    public PendingParentDraft? PendingSire { get; set; }
-}
-
-/// <summary>A dam/sire match staged from Look Up (or PickSireDam), not yet saved.</summary>
+/// <summary>A dam/sire match staged from Look Up (or PickSireDam), not yet committed to the database.</summary>
 public sealed class PendingParentDraft
 {
     public int Id { get; set; }

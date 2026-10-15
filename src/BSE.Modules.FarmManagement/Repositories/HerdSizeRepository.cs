@@ -28,14 +28,14 @@ public sealed class HerdSizeRepository : DapperRepository, IHerdSizeRepository
     public Task UpdateAsync(UpdateHerdSizeCommand command)
         => ExecuteAsync("EditHerdSize", BuildUpdateParams(command));
 
-    public Task UpdateAsync(UpdateHerdSizeCommand command, IDbConnection connection, IDbTransaction transaction)
-        => ExecuteAsync("EditHerdSize", BuildUpdateParams(command), connection, transaction);
+    public Task<int> UpdateAsync(UpdateHerdSizeCommand command, IDbConnection connection, IDbTransaction transaction)
+        => ExecuteWithRowCountAsync("EditHerdSize", BuildUpdateParams(command), connection, transaction);
 
     public Task DeleteAsync(int id, byte[] rowStamp)
         => ExecuteAsync("DeleteHerdSize", new { ID = id, RowStamp = rowStamp });
 
-    public Task DeleteAsync(int id, byte[] rowStamp, IDbConnection connection, IDbTransaction transaction)
-        => ExecuteAsync("DeleteHerdSize", new { ID = id, RowStamp = rowStamp }, connection, transaction);
+    public Task<int> DeleteAsync(int id, byte[] rowStamp, IDbConnection connection, IDbTransaction transaction)
+        => ExecuteWithRowCountAsync("DeleteHerdSize", new { ID = id, RowStamp = rowStamp }, connection, transaction);
 
     private static object BuildAddParams(AddHerdSizeCommand command) => new
     {

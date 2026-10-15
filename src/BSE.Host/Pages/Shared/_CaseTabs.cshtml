@@ -20,7 +20,7 @@
     };
 
     // Farm, Case (DEFRA), Case (APHA), BAB and Clinical stage their scalar fields into the
-    // shared cross-tab draft (BSE.Host.Services.CaseScalarDraftState) before navigating away,
+    // shared cross-tab session (BSE.Host.Services.CaseEditSessionState) before navigating away,
     // so an invalid field blocks the tab switch, and the edit is not silently lost when Save
     // is eventually pressed on a different tab. Relations has its own scalar fields (Case
     // Herdbook/Dam Status/Dam-Sire) and stages them too. Feeds is the only tab that is a pure

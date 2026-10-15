@@ -53,15 +53,20 @@ public class ClinicalVisitAddModel(
     {
         if (!date.HasValue)
         {
-            ModelState.AddModelError(key, "Enter a visit date.");
+            // The DatePickerModelBinder already added "Please enter a valid date" when the posted
+            // text failed to parse — don't stack a second, contradictory "blank" message on it.
+            if (ModelState[key] is not { Errors.Count: > 0 })
+                ModelState.AddModelError(key, "Enter a visit date.");
             return;
         }
 
+        // Legacy's CalendarDate.Validate treats the earliest bound as inclusive — a visit on the
+        // birth date itself is valid.
         var minDate = birthDate?.Date ?? new DateTime(1970, 1, 1);
-        if (date.Value.Date <= minDate)
+        if (date.Value.Date < minDate)
             ModelState.AddModelError(key, birthDate.HasValue
-                ? "The visit date must be after the birth date."
-                : "The visit date must be after 1 January 1970.");
+                ? "The visit date must be on or after the birth date."
+                : "The visit date must be on or after 1 January 1970.");
 
         if (date.Value.Date > DateTime.Today)
             ModelState.AddModelError(key, "The visit date must not be in the future.");

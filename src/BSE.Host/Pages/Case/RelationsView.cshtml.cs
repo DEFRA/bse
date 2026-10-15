@@ -20,6 +20,13 @@ public class RelationsViewModel(IAnimalRelationsRepository relationsRepository) 
     [BindProperty(SupportsGet = true)]
     public string Rbse { get; set; } = string.Empty;
 
+    /// <summary>Page the user came from. Rendered as a direct link rather than relying on
+    /// history.back() — the referring page is sometimes the result of a POST (e.g. the Relations
+    /// tab's inline Select/Add/Update handlers), and browsers show a resubmission error/warning
+    /// when history.back() lands on that entry instead of reloading it.</summary>
+    [BindProperty(SupportsGet = true)]
+    public string? ReturnUrl { get; set; }
+
     public RelationDetailsRecord? Details { get; private set; }
 
     public async Task<IActionResult> OnGetAsync()
@@ -28,6 +35,11 @@ public class RelationsViewModel(IAnimalRelationsRepository relationsRepository) 
         if (rbse.Length == 0)
         {
             return RedirectToPage("/Home");
+        }
+
+        if (!string.IsNullOrEmpty(ReturnUrl) && !Url.IsLocalUrl(ReturnUrl))
+        {
+            ReturnUrl = null;
         }
 
         Details = await relationsRepository.GetRelationsDetailsByRbseAsync(rbse);
