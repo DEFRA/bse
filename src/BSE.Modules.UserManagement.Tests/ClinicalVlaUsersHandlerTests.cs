@@ -472,6 +472,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         _clinicalRepository.GetVisitsByRbseAsync(Arg.Any<string>()).Returns(Array.Empty<ClinicalVisitRecord>());
         _batchRepository.GetBatchNumbersByRbseAsync(Arg.Any<string>()).Returns(Array.Empty<BatchNumberEntry>());
         _caseRepository.GetCaseByRbseAsync(Arg.Any<string>()).Returns((CaseRecord?)null);
+        _clinicalEditOrchestration.CommitAllAsync(Arg.Any<string>(), Arg.Any<int>()).Returns(CaseCommitOutcome.Success([]));
 
         var connection = Substitute.For<System.Data.IDbConnection>();
         var transaction = Substitute.For<System.Data.IDbTransaction>();
@@ -481,7 +482,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         var model = new ClinicalModel(
             _clinicalRepository, _caseRepository, _batchRepository, _clinicalDraftState,
             _clinicalCaseDraftDiscard, _clinicalEditOrchestration,
-            _currentUserService, _clinicalConnectionFactory, new ConfigurationBuilder().AddInMemoryCollection().Build())
+            _currentUserService, new ConfigurationBuilder().AddInMemoryCollection().Build())
         {
             Rbse = Rbse
         };
@@ -546,8 +547,7 @@ public sealed class ClinicalVlaUsersHandlerTests
 
         var redirect = result.Should().BeOfType<RedirectToPageResult>().Subject;
         redirect.PageName.Should().Be("/Home");
-        await _clinicalRepository.Received(1).AddAsync(
-            Arg.Any<AddCaseClinicalCommand>(), Arg.Any<System.Data.IDbConnection>(), Arg.Any<System.Data.IDbTransaction>());
+        await _clinicalEditOrchestration.Received(1).CommitAllAsync(Rbse, Arg.Any<int>());
     }
 
     [Fact]
@@ -1314,8 +1314,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         var result = await model.OnPostSaveSignsAsync(null);
 
         result.Should().BeOfType<RedirectToPageResult>();
-        await _clinicalRepository.Received(1).DeleteVisitAsync(1, Arg.Is<byte[]>(b => b.SequenceEqual(new byte[] { 9, 9 })),
-            Arg.Any<System.Data.IDbConnection>(), Arg.Any<System.Data.IDbTransaction>());
+        await _clinicalEditOrchestration.Received(1).CommitAllAsync(Rbse, Arg.Any<int>());
     }
 
     [Fact]
@@ -1337,9 +1336,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         var result = await model.OnPostSaveSignsAsync(null);
 
         result.Should().BeOfType<RedirectToPageResult>();
-        await _clinicalRepository.Received(1).EditVisitAsync(
-            Arg.Is<EditClinicalVisitCommand>(c => c.Id == 1 && c.VisitDate == new DateTime(2024, 2, 2)),
-            Arg.Any<System.Data.IDbConnection>(), Arg.Any<System.Data.IDbTransaction>());
+        await _clinicalEditOrchestration.Received(1).CommitAllAsync(Rbse, Arg.Any<int>());
     }
 
     [Fact]

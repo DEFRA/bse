@@ -1,5 +1,4 @@
-﻿using BSE.Infrastructure;
-using BSE.Host.Helpers;
+﻿using BSE.Host.Helpers;
 using BSE.Host.Services;
 using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Repositories;
@@ -23,7 +22,6 @@ public class BabModel(
     ICaseRepository caseRepository,
     ILookupDataService lookups,
     IBatchRepository batchRepository,
-    IDbConnectionFactory connectionFactory,
     ICaseEditSessionStateService sessionState,
     ICaseDraftDiscardService caseDraftDiscard,
     ICaseEditOrchestrationService caseEditOrchestration,
@@ -113,53 +111,42 @@ public class BabModel(
             await ClearPurchaseFieldsIfPresentAsync();
         }
 
-        // Cross-tab staging (restores legacy's "one session, one commit" model): only the edit
-        // path (an existing BAB row) stages — first-time creation keeps committing immediately,
-        // since there is no earlier row for another tab's save to silently discard.
-        if (!string.IsNullOrEmpty(rowStampBase64))
-        {
-            var rowStamp = Convert.FromBase64String(rowStampBase64);
-            var edit = new EditCaseBabCommand(
-                Rbse, Bab.NatalCphh, Bab.Notes,
-                Bab.TracedName, Bab.TracedAddress1, Bab.TracedAddress2, Bab.TracedAddress3,
-                Bab.TracedPostcode, Bab.FeedRisk, Bab.HorizontalRisk, Bab.MaternalRisk,
-                rowStamp);
+        // Cross-tab staging (restores legacy's "one session, one commit" model): stage this
+        // tab's fields and commit through CommitAllAsync regardless of whether a BAB row already
+        // exists — its isNewCase/no-existing-Bab-row branches already Add vs Edit correctly. A
+        // brand-new BAB row (no rowStampBase64, i.e. the very first Save for a new case) used to
+        // bypass staging entirely and insert BAB in its own standalone transaction — which, for a
+        // genuinely new case, ran before Case/Farm/CaseWork had been created (CommitAllAsync is
+        // the only thing that creates them), either throwing an FK violation or, when some other
+        // tab's Save had already created the case, silently committing only this tab's row while
+        // leaving whatever Farm/Case fields were still staged (never committed) uncommitted.
+        var rowStamp = string.IsNullOrEmpty(rowStampBase64) ? [] : Convert.FromBase64String(rowStampBase64);
+        var edit = new EditCaseBabCommand(
+            Rbse, Bab.NatalCphh, Bab.Notes,
+            Bab.TracedName, Bab.TracedAddress1, Bab.TracedAddress2, Bab.TracedAddress3,
+            Bab.TracedPostcode, Bab.FeedRisk, Bab.HorizontalRisk, Bab.MaternalRisk,
+            rowStamp);
 
-            var draft = await sessionState.GetAsync(Rbse) ?? new CaseEditSessionState { Rbse = Rbse };
-            // Always trust the freshly posted rowstamp over any earlier-pinned one — a stale pin
-            // left over from an earlier stage this session causes a false "modified by another
-            // user" error on the very next Save even with a single user involved.
-            draft.BabBaseRowStampBase64 = rowStampBase64;
-            draft.Bab = edit with { RowStamp = Convert.FromBase64String(draft.BabBaseRowStampBase64) };
-            draft.BabOrigin = Origin;
-            StageCaseOrigin(draft, currentCase);
-            draft.HasPendingChanges = true;
-            await sessionState.SetAsync(draft);
+        var draft = await sessionState.GetAsync(Rbse) ?? new CaseEditSessionState { Rbse = Rbse };
+        // Always trust the freshly posted rowstamp over any earlier-pinned one — a stale pin
+        // left over from an earlier stage this session causes a false "modified by another
+        // user" error on the very next Save even with a single user involved.
+        draft.BabBaseRowStampBase64 = rowStampBase64 ?? string.Empty;
+        draft.Bab = edit with { RowStamp = string.IsNullOrEmpty(draft.BabBaseRowStampBase64) ? [] : Convert.FromBase64String(draft.BabBaseRowStampBase64) };
+        draft.BabOrigin = Origin;
+        StageCaseOrigin(draft, currentCase);
+        draft.HasPendingChanges = true;
+        await sessionState.SetAsync(draft);
 
-            var userId = await currentUser.GetUserIdAsync();
-            var (failureRedirect, commitOutcome) = await CaseCommitHelper.CommitAllAsync(
-                this, caseEditOrchestration, Rbse, userId,
-                result => $"Unable to save BAB changes: {result}.");
-            if (failureRedirect is not null)
-                return failureRedirect;
+        var userId = await currentUser.GetUserIdAsync();
+        var (failureRedirect, commitOutcome) = await CaseCommitHelper.CommitAllAsync(
+            this, caseEditOrchestration, Rbse, userId,
+            result => $"Unable to save BAB changes: {result}.");
+        if (failureRedirect is not null)
+            return failureRedirect;
 
-            if (CaseCommitHelper.TryStageWarnings(this, commitOutcome!, Rbse) is { } warningRedirect)
-                return warningRedirect;
-        }
-        else
-        {
-            using var conn = connectionFactory.CreateConnection();
-            conn.Open();
-            using var tx = conn.BeginTransaction();
-
-            var add = new AddCaseBabCommand(
-                Rbse, Bab.NatalCphh, Bab.Notes,
-                Bab.TracedName, Bab.TracedAddress1, Bab.TracedAddress2, Bab.TracedAddress3,
-                Bab.TracedPostcode, Bab.FeedRisk, Bab.HorizontalRisk, Bab.MaternalRisk);
-            await babRepository.AddAsync(add, Origin, conn, tx);
-
-            tx.Commit();
-        }
+        if (CaseCommitHelper.TryStageWarnings(this, commitOutcome!, Rbse) is { } warningRedirect)
+            return warningRedirect;
 
         // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx on a fully successful
         // save, clearing the session case state — not back to the tab the user was on.

@@ -53,7 +53,7 @@
     // (matching legacy's RBSE.ascx), not repeated in the page-level summary.
     var summaryFieldErrors = Model.RelationFieldErrors.Where(e => e.Key != "RelationRbse").ToList();
 }
-@if (!ViewContext.ModelState.IsValid || summaryFieldErrors.Count > 0)
+@if (!ViewContext.ModelState.IsValid || summaryFieldErrors.Count > 0 || !string.IsNullOrWhiteSpace(Model.DamError) || !string.IsNullOrWhiteSpace(Model.SireError))
 {
     <div class="govuk-error-summary" data-module="govuk-error-summary">
         <div role="alert">
@@ -63,6 +63,14 @@
                     @foreach (var e in ViewContext.ModelState.Values.SelectMany(v => v.Errors))
                     {
                         <li>@e.ErrorMessage</li>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.DamError))
+                    {
+                        <li>Dam: @Model.DamError</li>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.SireError))
+                    {
+                        <li>Sire: @Model.SireError</li>
                     }
                     @foreach (var e in summaryFieldErrors)
                     {
@@ -100,6 +108,9 @@
             return "";
         return id > 0 ? id.ToString() : "(New)";
     }
+
+    // (New) is shown in bold to draw attention to an unsaved Sire/Dam pedigree row.
+    bool IsNewParent(bool hasParent, int id) => hasParent && id <= 0;
 }
 
 @if (canEditRelations)
@@ -124,7 +135,7 @@
         <div class="bse-relations-parent-column">
             <div class="bse-relations-parent-field-row">
                 <span class="govuk-label bse-relations-parent-label-strong">Sire Details</span>
-                <span class="govuk-body bse-relations-parent-static">@ParentIdDisplay(d.HasSire, d.SireId)</span>
+                <span class="govuk-body bse-relations-parent-static @(IsNewParent(d.HasSire, d.SireId) ? "govuk-!-font-weight-bold" : "")">@ParentIdDisplay(d.HasSire, d.SireId)</span>
             </div>
         </div>
         <div class="bse-relations-parent-column">
@@ -308,7 +319,7 @@
         <div class="bse-relations-parent-column">
             <div class="bse-relations-parent-field-row">
                 <span class="govuk-label bse-relations-parent-label-strong">Dam Details</span>
-                <span class="govuk-body bse-relations-parent-static">@ParentIdDisplay(d.HasDam, d.DamId)</span>
+                <span class="govuk-body bse-relations-parent-static @(IsNewParent(d.HasDam, d.DamId) ? "govuk-!-font-weight-bold" : "")">@ParentIdDisplay(d.HasDam, d.DamId)</span>
             </div>
         </div>
         <div class="bse-relations-parent-column">
