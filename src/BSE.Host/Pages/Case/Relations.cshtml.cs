@@ -98,6 +98,10 @@ public class RelationsModel(
     public int? BirthYear { get; set; }
     [BindProperty, ModelBinder(BinderType = typeof(DatePickerModelBinder))] public DateTime? LeftDate { get; set; }
     [BindProperty] public string? RelationFate { get; set; }
+    /// <summary>Populated from the related case's Fate (a luCaseFate code/description) whenever an
+    /// RBSE is set — that vocabulary is distinct from this panel's luRelationFate options, so
+    /// RelationFate alone can't be matched back to a description via the RelationFates lookup.</summary>
+    [BindProperty] public string? RelationFateDesc { get; set; }
     [BindProperty] public string? Sire { get; set; }
 
     public IDictionary<string, string> RelationFieldErrors { get; private set; } = new Dictionary<string, string>();
@@ -748,7 +752,7 @@ public class RelationsModel(
             BirthMonth = BirthMonth,
             BirthYear = BirthYear,
             RelationFate = RelationFate,
-            RelationFateDesc = RelationFates.FirstOrDefault(f => f.Code == RelationFate)?.Description,
+            RelationFateDesc = RelationFateDesc ?? RelationFates.FirstOrDefault(f => f.Code == RelationFate)?.Description,
             LeftDate = LeftDate,
             EartagCountry = EartagCountry,
             EartagHerdmark = EartagHerdmark,
@@ -786,6 +790,7 @@ public class RelationsModel(
                 ? new DateTime(item.BirthYear.Value, item.BirthMonth.Value, item.BirthDay.Value, 0, 0, 0, DateTimeKind.Unspecified)
                 : null;
             RelationFate = item.RelationFate;
+            RelationFateDesc = item.RelationFateDesc;
             LeftDate = item.LeftDate;
             EartagCountry = item.EartagCountry;
             EartagHerdmark = item.EartagHerdmark;
@@ -802,6 +807,7 @@ public class RelationsModel(
             ModelState.Remove(nameof(Sex));
             ModelState.Remove(nameof(BirthDate));
             ModelState.Remove(nameof(RelationFate));
+            ModelState.Remove(nameof(RelationFateDesc));
             ModelState.Remove(nameof(LeftDate));
             ModelState.Remove(nameof(EartagCountry));
             ModelState.Remove(nameof(EartagHerdmark));
@@ -851,7 +857,7 @@ public class RelationsModel(
         item.BirthMonth = BirthMonth;
         item.BirthYear = BirthYear;
         item.RelationFate = RelationFate;
-        item.RelationFateDesc = RelationFates.FirstOrDefault(f => f.Code == RelationFate)?.Description;
+        item.RelationFateDesc = RelationFateDesc ?? RelationFates.FirstOrDefault(f => f.Code == RelationFate)?.Description;
         item.LeftDate = LeftDate;
         item.EartagCountry = EartagCountry;
         item.EartagHerdmark = EartagHerdmark;
@@ -1365,6 +1371,7 @@ public class RelationsModel(
             found = true,
             sex = related.Sex,
             fate = related.Fate,
+            fateDesc = related.FateDesc,
             eartagCountry = related.EartagCountry,
             eartagHerdmark = related.EartagHerdmark,
             eartag = related.Eartag,
@@ -1429,6 +1436,7 @@ public class RelationsModel(
 
         Sex = related.Sex;
         RelationFate = related.Fate;
+        RelationFateDesc = related.FateDesc;
         EartagCountry = related.EartagCountry;
         EartagHerdmark = related.EartagHerdmark;
         Eartag = related.Eartag;

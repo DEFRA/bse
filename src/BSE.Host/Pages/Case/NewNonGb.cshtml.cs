@@ -89,6 +89,11 @@ public class NewNonGbModel : PageModel
         return Page();
     }
 
+    /// <summary>Live eartag validation for the help tooltip, reusing the server-side rules so the
+    /// hint reflects the same pass/fail result as Save — matches Edit.cshtml.cs's identical handler.</summary>
+    public IActionResult OnGetValidateEartag(string? country, string? herdmark, string? animal)
+        => new JsonResult(new { error = EartagValidator.Validate(country, herdmark, animal) });
+
     public async Task<IActionResult> OnPostAsync()
     {
         if (string.IsNullOrWhiteSpace(Rbse))
