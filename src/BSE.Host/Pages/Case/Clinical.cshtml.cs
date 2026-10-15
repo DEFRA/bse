@@ -20,6 +20,7 @@ public class ClinicalModel(
     IClinicalRepository clinicalRepository,
     ICaseRepository caseRepository,
     IBatchRepository batchRepository,
+    ICaseWizardStateService wizardState,
     ICaseEditSessionStateService sessionState,
     ICaseDraftDiscardService caseDraftDiscard,
     ICaseEditOrchestrationService caseEditOrchestration,
@@ -43,6 +44,11 @@ public class ClinicalModel(
     public string? ClinicalRowStampBase64 { get; private set; }
     public string SpolSiteUrl { get; private set; } = string.Empty;
     public IReadOnlyList<BatchNumberEntry> BatchNumbers { get; private set; } = [];
+
+    /// <summary>Legacy IsVLAAllowedAdditionalCaseEdit: a VLA user can edit Clinical signs/visits
+    /// freely unless a batch is currently selected AND this case is already linked to it — once
+    /// batch-processed under the active batch, these fields lock for VLA roles.</summary>
+    public bool IsVlaAllowedAdditionalCaseEdit { get; private set; } = true;
 
     // ── Inline "add/edit clinical visit" row state (GDS editable-grid pattern, matches /Case/Farm) ──
     [BindProperty] public List<StagedVisitItem> StagedVisits { get; set; } = [];
@@ -442,6 +448,10 @@ public class ClinicalModel(
         var stagedCase = (await sessionState.GetAsync(Rbse))?.Case;
         BirthDate        = stagedCase is not null ? stagedCase.BirthDate : caseRecord?.BirthDate;
         BatchNumbers     = (await batchTask).ToList().AsReadOnly();
+
+        var pendingBatch = await wizardState.GetAsync();
+        IsVlaAllowedAdditionalCaseEdit = pendingBatch is null
+            || !BatchNumbers.Any(b => b.BatchId == pendingBatch.BatchId);
     }
 
     private async Task<CaseEditSessionState> LoadOrInitializeDraftStateAsync()

@@ -161,7 +161,7 @@ public class FarmModel(
 
     [BindProperty(SupportsGet = true)] public int    HPage { get; set; } = 1;
     [BindProperty(SupportsGet = true)] public string HSort { get; set; } = "year";
-    [BindProperty(SupportsGet = true)] public string HDir  { get; set; } = "desc";
+    [BindProperty(SupportsGet = true)] public string HDir  { get; set; } = "asc";
     public int HerdSizesTotalPages => Math.Max(1, (int)Math.Ceiling(SortedStagedHerdSizes().Count / (double)PageSize));
     public int HerdSizesTotalCount => SortedStagedHerdSizes().Count;
     public int HerdSizesCurrentPage => Math.Clamp(HPage, 1, HerdSizesTotalPages);
@@ -463,6 +463,13 @@ public class FarmModel(
             ModelState.AddModelError("EditableFarm.CPHH", "The CPHH you have entered is for a non-GB Farm.");
             EditableFarm ??= new FarmEditViewModel();
             EditableFarm.CPHH = normalisedCphh;
+
+            // Legacy parity: btnLookUp_Click's non-GB branch only shows the warning label — it never
+            // touches Session(SV_CPHHNumber)/LoadFarmDetails/the grid pagers, so whatever Farm/Linked
+            // Farms/Herd Size were already displayed from an earlier valid Look Up remain on screen
+            // unchanged. skipReseedCheck stops this rejected CPHH from being treated as a genuine
+            // CPHH change and wiping them.
+            await LoadOrInitializeDraftStateAsync(skipReseedCheck: true);
             await LoadLookupsForEditAsync();
             return Page();
         }
@@ -1654,7 +1661,12 @@ public class FarmModel(
         return hasHerdErrors;
     }
 
-    private async Task<CaseEditSessionState> LoadOrInitializeDraftStateAsync()
+    /// <param name="skipReseedCheck">True for a rejected Look Up attempt (e.g. a non-GB CPHH) that
+    /// never resolved to a farm — legacy's btnLookUp_Click only shows the warning label in that case
+    /// and never touches Session(SV_CPHHNumber)/the grids, so whatever was already staged from an
+    /// earlier valid Look Up must redisplay unchanged instead of being reseeded against the rejected
+    /// CPHH.</param>
+    private async Task<CaseEditSessionState> LoadOrInitializeDraftStateAsync(bool skipReseedCheck = false)
     {
         // Must still read any already-staged draft even when Farm is null (a brand-new case's
         // farm has no DB row yet) — otherwise linked farms/herd sizes added via Add/Confirm before
@@ -1667,15 +1679,26 @@ public class FarmModel(
         // sizes. Likewise, looking up one CPHH, then looking up a *different* CPHH in the same
         // session, must not keep showing the first farm's already-cached Linked Farms/Herd Size rows
         // — reseed from the newly resolved farm's own persisted data whenever the staged Cphh no
-        // longer matches it, exactly as a brand-new draft would.
-        var needsSeedFromPersisted = (draft.LinkedFarms.Count == 0 && draft.HerdSizes.Count == 0 && !draft.HasFarmCollectionsChanges)
-            || (Farm is not null && !string.Equals(draft.Cphh, Farm.CPHH, StringComparison.OrdinalIgnoreCase));
+        // longer matches it, exactly as a brand-new draft would. Compared against the CPHH this
+        // request is actually resolving to (EditableFarm.CPHH), not just Farm?.CPHH — the previous
+        // check only re-seeded when the *new* CPHH matched an existing farm; looking up a second
+        // CPHH that itself has no farm row yet (Farm stays null) never re-triggered it, so the first
+        // CPHH's Herd Size/Linked Farms grids kept showing after switching to an unregistered CPHH.
+        var requestedCphh = CphhNormalizer.Normalize(EditableFarm?.CPHH);
+        var needsSeedFromPersisted = !skipReseedCheck
+            && ((draft.LinkedFarms.Count == 0 && draft.HerdSizes.Count == 0 && !draft.HasFarmCollectionsChanges)
+                || (requestedCphh.Length > 0 && !string.Equals(draft.Cphh, requestedCphh, StringComparison.OrdinalIgnoreCase))
+                || (Farm is not null && !string.Equals(draft.Cphh, Farm.CPHH, StringComparison.OrdinalIgnoreCase)));
 
         if (needsSeedFromPersisted)
         {
             if (Farm is null)
             {
-                draft.Cphh = string.Empty;
+                // Track the CPHH being resolved (not blank) even though it has no farm row yet —
+                // otherwise every subsequent call here would see draft.Cphh ("") still differing
+                // from requestedCphh and keep wiping any Herd Size/Linked Farm rows the user had
+                // already added for this still-unregistered CPHH.
+                draft.Cphh = requestedCphh;
                 draft.LinkedFarms = [];
                 draft.HerdSizes = [];
             }

@@ -480,7 +480,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         connection.BeginTransaction().Returns(transaction);
 
         var model = new ClinicalModel(
-            _clinicalRepository, _caseRepository, _batchRepository, _clinicalDraftState,
+            _clinicalRepository, _caseRepository, _batchRepository, _wizardState, _clinicalDraftState,
             _clinicalCaseDraftDiscard, _clinicalEditOrchestration,
             _currentUserService, new ConfigurationBuilder().AddInMemoryCollection().Build())
         {
