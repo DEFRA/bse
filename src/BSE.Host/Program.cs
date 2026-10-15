@@ -23,6 +23,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Policy;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
 using Sustainsys.Saml2;
@@ -42,6 +43,8 @@ Log.Logger = new LoggerConfiguration()
 try
 {
     const string UnauthorizedPath = "/Unauthorized";
+    const string SessionCookieName = "BSE.Session";
+    const string AuthCookieName = "BSE.Auth";
 
     var builder = WebApplication.CreateBuilder(args);
 
@@ -171,6 +174,19 @@ try
     var bypassAuthentication = builder.Environment.IsDevelopment()
         && builder.Configuration.GetValue<bool>("Authentication:BypassEnabled");
 
+    // One idle timeout drives both the auth cookie and the ASP.NET session so they expire together.
+    var idleTimeout = TimeSpan.FromMinutes(
+        Math.Max(1, builder.Configuration.GetValue("Session:IdleTimeoutMinutes", 20)));
+
+    // Shared key ring so auth/session cookies survive restarts and scale-out (e.g. a /home share on App Service).
+    var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"];
+    if (!string.IsNullOrWhiteSpace(dataProtectionKeysPath))
+    {
+        builder.Services.AddDataProtection()
+            .SetApplicationName("BSE")
+            .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
+    }
+
     builder.Services.Configure<Saml2Configuration>(
         builder.Configuration.GetSection(Saml2Configuration.SectionName));
 
@@ -206,6 +222,12 @@ try
             })
             .AddCookie(options =>
             {
+                options.ExpireTimeSpan = idleTimeout;
+                options.SlidingExpiration = true;
+                options.Cookie.Name = AuthCookieName;
+                options.Cookie.HttpOnly = true;
+                options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+
                 options.Events.OnRedirectToLogin = async ctx =>
 
                 {
@@ -216,11 +238,24 @@ try
                         ctx.Request.Path.Value,
                         ctx.Request.Query["ReturnUrl"].ToString());
 
+                    // A stale auth cookie means the sign-in timed out: tell the user instead of jumping straight to Entra.
+                    if (ctx.Request.Cookies.ContainsKey(AuthCookieName)
+                        && ctx.Request.Headers.Accept.ToString().Contains("text/html", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ctx.Response.Redirect("/SessionError");
+                        return;
+                    }
+
+                    // Return to the page that triggered the challenge after re-authentication (GET only).
+                    var returnUri = HttpMethods.IsGet(ctx.Request.Method)
+                        ? $"{ctx.Request.PathBase}{ctx.Request.Path}{ctx.Request.QueryString}"
+                        : "/Home";
+
                     await ctx.HttpContext.ChallengeAsync(
                         Saml2Defaults.Scheme,
                         new AuthenticationProperties
                         {
-                            RedirectUri = "/Home"
+                            RedirectUri = returnUri
                         });
                 };
                 // Redirect authenticated users with insufficient permissions to Unauthorized, not a 403.
@@ -260,6 +295,15 @@ try
                 };
 
                 options.IdentityProviders.Add(idp);
+
+                // Without ForceAuthn, Entra's SSO session silently re-signs the user in after the idle timeout.
+                if (saml2Config.ForceAuthn)
+                {
+                    options.Notifications.AuthenticationRequestCreated = (request, _, _) =>
+                    {
+                        request.ForceAuthentication = true;
+                    };
+                }
 
                 // Extract the user's email from the Entra ID SAML assertion and add it
                 // as the canonical 'emailaddress' claim so GroupClaimsTransformation
@@ -367,7 +411,8 @@ try
     // ── Session support (for grid state persistence in OSS Export and other pages) ──
     builder.Services.AddSession(options =>
     {
-        options.IdleTimeout = TimeSpan.FromMinutes(20);
+        options.IdleTimeout = idleTimeout;
+        options.Cookie.Name = SessionCookieName;
         options.Cookie.HttpOnly = true;
         options.Cookie.IsEssential = true; // Required for app to function
     });
@@ -463,6 +508,40 @@ try
         await next();
     });
 
+    // The ASP.NET session cookie outlives its server-side state, so a cookie with no marker means the
+    // session idled out. The case/wizard pages only reach /SessionError on a blank RBSE, never on timeout.
+    app.Use(async (context, next) =>
+    {
+        var path = context.Request.Path;
+        var isExcludedPath =
+            path.StartsWithSegments(UnauthorizedPath, StringComparison.OrdinalIgnoreCase)
+            || path.StartsWithSegments("/Error", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWithSegments("/SessionError", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWithSegments("/Saml2", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWithSegments("/signin", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWithSegments("/signout", StringComparison.OrdinalIgnoreCase)
+            || System.IO.Path.HasExtension(path.Value);
+
+        var wantsHtml = context.Request.Headers.Accept.ToString().Contains("text/html", StringComparison.OrdinalIgnoreCase);
+
+        if (!isExcludedPath && wantsHtml && context.User.Identity?.IsAuthenticated == true)
+        {
+            const string marker = "bse.session.started";
+            if (context.Session.GetString(marker) is null)
+            {
+                context.Session.SetString(marker, "1");
+                if (context.Request.Cookies.ContainsKey(SessionCookieName))
+                {
+                    context.Response.Redirect("/SessionError");
+                    return;
+                }
+            }
+        }
+
+        await next();
+    });
+
     app.UseAuthorization();
 
     // Liveness: always returns 200 — no health checks evaluated.
@@ -507,6 +586,21 @@ try
     }).RequireAuthorization();
 
     app.MapGet("/", () => Results.Redirect("/Home"));
+
+    // Target of "Sign in again" on the session-timeout page: drops stale cookies, then starts Entra sign-in.
+    app.MapGet("/signin", (HttpContext ctx) =>
+    {
+        ctx.Response.Cookies.Delete(AuthCookieName);
+        ctx.Response.Cookies.Delete(SessionCookieName);
+
+        if (bypassAuthentication)
+            return Results.Redirect("/Home");
+
+        return Results.Challenge(
+            new AuthenticationProperties { RedirectUri = "/Home" },
+            [Saml2Defaults.Scheme]);
+    }).AllowAnonymous();
+
     app.MapRazorPages();
 
     app.Run();
