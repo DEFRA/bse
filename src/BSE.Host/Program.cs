@@ -218,7 +218,8 @@ try
             .AddAuthentication(options =>
             {
                 options.DefaultScheme          = CookieAuthenticationDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = Saml2Defaults.Scheme;
+                // Cookie challenge runs OnRedirectToLogin (timeout page, else Entra); a Saml2 default would skip it.
+                options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
             })
             .AddCookie(options =>
             {
