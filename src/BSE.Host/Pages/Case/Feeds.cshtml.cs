@@ -166,6 +166,8 @@ public class FeedsModel(
         draft.HasFeedsChanges = IsFeedsDraftDirty(draft.Feeds);
         await sessionState.SetAsync(draft);
 
+        // Legacy parity: btnAddAsNew_Click always blanks the panel once the row is added.
+        ClearPanelFields();
         return RedirectToPage(new { rbse = Rbse });
     }
 
@@ -256,6 +258,8 @@ public class FeedsModel(
         draft.HasFeedsChanges = IsFeedsDraftDirty(draft.Feeds);
         await sessionState.SetAsync(draft);
 
+        // Legacy parity: btnUpdateSelected_Click always blanks the panel once the row is updated.
+        ClearPanelFields();
         return RedirectToPage(new { rbse = Rbse });
     }
 
@@ -331,7 +335,6 @@ public class FeedsModel(
             return Forbid();
 
         Rbse = RbseHelper.ParseToRaw(Rbse);
-        StashPostedPanelState();
         var postedLookupName = Request.Form[nameof(SupplierLookupName)].ToString();
         var supplierName = (SupplierLookupName ?? postedLookupName ?? SupplierName ?? string.Empty).Trim();
 
@@ -352,6 +355,9 @@ public class FeedsModel(
             }
         }
 
+        // Only the PickSupplier round trip needs the panel stashed — stashing unconditionally
+        // above left a stale entry that leaked into whatever the user did next (e.g. Add As New).
+        StashPostedPanelState();
         return RedirectToPage("/Case/PickSupplier", new { rbse = Rbse, name = supplierName });
     }
 
@@ -439,6 +445,22 @@ public class FeedsModel(
     private sealed record FeedsPanelState(
         string? EditingClientKey, int? EditingFeedId, short? YearFrom, short? YearTo,
         string? RationType, string? RationName, bool IsPrePurchase, int? SupplierId, string? SupplierName);
+
+    /// <summary>Legacy parity: the shared panel is always blanked immediately after Add/Update commits a
+    /// row to the draft, so stale field values (and any leftover stash) never bleed into the next action.</summary>
+    private void ClearPanelFields()
+    {
+        EditingClientKey = null;
+        EditingFeedId = null;
+        YearFrom = null;
+        YearTo = null;
+        RationType = null;
+        RationName = null;
+        IsPrePurchase = false;
+        SupplierId = null;
+        SupplierName = null;
+        TempData.Remove(PanelStateTempDataKey);
+    }
 
     private async Task<CaseEditSessionState> LoadOrInitializeDraftStateAsync()
     {
