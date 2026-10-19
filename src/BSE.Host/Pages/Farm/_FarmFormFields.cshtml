@@ -201,28 +201,27 @@
                 <label asp-for="Herdmark3" class="govuk-label">Herdmark 3</label>
                 <input asp-for="Herdmark3" class="govuk-input bse-farm-legacy__input" maxlength="8" spellcheck="false" readonly="@(!canEditJointControls)" />
             </div>
-            <div class="bse-farm-legacy__field">
-                @if (showVlaFields)
-                {
-                    <label asp-for="HerdType" class="govuk-label">Herd Type</label>
-                    <select asp-for="HerdType" class="govuk-select bse-farm-legacy__input" disabled="@(!canEditVlaControls)">
-                        <option value="">-- Select --</option>
-                        @foreach (var h in herdTypeOptions)
-                        {
-                            <option value="@h.Code" selected="@(h.Code == farm.HerdType ? "selected" : null)">@h.Description</option>
-                        }
-                    </select>
-                    @if (!canEditVlaControls)
-                    {
-                        <input type="hidden" asp-for="HerdType" />
-                    }
-                }
-            </div>
+            <div class="bse-farm-legacy__field"></div>
         </div>
 
         @if (showVlaFields)
         {
+        <div class="bse-farm-legacy__section">
         <div class="bse-farm-legacy__row">
+            <div class="bse-farm-legacy__field">
+                <label asp-for="HerdType" class="govuk-label">Herd Type</label>
+                <select asp-for="HerdType" class="govuk-select bse-farm-legacy__input" disabled="@(!canEditVlaControls)">
+                    <option value="">-- Select --</option>
+                    @foreach (var h in herdTypeOptions)
+                    {
+                        <option value="@h.Code" selected="@(h.Code == farm.HerdType ? "selected" : null)">@h.Description</option>
+                    }
+                </select>
+                @if (!canEditVlaControls)
+                {
+                    <input type="hidden" asp-for="HerdType" />
+                }
+            </div>
             <div class="bse-farm-legacy__field">
                 <label asp-for="PedigreeType" class="govuk-label">Pedigree</label>
                 <select asp-for="PedigreeType" class="govuk-select bse-farm-legacy__input" disabled="@(!canEditVlaControls)">
@@ -237,7 +236,6 @@
                     <input type="hidden" asp-for="PedigreeType" />
                 }
             </div>
-            <div class="bse-farm-legacy__field"></div>
         </div>
 
         <div class="bse-farm-legacy__row">
@@ -246,6 +244,7 @@
                 <input asp-for="IsDealer" class="bse-farm-legacy__dealer-checkbox" disabled="@(!canEditVlaControls)" />
             </div>
             <div class="bse-farm-legacy__field"></div>
+        </div>
         </div>
         }
     </div>

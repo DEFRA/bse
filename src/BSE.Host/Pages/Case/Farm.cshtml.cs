@@ -106,11 +106,14 @@ public class FarmModel(
     public bool CanEditVlaControls { get; private set; }
     public bool CanEditCreateMode { get; private set; }
 
-    /// <summary>Legacy MakeDEFRAControlsWritable/ReadOnly: every group except DEFRA Viewer can edit.</summary>
+    /// <summary>Legacy MakeDEFRAControlsWritable/ReadOnly: DEFRA Data Entry/Maintenance and VLA
+    /// Maintenance can edit; VLA Data Entry and DEFRA Viewer cannot.</summary>
     public bool CanEditDefraControls { get; private set; }
 
-    /// <summary>Legacy DEFRAViewerEnable(): shows the "CONFIDENTIAL DATA" banner and locks every field.</summary>
-    public bool IsConfidentialViewOnly => !CanEditDefraControls;
+    /// <summary>Legacy DEFRAViewerEnable(): shows the "CONFIDENTIAL DATA" banner and locks every
+    /// field — DEFRA Viewer only, not VLA Data Entry (which also can't edit DEFRA fields but does
+    /// not show this banner in legacy).</summary>
+    public bool IsConfidentialViewOnly => !User.IsInRole(DataEntryRole);
 
     /// <summary>Legacy MakeDEFRAControlsWritable: Session(SV_CPHHNumber) &lt;&gt; "" gate. Always true
     /// for an existing case (CPHH is already persisted); for a brand-new case (create mode) this is
@@ -142,6 +145,7 @@ public class FarmModel(
 
     private const string Bse1Document = "BSE1";
     private const string VlaAccessRole = "VLAAccess";
+    private const string VlaMaintenanceRole = "VLAMaintenance";
     private const string DataEntryRole = "DataEntry";
     private const string EnterCphhMessage = "Enter a CPHH.";
     private const string AdnsRegionField = "EditableFarm.ADNSRegionID";
@@ -591,6 +595,16 @@ public class FarmModel(
 
         ApplyLegacyJointAndVlaEditGuards();
 
+        // Legacy parity: UpdateSessionWithCaseDetails() hard-blocks Save while a Herd Size or
+        // Linked Farm row is still open for inline edit, rather than silently persisting whatever
+        // was last confirmed via that row's own Update/Add button.
+        if (!string.IsNullOrWhiteSpace(EditingClientKey) || !string.IsNullOrWhiteSpace(EditingLinkedClientKey))
+        {
+            ModelState.AddModelError("", "Finish editing the herd size or linked farm row before saving.");
+            await LoadLookupsForEditAsync();
+            return Page();
+        }
+
         if (!TryValidateStagedCollections())
         {
             await LoadLookupsForEditAsync();
@@ -639,8 +653,10 @@ public class FarmModel(
     /// </summary>
     public async Task<IActionResult> OnPostStageAndGotoAsync(string targetPage)
     {
+        // Legacy parity: UpdateSessionWithCaseDetails() has no role check at all — every role,
+        // including DEFRA Viewer (no "DataEntry" claim), can always navigate away from this tab.
         if (!User.IsInRole(DataEntryRole))
-            return Forbid();
+            return RedirectToPage(targetPage, new { rbse = Rbse });
 
         var stagingResult = await StageFarmEditForNavigationAsync();
         if (stagingResult is not null)
@@ -1356,9 +1372,12 @@ public class FarmModel(
             return;
         }
 
-        CanEditDefraControls = true;
-
         var isVlaGroup = User.IsInRole(VlaAccessRole);
+
+        // Legacy MakeDEFRAControlsReadOnly (VLADataEntryEnable) vs MakeDEFRAControlsWritable
+        // (VLAMaintenanceEnable) — only VLA Maintenance, not VLA Data Entry, may edit DEFRA fields.
+        CanEditDefraControls = !isVlaGroup || User.IsInRole(VlaMaintenanceRole);
+
         if (!isVlaGroup)
         {
             CanEditJointControls = true;

@@ -136,10 +136,10 @@ public class ClinicalModel(
     /// </summary>
     public async Task<IActionResult> OnPostStageAndGotoAsync(string targetPage, string? clinicalRowStampBase64)
     {
-        if (!User.IsInRole("DataEntry"))
-            return Forbid();
-
-        await StageSignsEditAsync(clinicalRowStampBase64);
+        // Legacy parity: UpdateSessionWithCaseDetails() has no role check at all — every role,
+        // including DEFRA Viewer (no "DataEntry" claim), can always navigate away from this tab.
+        if (User.IsInRole("DataEntry"))
+            await StageSignsEditAsync(clinicalRowStampBase64);
 
         return RedirectToPage(targetPage, new { rbse = Rbse });
     }
@@ -148,10 +148,8 @@ public class ClinicalModel(
     /// Save/tab-switch — never staged the in-progress Signs edit, silently discarding it.</summary>
     public async Task<IActionResult> OnPostResortVisitsAsync(string? clinicalRowStampBase64)
     {
-        if (!User.IsInRole("DataEntry"))
-            return Forbid();
-
-        await StageSignsEditAsync(clinicalRowStampBase64);
+        if (User.IsInRole("DataEntry"))
+            await StageSignsEditAsync(clinicalRowStampBase64);
 
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadAsync();
