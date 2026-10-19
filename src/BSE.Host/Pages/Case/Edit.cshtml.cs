@@ -201,6 +201,9 @@ public class EditModel(
         var postedCase = Case;
 
         await LoadReadonlyPageAsync();
+        if (!CanEditCaseFields)
+            return Forbid();
+
         await RestoreAndRestageCaseEditAsync(postedCase);
         await LoadOrInitializeDraftStateAsync();
 
@@ -223,6 +226,9 @@ public class EditModel(
         var postedCase = Case;
 
         await LoadReadonlyPageAsync();
+        if (!CanEditCaseFields)
+            return Forbid();
+
         await RestoreAndRestageCaseEditAsync(postedCase);
         await LoadOrInitializeDraftStateAsync();
 
@@ -271,6 +277,9 @@ public class EditModel(
         var postedCase = Case;
 
         await LoadReadonlyPageAsync();
+        if (!CanEditCaseFields)
+            return Forbid();
+
         await RestoreAndRestageCaseEditAsync(postedCase);
         await LoadOrInitializeDraftStateAsync();
 
@@ -309,8 +318,13 @@ public class EditModel(
 
     private async Task<IActionResult> SaveAsync(string successRedirectPage)
     {
+        // Legacy parity: btnCaseWork is never disabled for any role, including DEFRA Viewer —
+        // unlike btnSave, which is disabled only for DEFRA Viewer. Forbidding here on the
+        // Casework path blocked Viewer from using a button legacy always leaves reachable.
         if (!CanUserEditCase())
-            return Forbid();
+            return successRedirectPage == "/CaseWork/Entry"
+                ? RedirectToPage(successRedirectPage, new { rbse = Rbse })
+                : Forbid();
 
         ApplyLegacyDefraPermissions();
 
@@ -428,8 +442,11 @@ public class EditModel(
     /// should proceed with its own redirect.</summary>
     private async Task<IActionResult?> StageCaseEditForNavigationAsync()
     {
+        // Legacy parity: UpdateSessionWithCaseDetails() has no role check at all — every role,
+        // including DEFRA Viewer (who holds no "DataEntry" claim), can always navigate away from
+        // this tab. Forbidding here blocked DEFRA Viewer from switching tabs entirely.
         if (!CanUserEditCase())
-            return Forbid();
+            return null;
 
         ApplyLegacyDefraPermissions();
 
@@ -970,6 +987,9 @@ public class EditModel(
             return Forbid();
 
         await LoadReadonlyPageAsync();
+        if (!CanEditCaseFields)
+            return Forbid();
+
         await LoadOrInitializeDraftStateAsync();
 
         var item = StagedTests.FirstOrDefault(t => t.Id == id);

@@ -233,8 +233,10 @@ public class VlaModel(
     /// succeeded, meaning the caller should proceed with its own redirect using the returned Rbse.</summary>
     private async Task<(IActionResult? Result, string Rbse)> StageVlaEditForNavigationAsync()
     {
+        // Legacy parity: UpdateSessionWithCaseDetails() has no role check at all — every role,
+        // including DEFRA Viewer (no "DataEntry" claim), can always navigate away from this tab.
         if (!User.IsInRole(DataEntryRole))
-            return (Forbid(), Rbse);
+            return (null, Rbse);
 
         var caseRbse = RbseHelper.ParseToRaw(Rbse);
         Rbse = caseRbse;

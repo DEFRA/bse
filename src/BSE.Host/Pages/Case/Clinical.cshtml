@@ -228,7 +228,11 @@
     }
 
     <output aria-live="polite" class="govuk-visually-hidden" id="visit-live-region"></output>
+    </fieldset>
 
+    <!-- Legacy parity: btnSave is enabled for every role except DEFRA Viewer, independent of
+         canEditClinical (which additionally requires VLAAccess + batch access) — it must sit
+         outside the fieldset above, or DEFRA Data Entry/Maintenance could never click it at all. -->
     <div class="bse-case-bottom-row">
         <div class="bse-case-bottom-row__right">
             <div class="govuk-button-group bse-case-bottom-row__actions">
@@ -240,13 +244,12 @@
                 }
                 @if (canSaveClinical)
                 {
-                    <button type="submit" asp-page-handler="SaveSigns" class="govuk-button" data-module="govuk-button">Save</button>
+                    <button type="submit" form="case-clinical-inline-form" asp-page-handler="SaveSigns" class="govuk-button" data-module="govuk-button">Save</button>
                 }
                 <a asp-page="/Case/Clinical" asp-page-handler="CancelClinicalEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
             </div>
         </div>
     </div>
-    </fieldset>
 </form>
 
 <style>
