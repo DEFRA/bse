@@ -22,6 +22,7 @@ using BSE.Host.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -200,6 +201,7 @@ try
 
     builder.Services.AddAntiforgery(options =>
     {
+        options.HeaderName = "RequestVerificationToken";
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
         options.Cookie.SecurePolicy = cookieSecurePolicy;
@@ -598,9 +600,14 @@ try
     }).RequireAuthorization();
 
     app.MapPost("/case/{rbse}/discard-unsaved", async (
+        HttpContext httpContext,
+        IAntiforgery antiforgery,
         string rbse,
         ICaseDraftDiscardService caseDraftDiscard) =>
     {
+        if (!await antiforgery.IsRequestValidAsync(httpContext))
+            return Results.BadRequest();
+
         var normalizedRbse = RbseHelper.ParseToRaw(rbse);
 
         await caseDraftDiscard.DiscardAllAsync(normalizedRbse);
