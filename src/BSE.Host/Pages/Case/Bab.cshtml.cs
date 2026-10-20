@@ -180,8 +180,10 @@ public class BabModel(
     /// </summary>
     public async Task<IActionResult> OnPostStageAndGotoAsync(string targetPage, string? rowStampBase64)
     {
+        // Legacy parity: UpdateSessionWithCaseDetails() has no role check at all — every role,
+        // including DEFRA Viewer (no "DataEntry" claim), can always navigate away from this tab.
         if (!User.IsInRole("DataEntry"))
-            return Forbid();
+            return RedirectToPage(targetPage, new { rbse = Rbse });
 
         var currentBabTask = babRepository.GetByRbseAsync(Rbse);
         var currentCaseTask = caseRepository.GetCaseByRbseAsync(Rbse);

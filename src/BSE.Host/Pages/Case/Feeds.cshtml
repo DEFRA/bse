@@ -71,7 +71,7 @@
                     <td class="govuk-table__cell">@f.SupplierName</td>
                     <td class="govuk-table__cell">@f.RationName</td>
                     <td class="govuk-table__cell">
-                        @(f.IsPrePurchase ? "Yes" : "No")
+                        @(f.IsPrePurchase ? "True" : "False")
                         @if (f.IsUnsaved)
                         {
                             <strong class="govuk-tag govuk-tag--yellow govuk-!-margin-left-2">Unsaved</strong>
@@ -174,7 +174,11 @@
             <input type="hidden" id="supplier-name" name="SupplierName" value="@Model.SupplierName" />
         </div>
     </div>
+    </fieldset>
 
+    <!-- Legacy parity: btnSave is enabled for every role except DEFRA Viewer, independent of
+         canEditFeeds (which additionally requires VLAAccess) — it must sit outside the fieldset
+         above, or DEFRA Data Entry/Maintenance could never click it at all. -->
     <div class="bse-case-bottom-row">
         <div class="bse-case-bottom-row__right">
             <div class="govuk-button-group bse-case-bottom-row__actions">
@@ -186,13 +190,12 @@
                 }
                 @if (canSaveFeeds)
                 {
-                    <button type="submit" asp-page-handler="SaveFeeds" class="govuk-button" data-module="govuk-button">Save</button>
+                    <button type="submit" form="case-feeds-inline-form" asp-page-handler="SaveFeeds" class="govuk-button" data-module="govuk-button">Save</button>
                 }
                 <a asp-page="/Case/Feeds" asp-page-handler="CancelFeedsEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
             </div>
         </div>
     </div>
-    </fieldset>
 </form>
 
 <style>

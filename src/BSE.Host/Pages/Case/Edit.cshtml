@@ -293,7 +293,7 @@
                                 <td class="govuk-table__cell">@(t.TestResultDescription ?? t.TestResult)</td>
                             }
                             <td class="govuk-table__cell">
-                                @if (isEditingTest && User.IsInRole("DataEntry"))
+                                @if (isEditingTest && Model.CanEditCaseFields)
                                 {
                                     <input type="hidden" name="EditingTestId" value="@t.Id" />
                                     <input type="hidden" name="EditTestRowStampBase64" value="@(t.RowStamp is not null ? Convert.ToBase64String(t.RowStamp) : "")" />
@@ -304,7 +304,7 @@
                                 }
                                 else
                                 {
-                                    @if (User.IsInRole("DataEntry"))
+                                    @if (Model.CanEditCaseFields)
                                     {
                                         <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
                                             <button type="submit" asp-page-handler="BeginEditTestRow" asp-route-id="@t.Id" class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">Change</button>
@@ -316,7 +316,7 @@
                         </tr>
                     }
 
-                    <tr id="add-test-row-inline" class="govuk-table__row bse-herd-row--unsaved" hidden="@(!Model.ShowAddTestRow || !User.IsInRole("DataEntry"))">
+                    <tr id="add-test-row-inline" class="govuk-table__row bse-herd-row--unsaved" hidden="@(!Model.ShowAddTestRow || !Model.CanEditCaseFields)">
                         <td class="govuk-table__cell">
                             <label class="govuk-visually-hidden" for="new-test-type">Test type</label>
                             <select id="new-test-type" name="NewTestType" class="govuk-select govuk-!-width-one-half">
@@ -354,9 +354,12 @@
                 ["PageNumberKey"] = "TPage"
             })
 
-            <div class="govuk-button-group govuk-!-margin-bottom-4">
-                <button type="button" id="show-add-test-row" class="govuk-button govuk-button--secondary" data-module="govuk-button">Add test record</button>
-            </div>
+            @if (Model.CanEditCaseFields)
+            {
+                <div class="govuk-button-group govuk-!-margin-bottom-4">
+                    <button type="button" id="show-add-test-row" class="govuk-button govuk-button--secondary" data-module="govuk-button">Add test record</button>
+                </div>
+            }
 
             <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
 
@@ -540,7 +543,12 @@
                 </div>
             </div>
         </section>
+    </fieldset>
 
+        <!-- Legacy parity: btnCaseWork/btnCaseAuditLog/btnSave are enabled independently of the
+             DEFRA case fields/Test grid fieldset above (btnSave is only ever disabled for DEFRA
+             Viewer) — these must sit outside it, or a role with read-only fields (e.g. VLA Data
+             Entry) could never click them at all. -->
         <div class="bse-case-bottom-row">
             <div class="govuk-button-group bse-case-bottom-row__left">
                 <button type="submit" form="case-edit-inline-form" formmethod="post" formaction="?handler=StageAndGoToAuditLog"
@@ -561,13 +569,12 @@
                     }
                     @if (User.IsInRole("DataEntry"))
                     {
-                        <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+                        <button type="submit" form="case-edit-inline-form" class="govuk-button" data-module="govuk-button">Save</button>
                     }
                     <a asp-page="/Case/Edit" asp-page-handler="CancelEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
                 </div>
             </div>
         </div>
-    </fieldset>
 </form>
 
 <style>

@@ -1009,6 +1009,7 @@
 
         (function () {
             var rbseInput = document.getElementById('relation-rbse');
+            var lastCheckedRbse = rbseInput ? rbseInput.value.trim() : '';
             var rbseGroup = document.getElementById('relation-rbse-group');
             var rbseStar = document.getElementById('relation-rbse-star');
             var viewRelationsLink = document.getElementById('view-relation-rbse-link');
@@ -1093,10 +1094,16 @@
                 }
             }
 
-            // Mirrors legacy ctlRelationRBSE_RBSEChanged: look up the related case and populate
-            // Sex/Fate/Eartag/birth date/left date/Sire, disabling those fields while an RBSE is set.
+            // Mirrors legacy ctlRelationRBSE_RBSEChanged: an AutoPostBack TextChanged event, which
+            // only fires when the value actually changed — not on every blur, otherwise tabbing
+            // through an untouched, still-blank RBSE field wipes whatever was already typed below.
             function lookUpRelationRbse() {
                 var rbse = rbseInput.value.trim();
+                if (rbse === lastCheckedRbse) {
+                    return;
+                }
+                lastCheckedRbse = rbse;
+
                 if (!rbse) {
                     clearRelatedFields();
                     setRelatedFieldsDisabled(false);
