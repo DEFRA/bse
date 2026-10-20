@@ -31,6 +31,7 @@ public class VlaModel(
     ILookupDataService lookups,
     IBatchRepository batchRepository,
     IOtherOwnerRepository ownerRepository,
+    ITestRepository testRepository,
     IDbConnectionFactory connectionFactory,
     IConfiguration configuration) : PageModel
 {
@@ -537,6 +538,25 @@ public class VlaModel(
                 Cphh = o.Cphh,
                 RowStampBase64 = Convert.ToBase64String(o.RowStamp ?? [])
             }).ToList();
+
+            // HasCaseEditChanges also guards Tests' reconciliation (CaseEditOrchestrationService.
+            // PersistStagedCaseEditAsync) even though Tests belongs to the DEFRA tab — without
+            // hydrating it here too, a VLA-only session (DEFRA tab never visited) commits an empty
+            // Tests list and silently deletes every persisted test record on Save.
+            if (draft.Tests.Count == 0)
+            {
+                var persistedTests = (await testRepository.GetByRbseAsync(caseRbse)).OrderBy(t => t.Id).ToList();
+                draft.Tests = persistedTests.Select(t => new CaseEditDraftTestItem
+                {
+                    Id = t.Id,
+                    TestType = t.TestType,
+                    TestTypeDescription = t.TestTypeDescription,
+                    TestResult = t.TestResult,
+                    TestResultDescription = t.TestResultDescription,
+                    RowStampBase64 = t.RowStamp is null ? string.Empty : Convert.ToBase64String(t.RowStamp)
+                }).ToList();
+            }
+
             await sessionState.SetAsync(draft);
         }
 
