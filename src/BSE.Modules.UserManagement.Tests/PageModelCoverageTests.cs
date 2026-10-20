@@ -368,6 +368,7 @@ public sealed class PageModelCoverageTests
         var lookupService = Substitute.For<ILookupDataService>();
         var batchRepository = Substitute.For<IBatchRepository>();
         var ownerRepository = Substitute.For<IOtherOwnerRepository>();
+        var testRepository = Substitute.For<ITestRepository>();
         var connectionFactory = Substitute.For<IDbConnectionFactory>();
         var configuration = new ConfigurationBuilder().AddInMemoryCollection().Build();
 
@@ -382,6 +383,7 @@ public sealed class PageModelCoverageTests
             lookupService,
             batchRepository,
             ownerRepository,
+            testRepository,
             connectionFactory,
             configuration);
 

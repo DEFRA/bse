@@ -46,6 +46,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     private readonly ILookupDataService _lookups = Substitute.For<ILookupDataService>();
     private readonly IBatchRepository _batchRepository = Substitute.For<IBatchRepository>();
     private readonly IOtherOwnerRepository _ownerRepository = Substitute.For<IOtherOwnerRepository>();
+    private readonly ITestRepository _testRepository = Substitute.For<ITestRepository>();
     private readonly IDbConnectionFactory _connectionFactory = Substitute.For<IDbConnectionFactory>();
     private readonly ICaseDraftDiscardService _vlaCaseDraftDiscard = Substitute.For<ICaseDraftDiscardService>();
 
@@ -64,7 +65,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         var model = new VlaModel(
             _caseService, _babRepository, _currentUserService, _wizardState, _sessionState,
             _vlaCaseDraftDiscard, _caseEditOrchestration,
-            _lookups, _batchRepository, _ownerRepository, _connectionFactory,
+            _lookups, _batchRepository, _ownerRepository, _testRepository, _connectionFactory,
             new ConfigurationBuilder().AddInMemoryCollection().Build())
         {
             Rbse = Rbse
