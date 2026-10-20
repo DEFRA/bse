@@ -94,6 +94,7 @@
         </p>
     </div>
 
+@Html.AntiForgeryToken()
 <script>
     (function () {
         var caseFormSelector = '#case-farm-inline-form, #case-edit-inline-form, #case-bab-inline-form, #edit-vla-form, #case-clinical-inline-form, #case-feeds-inline-form, #case-relations-inline-form';
@@ -321,6 +322,11 @@
             }
         }
 
+        function antiforgeryToken() {
+            var input = document.querySelector('input[name="__RequestVerificationToken"]');
+            return input ? input.value : '';
+        }
+
         async function clearUnsavedChangesAcrossTabs() {
             var rbse = extractRbseFromPath();
             if (!rbse) {
@@ -330,7 +336,7 @@
             try {
                 await fetch('/case/' + encodeURIComponent(rbse) + '/discard-unsaved', {
                     method: 'POST',
-                    headers: { 'Accept': 'application/json' },
+                    headers: { 'Accept': 'application/json', 'RequestVerificationToken': antiforgeryToken() },
                     credentials: 'same-origin'
                 });
                 clearClientSideDrafts(rbse);
