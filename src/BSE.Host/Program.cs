@@ -48,6 +48,8 @@ try
 
     var builder = WebApplication.CreateBuilder(args);
 
+    builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
+
     // ── Structured logging ──────────────────────────────────────────────────
     builder.Host.UseSerilog((context, _, config) =>
     {
@@ -190,6 +192,19 @@ try
     builder.Services.Configure<Saml2Configuration>(
         builder.Configuration.GetSection(Saml2Configuration.SectionName));
 
+    builder.Services.AddSingleton<ISignInSessionRegistry, SignInSessionRegistry>();
+
+    var cookieSecurePolicy = builder.Environment.IsDevelopment()
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
+
+    builder.Services.AddAntiforgery(options =>
+    {
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = cookieSecurePolicy;
+    });
+
     if (bypassAuthentication)
     {
         builder.Services
@@ -227,7 +242,10 @@ try
                 options.SlidingExpiration = true;
                 options.Cookie.Name = AuthCookieName;
                 options.Cookie.HttpOnly = true;
-                options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+                options.Cookie.SameSite = SameSiteMode.Lax;
+                options.Cookie.SecurePolicy = cookieSecurePolicy;
+                options.Events.OnSigningIn = SingleSessionCookieEvents.OnSigningIn;
+                options.Events.OnValidatePrincipal = SingleSessionCookieEvents.OnValidatePrincipal;
 
                 options.Events.OnRedirectToLogin = async ctx =>
 
@@ -415,6 +433,8 @@ try
         options.IdleTimeout = idleTimeout;
         options.Cookie.Name = SessionCookieName;
         options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = cookieSecurePolicy;
         options.Cookie.IsEssential = true; // Required for app to function
     });
 
@@ -451,6 +471,8 @@ try
     authorizationBuilder.AddPolicy("AuditAccess", p => p.RequireRole("DEFRAAccess", "VLAAccess"));
 
     var app = builder.Build();
+
+    app.UseMiddleware<SecurityHeadersMiddleware>(!app.Environment.IsDevelopment());
 
     app.UseForwardedHeaders(); // options registered via builder.Services.Configure<ForwardedHeadersOptions> above
 
