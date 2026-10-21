@@ -67,8 +67,8 @@
 
     <h3 class="govuk-heading-m" id="General_Grids">Data tables</h3>
     <p class="govuk-body">Data is displayed in tables. Use the action links in each row to view, edit or remove that record. Where present, column headings can be selected to sort the table — select once for ascending order, again for descending.</p>
-    <p class="govuk-body">When a table spans multiple pages, use the pagination links below the table to move between pages. The current page number and total page count are shown.</p>
-    <p class="govuk-body">To add a new row to a table, use the <strong>Add new</strong> link or button below the table. To edit or remove an existing row, use the action links on that row.</p>
+    <p class="govuk-body">When a table spans multiple pages, use the pagination links after the table to move between pages. The current page number and total page count are shown.</p>
+    <p class="govuk-body">To add a new row to a table, use the <strong>Add new</strong> link or button after the table. To edit or remove an existing row, use the action links on that row.</p>
 
     <h3 class="govuk-heading-m" id="General_FieldErrors">Field error messages</h3>
     <p class="govuk-body">If required data is missing or invalid when a form is submitted, an error summary appears at the top of the page. Each error message links directly to the affected field. Correct the highlighted fields and resubmit the form.</p>
@@ -81,7 +81,7 @@
 @* ── 2. Home page ───────────────────────────────────────────────────────── *@
 <section id="home-page">
     <h2 class="govuk-heading-l">2. Home page</h2>
-    <p class="govuk-body">The home page provides quick access to all areas of the system available to your user group. Selecting the <strong>BSE Database System</strong> link in the navigation bar returns you to the home page at any time.</p>
+    <p class="govuk-body">The home page provides quick access to all areas of the system available to your user group. Selecting <strong>Home</strong> in the navigation bar returns you to the home page at any time.</p>
 
     @if (isVLAAccess)
     {
@@ -89,10 +89,10 @@
         <p class="govuk-body">If you are a APHA user working with a batch of case details, the batch number panel is where you specify the batch you wish to work with. Any cases you enter while the batch number is displayed will be added to that batch.</p>
         <p class="govuk-body">The batch number is in the format <samp>yyyy/nnnnnn</samp> — where <samp>yyyy</samp> is a four-digit year and <samp>nnnnnn</samp> is an integer up to six digits in length (for example, <samp>2026/000001</samp>). Note that only the last 3 digits of the batch number are used in the OSS export.</p>
         <h4 class="govuk-heading-s">Looking up an existing batch</h4>
-        <p class="govuk-body">Enter the batch year in the <strong>Year</strong> field and the batch number in the <strong>Number</strong> field, then select <strong>Go</strong>. If the batch is found, you are taken to the new case page with that batch pre-selected. If the batch is not found, an error is shown — check the year and number and try again.</p>
+        <p class="govuk-body">In the <strong>Batch Number</strong> section, enter the 4-digit year in the first field (<strong>Batch year</strong>) and the batch number in the second (<strong>Batch number</strong>), then select <strong>Go</strong> in the RBSE Number section. If the batch is found, you are taken to the new case page with that batch pre-selected. If the batch is not found, an error is shown — check the year and number and try again.</p>
         <h4 class="govuk-heading-s">Creating a new batch</h4>
-        <p class="govuk-body">Select <strong>Create new</strong> to start work on a new batch. A new batch number is assigned automatically and displayed in the year and number fields. If the most recent batch has no cases recorded against it, that batch number is assigned to you rather than creating a new one.</p>
-        <p class="govuk-body">The three most recent batches, together with the number of cases recorded against each, are shown in the Recent batches table next to the batch entry fields.</p>
+        <p class="govuk-body">Select <strong>Create New</strong> to start work on a new batch. A new batch number is assigned automatically and a confirmation message shows the batch number. To add a case to the batch, enter an RBSE number in the RBSE Number section and select <strong>Go</strong>. If the most recent batch has no cases recorded against it, that batch number is assigned to you rather than creating a new one.</p>
+        <p class="govuk-body">The three most recent batches, together with the number of cases recorded against each, are listed in the <strong>Recent batches</strong> table in the Batch Number section.</p>
         <p class="govuk-body">See also: <a class="govuk-link" href="#General_FieldErrors">Field error messages</a></p>
     }
 
@@ -111,7 +111,7 @@
     }
 
     <h3 class="govuk-heading-m" id="HomeNavigation">Navigation links</h3>
-    <p class="govuk-body">Below the data entry panels, the home page shows links to all areas of the system available to your user group:</p>
+    <p class="govuk-body">After the Batch Number and RBSE Number sections, the home page shows links to all areas of the system available to your user group:</p>
     <ul class="govuk-list govuk-list--bullet">
         <li><strong>Search</strong> — links to all case and farm search pages, available to all users.</li>
         <li><strong>Casework and reports</strong> — links to the audit log and BSESS check, available to all users.
@@ -150,7 +150,7 @@
     <h3 class="govuk-heading-m" id="CaseEntryFarm">Farm</h3>
     <p class="govuk-body">The Farm section allows entry of details about the farm where the case occurred.</p>
     <p class="govuk-body">Enter the CPHH of the farm and select <strong>Look up</strong>. If the CPHH exists in the system, the farm details are populated. If the farm does not exist, you are shown a list of farms with the same CPH — select one or choose to create a new farm.</p>
-    <p class="govuk-body">The farm location section includes the Animal Health Office, map reference, and address fields. The correspondence address can be set separately to the location address; select <strong>Use above address</strong> to copy the location address.</p>
+    <p class="govuk-body">The farm location section includes the Animal Health Office, map reference, and address fields. The correspondence address can be set separately to the location address; select <strong>Use Above Address</strong> to copy the location address.</p>
     <p class="govuk-body">The Authority County, Local Authority and ADNS Region fields determine the ADNS reporting region for the farm. You must select an ADNS Region for any farm within Great Britain so that cases can be reported to ADNS.</p>
     <p class="govuk-body">The Related Farms table records CPHH numbers of farms connected to the case farm. The Herd Size table holds herd size data for preceding years — a Year and Herd Size are required for each row.</p>
 
@@ -254,18 +254,18 @@
     <h2 class="govuk-heading-l">6. Search</h2>
     <p class="govuk-body">The Search pages enable you to perform searches on farm and case data. Enter criteria in one or more fields — only records matching all entered criteria are shown. Partial values are accepted for Name and Address fields; a CPH (without individual holding identifier) may be entered instead of a full CPHH.</p>
     <p class="govuk-body">If you select <strong>Search</strong> without entering any criteria, an error is shown asking you to provide one or more search criteria.</p>
-    <p class="govuk-body">Results are shown in a sortable, paginated table below the search form. Select a column heading to sort by that column; select it again to reverse the order. Use the pagination links below the table to move between pages.</p>
+    <p class="govuk-body">Results are shown in a sortable, paginated table after the search form. Select a column heading to sort by that column; select it again to reverse the order. Use the pagination links after the table to move between pages.</p>
     <p class="govuk-body">Each search page provides an <strong>Export to Excel</strong> link with the results. Selecting it downloads the complete result set as an Excel spreadsheet — every matching record is included, not just the page currently displayed.</p>
     <p class="govuk-body">See also: <a class="govuk-link" href="#General_Grids">Data tables</a></p>
 
     <h3 class="govuk-heading-m" id="SearchFarm">Farm search</h3>
     <p class="govuk-body">The Farm Search page allows searches on information recorded for a farm. You can search on CPH(H), owner name, address, herdmark, numeric herdmark, county, dealer status and Animal Health Office, and choose whether to include non-GB farms.</p>
-    <p class="govuk-body">Enter criteria in at least one field — results are displayed in the table below the search form.</p>
+    <p class="govuk-body">Enter criteria in at least one field — results are displayed in the results table after the search form.</p>
     <p class="govuk-body">See also: <a class="govuk-link" href="#General_Grids">Data tables</a></p>
 
     <h3 class="govuk-heading-m" id="SearchCase">Case search</h3>
     <p class="govuk-body">The Case Search page allows searches on information recorded for a case, including RBSE, eartag, DBSE, fate, final result, sex, survey, passive or active status, and date ranges for Form A, final result and birth dates.</p>
-    <p class="govuk-body">Enter criteria in at least one field — results are displayed in the table below the search form. In the <strong>Notes</strong> field, and other text fields, the <samp>%</samp> character can be used as a wildcard.</p>
+    <p class="govuk-body">Enter criteria in at least one field — results are displayed in the results table after the search form. In the <strong>Notes</strong> field, and other text fields, the <samp>%</samp> character can be used as a wildcard.</p>
     <p class="govuk-body">See also: <a class="govuk-link" href="#General_Grids">Data tables</a></p>
 
     <h3 class="govuk-heading-m" id="SearchCaseByHerdMark">Cases by herdmark</h3>
@@ -274,7 +274,7 @@
 
     <h3 class="govuk-heading-m" id="SearchRelatedAnimal">Related animals search</h3>
     <p class="govuk-body">The Related Animals Search finds animals related to a case, or cases related to a given animal. You can search on the RBSE of the case, the eartag, name or RBSE of the related animal, and the relation type. The relation type list includes <strong>Dam</strong> and <strong>Sire</strong> in addition to the recorded relation types.</p>
-    <p class="govuk-body">Enter criteria in at least one field — results are displayed in the table below the search form.</p>
+    <p class="govuk-body">Enter criteria in at least one field — results are displayed in the results table after the search form.</p>
     <p class="govuk-body">See also: <a class="govuk-link" href="#General_Grids">Data tables</a></p>
 
     <h3 class="govuk-heading-m" id="SearchOutstandingData">Outstanding data list</h3>
@@ -283,7 +283,7 @@
     <p class="govuk-body">See also: <a class="govuk-link" href="#General_Grids">Data tables</a></p>
 
     <h3 class="govuk-heading-m" id="SearchCPHH">Cases by holding/herdmark</h3>
-    <p class="govuk-body">This search (designed for organic farmer checks) finds all cases that occurred on a specific farm. Enter at least one of CPH(H), herdmark or numeric herdmark, and choose whether to include non-GB cases. Results are shown in the table below the search form.</p>
+    <p class="govuk-body">This search (designed for organic farmer checks) finds all cases that occurred on a specific farm. Enter at least one of CPH(H), herdmark or numeric herdmark, and choose whether to include non-GB cases. Results are shown in the results table after the search form.</p>
     <p class="govuk-body">See also: <a class="govuk-link" href="#General_Grids">Data tables</a></p>
 
     <p class="govuk-body govuk-!-margin-top-4"><a class="govuk-link" href="#">Back to top</a></p>
@@ -395,7 +395,7 @@
             <p class="govuk-body">Use the <strong>Select a Table</strong> drop-down at the top of the page to navigate through the tables. See the section on <a class="govuk-link" href="#General_Grids">Data tables</a> for information on how to add, edit and remove rows. If data for a case has been entered using a value in the table then you will not be allowed to delete that row.</p>
             @if (isVLAMaintenance)
             {
-                <p class="govuk-body">If you enter a string longer than the database allows then it will be truncated, so check the field sizes listed below before entering data. Each code must be unique within its table — if you enter a code that already exists you will see the message "The Code you have selected is already used".</p>
+                <p class="govuk-body">If you enter a string longer than the database allows then it will be truncated, so check the field sizes listed in this section before entering data. Each code must be unique within its table — if you enter a code that already exists you will see the message "The Code you have selected is already used".</p>
                 <p class="govuk-body">Read this section before adding any new codes, as some lists affect the behaviour of other parts of the system.</p>
             }
             else

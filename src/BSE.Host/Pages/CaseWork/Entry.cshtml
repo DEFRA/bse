@@ -882,6 +882,22 @@
         max-width: 100%;
         overflow-x: auto;
     }
+
+    /* WCAG 1.4.10: stack the three columns and release fixed widths on narrow screens. */
+    @@media (max-width: 40.0525em) {
+        .bse-casework-entry-row, .bse-casework-entry-main > .govuk-grid-row { flex-direction: column; column-gap: 0; }
+        .bse-casework-entry-main > .govuk-grid-row { min-width: 0; margin-left: 0; margin-right: 0; width: 100%; }
+        .bse-casework-entry-left, .bse-casework-entry-main, .bse-casework-entry-middle, .bse-casework-entry-right { width: 100%; max-width: 100%; flex: 1 1 auto; }
+        .bse-casework-entry-close-case { position: static; }
+        .bse-casework-entry-left .govuk-summary-list__key { width: auto; }
+        .bse-casework-entry-left .govuk-summary-list__value, .bse-casework-entry-left .govuk-form-group > .govuk-label,
+        .bse-casework-entry-middle .govuk-form-group > .govuk-label, .bse-casework-entry-comments-label, .bse-casework-entry-post2000-label,
+        .bse-casework-entry-post2000-row .bse-casework-entry-post2000-warning-inline { white-space: normal; flex: 1 1 100%; }
+        .bse-casework-entry-left .govuk-form-group, .bse-casework-entry-middle .govuk-form-group { flex-wrap: wrap !important; }
+        .bse-casework-entry-middle #TseTestingSite, .bse-casework-entry-middle #AhroId, .bse-casework-entry-left .govuk-form-group select,
+        .bse-casework-entry-comments .govuk-textarea { width: 100% !important; max-width: 100% !important; }
+        .bse-casework-entry-minutes-table { min-width: 0; display: block; overflow-x: auto; }
+    }
 </style>
 
 @if (Model.ShowTseFields)
