@@ -3657,3 +3657,24 @@ button, input, select, textarea, .bse-inline-row-button { font-family: inherit; 
     .bse-user-maintenance-table .bse-row-editing { background-color: #1d3a56; }
     .bse-user-maintenance-table .bse-row-select-link { color: #5694ca; }
 }
+
+/* Reflow fixes found at 320px. */
+@media (max-width: 40.0525em) {
+    .bse-home-rbse-table .govuk-table__header, .bse-home-rbse-table .govuk-table__cell { padding-right: 10px; }
+    .bse-date-search-row .govuk-form-group { grid-template-columns: minmax(0, 1fr); row-gap: 0.5rem; align-items: start; }
+    .bse-date-search-row .govuk-label { white-space: normal; }
+    .bse-date-search-row .bse-date-range-input-wrapper { flex-wrap: wrap; }
+}
+/* Case pages use fixed-width legacy grids and wide data tables; collapse them for 320px reflow. */
+@media (max-width: 40.0525em) {
+    main [class*="bse-"], main [class*="bse-"] .govuk-form-group { grid-template-columns: minmax(0, 1fr) !important; min-width: 0 !important; }
+    main [class*="bse-"][class*="row"], main [class*="bse-"][class*="fields"], main [class*="bse-"][class*="columns"],
+    main [class*="bse-"][class*="field"], main [class*="bse-"][class*="entry"], main [class*="bse-"][class*="group"] { flex-wrap: wrap; }
+    main .govuk-input, main .govuk-select, main .govuk-textarea, main [class*="bse-"] input:not([type="checkbox"]):not([type="radio"]),
+    main [class*="bse-"] select, main [class*="bse-"] textarea { max-width: 100% !important; min-width: 0 !important; box-sizing: border-box; }
+    main .govuk-label { white-space: normal !important; }
+    main fieldset { min-width: 0; }
+    /* Tables scroll inside themselves; position:relative keeps absolutely placed hidden text inside the scroller. */
+    main table { display: block; max-width: 100%; overflow-x: auto; position: relative; }
+    main .govuk-visually-hidden { left: 0 !important; }
+}
