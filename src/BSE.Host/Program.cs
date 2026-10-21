@@ -44,6 +44,9 @@ Log.Logger = new LoggerConfiguration()
 try
 {
     const string UnauthorizedPath = "/Unauthorized";
+    const string SessionErrorPath = "/SessionError";
+    const string HomePath = "/Home";
+    const string ErrorPath = "/Error";
     const string SessionCookieName = "BSE.Session";
     const string AuthCookieName = "BSE.Auth";
 
@@ -240,14 +243,7 @@ try
             })
             .AddCookie(options =>
             {
-                options.ExpireTimeSpan = idleTimeout;
-                options.SlidingExpiration = true;
-                options.Cookie.Name = AuthCookieName;
-                options.Cookie.HttpOnly = true;
-                options.Cookie.SameSite = SameSiteMode.Lax;
-                options.Cookie.SecurePolicy = cookieSecurePolicy;
-                options.Events.OnSigningIn = SingleSessionCookieEvents.OnSigningIn;
-                options.Events.OnValidatePrincipal = SingleSessionCookieEvents.OnValidatePrincipal;
+                AuthCookieConfiguration.Apply(options, AuthCookieName, idleTimeout, cookieSecurePolicy);
 
                 options.Events.OnRedirectToLogin = async ctx =>
 
@@ -263,14 +259,14 @@ try
                     if (ctx.Request.Cookies.ContainsKey(AuthCookieName)
                         && ctx.Request.Headers.Accept.ToString().Contains("text/html", StringComparison.OrdinalIgnoreCase))
                     {
-                        ctx.Response.Redirect("/SessionError");
+                        ctx.Response.Redirect(SessionErrorPath);
                         return;
                     }
 
                     // Return to the page that triggered the challenge after re-authentication (GET only).
                     var returnUri = HttpMethods.IsGet(ctx.Request.Method)
                         ? $"{ctx.Request.PathBase}{ctx.Request.Path}{ctx.Request.QueryString}"
-                        : "/Home";
+                        : HomePath;
 
                     await ctx.HttpContext.ChallengeAsync(
                         Saml2Defaults.Scheme,
@@ -419,8 +415,8 @@ try
     builder.Services.AddRazorPages(options =>
     {
         options.Conventions.AuthorizeFolder("/");
-        options.Conventions.AllowAnonymousToPage("/Error");
-        options.Conventions.AllowAnonymousToPage("/SessionError");
+        options.Conventions.AllowAnonymousToPage(ErrorPath);
+        options.Conventions.AllowAnonymousToPage(SessionErrorPath);
         options.Conventions.AllowAnonymousToPage(UnauthorizedPath);
     })
      .AddMvcOptions(o =>
@@ -479,7 +475,7 @@ try
     app.UseForwardedHeaders(); // options registered via builder.Services.Configure<ForwardedHeadersOptions> above
 
     app.UseMiddleware<UnhandledExceptionLoggingMiddleware>();
-    app.UseExceptionHandler("/Error");
+    app.UseExceptionHandler(ErrorPath);
 
     var slowRequestThresholdMs = builder.Configuration.GetValue<int?>("Serilog:SlowRequestThresholdMs") ?? 1000;
     app.UseSerilogRequestLogging(options =>
@@ -512,8 +508,8 @@ try
         var path = context.Request.Path;
         var isExcludedPath =
             path.StartsWithSegments(UnauthorizedPath, StringComparison.OrdinalIgnoreCase)
-            || path.StartsWithSegments("/Error", StringComparison.OrdinalIgnoreCase)
-            || path.StartsWithSegments("/SessionError", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWithSegments(ErrorPath, StringComparison.OrdinalIgnoreCase)
+            || path.StartsWithSegments(SessionErrorPath, StringComparison.OrdinalIgnoreCase)
             || path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase)
             || path.StartsWithSegments("/Saml2", StringComparison.OrdinalIgnoreCase)
             || path.StartsWithSegments("/signin", StringComparison.OrdinalIgnoreCase)
@@ -540,8 +536,8 @@ try
         var path = context.Request.Path;
         var isExcludedPath =
             path.StartsWithSegments(UnauthorizedPath, StringComparison.OrdinalIgnoreCase)
-            || path.StartsWithSegments("/Error", StringComparison.OrdinalIgnoreCase)
-            || path.StartsWithSegments("/SessionError", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWithSegments(ErrorPath, StringComparison.OrdinalIgnoreCase)
+            || path.StartsWithSegments(SessionErrorPath, StringComparison.OrdinalIgnoreCase)
             || path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase)
             || path.StartsWithSegments("/Saml2", StringComparison.OrdinalIgnoreCase)
             || path.StartsWithSegments("/signin", StringComparison.OrdinalIgnoreCase)
@@ -558,7 +554,7 @@ try
                 context.Session.SetString(marker, "1");
                 if (context.Request.Cookies.ContainsKey(SessionCookieName))
                 {
-                    context.Response.Redirect("/SessionError");
+                    context.Response.Redirect(SessionErrorPath);
                     return;
                 }
             }
@@ -615,7 +611,7 @@ try
         return Results.Ok(new { cleared = true });
     }).RequireAuthorization();
 
-    app.MapGet("/", () => Results.Redirect("/Home"));
+    app.MapGet("/", () => Results.Redirect(HomePath));
 
     // Target of "Sign in again" on the session-timeout page: drops stale cookies, then starts Entra sign-in.
     app.MapGet("/signin", (HttpContext ctx) =>
@@ -624,10 +620,10 @@ try
         ctx.Response.Cookies.Delete(SessionCookieName);
 
         if (bypassAuthentication)
-            return Results.Redirect("/Home");
+            return Results.Redirect(HomePath);
 
         return Results.Challenge(
-            new AuthenticationProperties { RedirectUri = "/Home" },
+            new AuthenticationProperties { RedirectUri = HomePath },
             [Saml2Defaults.Scheme]);
     }).AllowAnonymous();
 
@@ -643,6 +639,3 @@ finally
 {
     Log.CloseAndFlush();
 }
-
-// Expose Program to integration test projects using WebApplicationFactory<Program>.
-public partial class Program { }

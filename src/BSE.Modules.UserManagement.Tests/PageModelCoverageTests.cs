@@ -369,7 +369,6 @@ public sealed class PageModelCoverageTests
         var batchRepository = Substitute.For<IBatchRepository>();
         var ownerRepository = Substitute.For<IOtherOwnerRepository>();
         var testRepository = Substitute.For<ITestRepository>();
-        var connectionFactory = Substitute.For<IDbConnectionFactory>();
         var configuration = new ConfigurationBuilder().AddInMemoryCollection().Build();
 
         var model = new VlaModel(
@@ -384,7 +383,6 @@ public sealed class PageModelCoverageTests
             batchRepository,
             ownerRepository,
             testRepository,
-            connectionFactory,
             configuration);
 
         SetPrivateProperty(model, "OwnerTypeOptions", new ILookupItem[]

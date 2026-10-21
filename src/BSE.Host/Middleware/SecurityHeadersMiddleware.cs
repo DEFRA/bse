@@ -27,13 +27,13 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next, bool enableH
             var (response, hsts) = ((HttpResponse, bool))state;
             var headers = response.Headers;
 
-            headers["Content-Security-Policy"] = ContentSecurityPolicy;
-            headers["X-Frame-Options"] = "DENY";
-            headers["X-Content-Type-Options"] = "nosniff";
+            headers.ContentSecurityPolicy = ContentSecurityPolicy;
+            headers.XFrameOptions = "DENY";
+            headers.XContentTypeOptions = "nosniff";
             headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
 
             if (hsts)
-                headers["Strict-Transport-Security"] = StrictTransportSecurity;
+                headers.StrictTransportSecurity = StrictTransportSecurity;
 
             return Task.CompletedTask;
         }, (context.Response, enableHsts));

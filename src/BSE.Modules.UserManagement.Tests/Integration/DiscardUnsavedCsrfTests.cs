@@ -25,7 +25,7 @@ public sealed class DiscardUnsavedCsrfTests : IClassFixture<UserManagementWebFac
                 GroupName: "DEFRA Data Entry"));
         var client = _factory.CreateClient(new() { AllowAutoRedirect = false });
 
-        var response = await client.PostAsync("/case/123/discard-unsaved", content: null);
+        var response = await client.PostAsync("/case/123/discard-unsaved", content: null, TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
@@ -41,7 +41,7 @@ public sealed class DiscardUnsavedCsrfTests : IClassFixture<UserManagementWebFac
         using var request = new HttpRequestMessage(HttpMethod.Post, "/case/123/discard-unsaved");
         request.Headers.Add("RequestVerificationToken", "forged");
 
-        var response = await client.SendAsync(request);
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }

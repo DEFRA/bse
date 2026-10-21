@@ -47,7 +47,6 @@ public sealed class ClinicalVlaUsersHandlerTests
     private readonly IBatchRepository _batchRepository = Substitute.For<IBatchRepository>();
     private readonly IOtherOwnerRepository _ownerRepository = Substitute.For<IOtherOwnerRepository>();
     private readonly ITestRepository _testRepository = Substitute.For<ITestRepository>();
-    private readonly IDbConnectionFactory _connectionFactory = Substitute.For<IDbConnectionFactory>();
     private readonly ICaseDraftDiscardService _vlaCaseDraftDiscard = Substitute.For<ICaseDraftDiscardService>();
 
     private VlaModel CreateVlaModel(string[]? roles = null)
@@ -65,7 +64,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         var model = new VlaModel(
             _caseService, _babRepository, _currentUserService, _wizardState, _sessionState,
             _vlaCaseDraftDiscard, _caseEditOrchestration,
-            _lookups, _batchRepository, _ownerRepository, _testRepository, _connectionFactory,
+            _lookups, _batchRepository, _ownerRepository, _testRepository,
             new ConfigurationBuilder().AddInMemoryCollection().Build())
         {
             Rbse = Rbse
@@ -221,7 +220,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         var model = CreateVlaModel(["DataEntry", "VLAAccess"]);
         _batchRepository.GetBatchNumbersByRbseAsync(Rbse).Returns(
             [new BatchNumberEntry(1, "2024/001", Rbse, "BSE1")]);
-        _sessionState.GetAsync(Rbse).Returns(new CaseEditSessionState
+        _sessionState.GetAsync(Rbse, Arg.Any<CancellationToken>()).Returns(new CaseEditSessionState
         {
             Rbse = Rbse,
             OtherOwners = [new CaseEditDraftOtherOwnerItem { Id = 11, Type = "B", Name = "Owner Name", Cphh = "01001000101" }]
@@ -236,12 +235,34 @@ public sealed class ClinicalVlaUsersHandlerTests
     }
 
     [Fact]
+    public async Task VlaModel_OnPostBeginEditOwnerRowAsync_EmptyDraft_HydratesPersistedTestsWithRowStamps()
+    {
+        var model = CreateVlaModel(["DataEntry", "VLAAccess"]);
+        _batchRepository.GetBatchNumbersByRbseAsync(Rbse).Returns(
+            [new BatchNumberEntry(1, "2024/001", Rbse, "BSE1")]);
+        var draft = new CaseEditSessionState { Rbse = Rbse };
+        _sessionState.GetAsync(Rbse, Arg.Any<CancellationToken>()).Returns(draft);
+        _testRepository.GetByRbseAsync(Rbse).Returns(
+        [
+            new CaseTestRecord(2, Rbse, "T2", "Type 2", "N", "Negative", null),
+            new CaseTestRecord(1, Rbse, "T1", "Type 1", "P", "Positive", [1, 2])
+        ]);
+
+        await model.OnPostBeginEditOwnerRowAsync(99);
+
+        draft.Tests.Select(t => t.Id).Should().Equal(1, 2);
+        draft.Tests[0].RowStampBase64.Should().Be(Convert.ToBase64String([1, 2]));
+        draft.Tests[1].RowStampBase64.Should().BeEmpty();
+        await _sessionState.Received(1).SetAsync(draft, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task VlaModel_OnPostBeginEditOwnerRowAsync_OwnerNotFound_RedirectsToSelf()
     {
         var model = CreateVlaModel(["DataEntry", "VLAAccess"]);
         _batchRepository.GetBatchNumbersByRbseAsync(Rbse).Returns(
             [new BatchNumberEntry(1, "2024/001", Rbse, "BSE1")]);
-        _sessionState.GetAsync(Rbse).Returns(new CaseEditSessionState { Rbse = Rbse });
+        _sessionState.GetAsync(Rbse, Arg.Any<CancellationToken>()).Returns(new CaseEditSessionState { Rbse = Rbse });
 
         var result = await model.OnPostBeginEditOwnerRowAsync(99);
 
@@ -271,7 +292,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         var model = CreateVlaModel(["DataEntry", "VLAAccess"]);
         _batchRepository.GetBatchNumbersByRbseAsync(Rbse).Returns(
             [new BatchNumberEntry(1, "2024/001", Rbse, "BSE1")]);
-        _sessionState.GetAsync(Rbse).Returns(new CaseEditSessionState { Rbse = Rbse });
+        _sessionState.GetAsync(Rbse, Arg.Any<CancellationToken>()).Returns(new CaseEditSessionState { Rbse = Rbse });
 
         model.NewOwnerType = null;
         model.NewOwnerName = null;
@@ -291,7 +312,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         _batchRepository.GetBatchNumbersByRbseAsync(Rbse).Returns(
             [new BatchNumberEntry(1, "2024/001", Rbse, "BSE1")]);
         var draft = new CaseEditSessionState { Rbse = Rbse };
-        _sessionState.GetAsync(Rbse).Returns(draft);
+        _sessionState.GetAsync(Rbse, Arg.Any<CancellationToken>()).Returns(draft);
         _lookups.GetLookupAsync(LookupTableId.OwnerType).Returns(
             [new LookupItem { Code = "B", Description = "Buyer" }]);
 
@@ -302,7 +323,7 @@ public sealed class ClinicalVlaUsersHandlerTests
 
         result.Should().BeOfType<RedirectToPageResult>();
         draft.OtherOwners.Should().Contain(o => o.Name == "Jane Owner");
-        await _sessionState.Received().SetAsync(Arg.Any<CaseEditSessionState>());
+        await _sessionState.Received().SetAsync(Arg.Any<CaseEditSessionState>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -332,7 +353,7 @@ public sealed class ClinicalVlaUsersHandlerTests
             Rbse = Rbse,
             OtherOwners = [new CaseEditDraftOtherOwnerItem { Id = 11, Type = "B", Name = "Old Name" }]
         };
-        _sessionState.GetAsync(Rbse).Returns(draft);
+        _sessionState.GetAsync(Rbse, Arg.Any<CancellationToken>()).Returns(draft);
 
         model.EditingOwnerId = 11;
         model.EditOwnerType = "B";
@@ -342,7 +363,7 @@ public sealed class ClinicalVlaUsersHandlerTests
 
         result.Should().BeOfType<RedirectToPageResult>();
         await _sessionState.Received(1).SetAsync(Arg.Is<CaseEditSessionState>(d =>
-            d.OtherOwners.Single().Name == "New Name"));
+            d.OtherOwners.Single().Name == "New Name"), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -372,12 +393,12 @@ public sealed class ClinicalVlaUsersHandlerTests
             Rbse = Rbse,
             OtherOwners = [new CaseEditDraftOtherOwnerItem { Id = 11, Type = "B", Name = "Owner" }]
         };
-        _sessionState.GetAsync(Rbse).Returns(draft);
+        _sessionState.GetAsync(Rbse, Arg.Any<CancellationToken>()).Returns(draft);
 
         var result = await model.OnPostDeleteOwnerAsync(11, string.Empty);
 
         result.Should().BeOfType<RedirectToPageResult>();
-        await _sessionState.Received(1).SetAsync(Arg.Is<CaseEditSessionState>(d => d.OtherOwners.Count == 0));
+        await _sessionState.Received(1).SetAsync(Arg.Is<CaseEditSessionState>(d => d.OtherOwners.Count == 0), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -402,7 +423,7 @@ public sealed class ClinicalVlaUsersHandlerTests
             [new BatchNumberEntry(1, "2024/001", Rbse, "BSE1")]);
         _lookups.GetLookupAsync(LookupTableId.OwnerType).Returns(
             [new LookupItem { Code = "Previous", Description = "Previous owner" }]);
-        _sessionState.GetAsync(Rbse).Returns(new CaseEditSessionState
+        _sessionState.GetAsync(Rbse, Arg.Any<CancellationToken>()).Returns(new CaseEditSessionState
         {
             Rbse = Rbse,
             OtherOwners = [new CaseEditDraftOtherOwnerItem { Id = 1, Type = "Previous", Name = "Existing Owner" }]
@@ -600,7 +621,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     [Fact]
     public async Task ClinicalModel_OnPostAddVisitRowAsync_Invalid_ReopensAddRow()
     {
-        _clinicalDraftState.GetAsync(Rbse).Returns(new CaseEditSessionState { Rbse = Rbse });
+        _clinicalDraftState.GetAsync(Rbse, Arg.Any<CancellationToken>()).Returns(new CaseEditSessionState { Rbse = Rbse });
 
         var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
         model.NewVisitDate = null;
@@ -615,7 +636,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     [Fact]
     public async Task ClinicalModel_OnPostAddVisitRowAsync_Valid_AddsToDraft()
     {
-        _clinicalDraftState.GetAsync(Rbse).Returns(new CaseEditSessionState { Rbse = Rbse });
+        _clinicalDraftState.GetAsync(Rbse, Arg.Any<CancellationToken>()).Returns(new CaseEditSessionState { Rbse = Rbse });
 
         var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
         model.NewVisitDate = new DateTime(2024, 1, 10);
@@ -624,7 +645,7 @@ public sealed class ClinicalVlaUsersHandlerTests
 
         result.Should().BeOfType<RedirectToPageResult>();
         await _clinicalDraftState.Received().SetAsync(Arg.Is<CaseEditSessionState>(d =>
-            d.Visits.Any(v => v.VisitDate == new DateTime(2024, 1, 10))));
+            d.Visits.Any(v => v.VisitDate == new DateTime(2024, 1, 10))), Arg.Any<CancellationToken>());
     }
 
     /// <summary>Regression test: a checkbox edit typed into the Signs panel but not yet saved must
@@ -633,7 +654,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     [Fact]
     public async Task ClinicalModel_OnPostAddVisitRowAsync_PreservesPostedSignsCheckboxEdit()
     {
-        _clinicalDraftState.GetAsync(Rbse).Returns(new CaseEditSessionState { Rbse = Rbse });
+        _clinicalDraftState.GetAsync(Rbse, Arg.Any<CancellationToken>()).Returns(new CaseEditSessionState { Rbse = Rbse });
         _clinicalRepository.GetByRbseAsync(Rbse).Returns(new CaseClinicalRecord
         {
             Rbse = Rbse,
@@ -653,7 +674,7 @@ public sealed class ClinicalVlaUsersHandlerTests
 
         result.Should().BeOfType<RedirectToPageResult>();
         await _clinicalDraftState.Received().SetAsync(Arg.Is<CaseEditSessionState>(d =>
-            d.Clinical != null && d.Clinical.Apprehension == true));
+            d.Clinical != null && d.Clinical.Apprehension == true), Arg.Any<CancellationToken>());
     }
 
     /// <summary>Regression test: the bug above also applied, more severely, to a brand-new clinical
@@ -663,7 +684,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     [Fact]
     public async Task ClinicalModel_OnPostAddVisitRowAsync_PreservesPostedSignsCheckboxEdit_ForBrandNewClinicalRecord()
     {
-        _clinicalDraftState.GetAsync(Rbse).Returns(new CaseEditSessionState { Rbse = Rbse });
+        _clinicalDraftState.GetAsync(Rbse, Arg.Any<CancellationToken>()).Returns(new CaseEditSessionState { Rbse = Rbse });
         _clinicalRepository.GetByRbseAsync(Rbse).Returns((CaseClinicalRecord?)null);
 
         var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
@@ -677,7 +698,7 @@ public sealed class ClinicalVlaUsersHandlerTests
 
         result.Should().BeOfType<RedirectToPageResult>();
         await _clinicalDraftState.Received().SetAsync(Arg.Is<CaseEditSessionState>(d =>
-            d.Clinical != null && d.Clinical.Apprehension == true));
+            d.Clinical != null && d.Clinical.Apprehension == true), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -688,7 +709,7 @@ public sealed class ClinicalVlaUsersHandlerTests
             Rbse = Rbse,
             Visits = [new CaseClinicalDraftVisitItem { ClientKey = "v1", VisitDate = new DateTime(2024, 2, 1) }]
         };
-        _clinicalDraftState.GetAsync(Rbse).Returns(draft);
+        _clinicalDraftState.GetAsync(Rbse, Arg.Any<CancellationToken>()).Returns(draft);
 
         var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
         var result = await model.OnPostBeginEditVisitRowAsync("v1", null);
@@ -706,7 +727,7 @@ public sealed class ClinicalVlaUsersHandlerTests
             Rbse = Rbse,
             Visits = [new CaseClinicalDraftVisitItem { ClientKey = "v1", VisitDate = new DateTime(2024, 2, 1) }]
         };
-        _clinicalDraftState.GetAsync(Rbse).Returns(draft);
+        _clinicalDraftState.GetAsync(Rbse, Arg.Any<CancellationToken>()).Returns(draft);
 
         var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
         model.EditingClientKey = "v1";
@@ -716,7 +737,7 @@ public sealed class ClinicalVlaUsersHandlerTests
 
         result.Should().BeOfType<RedirectToPageResult>();
         await _clinicalDraftState.Received().SetAsync(Arg.Is<CaseEditSessionState>(d =>
-            d.Visits.Single().VisitDate == new DateTime(2024, 3, 1)));
+            d.Visits.Single().VisitDate == new DateTime(2024, 3, 1)), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -727,13 +748,13 @@ public sealed class ClinicalVlaUsersHandlerTests
             Rbse = Rbse,
             Visits = [new CaseClinicalDraftVisitItem { ClientKey = "v1", VisitDate = new DateTime(2024, 2, 1) }]
         };
-        _clinicalDraftState.GetAsync(Rbse).Returns(draft);
+        _clinicalDraftState.GetAsync(Rbse, Arg.Any<CancellationToken>()).Returns(draft);
 
         var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
         var result = await model.OnPostDeleteVisitAsync("v1", null);
 
         result.Should().BeOfType<RedirectToPageResult>();
-        await _clinicalDraftState.Received().SetAsync(Arg.Is<CaseEditSessionState>(d => d.Visits.Count == 0));
+        await _clinicalDraftState.Received().SetAsync(Arg.Is<CaseEditSessionState>(d => d.Visits.Count == 0), Arg.Any<CancellationToken>());
     }
 
     // ── UsersModel (remaining gaps) ──────────────────────────────────────────
@@ -1197,7 +1218,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     {
         var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
         var existingDate = new DateTime(2024, 6, 1);
-        _clinicalDraftState.GetAsync(Rbse).Returns(new CaseEditSessionState
+        _clinicalDraftState.GetAsync(Rbse, Arg.Any<CancellationToken>()).Returns(new CaseEditSessionState
         {
             Rbse = Rbse,
             Visits = [new CaseClinicalDraftVisitItem { ClientKey = "v1", VisitDate = existingDate }]
@@ -1216,7 +1237,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     {
         var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
         _caseRepository.GetCaseByRbseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, BirthDate = new DateTime(2024, 1, 1) });
-        _clinicalDraftState.GetAsync(Rbse).Returns(new CaseEditSessionState { Rbse = Rbse });
+        _clinicalDraftState.GetAsync(Rbse, Arg.Any<CancellationToken>()).Returns(new CaseEditSessionState { Rbse = Rbse });
         model.NewVisitDate = new DateTime(2023, 12, 31);
 
         var result = await model.OnPostAddVisitRowAsync(null);
@@ -1230,7 +1251,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     public async Task ClinicalModel_OnPostAddVisitRowAsync_FutureDate_AddsModelError()
     {
         var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
-        _clinicalDraftState.GetAsync(Rbse).Returns(new CaseEditSessionState { Rbse = Rbse });
+        _clinicalDraftState.GetAsync(Rbse, Arg.Any<CancellationToken>()).Returns(new CaseEditSessionState { Rbse = Rbse });
         model.NewVisitDate = DateTime.Today.AddDays(5);
 
         var result = await model.OnPostAddVisitRowAsync(null);
@@ -1244,7 +1265,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     public async Task ClinicalModel_OnPostUpdateVisitRowAsync_RowNotFound_SetsErrorAndRedirects()
     {
         var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
-        _clinicalDraftState.GetAsync(Rbse).Returns(new CaseEditSessionState { Rbse = Rbse });
+        _clinicalDraftState.GetAsync(Rbse, Arg.Any<CancellationToken>()).Returns(new CaseEditSessionState { Rbse = Rbse });
         model.EditingClientKey = "missing";
 
         var result = await model.OnPostUpdateVisitRowAsync(null);
@@ -1258,7 +1279,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     {
         var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
         var sharedDate = new DateTime(2024, 5, 1);
-        _clinicalDraftState.GetAsync(Rbse).Returns(new CaseEditSessionState
+        _clinicalDraftState.GetAsync(Rbse, Arg.Any<CancellationToken>()).Returns(new CaseEditSessionState
         {
             Rbse = Rbse,
             Visits =
@@ -1308,7 +1329,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         // No existing draft => a fresh one is seeded from persisted visits unless the draft already
         // reflects a real edit (HasClinicalVisitsChanges) with an empty Visits list, which is what
         // "the user deleted the only staged visit" looks like here.
-        _clinicalDraftState.GetAsync(Rbse).Returns(
+        _clinicalDraftState.GetAsync(Rbse, Arg.Any<CancellationToken>()).Returns(
             new CaseEditSessionState { Rbse = Rbse, Visits = [], HasClinicalVisitsChanges = true },
             new CaseEditSessionState { Rbse = Rbse, Visits = [], HasClinicalVisitsChanges = true });
 
@@ -1332,7 +1353,7 @@ public sealed class ClinicalVlaUsersHandlerTests
             Rbse = Rbse,
             Visits = [new CaseClinicalDraftVisitItem { ClientKey = "v1", Id = 1, VisitDate = new DateTime(2024, 2, 2), RowStampBase64 = Convert.ToBase64String([9, 9]) }]
         };
-        _clinicalDraftState.GetAsync(Rbse).Returns(draft);
+        _clinicalDraftState.GetAsync(Rbse, Arg.Any<CancellationToken>()).Returns(draft);
 
         var result = await model.OnPostSaveSignsAsync(null);
 
@@ -1354,7 +1375,7 @@ public sealed class ClinicalVlaUsersHandlerTests
             Rbse = Rbse,
             Visits = [new CaseClinicalDraftVisitItem { ClientKey = "v1", Id = 1, VisitDate = new DateTime(2024, 1, 1), RowStampBase64 = Convert.ToBase64String([9, 9]) }]
         };
-        _clinicalDraftState.GetAsync(Rbse).Returns(draft);
+        _clinicalDraftState.GetAsync(Rbse, Arg.Any<CancellationToken>()).Returns(draft);
 
         var result = await model.OnPostSaveSignsAsync(null);
 
