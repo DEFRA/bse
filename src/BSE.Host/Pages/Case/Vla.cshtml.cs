@@ -32,7 +32,6 @@ public class VlaModel(
     IBatchRepository batchRepository,
     IOtherOwnerRepository ownerRepository,
     ITestRepository testRepository,
-    IDbConnectionFactory connectionFactory,
     IConfiguration configuration) : PageModel
 {
     private const string RowStampKey    = "VlaEdit_RowStamp_{0}";

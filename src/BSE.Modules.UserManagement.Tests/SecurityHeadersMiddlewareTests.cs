@@ -47,7 +47,7 @@ public class SecurityHeadersMiddlewareTests
     {
         var client = await NewClientAsync(hsts: true);
 
-        var response = await client.GetAsync(path);
+        var response = await client.GetAsync(path, TestContext.Current.CancellationToken);
 
         ((int)response.StatusCode).Should().Be(status);
         response.Headers.GetValues("Content-Security-Policy").Single().Should().Contain("frame-ancestors 'none'");
@@ -62,7 +62,7 @@ public class SecurityHeadersMiddlewareTests
     {
         var client = await NewClientAsync(hsts: false);
 
-        var response = await client.GetAsync("/");
+        var response = await client.GetAsync("/", TestContext.Current.CancellationToken);
 
         response.Headers.Contains("Strict-Transport-Security").Should().BeFalse();
         response.Headers.Contains("X-Frame-Options").Should().BeTrue();
