@@ -639,6 +639,3 @@ finally
 {
     Log.CloseAndFlush();
 }
-
-// Expose Program to integration test projects using WebApplicationFactory<Program>.
-public partial class Program { }
