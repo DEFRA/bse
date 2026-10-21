@@ -54,9 +54,9 @@
         <caption class="govuk-visually-hidden">TSESS comparison details</caption>
         <thead class="govuk-table__head">
             <tr class="govuk-table__row">
-                <th scope="col" class="govuk-table__header"></th>
+                <th scope="col" class="govuk-table__header"><span class="govuk-visually-hidden">TSESS field</span></th>
                 <th scope="col" class="govuk-table__header" style="text-align:left; padding: 0.8rem 1rem;">TSESS</th>
-                <th scope="col" class="govuk-table__header"></th>
+                <th scope="col" class="govuk-table__header"><span class="govuk-visually-hidden">BSE field</span></th>
                 <th scope="col" class="govuk-table__header" style="text-align:left; padding: 0.8rem 1rem;">BSE</th>
             </tr>
         </thead>
@@ -66,8 +66,8 @@
             <tr class="govuk-table__row"><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">Birth Date</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">@Model.Result?.BsessBirthDate</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">Birth Date</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">@Model.Result?.BseBirthDate</td></tr>
             <tr class="govuk-table__row"><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">Testing Group</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">@Model.Result?.TestGroupName</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">Survey</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">@Model.Result?.Survey</td></tr>
             <tr class="govuk-table__row"><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">Final Result</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">@Model.Result?.BsssFinalResult</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">Final Result</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">@Model.Result?.BseFinalResult</td></tr>
-            <tr class="govuk-table__row"><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">Barcode</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">@Model.Result?.Barcode</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;"></td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;"></td></tr>
-            <tr class="govuk-table__row"><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">AHF Reference</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;"></td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;"></td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;"></td></tr>
+            <tr class="govuk-table__row"><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">Barcode</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">@Model.Result?.Barcode</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;"><span class="govuk-visually-hidden">Not applicable</span></td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;"><span class="govuk-visually-hidden">Not applicable</span></td></tr>
+            <tr class="govuk-table__row"><td class="govuk-table__cell" style="padding: 0.8rem 1rem;">AHF Reference</td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;"><span class="govuk-visually-hidden">Not applicable</span></td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;"><span class="govuk-visually-hidden">Not applicable</span></td><td class="govuk-table__cell" style="padding: 0.8rem 1rem;"><span class="govuk-visually-hidden">Not applicable</span></td></tr>
         </tbody>
     </table>
 

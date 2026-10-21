@@ -43,7 +43,8 @@
     <div class="bse-farm-legacy">
         <div class="bse-farm-legacy__row">
             <div class="bse-farm-legacy__field bse-outstanding-legacy__field--wide @(Model.NoOptionSelected ? "govuk-form-group--error" : "")">
-                <label class="govuk-visually-hidden" for="search-type-results">Outstanding data type</label>
+                <fieldset class="govuk-fieldset">
+                <legend class="govuk-visually-hidden">Outstanding data type</legend>
                 @if (Model.NoOptionSelected)
                 {
                     <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @OutstandingModel.NoOptionMessage</p>
@@ -62,13 +63,15 @@
                         <label class="govuk-label govuk-radios__label" for="search-type-bse1">BSE1s</label>
                     </div>
                 </div>
+                </fieldset>
             </div>
         </div>
 
         <div class="bse-farm-legacy__row">
             <div class="bse-farm-legacy__field bse-outstanding-legacy__field--date bse-outstanding-legacy__field--wide">
-                <label for="Filter_EarliestFormADate" class="govuk-label">Form A Date Between</label>
-                <div class="bse-outstanding-legacy__date-range" role="group" aria-labelledby="Filter_EarliestFormADate">
+                <fieldset class="govuk-fieldset">
+                <legend class="govuk-label">Form A Date Between</legend>
+                <div class="bse-outstanding-legacy__date-range">
                     <div class="govuk-form-group @(Model.Filter.EarliestFormADateError is not null ? "govuk-form-group--error" : "")">
                         <label asp-for="Filter.EarliestFormADate" class="govuk-visually-hidden">Form A date from</label>
                         @if (Model.Filter.EarliestFormADateError is not null)
@@ -91,16 +94,16 @@
                         </div>
                     </div>
                 </div>
+                </fieldset>
             </div>
         </div>
 
         <div class="bse-farm-legacy__row bse-outstanding-legacy__row--actions">
             <div class="bse-farm-legacy__field bse-farm-legacy__field--dealer-left bse-outstanding-legacy__field--include">
-                <label asp-for="Filter.IncludeNonGb" class="govuk-label">Include Non-GB Cases?</label>
                 <div class="govuk-checkboxes" data-module="govuk-checkboxes">
                     <div class="govuk-checkboxes__item">
                         <input asp-for="Filter.IncludeNonGb" class="govuk-checkboxes__input bse-farm-legacy__dealer-checkbox" />
-                        <label asp-for="Filter.IncludeNonGb" class="govuk-label govuk-checkboxes__label"><span class="govuk-visually-hidden">Include Non-GB Cases?</span></label>
+                        <label asp-for="Filter.IncludeNonGb" class="govuk-label govuk-checkboxes__label">Include Non-GB Cases?</label>
                     </div>
                 </div>
                 <div class="govuk-button-group">

@@ -52,7 +52,7 @@
                         <a asp-page="/Home" class="govuk-header__link">Home</a>
                         @if (User.Identity?.IsAuthenticated == true)
                         {
-                            <a href="@helpHref" class="govuk-header__link" target="_blank" rel="noopener noreferrer">Help<span class="govuk-visually-hidden"> (opens in new tab)</span></a>
+                            <a href="@helpHref" class="govuk-header__link" target="bse-help" rel="noopener noreferrer">Help<span class="govuk-visually-hidden"> (opens in a separate tab, reused for later help links)</span></a>
                             <span class="bse-global-header__user-info govuk-body-s govuk-!-margin-bottom-0">
                                 @await Html.PartialAsync("_UserContextPartial")
                             </span>
@@ -151,7 +151,7 @@
             <div class="govuk-width-container bse-app-layout-container">
                 <img class="govuk-footer__crown bse-footer-apha-logo"
                      src="~/assets/images/APHA_Lesser_Arms_Stacked_colour.png"
-                     alt="Animal and Plant Health Agency logo"
+                     alt=""
                      asp-append-version="true" />
                 <div class="govuk-footer__meta">
                     <div class="govuk-footer__meta-item govuk-footer__meta-item--grow">
@@ -159,6 +159,9 @@
                         <ul class="govuk-footer__inline-list">
                             <li class="govuk-footer__inline-list-item">
                                 <span>Animal &amp; Plant Health Agency</span>
+                            </li>
+                            <li class="govuk-footer__inline-list-item">
+                                <a class="govuk-footer__link" asp-page="/Accessibility">Accessibility statement</a>
                             </li>
                         </ul>
                         <svg aria-hidden="true" focusable="false" class="govuk-footer__licence-logo"
