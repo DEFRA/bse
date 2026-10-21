@@ -61,12 +61,12 @@
                             <label class="govuk-label govuk-!-margin-bottom-0" for="batch-year">Enter Batch Number</label>
 
                             <input id="batch-year" name="BatchYear" type="text" inputmode="numeric"
-                                   form="case-entry-form" aria-label="Batch year"
+                                   form="case-entry-form" aria-label="Batch year" aria-describedby="batch-hint@(hasBatchError ? " batch-error" : "")"
                                    class="govuk-input bse-home-batch-year @(batchYearError is not null || Model.BatchNotFound ? "govuk-input--error" : "")"
                                    value="@Model.BatchYear" autocomplete="off" />
 
                             <input id="batch-number" name="BatchNumber" type="text" inputmode="numeric"
-                                   form="case-entry-form" aria-label="Batch number"
+                                   form="case-entry-form" aria-label="Batch number" aria-describedby="batch-hint@(hasBatchError ? " batch-error" : "")"
                                    class="govuk-input bse-home-batch-number @(batchNumberError is not null || Model.BatchNotFound ? "govuk-input--error" : "")"
                                    value="@Model.BatchNumber" autocomplete="off" />
 
@@ -123,7 +123,7 @@
                         @rbseError
                     </p>
                 }
-                <div class="bse-home-rbse-entry" aria-describedby="@(rbseError is not null ? "rbse-error" : "")">
+                <div class="bse-home-rbse-entry">
                     <label class="govuk-label govuk-!-margin-bottom-0" for="rbse-lookup-input">RBSE</label>
                     <div class="bse-home-rbse-combobox">
                         <input id="rbse-lookup-input" name="LookupRbse" type="text"
@@ -142,7 +142,7 @@
             <caption class="govuk-table__caption govuk-table__caption--s govuk-visually-hidden">Latest RBSE and DBSE references</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header"></th>
+                    <th scope="col" class="govuk-table__header"><span class="govuk-visually-hidden">Period</span></th>
                     <th scope="col" class="govuk-table__header">RBSE</th>
                     <th scope="col" class="govuk-table__header">DBSE</th>
                 </tr>

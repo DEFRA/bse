@@ -3804,3 +3804,42 @@ body .bse-form-fieldset-reset {
     }
 }
 
+/* WCAG 1.4.10 reflow: nothing may force the page itself to scroll sideways at 320px / 400% zoom. */
+img, svg, video { max-width: 100%; height: auto; }
+.govuk-input, .govuk-select, .govuk-textarea { max-width: 100%; }
+.govuk-main-wrapper, .govuk-grid-column-one-third, .govuk-grid-column-two-thirds, .govuk-grid-column-full { overflow-wrap: anywhere; }
+@media (max-width: 40.0525em) {
+    .bse-app-layout-container { margin-left: var(--bse-app-left-gutter) !important; margin-right: var(--bse-app-left-gutter) !important; }
+    .govuk-grid-row, .bse-casework-entry-row { display: block; }
+    .govuk-pagination__list { flex-wrap: wrap; }
+    .bse-pagination-bar { flex-direction: column; align-items: flex-start; }
+    .bse-pagination { flex-wrap: wrap; }
+}
+
+/* Wide tables scroll inside their own wrapper, not the whole page. */
+[class*="table-wrap"] { max-width: 100%; overflow-x: auto; }
+
+/* Form controls and buttons must inherit the GOV.UK typeface, not the browser default. */
+button, input, select, textarea, .bse-inline-row-button { font-family: inherit; }
+
+/* Honour the user's light/dark preference. */
+:root { color-scheme: light dark; }
+@media (prefers-color-scheme: dark) {
+    body, .govuk-template__body, .govuk-template { background-color: #0b0c0c; color: #ffffff; }
+    .govuk-body, .govuk-label, .govuk-hint, .govuk-fieldset__legend, .govuk-heading-xl, .govuk-heading-l, .govuk-heading-m, .govuk-heading-s,
+    .govuk-table__header, .govuk-table__cell, .govuk-table__caption, .govuk-summary-list__key, .govuk-summary-list__value,
+    .govuk-list, .govuk-breadcrumbs__list-item, .govuk-inset-text { color: #ffffff; }
+    .govuk-hint { color: #b1b4b6; }
+    .govuk-link:link, .govuk-link:visited, .govuk-breadcrumbs__link { color: #5694ca; }
+    .govuk-link:hover { color: #99c2e5; }
+    .govuk-input, .govuk-select, .govuk-textarea { background-color: #0b0c0c; color: #ffffff; border-color: #ffffff; }
+    .govuk-table__header, .govuk-table__cell { border-color: #505a5f; }
+    .govuk-footer { background: #1d1f20; border-top-color: #505a5f; }
+    .govuk-footer__link, .govuk-footer__licence-description, .govuk-footer__copyright-logo { color: #ffffff; }
+    .bse-global-header-nav { background: #0b0c0c; border-bottom-color: #505a5f; }
+    .bse-autosuggest-list, .bse-autosuggest-panel, .bse-autosuggest-format-hint { background: #1d1f20; color: #ffffff; }
+    .bse-casework-report-row--selected { background-color: #594d00; }
+    .bse-user-maintenance-table .bse-row-selected { background-color: #003a63; color: #ffffff; }
+    .bse-user-maintenance-table .bse-row-editing { background-color: #1d3a56; }
+    .bse-user-maintenance-table .bse-row-select-link { color: #5694ca; }
+}
