@@ -13,8 +13,8 @@ namespace BSE.Host.Pages.CaseWork;
 public class PrintBatchModel(IBatchService batchService) : PageModel
 {
     // Matches legacy BatchNumber.ascx: 4-digit year, up to 6-digit numeric serial.
-    private static readonly Regex YearPattern = new(@"^\d{4}$", RegexOptions.Compiled);
-    private static readonly Regex NumberPattern = new(@"^\d{1,6}$", RegexOptions.Compiled);
+    private static readonly Regex YearPattern = new(@"^\d{4}$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+    private static readonly Regex NumberPattern = new(@"^\d{1,6}$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
 
     // DateTime.Now follows the host OS's local timezone, which defaults to UTC on typical
     // Linux/container deployments and would show "Date Run" an hour behind the real UK
