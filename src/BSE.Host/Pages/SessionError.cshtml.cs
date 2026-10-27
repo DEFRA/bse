@@ -8,5 +8,6 @@ public class SessionErrorModel : PageModel
 {
     public void OnGet()
     {
+        // Static error page; nothing to load.
     }
 }

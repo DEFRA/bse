@@ -4,6 +4,7 @@
     <Deploy />
   </Project>
   <Project Path="BSE.Host/BSE.Host.csproj" />
+  <Project Path="BSE.Host.Tests/BSE.Host.Tests.csproj" />
   <Project Path="BSE.Infrastructure.Tests/BSE.Infrastructure.Tests.csproj" />
   <Project Path="BSE.Infrastructure/BSE.Infrastructure.csproj" />
   <Project Path="BSE.Modules.AdnsExport.Tests/BSE.Modules.AdnsExport.Tests.csproj" />

@@ -67,7 +67,7 @@ public class PickListsModel(
     public int TotalCount => Rows.Count;
     public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
 
-    public IReadOnlyList<IDictionary<string, object?>> PagedRows =>
+    public IReadOnlyList<IDictionary<string, object?>> GetPagedRows() =>
         ApplySorting(Rows).Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
 
     public async Task<IActionResult> OnGetAsync()

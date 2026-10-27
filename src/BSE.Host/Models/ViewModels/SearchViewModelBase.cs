@@ -22,7 +22,7 @@ public abstract class SearchViewModelBase<TResult>
     public int TotalCount => Results.Count;
     public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
 
-    public IReadOnlyList<TResult> PagedResults =>
+    public IReadOnlyList<TResult> GetPagedResults() =>
         ApplySorting(Results)
             .Skip((PageNumber - 1) * PageSize)
             .Take(PageSize)
@@ -30,7 +30,7 @@ public abstract class SearchViewModelBase<TResult>
 
     /// <summary>Full sorted result set, unpaged — Excel export must include every matching row
     /// in the same order as the on-screen grid, not just the current page.</summary>
-    public IReadOnlyList<TResult> SortedResults => ApplySorting(Results).ToList();
+    public IReadOnlyList<TResult> GetSortedResults() => ApplySorting(Results).ToList();
 
     /// <summary>Apply sorting to the full result set before paging.</summary>
     protected abstract IEnumerable<TResult> ApplySorting(IReadOnlyList<TResult> source);

@@ -23,7 +23,7 @@ public class RbseChangesModel(IAuditLogService auditLogService) : PageModel
     public bool HasSearched { get; private set; }
     public int TotalCount => Entries.Count();
     public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
-    public IReadOnlyList<AuditLogRBSEChangeEntry> PagedEntries => Entries.Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
+    public IReadOnlyList<AuditLogRBSEChangeEntry> GetPagedEntries() => Entries.Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
 
     public string? StartDateError { get; private set; }
     public string? EndDateError { get; private set; }

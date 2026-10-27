@@ -6,5 +6,5 @@ namespace BSE.Host.Pages.AdnsExport;
 [Authorize(Policy = "DEFRAMaintenance")]
 public class AdnsMenuModel : PageModel
 {
-    public void OnGet() { }
+    public void OnGet() { /* Static menu page; nothing to load. */ }
 }

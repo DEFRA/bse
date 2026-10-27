@@ -6,5 +6,5 @@ namespace BSE.Host.Pages.AuditLog;
 [Authorize(Policy = "AuditAccess")]
 public class MenuModel : PageModel
 {
-    public void OnGet() { }
+    public void OnGet() { /* Static menu page; nothing to load. */ }
 }

@@ -55,7 +55,7 @@ public class GbModel(
     public int TotalCount => Preview?.Cases.Count ?? 0;
     public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
 
-    public IReadOnlyList<AdnsCaseRecord> PagedCases =>
+    public IReadOnlyList<AdnsCaseRecord> GetPagedCases() =>
         ApplySorting(Preview?.Cases ?? []).Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
 
     private IEnumerable<AdnsCaseRecord> ApplySorting(IEnumerable<AdnsCaseRecord> cases) => SortColumn switch

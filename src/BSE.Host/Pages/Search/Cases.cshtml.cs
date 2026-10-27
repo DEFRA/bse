@@ -100,7 +100,7 @@ public class CasesModel : PageModel
         }
 
         var row = 2;
-        foreach (var r in Filter.SortedResults)
+        foreach (var r in Filter.GetSortedResults())
         {
             ws.Cell(row, 1).Value = r.Rbse;
             ws.Cell(row, 2).Value = r.Cphh;

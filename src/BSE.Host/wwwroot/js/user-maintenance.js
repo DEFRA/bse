@@ -245,6 +245,8 @@
             if (isServerRendered) { submitGrid(element); } else { cancelEdit(); }
         } else if (name === 'save') {
             submitGrid(element);
+        } else {
+            // Unknown action names are ignored.
         }
     }
 

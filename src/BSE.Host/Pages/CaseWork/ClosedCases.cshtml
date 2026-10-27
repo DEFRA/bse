@@ -75,7 +75,7 @@
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
-                @foreach (var caseRecord in Model.PagedCases)
+                @foreach (var caseRecord in Model.GetPagedCases())
                 {
                     var isSelected = !string.IsNullOrWhiteSpace(Model.Rbse)
                         && string.Equals(caseRecord.Rbse, Model.Rbse, StringComparison.OrdinalIgnoreCase);

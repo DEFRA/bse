@@ -17,6 +17,9 @@
     <PackageReference Include="ClosedXML" Version="0.104.2" />
   </ItemGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="BSE.Host.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\BSE.Infrastructure\BSE.Infrastructure.csproj" />
     <ProjectReference Include="..\BSE.SharedKernel\BSE.SharedKernel.csproj" />
     <ProjectReference Include="..\BSE.Modules.ReferenceData\BSE.Modules.ReferenceData.csproj" />

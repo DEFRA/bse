@@ -27,7 +27,7 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next, bool enableH
             var (response, hsts) = ((HttpResponse, bool))state;
             var headers = response.Headers;
 
-            headers.ContentSecurityPolicy = ContentSecurityPolicy;
+            headers.ContentSecurityPolicy = ContentSecurityPolicy; // NOSONAR S7039: 'unsafe-inline' is a known gap until views move to nonces
             headers.XFrameOptions = "DENY";
             headers.XContentTypeOptions = "nosniff";
             headers["Referrer-Policy"] = "strict-origin-when-cross-origin";

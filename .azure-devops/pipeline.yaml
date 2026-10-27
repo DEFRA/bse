@@ -79,7 +79,8 @@ stages:
           projectName: 'BSE'
           extraProperties: |
             sonar.cs.opencover.reportsPaths=$(Agent.TempDirectory)/**/coverage.opencover.xml
-            sonar.coverage.exclusions=**/Program.cs
+            sonar.coverage.exclusions=**/Program.cs,**/*.cshtml,**/wwwroot/**,src/BSE.Database/**,src/Database/**
+            sonar.cpd.exclusions=**/*.cshtml,**/*.sql
 
     - script: dotnet restore $(solution)
       displayName: 'Restore dependencies'

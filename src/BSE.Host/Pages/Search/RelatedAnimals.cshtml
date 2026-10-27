@@ -131,7 +131,7 @@
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
-                @foreach (var r in Model.PagedResults)
+                @foreach (var r in Model.GetPagedResults())
                 {
                     <tr class="govuk-table__row">
                         <td class="govuk-table__cell bse-rbse">@BseFormat.FormatRbse(r.Rbse)</td>

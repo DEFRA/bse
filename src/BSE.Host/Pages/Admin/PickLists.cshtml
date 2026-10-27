@@ -113,7 +113,7 @@ else
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
-                @foreach (var row in Model.PagedRows)
+                @foreach (var row in Model.GetPagedRows())
                 {
                     var rowKey = PickListsModel.RowValue(row, Model.KeyColumn);
                     var rowLabel = PickListsModel.RowValue(row, Model.DisplayFields[0].Column);
