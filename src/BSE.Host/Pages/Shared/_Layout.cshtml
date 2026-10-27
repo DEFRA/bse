@@ -182,6 +182,24 @@
         </div>
     </footer>
 
+    <script>
+        document.addEventListener('click', function (e) {
+            var confirmEl = e.target.closest('[data-confirm]');
+            if (confirmEl && !window.confirm(confirmEl.getAttribute('data-confirm'))) {
+                e.preventDefault();
+                return;
+            }
+            if (e.target.closest('[data-history-back]')) {
+                history.back();
+            }
+        }, true);
+        document.addEventListener('change', function (e) {
+            var el = e.target.closest('[data-autosubmit]');
+            if (el && el.form) {
+                el.form.submit();
+            }
+        });
+    </script>
     <script type="module" src="/govuk/govuk-frontend.min.js"></script>
     <script type="module" src="/moj/moj-frontend.min.js"></script>
     <script type="module">

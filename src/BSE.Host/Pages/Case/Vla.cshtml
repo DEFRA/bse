@@ -397,7 +397,7 @@
                                 <td class="govuk-table__cell">
                                     <div class="govuk-button-group bse-row-actions govuk-!-margin-bottom-0">
                                         <button type="submit" asp-page-handler="BeginEditOwnerRow" asp-route-ownerId="@o.Id" formnovalidate class="govuk-button govuk-button--secondary govuk-!-margin-bottom-0">Change</button>
-                                        <button type="submit" asp-page-handler="DeleteOwner" asp-route-ownerId="@o.Id" asp-route-rowStampBase64="@(Convert.ToBase64String(o.RowStamp ?? []))" formnovalidate class="govuk-button govuk-button--warning govuk-!-margin-bottom-0" onclick="return confirm('Delete this owner record?')">Delete</button>
+                                        <button type="submit" asp-page-handler="DeleteOwner" asp-route-ownerId="@o.Id" asp-route-rowStampBase64="@(Convert.ToBase64String(o.RowStamp ?? []))" formnovalidate class="govuk-button govuk-button--warning govuk-!-margin-bottom-0" data-confirm="Delete this owner record?">Delete</button>
                                     </div>
                                 </td>
                             }

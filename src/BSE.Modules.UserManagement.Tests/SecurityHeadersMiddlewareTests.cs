@@ -1,3 +1,4 @@
+using BSE.Host.Helpers;
 using BSE.Host.Middleware;
 using FluentAssertions;
 using Microsoft.AspNetCore.Builder;
@@ -56,6 +57,52 @@ public class SecurityHeadersMiddlewareTests
         response.Headers.GetValues("Referrer-Policy").Single().Should().NotBeNullOrEmpty();
         response.Headers.GetValues("Strict-Transport-Security").Single().Should().StartWith("max-age=");
     }
+
+    [Fact]
+    public async Task Csp_UsesPerRequestScriptNonce_WithoutUnsafeInlineScripts()
+    {
+        var client = await NewClientAsync(hsts: false);
+
+        var first = (await client.GetAsync("/", TestContext.Current.CancellationToken)).Headers.GetValues("Content-Security-Policy").Single();
+        var second = (await client.GetAsync("/", TestContext.Current.CancellationToken)).Headers.GetValues("Content-Security-Policy").Single();
+
+        var scriptSrc = first.Split(';').Select(d => d.Trim()).Single(d => d.StartsWith("script-src ", StringComparison.Ordinal));
+        scriptSrc.Should().MatchRegex("^script-src 'self' 'nonce-[A-Za-z0-9+/=]+'$");
+        scriptSrc.Should().NotContain("unsafe-inline");
+        second.Should().NotBe(first);
+    }
+
+    [Fact]
+    public void NonceTagHelper_AddsNonce_OnlyWhenMissing()
+    {
+        var httpContext = new DefaultHttpContext();
+        httpContext.Items[SecurityHeadersMiddleware.NonceItemKey] = "abc";
+        var helper = new CspNonceTagHelper
+        {
+            ViewContext = new Microsoft.AspNetCore.Mvc.Rendering.ViewContext { HttpContext = httpContext }
+        };
+
+        var output = NewScriptOutput();
+        helper.Process(NewContext(), output);
+        output.Attributes["nonce"].Value.Should().Be("abc");
+
+        var existing = NewScriptOutput();
+        existing.Attributes.SetAttribute("nonce", "keep");
+        helper.Process(NewContext(), existing);
+        existing.Attributes["nonce"].Value.Should().Be("keep");
+
+        httpContext.Items.Clear();
+        var none = NewScriptOutput();
+        helper.Process(NewContext(), none);
+        none.Attributes.ContainsName("nonce").Should().BeFalse();
+    }
+
+    private static Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContext NewContext() =>
+        new([], new Dictionary<object, object>(), "id");
+
+    private static Microsoft.AspNetCore.Razor.TagHelpers.TagHelperOutput NewScriptOutput() =>
+        new("script", [], (_, _) => Task.FromResult<Microsoft.AspNetCore.Razor.TagHelpers.TagHelperContent>(
+            new Microsoft.AspNetCore.Razor.TagHelpers.DefaultTagHelperContent()));
 
     [Fact]
     public async Task Hsts_IsOmitted_WhenDisabled()
