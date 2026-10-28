@@ -14,6 +14,8 @@ public class FarmLinkedFarmEditModel(
     IFarmService farmService,
     IFarmRelationRepository relationRepo) : PageModel
 {
+    private const string CaseFarmPage = "/Case/Farm";
+
     [BindProperty(SupportsGet = true)] public string Rbse { get; set; } = string.Empty;
     [BindProperty(SupportsGet = true)] public int Id { get; set; }
 
@@ -24,11 +26,11 @@ public class FarmLinkedFarmEditModel(
     {
         var @case = await caseService.GetCaseAsync(Rbse);
         if (@case?.Cphh is not { } cphh)
-            return RedirectToPage("/Case/Farm", new { rbse = Rbse });
+            return RedirectToPage(CaseFarmPage, new { rbse = Rbse });
 
         var linked = (await farmService.GetRelatedFarmsAsync(cphh)).FirstOrDefault(f => f.ID == Id);
         if (linked is null)
-            return RedirectToPage("/Case/Farm", new { rbse = Rbse });
+            return RedirectToPage(CaseFarmPage, new { rbse = Rbse });
 
         RelatedCphh = linked.RelatedCPHH;
         RowStampBase64 = linked.RowStamp is not null ? Convert.ToBase64String(linked.RowStamp) : string.Empty;
@@ -39,7 +41,7 @@ public class FarmLinkedFarmEditModel(
     {
         var @case = await caseService.GetCaseAsync(Rbse);
         if (@case?.Cphh is not { } cphh)
-            return RedirectToPage("/Case/Farm", new { rbse = Rbse });
+            return RedirectToPage(CaseFarmPage, new { rbse = Rbse });
 
         if (string.IsNullOrWhiteSpace(RelatedCphh))
             ModelState.AddModelError(nameof(RelatedCphh), "Enter a CPHH.");
@@ -67,6 +69,6 @@ public class FarmLinkedFarmEditModel(
         await relationRepo.UpdateAsync(Id, normalisedCphh, rowStamp);
 
         TempData["Success"] = "Linked farm updated.";
-        return RedirectToPage("/Case/Farm", new { rbse = Rbse });
+        return RedirectToPage(CaseFarmPage, new { rbse = Rbse });
     }
 }
