@@ -90,7 +90,7 @@ public class BsessImportJobTests
         using var cts = new CancellationTokenSource();
 
         await job.StartAsync(cts.Token);
-        await Task.Delay(200);
+        await Task.Delay(200, TestContext.Current.CancellationToken);
         await job.StopAsync(CancellationToken.None);
 
         // Job should have survived the exception and not re-thrown it.
