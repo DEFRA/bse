@@ -22,6 +22,8 @@ namespace BSE.Modules.CaseManagement.Repositories;
 /// </summary>
 public sealed class CaseRepository : DapperRepository, ICaseRepository
 {
+    private const string ReturnValueParam = "ReturnValue";
+
     public CaseRepository(IDbConnectionFactory connectionFactory) : base(connectionFactory) { }
 
     public async Task<CaseRecord?> GetCaseByRbseAsync(string rbse)
@@ -78,7 +80,7 @@ public sealed class CaseRepository : DapperRepository, ICaseRepository
     {
         var p = BuildAddCaseParams(command, userId);
         await ExecuteAsync("AddCase", p, connection, transaction);
-        return (AddCaseResult)p.Get<int>("ReturnValue");
+        return (AddCaseResult)p.Get<int>(ReturnValueParam);
     }
 
     public async Task<EditCaseResult> EditCaseAsync(
@@ -86,14 +88,14 @@ public sealed class CaseRepository : DapperRepository, ICaseRepository
     {
         var p = BuildEditCaseParams(command, userId);
         await ExecuteAsync("EditCase", p, connection, transaction);
-        return (EditCaseResult)p.Get<int>("ReturnValue");
+        return (EditCaseResult)p.Get<int>(ReturnValueParam);
     }
 
     public async Task<EditCaseResult> EditFinalResultAsync(
         EditFinalResultCommand command, int userId, IDbConnection connection, IDbTransaction transaction)
     {
         var p = new DynamicParameters();
-        p.Add("ReturnValue", direction: ParameterDirection.ReturnValue);
+        p.Add(ReturnValueParam, direction: ParameterDirection.ReturnValue);
         p.Add("@RBSE", command.Rbse);
         p.Add("@FinalResult", command.FinalResult);
         p.Add("@FinalResultDate", command.FinalResultDate);
@@ -107,45 +109,45 @@ public sealed class CaseRepository : DapperRepository, ICaseRepository
         p.Add("@LabComment", command.LabComment);
         p.Add("@DBSE", dbType: System.Data.DbType.String, size: 7, direction: ParameterDirection.Output);
         await ExecuteAsync("EditCaseFinalResult", p, connection, transaction);
-        return (EditCaseResult)p.Get<int>("ReturnValue");
+        return (EditCaseResult)p.Get<int>(ReturnValueParam);
     }
 
     public async Task<DeleteCaseResult> DeleteCaseAsync(string rbse, int userId)
     {
         var p = new DynamicParameters();
-        p.Add("ReturnValue", direction: ParameterDirection.ReturnValue);
+        p.Add(ReturnValueParam, direction: ParameterDirection.ReturnValue);
         p.Add("@RBSE", rbse);
         p.Add("@UserID", userId);
         await ExecuteWithOutputAsync("DeleteCase", p);
-        return (DeleteCaseResult)p.Get<int>("ReturnValue");
+        return (DeleteCaseResult)p.Get<int>(ReturnValueParam);
     }
 
     public async Task<MoveCaseResult> MoveCaseAsync(string rbse, string newCphh, int userId)
     {
         var p = new DynamicParameters();
-        p.Add("ReturnValue", direction: ParameterDirection.ReturnValue);
+        p.Add(ReturnValueParam, direction: ParameterDirection.ReturnValue);
         p.Add("@RBSE", rbse);
         p.Add("@NewCPHH", newCphh);
         p.Add("@UserID", userId);
         await ExecuteWithOutputAsync("MoveCase", p);
-        return (MoveCaseResult)p.Get<int>("ReturnValue");
+        return (MoveCaseResult)p.Get<int>(ReturnValueParam);
     }
 
     public async Task<ChangeRbseResult> ChangeRbseAsync(string oldRbse, string newRbse, int userId)
     {
         var p = new DynamicParameters();
-        p.Add("ReturnValue", direction: ParameterDirection.ReturnValue);
+        p.Add(ReturnValueParam, direction: ParameterDirection.ReturnValue);
         p.Add("@OldRBSE", oldRbse);
         p.Add("@NewRBSE", newRbse);
         p.Add("@UserID", userId);
         await ExecuteWithOutputAsync("ChangeRBSE", p);
-        return (ChangeRbseResult)p.Get<int>("ReturnValue");
+        return (ChangeRbseResult)p.Get<int>(ReturnValueParam);
     }
 
     public async Task<AddNonGbCaseResult> AddNonGbCaseAsync(AddNonGbCaseCommand command, int userId)
     {
         var p = new DynamicParameters();
-        p.Add("ReturnValue", direction: ParameterDirection.ReturnValue);
+        p.Add(ReturnValueParam, direction: ParameterDirection.ReturnValue);
         p.Add("@RBSE", command.Rbse);
         p.Add("@Eartag", command.Eartag);
         p.Add("@EartagHerdmark", command.EartagHerdmark);
@@ -168,7 +170,7 @@ public sealed class CaseRepository : DapperRepository, ICaseRepository
         p.Add("@Barcode", command.Barcode);
         p.Add("@AHFReference", command.AhfReference);
         await ExecuteWithOutputAsync("AddNonGBCase", p);
-        return (AddNonGbCaseResult)p.Get<int>("ReturnValue");
+        return (AddNonGbCaseResult)p.Get<int>(ReturnValueParam);
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -176,7 +178,7 @@ public sealed class CaseRepository : DapperRepository, ICaseRepository
     private static DynamicParameters BuildAddCaseParams(AddCaseCommand c, int userId)
     {
         var p = new DynamicParameters();
-        p.Add("ReturnValue", direction: ParameterDirection.ReturnValue);
+        p.Add(ReturnValueParam, direction: ParameterDirection.ReturnValue);
         p.Add("@RBSE", c.Rbse); p.Add("@CPHH", c.Cphh);
         p.Add("@EartagCountry", c.EartagCountry); p.Add("@EartagHerdmark", c.EartagHerdmark);
         p.Add("@Eartag", c.Eartag); p.Add("@PreviousEartag", c.PreviousEartag);
@@ -207,7 +209,7 @@ public sealed class CaseRepository : DapperRepository, ICaseRepository
     private static DynamicParameters BuildEditCaseParams(EditCaseCommand c, int userId)
     {
         var p = new DynamicParameters();
-        p.Add("ReturnValue", direction: ParameterDirection.ReturnValue);
+        p.Add(ReturnValueParam, direction: ParameterDirection.ReturnValue);
         p.Add("@RBSE", c.Rbse);
         p.Add("@EartagCountry", c.EartagCountry); p.Add("@EartagHerdmark", c.EartagHerdmark);
         p.Add("@Eartag", c.Eartag); p.Add("@PreviousEartag", c.PreviousEartag);

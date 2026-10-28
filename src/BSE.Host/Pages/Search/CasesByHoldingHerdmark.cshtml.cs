@@ -12,6 +12,8 @@ namespace BSE.Host.Pages.Search;
 [Authorize]
 public class CasesByHoldingHerdmarkModel : PageModel
 {
+    private const string DateTimeFormat = "dd/MM/yyyy HH:mm:ss";
+
     private readonly ICaseSearchService _search;
     private const int PageSize = 10;
 
@@ -105,14 +107,14 @@ public class CasesByHoldingHerdmarkModel : PageModel
             ws.Cell(row, 2).Value = r.Cphh;
             ws.Cell(row, 3).Value = r.Sex;
             ws.Cell(row, 4).Value = r.Eartag;
-            ws.Cell(row, 5).Value = r.BirthDate?.ToString("dd/MM/yyyy HH:mm:ss");
+            ws.Cell(row, 5).Value = r.BirthDate?.ToString(DateTimeFormat);
             ws.Cell(row, 6).Value = r.Origin;
-            ws.Cell(row, 7).Value = r.PurchaseDate?.ToString("dd/MM/yyyy HH:mm:ss");
+            ws.Cell(row, 7).Value = r.PurchaseDate?.ToString(DateTimeFormat);
             ws.Cell(row, 8).Value = r.PurchaseAgeInMonths?.ToString();
-            ws.Cell(row, 9).Value = r.OnsetDate?.ToString("dd/MM/yyyy HH:mm:ss");
-            ws.Cell(row, 10).Value = r.FormADate?.ToString("dd/MM/yyyy HH:mm:ss");
-            ws.Cell(row, 11).Value = r.SlaughterDate?.ToString("dd/MM/yyyy HH:mm:ss");
-            ws.Cell(row, 12).Value = r.FinalResultDate?.ToString("dd/MM/yyyy HH:mm:ss");
+            ws.Cell(row, 9).Value = r.OnsetDate?.ToString(DateTimeFormat);
+            ws.Cell(row, 10).Value = r.FormADate?.ToString(DateTimeFormat);
+            ws.Cell(row, 11).Value = r.SlaughterDate?.ToString(DateTimeFormat);
+            ws.Cell(row, 12).Value = r.FinalResultDate?.ToString(DateTimeFormat);
             ws.Cell(row, 13).Value = r.OnsetAgeInMonths?.ToString();
             ws.Cell(row, 14).Value = r.Fate;
             ws.Cell(row, 15).Value = r.FinalResult;
