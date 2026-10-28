@@ -18,43 +18,43 @@ public sealed class SearchRepository : DapperRepository, ISearchRepository
     public SearchRepository(IDbConnectionFactory connectionFactory)
         : base(connectionFactory) { }
 
-    public async Task<IReadOnlyList<CaseSearchResult>> SearchCasesAsync(CaseSearchQuery q, CancellationToken ct = default)
+    public async Task<IReadOnlyList<CaseSearchResult>> SearchCasesAsync(CaseSearchQuery query, CancellationToken ct = default)
     {
         var p = new DynamicParameters();
-        p.Add("RBSE",                    q.Rbse         ?? "", DbType.AnsiString,  size: 9);
-        p.Add("Eartag",                  q.Eartag       ?? "", DbType.AnsiString,  size: 35);
-        p.Add("DBSE",                    q.Dbse         ?? "", DbType.AnsiString,  size: 7);
-        p.Add("Fate",                    q.Fate         ?? "", DbType.AnsiString,  size: 4);
-        p.Add("FinalResult",             q.FinalResult  ?? "", DbType.AnsiString,  size: 5);
-        p.Add("Sex",                     q.Sex          ?? "", DbType.AnsiString,  size: 1);
-        p.Add("Survey",                  q.Survey       ?? "", DbType.AnsiString,  size: 4);
-        p.Add("Notes",                   q.Notes        ?? "", DbType.AnsiString,  size: 500);
-        p.Add("PassiveActive",           q.PassiveActive ?? "", DbType.AnsiString,  size: 1);
-        p.Add("EarliestFormADate",       (object?)q.EarliestFormADate       ?? DBNull.Value, DbType.DateTime);
-        p.Add("LatestFormADate",         (object?)q.LatestFormADate         ?? DBNull.Value, DbType.DateTime);
-        p.Add("EarliestFinalResultDate", (object?)q.EarliestFinalResultDate ?? DBNull.Value, DbType.DateTime);
-        p.Add("LatestFinalResultDate",   (object?)q.LatestFinalResultDate   ?? DBNull.Value, DbType.DateTime);
-        p.Add("EarliestBirthDate",       (object?)q.EarliestBirthDate       ?? DBNull.Value, DbType.DateTime);
-        p.Add("LatestBirthDate",         (object?)q.LatestBirthDate         ?? DBNull.Value, DbType.DateTime);
-        p.Add("IncludeNonGBCases",       q.IncludeNonGbCases,         DbType.Boolean);
-        p.Add("IsImportedCase",          q.IsImportedCase,            DbType.Boolean);
+        p.Add("RBSE",                    query.Rbse         ?? "", DbType.AnsiString,  size: 9);
+        p.Add("Eartag",                  query.Eartag       ?? "", DbType.AnsiString,  size: 35);
+        p.Add("DBSE",                    query.Dbse         ?? "", DbType.AnsiString,  size: 7);
+        p.Add("Fate",                    query.Fate         ?? "", DbType.AnsiString,  size: 4);
+        p.Add("FinalResult",             query.FinalResult  ?? "", DbType.AnsiString,  size: 5);
+        p.Add("Sex",                     query.Sex          ?? "", DbType.AnsiString,  size: 1);
+        p.Add("Survey",                  query.Survey       ?? "", DbType.AnsiString,  size: 4);
+        p.Add("Notes",                   query.Notes        ?? "", DbType.AnsiString,  size: 500);
+        p.Add("PassiveActive",           query.PassiveActive ?? "", DbType.AnsiString,  size: 1);
+        p.Add("EarliestFormADate",       (object?)query.EarliestFormADate       ?? DBNull.Value, DbType.DateTime);
+        p.Add("LatestFormADate",         (object?)query.LatestFormADate         ?? DBNull.Value, DbType.DateTime);
+        p.Add("EarliestFinalResultDate", (object?)query.EarliestFinalResultDate ?? DBNull.Value, DbType.DateTime);
+        p.Add("LatestFinalResultDate",   (object?)query.LatestFinalResultDate   ?? DBNull.Value, DbType.DateTime);
+        p.Add("EarliestBirthDate",       (object?)query.EarliestBirthDate       ?? DBNull.Value, DbType.DateTime);
+        p.Add("LatestBirthDate",         (object?)query.LatestBirthDate         ?? DBNull.Value, DbType.DateTime);
+        p.Add("IncludeNonGBCases",       query.IncludeNonGbCases,         DbType.Boolean);
+        p.Add("IsImportedCase",          query.IsImportedCase,            DbType.Boolean);
 
         var result = await QueryAsync<CaseSearchResult>("GetSearchCase", p, SearchCommandTimeoutSeconds);
         return result.ToList();
     }
 
-    public async Task<IReadOnlyList<FarmSearchResult>> SearchFarmsAsync(FarmSearchQuery q, CancellationToken ct = default)
+    public async Task<IReadOnlyList<FarmSearchResult>> SearchFarmsAsync(FarmSearchQuery query, CancellationToken ct = default)
     {
         var p = new DynamicParameters();
-        p.Add("CPHH",             q.Cphh             ?? string.Empty, DbType.AnsiString, size: 11);
-        p.Add("OwnerName",        q.OwnerName        ?? string.Empty, DbType.AnsiString, size: 100);
-        p.Add("Address",          q.Address          ?? string.Empty, DbType.AnsiString, size: 160);
-        p.Add("County",           q.County           ?? string.Empty, DbType.AnsiString, size: 15);
-        p.Add("Herdmark",         q.Herdmark         ?? string.Empty, DbType.AnsiString, size: 8);
-        p.Add("NumericHerdmark",  q.NumericHerdmark  ?? string.Empty, DbType.AnsiString, size: 6);
-        p.Add("IsDealer",         q.IsDealer,                                DbType.Boolean);
-        p.Add("AHO",              q.Aho              ?? string.Empty, DbType.AnsiString, size: 2);
-        p.Add("IncludeNonGBFarms", q.IncludeNonGbFarms,                      DbType.Boolean);
+        p.Add("CPHH",             query.Cphh             ?? string.Empty, DbType.AnsiString, size: 11);
+        p.Add("OwnerName",        query.OwnerName        ?? string.Empty, DbType.AnsiString, size: 100);
+        p.Add("Address",          query.Address          ?? string.Empty, DbType.AnsiString, size: 160);
+        p.Add("County",           query.County           ?? string.Empty, DbType.AnsiString, size: 15);
+        p.Add("Herdmark",         query.Herdmark         ?? string.Empty, DbType.AnsiString, size: 8);
+        p.Add("NumericHerdmark",  query.NumericHerdmark  ?? string.Empty, DbType.AnsiString, size: 6);
+        p.Add("IsDealer",         query.IsDealer,                                DbType.Boolean);
+        p.Add("AHO",              query.Aho              ?? string.Empty, DbType.AnsiString, size: 2);
+        p.Add("IncludeNonGBFarms", query.IncludeNonGbFarms,                      DbType.Boolean);
 
         var result = await QueryAsync<FarmSearchResult>("GetSearchFarm", p, SearchCommandTimeoutSeconds);
         return result.ToList();
@@ -85,37 +85,37 @@ public sealed class SearchRepository : DapperRepository, ISearchRepository
     }
 
     public async Task<IReadOnlyList<OutstandingCaseResult>> GetOutstandingBse1sAsync(
-        OutstandingSearchQuery q, CancellationToken ct = default)
+        OutstandingSearchQuery query, CancellationToken ct = default)
     {
         var result = await QueryAsync<OutstandingCaseResult>("GetSearchOutstandingBSE1s", new
         {
-            EarliestFormADate = q.EarliestFormADate,
-            LatestFormADate = q.LatestFormADate,
-            IncludeNonGBCases = q.IncludeNonGbCases
+            EarliestFormADate = query.EarliestFormADate,
+            LatestFormADate = query.LatestFormADate,
+            IncludeNonGBCases = query.IncludeNonGbCases
         });
         return result.ToList();
     }
 
     public async Task<IReadOnlyList<OutstandingCaseResult>> GetOutstandingFatesAsync(
-        OutstandingSearchQuery q, CancellationToken ct = default)
+        OutstandingSearchQuery query, CancellationToken ct = default)
     {
         var result = await QueryAsync<OutstandingCaseResult>("GetSearchOutstandingFates", new
         {
-            EarliestFormADate = q.EarliestFormADate,
-            LatestFormADate = q.LatestFormADate,
-            IncludeNonGBCases = q.IncludeNonGbCases
+            EarliestFormADate = query.EarliestFormADate,
+            LatestFormADate = query.LatestFormADate,
+            IncludeNonGBCases = query.IncludeNonGbCases
         });
         return result.ToList();
     }
 
     public async Task<IReadOnlyList<OutstandingCaseResult>> GetOutstandingResultsAsync(
-        OutstandingSearchQuery q, CancellationToken ct = default)
+        OutstandingSearchQuery query, CancellationToken ct = default)
     {
         var result = await QueryAsync<OutstandingCaseResult>("GetSearchOutstandingResults", new
         {
-            EarliestFormADate = q.EarliestFormADate,
-            LatestFormADate = q.LatestFormADate,
-            IncludeNonGBCases = q.IncludeNonGbCases
+            EarliestFormADate = query.EarliestFormADate,
+            LatestFormADate = query.LatestFormADate,
+            IncludeNonGBCases = query.IncludeNonGbCases
         });
         return result.ToList();
     }

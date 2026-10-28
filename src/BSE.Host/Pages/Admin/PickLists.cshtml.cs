@@ -222,12 +222,6 @@ public class PickListsModel(
 
     private string Field(string column) => Fields.GetValueOrDefault(column, "").Trim();
 
-    private bool BoolField(string column) =>
-        Fields.TryGetValue(column, out var v) && (v == "true" || v == "on" || v == "1" || v == "True");
-
-    private int? IntField(string column) =>
-        int.TryParse(Field(column), out var value) ? value : null;
-
     private Task DeleteAsync()
     {
         var key = Field(KeyColumn);
@@ -248,17 +242,6 @@ public class PickListsModel(
     private static int ParseKey(string value) => int.TryParse(value, out var id) ? id : 0;
 
     // ── Validation ───────────────────────────────────────────────────────────
-
-    private void ValidateRequired()
-    {
-        foreach (var field in DisplayFields.Where(f => !f.IsBoolean && !f.IsNumeric))
-        {
-            if (string.IsNullOrWhiteSpace(Field(field.Column)))
-            {
-                ModelState.AddModelError(field.Column, $"Enter a {field.Label.ToLowerInvariant()}");
-            }
-        }
-    }
 
     public static string RowValue(IDictionary<string, object?> row, string column)
     {

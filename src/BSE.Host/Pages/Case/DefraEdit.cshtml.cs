@@ -275,7 +275,7 @@ public class DefraEditModel(
         // Date of Birth: after 1 Jan 1970, before Form A date (or today), PurchaseDate, OnsetDate
         if (Case.BirthDate.HasValue)
         {
-            if (Case.BirthDate.Value.Date < new DateTime(1970, 1, 1))
+            if (Case.BirthDate.Value.Date < DateTime.UnixEpoch)
                 ModelState.AddModelError("Case.BirthDate",
                     "Date of birth must be after 1 January 1970.");
             else

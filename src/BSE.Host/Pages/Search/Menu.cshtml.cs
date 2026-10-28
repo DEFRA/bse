@@ -8,5 +8,6 @@ public class MenuModel : PageModel
 {
     public void OnGet()
     {
+        // Static menu page; nothing to load.
     }
 }
