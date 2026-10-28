@@ -192,7 +192,7 @@
                 <div class="govuk-date-input__item">
                     <div class="govuk-form-group">
                         <label class="govuk-label govuk-date-input__label" for="Case_PurchaseAgeInMonths">Total months</label>
-                        <input asp-for="Case.PurchaseAgeInMonths"
+                        <input asp-for="Case.PurchaseAgeInMonths" id="Case_PurchaseAgeInMonths"
                                class="govuk-input govuk-date-input__input govuk-input--width-4 @(ViewData.ModelState["Case.PurchaseAgeInMonths"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
                                type="number" min="0" />
                         <span id="age-purchased-months-error-star" class="bse-star-error" title="This must be an integer" style="display:none">*</span>
@@ -293,7 +293,7 @@
                 <div class="govuk-date-input__item">
                     <div class="govuk-form-group">
                         <label class="govuk-label govuk-date-input__label" for="Case_OnsetAgeInMonths">Total months</label>
-                        <input asp-for="Case.OnsetAgeInMonths"
+                        <input asp-for="Case.OnsetAgeInMonths" id="Case_OnsetAgeInMonths"
                                class="govuk-input govuk-date-input__input govuk-input--width-4 @(ViewData.ModelState["Case.OnsetAgeInMonths"]?.Errors.Count > 0 ? "govuk-input--error" : "")"
                                type="number" min="0" />
                         <span id="onset-age-months-error-star" class="bse-star-error" title="This must be an integer" style="display:none">*</span>
