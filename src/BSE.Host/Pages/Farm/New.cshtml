@@ -83,7 +83,7 @@
     else
     {
         <div class="govuk-form-group @(ViewData.ModelState.ContainsKey("Farm.CPHH") && ViewData.ModelState["Farm.CPHH"]!.Errors.Count > 0 ? "govuk-form-group--error" : "")">
-            <label asp-for="Farm.CPHH" class="govuk-label">CPHH</label>
+            <label asp-for="Farm.CPHH" for="farm-cphh" class="govuk-label">CPHH</label>
             @if (ViewData.ModelState.ContainsKey("Farm.CPHH") && ViewData.ModelState["Farm.CPHH"]!.Errors.Count > 0)
             {
                 <p id="farm-cphh-error" class="govuk-error-message">
