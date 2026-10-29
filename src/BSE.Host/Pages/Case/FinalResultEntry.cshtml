@@ -97,7 +97,7 @@
             <div class="bse-fre-check-row">
                 <span>@label</span>
                 <div>
-                    <input type="checkbox" checked="@(received ? "checked" : null)" disabled />
+                    <input type="checkbox" aria-label="@label" checked="@(received ? "checked" : null)" disabled />
                     @if (date is not null)
                     {
                         <span class="govuk-body-s">@date.Value.ToString("dd/MM/yyyy")</span>

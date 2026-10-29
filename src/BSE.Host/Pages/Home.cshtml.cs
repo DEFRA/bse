@@ -193,7 +193,7 @@ public class HomeModel(
 
         if (string.IsNullOrWhiteSpace(LookupRbse))
         {
-            ModelState.AddModelError(nameof(LookupRbse), "You must enter a RBSE number");
+            ModelState.AddModelError(nameof(LookupRbse), "Enter an RBSE number in the format 00/00/00000");
             await LoadPageDataAsync();
             return Page();
         }

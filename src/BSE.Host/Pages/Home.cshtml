@@ -45,19 +45,19 @@
         <div class="bse-home-batch-layout">
             <div class="bse-home-batch-layout__form">
                 <h2 class="govuk-heading-m govuk-!-margin-bottom-3" id="batch-panel-heading">Batch Number</h2>
-                <p class="govuk-body govuk-!-margin-bottom-4">Only enter a batch number if you are entering a batch of case details</p>
+                <p class="govuk-body govuk-!-margin-bottom-4" id="batch-instructions">Only use this if you are entering a batch of case details. Enter the batch year, for example 2026, and the batch number, for example 1. To start a new batch instead, select Create New.</p>
 
                 <form method="post">
                     <div class="govuk-form-group @(hasBatchError ? "govuk-form-group--error" : "")">
                         @if (hasBatchError)
                         {
-                            <p id="batch-error" class="govuk-error-message">
+                            <p id="batch-error" class="govuk-error-message bse-error-message--visible">
                                 <span class="govuk-visually-hidden">Error:</span>
                                 @(batchYearError ?? batchNumberError)
                             </p>
                         }
 
-                        <div class="bse-home-batch-entry" aria-describedby="@(hasBatchError ? "batch-error" : "")">
+                        <div class="bse-home-batch-entry" aria-describedby="@(hasBatchError ? "batch-error batch-instructions" : "batch-instructions")">
                             <label class="govuk-label govuk-!-margin-bottom-0" for="batch-year">Enter Batch Number</label>
 
                             <input id="batch-year" name="BatchYear" type="text" inputmode="numeric"
@@ -118,7 +118,7 @@
             <div class="govuk-form-group @(rbseError is not null ? "govuk-form-group--error" : "")">
                 @if (rbseError is not null)
                 {
-                    <p id="rbse-error" class="govuk-error-message">
+                    <p id="rbse-error" class="govuk-error-message bse-error-message--visible">
                         <span class="govuk-visually-hidden">Error:</span>
                         @rbseError
                     </p>
@@ -128,7 +128,7 @@
                     <div class="bse-home-rbse-combobox">
                         <input id="rbse-lookup-input" name="LookupRbse" type="text"
                                class="govuk-input bse-home-rbse-input @(rbseError is not null ? "govuk-input--error" : "")"
-                               value="@Model.LookupRbse" autocomplete="on" data-no-global-autosuggest="true" title="RBSE Format: NN/NN/NNNNN" spellcheck="false" autocapitalize="off" />
+                               value="@Model.LookupRbse" autocomplete="on" data-no-global-autosuggest="true" title="RBSE Format: NN/NN/NNNNN" spellcheck="false" autocapitalize="off" aria-describedby="@(rbseError is not null ? "rbse-error" : null)" />
                     </div>
 
                     <button type="submit" class="govuk-button"

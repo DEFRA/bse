@@ -34,84 +34,84 @@ public sealed class CaseWorkRepository : DapperRepository, ICaseWorkRepository
     public Task<IEnumerable<CaseWorkEntryRecord>> GetClosedCasesAsync()
         => QueryAsync<CaseWorkEntryRecord>("GetClosedCaseReportData");
 
-    public Task EditEntryAsync(EditCaseWorkEntryCommand c)
+    public Task EditEntryAsync(EditCaseWorkEntryCommand command)
         => ExecuteAsync("EditCaseWorkEntry", new
         {
-            RBSE = c.Rbse,
-            Barcode = c.Barcode,
-            AHFReference = c.AhfReference,
-            PurchaserBSE1ReceivedDate = c.PurchaserBse1ReceivedDate,
-            BreederBSE1ReceivedDate = c.BreederBse1ReceivedDate,
-            Vendor1BSE1ReceivedDate = c.Vendor1Bse1ReceivedDate,
-            HomebredBSE1ReceivedDate = c.HomebredBse1ReceivedDate,
-            SummarySheetReceivedDate = c.SummarySheetReceivedDate,
-            PaperworkCompleteDate = c.PaperworkCompleteDate,
-            ActiveMemoDate = c.ActiveMemoDate,
-            AnnexADate = c.AnnexADate,
-            AnnexBDate = c.AnnexBDate,
-            AnnexCDate = c.AnnexCDate,
-            AnnexDDate = c.AnnexDDate,
-            RegionalLab = c.RegionalLab,
-            ReceivedByRegionalLabDate = c.ReceivedByRegionalLabDate,
-            InitialReceivedDate = c.InitialReceivedDate,
-            FinalReceivedDate = c.FinalReceivedDate,
-            FinalSentDate = c.FinalSentDate,
-            LabChasedDate = c.LabChasedDate,
-            BarbMinuteSentDate = c.BarbMinuteSentDate,
-            Post2000SentDate = c.Post2000SentDate,
-            CaseWorkNotes = c.CaseWorkNotes,
-            DataCompleteDate = c.DataCompleteDate,
-            IsCaseClosed = c.IsCaseClosed,
-            UserID = c.UserId,
-            TseTestingSite = c.TseTestingSite,
-            SamplingDate = c.SamplingDate,
-            AHROId = c.AhroId
+            RBSE = command.Rbse,
+            Barcode = command.Barcode,
+            AHFReference = command.AhfReference,
+            PurchaserBSE1ReceivedDate = command.PurchaserBse1ReceivedDate,
+            BreederBSE1ReceivedDate = command.BreederBse1ReceivedDate,
+            Vendor1BSE1ReceivedDate = command.Vendor1Bse1ReceivedDate,
+            HomebredBSE1ReceivedDate = command.HomebredBse1ReceivedDate,
+            SummarySheetReceivedDate = command.SummarySheetReceivedDate,
+            PaperworkCompleteDate = command.PaperworkCompleteDate,
+            ActiveMemoDate = command.ActiveMemoDate,
+            AnnexADate = command.AnnexADate,
+            AnnexBDate = command.AnnexBDate,
+            AnnexCDate = command.AnnexCDate,
+            AnnexDDate = command.AnnexDDate,
+            RegionalLab = command.RegionalLab,
+            ReceivedByRegionalLabDate = command.ReceivedByRegionalLabDate,
+            InitialReceivedDate = command.InitialReceivedDate,
+            FinalReceivedDate = command.FinalReceivedDate,
+            FinalSentDate = command.FinalSentDate,
+            LabChasedDate = command.LabChasedDate,
+            BarbMinuteSentDate = command.BarbMinuteSentDate,
+            Post2000SentDate = command.Post2000SentDate,
+            CaseWorkNotes = command.CaseWorkNotes,
+            DataCompleteDate = command.DataCompleteDate,
+            IsCaseClosed = command.IsCaseClosed,
+            UserID = command.UserId,
+            TseTestingSite = command.TseTestingSite,
+            SamplingDate = command.SamplingDate,
+            AHROId = command.AhroId
         });
 
     // ── Transactional writes ───────────────────────────────────────────────────
 
-    public Task AddAsync(AddCaseWorkCommand c, IDbConnection conn, IDbTransaction tx)
+    public Task AddAsync(AddCaseWorkCommand command, IDbConnection connection, IDbTransaction transaction)
         => ExecuteAsync("AddCaseWork", new
         {
-            RBSE = c.Rbse,
-            RBSEDate = c.RbseDate,
-            Barcode = c.Barcode,
-            AHFReference = c.AhfReference,
-            PurchaserBSE1ReceivedDate = c.PurchaserBse1ReceivedDate,
-            BreederBSE1ReceivedDate = c.BreederBse1ReceivedDate,
-            Vendor1BSE1ReceivedDate = c.Vendor1Bse1ReceivedDate,
-            HomebredBSE1ReceivedDate = c.HomebredBse1ReceivedDate,
-            SummarySheetReceivedDate = c.SummarySheetReceivedDate,
-            PaperworkCompleteDate = c.PaperworkCompleteDate
-        }, conn, tx);
+            RBSE = command.Rbse,
+            RBSEDate = command.RbseDate,
+            Barcode = command.Barcode,
+            AHFReference = command.AhfReference,
+            PurchaserBSE1ReceivedDate = command.PurchaserBse1ReceivedDate,
+            BreederBSE1ReceivedDate = command.BreederBse1ReceivedDate,
+            Vendor1BSE1ReceivedDate = command.Vendor1Bse1ReceivedDate,
+            HomebredBSE1ReceivedDate = command.HomebredBse1ReceivedDate,
+            SummarySheetReceivedDate = command.SummarySheetReceivedDate,
+            PaperworkCompleteDate = command.PaperworkCompleteDate
+        }, connection, transaction);
 
-    public Task EditAsync(EditCaseWorkCommand c, IDbConnection conn, IDbTransaction tx)
+    public Task EditAsync(EditCaseWorkCommand command, IDbConnection connection, IDbTransaction transaction)
         => ExecuteAsync("EditCaseWork", new
         {
-            RBSE = c.Rbse,
-            RBSEDate = c.RbseDate,
-            Barcode = c.Barcode,
-            AHFReference = c.AhfReference,
-            PurchaserBSE1ReceivedDate = c.PurchaserBse1ReceivedDate,
-            BreederBSE1ReceivedDate = c.BreederBse1ReceivedDate,
-            Vendor1BSE1ReceivedDate = c.Vendor1Bse1ReceivedDate,
-            HomebredBSE1ReceivedDate = c.HomebredBse1ReceivedDate,
-            SummarySheetReceivedDate = c.SummarySheetReceivedDate,
-            PaperworkCompleteDate = c.PaperworkCompleteDate
-        }, conn, tx);
+            RBSE = command.Rbse,
+            RBSEDate = command.RbseDate,
+            Barcode = command.Barcode,
+            AHFReference = command.AhfReference,
+            PurchaserBSE1ReceivedDate = command.PurchaserBse1ReceivedDate,
+            BreederBSE1ReceivedDate = command.BreederBse1ReceivedDate,
+            Vendor1BSE1ReceivedDate = command.Vendor1Bse1ReceivedDate,
+            HomebredBSE1ReceivedDate = command.HomebredBse1ReceivedDate,
+            SummarySheetReceivedDate = command.SummarySheetReceivedDate,
+            PaperworkCompleteDate = command.PaperworkCompleteDate
+        }, connection, transaction);
 
-    public Task EditAsync(EditCaseWorkCommand c)
+    public Task EditAsync(EditCaseWorkCommand command)
         => ExecuteAsync("EditCaseWork", new
         {
-            RBSE = c.Rbse,
-            RBSEDate = c.RbseDate,
-            Barcode = c.Barcode,
-            AHFReference = c.AhfReference,
-            PurchaserBSE1ReceivedDate = c.PurchaserBse1ReceivedDate,
-            BreederBSE1ReceivedDate = c.BreederBse1ReceivedDate,
-            Vendor1BSE1ReceivedDate = c.Vendor1Bse1ReceivedDate,
-            HomebredBSE1ReceivedDate = c.HomebredBse1ReceivedDate,
-            SummarySheetReceivedDate = c.SummarySheetReceivedDate,
-            PaperworkCompleteDate = c.PaperworkCompleteDate
+            RBSE = command.Rbse,
+            RBSEDate = command.RbseDate,
+            Barcode = command.Barcode,
+            AHFReference = command.AhfReference,
+            PurchaserBSE1ReceivedDate = command.PurchaserBse1ReceivedDate,
+            BreederBSE1ReceivedDate = command.BreederBse1ReceivedDate,
+            Vendor1BSE1ReceivedDate = command.Vendor1Bse1ReceivedDate,
+            HomebredBSE1ReceivedDate = command.HomebredBse1ReceivedDate,
+            SummarySheetReceivedDate = command.SummarySheetReceivedDate,
+            PaperworkCompleteDate = command.PaperworkCompleteDate
         });
 }

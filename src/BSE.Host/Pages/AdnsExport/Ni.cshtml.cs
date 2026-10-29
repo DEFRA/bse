@@ -16,6 +16,8 @@ public class NiModel(
     IAdnsExportService adnsExportService,
     IOptions<AdnsMsGraphOptions> msGraphOptions) : PageModel
 {
+    private const string DateFormat = "dd/MM/yyyy";
+
     private const int PageSize = 10;
     private const string DraftTempDataKey = "AdnsNiDraftCases";
     private const string PreviewTempDataKey = "AdnsNiPreview";
@@ -95,7 +97,7 @@ public class NiModel(
         DraftCases = [];
         Preview = null;
 
-        InputConfirmationDate = DateTime.Today.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
+        InputConfirmationDate = DateTime.Today.ToString(DateFormat, CultureInfo.InvariantCulture);
 
         var lastReference = await adnsExportService.GetLastReferenceAsync("NI");
         if (lastReference is not null)
@@ -129,7 +131,7 @@ public class NiModel(
             UserEmailAddress = DefaultToEmailAddress;
 
         if (string.IsNullOrWhiteSpace(InputConfirmationDate))
-            InputConfirmationDate = DateTime.Today.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
+            InputConfirmationDate = DateTime.Today.ToString(DateFormat, CultureInfo.InvariantCulture);
 
         return true;
     }
@@ -175,7 +177,7 @@ public class NiModel(
         InputAdnsRegionId = 0;
         // Legacy parity: reset to today's date, not blank, so adding several rows in a row
         // doesn't force the user to re-enter a confirmation date every time.
-        InputConfirmationDate = DateTime.Today.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
+        InputConfirmationDate = DateTime.Today.ToString(DateFormat, CultureInfo.InvariantCulture);
 
         return Page();
     }
@@ -306,7 +308,7 @@ public class NiModel(
 
     // Accepts the MOJ date-picker's free-text d/M/yyyy format, independent of server locale.
     private static bool TryParseConfirmationDate(string? text, out DateTime date) =>
-        DateTime.TryParseExact(text?.Trim(), ["d/M/yyyy", "dd/MM/yyyy", "d/MM/yyyy", "dd/M/yyyy"],
+        DateTime.TryParseExact(text?.Trim(), ["d/M/yyyy", DateFormat, "d/MM/yyyy", "dd/M/yyyy"],
             CultureInfo.InvariantCulture, DateTimeStyles.None, out date);
 
     private static NiGridRow ToGridRow(NiCaseInput c) =>

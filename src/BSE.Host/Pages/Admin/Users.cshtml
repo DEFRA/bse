@@ -69,7 +69,7 @@
             <caption class="govuk-visually-hidden">Users</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header"></th>
+                    <th scope="col" class="govuk-table__header"><span class="govuk-visually-hidden">Select user</span></th>
                     @{ ViewData["Label"] = "Name";     ViewData["Column"] = "UserName"; ViewData["SortColumn"] = usersSortCol; ViewData["SortDesc"] = usersSortDesc; ViewData["BaseUrl"] = usersSortBase; ViewData["Prefix"] = ""; }
                     <partial name="_SortableHeader" />
                     @{ ViewData["Label"] = "Email";    ViewData["Column"] = "Email"; }

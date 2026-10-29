@@ -6,5 +6,8 @@ namespace BSE.Host.Pages.CaseWork;
 [Authorize(Policy = "VLAMaintenance")]
 public class CaseWorkMenuModel : PageModel
 {
-    public void OnGet() { }
+    public void OnGet()
+    {
+        // Static menu page; nothing to load.
+    }
 }

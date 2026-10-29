@@ -62,7 +62,7 @@ public class ClinicalVisitAddModel(
 
         // Legacy's CalendarDate.Validate treats the earliest bound as inclusive — a visit on the
         // birth date itself is valid.
-        var minDate = birthDate?.Date ?? new DateTime(1970, 1, 1);
+        var minDate = birthDate?.Date ?? DateTime.UnixEpoch;
         if (date.Value.Date < minDate)
             ModelState.AddModelError(key, birthDate.HasValue
                 ? "The visit date must be on or after the birth date."

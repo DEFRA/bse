@@ -87,5 +87,5 @@ public sealed class GeoLookupService(IDbRepository db) : IGeoLookupService
         return middle.ToString("0000");
     }
 
-    private record PrefixCodeRow(string Code);
+    private sealed record PrefixCodeRow(string Code);
 }

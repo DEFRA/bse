@@ -65,11 +65,11 @@ public class EditModel : PageModel
         // Validate map reference is within the parish for the CPHH (mirrors legacy MapReference1_MapReferenceChanged)
         if (Farm is not null
             && Farm.MapReference is { Length: >= 8 } mapRef
-            && Farm.CPHH.Length >= 5)
+            && Farm.CPHH.Length >= 5
+            && !await _geoLookup.IsMapReferenceWithinParishAsync(Farm.CPHH, mapRef))
         {
-            if (!await _geoLookup.IsMapReferenceWithinParishAsync(Farm.CPHH, mapRef))
-                ModelState.AddModelError("Farm.MapRef1",
-                    "Map reference does not lie within the parish boundaries for this CPHH.");
+            ModelState.AddModelError("Farm.MapRef1",
+                "Map reference does not lie within the parish boundaries for this CPHH.");
         }
 
         if (!ModelState.IsValid || Farm is null) return Page();

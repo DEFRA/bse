@@ -117,17 +117,17 @@ public class PickSireDamModel(IAnimalRelationsRepository relationsRepository) : 
             id, NullIfBlank(matchedRbse), eartag, name, herdbook, birthDay, birthMonth, birthYear, rowStampBase64,
             fate, finalResult, childCount));
 
-        return RedirectToPage(GetReturnPage(), new { rbse = Rbse, sex = Sex });
+        return RedirectToPage(ReturnPage, new { rbse = Rbse, sex = Sex });
     }
 
     /// <summary>Legacy btnNew_Click: creates an unlinked pedigree entry from the typed search values.</summary>
     public IActionResult OnPostNew()
     {
         SetPendingParent(new PendingDamSire(0, null, Eartag, Name, Herdbook, null, null, null, null, null, null, null));
-        return RedirectToPage(GetReturnPage(), new { rbse = Rbse, sex = Sex, startNew = true });
+        return RedirectToPage(ReturnPage, new { rbse = Rbse, sex = Sex, startNew = true });
     }
 
-    public IActionResult OnPostExit() => RedirectToPage(GetReturnPage(), new { rbse = Rbse, sex = Sex });
+    public IActionResult OnPostExit() => RedirectToPage(ReturnPage, new { rbse = Rbse, sex = Sex });
 
     private void SetPendingParent(PendingDamSire pending)
     {
@@ -137,8 +137,7 @@ public class PickSireDamModel(IAnimalRelationsRepository relationsRepository) : 
 
     private static string? NullIfBlank(string? s) => string.IsNullOrWhiteSpace(s) ? null : s;
 
-    private string GetReturnPage()
-        => "/Case/Relations";
+    private const string ReturnPage = "/Case/Relations";
 }
 
 /// <summary>TempData keys used to hand a picked/new pedigree row back to the Relations page.</summary>

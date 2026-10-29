@@ -238,13 +238,15 @@
 
     function handleAction(name, element) {
         if (name === 'start-new') {
-            if (isOnLastPageWithRoom()) { startNew(); } else { submitGrid(element); }
+            if (isOnLastPageWithRoom()) { startNew(); } else { void submitGrid(element); }
         } else if (name === 'start-edit') {
             startEdit();
         } else if (name === 'cancel') {
-            if (isServerRendered) { submitGrid(element); } else { cancelEdit(); }
+            if (isServerRendered) { void submitGrid(element); } else { cancelEdit(); }
         } else if (name === 'save') {
-            submitGrid(element);
+            void submitGrid(element);
+        } else {
+            // Unknown action names are ignored.
         }
     }
 
@@ -274,16 +276,16 @@
         var link = e.target.closest('.govuk-pagination__link, .bse-sortable-table__button');
         if (link && link.getAttribute('href')) {
             e.preventDefault();
-            loadGrid(new URL(link.getAttribute('href'), window.location.href).toString());
+            void loadGrid(new URL(link.getAttribute('href'), window.location.href).toString());
         }
     });
 
     container.addEventListener('submit', function (e) {
         e.preventDefault();
-        submitGrid(e.submitter);
+        void submitGrid(e.submitter);
     });
 
-    window.addEventListener('popstate', function () { loadGrid(window.location.href); });
+    window.addEventListener('popstate', function () { void loadGrid(window.location.href); });
 
     adoptServerState();
 })();

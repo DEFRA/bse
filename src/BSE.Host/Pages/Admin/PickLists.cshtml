@@ -48,7 +48,7 @@
     <div class="govuk-form-group">
         <label class="govuk-label" for="tableId">Select a Table</label>
         <select id="tableId" name="tableId" class="govuk-select govuk-!-width-two-thirds"
-                onchange="this.form.submit();">
+                data-autosubmit>
             @foreach (var lookup in Model.Lookups)
             {
                 <option value="@lookup.Id" selected="@(lookup.Id == Model.TableId)">@lookup.Description</option>
@@ -141,7 +141,7 @@ else
                                     <input type="hidden" name="Fields[Name]" value="@PickListsModel.RowValue(row, "Name")" />
                                     <button type="submit" class="govuk-button govuk-button--warning govuk-!-margin-bottom-0"
                                             data-module="govuk-button"
-                                            onclick="return confirm('Are you sure you want to delete this record?');">
+                                            data-confirm="Are you sure you want to delete this record?">
                                         Delete<span class="govuk-visually-hidden"> @rowLabel</span>
                                     </button>
                                 </form>

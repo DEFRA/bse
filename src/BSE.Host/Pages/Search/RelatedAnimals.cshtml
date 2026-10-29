@@ -101,7 +101,7 @@
         ViewData["PageNumber"] = Model.PageNumber;
 
         @await Html.PartialAsync("_ExportLink")
-        <div class="bse-related-animals-search-table-wrap">
+        <div class="bse-related-animals-search-table-wrap" tabindex="0" role="region" aria-label="Related animals results">
         <table class="govuk-table bse-related-animals-search-table">
             <caption class="govuk-visually-hidden">Related animal results</caption>
             <thead class="govuk-table__head">

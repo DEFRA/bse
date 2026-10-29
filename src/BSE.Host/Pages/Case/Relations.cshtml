@@ -239,7 +239,7 @@
                     <form method="post" asp-page="/Case/Relations" asp-page-handler="RemoveSire" asp-route-rbse="@Model.Rbse" novalidate>
                         <input type="hidden" asp-for="Rbse" />
                         <button type="submit" class="govuk-button govuk-button--warning"
-                                onclick="return confirm('This will disassociate the sire from the case.  Do you wish to continue?');">Remove Sire</button>
+                                data-confirm="This will disassociate the sire from the case.  Do you wish to continue?">Remove Sire</button>
                     </form>
                 }
                 @if (sireLinked)
@@ -426,7 +426,7 @@
                     <form method="post" asp-page="/Case/Relations" asp-page-handler="RemoveDam" asp-route-rbse="@Model.Rbse" novalidate>
                         <input type="hidden" asp-for="Rbse" />
                         <button type="submit" class="govuk-button govuk-button--warning"
-                                onclick="return confirm('This will disassociate the dam from the case.  Do you wish to continue?');">Remove Dam</button>
+                                data-confirm="This will disassociate the dam from the case.  Do you wish to continue?">Remove Dam</button>
                     </form>
                 }
                 @if (damLinked)
@@ -525,6 +525,7 @@
 
         <fieldset class="bse-form-fieldset-reset" disabled="@(canEditOtherRelations ? null : "disabled")">
 
+        <div class="bse-table-scroll" tabindex="0" role="region" aria-label="Related animals">
         <table class="govuk-table">
             <caption class="govuk-visually-hidden">Related animals for @Model.Rbse</caption>
             <thead class="govuk-table__head">
@@ -593,6 +594,7 @@
                 }
             </tbody>
         </table>
+        </div>
 
         @if (Model.TotalRelationsCount > 0)
         {

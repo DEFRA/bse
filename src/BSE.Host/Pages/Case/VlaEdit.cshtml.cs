@@ -136,7 +136,7 @@ public class VlaEditModel(
         // BirthDate: after 1970-01-01, before FormADate or today
         if (Case.BirthDate.HasValue)
         {
-            if (Case.BirthDate.Value.Date < new DateTime(1970, 1, 1))
+            if (Case.BirthDate.Value.Date < DateTime.UnixEpoch)
                 ModelState.AddModelError("Case.BirthDate", "Birth date must be after 31/12/1969.");
             else
             {

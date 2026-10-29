@@ -118,7 +118,7 @@
                 </div>
             </div>
             <div class="bse-farm-legacy__field bse-farm-legacy__field--continuation">
-                <label class="govuk-label" aria-hidden="true">&nbsp;</label>
+                <span class="govuk-label" aria-hidden="true">&nbsp;</span>
                 <div></div>
             </div>
         </div>
@@ -147,7 +147,7 @@
         ViewData["PageNumber"] = Model.Filter.PageNumber;
 
         @await Html.PartialAsync("_ExportLink")
-        <div class="bse-farm-search-table-wrap">
+        <div class="bse-farm-search-table-wrap" tabindex="0" role="region" aria-label="Farm search results">
         <table class="govuk-table govuk-table--small-text-until-tablet bse-farm-search-table">
             <caption class="govuk-visually-hidden">Farm search results</caption>
             <thead class="govuk-table__head">
