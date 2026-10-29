@@ -11,6 +11,8 @@ namespace BSE.Host.Pages.Case;
 [Authorize]
 public class PickFarmModel(IFarmService farmService) : PageModel
 {
+    private const string HomePage = "/Home";
+
     public const int PageSize = 10;
 
     [BindProperty(SupportsGet = true)]
@@ -37,11 +39,11 @@ public class PickFarmModel(IFarmService farmService) : PageModel
     public async Task<IActionResult> OnGetAsync()
     {
         if (!HasLegacyPickFarmAccess())
-            return RedirectToPage("/Home");
+            return RedirectToPage(HomePage);
 
         var normalized = CphhNormalizer.Normalize(Cphh);
         if (string.IsNullOrWhiteSpace(Rbse))
-            return RedirectToPage("/Home");
+            return RedirectToPage(HomePage);
 
         Cphh = normalized;
         FormattedRequestedCphh = BseFormat.FormatCphh(Cphh) ?? Cphh;
@@ -61,11 +63,11 @@ public class PickFarmModel(IFarmService farmService) : PageModel
     public async Task<IActionResult> OnPostUseSelectedAsync(string? selectedFarmCphh)
     {
         if (!HasLegacyPickFarmAccess())
-            return RedirectToPage("/Home");
+            return RedirectToPage(HomePage);
 
         var normalized = CphhNormalizer.Normalize(Cphh);
         if (string.IsNullOrWhiteSpace(Rbse))
-            return RedirectToPage("/Home");
+            return RedirectToPage(HomePage);
 
         if (string.IsNullOrWhiteSpace(selectedFarmCphh))
         {
@@ -100,11 +102,11 @@ public class PickFarmModel(IFarmService farmService) : PageModel
     public IActionResult OnPostNewAsync()
     {
         if (!HasLegacyPickFarmAccess())
-            return RedirectToPage("/Home");
+            return RedirectToPage(HomePage);
 
         var normalized = CphhNormalizer.Normalize(Cphh);
         if (string.IsNullOrWhiteSpace(Rbse))
-            return RedirectToPage("/Home");
+            return RedirectToPage(HomePage);
 
         return RedirectToPage("/Farm/New", new { returnRbse = Rbse, returnCphh = normalized, returnToCaseFarm = true });
     }
@@ -112,10 +114,10 @@ public class PickFarmModel(IFarmService farmService) : PageModel
     public IActionResult OnPostCancelAsync()
     {
         if (!HasLegacyPickFarmAccess())
-            return RedirectToPage("/Home");
+            return RedirectToPage(HomePage);
 
         if (string.IsNullOrWhiteSpace(Rbse))
-            return RedirectToPage("/Home");
+            return RedirectToPage(HomePage);
 
         return RedirectToPage("/Case/Farm", new { rbse = Rbse, newCphh = CphhNormalizer.Normalize(Cphh) });
     }

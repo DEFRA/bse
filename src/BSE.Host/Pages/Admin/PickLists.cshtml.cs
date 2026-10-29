@@ -10,6 +10,8 @@ public class PickListsModel(
     IEditableLookupAdminService lookupAdminService,
     ILookupDataService lookupDataService) : PageModel
 {
+    private const string DescriptionColumn = "Description";
+
     private const int PageSize = 10;
 
     // Legacy PickListMaintenance.aspx defaulted to table 11 (Valuation Age) when none was requested.
@@ -168,7 +170,7 @@ public class PickListsModel(
         TestTypeId or RelationFateId =>
         [
             new("Code", "Code"),
-            new("Description", "Description"),
+            new(DescriptionColumn, DescriptionColumn),
             new("IsActive", "Is Active", IsBoolean: true)
         ],
         BreedId =>
@@ -192,7 +194,7 @@ public class PickListsModel(
         [
             new("IDColumn", "ID"),
             new("Code", "Code"),
-            new("Description", "Description"),
+            new(DescriptionColumn, DescriptionColumn),
             new("BSERegionID", "BSE Region", IsNumeric: true, IsRegionLookup: true)
         ],
         TseTestingSiteId =>
@@ -206,7 +208,7 @@ public class PickListsModel(
         _ =>
         [
             new("Code", "Code"),
-            new("Description", "Description")
+            new(DescriptionColumn, DescriptionColumn)
         ]
     };
 

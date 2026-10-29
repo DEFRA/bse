@@ -25,6 +25,8 @@ public class DefraEditModel(
     IBatchRepository batchRepository,
     IConfiguration configuration) : PageModel
 {
+    private const string BirthDateKey = "Case.BirthDate";
+
     private const string RowStampKey = "DefraEdit_RowStamp_{0}";
 
     [BindProperty(SupportsGet = true)]
@@ -276,23 +278,23 @@ public class DefraEditModel(
         if (Case.BirthDate.HasValue)
         {
             if (Case.BirthDate.Value.Date < DateTime.UnixEpoch)
-                ModelState.AddModelError("Case.BirthDate",
+                ModelState.AddModelError(BirthDateKey,
                     "Date of birth must be after 1 January 1970.");
             else
             {
                 var formALimit = Case.FormADate.HasValue ? Case.FormADate.Value.Date : today;
                 if (Case.BirthDate.Value.Date >= formALimit)
-                    ModelState.AddModelError("Case.BirthDate",
+                    ModelState.AddModelError(BirthDateKey,
                         Case.FormADate.HasValue
                             ? "Date of birth must be before the Form A date."
                             : "Date of birth must be a past date.");
 
                 if (Case.PurchaseDate.HasValue && Case.BirthDate.Value.Date >= Case.PurchaseDate.Value.Date)
-                    ModelState.AddModelError("Case.BirthDate",
+                    ModelState.AddModelError(BirthDateKey,
                         "Date of birth must be before the purchase date.");
 
                 if (Case.OnsetDate.HasValue && Case.BirthDate.Value.Date >= Case.OnsetDate.Value.Date)
-                    ModelState.AddModelError("Case.BirthDate",
+                    ModelState.AddModelError(BirthDateKey,
                         "Date of birth must be before the onset date.");
             }
         }
