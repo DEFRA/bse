@@ -78,7 +78,7 @@
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
-                @foreach (var e in Model.PagedEntries)
+                @foreach (var e in Model.PagedEntries())
                 {
                     <tr class="govuk-table__row">
                         <td class="govuk-table__cell">@e.TableName</td>
@@ -102,13 +102,13 @@
     }
     else if (Model.HasSearched)
     {
-        <div class="govuk-notification-banner" role="region" aria-labelledby="new-farms-info-title" data-module="govuk-notification-banner">
+        <section class="govuk-notification-banner" aria-labelledby="new-farms-info-title" data-module="govuk-notification-banner">
             <div class="govuk-notification-banner__header">
                 <h2 class="govuk-notification-banner__title" id="new-farms-info-title">Information</h2>
             </div>
             <div class="govuk-notification-banner__content">
                 <p class="govuk-notification-banner__heading">No new farms found in this period.</p>
             </div>
-        </div>
+        </section>
     }
 </div>

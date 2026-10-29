@@ -23,7 +23,7 @@ public class UsersModel(IUserManagementService userManagementService, ILookupDat
 
     public int TotalCount => Users.Count();
     public int TotalPages => PageCountFor(TotalCount);
-    public IReadOnlyList<User> PagedUsers => Users.Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
+    public IReadOnlyList<User> PagedUsers() => Users.Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
 
     private static int PageCountFor(int totalCount) =>
         totalCount == 0 ? 1 : (int)Math.Ceiling(totalCount / (double)PageSize);

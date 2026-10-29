@@ -12,6 +12,11 @@ namespace BSE.Host.Pages.CaseWork;
 [Authorize(Policy = "VLAAccess")]
 public class PrintBatchModel(IBatchService batchService) : PageModel
 {
+    private const string CaseBlockOpen = "<div class=\"case-block\">";
+    private const string SmallTableOpen = "<table class=\"report-table-small\">";
+    private const string TableAndBlockClose = "</table></div><hr/>";
+    private const string TableClose = "</table>";
+
     // Matches legacy BatchNumber.ascx: 4-digit year, up to 6-digit numeric serial.
     private static readonly Regex YearPattern = new(@"^\d{4}$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
     private static readonly Regex NumberPattern = new(@"^\d{1,6}$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
@@ -175,10 +180,10 @@ public class PrintBatchModel(IBatchService batchService) : PageModel
     {
         foreach (var row in rows)
         {
-            sb.AppendLine("<div class=\"case-block\">");
+            sb.AppendLine(CaseBlockOpen);
             sb.AppendLine("<table class=\"report-table\"><tr>" +
                 $"<th>Case - {V(row, "DisplayRBSE")}</th><th>CPHH - {V(row, "DisplayCPHH")}</th></tr></table>");
-            sb.AppendLine("<table class=\"report-table-small\">");
+            sb.AppendLine(SmallTableOpen);
             AppendSymptomRow(sb, row, "APPR", "Apprehension", "ABNO", "AbnormalBehaviour");
             AppendSymptomRow(sb, row, "TOUCH", "HypersensitiveTouch", "SHY", "HeadShyness");
             AppendSymptomRow(sb, row, "SOUND", "HypersensitiveSound", "FLANK", "LickingFlank");
@@ -192,7 +197,7 @@ public class PrintBatchModel(IBatchService batchService) : PageModel
             AppendSymptomRow(sb, row, "CIRCLE", "Circling", "PAR", "Paresis", "TREM", "Tremor");
             AppendSymptomRow(sb, row, "H ATAX", "HindAtaxia", "F ATX", "ForeAtaxia", "KNUCK", "KnucklingFetlock");
             AppendSymptomRow(sb, row, "WT", "WeightLoss", "COND", "ConditionLoss", "MILK", "MilkYield");
-            sb.AppendLine("</table></div><hr/>");
+            sb.AppendLine(TableAndBlockClose);
         }
     }
 
@@ -214,7 +219,7 @@ public class PrintBatchModel(IBatchService batchService) : PageModel
     {
         foreach (var row in rows)
         {
-            sb.AppendLine("<div class=\"case-block\">");
+            sb.AppendLine(CaseBlockOpen);
             sb.AppendLine("<table class=\"report-table\">");
             sb.AppendLine("<tr><th>RBSE</th><th>EARTAG</th><th>CPHH</th><th>OWNER</th><th>Address</th></tr>");
             sb.AppendLine("<tr>" +
@@ -223,24 +228,24 @@ public class PrintBatchModel(IBatchService batchService) : PageModel
                 $"<td>{V(row, "DisplayCPHH")}</td>" +
                 $"<td>{V(row, "Ownername")}</td>" +
                 $"<td>{V(row, "Address1")}</td></tr>");
-            sb.AppendLine("</table>");
-            sb.AppendLine("<table class=\"report-table-small\">");
+            sb.AppendLine(TableClose);
+            sb.AppendLine(SmallTableOpen);
             sb.AppendLine("<tr><th>BIRTH</th><th>BAB</th><th>AGE</th><th>SEX</th><th>BREED</th><th>HB/P</th><th>DATE P</th><th>AGE P</th></tr>");
             sb.AppendLine("<tr>" +
                 $"<td>{V(row, "BirthDate")}</td><td>{V(row, "IsBAB")}</td><td>{V(row, "OnsetAgeInMonths")}</td>" +
                 $"<td>{V(row, "Sex")}</td><td>{V(row, "Breed")}</td><td>{V(row, "Origin")}</td>" +
                 $"<td>{V(row, "PurchaseDate")}</td><td>{V(row, "PurchaseAgeInMonths")}</td></tr>");
-            sb.AppendLine("</table>");
-            sb.AppendLine("<table class=\"report-table-small\">");
+            sb.AppendLine(TableClose);
+            sb.AppendLine(SmallTableOpen);
             sb.AppendLine("<tr><th>ENTRY</th><th>ONSET</th><th>PREG</th><th>MONTHS POST CALVING</th></tr>");
             sb.AppendLine("<tr>" +
                 $"<td>{V(row, "HerdEntryDate")}</td><td>{V(row, "OnsetDate")}</td>" +
                 $"<td>{V(row, "MonthsPregnant")}</td><td>{V(row, "MonthsPostCalving")}</td></tr>");
-            sb.AppendLine("</table>");
-            sb.AppendLine("<table class=\"report-table-small\">");
+            sb.AppendLine(TableClose);
+            sb.AppendLine(SmallTableOpen);
             sb.AppendLine("<tr><th>H TYPE</th></tr>");
             sb.AppendLine($"<tr><td>{V(row, "HerdType")} {V(row, "PedigreeType")}</td></tr>");
-            sb.AppendLine("</table>");
+            sb.AppendLine(TableClose);
             sb.AppendLine("</div><hr/>");
         }
     }
@@ -251,10 +256,10 @@ public class PrintBatchModel(IBatchService batchService) : PageModel
         foreach (var group in rows.GroupBy(r => r.TryGetValue("RBSE", out var v) ? v?.ToString() ?? "" : ""))
         {
             var first = group.First();
-            sb.AppendLine("<div class=\"case-block\">");
+            sb.AppendLine(CaseBlockOpen);
             sb.AppendLine("<table class=\"report-table\"><tr>" +
                 $"<th>Case - {E(RbseHelper.Format(group.Key))}</th><th>CPHH - {FormatCphh(first, "CPHH")}</th></tr></table>");
-            sb.AppendLine("<table class=\"report-table-small\">");
+            sb.AppendLine(SmallTableOpen);
             sb.AppendLine("<tr><th>Year From</th><th>Year To</th><th>Ration Type</th><th>Supplier Name</th><th>Ration Name</th><th>Is PrePurchase</th></tr>");
             foreach (var row in group)
             {
@@ -262,7 +267,7 @@ public class PrintBatchModel(IBatchService batchService) : PageModel
                     $"<td>{V(row, "YearFrom")}</td><td>{V(row, "YearTo")}</td><td>{V(row, "RationType")}</td>" +
                     $"<td>{V(row, "Name")}</td><td>{V(row, "RationName")}</td><td>{V(row, "IsPrePurchase")}</td></tr>");
             }
-            sb.AppendLine("</table></div><hr/>");
+            sb.AppendLine(TableAndBlockClose);
         }
     }
 
@@ -272,9 +277,9 @@ public class PrintBatchModel(IBatchService batchService) : PageModel
     {
         foreach (var group in rows.GroupBy(r => r.TryGetValue("RBSE", out var v) ? v?.ToString() ?? "" : ""))
         {
-            sb.AppendLine("<div class=\"case-block\">");
+            sb.AppendLine(CaseBlockOpen);
             sb.AppendLine($"<table class=\"report-table\"><tr><th>Case - {E(RbseHelper.Format(group.Key))}</th></tr></table>");
-            sb.AppendLine("<table class=\"report-table-small\">");
+            sb.AppendLine(SmallTableOpen);
             sb.AppendLine("<tr><th>BIRTH</th><th>SEX</th><th>RELATION TYPE</th><th>EARTAG</th><th>FATE</th><th>DATE LEFT</th><th>RBSE OF RELATION</th><th>SIRE</th></tr>");
             foreach (var row in group)
             {
@@ -283,7 +288,7 @@ public class PrintBatchModel(IBatchService batchService) : PageModel
                     $"<td>{V(row, "EartagHerdmark")} {V(row, "Eartag")}</td><td>{V(row, "RelationFateDesc")}</td>" +
                     $"<td>{V(row, "LeftDate")}</td><td>{E(RbseHelper.Format(row.TryGetValue("RelationRBSE", out var rv) ? rv?.ToString() : null))}</td><td>{V(row, "Sire")}</td></tr>");
             }
-            sb.AppendLine("</table></div><hr/>");
+            sb.AppendLine(TableAndBlockClose);
         }
     }
 
@@ -292,10 +297,10 @@ public class PrintBatchModel(IBatchService batchService) : PageModel
     {
         foreach (var row in rows)
         {
-            sb.AppendLine("<div class=\"case-block\">");
+            sb.AppendLine(CaseBlockOpen);
             sb.AppendLine("<table class=\"report-table\"><tr>" +
                 $"<th>Case - {V(row, "DisplayRBSE")}</th><th>CPHH - {V(row, "DisplayCPHH")}</th></tr></table>");
-            sb.AppendLine("<table class=\"report-table-small\">");
+            sb.AppendLine(SmallTableOpen);
             sb.AppendLine("<tr><th colspan=\"8\">Sire Detail:</th></tr>");
             sb.AppendLine("<tr><th>ID</th><th>RBSE</th><th>EARTAG</th><th>NAME</th><th>DATE OF BIRTH</th><th>FATE</th><th>HERD BOOK</th><th>ALT NAME</th></tr>");
             sb.AppendLine("<tr>" +
@@ -308,7 +313,7 @@ public class PrintBatchModel(IBatchService batchService) : PageModel
                 $"<td>{V(row, "DamID")}</td><td>{V(row, "DamDisplayRBSE")}</td><td>{V(row, "DamEartag")}</td>" +
                 $"<td>{V(row, "DamName")}</td><td>{V(row, "DamBirthDate")}</td><td>{V(row, "DamFate")}</td>" +
                 $"<td>{V(row, "DamHerdbook")}</td><td>{V(row, "DamAlternativeName")}</td><td>{V(row, "DamStatus")}</td></tr>");
-            sb.AppendLine("</table></div><hr/>");
+            sb.AppendLine(TableAndBlockClose);
         }
     }
 
@@ -322,6 +327,6 @@ public class PrintBatchModel(IBatchService batchService) : PageModel
         {
             sb.AppendLine("<tr>" + string.Join("", columns.Select(c => $"<td>{V(row, c)}</td>")) + "</tr>");
         }
-        sb.AppendLine("</table>");
+        sb.AppendLine(TableClose);
     }
 }

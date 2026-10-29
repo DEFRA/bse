@@ -21,7 +21,7 @@ public class ClosedCasesModel(ICaseWorkService caseWorkService) : PageModel
 
     public int TotalCount => Cases.Count();
     public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
-    public IReadOnlyList<CaseWorkEntryRecord> PagedCases =>
+    public IReadOnlyList<CaseWorkEntryRecord> PagedCases() =>
         Cases.Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
 
     public async Task OnGetAsync()

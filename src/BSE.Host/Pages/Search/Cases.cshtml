@@ -318,7 +318,7 @@
         var sortDesc = Model.Filter.SortDesc;
         ViewData["PageNumber"] = Model.Filter.PageNumber;
 
-        <div class="bse-case-search-table-wrap" role="region" aria-label="Case search results">
+        <section class="bse-case-search-table-wrap" aria-label="Case search results">
         <table class="govuk-table bse-case-search-table">
             <caption class="govuk-visually-hidden">Case search results</caption>
             <thead class="govuk-table__head">
@@ -358,7 +358,7 @@
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
-                @foreach (var r in Model.Filter.PagedResults)
+                @foreach (var r in Model.Filter.PagedResults())
                 {
                     <tr class="govuk-table__row">
                         <td class="govuk-table__cell bse-rbse">@BseFormat.FormatRbse(r.Rbse)</td>
@@ -381,7 +381,7 @@
                 }
             </tbody>
         </table>
-        </div>
+        </section>
 
         @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData)
         {

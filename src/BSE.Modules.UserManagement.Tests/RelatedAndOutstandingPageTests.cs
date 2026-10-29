@@ -101,7 +101,7 @@ public class RelatedAnimalsModelTests
 
         model.HasSearched.Should().BeTrue();
         model.TotalCount.Should().Be(3);
-        model.PagedResults.Should().HaveCount(3);
+        model.PagedResults().Should().HaveCount(3);
     }
 
     [Theory]
@@ -138,7 +138,7 @@ public class RelatedAnimalsModelTests
             {
                 model.SortColumn = column;
                 model.SortDesc = desc;
-                model.PagedResults.Should().HaveCount(4, $"{column} desc={desc}");
+                model.PagedResults().Should().HaveCount(4, $"{column} desc={desc}");
             }
         }
     }
@@ -221,7 +221,7 @@ public class OutstandingModelTests
         await model.OnGetAsync();
 
         model.Filter.HasSearched.Should().BeFalse();
-        await _search.DidNotReceiveWithAnyArgs().GetOutstandingFatesAsync(default!);
+        await _search.DidNotReceiveWithAnyArgs().GetOutstandingFatesAsync(default!, TestContext.Current.CancellationToken);
     }
 
     [Theory]
@@ -285,7 +285,7 @@ public class OutstandingModelTests
             {
                 model.Filter.SortColumn = column;
                 model.Filter.SortDesc = desc;
-                model.Filter.PagedResults.Should().HaveCount(3);
+                model.Filter.PagedResults().Should().HaveCount(3);
             }
         }
     }

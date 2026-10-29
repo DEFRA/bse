@@ -64,7 +64,7 @@ public class NiModel(
     public string FromAddress => _msGraphOptions.FromAddress;
     public string DefaultToEmailAddress => _msGraphOptions.ToAddress;
 
-    public IReadOnlyList<NiGridRow> CurrentRows =>
+    public IReadOnlyList<NiGridRow> CurrentRows() =>
         Preview is null
             ? DraftCases.Select(ToGridRow).ToList()
             : Preview.Cases.Select(c => new NiGridRow(
@@ -75,11 +75,11 @@ public class NiModel(
                 c.ConfirmationDate,
                 $"{c.AdnsYear}|{c.AdnsNumber}|{c.AdnsRegionId}|{c.ConfirmationDate:O}")).ToList();
 
-    public int TotalCount => CurrentRows.Count;
+    public int TotalCount => CurrentRows().Count;
     public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
 
-    public IReadOnlyList<NiGridRow> PagedRows =>
-        ApplySorting(CurrentRows).Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
+    public IReadOnlyList<NiGridRow> PagedRows() =>
+        ApplySorting(CurrentRows()).Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
 
     public async Task<IActionResult> OnGetAsync()
     {

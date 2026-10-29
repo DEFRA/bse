@@ -29,7 +29,7 @@ public class ByFarmModel(IAuditLogService auditLogService) : PageModel
     public bool HasSearched { get; private set; }
     public int TotalCount => Entries.Count();
     public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
-    public IReadOnlyList<AuditLogEntry> PagedEntries => Entries.Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
+    public IReadOnlyList<AuditLogEntry> PagedEntries() => Entries.Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
 
     public async Task<IActionResult> OnGetAsync()
     {

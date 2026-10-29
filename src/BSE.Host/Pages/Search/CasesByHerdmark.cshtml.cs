@@ -33,7 +33,7 @@ public class CasesByHerdmarkModel : PageModel
     public bool HasSearched { get; private set; }
     public int TotalCount => Results.Count;
     public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
-    public IReadOnlyList<CaseDetailSearchResult> PagedResults =>
+    public IReadOnlyList<CaseDetailSearchResult> PagedResults() =>
         ApplySorting(Results)
             .Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
 

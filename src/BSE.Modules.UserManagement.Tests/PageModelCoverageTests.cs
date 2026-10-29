@@ -406,8 +406,6 @@ public sealed class PageModelCoverageTests
     {
         var caseService = Substitute.For<ICaseService>();
         var farmService = Substitute.For<IFarmService>();
-        var relationRepo = Substitute.For<IFarmRelationRepository>();
-        var herdSizeRepo = Substitute.For<IHerdSizeRepository>();
         var lookups = Substitute.For<ILookupDataService>();
         var batchRepository = Substitute.For<IBatchRepository>();
         var wizardState = Substitute.For<ICaseWizardStateService>();
@@ -419,8 +417,6 @@ public sealed class PageModelCoverageTests
         return new FarmModel(
             caseService,
             farmService,
-            relationRepo,
-            herdSizeRepo,
             lookups,
             batchRepository,
             wizardState,

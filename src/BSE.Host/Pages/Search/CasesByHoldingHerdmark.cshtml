@@ -95,7 +95,7 @@
         ViewData["PageNumber"] = Model.PageNumber;
 
         @await Html.PartialAsync("_ExportLink")
-        <div class="bse-holding-herdmark-search-table-wrap" role="region" aria-label="Cases by holding herdmark results">
+        <section class="bse-holding-herdmark-search-table-wrap" aria-label="Cases by holding herdmark results">
         <table class="govuk-table bse-holding-herdmark-search-table">
             <caption class="govuk-visually-hidden">Cases by holding or herdmark results</caption>
             <thead class="govuk-table__head">
@@ -139,7 +139,7 @@
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
-                @foreach (var r in Model.PagedResults)
+                @foreach (var r in Model.PagedResults())
                 {
                     <tr class="govuk-table__row">
                         <td class="govuk-table__cell bse-rbse">@BseFormat.FormatRbse(r.Rbse)</td>
@@ -164,7 +164,7 @@
                 }
             </tbody>
         </table>
-        </div>
+        </section>
         @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages, ["Fragment"] = "holding-herdmark-search-results" })
     }
 }

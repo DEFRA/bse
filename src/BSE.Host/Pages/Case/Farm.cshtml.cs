@@ -31,8 +31,6 @@ namespace BSE.Host.Pages.Case;
 public class FarmModel(
     ICaseService caseService,
     IFarmService farmService,
-    IFarmRelationRepository relationRepo,
-    IHerdSizeRepository herdSizeRepo,
     ILookupDataService lookups,
     IBatchRepository batchRepository,
     ICaseWizardStateService wizardState,
@@ -789,7 +787,7 @@ public class FarmModel(
             return;
 
         EditableFarm = postedEditableFarm;
-        EditableFarmRowStampBase64 = postedFarmRowStampBase64;
+        EditableFarmRowStampBase64 = postedFarmRowStampBase64 ?? string.Empty;
 
         byte[]? rowStamp = null;
         if (!string.IsNullOrWhiteSpace(postedFarmRowStampBase64))

@@ -147,7 +147,7 @@
         ViewData["PageNumber"] = Model.Filter.PageNumber;
 
         @await Html.PartialAsync("_ExportLink")
-        <div class="bse-farm-search-table-wrap" role="region" aria-label="Farm search results">
+        <section class="bse-farm-search-table-wrap" aria-label="Farm search results">
         <table class="govuk-table govuk-table--small-text-until-tablet bse-farm-search-table">
             <caption class="govuk-visually-hidden">Farm search results</caption>
             <thead class="govuk-table__head">
@@ -179,7 +179,7 @@
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
-                @foreach (var r in Model.Filter.PagedResults)
+                @foreach (var r in Model.Filter.PagedResults())
                 {
                     <tr class="govuk-table__row">
                         <td class="govuk-table__cell">@r.Cphh</td>
@@ -198,7 +198,7 @@
                 }
             </tbody>
         </table>
-        </div>
+        </section>
         @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.Filter.PageNumber, ["TotalPages"] = Model.Filter.TotalPages, ["PageNumberKey"] = "Filter.PageNumber", ["Fragment"] = "farm-search-results" })
     }
 }

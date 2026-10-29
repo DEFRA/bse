@@ -147,7 +147,7 @@ public class ResilientDistributedCacheTests
     {
         await _sut.SetAsync("k", [1], Options, TestContext.Current.CancellationToken);
 
-        await _memory.DidNotReceiveWithAnyArgs().SetAsync(default!, default!, default!, default);
+        await _memory.DidNotReceiveWithAnyArgs().SetAsync(default!, default!, default!, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -178,7 +178,7 @@ public class ResilientDistributedCacheTests
 
         await _redis.Received(1).RefreshAsync("k", Arg.Any<CancellationToken>());
         await _redis.Received(1).RemoveAsync("k", Arg.Any<CancellationToken>());
-        await _memory.DidNotReceiveWithAnyArgs().RefreshAsync(default!, default);
+        await _memory.DidNotReceiveWithAnyArgs().RefreshAsync(default!, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -243,7 +243,7 @@ public class FarmsModelTests
 
         model.NoCriteria.Should().BeFalse();
         model.Filter.HasSearched.Should().BeFalse();
-        await _search.DidNotReceiveWithAnyArgs().SearchFarmsAsync(default!);
+        await _search.DidNotReceiveWithAnyArgs().SearchFarmsAsync(default!, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -320,7 +320,7 @@ public class FarmsModelTests
 
         await model.OnGetAsync();
 
-        await _search.DidNotReceiveWithAnyArgs().SearchFarmsAsync(default!);
+        await _search.DidNotReceiveWithAnyArgs().SearchFarmsAsync(default!, TestContext.Current.CancellationToken);
     }
 
     [Theory]
