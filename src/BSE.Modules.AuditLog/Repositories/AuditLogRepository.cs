@@ -44,9 +44,9 @@ public sealed class AuditLogRepository : DapperRepository, IAuditLogRepository
         => QueryWithUkTimesAsync<AuditLogCaseMoveEntry>("GetAuditLogCaseMoves",
             new { StartDate = startDate, EndDate = endDate });
 
-    public Task<IEnumerable<AuditLogCPHHChangeEntry>> GetCphhChangesAsync(
+    public Task<IEnumerable<AuditLogCphhChangeEntry>> GetCphhChangesAsync(
         DateTime startDate, DateTime endDate)
-        => QueryWithUkTimesAsync<AuditLogCPHHChangeEntry>("GetAuditLogCPHHChanges",
+        => QueryWithUkTimesAsync<AuditLogCphhChangeEntry>("GetAuditLogCPHHChanges",
             new { StartDate = startDate, EndDate = endDate });
 
     public Task<IEnumerable<AuditLogNewFarmEntry>> GetNewFarmsAsync(
@@ -54,8 +54,8 @@ public sealed class AuditLogRepository : DapperRepository, IAuditLogRepository
         => QueryWithUkTimesAsync<AuditLogNewFarmEntry>("GetAuditLogNewFarms",
             new { StartDate = startDate, EndDate = endDate });
 
-    public Task<IEnumerable<AuditLogRBSEChangeEntry>> GetRbseChangesAsync(
+    public Task<IEnumerable<AuditLogRbseChangeEntry>> GetRbseChangesAsync(
         DateTime startDate, DateTime endDate)
-        => QueryWithUkTimesAsync<AuditLogRBSEChangeEntry>("GetAuditLogRBSEChanges",
+        => QueryWithUkTimesAsync<AuditLogRbseChangeEntry>("GetAuditLogRBSEChanges",
             new { StartDate = startDate, EndDate = endDate });
 }

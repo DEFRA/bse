@@ -15,23 +15,23 @@ public sealed class LookupRepository : DapperRepository, ILookupRepository
 
     // ── Simple no-param reads ──────────────────────────────────────────────────
 
-    public Task<IEnumerable<LuADNSRegion>> GetADNSRegionsAsync()
-        => QueryAsync<LuADNSRegion>("GetluADNSRegion");
+    public Task<IEnumerable<LuAdnsRegion>> GetADNSRegionsAsync()
+        => QueryAsync<LuAdnsRegion>("GetluADNSRegion");
 
-    public Task<IEnumerable<LuADNSRegion>> GetADNSRegionsByAuthorityAsync(int authorityId)
-        => QueryAsync<LuADNSRegion>("GetluADNSRegionByAuthority", new { AuthorityID = authorityId });
+    public Task<IEnumerable<LuAdnsRegion>> GetADNSRegionsByAuthorityAsync(int authorityId)
+        => QueryAsync<LuAdnsRegion>("GetluADNSRegionByAuthority", new { AuthorityID = authorityId });
 
-    public Task<IEnumerable<LuAHO>> GetAHOAsync()
-        => QueryAsync<LuAHO>("GetluAHO");
+    public Task<IEnumerable<LuAho>> GetAHOAsync()
+        => QueryAsync<LuAho>("GetluAHO");
 
-    public Task<IEnumerable<LuAHO>> GetAHOCodeAsync()
-        => QueryAsync<LuAHO>("GetluAHOCode");
+    public Task<IEnumerable<LuAho>> GetAHOCodeAsync()
+        => QueryAsync<LuAho>("GetluAHOCode");
 
-    public Task<IEnumerable<LuAHRO>> GetAHROAsync()
-        => QueryAsync<LuAHRO>("GetluAHRO");
+    public Task<IEnumerable<LuAhro>> GetAHROAsync()
+        => QueryAsync<LuAhro>("GetluAHRO");
 
-    public Task<IEnumerable<LuAHRO>> GetAHROCodeAsync()
-        => QueryAsync<LuAHRO>("GetluAHROCode");
+    public Task<IEnumerable<LuAhro>> GetAHROCodeAsync()
+        => QueryAsync<LuAhro>("GetluAHROCode");
 
     public Task<IEnumerable<LuAnimalOrigin>> GetAnimalOriginsAsync()
         => QueryAsync<LuAnimalOrigin>("GetluAnimalOrigin");
@@ -45,14 +45,14 @@ public sealed class LookupRepository : DapperRepository, ILookupRepository
     public Task<IEnumerable<LuBreed>> GetBreedsAsync()
         => QueryAsync<LuBreed>("GetluBreed");
 
-    public Task<IEnumerable<LuBSECounty>> GetBSECountiesAsync()
-        => QueryAsync<LuBSECounty>("GetluBSECounty");
+    public Task<IEnumerable<LuBseCounty>> GetBSECountiesAsync()
+        => QueryAsync<LuBseCounty>("GetluBSECounty");
 
     public Task<IEnumerable<LookupItem>> GetBSEFormsAsync()
         => QueryAsync<LookupItem>("GetluBSEForm");
 
-    public Task<IEnumerable<LuBSERegion>> GetBSERegionsAsync()
-        => QueryAsync<LuBSERegion>("GetluBSERegion");
+    public Task<IEnumerable<LuBseRegion>> GetBSERegionsAsync()
+        => QueryAsync<LuBseRegion>("GetluBSERegion");
 
     public Task<IEnumerable<LuCaseFate>> GetCaseFatesAsync()
         => QueryAsync<LuCaseFate>("GetluCaseFate");
@@ -111,8 +111,8 @@ public sealed class LookupRepository : DapperRepository, ILookupRepository
     public Task<IEnumerable<LuTestType>> GetTestTypesAsync()
         => QueryAsync<LuTestType>("GetluTestType");
 
-    public Task<IEnumerable<LuTSETestingSite>> GetTSETestingSitesAsync()
-        => QueryAsync<LuTSETestingSite>("GetluTSETestingSite");
+    public Task<IEnumerable<LuTseTestingSite>> GetTSETestingSitesAsync()
+        => QueryAsync<LuTseTestingSite>("GetluTSETestingSite");
 
     public Task<IEnumerable<LookupItem>> GetValuationAgesAsync()
         => QueryAsync<LookupItem>("GetluValuationAge");
@@ -144,8 +144,8 @@ public sealed class LookupRepository : DapperRepository, ILookupRepository
         => QuerySingleOrDefaultAsync<ParishLookup>("GetParishByCountyParish",
             new { County = county, Parish = parish });
 
-    public Task<IEnumerable<LuBSECounty>> GetNonGBCountiesAsync()
-        => QueryAsync<LuBSECounty>("GetNonGBCounty");
+    public Task<IEnumerable<LuBseCounty>> GetNonGBCountiesAsync()
+        => QueryAsync<LuBseCounty>("GetNonGBCounty");
 
     public Task<IEnumerable<LuSupplier>> GetPossibleSuppliersAsync(string name)
         => QueryAsync<LuSupplier>("GetPossibleSuppliers", new { Name = name });

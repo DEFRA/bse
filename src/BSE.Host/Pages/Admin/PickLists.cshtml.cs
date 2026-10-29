@@ -58,7 +58,7 @@ public class PickListsModel(
     public EditableLookup? Lookup { get; private set; }
     public EditableLookupProcs? Procs { get; private set; }
     public IReadOnlyList<IDictionary<string, object?>> Rows { get; private set; } = [];
-    public IReadOnlyList<LuBSERegion> BseRegionOptions { get; private set; } = [];
+    public IReadOnlyList<LuBseRegion> BseRegionOptions { get; private set; } = [];
     public IReadOnlyList<BSE.SharedKernel.ILookupItem> AhoOptions { get; private set; } = [];
 
     /// <summary>Columns rendered in the grid, in the order returned by the table's select procedure.</summary>

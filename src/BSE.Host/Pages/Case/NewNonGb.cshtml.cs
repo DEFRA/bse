@@ -74,7 +74,7 @@ public class NewNonGbModel : PageModel
 
     public IReadOnlyList<LuCaseFate> FateOptions { get; private set; } = [];
     public IReadOnlyList<LuTestResult> FinalResultOptions { get; private set; } = [];
-    public IReadOnlyList<LuBSECounty> CountyOptions { get; private set; } = [];
+    public IReadOnlyList<LuBseCounty> CountyOptions { get; private set; } = [];
 
     public async Task<IActionResult> OnGetAsync()
     {

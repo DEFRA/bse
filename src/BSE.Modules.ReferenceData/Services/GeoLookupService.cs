@@ -15,7 +15,7 @@ public sealed class GeoLookupService : IGeoLookupService
     public Task<ParishLookup?> GetParishAsync(string county, string parish)
         => _repo.GetParishByCountyParishAsync(county, parish);
 
-    public Task<IEnumerable<LuBSECounty>> GetNonGBCountyAsync()
+    public Task<IEnumerable<LuBseCounty>> GetNonGBCountyAsync()
         => _repo.GetNonGBCountiesAsync();
 
     public Task<MapReference?> GetXYReferenceByPrefixCodeAsync(string code)

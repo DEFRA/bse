@@ -49,11 +49,11 @@ public sealed class FarmModelHandlerTests
 
     public FarmModelHandlerTests()
     {
-        _lookups.GetADNSRegionsAsync().Returns(Array.Empty<LuADNSRegion>());
+        _lookups.GetADNSRegionsAsync().Returns(Array.Empty<LuAdnsRegion>());
         _lookups.GetLookupAsync(Arg.Any<LookupTableId>()).Returns(Array.Empty<LookupItem>());
         _lookups.GetHerdTypesAsync().Returns(Array.Empty<LuHerdType>());
         _lookups.GetAuthoritiesByCountyAsync(Arg.Any<int>()).Returns(Array.Empty<LuAuthority>());
-        _lookups.GetADNSRegionsByAuthorityAsync(Arg.Any<int>()).Returns(Array.Empty<LuADNSRegion>());
+        _lookups.GetADNSRegionsByAuthorityAsync(Arg.Any<int>()).Returns(Array.Empty<LuAdnsRegion>());
         _batchRepository.GetBatchNumbersByRbseAsync(Arg.Any<string>()).Returns(Array.Empty<BatchNumberEntry>());
         _wizardState.GetAsync().Returns((CaseWizardState?)null);
         _farmService.GetRelatedFarmsAsync(Arg.Any<string>()).Returns(Array.Empty<FarmRelationRecord>());

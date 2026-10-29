@@ -44,7 +44,7 @@ public class PickListsEditModel(
 
     public EditableLookup? Lookup { get; private set; }
     public EditableLookupProcs? Procs { get; private set; }
-    public IReadOnlyList<LuBSERegion> BseRegionOptions { get; private set; } = [];
+    public IReadOnlyList<LuBseRegion> BseRegionOptions { get; private set; } = [];
     public IReadOnlyList<ILookupItem> AhoOptions { get; private set; } = [];
     public IReadOnlyList<FieldSpec> DisplayFields { get; private set; } = [];
 

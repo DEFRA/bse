@@ -8,7 +8,7 @@
     var pedigreeOptions    = ViewData["PedigreeOptions"]         as IEnumerable<BSE.SharedKernel.ILookupItem> ?? Enumerable.Empty<BSE.SharedKernel.ILookupItem>();
     var authCountyOptions  = ViewData["AuthorityCountyOptions"]  as IEnumerable<BSE.SharedKernel.ILookupItem> ?? Enumerable.Empty<BSE.SharedKernel.ILookupItem>();
     var authorityOptions   = ViewData["AuthorityOptions"]        as IEnumerable<LuAuthority>                  ?? Enumerable.Empty<LuAuthority>();
-    var adnsOptions        = ViewData["AdnsOptions"]             as IEnumerable<LuADNSRegion>                 ?? Enumerable.Empty<LuADNSRegion>();
+    var adnsOptions        = ViewData["AdnsOptions"]             as IEnumerable<LuAdnsRegion>                 ?? Enumerable.Empty<LuAdnsRegion>();
     // Authoritative, stored flag — must match CaseEditOrchestrationService's mandatory-fields check,
     // which also reads FarmRecord.IsNonGBFarm rather than re-deriving it from the CPHH prefix. Using a
     // different (CPHH-prefix-based) determination here could disable/exclude a field from the POST

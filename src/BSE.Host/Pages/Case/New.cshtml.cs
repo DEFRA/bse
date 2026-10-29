@@ -52,7 +52,7 @@ public class NewModel : PageModel
     [BindProperty] public string? Notes { get; set; }
     [BindProperty] public string? CaseType { get; set; }
 
-    // -- Farm details — only required when the CPHH has no existing farm record
+    // -- Farm details ï¿½ only required when the CPHH has no existing farm record
     // (legacy CaseEntryFarm.aspx -> PickFarm.aspx -> NewFarm.aspx chain) --------
     [BindProperty] public string? OwnerName { get; set; }
     [BindProperty] public string? Address1 { get; set; }
@@ -64,12 +64,12 @@ public class NewModel : PageModel
     [BindProperty] public string? Aho { get; set; }
     [BindProperty] public int? AdnsRegionId { get; set; }
 
-    /// <summary>True once a Farm lookup has confirmed the CPHH has no existing farm — shows the farm fields.</summary>
+    /// <summary>True once a Farm lookup has confirmed the CPHH has no existing farm ï¿½ shows the farm fields.</summary>
     public bool RequireFarmDetails { get; private set; }
 
     public IReadOnlyList<LookupItem> CountyOptions { get; private set; } = [];
     public IReadOnlyList<LookupItem> AhoOptions { get; private set; } = [];
-    public IReadOnlyList<LuADNSRegion> AdnsOptions { get; private set; } = [];
+    public IReadOnlyList<LuAdnsRegion> AdnsOptions { get; private set; } = [];
 
     public async Task OnGetAsync(string? cphh = null)
     {

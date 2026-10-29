@@ -1,7 +1,7 @@
 namespace BSE.Modules.ReferenceData.Models;
 
 /// <summary>Maps to luTSETestingSite via GetluTSETestingSite.</summary>
-public record LuTSETestingSite
+public record LuTseTestingSite
 {
     public int Id { get; init; }
     public string Name { get; init; } = string.Empty;

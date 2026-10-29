@@ -116,7 +116,7 @@ public class EditModel : PageModel
 
         ViewData["AdnsOptions"] = Farm?.AuthorityID is > 0
             ? await _lookups.GetADNSRegionsByAuthorityAsync(Farm.AuthorityID.Value)
-            : (IEnumerable<LuADNSRegion>)[];
+            : (IEnumerable<LuAdnsRegion>)[];
     }
 
     /// <summary>AJAX handler: returns authorities for a given authority county.</summary>

@@ -101,7 +101,7 @@ public sealed class AuditLogServiceTests
         var end = new DateTime(2026, 3, 31);
         var entries = new[]
         {
-            new AuditLogCPHHChangeEntry { Id = 6, TableName = "Farm", UserName = "frank", CaseCount = 3 }
+            new AuditLogCphhChangeEntry { Id = 6, TableName = "Farm", UserName = "frank", CaseCount = 3 }
         };
         _repository.GetCphhChangesAsync(start, end).Returns(entries);
 
@@ -143,7 +143,7 @@ public sealed class AuditLogServiceTests
         var end = new DateTime(2026, 5, 31);
         var entries = new[]
         {
-            new AuditLogRBSEChangeEntry { Id = 8, TableName = "Case", UserName = "henry", HasBatches = "N" }
+            new AuditLogRbseChangeEntry { Id = 8, TableName = "Case", UserName = "henry", HasBatches = "N" }
         };
         _repository.GetRbseChangesAsync(start, end).Returns(entries);
 
