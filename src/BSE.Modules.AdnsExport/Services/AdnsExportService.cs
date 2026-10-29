@@ -51,9 +51,9 @@ public sealed class AdnsExportService : IAdnsExportService
         return BuildPreview("CI", emailReference, cases, Array.Empty<MissingAdnsCaseRecord>());
     }
 
-    public AdnsExportPreview PreviewNiExport(string emailReference, IReadOnlyList<NiCaseInput> niCases)
+    public AdnsExportPreview PreviewNiExport(string emailReference, IReadOnlyList<NiCaseInput> cases)
     {
-        var cases = niCases.Select((c, i) => new AdnsCaseRecord
+        var records = cases.Select((c, i) => new AdnsCaseRecord
         {
             Id = i + 1,
             Rbse = c.Rbse,
@@ -64,7 +64,7 @@ public sealed class AdnsExportService : IAdnsExportService
             ConfirmationDate = c.ConfirmationDate,
             AdnsReference = $"{c.AdnsYear}/{c.AdnsNumber:00000}"
         }).ToList();
-        return BuildPreview("NI", emailReference, cases, Array.Empty<MissingAdnsCaseRecord>());
+        return BuildPreview("NI", emailReference, records, Array.Empty<MissingAdnsCaseRecord>());
     }
 
     // ── Reference helpers ──────────────────────────────────────────────────────

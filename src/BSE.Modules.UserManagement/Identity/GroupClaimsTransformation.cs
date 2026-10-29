@@ -66,7 +66,7 @@ public sealed class GroupClaimsTransformation : IClaimsTransformation
             var user = await _userRepository.GetByEmailAsync(upn);
 
             if (_logger.IsEnabled(LogLevel.Debug))
-                _logger.LogDebug("user from DB : resolved user '{user}'", user);
+                _logger.LogDebug("user from DB : resolved user '{User}'", user);
 
             if (user is null)
                 return principal;

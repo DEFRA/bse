@@ -84,7 +84,7 @@ public sealed class FarmRepository : DapperRepository, IFarmRepository
         var p = new DynamicParameters(BuildEditFarmParams(command, userId));
         p.Add("RETURN_VALUE", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
         await ExecuteWithOutputAsync("EditFarm", p, connection, transaction);
-        return (int)p.Get<int>("RETURN_VALUE") switch
+        return p.Get<int>("RETURN_VALUE") switch
         {
             0 => null,
             1 => throw new InvalidOperationException($"The farm with CPHH {command.CPHH} has been deleted by another user"),

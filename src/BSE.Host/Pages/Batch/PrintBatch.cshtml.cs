@@ -37,7 +37,7 @@ public class PrintBatchModel(IBatchRepository batchRepository) : PageModel
     public string? ReportType { get; set; }
 
     /// <summary>Set after a valid lookup — number of cases in the batch.</summary>
-    public int? BatchCaseCount { get; private set; }
+    public int? BatchCaseCount { get; }
 
     public Task<IActionResult> OnGetAsync() => Task.FromResult<IActionResult>(Page());
 

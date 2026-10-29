@@ -25,23 +25,23 @@ public sealed class FeedRepository : DapperRepository, IFeedRepository
     public async Task<IReadOnlyList<CaseFeedRecord>> GetByRbseAsync(string rbse)
         => (await QueryAsync<CaseFeedRecord>("GetFeedByRBSE", new { RBSE = rbse })).ToList();
 
-    public Task AddAsync(AddFeedCommand c, IDbConnection conn, IDbTransaction tx)
+    public Task AddAsync(AddFeedCommand command, IDbConnection connection, IDbTransaction transaction)
         => ExecuteAsync("AddCaseFeed", new
         {
-            RBSE = c.Rbse, YearFrom = c.YearFrom, YearTo = c.YearTo,
-            RationType = c.RationType, SupplierID = c.SupplierId,
-            RationName = c.RationName, IsPrePurchase = c.IsPrePurchase
-        }, conn, tx);
+            RBSE = command.Rbse, YearFrom = command.YearFrom, YearTo = command.YearTo,
+            RationType = command.RationType, SupplierID = command.SupplierId,
+            RationName = command.RationName, IsPrePurchase = command.IsPrePurchase
+        }, connection, transaction);
 
-    public Task<int> EditAsync(EditFeedCommand c, IDbConnection conn, IDbTransaction tx)
+    public Task<int> EditAsync(EditFeedCommand command, IDbConnection connection, IDbTransaction transaction)
         => ExecuteWithRowCountAsync("EditCaseFeed", new
         {
-            ID = c.Id, YearFrom = c.YearFrom, YearTo = c.YearTo,
-            RationType = c.RationType, SupplierID = c.SupplierId,
-            RationName = c.RationName, IsPrePurchase = c.IsPrePurchase,
-            RowStamp = c.RowStamp
-        }, conn, tx);
+            ID = command.Id, YearFrom = command.YearFrom, YearTo = command.YearTo,
+            RationType = command.RationType, SupplierID = command.SupplierId,
+            RationName = command.RationName, IsPrePurchase = command.IsPrePurchase,
+            RowStamp = command.RowStamp
+        }, connection, transaction);
 
-    public Task<int> DeleteAsync(int id, byte[] rowStamp, IDbConnection conn, IDbTransaction tx)
-        => ExecuteWithRowCountAsync("DeleteCaseFeed", new { ID = id, RowStamp = rowStamp }, conn, tx);
+    public Task<int> DeleteAsync(int id, byte[] rowStamp, IDbConnection connection, IDbTransaction transaction)
+        => ExecuteWithRowCountAsync("DeleteCaseFeed", new { ID = id, RowStamp = rowStamp }, connection, transaction);
 }

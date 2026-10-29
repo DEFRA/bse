@@ -45,7 +45,7 @@ public class NewModel(
     public string? VetnetNumericHerdmark { get; private set; }
     public bool VetnetFound => !string.IsNullOrWhiteSpace(VetnetHerdmark) && !string.IsNullOrWhiteSpace(VetnetNumericHerdmark);
     public bool ShowBrusselsWarning { get; private set; }
-    public string BrusselsWarningText => BrusselsWarningMessage;
+    public static string BrusselsWarningText => BrusselsWarningMessage;
 
     private string? DerivedParish { get; set; }
     private string? DerivedCounty { get; set; }
