@@ -418,6 +418,7 @@ try
         options.Conventions.AllowAnonymousToPage(ErrorPath);
         options.Conventions.AllowAnonymousToPage(SessionErrorPath);
         options.Conventions.AllowAnonymousToPage(UnauthorizedPath);
+        options.Conventions.AllowAnonymousToPage("/AccessibilityStatement");
     })
      .AddMvcOptions(o =>
         // ASP.NET Core 6+ treats non-nullable string properties as implicitly [Required]

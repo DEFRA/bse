@@ -34,6 +34,7 @@
     <fieldset class="bse-form-fieldset-reset" disabled="@(!canEditFeeds ? "disabled" : null)">
 
     @* -- Existing feed records -------------------------------------------------- *@
+    <div class="bse-table-scroll" tabindex="0" role="region" aria-label="Feed history">
     <table class="govuk-table">
         <caption class="govuk-visually-hidden">Feed history for @Model.Rbse</caption>
         <thead class="govuk-table__head">
@@ -96,6 +97,7 @@
             }
         </tbody>
     </table>
+    </div>
 
     @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData)
     {
