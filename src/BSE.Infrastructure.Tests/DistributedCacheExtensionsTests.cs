@@ -18,8 +18,8 @@ public sealed class DistributedCacheExtensionsTests
         var cache = CreateMemoryCache();
         var payload = new TestPayload("case-123", 42);
 
-        await cache.SetJsonAsync("test-key", payload);
-        var result = await cache.GetJsonAsync<TestPayload>("test-key");
+        await cache.SetJsonAsync("test-key", payload, cancellationToken: TestContext.Current.CancellationToken);
+        var result = await cache.GetJsonAsync<TestPayload>("test-key", TestContext.Current.CancellationToken);
 
         result.Should().NotBeNull();
         result!.Name.Should().Be("case-123");
@@ -31,7 +31,7 @@ public sealed class DistributedCacheExtensionsTests
     {
         var cache = CreateMemoryCache();
 
-        var result = await cache.GetJsonAsync<TestPayload>("nonexistent-key");
+        var result = await cache.GetJsonAsync<TestPayload>("nonexistent-key", TestContext.Current.CancellationToken);
 
         result.Should().BeNull();
     }
@@ -52,10 +52,10 @@ public sealed class DistributedCacheExtensionsTests
             AbsoluteExpirationRelativeToNow = TimeSpan.FromMilliseconds(1)
         };
 
-        await cache.SetJsonAsync("expiring-key", new TestPayload("x", 1), customOptions);
-        await Task.Delay(50); // let the entry expire
+        await cache.SetJsonAsync("expiring-key", new TestPayload("x", 1), customOptions, TestContext.Current.CancellationToken);
+        await Task.Delay(50, TestContext.Current.CancellationToken); // let the entry expire
 
-        var result = await cache.GetJsonAsync<TestPayload>("expiring-key");
+        var result = await cache.GetJsonAsync<TestPayload>("expiring-key", TestContext.Current.CancellationToken);
         result.Should().BeNull();
     }
 }
