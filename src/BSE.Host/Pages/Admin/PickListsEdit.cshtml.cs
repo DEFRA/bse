@@ -117,7 +117,7 @@ public class PickListsEditModel(
             AhoOptions = (await lookupDataService.GetLookupAsync(BSE.SharedKernel.LookupTableId.AHO)).ToList();
     }
 
-    private IActionResult RedirectToTable() =>
+    private RedirectToPageResult RedirectToTable() =>
         RedirectToPage("/Admin/PickLists", new { tableId = TableId, sortColumn = SortColumn, sortDesc = SortDesc, pageNumber = PageNumber });
 
     private string Field(string column) => Fields.GetValueOrDefault(column, "").Trim();
@@ -147,16 +147,14 @@ public class PickListsEditModel(
 
     private void ValidateRequired()
     {
-        foreach (var field in DisplayFields.Where(f => !f.IsBoolean && !f.IsNumeric))
+        foreach (var field in DisplayFields.Where(f => !f.IsBoolean && !f.IsNumeric && string.IsNullOrWhiteSpace(Field(f.Column))))
         {
-            if (string.IsNullOrWhiteSpace(Field(field.Column)))
-                ModelState.AddModelError(field.Column, $"Enter a {field.Label.ToLowerInvariant()}");
+            ModelState.AddModelError(field.Column, $"Enter a {field.Label.ToLowerInvariant()}");
         }
 
-        foreach (var field in DisplayFields.Where(f => f.IsRegionLookup || f.IsAhoLookup))
+        foreach (var field in DisplayFields.Where(f => (f.IsRegionLookup || f.IsAhoLookup) && string.IsNullOrWhiteSpace(Field(f.Column))))
         {
-            if (string.IsNullOrWhiteSpace(Field(field.Column)))
-                ModelState.AddModelError(field.Column, $"Select a {field.Label.ToLowerInvariant()}");
+            ModelState.AddModelError(field.Column, $"Select a {field.Label.ToLowerInvariant()}");
         }
     }
 
@@ -189,7 +187,8 @@ public class PickListsEditModel(
     public static string RowValue(IDictionary<string, object?> row, string column)
     {
         if (!row.TryGetValue(column, out var value) || value is null) return "";
-        return value is bool flag ? (flag ? "Yes" : "No") : value.ToString() ?? "";
+        if (value is bool flag) return flag ? "Yes" : "No";
+        return value.ToString() ?? "";
     }
 
     private static IReadOnlyList<FieldSpec> FieldsFor(int tableId) => tableId switch

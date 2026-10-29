@@ -141,6 +141,8 @@ public sealed class LoggingDbRepositoryDecorator : IDbRepository
             return;
         }
 
+        if (!_logger.IsEnabled(LogLevel.Information)) return;
+
         _logger.LogInformation(
             "Database {Operation} for {StoredProcedure} completed in {ElapsedMs}ms (Timeout={TimeoutSeconds})",
             operation,

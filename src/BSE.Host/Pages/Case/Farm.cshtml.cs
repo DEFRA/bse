@@ -227,11 +227,11 @@ public class FarmModel(
         // request actually resolving to" check must come from the raw navigation parameters
         // instead — e.g. the Farm/New "Create Farm" redirect for an unmatched CPHH, which carries
         // NewCphh/ForceNewFarmDetails for a *different* CPHH than whatever was staged earlier.
-        var requestedCphh = !string.IsNullOrWhiteSpace(SelectedCphh)
-            ? CphhNormalizer.Normalize(SelectedCphh)
-            : !string.IsNullOrWhiteSpace(NewCphh)
-                ? CphhNormalizer.Normalize(NewCphh)
-                : null;
+        string? requestedCphh = null;
+        if (!string.IsNullOrWhiteSpace(SelectedCphh))
+            requestedCphh = CphhNormalizer.Normalize(SelectedCphh);
+        else if (!string.IsNullOrWhiteSpace(NewCphh))
+            requestedCphh = CphhNormalizer.Normalize(NewCphh);
 
         var stagedScalars = await sessionState.GetAsync(Rbse);
         if (stagedScalars?.Farm is not null

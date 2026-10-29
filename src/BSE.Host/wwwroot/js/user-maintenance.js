@@ -25,7 +25,7 @@
 
     function table() { return container.querySelector('.bse-user-maintenance-table'); }
     function form() { return container.querySelector('form'); }
-    function button(action) { return container.querySelector('[data-action="' + action + '"]'); }
+    function button(action) { return container.querySelector(`[data-action="${action}"]`); }
 
     function escapeHtml(value) {
         return String(value == null ? '' : value).replace(/[&<>"']/g, function (c) {
@@ -212,8 +212,8 @@
         if (!f) { return undefined; }
 
         var data = new FormData(f);
-        if (submitter && submitter.name) { data.append(submitter.name, submitter.value || ''); }
-        var action = (submitter && submitter.getAttribute('formaction')) || f.getAttribute('action') || window.location.href;
+        if (submitter?.name) { data.append(submitter.name, submitter.value || ''); }
+        var action = submitter?.getAttribute('formaction') || f.getAttribute('action') || window.location.href;
 
         container.setAttribute('aria-busy', 'true');
         return fetch(action, {
@@ -274,7 +274,7 @@
 
         // Paging and column sorting only ever change the grid, so refresh it in place.
         var link = e.target.closest('.govuk-pagination__link, .bse-sortable-table__button');
-        if (link && link.getAttribute('href')) {
+        if (link?.getAttribute('href')) {
             e.preventDefault();
             void loadGrid(new URL(link.getAttribute('href'), window.location.href).toString());
         }

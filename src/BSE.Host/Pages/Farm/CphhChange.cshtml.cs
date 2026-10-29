@@ -140,8 +140,9 @@ public class CphhChangeModel(
             Farm = await farm.GetByCphhAsync(cphh);
             if (Farm is null)
             {
-                logger.LogInformation(
-                    "No farm found for CPHH lookup ({DigitCount} digits supplied)", cphh.Length);
+                if (logger.IsEnabled(LogLevel.Information))
+                    logger.LogInformation(
+                        "No farm found for CPHH lookup ({DigitCount} digits supplied)", cphh.Length);
                 OldCphhError = FarmNotFoundMessage;
                 return;
             }

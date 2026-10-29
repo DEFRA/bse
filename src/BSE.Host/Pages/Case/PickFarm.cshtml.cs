@@ -129,7 +129,7 @@ public class PickFarmModel(IFarmService farmService) : PageModel
         return !isDefraViewer && !isVlaDataEntry;
     }
 
-    private IReadOnlyList<FarmSummaryRecord> Sort(IReadOnlyList<FarmSummaryRecord> farms)
+    private List<FarmSummaryRecord> Sort(IReadOnlyList<FarmSummaryRecord> farms)
     {
         IEnumerable<FarmSummaryRecord> q = farms;
         q = SortColumn switch

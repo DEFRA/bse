@@ -9,7 +9,7 @@ namespace BSE.Modules.AuditLog.Tests;
 public sealed class AuditLogServiceTests
 {
     private readonly IAuditLogRepository _repository = Substitute.For<IAuditLogRepository>();
-    private readonly IAuditLogService _sut;
+    private readonly AuditLogService _sut;
 
     public AuditLogServiceTests() => _sut = new AuditLogService(_repository);
 

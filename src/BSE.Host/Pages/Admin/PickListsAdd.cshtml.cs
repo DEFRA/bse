@@ -116,7 +116,7 @@ public class PickListsAddModel(
             AhoOptions = (await lookupDataService.GetLookupAsync(BSE.SharedKernel.LookupTableId.AHO)).ToList();
     }
 
-    private IActionResult RedirectToTable() =>
+    private RedirectToPageResult RedirectToTable() =>
         RedirectToPage("/Admin/PickLists", new { tableId = TableId, sortColumn = SortColumn, sortDesc = SortDesc, pageNumber = PageNumber });
 
     private string Field(string column) => Fields?.GetValueOrDefault(column, "")?.Trim() ?? string.Empty;
@@ -142,16 +142,14 @@ public class PickListsAddModel(
 
     private void ValidateRequired()
     {
-        foreach (var field in DisplayFields.Where(f => !f.IsBoolean && !f.IsNumeric))
+        foreach (var field in DisplayFields.Where(f => !f.IsBoolean && !f.IsNumeric && string.IsNullOrWhiteSpace(Field(f.Column))))
         {
-            if (string.IsNullOrWhiteSpace(Field(field.Column)))
-                ModelState.AddModelError(field.Column, $"Enter a {field.Label.ToLowerInvariant()}");
+            ModelState.AddModelError(field.Column, $"Enter a {field.Label.ToLowerInvariant()}");
         }
 
-        foreach (var field in DisplayFields.Where(f => f.IsRegionLookup || f.IsAhoLookup))
+        foreach (var field in DisplayFields.Where(f => (f.IsRegionLookup || f.IsAhoLookup) && string.IsNullOrWhiteSpace(Field(f.Column))))
         {
-            if (string.IsNullOrWhiteSpace(Field(field.Column)))
-                ModelState.AddModelError(field.Column, $"Select a {field.Label.ToLowerInvariant()}");
+            ModelState.AddModelError(field.Column, $"Select a {field.Label.ToLowerInvariant()}");
         }
     }
 
