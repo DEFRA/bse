@@ -130,7 +130,7 @@ public sealed class DapperRepositoryTests
         public List<string> CommandTexts { get; } = [];
         public FakeDbCommand? LastCommand { get; private set; }
 
-        public override string ConnectionString { get; set; } = "Server=localhost;Database=BSETest;Trusted_Connection=True;";
+        [System.Diagnostics.CodeAnalysis.AllowNull] public override string ConnectionString { get; set; } = "Server=localhost;Database=BSETest;Trusted_Connection=True;";
         public override string Database => "BSETest";
         public override string DataSource => "localhost";
         public override string ServerVersion => "1.0";
@@ -170,7 +170,7 @@ public sealed class DapperRepositoryTests
             _resultSet = resultSet;
         }
 
-        public override string CommandText { get; set; } = string.Empty;
+        [System.Diagnostics.CodeAnalysis.AllowNull] public override string CommandText { get; set; } = string.Empty;
         public override int CommandTimeout { get; set; }
         public override CommandType CommandType { get; set; }
         public override bool DesignTimeVisible { get; set; }
@@ -283,8 +283,8 @@ public sealed class DapperRepositoryTests
         public override DbType DbType { get; set; }
         public override ParameterDirection Direction { get; set; }
         public override bool IsNullable { get; set; }
-        public override string ParameterName { get; set; } = string.Empty;
-        public override string SourceColumn { get; set; } = string.Empty;
+        [System.Diagnostics.CodeAnalysis.AllowNull] public override string ParameterName { get; set; } = string.Empty;
+        [System.Diagnostics.CodeAnalysis.AllowNull] public override string SourceColumn { get; set; } = string.Empty;
         public override object? Value { get; set; }
         public override bool SourceColumnNullMapping { get; set; }
         public override DataRowVersion SourceVersion { get; set; }

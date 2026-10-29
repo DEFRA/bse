@@ -89,7 +89,7 @@ public class OpenCasesModelTests
 
         model.TotalCount.Should().Be(0);
         model.TotalPages.Should().Be(1);
-        model.PagedCases.Should().BeEmpty();
+        model.PagedCases().Should().BeEmpty();
     }
 
     [Fact]
@@ -102,7 +102,7 @@ public class OpenCasesModelTests
         await model.OnGetAsync();
 
         model.TotalPages.Should().Be(3);
-        model.PagedCases.Should().HaveCount(10);
+        model.PagedCases().Should().HaveCount(10);
     }
 
     [Theory]
@@ -209,7 +209,7 @@ public class ClosedCasesModelTests
         await model.OnGetAsync();
 
         model.TotalPages.Should().Be(1);
-        model.PagedCases.Should().BeEmpty();
+        model.PagedCases().Should().BeEmpty();
     }
 
     [Theory]
@@ -267,6 +267,6 @@ public class ClosedCasesModelTests
 
         await model.OnGetAsync();
 
-        model.PagedCases.Should().HaveCount(3);
+        model.PagedCases().Should().HaveCount(3);
     }
 }

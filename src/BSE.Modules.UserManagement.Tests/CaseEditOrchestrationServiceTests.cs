@@ -66,7 +66,7 @@ public sealed class CaseEditOrchestrationServiceTests
     [Fact]
     public async Task CommitAllAsync_WithMultipleMissingFarmFields_ThrowsExceptionListingAllOfThem()
     {
-        _sessionState.GetAsync(Rbse).Returns(new CaseEditSessionState
+        _sessionState.GetAsync(Rbse, Arg.Any<CancellationToken>()).Returns(new CaseEditSessionState
         {
             Rbse = Rbse,
             HasPendingChanges = true,
@@ -113,7 +113,7 @@ public sealed class CaseEditOrchestrationServiceTests
         // resolution must use the staged (now-null) value, not silently fall back to the stale DB value
         // — otherwise the mandatory check passes incorrectly and a NULL reaches the database's NOT NULL
         // OwnerName column, causing a SQL exception instead of the expected SaveResult screen.
-        _sessionState.GetAsync(Rbse).Returns(new CaseEditSessionState
+        _sessionState.GetAsync(Rbse, Arg.Any<CancellationToken>()).Returns(new CaseEditSessionState
         {
             Rbse = Rbse,
             HasPendingChanges = true,
@@ -154,7 +154,7 @@ public sealed class CaseEditOrchestrationServiceTests
         // Legacy parity: a brand-new case lives only in the shared session DataSet until the first
         // Save from any tab — CommitAllAsync must insert both Farm and Case rows together rather
         // than trying (and failing) to UPDATE rows that don't exist yet.
-        _sessionState.GetAsync(Rbse).Returns(new CaseEditSessionState
+        _sessionState.GetAsync(Rbse, Arg.Any<CancellationToken>()).Returns(new CaseEditSessionState
         {
             Rbse = Rbse,
             HasPendingChanges = true,
@@ -177,7 +177,7 @@ public sealed class CaseEditOrchestrationServiceTests
                 MonthsPostCalving: null, OnsetAgeInMonths: null, SlaughterDate: null, RowStamp: [],
                 AlternateDiagnosis: null, LabComment: null, CaseType: null)
         });
-        _wizardState.GetAsync().Returns((CaseWizardState?)null);
+        _wizardState.GetAsync(Arg.Any<CancellationToken>()).Returns((CaseWizardState?)null);
 
         _caseRepository.GetCaseByRbseAsync(Rbse).Returns((CaseRecord?)null);
         _farmRepository.GetByCphhAsync(Cphh).Returns((FarmRecord?)null);
@@ -216,7 +216,7 @@ public sealed class CaseEditOrchestrationServiceTests
         // dedicated non-GB message.
         const string nonGbCphh = "00999900001";
 
-        _sessionState.GetAsync(Rbse).Returns(new CaseEditSessionState
+        _sessionState.GetAsync(Rbse, Arg.Any<CancellationToken>()).Returns(new CaseEditSessionState
         {
             Rbse = Rbse,
             HasPendingChanges = true,

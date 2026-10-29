@@ -65,7 +65,7 @@
         <input type="hidden" asp-for="PageNumber" />
         <input type="hidden" asp-for="SelectedUserId" />
         <div class="bse-user-maintenance-table-wrap">
-        <table class="govuk-table bse-user-maintenance-table" data-page-number="@Model.PageNumber" data-total-pages="@Model.TotalPages" data-page-size-full="@(Model.PagedUsers.Count >= 10 ? "true" : "false")">
+        <table class="govuk-table bse-user-maintenance-table" data-page-number="@Model.PageNumber" data-total-pages="@Model.TotalPages" data-page-size-full="@(Model.PagedUsers().Count >= 10 ? "true" : "false")">
             <caption class="govuk-visually-hidden">Users</caption>
             <thead class="govuk-table__head">
                 <tr class="govuk-table__row">
@@ -83,7 +83,7 @@
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
-                @foreach (var u in Model.PagedUsers)
+                @foreach (var u in Model.PagedUsers())
                 {
                     var isEditing = Model.IsEditing(u.UserId);
                     var isSelected = !Model.IsEditingOrAdding && Model.SelectedUserId == u.UserId;

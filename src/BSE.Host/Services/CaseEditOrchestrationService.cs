@@ -141,7 +141,7 @@ public sealed class CaseEditOrchestrationService(
             {
                 var existingFarm = await farmRepository.GetByCphhAsync(cphh);
                 if (existingFarm is null)
-                    await farmRepository.AddAsync(MapToAddFarm(session.Farm, cphh), userId, connection, transaction);
+                    await farmRepository.AddAsync(MapToAddFarm(session!.Farm!, cphh), userId, connection, transaction);
 
                 var addResult = await caseRepository.AddCaseAsync(MapToAddCase(rbse, cphh, caseCommand), userId, connection, transaction);
                 if (addResult != AddCaseResult.Success)
@@ -153,7 +153,7 @@ public sealed class CaseEditOrchestrationService(
                 // which already does this via CaseService.CreateCaseAsync) never gets a CaseWork row.
                 // Uses whatever BSE1/Paperwork fields were staged from the Case (DEFRA) tab before
                 // the case itself existed, rather than hardcoding every optional field to null.
-                var cw = session.CaseWork;
+                var cw = session!.CaseWork;
                 await caseWorkRepository.AddAsync(
                     new AddCaseWorkCommand(
                         rbse,

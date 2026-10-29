@@ -326,7 +326,7 @@ public sealed class RelationsModelHandlerTests
         });
 
         CaseEditSessionState? savedDraft = null;
-        _sessionState.SetAsync(Arg.Do<CaseEditSessionState>(d => savedDraft = d)).Returns(Task.CompletedTask);
+        _sessionState.SetAsync(Arg.Do<CaseEditSessionState>(d => savedDraft = d), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 
         var result = await model.OnPostAddRelationRowAsync();
 
@@ -361,7 +361,7 @@ public sealed class RelationsModelHandlerTests
                 }
             ]
         };
-        _sessionState.GetAsync(Arg.Any<string>()).Returns(existingDraft);
+        _sessionState.GetAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(existingDraft);
 
         // Simulate stale posted values from a different (or blank Add-As-New) panel submission —
         // asp-for prefers these ModelState entries over the model property unless cleared.
@@ -402,7 +402,7 @@ public sealed class RelationsModelHandlerTests
         });
 
         CaseEditSessionState? savedDraft = null;
-        _sessionState.SetAsync(Arg.Do<CaseEditSessionState>(d => savedDraft = d)).Returns(Task.CompletedTask);
+        _sessionState.SetAsync(Arg.Do<CaseEditSessionState>(d => savedDraft = d), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
 
         var result = await model.OnPostAddRelationRowAsync();
 
@@ -421,8 +421,8 @@ public sealed class RelationsModelHandlerTests
         model.DamSire.DamStatus = "ALIVE";
 
         CaseEditSessionState? stored = null;
-        _sessionState.GetAsync(Arg.Any<string>()).Returns(_ => stored);
-        _sessionState.SetAsync(Arg.Do<CaseEditSessionState>(d => stored = d)).Returns(Task.CompletedTask);
+        _sessionState.GetAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(_ => stored);
+        _sessionState.SetAsync(Arg.Do<CaseEditSessionState>(d => stored = d), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
         _caseService.GetCaseAsync(Arg.Any<string>()).Returns((CaseRecord?)null);
 
         var result = await model.OnPostRemoveDamAsync();

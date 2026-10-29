@@ -97,8 +97,8 @@ public sealed class BabModelHandlerTests
             SlaughterDate: null, RowStamp: [], AlternateDiagnosis: null, LabComment: null, CaseType: null);
 
         CaseEditSessionState? stored = null;
-        _sessionState.GetAsync(Arg.Any<string>()).Returns(_ => stored ?? new CaseEditSessionState { Rbse = Rbse, Case = stagedCase });
-        _sessionState.SetAsync(Arg.Do<CaseEditSessionState>(d => stored = d)).Returns(Task.CompletedTask);
+        _sessionState.GetAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(_ => stored ?? new CaseEditSessionState { Rbse = Rbse, Case = stagedCase });
+        _sessionState.SetAsync(Arg.Do<CaseEditSessionState>(d => stored = d), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
         _caseEditOrchestration.CommitAllAsync(Rbse, 1).Returns(CaseCommitOutcome.Success([]));
 
         var result = await model.OnPostSaveBabAsync(rowStampBase64: null);

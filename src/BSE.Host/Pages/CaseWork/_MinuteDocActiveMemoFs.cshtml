@@ -9,17 +9,17 @@
     var bodyArticle = string.Equals(testResult, "Inconclusive", StringComparison.OrdinalIgnoreCase) ? "an" : "a";
 }
 
-<p align="left">Appendix 1</p>
+<p style="text-align:left">Appendix 1</p>
 
-<h1 align="left">
+<h1 style="text-align:left">
     BOVINE SPONGIFORM ENCEPHALOPATHY:<br />
     @testResult.ToUpper() RESULT TO AN INITIAL SCREENING TEST -<br />
     ANIMAL TAKEN IN A SURVEY
 </h1>
 
-<p align="right"><strong>RBSE Ref: @BseFormat.FormatRbse(Model.Details.Rbse)</strong></p>
-<p align="right"><strong>CPH: @cph</strong></p>
-<p align="right"><strong>Date of Report: @Model.MinuteDate?.ToString("dd/MM/yyyy")</strong></p>
+<p style="text-align:right"><strong>RBSE Ref: @BseFormat.FormatRbse(Model.Details.Rbse)</strong></p>
+<p style="text-align:right"><strong>CPH: @cph</strong></p>
+<p style="text-align:right"><strong>Date of Report: @Model.MinuteDate?.ToString("dd/MM/yyyy")</strong></p>
 
 <div><strong>To&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;SSC Worcester</strong> (AHspecialistservicecentreworcester@apha.gov.uk)<br /></div>
 <div id="textAddress">

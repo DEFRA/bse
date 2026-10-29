@@ -101,7 +101,7 @@
         ViewData["PageNumber"] = Model.PageNumber;
 
         @await Html.PartialAsync("_ExportLink")
-        <div class="bse-related-animals-search-table-wrap" role="region" aria-label="Related animals results">
+        <section class="bse-related-animals-search-table-wrap" aria-label="Related animals results">
         <table class="govuk-table bse-related-animals-search-table">
             <caption class="govuk-visually-hidden">Related animal results</caption>
             <thead class="govuk-table__head">
@@ -131,7 +131,7 @@
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
-                @foreach (var r in Model.PagedResults)
+                @foreach (var r in Model.PagedResults())
                 {
                     <tr class="govuk-table__row">
                         <td class="govuk-table__cell bse-rbse">@BseFormat.FormatRbse(r.Rbse)</td>
@@ -149,7 +149,7 @@
                 }
             </tbody>
         </table>
-        </div>
+        </section>
         @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages, ["Fragment"] = "related-animals-search-results" })
     }
 }

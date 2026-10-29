@@ -131,7 +131,7 @@
         ViewData["PageNumber"] = Model.Filter.PageNumber;
 
         @await Html.PartialAsync("_ExportLink")
-        <div class="bse-outstanding-search-table-wrap" role="region" aria-label="Outstanding data results">
+        <section class="bse-outstanding-search-table-wrap" aria-label="Outstanding data results">
         <table class="govuk-table bse-outstanding-search-table">
             <caption class="govuk-visually-hidden">Outstanding search results</caption>
             <thead class="govuk-table__head">
@@ -153,7 +153,7 @@
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
-                @foreach (var r in Model.Filter.PagedResults)
+                @foreach (var r in Model.Filter.PagedResults())
                 {
                     <tr class="govuk-table__row">
                         <td class="govuk-table__cell bse-rbse">@BseFormat.FormatRbse(r.Rbse)</td>
@@ -167,7 +167,7 @@
                 }
             </tbody>
         </table>
-        </div>
+        </section>
         @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.Filter.PageNumber, ["TotalPages"] = Model.Filter.TotalPages, ["PageNumberKey"] = "Filter.PageNumber", ["Fragment"] = "outstanding-search-results" })
     }
 }

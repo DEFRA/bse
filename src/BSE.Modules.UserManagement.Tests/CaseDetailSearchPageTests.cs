@@ -68,7 +68,7 @@ public class CasesByHerdmarkModelTests
         await model.OnGetAsync();
 
         model.HasSearched.Should().BeFalse();
-        await _search.DidNotReceiveWithAnyArgs().GetCasesByEartagHerdmarkAsync(default!, default);
+        await _search.DidNotReceiveWithAnyArgs().GetCasesByEartagHerdmarkAsync(default!, default, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -98,7 +98,7 @@ public class CasesByHerdmarkModelTests
         model.HasSearched.Should().BeTrue();
         model.TotalCount.Should().Be(3);
         model.TotalPages.Should().Be(1);
-        model.PagedResults.Should().HaveCount(3);
+        model.PagedResults().Should().HaveCount(3);
     }
 
     [Fact]
@@ -146,7 +146,7 @@ public class CasesByHerdmarkModelTests
         {
             model.SortColumn = column;
             model.SortDesc = desc;
-            model.PagedResults.Should().HaveCount(3, $"sorting by {column}");
+            model.PagedResults().Should().HaveCount(3, $"sorting by {column}");
         }
     }
 
@@ -161,7 +161,7 @@ public class CasesByHerdmarkModelTests
             .Returns(CaseDetailFixtures.ThreeRows());
         await model.OnGetAsync();
 
-        model.PagedResults.Select(r => r.Rbse).Should().ContainInOrder("00/01/00003", "00/01/00002", "00/01/00001");
+        model.PagedResults().Select(r => r.Rbse).Should().ContainInOrder("00/01/00003", "00/01/00002", "00/01/00001");
     }
 
     [Fact]
@@ -251,7 +251,7 @@ public class CasesByHoldingHerdmarkModelTests
         await model.OnGetAsync();
 
         model.HasSearched.Should().BeTrue();
-        model.PagedResults.Should().HaveCount(3);
+        model.PagedResults().Should().HaveCount(3);
     }
 
     [Theory]
@@ -309,7 +309,7 @@ public class CasesByHoldingHerdmarkModelTests
             {
                 model.SortColumn = column;
                 model.SortDesc = desc;
-                model.PagedResults.Should().HaveCount(3);
+                model.PagedResults().Should().HaveCount(3);
             }
         }
     }

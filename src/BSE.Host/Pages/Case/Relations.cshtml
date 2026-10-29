@@ -525,7 +525,7 @@
 
         <fieldset class="bse-form-fieldset-reset" disabled="@(canEditOtherRelations ? null : "disabled")">
 
-        <div class="bse-table-scroll" role="region" aria-label="Related animals">
+        <section class="bse-table-scroll" aria-label="Related animals">
         <table class="govuk-table">
             <caption class="govuk-visually-hidden">Related animals for @Model.Rbse</caption>
             <thead class="govuk-table__head">
@@ -594,7 +594,7 @@
                 }
             </tbody>
         </table>
-        </div>
+        </section>
 
         @if (Model.TotalRelationsCount > 0)
         {
@@ -670,8 +670,7 @@
                         @if (isEditingRelation && relationRbseIsValid)
                         {
                             <a id="view-relation-rbse-link" class="govuk-button govuk-button--secondary"
-                               href="@Url.Page("/Case/RelationsView", new { rbse = Model.RelationRbse, returnUrl = HttpContext.Request.Path + HttpContext.Request.QueryString })"
-                               role="button" draggable="false" data-module="govuk-button">View Relations</a>
+                               href="@Url.Page("/Case/RelationsView", new { rbse = Model.RelationRbse, returnUrl = HttpContext.Request.Path + HttpContext.Request.QueryString })" draggable="false" data-module="govuk-button">View Relations</a>
                         }
                         @* Legacy disables btnAddAsNew once a grid row is selected (grdRelations_SelectedIndexChanged). *@
                         <button type="submit" asp-page-handler="AddRelationRow" class="govuk-button govuk-button--secondary" data-module="govuk-button" disabled="@isEditingRelation">Add As New</button>
@@ -730,7 +729,7 @@
                     {
                         <button type="submit" asp-page-handler="SaveRelations" class="govuk-button" data-module="govuk-button">Save</button>
                     }
-                    <a asp-page="/Case/Relations" asp-page-handler="CancelRelationsEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
+                    <a asp-page="/Case/Relations" asp-page-handler="CancelRelationsEdit" asp-route-rbse="@Model.Rbse" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
                 </div>
             </div>
         </div>

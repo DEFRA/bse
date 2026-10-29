@@ -34,7 +34,7 @@
     <fieldset class="bse-form-fieldset-reset" disabled="@(!canEditFeeds ? "disabled" : null)">
 
     @* -- Existing feed records -------------------------------------------------- *@
-    <div class="bse-table-scroll" role="region" aria-label="Feed history">
+    <section class="bse-table-scroll" aria-label="Feed history">
     <table class="govuk-table">
         <caption class="govuk-visually-hidden">Feed history for @Model.Rbse</caption>
         <thead class="govuk-table__head">
@@ -97,7 +97,7 @@
             }
         </tbody>
     </table>
-    </div>
+    </section>
 
     @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData)
     {
@@ -186,7 +186,7 @@
             <div class="govuk-button-group bse-case-bottom-row__actions">
                 @if (viewDocsUrl is not null)
                 {
-                    <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" role="button" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">
+                    <a href="@viewDocsUrl" target="_blank" rel="noopener noreferrer" draggable="false" class="govuk-button govuk-button--secondary" data-module="govuk-button">
                         View docs<span class="govuk-visually-hidden"> (opens in new tab)</span>
                     </a>
                 }
@@ -194,7 +194,7 @@
                 {
                     <button type="submit" form="case-feeds-inline-form" asp-page-handler="SaveFeeds" class="govuk-button" data-module="govuk-button">Save</button>
                 }
-                <a asp-page="/Case/Feeds" asp-page-handler="CancelFeedsEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
+                <a asp-page="/Case/Feeds" asp-page-handler="CancelFeedsEdit" asp-route-rbse="@Model.Rbse" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
             </div>
         </div>
     </div>
