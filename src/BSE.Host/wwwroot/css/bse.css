@@ -3656,3 +3656,151 @@
     font-weight: 400;
 }
 
+/* Reflow (WCAG 1.4.10): the two-column legacy form grids are 1072px wide, so stack them below 1200px. */
+@media (max-width: 1200px) {
+    .bse-farm-legacy__row,
+    .bse-related-animals-search-page .bse-farm-legacy__row {
+        grid-template-columns: minmax(0, 1fr);
+        row-gap: 8px;
+        column-gap: 0;
+    }
+}
+
+/* The header actions are a fixed row, which pushes the Menu button off-screen on narrow phones. */
+@media (max-width: 40.0525em) {
+    .bse-global-header .govuk-header__container {
+        flex-wrap: wrap;
+        row-gap: 10px;
+    }
+
+    .bse-global-header__actions {
+        flex-wrap: wrap;
+        height: auto;
+        max-width: 100%;
+    }
+
+    .bse-global-header__utility-nav {
+        justify-content: flex-start;
+    }
+}
+
+/* GOV.UK's footer meta row uses negative side margins that add 15px of page width. */
+.govuk-footer {
+    overflow-x: clip;
+}
+
+/* Wide data tables scroll inside their own region instead of the whole page (WCAG 1.4.10). */
+.bse-table-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+    position: relative;
+}
+
+.bse-batch-panel .govuk-details__text {
+    overflow-x: auto;
+    position: relative;
+}
+
+@media (max-width: 1020px) {
+    .bse-user-maintenance-table-wrap {
+        overflow-x: auto;
+    }
+}
+
+/* Grid rows and button groups use negative side margins that add 15px of page width once the
+   container is pinned left. Columns stack at this width, so the negative margin is not needed. */
+@media (max-width: 1020px) {
+    .govuk-main-wrapper .govuk-grid-row,
+    .govuk-main-wrapper .govuk-button-group {
+        margin-right: 0;
+    }
+}
+
+/* Case pages: each page's own <style> sets fixed two-column grids, so these use `body` for the
+   extra specificity needed to override them from here. */
+body .bse-form-fieldset-reset {
+    min-width: 0;
+}
+
+@media (max-width: 1200px) {
+    body .bse-relations-parent-columns,
+    body .bse-relations-grid {
+        grid-template-columns: minmax(0, 1fr);
+        row-gap: 12px;
+    }
+
+    body .defra-legacy-receipt-row {
+        grid-template-columns: minmax(0, 12rem) minmax(0, 1fr);
+        column-gap: 0.75rem;
+    }
+
+    body .defra-legacy-grid,
+    body .vla-legacy-grid,
+    body .bab-legacy-grid,
+    body .bse-feeds-grid {
+        grid-template-columns: minmax(0, 1fr);
+        row-gap: 12px;
+        column-gap: 0;
+    }
+}
+
+@media (max-width: 640px) {
+    body .bse-batch-docs-row {
+        flex-wrap: wrap;
+    }
+
+    body .bse-batch-docs-row__batch {
+        flex: 1 1 100%;
+        min-width: 0;
+    }
+
+    body .bse-batch-panel .govuk-details__text {
+        max-width: 100%;
+    }
+
+    body .defra-legacy-receipt-row {
+        grid-template-columns: minmax(0, 1fr);
+        row-gap: 4px;
+    }
+
+    body .defra-legacy-field,
+    body .vla-legacy-field,
+    body .bab-legacy-field,
+    body .bse-feeds-field-row,
+    body .bse-relations-field-row,
+    body .bse-relations-parent-field-row,
+    body .bse-relations-case-row {
+        grid-template-columns: minmax(0, 1fr);
+        row-gap: 4px;
+    }
+
+    body .defra-legacy-field .govuk-label,
+    body .vla-legacy-field .govuk-label,
+    body .bab-legacy-field .govuk-label,
+    body .bse-feeds-field-row .govuk-label,
+    body .bse-relations-field-row .govuk-label,
+    body .bse-relations-parent-field-row .govuk-label {
+        white-space: normal;
+    }
+
+    body .vla-legacy-input,
+    body .bab-legacy-input,
+    body .bse-relations-parent-input,
+    body .defra-legacy-field .govuk-input,
+    body .defra-legacy-field .govuk-select,
+    body .vla-legacy-field .moj-datepicker__wrapper,
+    body .defra-legacy-field .moj-datepicker__wrapper {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    body .bse-feeds-field-error {
+        grid-column: 1;
+    }
+
+    body .bse-clinical-grid--18,
+    body .bse-clinical-grid--9 {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
