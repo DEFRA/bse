@@ -100,7 +100,7 @@ public sealed class LookupDataServiceTests
     [Fact]
     public async Task GetADNSRegionsAsync_CallsRepository_AndReturnsResults()
     {
-        var items = new[] { new LuADNSRegion { Id = 1, Name = "North" } };
+        var items = new[] { new LuAdnsRegion { Id = 1, Name = "North" } };
         _repo.GetADNSRegionsAsync().Returns(items);
 
         var result = await _sut.GetADNSRegionsAsync();
@@ -113,7 +113,7 @@ public sealed class LookupDataServiceTests
     [Fact]
     public async Task GetCountiesAsync_CallsBSECountiesOnRepository()
     {
-        var items = new[] { new LuBSECounty { Id = 1, Code = "AB", Description = "Aberdeen" } };
+        var items = new[] { new LuBseCounty { Id = 1, Code = "AB", Description = "Aberdeen" } };
         _repo.GetBSECountiesAsync().Returns(items);
 
         var result = await _sut.GetCountiesAsync();
@@ -127,7 +127,7 @@ public sealed class LookupDataServiceTests
     [Fact]
     public async Task GetBSERegionsAsync_CallsRepository_AndReturnsResults()
     {
-        var items = new[] { new LuBSERegion { Id = 1, SortOrder = 1, Name = "Scotland" } };
+        var items = new[] { new LuBseRegion { Id = 1, SortOrder = 1, Name = "Scotland" } };
         _repo.GetBSERegionsAsync().Returns(items);
 
         var result = await _sut.GetBSERegionsAsync();
@@ -196,7 +196,7 @@ public sealed class LookupDataServiceTests
     {
         _repo.GetADNSRegionsAsync().Returns(new[]
         {
-            new LuADNSRegion { Id = 3, Name = "Wales" }
+            new LuAdnsRegion { Id = 3, Name = "Wales" }
         });
 
         var result = (await _sut.GetLookupAsync(LookupTableId.ADNSRegion)).ToList();

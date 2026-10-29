@@ -31,13 +31,16 @@ public sealed class UserActivityLoggingMiddleware(RequestDelegate next, ILogger<
                 ?? "unknown"
             : "anonymous";
 
-        logger.LogInformation(
-            "User activity {Method} {Path} responded {StatusCode} in {ElapsedMs}ms by {UserUpn}",
-            context.Request.Method,
-            context.Request.Path.Value,
-            context.Response.StatusCode,
-            sw.ElapsedMilliseconds,
-            userUpn);
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation(
+                "User activity {Method} {Path} responded {StatusCode} in {ElapsedMs}ms by {UserUpn}",
+                context.Request.Method,
+                context.Request.Path.Value,
+                context.Response.StatusCode,
+                sw.ElapsedMilliseconds,
+                userUpn);
+        }
     }
 
     private static bool ShouldAudit(HttpRequest request)

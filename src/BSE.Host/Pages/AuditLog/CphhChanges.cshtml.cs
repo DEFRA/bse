@@ -19,11 +19,11 @@ public class CphhChangesModel(IAuditLogService auditLogService) : PageModel
     [BindProperty(SupportsGet = true)] public bool SortDesc { get; set; }
     [BindProperty(SupportsGet = true)] public int PageNumber { get; set; } = 1;
 
-    public IEnumerable<AuditLogCPHHChangeEntry> Entries { get; private set; } = [];
+    public IEnumerable<AuditLogCphhChangeEntry> Entries { get; private set; } = [];
     public bool HasSearched { get; private set; }
     public int TotalCount => Entries.Count();
     public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
-    public IReadOnlyList<AuditLogCPHHChangeEntry> PagedEntries => Entries.Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
+    public IReadOnlyList<AuditLogCphhChangeEntry> PagedEntries => Entries.Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
 
     public string? StartDateError { get; private set; }
     public string? EndDateError { get; private set; }
@@ -40,7 +40,7 @@ public class CphhChangesModel(IAuditLogService auditLogService) : PageModel
             }
 
             HasSearched = true;
-            Entries = ApplySorting((await auditLogService.GetCphhChangesAsync(StartDate!.Value, EndDate!.Value)).Cast<AuditLogCPHHChangeEntry>());
+            Entries = ApplySorting((await auditLogService.GetCphhChangesAsync(StartDate!.Value, EndDate!.Value)).Cast<AuditLogCphhChangeEntry>());
         }
         return Page();
     }
@@ -49,14 +49,14 @@ public class CphhChangesModel(IAuditLogService auditLogService) : PageModel
     {
         if (!AuditDateRange.Validate(StartDate, EndDate, out _, out _)) return RedirectToPage();
 
-        var entries = (await auditLogService.GetCphhChangesAsync(StartDate!.Value, EndDate!.Value)).Cast<AuditLogCPHHChangeEntry>();
+        var entries = (await auditLogService.GetCphhChangesAsync(StartDate!.Value, EndDate!.Value)).Cast<AuditLogCphhChangeEntry>();
         return AuditLogExcel.Build(ApplySorting(entries), "CPHH Changes", $"CphhChanges_{BSE.SharedKernel.UkClock.Today:yyyyMMdd}.xlsx",
             [("CaseCount", e => e.CaseCount)]);
     }
 
-    private IEnumerable<AuditLogCPHHChangeEntry> ApplySorting(IEnumerable<AuditLogCPHHChangeEntry> entries)
+    private IEnumerable<AuditLogCphhChangeEntry> ApplySorting(IEnumerable<AuditLogCphhChangeEntry> entries)
     {
-        Func<AuditLogCPHHChangeEntry, object?> keySelector = SortColumn switch
+        Func<AuditLogCphhChangeEntry, object?> keySelector = SortColumn switch
         {
             "Table" => e => e.TableName,
             "Field" => e => e.FieldName,

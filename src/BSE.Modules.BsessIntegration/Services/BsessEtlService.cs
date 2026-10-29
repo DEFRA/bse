@@ -109,6 +109,7 @@ public sealed class BsessEtlService : IBsessEtlService
 
         await bulkCopy.WriteToServerAsync(reader, cancellationToken);
 
-        _logger.LogInformation("BSESS import completed — {RowsCopied} rows copied", bulkCopy.RowsCopied);
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("BSESS import completed — {RowsCopied} rows copied", bulkCopy.RowsCopied);
     }
 }

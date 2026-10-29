@@ -54,7 +54,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         _lookups.GetBreedsAsync().Returns(Array.Empty<LuBreed>());
         _lookups.GetSexesAsync().Returns(Array.Empty<LuSex>());
         _lookups.GetAnimalOriginsAsync().Returns(Array.Empty<LuAnimalOrigin>());
-        _lookups.GetCountiesAsync().Returns(Array.Empty<LuBSECounty>());
+        _lookups.GetCountiesAsync().Returns(Array.Empty<LuBseCounty>());
         _lookups.GetLookupAsync(Arg.Any<LookupTableId>()).Returns(Array.Empty<LookupItem>());
         _batchRepository.GetBatchNumbersByRbseAsync(Arg.Any<string>()).Returns(Array.Empty<BatchNumberEntry>());
         _wizardState.GetAsync().Returns((CaseWizardState?)null);

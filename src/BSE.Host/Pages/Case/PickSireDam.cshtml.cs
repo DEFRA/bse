@@ -87,7 +87,7 @@ public class PickSireDamModel(IAnimalRelationsRepository relationsRepository) : 
     }
 
     /// <summary>Sorts on the columns legacy made sortable (Eartag, Name, Herdbook — not RBSE).</summary>
-    private IReadOnlyList<DamSireDetailRecord> Sort(IReadOnlyList<DamSireDetailRecord> matches)
+    private List<DamSireDetailRecord> Sort(IReadOnlyList<DamSireDetailRecord> matches)
     {
         IEnumerable<DamSireDetailRecord> q = matches;
         q = SortColumn switch

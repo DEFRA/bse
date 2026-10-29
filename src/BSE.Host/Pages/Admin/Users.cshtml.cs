@@ -157,7 +157,7 @@ public class UsersModel(IUserManagementService userManagementService, ILookupDat
         EditUserName = EditUserName?.Trim() ?? string.Empty;
     }
 
-    private IActionResult ReloadEditPage(bool isAdding)
+    private PageResult ReloadEditPage(bool isAdding)
     {
         IsAddingNew = isAdding;
         Users = ApplySorting(Users);

@@ -35,6 +35,9 @@ namespace BSE.Modules.UserManagement.Tests;
 /// </summary>
 public sealed class RelationsModelHandlerTests
 {
+    private static readonly string[] StaleFields = ["EditingClientKey", "RelationType", "RelationRbse", "Sex", "BirthDate", "RelationFate", "LeftDate", "EartagCountry", "EartagHerdmark", "Eartag", "Sire"];
+    private static readonly string[] StaleValue = ["stale"];
+
     private readonly IAnimalRelationsRepository _relationsRepository = Substitute.For<IAnimalRelationsRepository>();
     private readonly ICaseService _caseService = Substitute.For<ICaseService>();
     private readonly ILookupDataService _lookups = Substitute.For<ILookupDataService>();
@@ -362,9 +365,9 @@ public sealed class RelationsModelHandlerTests
 
         // Simulate stale posted values from a different (or blank Add-As-New) panel submission —
         // asp-for prefers these ModelState entries over the model property unless cleared.
-        foreach (var staleField in new[] { "EditingClientKey", "RelationType", "RelationRbse", "Sex", "BirthDate", "RelationFate", "LeftDate", "EartagCountry", "EartagHerdmark", "Eartag", "Sire" })
+        foreach (var staleField in StaleFields)
         {
-            model.ModelState.SetModelValue(staleField, new[] { "stale" }, "stale");
+            model.ModelState.SetModelValue(staleField, StaleValue, "stale");
         }
 
         var result = await model.OnPostBeginEditRelationRowAsync("row-1");

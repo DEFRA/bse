@@ -149,7 +149,7 @@ public class PickSupplierModel(
 
     private bool HasAccess() => User.IsInRole("DataEntry") && User.IsInRole("VLAAccess");
 
-    private IReadOnlyList<LuSupplier> Sort(IReadOnlyList<LuSupplier> rows)
+    private List<LuSupplier> Sort(IReadOnlyList<LuSupplier> rows)
     {
         IEnumerable<LuSupplier> q = rows;
         q = SortColumn switch

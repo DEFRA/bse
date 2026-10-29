@@ -19,11 +19,11 @@ public class RbseChangesModel(IAuditLogService auditLogService) : PageModel
     [BindProperty(SupportsGet = true)] public bool SortDesc { get; set; }
     [BindProperty(SupportsGet = true)] public int PageNumber { get; set; } = 1;
 
-    public IEnumerable<AuditLogRBSEChangeEntry> Entries { get; private set; } = [];
+    public IEnumerable<AuditLogRbseChangeEntry> Entries { get; private set; } = [];
     public bool HasSearched { get; private set; }
     public int TotalCount => Entries.Count();
     public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
-    public IReadOnlyList<AuditLogRBSEChangeEntry> PagedEntries => Entries.Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
+    public IReadOnlyList<AuditLogRbseChangeEntry> PagedEntries => Entries.Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
 
     public string? StartDateError { get; private set; }
     public string? EndDateError { get; private set; }
@@ -40,7 +40,7 @@ public class RbseChangesModel(IAuditLogService auditLogService) : PageModel
             }
 
             HasSearched = true;
-            Entries = ApplySorting((await auditLogService.GetRbseChangesAsync(StartDate!.Value, EndDate!.Value)).Cast<AuditLogRBSEChangeEntry>());
+            Entries = ApplySorting((await auditLogService.GetRbseChangesAsync(StartDate!.Value, EndDate!.Value)).Cast<AuditLogRbseChangeEntry>());
         }
         return Page();
     }
@@ -49,14 +49,14 @@ public class RbseChangesModel(IAuditLogService auditLogService) : PageModel
     {
         if (!AuditDateRange.Validate(StartDate, EndDate, out _, out _)) return RedirectToPage();
 
-        var entries = (await auditLogService.GetRbseChangesAsync(StartDate!.Value, EndDate!.Value)).Cast<AuditLogRBSEChangeEntry>();
+        var entries = (await auditLogService.GetRbseChangesAsync(StartDate!.Value, EndDate!.Value)).Cast<AuditLogRbseChangeEntry>();
         return AuditLogExcel.Build(ApplySorting(entries), "RBSE Changes", $"RbseChanges_{BSE.SharedKernel.UkClock.Today:yyyyMMdd}.xlsx",
             [("HasBatches", e => e.HasBatches)]);
     }
 
-    private IEnumerable<AuditLogRBSEChangeEntry> ApplySorting(IEnumerable<AuditLogRBSEChangeEntry> entries)
+    private IEnumerable<AuditLogRbseChangeEntry> ApplySorting(IEnumerable<AuditLogRbseChangeEntry> entries)
     {
-        Func<AuditLogRBSEChangeEntry, object?> keySelector = SortColumn switch
+        Func<AuditLogRbseChangeEntry, object?> keySelector = SortColumn switch
         {
             "Table" => e => e.TableName,
             "Field" => e => e.FieldName,

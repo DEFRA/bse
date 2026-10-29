@@ -1,7 +1,7 @@
 namespace BSE.Modules.ReferenceData.Models;
 
 /// <summary>Maps to luBSERegion via GetluBSERegion.</summary>
-public record LuBSERegion
+public record LuBseRegion
 {
     public int Id { get; init; }
     public int SortOrder { get; init; }

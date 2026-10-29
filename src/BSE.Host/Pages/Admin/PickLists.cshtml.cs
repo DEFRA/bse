@@ -58,7 +58,7 @@ public class PickListsModel(
     public EditableLookup? Lookup { get; private set; }
     public EditableLookupProcs? Procs { get; private set; }
     public IReadOnlyList<IDictionary<string, object?>> Rows { get; private set; } = [];
-    public IReadOnlyList<LuBSERegion> BseRegionOptions { get; private set; } = [];
+    public IReadOnlyList<LuBseRegion> BseRegionOptions { get; private set; } = [];
     public IReadOnlyList<BSE.SharedKernel.ILookupItem> AhoOptions { get; private set; } = [];
 
     /// <summary>Columns rendered in the grid, in the order returned by the table's select procedure.</summary>
@@ -103,9 +103,8 @@ public class PickListsModel(
 
         if (TableId <= 0)
         {
-            TableId = Lookups.Any(l => l.Id == DefaultTableId)
-                ? DefaultTableId
-                : Lookups.FirstOrDefault()?.Id ?? 0;
+            var firstId = Lookups.Count > 0 ? Lookups[0].Id : 0;
+            TableId = Lookups.Any(l => l.Id == DefaultTableId) ? DefaultTableId : firstId;
         }
 
         Lookup = Lookups.FirstOrDefault(l => l.Id == TableId);
@@ -130,7 +129,7 @@ public class PickListsModel(
         if (PageNumber > TotalPages) PageNumber = TotalPages;
     }
 
-    private IActionResult RedirectToTable() =>
+    private RedirectToPageResult RedirectToTable() =>
         RedirectToPage(new { tableId = TableId, sortColumn = SortColumn, sortDesc = SortDesc, pageNumber = PageNumber });
 
     private IEnumerable<IDictionary<string, object?>> ApplySorting(IReadOnlyList<IDictionary<string, object?>> source)
@@ -248,7 +247,8 @@ public class PickListsModel(
     public static string RowValue(IDictionary<string, object?> row, string column)
     {
         if (!row.TryGetValue(column, out var value) || value is null) return "";
-        return value is bool flag ? (flag ? "Yes" : "No") : value.ToString() ?? "";
+        if (value is bool flag) return flag ? "Yes" : "No";
+        return value.ToString() ?? "";
     }
 
     /// <summary>Legacy rendered the BSE Region as its name, not the stored ID — and, for the TSE

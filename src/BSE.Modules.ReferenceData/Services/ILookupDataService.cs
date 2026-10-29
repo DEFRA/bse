@@ -12,15 +12,15 @@ public interface ILookupDataService
     Task<IEnumerable<LuAnimalOrigin>> GetAnimalOriginsAsync();
     Task<IEnumerable<LuSex>> GetSexesAsync();
     Task<IEnumerable<LuHerdType>> GetHerdTypesAsync();
-    Task<IEnumerable<LuADNSRegion>> GetADNSRegionsAsync();
-    Task<IEnumerable<LuBSECounty>> GetCountiesAsync();
-    Task<IEnumerable<LuBSERegion>> GetBSERegionsAsync();
+    Task<IEnumerable<LuAdnsRegion>> GetADNSRegionsAsync();
+    Task<IEnumerable<LuBseCounty>> GetCountiesAsync();
+    Task<IEnumerable<LuBseRegion>> GetBSERegionsAsync();
     Task<IEnumerable<LuTestType>> GetTestTypesAsync();
     Task<IEnumerable<LuTestResult>> GetTestResultsAsync();
     Task<IEnumerable<LuUserGroup>> GetUserGroupsAsync();
 
     Task<IEnumerable<LuAuthority>> GetAuthoritiesByCountyAsync(int authorityCountyId);
-    Task<IEnumerable<LuADNSRegion>> GetADNSRegionsByAuthorityAsync(int authorityId);
+    Task<IEnumerable<LuAdnsRegion>> GetADNSRegionsByAuthorityAsync(int authorityId);
 
     /// <summary>
     /// Returns a generic Id+Description projection for the specified lookup table.

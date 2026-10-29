@@ -71,7 +71,7 @@ public class MoveCaseNewFarmModel(ICaseService caseService, IFarmService farmSer
         // the save with "You have not entered an ADNS Region." Reproduce that same rejection here
         // (never ported to this page) instead of silently moving the case with a now-stale ADNS Region.
         if (Farm.AuthorityID is > 0 && Farm.ADNSRegionID is > 0
-            && ViewData["AdnsOptions"] is IEnumerable<LuADNSRegion> adnsOptions
+            && ViewData["AdnsOptions"] is IEnumerable<LuAdnsRegion> adnsOptions
             && !adnsOptions.Any(x => x.Id == Farm.ADNSRegionID.Value))
         {
             ModelState.AddModelError("Farm.ADNSRegionID", "Specify an ADNS region for the farm.");
@@ -133,7 +133,7 @@ public class MoveCaseNewFarmModel(ICaseService caseService, IFarmService farmSer
 
         ViewData["AdnsOptions"] = Farm.AuthorityID is > 0
             ? await lookups.GetADNSRegionsByAuthorityAsync(Farm.AuthorityID.Value)
-            : (IEnumerable<LuADNSRegion>)[];
+            : (IEnumerable<LuAdnsRegion>)[];
     }
 
     public async Task<IActionResult> OnGetAuthoritiesAsync(int? authorityCountyId)

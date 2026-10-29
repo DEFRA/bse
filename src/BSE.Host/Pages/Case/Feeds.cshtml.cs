@@ -511,7 +511,7 @@ public class FeedsModel(
         return draft;
     }
 
-    private IReadOnlyList<StagedFeedItem> SortFeeds(IReadOnlyList<StagedFeedItem> feeds)
+    private System.Collections.ObjectModel.ReadOnlyCollection<StagedFeedItem> SortFeeds(IReadOnlyList<StagedFeedItem> feeds)
     {
         IEnumerable<StagedFeedItem> q = feeds;
         q = SortColumn switch

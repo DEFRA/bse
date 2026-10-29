@@ -34,7 +34,7 @@ public class DetailsModel : PageModel
         var relatedTask = _farm.GetRelatedFarmsAsync(cphh);
         var herdTask = _farm.GetHerdSizesAsync(cphh);
         var countTask = _farm.GetConfirmedCaseCountAsync(cphh);
-        var adnsTask = Farm.ADNSRegionID.HasValue ? _lookups.GetADNSRegionsAsync() : Task.FromResult<IEnumerable<LuADNSRegion>>(Array.Empty<LuADNSRegion>());
+        var adnsTask = Farm.ADNSRegionID.HasValue ? _lookups.GetADNSRegionsAsync() : Task.FromResult<IEnumerable<LuAdnsRegion>>(Array.Empty<LuAdnsRegion>());
 
         await Task.WhenAll(relatedTask, herdTask, countTask, adnsTask);
 

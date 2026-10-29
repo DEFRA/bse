@@ -1,7 +1,7 @@
 namespace BSE.Modules.ReferenceData.Models;
 
 /// <summary>Maps to luAHO via GetluAHO / GetluAHOCode.</summary>
-public record LuAHO
+public record LuAho
 {
     public int Id { get; init; }
     public string Code { get; init; } = string.Empty;
