@@ -9,6 +9,10 @@ namespace BSE.Host.Pages.CaseWork;
 [Authorize(Policy = "VLAMaintenance")]
 public class MinuteDocumentModel(ICaseWorkService caseWorkService) : PageModel
 {
+    private const string AnnexDType = "AnnexD";
+
+    private const string AnnexCType = "AnnexC";
+
     private const string SessionHomebred = "CaseWork.OutstandingForms.Homebred";
     private const string SessionBreeder = "CaseWork.OutstandingForms.Breeder";
     private const string SessionPurchaser = "CaseWork.OutstandingForms.Purchaser";
@@ -37,7 +41,7 @@ public class MinuteDocumentModel(ICaseWorkService caseWorkService) : PageModel
         Details = details;
         MinuteDate = GetMinuteDate(details, minuteType);
 
-        if (minuteType is "AnnexC" or "AnnexD")
+        if (minuteType is AnnexCType or AnnexDType)
         {
             OutstandingForms = ReadOutstandingForms();
             if (OutstandingForms.Count == 0)
@@ -50,7 +54,7 @@ public class MinuteDocumentModel(ICaseWorkService caseWorkService) : PageModel
             Response.Headers["Content-Disposition"] = $"attachment; filename=\"{GetLegacyFileName(minuteType, rbse)}\"";
         }
 
-        if (minuteType is "AnnexC" or "AnnexD")
+        if (minuteType is AnnexCType or AnnexDType)
             ClearOutstandingForms();
 
         return Page();
@@ -82,13 +86,13 @@ public class MinuteDocumentModel(ICaseWorkService caseWorkService) : PageModel
     private static string NormalizeMinuteType(string t) => t switch
     {
         "ActiveMemoFS" => "AMFS",
-        "Annex C" => "AnnexC",
-        "Annex D" => "AnnexD",
+        "Annex C" => AnnexCType,
+        "Annex D" => AnnexDType,
         _ => t
     };
 
     private static bool IsSupportedMinuteType(string t) =>
-        t is "ActiveMemo" or "AMFS" or "AnnexA" or "AnnexB" or "AnnexC" or "AnnexD";
+        t is "ActiveMemo" or "AMFS" or "AnnexA" or "AnnexB" or AnnexCType or AnnexDType;
 
     private static string GetLegacyFileName(string minuteType, string rbse)
     {
@@ -98,8 +102,8 @@ public class MinuteDocumentModel(ICaseWorkService caseWorkService) : PageModel
             "ActiveMemo" or "AMFS" => $"activememo{n}.doc",
             "AnnexA" => $"annexa{n}.doc",
             "AnnexB" => $"annexb{n}.doc",
-            "AnnexC" => $"annexc{n}.doc",
-            "AnnexD" => $"annexd{n}.doc",
+            AnnexCType => $"annexc{n}.doc",
+            AnnexDType => $"annexd{n}.doc",
             _ => $"minute{n}.doc"
         };
     }
@@ -109,8 +113,8 @@ public class MinuteDocumentModel(ICaseWorkService caseWorkService) : PageModel
         "ActiveMemo" or "AMFS" => d.ActiveMemoDate,
         "AnnexA" => d.AnnexADate,
         "AnnexB" => d.AnnexBDate,
-        "AnnexC" => d.AnnexCDate,
-        "AnnexD" => d.AnnexDDate,
+        AnnexCType => d.AnnexCDate,
+        AnnexDType => d.AnnexDDate,
         _ => null
     };
 }

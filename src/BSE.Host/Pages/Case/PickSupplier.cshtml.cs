@@ -13,6 +13,10 @@ public class PickSupplierModel(
     ILookupRepository lookupRepository,
     IEditableLookupAdminService editableLookupAdminService) : PageModel
 {
+    private const string FeedsPage = "/Case/Feeds";
+
+    private const string HomePage = "/Home";
+
     public const int PageSize = 10;
 
     [BindProperty(SupportsGet = true)] public string Rbse { get; set; } = string.Empty;
@@ -30,11 +34,11 @@ public class PickSupplierModel(
     public async Task<IActionResult> OnGetAsync()
     {
         if (!HasAccess())
-            return RedirectToPage("/Home");
+            return RedirectToPage(HomePage);
 
         var search = (Name ?? string.Empty).Trim();
         if (string.IsNullOrWhiteSpace(Rbse))
-            return RedirectToPage("/Case/Feeds", new { rbse = RbseHelper.ParseToRaw(Rbse) });
+            return RedirectToPage(FeedsPage, new { rbse = RbseHelper.ParseToRaw(Rbse) });
 
         Rbse = RbseHelper.ParseToRaw(Rbse);
         Name = search;
@@ -53,7 +57,7 @@ public class PickSupplierModel(
     public async Task<IActionResult> OnPostUseSelectedAsync(int id, string? selectedName)
     {
         if (!HasAccess())
-            return RedirectToPage("/Home");
+            return RedirectToPage(HomePage);
 
         var selected = Suppliers.FirstOrDefault(s => s.Id == id);
         if (selected is null)
@@ -73,7 +77,7 @@ public class PickSupplierModel(
         }
 
         var rbse = RbseHelper.ParseToRaw(Rbse);
-        return RedirectToPage("/Case/Feeds", new
+        return RedirectToPage(FeedsPage, new
         {
             rbse,
             pickedSupplierId = selected.Id,
@@ -84,7 +88,7 @@ public class PickSupplierModel(
     public async Task<IActionResult> OnPostNewAsync()
     {
         if (!HasAccess())
-            return RedirectToPage("/Home");
+            return RedirectToPage(HomePage);
 
         Rbse = RbseHelper.ParseToRaw(Rbse);
         Name = (Name ?? string.Empty).Trim();
@@ -127,7 +131,7 @@ public class PickSupplierModel(
             return Page();
         }
 
-        return RedirectToPage("/Case/Feeds", new
+        return RedirectToPage(FeedsPage, new
         {
             rbse = Rbse,
             pickedSupplierId = created.Id,
@@ -138,9 +142,9 @@ public class PickSupplierModel(
     public IActionResult OnPostCancel()
     {
         if (!HasAccess())
-            return RedirectToPage("/Home");
+            return RedirectToPage(HomePage);
 
-        return RedirectToPage("/Case/Feeds", new { rbse = RbseHelper.ParseToRaw(Rbse), resetSupplier = true });
+        return RedirectToPage(FeedsPage, new { rbse = RbseHelper.ParseToRaw(Rbse), resetSupplier = true });
     }
 
     private bool HasAccess() => User.IsInRole("DataEntry") && User.IsInRole("VLAAccess");

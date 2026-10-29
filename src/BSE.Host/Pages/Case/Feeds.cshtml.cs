@@ -38,6 +38,10 @@ public class FeedsModel(
     ICurrentUserService currentUser,
     IConfiguration configuration) : PageModel
 {
+    private const string VlaAccessRole = "VLAAccess";
+
+    private const string DataEntryRole = "DataEntry";
+
     private List<CaseFeedRecord> _persistedFeeds = [];
 
     [BindProperty(SupportsGet = true)]
@@ -114,7 +118,7 @@ public class FeedsModel(
     /// <summary>AJAX: "Validate Supplier" — exact match auto-fills; otherwise returns close matches to pick from.</summary>
     public async Task<IActionResult> OnGetValidateSupplierAsync(string? name)
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return new JsonResult(new { found = false, matches = Array.Empty<object>() });
 
         var trimmed = (name ?? string.Empty).Trim();
@@ -133,7 +137,7 @@ public class FeedsModel(
     /// <summary>Adds a feed record to the draft only. Not persisted until Save.</summary>
     public async Task<IActionResult> OnPostAddFeedRowAsync()
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         Rbse = RbseHelper.ParseToRaw(Rbse);
@@ -174,7 +178,7 @@ public class FeedsModel(
     /// <summary>Populates the shared field panel from a staged row for editing (no changes saved yet).</summary>
     public async Task<IActionResult> OnPostBeginEditFeedRowAsync(string clientKey)
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         Rbse = RbseHelper.ParseToRaw(Rbse);
@@ -213,7 +217,7 @@ public class FeedsModel(
     /// <summary>Updates the currently selected staged row from the shared field panel. Not persisted until Save.</summary>
     public async Task<IActionResult> OnPostUpdateFeedRowAsync()
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         Rbse = RbseHelper.ParseToRaw(Rbse);
@@ -266,7 +270,7 @@ public class FeedsModel(
     /// <summary>Removes a staged feed row (mirrors legacy "Delete Selected"). Not persisted until Save.</summary>
     public async Task<IActionResult> OnPostDeleteFeedRowAsync(string clientKey)
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         Rbse = RbseHelper.ParseToRaw(Rbse);
@@ -289,7 +293,7 @@ public class FeedsModel(
     /// <summary>Commits all staged feed changes to the database in one transaction.</summary>
     public async Task<IActionResult> OnPostSaveFeedsAsync()
     {
-        if (!User.IsInRole("DataEntry"))
+        if (!User.IsInRole(DataEntryRole))
             return Forbid();
 
         Rbse = RbseHelper.ParseToRaw(Rbse);
@@ -331,7 +335,7 @@ public class FeedsModel(
 
     public async Task<IActionResult> OnPostValidateSupplierNavigateAsync()
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole("VLAAccess"))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         Rbse = RbseHelper.ParseToRaw(Rbse);

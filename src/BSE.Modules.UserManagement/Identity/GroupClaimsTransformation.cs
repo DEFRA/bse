@@ -27,6 +27,10 @@ namespace BSE.Modules.UserManagement.Identity;
 /// </remarks>
 public sealed class GroupClaimsTransformation : IClaimsTransformation
 {
+    private const string DataEntryGroup = "DataEntry";
+
+    private const string ReadOnlyGroup = "ReadOnly";
+
     private readonly IUserRepository _userRepository;
     private readonly ILogger<GroupClaimsTransformation> _logger;
 
@@ -130,13 +134,13 @@ public sealed class GroupClaimsTransformation : IClaimsTransformation
     private static IEnumerable<string> GetPoliciesForGroup(string? groupName) =>
         groupName switch
         {
-            "DEFRA Viewer"              => ["ReadOnly", "DEFRAAccess"],
-            "DEFRA Data Entry"          => ["ReadOnly", "DataEntry", "FarmCreation", "DEFRAAccess"],
-            "DEFRA Maintenance"         => ["ReadOnly", "DataEntry", "DEFRAMaintenance", "PickListAccess", "FarmCreation", "DEFRAAccess"],
-            "VLA Data Entry"            => ["ReadOnly", "DataEntry", "VLAAccess", "PickListAccess"],
-            "VLA Maintenance"           => ["ReadOnly", "DataEntry", "DEFRAMaintenance", "VLAAccess", "VLAMaintenance", "PickListAccess", "FarmCreation"],
-            "DEFRA AI Wales Scotland"   => ["ReadOnly"],
-            "DEFRA AHO User"            => ["ReadOnly"],
+            "DEFRA Viewer"              => [ReadOnlyGroup, "DEFRAAccess"],
+            "DEFRA Data Entry"          => [ReadOnlyGroup, DataEntryGroup, "FarmCreation", "DEFRAAccess"],
+            "DEFRA Maintenance"         => [ReadOnlyGroup, DataEntryGroup, "DEFRAMaintenance", "PickListAccess", "FarmCreation", "DEFRAAccess"],
+            "VLA Data Entry"            => [ReadOnlyGroup, DataEntryGroup, "VLAAccess", "PickListAccess"],
+            "VLA Maintenance"           => [ReadOnlyGroup, DataEntryGroup, "DEFRAMaintenance", "VLAAccess", "VLAMaintenance", "PickListAccess", "FarmCreation"],
+            "DEFRA AI Wales Scotland"   => [ReadOnlyGroup],
+            "DEFRA AHO User"            => [ReadOnlyGroup],
             _                           => []
         };
 

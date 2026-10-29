@@ -11,6 +11,10 @@ public class PickListsAddModel(
     IEditableLookupAdminService lookupAdminService,
     ILookupDataService lookupDataService) : PageModel
 {
+    private const string BseRegionIdColumn = "BSERegionID";
+
+    private const string DescriptionColumn = "Description";
+
     private const int TestTypeId = 7;
     private const int BreedId = 13;
     private const int AhoId = 16;
@@ -125,15 +129,15 @@ public class PickListsAddModel(
 
     private Task AddAsync() => TableId switch
     {
-        TestTypeId => lookupAdminService.AddTestTypeAsync(Field("Code"), Field("Description"), BoolField("IsActive")),
-        RelationFateId => lookupAdminService.AddRelationFateAsync(Field("Code"), Field("Description"), BoolField("IsActive")),
+        TestTypeId => lookupAdminService.AddTestTypeAsync(Field("Code"), Field(DescriptionColumn), BoolField("IsActive")),
+        RelationFateId => lookupAdminService.AddRelationFateAsync(Field("Code"), Field(DescriptionColumn), BoolField("IsActive")),
         BreedId => lookupAdminService.AddBreedAsync(Field("Code"), Field("FullName"), Field("AmalgamatedName")),
-        AhoId => lookupAdminService.AddAHOAsync(Field("Code"), Field("Name"), IntField("BSERegionID")),
+        AhoId => lookupAdminService.AddAHOAsync(Field("Code"), Field("Name"), IntField(BseRegionIdColumn)),
         SupplierId => lookupAdminService.AddSupplierAsync(Field("Name"), Field("Details")),
-        BseCountyId => lookupAdminService.AddBSECountyAsync(Field("IDColumn"), Field("Code"), Field("Description"), IntField("BSERegionID")),
+        BseCountyId => lookupAdminService.AddBSECountyAsync(Field("IDColumn"), Field("Code"), Field(DescriptionColumn), IntField(BseRegionIdColumn)),
         TseTestingSiteId => lookupAdminService.AddTSETestingSiteAsync(Field("Name"), Field("Address"), Field("CPH"), Field("AHO")),
         AhroId => lookupAdminService.AddAHROAsync(Field("Name")),
-        _ => lookupAdminService.AddCodeDescriptionItemAsync(Procs!.InsertStoredProcedure, Field("Code"), Field("Description"))
+        _ => lookupAdminService.AddCodeDescriptionItemAsync(Procs!.InsertStoredProcedure, Field("Code"), Field(DescriptionColumn))
     };
 
     private void ValidateRequired()
@@ -176,7 +180,7 @@ public class PickListsAddModel(
         TestTypeId or RelationFateId =>
         [
             new("Code", "Code"),
-            new("Description", "Description"),
+            new(DescriptionColumn, DescriptionColumn),
             new("IsActive", "Is Active", IsBoolean: true)
         ],
         BreedId =>
@@ -189,7 +193,7 @@ public class PickListsAddModel(
         [
             new("Code", "Code"),
             new("Name", "Name"),
-            new("BSERegionID", "BSE Region", IsNumeric: true, IsRegionLookup: true)
+            new(BseRegionIdColumn, "BSE Region", IsNumeric: true, IsRegionLookup: true)
         ],
         SupplierId =>
         [
@@ -200,8 +204,8 @@ public class PickListsAddModel(
         [
             new("IDColumn", "ID"),
             new("Code", "Code"),
-            new("Description", "Description"),
-            new("BSERegionID", "BSE Region", IsNumeric: true, IsRegionLookup: true)
+            new(DescriptionColumn, DescriptionColumn),
+            new(BseRegionIdColumn, "BSE Region", IsNumeric: true, IsRegionLookup: true)
         ],
         TseTestingSiteId =>
         [
@@ -214,7 +218,7 @@ public class PickListsAddModel(
         _ =>
         [
             new("Code", "Code"),
-            new("Description", "Description")
+            new(DescriptionColumn, DescriptionColumn)
         ]
     };
 }

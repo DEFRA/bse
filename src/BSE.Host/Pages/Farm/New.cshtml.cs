@@ -17,6 +17,8 @@ public class NewModel(
     IFarmService farmService, ICurrentUserService currentUserService, ILookupDataService lookups,
     IGeoLookupService geoLookup, BSE.Host.Services.IGeoLookupService mapReferenceGeoLookup) : PageModel
 {
+    private const string CaseFarmPage = "/Case/Farm";
+
     private const string VetnetNotFoundMessage = "The CPHH you entered was not Found on Vetnet";
     private const string BrusselsWarningMessage = "Local authority not on file – case won’t be notifiable to Brussels.  Please investigate.";
     private const string FarmAlreadyExistsMessage = "A farm with this CPHH already exists.";
@@ -88,9 +90,9 @@ public class NewModel(
                 return RedirectToPage("/Home");
 
             if (existingFarm is not null)
-                return RedirectToPage("/Case/Farm", new { rbse = ReturnRbse, selectedCphh = Farm.CPHH });
+                return RedirectToPage(CaseFarmPage, new { rbse = ReturnRbse, selectedCphh = Farm.CPHH });
 
-            return RedirectToPage("/Case/Farm", new
+            return RedirectToPage(CaseFarmPage, new
             {
                 rbse = ReturnRbse,
                 newCphh = Farm.CPHH,
@@ -126,10 +128,10 @@ public class NewModel(
         TempData["Success"] = $"Farm {Farm.CPHH} has been created.";
 
         if (!string.IsNullOrEmpty(ReturnRbse) && ReturnToCaseFarm)
-            return RedirectToPage("/Case/Farm", new { rbse = ReturnRbse, selectedCphh = Farm.CPHH });
+            return RedirectToPage(CaseFarmPage, new { rbse = ReturnRbse, selectedCphh = Farm.CPHH });
 
         if (!string.IsNullOrEmpty(ReturnRbse))
-            return RedirectToPage("/Case/Farm", new { rbse = ReturnRbse, newCphh = ReturnCphh ?? Farm.CPHH });
+            return RedirectToPage(CaseFarmPage, new { rbse = ReturnRbse, newCphh = ReturnCphh ?? Farm.CPHH });
 
         return RedirectToPage("/Farm/Details", new { cphh = Farm.CPHH });
     }
