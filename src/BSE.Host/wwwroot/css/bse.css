@@ -1967,6 +1967,20 @@
     min-width: 100%;
 }
 
+/* On wide screens let results use the full window, as they did before the tables became
+   scroll containers; anything wider than that scrolls inside the table, not the page. */
+@media (min-width: 1021px) {
+    .bse-case-search-table-wrap,
+    .bse-outstanding-search-table-wrap,
+    .bse-holding-herdmark-search-table-wrap,
+    .bse-herdmark-search-table-wrap,
+    .bse-farm-search-table-wrap,
+    .bse-related-animals-search-table-wrap,
+    .bse-open-cases-table-wrap {
+        width: calc(100vw - 3rem);
+    }
+}
+
 .bse-related-animals-search-table .govuk-table__cell,
 .bse-related-animals-search-table .govuk-table__header {
     overflow-wrap: break-word;
