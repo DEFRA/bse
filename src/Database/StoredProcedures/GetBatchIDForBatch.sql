@@ -1,4 +1,4 @@
-/****** Object:  StoredProcedure [dbo].[GetBatchIDForBatch]    Script Date: 18/09/2026 16:33:57 ******/
+-- Object:  StoredProcedure [dbo].[GetBatchIDForBatch]    Script Date: 18/09/2026 16:33:57
 SET ANSI_NULLS OFF
 GO
  

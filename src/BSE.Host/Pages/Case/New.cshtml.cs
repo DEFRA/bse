@@ -79,17 +79,7 @@ public class NewModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (string.IsNullOrWhiteSpace(Rbse))
-            ModelState.AddModelError(nameof(Rbse), "Enter an RBSE.");
-
-        if (string.IsNullOrWhiteSpace(Cphh))
-            ModelState.AddModelError(nameof(Cphh), "Enter a CPHH.");
-
-        if (string.IsNullOrWhiteSpace(EartagCountry) && string.IsNullOrWhiteSpace(EartagHerdmark) && string.IsNullOrWhiteSpace(Eartag))
-            ModelState.AddModelError(nameof(Eartag), "Enter an eartag.");
-
-        if (FormADate is null)
-            ModelState.AddModelError(nameof(FormADate), "Enter a Form A date.");
+        ValidateRequiredCaseFields();
 
         var normalisedCphh = CphhNormalizer.Normalize(Cphh);
         Cphh = normalisedCphh;
@@ -104,20 +94,7 @@ public class NewModel : PageModel
         RequireFarmDetails = farm is null;
 
         if (RequireFarmDetails)
-        {
-            if (string.IsNullOrWhiteSpace(OwnerName))
-                ModelState.AddModelError(nameof(OwnerName), "Enter an owner name for the farm.");
-            if (string.IsNullOrWhiteSpace(Address1))
-                ModelState.AddModelError(nameof(Address1), "Enter the first line of the farm address.");
-            if (string.IsNullOrWhiteSpace(Parish))
-                ModelState.AddModelError(nameof(Parish), "Enter a parish for the farm.");
-            if (string.IsNullOrWhiteSpace(County))
-                ModelState.AddModelError(nameof(County), "Specify a county for the farm.");
-            if (string.IsNullOrWhiteSpace(Aho))
-                ModelState.AddModelError(nameof(Aho), "Specify an AHO for the farm.");
-            if (AdnsRegionId is null)
-                ModelState.AddModelError(nameof(AdnsRegionId), "Specify an ADNS region for the farm.");
-        }
+            ValidateNewFarmFields();
 
         if (!ModelState.IsValid)
         {
@@ -125,41 +102,19 @@ public class NewModel : PageModel
             return Page();
         }
 
-        int batchId;
+        var resolvedBatchId = await ResolveBatchIdAsync();
+        if (resolvedBatchId is null)
+        {
+            await LoadLookupsAsync();
+            return Page();
+        }
 
-        // If a batch year/number were supplied (via Home redirect), use that batch if it exists.
-        if (BatchYear.HasValue && BatchNumber.HasValue)
-        {
-            var existing = await _batch.GetBatchIdAsync(BatchYear.Value, BatchNumber.Value);
-            if (existing is null)
-            {
-                ModelState.AddModelError(string.Empty, $"Batch {BatchYear}/{BatchNumber} was not found.");
-                await LoadLookupsAsync();
-                return Page();
-            }
-            batchId = existing.Value;
-        }
-        else
-        {
-            var batch = await _batch.GetOrCreateBatchNumberAsync();
-            batchId = batch.BatchId;
-        }
+        var batchId = resolvedBatchId.Value;
 
         var userId = await _currentUser.GetUserIdAsync();
 
         if (RequireFarmDetails)
-        {
-            await _farms.AddAsync(new AddFarmCommand(
-                CPHH: normalisedCphh,
-                OwnerName: OwnerName, Address1: Address1, Address2: Address2, Address3: Address3,
-                Postcode: Postcode, Parish: Parish, District: null, County: County,
-                CorrespondenceAddress1: null, CorrespondenceAddress2: null, CorrespondenceAddress3: null,
-                CorrespondencePostcode: null, MapReference: null,
-                Herdmark1: null, Herdmark2: null, Herdmark3: null,
-                NumericHerdmark1: null, NumericHerdmark2: null,
-                AHO: Aho, HerdType: null, PedigreeType: null, IsDealer: false,
-                ADNSRegionID: AdnsRegionId), userId);
-        }
+            await _farms.AddAsync(BuildAddFarmCommand(normalisedCphh), userId);
 
         var addCase = new AddCaseCommand(
             Rbse: Rbse.Trim(), Cphh: normalisedCphh,
@@ -203,6 +158,63 @@ public class NewModel : PageModel
         TempData["SuccessMessage"] = $"Case {Rbse} created successfully.";
         return RedirectToPage("/Case/Farm", new { rbse = Rbse.Trim() });
     }
+
+    private void ValidateRequiredCaseFields()
+    {
+        if (string.IsNullOrWhiteSpace(Rbse))
+            ModelState.AddModelError(nameof(Rbse), "Enter an RBSE.");
+
+        if (string.IsNullOrWhiteSpace(Cphh))
+            ModelState.AddModelError(nameof(Cphh), "Enter a CPHH.");
+
+        if (string.IsNullOrWhiteSpace(EartagCountry) && string.IsNullOrWhiteSpace(EartagHerdmark) && string.IsNullOrWhiteSpace(Eartag))
+            ModelState.AddModelError(nameof(Eartag), "Enter an eartag.");
+
+        if (FormADate is null)
+            ModelState.AddModelError(nameof(FormADate), "Enter a Form A date.");
+    }
+
+    private void ValidateNewFarmFields()
+    {
+        if (string.IsNullOrWhiteSpace(OwnerName))
+            ModelState.AddModelError(nameof(OwnerName), "Enter an owner name for the farm.");
+        if (string.IsNullOrWhiteSpace(Address1))
+            ModelState.AddModelError(nameof(Address1), "Enter the first line of the farm address.");
+        if (string.IsNullOrWhiteSpace(Parish))
+            ModelState.AddModelError(nameof(Parish), "Enter a parish for the farm.");
+        if (string.IsNullOrWhiteSpace(County))
+            ModelState.AddModelError(nameof(County), "Specify a county for the farm.");
+        if (string.IsNullOrWhiteSpace(Aho))
+            ModelState.AddModelError(nameof(Aho), "Specify an AHO for the farm.");
+        if (AdnsRegionId is null)
+            ModelState.AddModelError(nameof(AdnsRegionId), "Specify an ADNS region for the farm.");
+    }
+
+    /// <summary>Uses the batch supplied via the Home redirect if it exists; returns null (with a model error) when it does not.</summary>
+    private async Task<int?> ResolveBatchIdAsync()
+    {
+        if (BatchYear.HasValue && BatchNumber.HasValue)
+        {
+            var existing = await _batch.GetBatchIdAsync(BatchYear.Value, BatchNumber.Value);
+            if (existing is null)
+                ModelState.AddModelError(string.Empty, $"Batch {BatchYear}/{BatchNumber} was not found.");
+            return existing;
+        }
+
+        var batch = await _batch.GetOrCreateBatchNumberAsync();
+        return batch.BatchId;
+    }
+
+    private AddFarmCommand BuildAddFarmCommand(string normalisedCphh) => new(
+        CPHH: normalisedCphh,
+        OwnerName: OwnerName, Address1: Address1, Address2: Address2, Address3: Address3,
+        Postcode: Postcode, Parish: Parish, District: null, County: County,
+        CorrespondenceAddress1: null, CorrespondenceAddress2: null, CorrespondenceAddress3: null,
+        CorrespondencePostcode: null, MapReference: null,
+        Herdmark1: null, Herdmark2: null, Herdmark3: null,
+        NumericHerdmark1: null, NumericHerdmark2: null,
+        AHO: Aho, HerdType: null, PedigreeType: null, IsDealer: false,
+        ADNSRegionID: AdnsRegionId);
 
     private async Task LoadLookupsAsync()
     {

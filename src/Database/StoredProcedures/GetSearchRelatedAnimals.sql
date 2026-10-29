@@ -1,4 +1,4 @@
-/****** Object:  StoredProcedure [dbo].[GetSearchRelatedAnimals]    Script Date: 18/09/2026 16:36:18 ******/
+-- Object:  StoredProcedure [dbo].[GetSearchRelatedAnimals]    Script Date: 18/09/2026 16:36:18
 SET ANSI_NULLS OFF
 GO
  
