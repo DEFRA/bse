@@ -20,6 +20,11 @@ parameters:
     type: boolean
     default: false
 
+  - name: deployToProd
+    displayName: Deploy to PRD
+    type: boolean
+    default: false
+
   - name: deployDbScripts
     displayName: Force deploy DB scripts (e.g. fresh infra / no schema yet)
     type: boolean
@@ -492,44 +497,134 @@ stages:
 # the 'PROD' Environment resource: Pipelines > Environments > PROD > Approvals
 # and checks > Approvals > add approver sabari.katari@defra.gov.uk.
 # -------------------------------------------------------------------------
-# - stage: PROD
-#   displayName: PROD
-#   dependsOn: Build
-#   condition: and(succeeded(), eq('${{ parameters.deployToProd }}', true), eq(variables['Build.SourceBranchName'], 'main'))
-#   variables:
-#     - name: appName
-#       value: 'PRDBSEWEBAW1401'
-#     - name: tenantId
-#       value: 'TBD'
-#     - name: appId
-#       value: 'TBD'
-#     - name: sqlServer
-#       value: 'TBD'
-#     - name: dbName
-#       value: 'BSE'
-#   jobs:
-#   - deployment: deploy_prod
-#     environment: 'PROD'
-#     pool:
-#       name: 'DEFRA-COMMON-UBUNTU-SSV5'
-#     strategy:
-#       runOnce:
-#         deploy:
-#           steps:
-#           - download: current
-#             artifact: drop
-#           - task: AzureWebApp@1
-#             inputs:
-#               azureSubscription: 'AZR-BSE-PRD1'
-#               appType: 'webAppLinux'
-#               appName: '$(appName)'
-#               package: '$(Pipeline.Workspace)/drop/*.zip'
-#               runtimeStack: 'DOTNETCORE|10.0'
-#               deploymentMethod: 'zipDeploy'
-#               appSettings: >-
-#                 -Saml2__SPEntityId "https://bse.azure.defra.cloud"
-#                 -Saml2__PublicOrigin "https://bse.azure.defra.cloud"
-#                 -Saml2__IdPEntityId "https://sts.windows.net/$(tenantId)/"
-#                 -Saml2__IdPMetadataUrl "https://login.microsoftonline.com/$(tenantId)/federationmetadata/2007-06/federationmetadata.xml?appid=$(appId)"
-#                 -Authentication__BypassEnabled "false"
-#                 -ConnectionStrings__BSE "Server=tcp:$(sqlServer);Database=$(dbName);Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Managed Identity;"
+  - stage: PRD
+  displayName: PRD
+  dependsOn:
+  - Build
+  - PRE
+  condition: >-
+    and(
+      eq(dependencies.Build.result, 'Succeeded'),
+      eq(dependencies.PRE.result, 'Succeeded'),
+      eq('${{ parameters.deployToProd }}', true),
+      eq(variables['Build.SourceBranchName'], 'main')
+    )
+  variables:
+    - name: appName
+      value: 'PRDBSEWEBAW1401'
+    - name: tenantId
+      value: '770a2450-0227-4c62-90c7-4e38537f1102'
+    - name: appId
+      value: 'a08f1c74-e9de-491b-9b69-30908b3b0e7c'
+    - name: sqlServer
+      value: 'prdbseinfsq1401.database.windows.net,1433'
+    - name: sqlServerHost
+      value: 'prdbseinfsq1401.database.windows.net'
+    - name: dbName
+      value: 'BSE'
+    - name: msGraphSender
+      value: 'tse.queries@apha.gov.uk'
+    - name: dbScriptsChanged
+      value: $[ stageDependencies.Build.build.outputs['detectDbChanges.dbScriptsChanged'] ]
+  jobs:
+  - deployment: deploy_prod
+    environment: 'PRD'
+    pool:
+      name: 'DEFRA-COMMON-UBUNTU-SSV5'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: current
+            artifact: drop
+ 
+          - task: AzureCLI@2
+            displayName: 'Check plan is zone redundant'
+            inputs:
+              azureSubscription: 'AZR-BSE-PRD1'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+ 
+                PLAN_ID=$(az webapp list --query "[?name=='$(appName)'].serverFarmId | [0]" -o tsv)
+ 
+                if [ -z "$PLAN_ID" ]; then
+                  echo "##vso[task.logissue type=error]Could not find $(appName) or its App Service Plan in this subscription."
+                  exit 1
+                fi
+ 
+                ZR=$(az resource show --ids "$PLAN_ID" --query "properties.zoneRedundant" -o tsv)
+                CAP=$(az appservice plan show --ids "$PLAN_ID" --query "sku.capacity" -o tsv)
+                SKU=$(az appservice plan show --ids "$PLAN_ID" --query "sku.name" -o tsv)
+ 
+                echo "Plan: ${PLAN_ID##*/}  SKU: $SKU  instances: $CAP  zoneRedundant: $ZR"
+ 
+                if [ "${ZR,,}" != "true" ]; then
+                  echo "##vso[task.logissue type=error]App Service Plan ${PLAN_ID##*/} is not zone redundant. Refusing to deploy to $(appName)."
+                  exit 1
+                fi
+ 
+                if [ "$CAP" -lt 2 ]; then
+                  echo "##vso[task.logissue type=error]Zone-redundant plan has fewer than 2 instances."
+                  exit 1
+                fi
+ 
+          - script: |
+              if [ "$(dbScriptsChanged)" = "true" ]; then
+                echo "Database script changes detected - database deployment WILL be applied for PRD."
+              elif [ "${{ parameters.deployDbScripts }}" = "True" ]; then
+                echo "deployDbScripts override enabled - database deployment WILL be applied for PRD (forced)."
+              else
+                echo "No database script changes detected and deployDbScripts not set - database deployment WILL BE SKIPPED for PRD."
+              fi
+            displayName: 'Log database deployment decision'
+ 
+          - task: AzureCLI@2
+            displayName: 'Apply database scripts'
+            condition: and(succeeded(), or(eq(variables['dbScriptsChanged'], 'true'), eq('${{ parameters.deployDbScripts }}', true)))
+            inputs:
+              azureSubscription: 'AZR-BSE-PRD1'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+ 
+                TOOLS="$(Agent.TempDirectory)/sqlcmd"
+                mkdir -p "$TOOLS"
+                curl -sSL --proto '=https' --fail --max-time 60 -o "$TOOLS/sqlcmd.tar.bz2" \
+                  https://github.com/microsoft/go-sqlcmd/releases/download/v1.8.2/sqlcmd-linux-amd64.tar.bz2
+                tar -xjf "$TOOLS/sqlcmd.tar.bz2" -C "$TOOLS"
+ 
+                DEPLOY_DIR="$(Pipeline.Workspace)/drop/sql/Deploy"
+                if [ ! -f "$DEPLOY_DIR/Deploy.sql" ]; then
+                  echo "##vso[task.logissue type=error]Deploy.sql not found in $DEPLOY_DIR"
+                  exit 1
+                fi
+ 
+                cd "$DEPLOY_DIR"
+                echo "Applying Deploy.sql"
+                "$TOOLS/sqlcmd" -S "$(sqlServerHost)" -d "$(dbName)" \
+                  --authentication-method ActiveDirectoryAzCli \
+                  -i Deploy.sql -b -t 0
+ 
+          - task: AzureWebApp@1
+            displayName: 'Deploy BSE.Host'
+            inputs:
+              azureSubscription: 'AZR-BSE-PRD1'
+              appType: 'webAppLinux'
+              appName: '$(appName)'
+              package: '$(Pipeline.Workspace)/drop/*.zip'
+              runtimeStack: 'DOTNETCORE|10.0'
+              deploymentMethod: 'zipDeploy'
+              appSettings: >-
+                -Saml2__SPEntityId "https://bse.azure.defra.cloud"
+                -Saml2__PublicOrigin "https://bse.azure.defra.cloud"
+                -Saml2__IdPEntityId "https://sts.windows.net/$(tenantId)/"
+                -Saml2__IdPMetadataUrl "https://login.microsoftonline.com/$(tenantId)/federationmetadata/2007-06/federationmetadata.xml?appid=$(appId)"
+                -Authentication__BypassEnabled "false"
+                -ConnectionStrings__BSE "Server=tcp:$(sqlServer);Database=$(dbName);Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Managed Identity;"
+                -AdnsMsGraph__MsGraphTenantId "$(tenantId)"
+                -AdnsMsGraph__MsGraphClientId "$(appId)"
+                -AdnsMsGraph__MsGraphSenderUserId "$(msGraphSender)"
+                -AdnsMsGraph__FromAddress "$(msGraphSender)"
