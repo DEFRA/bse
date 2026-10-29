@@ -497,7 +497,7 @@ stages:
 # the 'PROD' Environment resource: Pipelines > Environments > PROD > Approvals
 # and checks > Approvals > add approver sabari.katari@defra.gov.uk.
 # -------------------------------------------------------------------------
-  - stage: PRD
+- stage: PRD
   displayName: PRD
   dependsOn:
   - Build
