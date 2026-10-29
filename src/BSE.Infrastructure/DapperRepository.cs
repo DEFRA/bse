@@ -35,25 +35,6 @@ public class DapperRepository : IDbRepository
             commandType: CommandType.StoredProcedure);
     }
 
-    public async Task ExecuteAsync(string storedProcedure, object? param = null)
-    {
-        using var connection = OpenConnection();
-        await connection.ExecuteAsync(
-            storedProcedure,
-            param,
-            commandType: CommandType.StoredProcedure);
-    }
-
-    public async Task<T?> QuerySingleOrDefaultAsync<T>(string storedProcedure, object? param = null)
-        where T : class
-    {
-        using var connection = OpenConnection();
-        return await connection.QuerySingleOrDefaultAsync<T>(
-            storedProcedure,
-            param,
-            commandType: CommandType.StoredProcedure);
-    }
-
     public async Task<IEnumerable<T>> QueryAsync<T>(string storedProcedure, object? param, int commandTimeoutSeconds)
     {
         using var connection = OpenConnection();
@@ -64,7 +45,7 @@ public class DapperRepository : IDbRepository
             commandTimeout: commandTimeoutSeconds);
     }
 
-    public async Task ExecuteWithOutputAsync(string storedProcedure, DynamicParameters param)
+    public async Task ExecuteAsync(string storedProcedure, object? param = null)
     {
         using var connection = OpenConnection();
         await connection.ExecuteAsync(
@@ -80,14 +61,33 @@ public class DapperRepository : IDbRepository
             transaction: transaction,
             commandType: CommandType.StoredProcedure);
 
-    public Task<int> ExecuteWithRowCountAsync(string storedProcedure, object? param, IDbConnection connection, IDbTransaction? transaction)
+    public async Task<T?> QuerySingleOrDefaultAsync<T>(string storedProcedure, object? param = null)
+        where T : class
+    {
+        using var connection = OpenConnection();
+        return await connection.QuerySingleOrDefaultAsync<T>(
+            storedProcedure,
+            param,
+            commandType: CommandType.StoredProcedure);
+    }
+
+    public async Task ExecuteWithOutputAsync(string storedProcedure, DynamicParameters param)
+    {
+        using var connection = OpenConnection();
+        await connection.ExecuteAsync(
+            storedProcedure,
+            param,
+            commandType: CommandType.StoredProcedure);
+    }
+
+    public Task ExecuteWithOutputAsync(string storedProcedure, DynamicParameters param, IDbConnection connection, IDbTransaction? transaction)
         => connection.ExecuteAsync(
             storedProcedure,
             param,
             transaction: transaction,
             commandType: CommandType.StoredProcedure);
 
-    public Task ExecuteWithOutputAsync(string storedProcedure, DynamicParameters param, IDbConnection connection, IDbTransaction? transaction)
+    public Task<int> ExecuteWithRowCountAsync(string storedProcedure, object? param, IDbConnection connection, IDbTransaction? transaction)
         => connection.ExecuteAsync(
             storedProcedure,
             param,

@@ -28,11 +28,24 @@ public sealed class LoggingDbRepositoryDecorator : IDbRepository
             "Query",
             () => _inner.QueryAsync<T>(storedProcedure, param));
 
+    public Task<IEnumerable<T>> QueryAsync<T>(string storedProcedure, object? param, int commandTimeoutSeconds)
+        => ExecuteWithLoggingAsync(
+            storedProcedure,
+            "QueryWithTimeout",
+            () => _inner.QueryAsync<T>(storedProcedure, param, commandTimeoutSeconds),
+            commandTimeoutSeconds);
+
     public Task ExecuteAsync(string storedProcedure, object? param = null)
         => ExecuteWithLoggingAsync(
             storedProcedure,
             "Execute",
             () => _inner.ExecuteAsync(storedProcedure, param));
+
+    public Task ExecuteAsync(string storedProcedure, object? param, IDbConnection connection, IDbTransaction? transaction)
+        => ExecuteWithLoggingAsync(
+            storedProcedure,
+            "ExecuteInTransaction",
+            () => _inner.ExecuteAsync(storedProcedure, param, connection, transaction));
 
     public Task<T?> QuerySingleOrDefaultAsync<T>(string storedProcedure, object? param = null)
         where T : class
@@ -40,13 +53,6 @@ public sealed class LoggingDbRepositoryDecorator : IDbRepository
             storedProcedure,
             "QuerySingleOrDefault",
             () => _inner.QuerySingleOrDefaultAsync<T>(storedProcedure, param));
-
-    public Task<IEnumerable<T>> QueryAsync<T>(string storedProcedure, object? param, int commandTimeoutSeconds)
-        => ExecuteWithLoggingAsync(
-            storedProcedure,
-            "QueryWithTimeout",
-            () => _inner.QueryAsync<T>(storedProcedure, param, commandTimeoutSeconds),
-            commandTimeoutSeconds);
 
     public Task ExecuteWithOutputAsync(string storedProcedure, DynamicParameters param)
         => ExecuteWithLoggingAsync(
@@ -59,12 +65,6 @@ public sealed class LoggingDbRepositoryDecorator : IDbRepository
             storedProcedure,
             "ExecuteWithOutputInTransaction",
             () => _inner.ExecuteWithOutputAsync(storedProcedure, param, connection, transaction));
-
-    public Task ExecuteAsync(string storedProcedure, object? param, IDbConnection connection, IDbTransaction? transaction)
-        => ExecuteWithLoggingAsync(
-            storedProcedure,
-            "ExecuteInTransaction",
-            () => _inner.ExecuteAsync(storedProcedure, param, connection, transaction));
 
     public Task<int> ExecuteWithRowCountAsync(string storedProcedure, object? param, IDbConnection connection, IDbTransaction? transaction)
         => ExecuteWithLoggingAsync(
