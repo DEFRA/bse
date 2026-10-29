@@ -64,7 +64,7 @@
         ViewData["PageNumber"] = Model.PageNumber;
 
         @await Html.PartialAsync("_ExportLink")
-        <div class="bse-herdmark-search-table-wrap">
+        <div class="bse-herdmark-search-table-wrap" tabindex="0" role="region" aria-label="Cases by herdmark results">
         <table class="govuk-table bse-herdmark-search-table">
             <caption class="govuk-visually-hidden">Cases by herdmark results</caption>
             <thead class="govuk-table__head">

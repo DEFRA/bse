@@ -370,6 +370,13 @@
     margin-bottom: 0;
 }
 
+/* Let page links wrap instead of compressing on narrow screens (WCAG 1.4.10). */
+.bse-pagination,
+.bse-pagination .govuk-pagination__list {
+    flex-wrap: wrap;
+    row-gap: 0.5rem;
+}
+
 .bse-user-maintenance-table .govuk-table__cell,
 .bse-user-maintenance-table .govuk-table__header {
     vertical-align: middle;
@@ -459,6 +466,13 @@
 /* Legacy GridSelectedItem colour; the previous GOV.UK light grey was barely distinguishable from white. */
 .bse-user-maintenance-table .bse-row-selected {
     background-color: #33ccff;
+    outline: 3px solid #0b0c0c;
+    outline-offset: -3px;
+}
+
+.bse-user-maintenance-table .bse-row-selected .bse-row-select-link,
+.bse-user-maintenance-table .bse-row-selected .govuk-table__cell {
+    color: #0b0c0c;
 }
 
 .bse-user-maintenance-table tbody tr:not(.bse-row-editing) {
@@ -1325,6 +1339,11 @@
     display: none !important;
 }
 
+/* Opt-in: keep the inline message visible next to the field it describes (WCAG 3.3.1). */
+.govuk-error-message.bse-error-message--visible {
+    display: block !important;
+}
+
 .govuk-hint {
     display: block;
 }
@@ -1353,7 +1372,7 @@
     padding-left: 0;
     padding-right: 0;
     box-sizing: border-box;
-    overflow-x: visible;
+    overflow-x: auto;
 }
 
 .bse-farm-search-table-wrap {
@@ -1366,7 +1385,7 @@
     padding-left: 0;
     padding-right: 0;
     box-sizing: border-box;
-    overflow-x: visible;
+    overflow-x: auto;
 }
 
 .bse-outstanding-search-table,
@@ -1385,7 +1404,7 @@
 
 .bse-open-cases-table-wrap {
     width: 100%;
-    overflow-x: visible;
+    overflow-x: auto;
 }
 
 .bse-open-cases-table {
@@ -1939,7 +1958,7 @@
     padding-left: 0;
     padding-right: 0;
     box-sizing: border-box;
-    overflow-x: visible;
+    overflow-x: auto;
 }
 
 .bse-related-animals-search-table {
@@ -2701,6 +2720,12 @@
     margin-bottom: 0;
 }
 
+/* Radios grouped in a fieldset keep their normal GOV.UK label sizing. */
+.bse-farm-legacy__field fieldset .govuk-radios__label {
+    display: inline-block;
+    width: auto;
+}
+
 .bse-farm-mapref-row {
     display: inline-flex;
     align-items: center;
@@ -3065,11 +3090,11 @@
     height: 10px;
     border-left: 3px solid currentColor;
     border-top: 3px solid currentColor;
-    transform: rotate(45deg) translateY(2px);
+    transform: rotate(-135deg) translate(-2px, -2px);
 }
 
 .bse-global-header__menu-button[aria-expanded="true"] .bse-global-header__menu-button-icon {
-    transform: rotate(225deg) translateY(-2px);
+    transform: rotate(45deg) translateY(2px);
 }
 
 .bse-global-header-nav {

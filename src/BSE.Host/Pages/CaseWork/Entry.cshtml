@@ -268,7 +268,7 @@
                                 <thead class="govuk-table__head">
                                     <tr class="govuk-table__row">
                                         <th scope="col" colspan="2" class="govuk-table__header">Minutes Due</th>
-                                        <th scope="col" class="govuk-table__header"></th>
+                                        <th scope="col" class="govuk-table__header"><span class="govuk-visually-hidden">Action</span></th>
                                         <th scope="col" class="govuk-table__header">Minute Sent On</th>
                                     </tr>
                                 </thead>
@@ -301,6 +301,10 @@
                                                         @m.Due?.ToString("dd/MM/yyyy")
                                                     }
                                                 }
+                                                else
+                                                {
+                                                    <span class="govuk-visually-hidden">No due date</span>
+                                                }
                                             </td>
                                             <td class="govuk-table__cell">
                                                 <button type="submit" asp-page-handler="SendMinute" name="minuteType" value="@m.Type"
@@ -308,10 +312,10 @@
                                                         data-module="govuk-button"
                                                         title="@m.Disabled"
                                                         disabled="@(m.Disabled is not null)">
-                                                    Send
+                                                    Send<span class="govuk-visually-hidden"> @m.Label minute</span>
                                                 </button>
                                             </td>
-                                            <td class="govuk-table__cell">@(m.Sent?.ToString("dd/MM/yyyy"))</td>
+                                            <td class="govuk-table__cell">@if (m.Sent is null) { <span class="govuk-visually-hidden">Not sent</span> } else { @m.Sent?.ToString("dd/MM/yyyy") }</td>
                                         </tr>
                                     }
                                 </tbody>

@@ -43,11 +43,12 @@
     <div class="bse-farm-legacy">
         <div class="bse-farm-legacy__row">
             <div class="bse-farm-legacy__field bse-outstanding-legacy__field--wide @(Model.NoOptionSelected ? "govuk-form-group--error" : "")">
-                <label class="govuk-visually-hidden" for="search-type-results">Outstanding data type</label>
                 @if (Model.NoOptionSelected)
                 {
                     <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @OutstandingModel.NoOptionMessage</p>
                 }
+                <fieldset class="govuk-fieldset">
+                <legend class="govuk-visually-hidden">Outstanding data type</legend>
                 <div class="govuk-radios govuk-radios--inline" data-module="govuk-radios">
                     <div class="govuk-radios__item">
                         <input asp-for="Filter.SearchType" class="govuk-radios__input" id="search-type-results" type="radio" value="Results" />
@@ -62,13 +63,14 @@
                         <label class="govuk-label govuk-radios__label" for="search-type-bse1">BSE1s</label>
                     </div>
                 </div>
+                </fieldset>
             </div>
         </div>
 
         <div class="bse-farm-legacy__row">
             <div class="bse-farm-legacy__field bse-outstanding-legacy__field--date bse-outstanding-legacy__field--wide">
-                <label for="Filter_EarliestFormADate" class="govuk-label">Form A Date Between</label>
-                <div class="bse-outstanding-legacy__date-range" role="group" aria-labelledby="Filter_EarliestFormADate">
+                <span id="form-a-date-label" class="govuk-label">Form A Date Between</span>
+                <div class="bse-outstanding-legacy__date-range" role="group" aria-labelledby="form-a-date-label">
                     <div class="govuk-form-group @(Model.Filter.EarliestFormADateError is not null ? "govuk-form-group--error" : "")">
                         <label asp-for="Filter.EarliestFormADate" class="govuk-visually-hidden">Form A date from</label>
                         @if (Model.Filter.EarliestFormADateError is not null)
@@ -96,7 +98,7 @@
 
         <div class="bse-farm-legacy__row bse-outstanding-legacy__row--actions">
             <div class="bse-farm-legacy__field bse-farm-legacy__field--dealer-left bse-outstanding-legacy__field--include">
-                <label asp-for="Filter.IncludeNonGb" class="govuk-label">Include Non-GB Cases?</label>
+                <span class="govuk-label" aria-hidden="true">Include Non-GB Cases?</span>
                 <div class="govuk-checkboxes" data-module="govuk-checkboxes">
                     <div class="govuk-checkboxes__item">
                         <input asp-for="Filter.IncludeNonGb" class="govuk-checkboxes__input bse-farm-legacy__dealer-checkbox" />
@@ -129,7 +131,7 @@
         ViewData["PageNumber"] = Model.Filter.PageNumber;
 
         @await Html.PartialAsync("_ExportLink")
-        <div class="bse-outstanding-search-table-wrap">
+        <div class="bse-outstanding-search-table-wrap" tabindex="0" role="region" aria-label="Outstanding data results">
         <table class="govuk-table bse-outstanding-search-table">
             <caption class="govuk-visually-hidden">Outstanding search results</caption>
             <thead class="govuk-table__head">
