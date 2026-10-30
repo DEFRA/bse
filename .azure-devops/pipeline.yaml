@@ -265,12 +265,18 @@ stages:
                 -AzureAd__Instance "https://login.microsoftonline.com/"
                 -AzureAd__TenantId "$(tenantId)"
                 -AzureAd__ClientId "$(oidcClientId)"
-                -AzureAd__ClientSecret "@Microsoft.KeyVault(SecretUri=$(oidcClientSecretUri))"
+                -AzureAd__ClientSecret "$(oidcClientSecretDevTemp)"
                 -AzureAd__CallbackPath "/signin-oidc"
                 -AzureAd__SignedOutCallbackPath "/signout-callback-oidc"
                 -AzureAd__PublicOrigin "https://dev-bse.azure.defra.cloud"
                 -Authentication__BypassEnabled "false"
                 -ConnectionStrings__BSE "Server=tcp:$(sqlServer);Database=$(dbName);Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Managed Identity;"
+                # TODO(temporary/DEV-only): revert to
+                # -AzureAd__ClientSecret "@Microsoft.KeyVault(SecretUri=$(oidcClientSecretUri))"
+                # once the DEV App Service managed identity has "Key Vault Secrets User" access
+                # on devbseinfkv1401 and the oidc-client-secret is populated there.
+                # $(oidcClientSecretDevTemp) must be defined as a SECRET pipeline variable
+                # (Pipeline > Edit > Variables), never committed to this file.
                 -AdnsMsGraph__MsGraphTenantId "$(tenantId)"
                 -AdnsMsGraph__MsGraphClientId "$(msGraphClientId)"
                 -AdnsMsGraph__MsGraphSenderUserId "$(msGraphSender)"
