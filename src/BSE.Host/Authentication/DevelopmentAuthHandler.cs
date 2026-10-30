@@ -17,12 +17,12 @@ public sealed class DevelopmentAuthOptions : AuthenticationSchemeOptions
     /// Used only when <see cref="UseWindowsIdentity"/> is false, or as a fallback.
     /// Must exist as an active row in the [User] table with a valid UserGroup value.
     /// </summary>
-    public string NtLogin { get; set; } = "dev-user";
+    public string NtLogin { get; set; } = "sh000156";
 
     /// <summary>
     /// Email/UPN used for database user lookup in local bypass mode.
     /// </summary>
-    public string Email { get; set; } = "dev-user@defra.gov.uk";
+    public string Email { get; set; } = "swarna.hareesh@defra.gov.uk";
 
     /// <summary>
     /// When true (default) the handler automatically reads the current Windows

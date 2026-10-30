@@ -223,7 +223,7 @@ try
                 DevelopmentAuthHandler.SchemeName,
                 opts =>
                 {
-                    opts.Email              = builder.Configuration["Authentication:DevUserEmail"] ?? "dev-user@defra.gov.uk";
+                    opts.Email              = builder.Configuration["Authentication:DevUserEmail"] ?? "swarna.hareesh@defra.gov.uk";
                     opts.UseWindowsIdentity = builder.Configuration.GetValue<bool>("Authentication:UseWindowsIdentity", defaultValue: true);
                 });
     }

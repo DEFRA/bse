@@ -1,0 +1,24 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "BSE.Host (Debug, Auth Bypass)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "${workspaceFolder}/src/BSE.Host/bin/Debug/net9.0/BSE.Host.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/src/BSE.Host",
+      "stopAtEntry": false,
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "Authentication__BypassEnabled": "true",
+        "ASPNETCORE_URLS": "https://localhost:53642;http://localhost:53643"
+      },
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+      }
+    }
+  ]
+}
