@@ -212,8 +212,8 @@
 <section id="non-gb-case">
     <h2 class="govuk-heading-l">4. Non-GB case creation</h2>
     <p class="govuk-body">The Non-GB Case Creation page records cases from Jersey, Guernsey or the Isle of Man. You are taken to this page automatically when you enter an RBSE beginning <samp>6300</samp> or <samp>2300</samp> (the first four digits of the 9-digit RBSE) that does not already exist in the system.</p>
-    <p class="govuk-body">Enter the animal's <strong>Eartag</strong>, <strong>Fate</strong> and <strong>Final result code</strong>. The default values are <samp>SLOS</samp> (Slaughtered) for Fate and <samp>NOT</samp> (Not examined) for Final Result. A Final Result Date and Slaughter Date are also required.</p>
-    <p class="govuk-body">Enter the farm's <strong>CPHH</strong> — this must be an 11-digit non-GB CPHH beginning with <samp>00999</samp>. Enter the <strong>Owner Name</strong>, <strong>Address line 1</strong> and <strong>County</strong> (for example, Jersey, Guernsey or Isle of Man). Additional address lines, postcode, herdmark and numeric herdmark are optional.</p>
+    <p class="govuk-body">Enter the animal's <strong>Eartag</strong>, <strong>Fate</strong> and <strong>Final Result</strong>. The default values are <samp>SLOS</samp> (Slaughtered) for Fate and <samp>NOT</samp> (Not examined) for Final Result. A Final Result Date and Slaughter Date are also required.</p>
+    <p class="govuk-body">Enter the farm's <strong>CPHH</strong> — this must be an 11-digit non-GB CPHH beginning with <samp>00999</samp>. Enter the <strong>Owner Name</strong>, <strong>Address</strong> and <strong>County</strong> (for example, Jersey, Guernsey or Isle of Man). Additional address lines, postcode, herdmark and numeric herdmark are optional.</p>
     <p class="govuk-body">Select <strong>Save</strong> to create the case. If the non-GB farm CPHH already exists in the system, its details are updated; otherwise, a new farm record is created.</p>
 
     <p class="govuk-body govuk-!-margin-top-4"><a class="govuk-link" href="#">Back to top</a></p>
@@ -360,10 +360,10 @@
         <p class="govuk-body">The OSS Export page generates data for import into the Optical Storage System (OSS). It provides two functions, accessible via the <strong>BSE1</strong> and <strong>BSE1b</strong> sections.</p>
 
         <h3 class="govuk-heading-m" id="OSSExportBSE1">BSE1</h3>
-        <p class="govuk-body">Select <strong>Populate staging tables</strong> to populate the four OSS staging tables and create a new BSE1 batch number. The assigned batch number is shown on screen once the operation completes.</p>
+        <p class="govuk-body">Enter the batch <strong>Year</strong> and <strong>Number</strong>, then select <strong>Download</strong> to download the BSE1 file for that batch. An error is shown if the batch is not found or contains no cases.</p>
 
         <h3 class="govuk-heading-m" id="OSSExportBSE1b">BSE1b</h3>
-        <p class="govuk-body">Enter an RBSE number and select <strong>Look up</strong> to view the OSS cover sheet details for that case (RBSE, CPHH, owner name and address). A warning is shown if no OSS export record exists for the entered RBSE.</p>
+        <p class="govuk-body">Enter an <strong>RBSE</strong> number and select <strong>Add to grid</strong> to add the case to the list. Select <strong>Delete</strong> on a row to remove it. When the list is complete, select <strong>Export to OSS</strong> to download the file.</p>
 
         <p class="govuk-body govuk-!-margin-top-4"><a class="govuk-link" href="#">Back to top</a></p>
     </section>
