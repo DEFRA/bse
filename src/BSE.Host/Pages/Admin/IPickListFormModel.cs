@@ -11,7 +11,7 @@ public interface IPickListFormModel
     bool SortDesc { get; }
     int PageNumber { get; }
     Dictionary<string, string> Fields { get; }
-    IReadOnlyList<PickListsEditModel.FieldSpec> DisplayFields { get; }
+    IReadOnlyList<PickListFormPageModelBase.FieldSpec> DisplayFields { get; }
     IReadOnlyList<LuBseRegion> BseRegionOptions { get; }
     IReadOnlyList<ILookupItem> AhoOptions { get; }
 }

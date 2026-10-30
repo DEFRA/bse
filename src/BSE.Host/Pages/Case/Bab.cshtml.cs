@@ -1,4 +1,5 @@
 ﻿using BSE.Host.Helpers;
+using BSE.Host.Models.ViewModels;
 using BSE.Host.Services;
 using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Repositories;
@@ -89,28 +90,8 @@ public class BabModel(
         if (!canEdit)
             return await CommitStagedChangesOnlyAsync();
 
-        var normalisedNatalCphh = CphhNormalizer.Normalize(Bab.NatalCphh);
-        if (!string.IsNullOrWhiteSpace(normalisedNatalCphh) && normalisedNatalCphh.Length != 11)
-        {
-            ModelState.AddModelError("Bab.NatalCphh", "Enter CPHH as 11 digits in the format NN/NNN/NNNN/NN.");
-            SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
-            await LoadAsync();
-            Bab.NatalCphh = normalisedNatalCphh;
-            return Page();
-        }
-
-        Bab.NatalCphh = string.IsNullOrWhiteSpace(normalisedNatalCphh) ? null : normalisedNatalCphh;
-
-        if (Origin != "P")
-        {
-            Bab.NatalCphh = Bab.TracedName = Bab.TracedAddress1 =
-                Bab.TracedAddress2 = Bab.TracedAddress3 = Bab.TracedPostcode = null;
-
-            // Legacy EmptyPurchaseFields: changing Origin away from Purchased on this tab also
-            // clears the VLA tab's Purchase Date/County/Age fields, even though they aren't
-            // rendered here — both pages clear the same shared session Case row.
-            await ClearPurchaseFieldsIfPresentAsync();
-        }
+        if (await NormaliseBabFieldsAsync() is { } invalidPage)
+            return invalidPage;
 
         // Cross-tab staging (restores legacy's "one session, one commit" model): stage this
         // tab's fields and commit through CommitAllAsync regardless of whether a BAB row already
@@ -139,24 +120,14 @@ public class BabModel(
         draft.HasPendingChanges = true;
         await sessionState.SetAsync(draft);
 
-        var userId = await currentUser.GetUserIdAsync();
-        var (failureRedirect, commitOutcome) = await CaseCommitHelper.CommitAllAsync(
-            this, caseEditOrchestration, Rbse, userId,
-            result => $"Unable to save BAB changes: {result}.");
-        if (failureRedirect is not null)
-            return failureRedirect;
-
-        if (CaseCommitHelper.TryStageWarnings(this, commitOutcome!, Rbse) is { } warningRedirect)
-            return warningRedirect;
-
         // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx on a fully successful
         // save, clearing the session case state — not back to the tab the user was on.
-        return RedirectToPage("/Home");
+        return await CommitStagedChangesOnlyAsync();
     }
 
     /// <summary>Commits whatever is already staged for this RBSE across every tab, without
-    /// touching BAB's own fields — used when this tab's own fields are read-only (see
-    /// <see cref="OnPostSaveBabAsync"/>).</summary>
+    /// touching BAB's own fields — also the tail of <see cref="OnPostSaveBabAsync"/>, and used there
+    /// alone when this tab's own fields are read-only.</summary>
     private async Task<IActionResult> CommitStagedChangesOnlyAsync()
     {
         var userId = await currentUser.GetUserIdAsync();
@@ -170,6 +141,36 @@ public class BabModel(
             return warningRedirect;
 
         return RedirectToPage("/Home");
+    }
+
+    /// <summary>Validates and normalises the posted CPHH and clears Purchased-only fields. Returns the
+    /// page to redisplay when the CPHH is invalid, otherwise null.</summary>
+    private async Task<IActionResult?> NormaliseBabFieldsAsync()
+    {
+        var normalisedNatalCphh = CphhNormalizer.Normalize(Bab.NatalCphh);
+        if (!string.IsNullOrWhiteSpace(normalisedNatalCphh) && normalisedNatalCphh.Length != 11)
+        {
+            ModelState.AddModelError("Bab.NatalCphh", "Enter CPHH as 11 digits in the format NN/NNN/NNNN/NN.");
+            SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+            await LoadAsync();
+            Bab.NatalCphh = normalisedNatalCphh;
+            return Page();
+        }
+
+        Bab.NatalCphh = string.IsNullOrWhiteSpace(normalisedNatalCphh) ? null : normalisedNatalCphh;
+
+        if (Origin != "P")
+        {
+            Bab.NatalCphh = Bab.TracedName = Bab.TracedAddress1 =
+                Bab.TracedAddress2 = Bab.TracedAddress3 = Bab.TracedPostcode = null;
+
+            // Legacy EmptyPurchaseFields: changing Origin away from Purchased on this tab also
+            // clears the VLA tab's Purchase Date/County/Age fields, even though they aren't
+            // rendered here — both pages clear the same shared session Case row.
+            await ClearPurchaseFieldsIfPresentAsync();
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -198,28 +199,8 @@ public class BabModel(
         if (!EvaluateLegacyBabEditPermission(currentBirthDate, currentBab))
             return RedirectToPage(targetPage, new { rbse = Rbse });
 
-        var normalisedNatalCphh = CphhNormalizer.Normalize(Bab.NatalCphh);
-        if (!string.IsNullOrWhiteSpace(normalisedNatalCphh) && normalisedNatalCphh.Length != 11)
-        {
-            ModelState.AddModelError("Bab.NatalCphh", "Enter CPHH as 11 digits in the format NN/NNN/NNNN/NN.");
-            SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
-            await LoadAsync();
-            Bab.NatalCphh = normalisedNatalCphh;
-            return Page();
-        }
-
-        Bab.NatalCphh = string.IsNullOrWhiteSpace(normalisedNatalCphh) ? null : normalisedNatalCphh;
-
-        if (Origin != "P")
-        {
-            Bab.NatalCphh = Bab.TracedName = Bab.TracedAddress1 =
-                Bab.TracedAddress2 = Bab.TracedAddress3 = Bab.TracedPostcode = null;
-
-            // Legacy EmptyPurchaseFields: changing Origin away from Purchased on this tab also
-            // clears the VLA tab's Purchase Date/County/Age fields, even though they aren't
-            // rendered here — both pages clear the same shared session Case row.
-            await ClearPurchaseFieldsIfPresentAsync();
-        }
+        if (await NormaliseBabFieldsAsync() is { } invalidPage)
+            return invalidPage;
 
         var rowStamp = string.IsNullOrEmpty(rowStampBase64) ? [] : Convert.FromBase64String(rowStampBase64);
         var edit = new EditCaseBabCommand(
@@ -397,45 +378,5 @@ public class BabModel(
             || purchaseAgeInMonths.HasValue;
 
         return (birthDate, origin, hasPurchaseData);
-    }
-
-    public class BabFormViewModel
-    {
-        public string? NatalCphh { get; set; }
-        public string? Notes { get; set; }
-        public string? TracedName { get; set; }
-        public string? TracedAddress1 { get; set; }
-        public string? TracedAddress2 { get; set; }
-        public string? TracedAddress3 { get; set; }
-        public string? TracedPostcode { get; set; }
-        public string? FeedRisk { get; set; }
-        public string? HorizontalRisk { get; set; }
-        public string? MaternalRisk { get; set; }
-
-        public static BabFormViewModel FromRecord(CaseBabRecord r) => new()
-        {
-            NatalCphh      = r.NatalCphh,      Notes          = r.Notes,
-            TracedName     = r.TracedName,      TracedAddress1 = r.TracedAddress1,
-            TracedAddress2 = r.TracedAddress2,  TracedAddress3 = r.TracedAddress3,
-            TracedPostcode = r.TracedPostcode,  FeedRisk       = r.FeedRisk,
-            HorizontalRisk = r.HorizontalRisk,  MaternalRisk   = r.MaternalRisk
-        };
-
-        /// <summary>Overlays a staged-but-not-yet-committed BAB edit (from another tab's
-        /// cross-tab draft) so revisiting this tab shows the pending edit instead of the
-        /// last-committed DB values.</summary>
-        public void ApplyStagedCommand(EditCaseBabCommand c)
-        {
-            NatalCphh = c.NatalCphh;
-            Notes = c.Notes;
-            TracedName = c.TracedName;
-            TracedAddress1 = c.TracedAddress1;
-            TracedAddress2 = c.TracedAddress2;
-            TracedAddress3 = c.TracedAddress3;
-            TracedPostcode = c.TracedPostcode;
-            FeedRisk = c.FeedRisk;
-            HorizontalRisk = c.HorizontalRisk;
-            MaternalRisk = c.MaternalRisk;
-        }
     }
 }
