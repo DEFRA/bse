@@ -3867,8 +3867,9 @@ button, input, select, textarea, .bse-inline-row-button { font-family: inherit; 
 
 /* Pagination: GOV.UK stacks the pager in a column on phones; keep it in a wrapping row with 24px+ targets. */
 @media (max-width: 40.0525em) {
-    .bse-pagination { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 0.25rem 0.5rem; }
-    .bse-pagination .govuk-pagination__list { margin: 0; }
-    .bse-pagination .govuk-pagination__prev, .bse-pagination .govuk-pagination__next { margin: 0; }
-    .bse-pagination .govuk-pagination__link { display: inline-flex; align-items: center; justify-content: center; min-width: 2.25rem; min-height: 2.25rem; }
+    .bse-pagination { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 0.25rem; }
+    .bse-pagination .govuk-pagination__list { display: flex; flex-wrap: wrap; gap: 0.25rem; margin: 0; }
+    .bse-pagination .govuk-pagination__item { min-width: 0; margin: 0; padding: 0; }
+    .bse-pagination .govuk-pagination__prev, .bse-pagination .govuk-pagination__next { margin: 0; padding: 0; }
+    .bse-pagination .govuk-pagination__link { display: inline-flex; align-items: center; justify-content: center; min-width: 2rem; min-height: 2rem; }
 }
