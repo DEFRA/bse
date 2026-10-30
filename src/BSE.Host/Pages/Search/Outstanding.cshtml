@@ -69,8 +69,9 @@
 
         <div class="bse-farm-legacy__row">
             <div class="bse-farm-legacy__field bse-outstanding-legacy__field--date bse-outstanding-legacy__field--wide">
-                <span id="form-a-date-label" class="govuk-label">Form A Date Between</span>
-                <div class="bse-outstanding-legacy__date-range" role="group" aria-labelledby="form-a-date-label">
+                <fieldset class="govuk-fieldset">
+                <legend class="govuk-label">Form A Date Between</legend>
+                <div class="bse-outstanding-legacy__date-range">
                     <div class="govuk-form-group @(Model.Filter.EarliestFormADateError is not null ? "govuk-form-group--error" : "")">
                         <label asp-for="Filter.EarliestFormADate" class="govuk-visually-hidden">Form A date from</label>
                         @if (Model.Filter.EarliestFormADateError is not null)
@@ -99,7 +100,6 @@
 
         <div class="bse-farm-legacy__row bse-outstanding-legacy__row--actions">
             <div class="bse-farm-legacy__field bse-farm-legacy__field--dealer-left bse-outstanding-legacy__field--include">
-                <span class="govuk-label" aria-hidden="true">Include Non-GB Cases?</span>
                 <div class="govuk-checkboxes" data-module="govuk-checkboxes">
                     <div class="govuk-checkboxes__item">
                         <input asp-for="Filter.IncludeNonGb" class="govuk-checkboxes__input bse-farm-legacy__dealer-checkbox" />
