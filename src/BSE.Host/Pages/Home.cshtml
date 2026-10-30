@@ -57,16 +57,16 @@
                             </p>
                         }
 
-                        <div class="bse-home-batch-entry" aria-describedby="@(hasBatchError ? "batch-error batch-instructions" : "batch-instructions")">
+                        <div class="bse-home-batch-entry">
                             <label class="govuk-label govuk-!-margin-bottom-0" for="batch-year">Enter Batch Number</label>
 
                             <input id="batch-year" name="BatchYear" type="text" inputmode="numeric"
-                                   form="case-entry-form" aria-label="Batch year" aria-describedby="batch-hint@(hasBatchError ? " batch-error" : "")"
+                                   form="case-entry-form" aria-label="Batch year" aria-describedby="batch-instructions@(hasBatchError ? " batch-error" : "")"
                                    class="govuk-input bse-home-batch-year @(batchYearError is not null || Model.BatchNotFound ? "govuk-input--error" : "")"
                                    value="@Model.BatchYear" autocomplete="off" />
 
                             <input id="batch-number" name="BatchNumber" type="text" inputmode="numeric"
-                                   form="case-entry-form" aria-label="Batch number" aria-describedby="batch-hint@(hasBatchError ? " batch-error" : "")"
+                                   form="case-entry-form" aria-label="Batch number" aria-describedby="batch-instructions@(hasBatchError ? " batch-error" : "")"
                                    class="govuk-input bse-home-batch-number @(batchNumberError is not null || Model.BatchNotFound ? "govuk-input--error" : "")"
                                    value="@Model.BatchNumber" autocomplete="off" />
 
