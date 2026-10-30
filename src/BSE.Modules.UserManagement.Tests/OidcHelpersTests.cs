@@ -121,7 +121,10 @@ public sealed class OidcHelpersTests
     [Fact]
     public void RewriteRedirectUriHost_ReturnsOriginal_WhenRedirectUriIsNotAbsolute()
     {
-        const string redirectUri = "/signin-oidc?code=abc";
+        // No leading slash: Uri.TryCreate(..., UriKind.Absolute, ...) treats a leading "/" as an
+        // implicit file-path-style absolute URI on Linux (but not Windows), so this string must
+        // avoid that platform quirk to reliably exercise the "not absolute" branch everywhere.
+        const string redirectUri = "signin-oidc?code=abc";
         var publicOrigin = new Uri("https://dev-bse.azure.defra.cloud");
 
         var result = OidcHelpers.RewriteRedirectUriHost(redirectUri, publicOrigin);
