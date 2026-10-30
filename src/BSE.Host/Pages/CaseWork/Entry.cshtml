@@ -883,6 +883,28 @@
         overflow-x: auto;
     }
 
+    /* Between 1200px and 1500px the columns are narrower than label + input, so wrap the label above its field. */
+    @@media (max-width: 1500px) {
+        .bse-casework-entry-left .govuk-form-group,
+        .bse-casework-entry-middle .govuk-form-group {
+            flex-wrap: wrap !important;
+        }
+
+        .bse-casework-entry-left .govuk-form-group:not(.bse-casework-entry-minute-sent-row) > .govuk-label,
+        .bse-casework-entry-middle .govuk-form-group:not(.bse-casework-entry-minute-sent-row) > .govuk-label {
+            flex: 1 1 100% !important;
+        }
+
+        .bse-casework-entry-left .govuk-summary-list__key {
+            width: 6.5rem;
+        }
+
+        .bse-casework-entry-left .govuk-summary-list__value {
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }
+    }
+
     /* WCAG 1.4.10: stack the three columns and release fixed widths on narrow screens. */
     @@media (max-width: 40.0525em) {
         .bse-casework-entry-row, .bse-casework-entry-main > .govuk-grid-row { flex-direction: column; column-gap: 0; }
