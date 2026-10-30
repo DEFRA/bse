@@ -3878,3 +3878,8 @@ button, input, select, textarea, .bse-inline-row-button { font-family: inherit; 
 
 /* The eartag help icon sits outside the GOV.UK text wrapper, so inherit would give the browser default font. */
 .bse-eartag-help__icon { font-family: "GDS Transport", arial, sans-serif; }
+
+/* The herd size grid is 1183px wide; scroll it inside its own area below 1200px instead of the whole page. */
+@media (max-width: 1200px) {
+    .case-farm-herd-table { display: block; max-width: 100%; overflow-x: auto; position: relative; }
+}

@@ -947,6 +947,13 @@
         }
     }
 
+    /* When the columns stack (up to 1200px) the post-2000 warning row must wrap instead of pushing the page wider. */
+    @@media (max-width: 1200px) {
+        .bse-casework-entry-post2000-row { flex-wrap: wrap; }
+        .bse-casework-entry-post2000-label,
+        .bse-casework-entry-post2000-row .bse-casework-entry-post2000-warning-inline { white-space: normal; }
+    }
+
     /* WCAG 1.4.10: stack the three columns and release fixed widths on narrow screens. */
     @@media (max-width: 40.0525em) {
         .bse-casework-entry-row, .bse-casework-entry-main > .govuk-grid-row { flex-direction: column; column-gap: 0; }
