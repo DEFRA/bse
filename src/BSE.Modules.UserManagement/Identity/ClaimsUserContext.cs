@@ -9,7 +9,7 @@ namespace BSE.Modules.UserManagement.Identity;
 /// Registered as scoped so it is recreated per request.
 /// </summary>
 /// <remarks>
-/// Email claim resolution order (matches Entra ID SAML/OIDC assertion output):
+/// Email claim resolution order (matches Entra ID OIDC token output):
 /// 1. <c>emailaddress</c> — canonical internal claim added by AcsCommandResultCreated
 /// 2. <c>ClaimTypes.Email</c> — standard .NET email claim type
 /// 3. <c>preferred_username</c> — Azure AD OIDC fallback
@@ -27,7 +27,7 @@ public sealed class ClaimsUserContext : IUserContext
     public const string BseGroupIdClaimType = "bse:groupId";
 
     // Canonical internal claim for the user's email / UPN — added by AcsCommandResultCreated
-    // from the Entra ID SAML assertion. Mirrors the reference ExtractEmail priority order.
+    // from the Entra ID OIDC token. Mirrors the reference ExtractEmail priority order.
     public const string EmailClaimType = "emailaddress";
 
     private readonly ClaimsPrincipal _principal;
