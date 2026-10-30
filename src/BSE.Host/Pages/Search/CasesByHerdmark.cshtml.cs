@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace BSE.Host.Pages.Search;
 
 [Authorize]
-public class CasesByHerdmarkModel : PageModel
+public class CasesByHerdmarkModel : PageModel, ICaseDetailResultsModel
 {
     private const string DateTimeFormat = "dd/MM/yyyy HH:mm:ss";
 

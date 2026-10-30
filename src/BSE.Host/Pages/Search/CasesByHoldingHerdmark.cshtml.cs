@@ -10,7 +10,7 @@ using BSE.SharedKernel;
 namespace BSE.Host.Pages.Search;
 
 [Authorize]
-public class CasesByHoldingHerdmarkModel : PageModel
+public class CasesByHoldingHerdmarkModel : PageModel, ICaseDetailResultsModel
 {
     private const string DateTimeFormat = "dd/MM/yyyy HH:mm:ss";
 
