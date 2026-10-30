@@ -3816,8 +3816,10 @@ img, svg, video { max-width: 100%; height: auto; }
     .bse-pagination { flex-wrap: wrap; }
 }
 
-/* Wide tables scroll inside their own wrapper, not the whole page. */
-[class*="table-wrap"] { max-width: 100%; overflow-x: auto; }
+/* Wide tables scroll inside their own wrapper, not the whole page. Desktop keeps the full-window results width. */
+@media (max-width: 40.0525em) {
+    [class*="table-wrap"] { max-width: 100%; overflow-x: auto; }
+}
 
 /* Form controls and buttons must inherit the GOV.UK typeface, not the browser default. */
 button, input, select, textarea, .bse-inline-row-button { font-family: inherit; }
