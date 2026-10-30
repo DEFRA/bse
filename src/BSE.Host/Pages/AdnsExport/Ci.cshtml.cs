@@ -14,7 +14,7 @@ namespace BSE.Host.Pages.AdnsExport;
 [Authorize(Policy = "DEFRAMaintenance")]
 public class CiModel(
     IAdnsExportService adnsExportService,
-    IOptions<AdnsMsGraphOptions> msGraphOptions) : PageModel
+    IOptions<AdnsMsGraphOptions> msGraphOptions) : PageModel, IAdnsExportPageModel
 {
     private const string PreviewTempDataKey = "AdnsCiPreview";
     private readonly AdnsMsGraphOptions _msGraphOptions = msGraphOptions.Value;

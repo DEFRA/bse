@@ -1,0 +1,38 @@
+@model BSE.Host.Pages.AdnsExport.IAdnsExportPageModel
+<hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
+
+<div class="govuk-grid-row">
+    <div class="govuk-grid-column-one-half">
+        <p class="govuk-body">Starting ADNS Reference: @Model.Preview!.StartAdnsReference</p>
+    </div>
+    <div class="govuk-grid-column-one-half">
+        <p class="govuk-body">Ending ADNS Reference: @Model.Preview.EndAdnsReference</p>
+    </div>
+</div>
+
+<table class="govuk-table">
+    <caption class="govuk-visually-hidden">Generated report summary by ADNS region</caption>
+    <thead class="govuk-table__head">
+        <tr class="govuk-table__row">
+            <th scope="col" class="govuk-table__header">ADNS Number</th>
+            <th scope="col" class="govuk-table__header">Region Name</th>
+            <th scope="col" class="govuk-table__header">Reported Cases</th>
+        </tr>
+    </thead>
+    <tbody class="govuk-table__body">
+        @foreach (var s in Model.Preview.Summary)
+        {
+            var firstNumber = Model.Preview.Cases
+                .Where(c => c.AdnsRegionId == s.AdnsRegionId)
+                .Select(c => c.AdnsNumber)
+                .OrderBy(n => n)
+                .FirstOrDefault();
+
+            <tr class="govuk-table__row">
+                <td class="govuk-table__cell">@firstNumber.ToString("00000")</td>
+                <td class="govuk-table__cell">@s.AdnsRegionName</td>
+                <td class="govuk-table__cell">@s.CasesCount</td>
+            </tr>
+        }
+    </tbody>
+</table>

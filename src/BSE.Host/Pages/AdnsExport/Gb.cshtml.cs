@@ -13,7 +13,7 @@ namespace BSE.Host.Pages.AdnsExport;
 [Authorize(Policy = "DEFRAMaintenance")]
 public class GbModel(
     IAdnsExportService adnsExportService,
-    IOptions<AdnsMsGraphOptions> msGraphOptions) : PageModel
+    IOptions<AdnsMsGraphOptions> msGraphOptions) : PageModel, IAdnsExportPageModel
 {
     private const int PageSize = 10;
     private const string PreviewTempDataKey = "AdnsGbPreview";

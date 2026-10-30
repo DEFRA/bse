@@ -1,0 +1,33 @@
+@model BSE.Host.Pages.AdnsExport.IAdnsExportPageModel
+<h1 class="govuk-heading-l">@ViewData["Title"]</h1>
+<nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="govuk-breadcrumbs__list">
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
+        <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/AdnsExport/Menu">ADNS export</a></li>
+        <li class="govuk-breadcrumbs__list-item" aria-current="page">@ViewData["Crumb"]</li>
+    </ol>
+</nav>
+
+@if (!ViewContext.ModelState.IsValid || !string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="govuk-error-summary" data-module="govuk-error-summary">
+        <div role="alert">
+            <h2 class="govuk-error-summary__title">There is a problem</h2>
+            <div class="govuk-error-summary__body">
+                <ul class="govuk-list govuk-error-summary__list">
+                    @foreach (var entry in ViewContext.ModelState.Where(x => x.Value?.Errors.Count > 0))
+                    {
+                        foreach (var err in entry.Value!.Errors)
+                        {
+                            <li>@err.ErrorMessage</li>
+                        }
+                    }
+                    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+                    {
+                        <li>@Model.ErrorMessage</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}

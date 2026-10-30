@@ -14,7 +14,7 @@ namespace BSE.Host.Pages.AdnsExport;
 [Authorize(Policy = "DEFRAMaintenance")]
 public class NiModel(
     IAdnsExportService adnsExportService,
-    IOptions<AdnsMsGraphOptions> msGraphOptions) : PageModel
+    IOptions<AdnsMsGraphOptions> msGraphOptions) : PageModel, IAdnsExportPageModel
 {
     private const string DateFormat = "dd/MM/yyyy";
 
@@ -61,7 +61,7 @@ public class NiModel(
     public string? ErrorMessage { get; private set; }
     private readonly AdnsMsGraphOptions _msGraphOptions = msGraphOptions.Value;
 
-    public string FromAddress => _msGraphOptions.FromAddress;
+    public string FromEmailAddress => _msGraphOptions.FromAddress;
     public string DefaultToEmailAddress => _msGraphOptions.ToAddress;
 
     public IReadOnlyList<NiGridRow> CurrentRows() =>
