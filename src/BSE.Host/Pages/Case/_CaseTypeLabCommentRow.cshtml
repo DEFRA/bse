@@ -1,0 +1,21 @@
+@model BSE.Host.Pages.Case.ICaseEditFormPage
+@{
+    static bool IsSelected(string? optionCode, string? currentValue) =>
+        string.Equals(optionCode, currentValue, StringComparison.OrdinalIgnoreCase);
+}
+            <div class="defra-legacy-grid">
+                <div class="defra-legacy-field">
+                    <label asp-for="Case.CaseType" class="govuk-label">Case type</label>
+                    <select asp-for="Case.CaseType" class="govuk-select defra-legacy-input--sm">
+                        <option value="">-- Select --</option>
+                        @foreach (var o in Model.CaseTypeOptions)
+                        {
+                            <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.CaseType)">@o.Description</option>
+                        }
+                    </select>
+                </div>
+                <div class="defra-legacy-field">
+                    <label asp-for="Case.LabComment" class="govuk-label">Lab comment</label>
+                    <textarea asp-for="Case.LabComment" class="govuk-textarea defra-legacy-input--sm" rows="2" maxlength="255"></textarea>
+                </div>
+            </div>

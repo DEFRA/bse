@@ -23,7 +23,7 @@ public class DefraEditModel(
     ILookupDataService lookups,
     ICaseWorkRepository caseWorkRepository,
     IBatchRepository batchRepository,
-    IConfiguration configuration) : PageModel
+    IConfiguration configuration) : PageModel, ICaseEditFormPage
 {
     private const string BirthDateKey = "Case.BirthDate";
 

@@ -30,7 +30,7 @@ public class EditModel(
     ICaseDraftDiscardService caseDraftDiscard,
     ICaseEditOrchestrationService caseEditOrchestration,
     IBatchRepository batchRepository,
-    IConfiguration configuration) : PageModel
+    IConfiguration configuration) : PageModel, ICaseEditFormPage
 {
     private const string SpolSiteUrlKey = "SpolSiteUrl";
 
