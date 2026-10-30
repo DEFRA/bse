@@ -27,9 +27,8 @@ using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
-using Sustainsys.Saml2;
-using Sustainsys.Saml2.AspNetCore2;
-using Sustainsys.Saml2.Metadata;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.Identity.Web;
 using Serilog;
 using Serilog.Events;
 using Serilog.Formatting.Json;
@@ -172,11 +171,11 @@ try
     // ── Authentication ──────────────────────────────────────────────────────────
     // Two paths:
     //   Authentication:BypassEnabled = true  — DevelopmentAuthHandler (local, no Entra)
-    //   Authentication:BypassEnabled = false — SAML 2.0 via Sustainsys + Entra ID
+    //   Authentication:BypassEnabled = false — OIDC via Microsoft.Identity.Web + Entra ID
     //
-    // SAML config is read from the Saml2 section in appsettings.json /
-    // appsettings.{Environment}.json or environment variables SAML2__*.
-    
+    // OIDC config is read from the AzureAd section in appsettings.json /
+    // appsettings.{Environment}.json or environment variables AzureAd__*.
+
     var bypassAuthentication = builder.Environment.IsDevelopment()
         && builder.Configuration.GetValue<bool>("Authentication:BypassEnabled");
 
@@ -193,8 +192,8 @@ try
             .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
     }
 
-    builder.Services.Configure<Saml2Configuration>(
-        builder.Configuration.GetSection(Saml2Configuration.SectionName));
+    builder.Services.Configure<AzureAdOidcConfiguration>(
+        builder.Configuration.GetSection(AzureAdOidcConfiguration.SectionName));
 
     builder.Services.AddSingleton<ISignInSessionRegistry, SignInSessionRegistry>();
 
@@ -230,142 +229,119 @@ try
     else
     {
         // ── SAML 2.0 / Entra ID ────────────────────────────────────────────
-        var saml2Config = builder.Configuration
-            .GetSection(Saml2Configuration.SectionName)
-            .Get<Saml2Configuration>() ?? new Saml2Configuration();
+        var azureAdConfig = builder.Configuration
+            .GetSection(AzureAdOidcConfiguration.SectionName)
+            .Get<AzureAdOidcConfiguration>() ?? new AzureAdOidcConfiguration();
 
         builder.Services
             .AddAuthentication(options =>
             {
                 options.DefaultScheme          = CookieAuthenticationDefaults.AuthenticationScheme;
-                // Cookie challenge runs OnRedirectToLogin (timeout page, else Entra); a Saml2 default would skip it.
+                // Cookie challenge runs OnRedirectToLogin (timeout page, else Entra); an OIDC default would skip it.
                 options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
             })
-            .AddCookie(options =>
-            {
-                AuthCookieConfiguration.Apply(options, AuthCookieName, idleTimeout, cookieSecurePolicy);
-
-                options.Events.OnRedirectToLogin = async ctx =>
-
+            .AddMicrosoftIdentityWebApp(
+                options =>
                 {
-                    var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>()
-                        .CreateLogger("AuthSecurity");
-                    logger.LogWarning(
-                        "Authentication challenge redirect for {Path}. ReturnUrl={ReturnUrl}",
-                        ctx.Request.Path.Value,
-                        ctx.Request.Query["ReturnUrl"].ToString());
+                options.Instance              = azureAdConfig.Instance;
+                options.TenantId              = azureAdConfig.TenantId;
+                options.ClientId              = azureAdConfig.ClientId;
+                options.ClientSecret          = azureAdConfig.ClientSecret;
+                options.CallbackPath          = azureAdConfig.CallbackPath;
+                options.SignedOutCallbackPath = azureAdConfig.SignedOutCallbackPath;
 
-                    // A stale auth cookie means the sign-in timed out: tell the user instead of jumping straight to Entra.
-                    if (ctx.Request.Cookies.ContainsKey(AuthCookieName)
-                        && ctx.Request.Headers.Accept.ToString().Contains("text/html", StringComparison.OrdinalIgnoreCase))
-                    {
-                        ctx.Response.Redirect(SessionErrorPath);
-                        return;
-                    }
+                // Pin the public origin so the correct redirect_uri is sent to Entra ID
+                // regardless of which port/protocol the request arrives on locally, and so the
+                // post-authentication redirect never leaks the raw azurewebsites.net hostname
+                // (Azure Front Door can resolve Request.Host to it before UseForwardedHeaders() corrects it).
+                var publicOrigin = !string.IsNullOrWhiteSpace(azureAdConfig.PublicOrigin)
+                    ? new Uri(azureAdConfig.PublicOrigin)
+                    : null;
 
-                    // Return to the page that triggered the challenge after re-authentication (GET only).
-                    var returnUri = HttpMethods.IsGet(ctx.Request.Method)
-                        ? $"{ctx.Request.PathBase}{ctx.Request.Path}{ctx.Request.QueryString}"
-                        : HomePath;
-
-                    await ctx.HttpContext.ChallengeAsync(
-                        Saml2Defaults.Scheme,
-                        new AuthenticationProperties
-                        {
-                            RedirectUri = returnUri
-                        });
-                };
-                // Redirect authenticated users with insufficient permissions to Unauthorized, not a 403.
-                options.Events.OnRedirectToAccessDenied = ctx =>
+                var originalOnRedirectToIdentityProvider = options.Events.OnRedirectToIdentityProvider;
+                options.Events.OnRedirectToIdentityProvider = async ctx =>
                 {
-                    var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>()
-                        .CreateLogger("AuthSecurity");
-                    logger.LogWarning(
-                        "Access denied redirect for {Path} (User={User})",
-                        ctx.Request.Path.Value,
-                        ctx.HttpContext.User.Identity?.Name ?? "unknown");
+                    // Without ForceAuthn (prompt=login), Entra's SSO session silently re-signs the
+                    // user in after the idle timeout.
+                    if (azureAdConfig.ForceAuthn)
+                        ctx.ProtocolMessage.Prompt = "login";
 
-                    ctx.Response.Redirect(UnauthorizedPath);
-                    return Task.CompletedTask;
-                };
-            })
-            .AddSaml2(options =>
-            {
-                options.SPOptions.EntityId = new EntityId(saml2Config.SPEntityId);
+                    ctx.ProtocolMessage.RedirectUri =
+                        OidcHelpers.RewriteRedirectUriHost(ctx.ProtocolMessage.RedirectUri, publicOrigin);
 
-                // Pin the public origin so the correct ACS Reply URL is sent to Entra ID
-                // regardless of which port/protocol the request arrives on locally.
-                if (!string.IsNullOrWhiteSpace(saml2Config.PublicOrigin))
-                    options.SPOptions.PublicOrigin = new Uri(saml2Config.PublicOrigin);
-
-                // SP signing certificate — placeholder; wire Key Vault reference before production deploy.
-                // Leaving ServiceCertificates empty is acceptable for local SAML testing only.
-                // Production tracking item: once saml2Config.SPCertificateThumbprint is provisioned, resolve the
-                // certificate from the certificate store/Key Vault and add it to options.SPOptions.ServiceCertificates.
-
-                var idp = new IdentityProvider(
-                    new EntityId(saml2Config.IdPEntityId),
-                    options.SPOptions)
-                {
-                    MetadataLocation = saml2Config.IdPMetadataUrl,
-                    LoadMetadata     = true,
+                    if (originalOnRedirectToIdentityProvider is not null)
+                        await originalOnRedirectToIdentityProvider(ctx);
                 };
 
-                options.IdentityProviders.Add(idp);
-
-                // Without ForceAuthn, Entra's SSO session silently re-signs the user in after the idle timeout.
-                if (saml2Config.ForceAuthn)
-                {
-                    options.Notifications.AuthenticationRequestCreated = (request, _, _) =>
-                    {
-                        request.ForceAuthentication = true;
-                    };
-                }
-
-                // Extract the user's email from the Entra ID SAML assertion and add it
+                // Extract the user's email from the Entra ID OIDC token and add it
                 // as the canonical 'emailaddress' claim so GroupClaimsTransformation
                 // can look up the user in the database.
-                //
-                // Also rewrite the post-ACS Location redirect to use PublicOrigin.
-                // Sustainsys builds the redirect URL from Request.Host, which behind
-                // Azure Front Door can resolve to devbsewebaw1401.azurewebsites.net
-                // before UseForwardedHeaders() corrects Request.Host. This guarantees
-                // the 303 Location header always uses dev-bse.azure.defra.cloud.
-                // Assertion payloads are never logged (GDPR / Defra SDS Logging Standards).
-                options.Notifications.AcsCommandResultCreated = (result, _) =>
+                // Token payloads are never logged (GDPR / Defra SDS Logging Standards).
+                var originalOnTokenValidated = options.Events.OnTokenValidated;
+                options.Events.OnTokenValidated = async ctx =>
                 {
-                    // Fix post-ACS redirect hostname ----------------------------
-                    if (!string.IsNullOrWhiteSpace(saml2Config.PublicOrigin)
-                        && result.Location is { IsAbsoluteUri: true } location)
+                    if (ctx.Principal?.Identity is System.Security.Claims.ClaimsIdentity identity)
                     {
-                        var origin = new Uri(saml2Config.PublicOrigin);
-                        if (!string.Equals(location.Host, origin.Host, StringComparison.OrdinalIgnoreCase))
+                        var email = OidcHelpers.ResolveEmailClaim(identity);
+
+                        if (!string.IsNullOrWhiteSpace(email)
+                            && !identity.HasClaim(c => c.Type == ClaimsUserContext.EmailClaimType))
                         {
-                            result.Location = new UriBuilder(location)
-                            {
-                                Scheme = origin.Scheme,
-                                Host   = origin.Host,
-                                Port   = origin.IsDefaultPort ? -1 : origin.Port
-                            }.Uri;
+                            identity.AddClaim(new System.Security.Claims.Claim(ClaimsUserContext.EmailClaimType, email));
                         }
                     }
 
-                    // Extract email claim ---------------------------------------
-                    if (result.Principal?.Identity is not System.Security.Claims.ClaimsIdentity identity)
-                        return;
-
-                    var email =
-                        identity.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
-                        ?? identity.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value
-                        ?? identity.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-                    if (!string.IsNullOrWhiteSpace(email)
-                        && !identity.HasClaim(c => c.Type == ClaimsUserContext.EmailClaimType))
-                    {
-                        identity.AddClaim(new System.Security.Claims.Claim(ClaimsUserContext.EmailClaimType, email));
-                    }
+                    if (originalOnTokenValidated is not null)
+                        await originalOnTokenValidated(ctx);
                 };
-            });
+                },
+                cookieOptions =>
+                {
+                    AuthCookieConfiguration.Apply(cookieOptions, AuthCookieName, idleTimeout, cookieSecurePolicy);
+
+                    cookieOptions.Events.OnRedirectToLogin = async ctx =>
+                    {
+                        var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>()
+                            .CreateLogger("AuthSecurity");
+                        logger.LogWarning(
+                            "Authentication challenge redirect for {Path}. ReturnUrl={ReturnUrl}",
+                            ctx.Request.Path.Value,
+                            ctx.Request.Query["ReturnUrl"].ToString());
+
+                        // A stale auth cookie means the sign-in timed out: tell the user instead of jumping straight to Entra.
+                        if (ctx.Request.Cookies.ContainsKey(AuthCookieName)
+                            && ctx.Request.Headers.Accept.ToString().Contains("text/html", StringComparison.OrdinalIgnoreCase))
+                        {
+                            ctx.Response.Redirect(SessionErrorPath);
+                            return;
+                        }
+
+                        // Return to the page that triggered the challenge after re-authentication (GET only).
+                        var returnUri = HttpMethods.IsGet(ctx.Request.Method)
+                            ? $"{ctx.Request.PathBase}{ctx.Request.Path}{ctx.Request.QueryString}"
+                            : HomePath;
+
+                        await ctx.HttpContext.ChallengeAsync(
+                            OpenIdConnectDefaults.AuthenticationScheme,
+                            new AuthenticationProperties
+                            {
+                                RedirectUri = returnUri
+                            });
+                    };
+                    // Redirect authenticated users with insufficient permissions to Unauthorized, not a 403.
+                    cookieOptions.Events.OnRedirectToAccessDenied = ctx =>
+                    {
+                        var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>()
+                            .CreateLogger("AuthSecurity");
+                        logger.LogWarning(
+                            "Access denied redirect for {Path} (User={User})",
+                            ctx.Request.Path.Value,
+                            ctx.HttpContext.User.Identity?.Name ?? "unknown");
+
+                        ctx.Response.Redirect(UnauthorizedPath);
+                        return Task.CompletedTask;
+                    };
+                });
     }
 
     // ── Forwarded headers (service registration) ────────────────────────────────
@@ -450,7 +426,7 @@ try
     // GroupClaimsTransformation currently derives policy claims from a hardcoded switch on luUserGroup.Name
     // Source of truth: docs/Legacy-Page-Level-Access-Control.md (Section 5 access matrix)
     // Redirect authenticated-but-forbidden users to Home instead of returning 403.
-    // Applies to both the dev-bypass path and the SAML path.
+    // Applies to both the dev-bypass path and the OIDC path.
     builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, HomeRedirectAuthorizationHandler>();
 
     var authorizationBuilder = builder.Services.AddAuthorizationBuilder();
@@ -512,7 +488,8 @@ try
             || path.StartsWithSegments(ErrorPath, StringComparison.OrdinalIgnoreCase)
             || path.StartsWithSegments(SessionErrorPath, StringComparison.OrdinalIgnoreCase)
             || path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase)
-            || path.StartsWithSegments("/Saml2", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWithSegments("/signin-oidc", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWithSegments("/signout-callback-oidc", StringComparison.OrdinalIgnoreCase)
             || path.StartsWithSegments("/signin", StringComparison.OrdinalIgnoreCase)
             || path.StartsWithSegments("/signout", StringComparison.OrdinalIgnoreCase);
 
@@ -540,7 +517,8 @@ try
             || path.StartsWithSegments(ErrorPath, StringComparison.OrdinalIgnoreCase)
             || path.StartsWithSegments(SessionErrorPath, StringComparison.OrdinalIgnoreCase)
             || path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase)
-            || path.StartsWithSegments("/Saml2", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWithSegments("/signin-oidc", StringComparison.OrdinalIgnoreCase)
+            || path.StartsWithSegments("/signout-callback-oidc", StringComparison.OrdinalIgnoreCase)
             || path.StartsWithSegments("/signin", StringComparison.OrdinalIgnoreCase)
             || path.StartsWithSegments("/signout", StringComparison.OrdinalIgnoreCase)
             || System.IO.Path.HasExtension(path.Value);
@@ -625,7 +603,7 @@ try
 
         return Results.Challenge(
             new AuthenticationProperties { RedirectUri = HomePath },
-            [Saml2Defaults.Scheme]);
+            [OpenIdConnectDefaults.AuthenticationScheme]);
     }).AllowAnonymous();
 
     app.MapRazorPages();

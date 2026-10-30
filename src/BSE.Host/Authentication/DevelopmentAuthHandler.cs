@@ -34,11 +34,11 @@ public sealed class DevelopmentAuthOptions : AuthenticationSchemeOptions
 }
 
 /// <summary>
-/// Development-only authentication handler. Bypasses Entra ID / SAML.
+/// Development-only authentication handler. Bypasses Entra ID / OIDC.
 /// When UseWindowsIdentity=true reads WindowsIdentity.GetCurrent() (e.g. DEFRA\DS000104 → DS000104)
 /// so the correct [User] row is found automatically without any config change per developer.
 /// Does NOT hardcode roles — emits preferred_username so GroupClaimsTransformation
-/// resolves the role from the [User] table, identical to the production SAML flow.
+/// resolves the role from the [User] table, identical to the production OIDC flow.
 /// </summary>
 public sealed class DevelopmentAuthHandler : AuthenticationHandler<DevelopmentAuthOptions>
 {

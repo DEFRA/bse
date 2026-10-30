@@ -50,6 +50,12 @@ variables:
     value: 'src/BSE.Host/BSE.Host.csproj'
   - name: databaseScriptsPath
     value: 'src/Database'
+# NOTE: Each deployment stage (DEV/TST/PRE/PRD) resolves the OIDC client secret directly from Azure
+# Key Vault via an App Service Key Vault reference: -AzureAd__ClientSecret
+# "@Microsoft.KeyVault(SecretUri=$(oidcClientSecretUri))". The App Service's managed identity must
+# have 'Key Vault Secrets User' (get) access on the referenced vault, and $(oidcClientSecretUri)
+# below is a PLACEHOLDER — replace 'CHANGEME-<env>-kv' with the real Key Vault name/secret URI for
+# each environment before deploying. Never commit the actual secret value to this file.
 
 stages:
 
@@ -181,6 +187,10 @@ stages:
       value: '770a2450-0227-4c62-90c7-4e38537f1102'
     - name: appId
       value: '3eeeb482-eea0-4bb5-85a9-9a6fefb27a23'
+    - name: oidcClientId
+      value: '3eeeb482-eea0-4bb5-85a9-9a6fefb27a23'
+    - name: oidcClientSecretUri
+      value: 'https://devbseinfkv1401.vault.azure.net/secrets/oidc-client-secret/'
     - name: sqlServer
       value: 'devbseinfsq1401.database.windows.net,1433'
     - name: sqlServerHost
@@ -252,10 +262,13 @@ stages:
               runtimeStack: 'DOTNETCORE|10.0'
               deploymentMethod: 'zipDeploy'
               appSettings: >-
-                -Saml2__SPEntityId "https://dev-bse.azure.defra.cloud"
-                -Saml2__PublicOrigin "https://dev-bse.azure.defra.cloud"
-                -Saml2__IdPEntityId "https://sts.windows.net/$(tenantId)/"
-                -Saml2__IdPMetadataUrl "https://login.microsoftonline.com/$(tenantId)/federationmetadata/2007-06/federationmetadata.xml?appid=$(appId)"
+                -AzureAd__Instance "https://login.microsoftonline.com/"
+                -AzureAd__TenantId "$(tenantId)"
+                -AzureAd__ClientId "$(oidcClientId)"
+                -AzureAd__ClientSecret "@Microsoft.KeyVault(SecretUri=$(oidcClientSecretUri))"
+                -AzureAd__CallbackPath "/signin-oidc"
+                -AzureAd__SignedOutCallbackPath "/signout-callback-oidc"
+                -AzureAd__PublicOrigin "https://dev-bse.azure.defra.cloud"
                 -Authentication__BypassEnabled "false"
                 -ConnectionStrings__BSE "Server=tcp:$(sqlServer);Database=$(dbName);Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Managed Identity;"
                 -AdnsMsGraph__MsGraphTenantId "$(tenantId)"
@@ -278,6 +291,10 @@ stages:
       value: '770a2450-0227-4c62-90c7-4e38537f1102'
     - name: appId
       value: '831094e6-109b-4555-b73f-c49e07d2d5d3'
+    - name: oidcClientId
+      value: '831094e6-109b-4555-b73f-c49e07d2d5d3'
+    - name: oidcClientSecretUri
+      value: 'https://tstbseinfkv1401.vault.azure.net/secrets/oidc-client-secret/'
     - name: sqlServer
       value: 'tstbseinfsq1401.database.windows.net,1433'
     - name: sqlServerHost
@@ -349,10 +366,13 @@ stages:
               runtimeStack: 'DOTNETCORE|10.0'
               deploymentMethod: 'zipDeploy'
               appSettings: >-
-                -Saml2__SPEntityId "https://tst-bse.azure.defra.cloud"
-                -Saml2__PublicOrigin "https://tst-bse.azure.defra.cloud"
-                -Saml2__IdPEntityId "https://sts.windows.net/$(tenantId)/"
-                -Saml2__IdPMetadataUrl "https://login.microsoftonline.com/$(tenantId)/federationmetadata/2007-06/federationmetadata.xml?appid=$(appId)"
+                -AzureAd__Instance "https://login.microsoftonline.com/"
+                -AzureAd__TenantId "$(tenantId)"
+                -AzureAd__ClientId "$(oidcClientId)"
+                -AzureAd__ClientSecret "@Microsoft.KeyVault(SecretUri=$(oidcClientSecretUri))"
+                -AzureAd__CallbackPath "/signin-oidc"
+                -AzureAd__SignedOutCallbackPath "/signout-callback-oidc"
+                -AzureAd__PublicOrigin "https://tst-bse.azure.defra.cloud"
                 -Authentication__BypassEnabled "false"
                 -ConnectionStrings__BSE "Server=tcp:$(sqlServer);Database=$(dbName);Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Managed Identity;"
                 -AdnsMsGraph__MsGraphTenantId "$(tenantId)"
@@ -385,6 +405,10 @@ stages:
       value: '770a2450-0227-4c62-90c7-4e38537f1102'
     - name: appId
       value: 'b5bd1613-6e97-466b-b5aa-dfce852f8268'
+    - name: oidcClientId
+      value: 'b5bd1613-6e97-466b-b5aa-dfce852f8268'
+    - name: oidcClientSecretUri
+      value: 'https://prebseinfkv1401.vault.azure.net/secrets/oidc-client-secret/'
     - name: sqlServer
       value: 'prebseinfsq1401.database.windows.net,1433'
     - name: sqlServerHost
@@ -484,10 +508,13 @@ stages:
               runtimeStack: 'DOTNETCORE|10.0'
               deploymentMethod: 'zipDeploy'
               appSettings: >-
-                -Saml2__SPEntityId "https://pre-bse.azure.defra.cloud"
-                -Saml2__PublicOrigin "https://pre-bse.azure.defra.cloud"
-                -Saml2__IdPEntityId "https://sts.windows.net/$(tenantId)/"
-                -Saml2__IdPMetadataUrl "https://login.microsoftonline.com/$(tenantId)/federationmetadata/2007-06/federationmetadata.xml?appid=$(appId)"
+                -AzureAd__Instance "https://login.microsoftonline.com/"
+                -AzureAd__TenantId "$(tenantId)"
+                -AzureAd__ClientId "$(oidcClientId)"
+                -AzureAd__ClientSecret "@Microsoft.KeyVault(SecretUri=$(oidcClientSecretUri))"
+                -AzureAd__CallbackPath "/signin-oidc"
+                -AzureAd__SignedOutCallbackPath "/signout-callback-oidc"
+                -AzureAd__PublicOrigin "https://pre-bse.azure.defra.cloud"
                 -Authentication__BypassEnabled "false"
                 -ConnectionStrings__BSE "Server=tcp:$(sqlServer);Database=$(dbName);Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Managed Identity;"
                 
@@ -516,6 +543,10 @@ stages:
       value: '770a2450-0227-4c62-90c7-4e38537f1102'
     - name: appId
       value: 'a08f1c74-e9de-491b-9b69-30908b3b0e7c'
+    - name: oidcClientId
+      value: 'a08f1c74-e9de-491b-9b69-30908b3b0e7c'
+    - name: oidcClientSecretUri
+      value: 'https://prdbseinfkv1401.vault.azure.net/secrets/oidc-client-secret/'
     - name: sqlServer
       value: 'prdbseinfsq1401.database.windows.net,1433'
     - name: sqlServerHost
@@ -618,10 +649,13 @@ stages:
               runtimeStack: 'DOTNETCORE|10.0'
               deploymentMethod: 'zipDeploy'
               appSettings: >-
-                -Saml2__SPEntityId "https://bse.azure.defra.cloud"
-                -Saml2__PublicOrigin "https://bse.azure.defra.cloud"
-                -Saml2__IdPEntityId "https://sts.windows.net/$(tenantId)/"
-                -Saml2__IdPMetadataUrl "https://login.microsoftonline.com/$(tenantId)/federationmetadata/2007-06/federationmetadata.xml?appid=$(appId)"
+                -AzureAd__Instance "https://login.microsoftonline.com/"
+                -AzureAd__TenantId "$(tenantId)"
+                -AzureAd__ClientId "$(oidcClientId)"
+                -AzureAd__ClientSecret "@Microsoft.KeyVault(SecretUri=$(oidcClientSecretUri))"
+                -AzureAd__CallbackPath "/signin-oidc"
+                -AzureAd__SignedOutCallbackPath "/signout-callback-oidc"
+                -AzureAd__PublicOrigin "https://bse.azure.defra.cloud"
                 -Authentication__BypassEnabled "false"
                 -ConnectionStrings__BSE "Server=tcp:$(sqlServer);Database=$(dbName);Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Managed Identity;"
                 -AdnsMsGraph__MsGraphTenantId "$(tenantId)"
