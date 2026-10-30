@@ -178,7 +178,10 @@ stages:
     and(
       in(dependencies.Build.result, 'Succeeded'),
       eq('${{ parameters.deployToDev }}', true),
-      eq(variables['Build.SourceBranchName'], 'develop')
+      or(
+        eq(variables['Build.SourceBranchName'], 'develop'),
+        eq(variables['Build.SourceBranch'], 'refs/heads/temp/dev-oidc-secret-testing')
+      )
     )
   variables:
     - name: appName
