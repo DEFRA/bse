@@ -18,21 +18,13 @@ public class FeedEditModel(
     IFeedRepository feedRepository,
     ICaseService caseService,
     ILookupDataService lookups,
-    IDbConnectionFactory connectionFactory) : PageModel
+    IDbConnectionFactory connectionFactory) : FeedPageModelBase(lookups)
 {
-    [BindProperty(SupportsGet = true)]
-    public string Rbse { get; set; } = string.Empty;
-
     [BindProperty(SupportsGet = true)]
     public int FeedId { get; set; }
 
     [BindProperty]
     public EditFeedViewModel Feed { get; set; } = new();
-
-    public IEnumerable<LookupItem> RationTypes { get; private set; } = [];
-    public IEnumerable<LookupItem> Suppliers { get; private set; } = [];
-
-    public IDictionary<string, string> FieldErrors { get; private set; } = new Dictionary<string, string>();
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -95,15 +87,6 @@ public class FeedEditModel(
 
         TempData["Success"] = "Feed record updated.";
         return RedirectToPage("/Case/Feeds", new { rbse = Rbse });
-    }
-
-    private async Task LoadLookupsAsync()
-    {
-        var rtTask = lookups.GetLookupAsync(LookupTableId.RationType);
-        var supTask = lookups.GetLookupAsync(LookupTableId.Supplier);
-        await Task.WhenAll(rtTask, supTask);
-        RationTypes = await rtTask;
-        Suppliers = await supTask;
     }
 
     public sealed class EditFeedViewModel
