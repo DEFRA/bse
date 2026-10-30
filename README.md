@@ -28,3 +28,4 @@ Cloud Platform	Microsoft Azure
 CI/CD	Azure DevOps / GitHub Actions
 Source Control	GitHub 
 Code base for BSE
+test deploy

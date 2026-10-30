@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>14</LangVersion>
@@ -11,7 +11,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\BSE.Infrastructure\BSE.Infrastructure.csproj" />
-    <ProjectReference Include="..\BSE.Modules.Batch\BSE.Modules.Batch.csproj" />
     <ProjectReference Include="..\BSE.Modules.CaseWork\BSE.Modules.CaseWork.csproj" />
     <ProjectReference Include="..\BSE.SharedKernel\BSE.SharedKernel.csproj" />
   </ItemGroup>

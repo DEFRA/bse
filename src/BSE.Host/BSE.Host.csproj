@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>14</LangVersion>
@@ -24,7 +24,6 @@
     <ProjectReference Include="..\BSE.Modules.AuditLog\BSE.Modules.AuditLog.csproj" />
     <ProjectReference Include="..\BSE.Modules.FarmManagement\BSE.Modules.FarmManagement.csproj" />
     <ProjectReference Include="..\BSE.Modules.Search\BSE.Modules.Search.csproj" />
-    <ProjectReference Include="..\BSE.Modules.Batch\BSE.Modules.Batch.csproj" />
     <ProjectReference Include="..\BSE.Modules.CaseManagement\BSE.Modules.CaseManagement.csproj" />
     <ProjectReference Include="..\BSE.Modules.AnimalRelations\BSE.Modules.AnimalRelations.csproj" />
     <ProjectReference Include="..\BSE.Modules.CaseWork\BSE.Modules.CaseWork.csproj" />
