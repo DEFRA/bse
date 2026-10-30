@@ -10,7 +10,7 @@ namespace BSE.Host.Pages.Admin;
 [Authorize(Policy = "PickListAccess")]
 public class PickListsEditModel(
     IEditableLookupAdminService lookupAdminService,
-    ILookupDataService lookupDataService) : PageModel
+    ILookupDataService lookupDataService) : PageModel, IPickListFormModel
 {
     private const string BseRegionIdColumn = "BSERegionID";
 
