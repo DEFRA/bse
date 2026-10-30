@@ -52,7 +52,8 @@
                         <a asp-page="/Home" class="govuk-header__link">Home</a>
                         @if (User.Identity?.IsAuthenticated == true)
                         {
-                            <a href="@helpHref" class="govuk-header__link" target="bse-help" rel="noopener noreferrer">Help<span class="govuk-visually-hidden"> (opens in a new tab, reused each time)</span></a>
+                            @* rel="noopener" would force a new tab on every click; Help is same-origin so the named tab can be reused safely. *@
+                            <a href="@helpHref" class="govuk-header__link" target="bse-help">Help<span class="govuk-visually-hidden"> (opens in a new tab, reused each time)</span></a>
                             <span class="bse-global-header__user-info govuk-body-s govuk-!-margin-bottom-0">
                                 @await Html.PartialAsync("_UserContextPartial")
                             </span>
