@@ -882,6 +882,13 @@
             row-gap: 0.3rem;
         }
     }
+
+    /* The two receipt columns need about 1260px; stack them below 1300px so the page does not scroll sideways. */
+    @@media (max-width: 1300px) {
+        .defra-legacy-receipts-grid {
+            grid-template-columns: 1fr;
+        }
+    }
 </style>
 
 <script>
