@@ -1,4 +1,4 @@
-using BSE.Infrastructure;
+﻿using BSE.Infrastructure;
 using BSE.Host.Models.ViewModels;
 using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Repositories;
@@ -22,53 +22,21 @@ public class BabEditModel(
     ILookupDataService lookups,
     IBatchRepository batchRepository,
     IDbConnectionFactory connectionFactory,
-    IConfiguration configuration) : PageModel
+    IConfiguration configuration) : BabPageModelBase(babRepository, caseRepository, lookups, batchRepository, configuration)
 {
-    [BindProperty(SupportsGet = true)]
-    public string Rbse { get; set; } = string.Empty;
-
-    public string? RowStampBase64 { get; private set; }
-    public string SpolSiteUrl { get; private set; } = string.Empty;
-    public IReadOnlyList<BatchNumberEntry> BatchNumbers { get; private set; } = [];
-
-    public IEnumerable<LookupItem> AnimalOrigins { get; private set; } = [];
-    public IEnumerable<LookupItem> FeedRisks { get; private set; } = [];
-    public IEnumerable<LookupItem> HorizontalRisks { get; private set; } = [];
-    public IEnumerable<LookupItem> MaternalRisks { get; private set; } = [];
-
-    [BindProperty]
-    public string? Origin { get; set; }
-
-    [BindProperty]
-    public BabFormViewModel Bab { get; set; } = new();
-
     public async Task<IActionResult> OnGetAsync()
     {
-        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+        LoadSpolSiteUrl();
         await LoadAsync();
         return Page();
     }
 
     public async Task<IActionResult> OnPostSaveBabAsync(string? rowStampBase64)
     {
-        var normalisedNatalCphh = CphhNormalizer.Normalize(Bab.NatalCphh);
-        if (!string.IsNullOrWhiteSpace(normalisedNatalCphh) && normalisedNatalCphh.Length != 11)
-        {
-            ModelState.AddModelError("Bab.NatalCphh", "Enter CPHH as 11 digits in the format NN/NNN/NNNN/NN.");
-            SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
-            await LoadAsync();
-            Bab.NatalCphh = normalisedNatalCphh;
-            return Page();
-        }
+        if (await NormaliseNatalCphhAsync() is { } invalidPage)
+            return invalidPage;
 
-        Bab.NatalCphh = string.IsNullOrWhiteSpace(normalisedNatalCphh) ? null : normalisedNatalCphh;
-
-        // Traced fields only apply when Origin = "P" (Purchased); mirrors legacy EmptyTracedFields
-        if (Origin != "P")
-        {
-            Bab.NatalCphh = Bab.TracedName = Bab.TracedAddress1 =
-                Bab.TracedAddress2 = Bab.TracedAddress3 = Bab.TracedPostcode = null;
-        }
+        ClearTracedFieldsUnlessPurchased();
 
         using var conn = connectionFactory.CreateConnection();
         conn.Open();
@@ -82,7 +50,7 @@ public class BabEditModel(
                 Bab.TracedName, Bab.TracedAddress1, Bab.TracedAddress2, Bab.TracedAddress3,
                 Bab.TracedPostcode, Bab.FeedRisk, Bab.HorizontalRisk, Bab.MaternalRisk,
                 rowStamp);
-            await babRepository.EditAsync(edit, Origin, conn, tx);
+            await BabRepository.EditAsync(edit, Origin, conn, tx);
         }
         else
         {
@@ -90,7 +58,7 @@ public class BabEditModel(
                 Rbse, Bab.NatalCphh, Bab.Notes,
                 Bab.TracedName, Bab.TracedAddress1, Bab.TracedAddress2, Bab.TracedAddress3,
                 Bab.TracedPostcode, Bab.FeedRisk, Bab.HorizontalRisk, Bab.MaternalRisk);
-            await babRepository.AddAsync(add, Origin, conn, tx);
+            await BabRepository.AddAsync(add, Origin, conn, tx);
         }
 
         tx.Commit();
@@ -98,27 +66,9 @@ public class BabEditModel(
         return RedirectToPage("/Case/Bab", new { rbse = Rbse });
     }
 
-    private async Task LoadAsync()
+    protected override async Task LoadAsync()
     {
-        var babTask     = babRepository.GetByRbseAsync(Rbse);
-        var caseTask    = caseRepository.GetCaseByRbseAsync(Rbse);
-        var batchTask   = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
-        var originsTask = lookups.GetAnimalOriginsAsync();
-        var frTask      = lookups.GetLookupAsync(LookupTableId.FeedRisk);
-        var hrTask      = lookups.GetLookupAsync(LookupTableId.HorizontalRisk);
-        var mrTask      = lookups.GetLookupAsync(LookupTableId.MaternalRisk);
-
-        await Task.WhenAll(babTask, caseTask, batchTask, originsTask, frTask, hrTask, mrTask);
-
-        var bab        = await babTask;
-        var caseRecord = await caseTask;
-        Bab            = bab is not null ? BabFormViewModel.FromRecord(bab) : new BabFormViewModel();
-        RowStampBase64 = bab?.RowStamp is not null ? Convert.ToBase64String(bab.RowStamp) : null;
-        Origin         = caseRecord?.Origin;
-        BatchNumbers   = (await batchTask).ToList().AsReadOnly();
-        AnimalOrigins  = (await originsTask).Select(x => new LookupItem(x.Id, x.Code, x.Description)).ToList();
-        FeedRisks      = await frTask;
-        HorizontalRisks = await hrTask;
-        MaternalRisks  = await mrTask;
+        var (_, caseRecord) = await LoadSharedAsync();
+        Origin = caseRecord?.Origin;
     }
 }
