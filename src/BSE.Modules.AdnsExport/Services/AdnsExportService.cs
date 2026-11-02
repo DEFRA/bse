@@ -93,10 +93,18 @@ public sealed class AdnsExportService : IAdnsExportService
             {
                 foreach (var c in command.Cases)
                 {
+                    var update = new AdnsCaseUpdate(
+                        c.Rbse,
+                        sentDate,
+                        c.AdnsRegionId,
+                        (short)c.AdnsYear,
+                        c.AdnsNumber,
+                        c.RowStamp ?? Array.Empty<byte>());
+
                     var returnCode = await _repository.EditCaseAdnsAsync(
-                        c.Rbse, sentDate, c.AdnsRegionId,
-                        (short)c.AdnsYear, c.AdnsNumber, c.RowStamp!,
-                        connection, transaction);
+                        update,
+                        connection,
+                        transaction);
 
                     if (returnCode != 0)
                     {

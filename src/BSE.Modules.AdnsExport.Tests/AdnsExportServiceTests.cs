@@ -38,6 +38,21 @@ public sealed class AdnsExportServiceTests
             Options.Create(MsGraphOpts));
     }
 
+    [Fact]
+    public async Task DispatchAsync_SaveAdnsData_UsesStructuredUpdatePayload()
+    {
+        var cases = new[] { MakeCase(1, "2024/00001") };
+        _repo.EditCaseAdnsAsync(Arg.Any<AdnsCaseUpdate>(), Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>())
+             .Returns(0);
+
+        await _sut.DispatchAsync(new DispatchAdnsCommand("GB", "DBSE2024/00001", cases, "user@test.com", SaveAdnsData: true));
+
+        await _repo.Received(1).EditCaseAdnsAsync(
+            Arg.Is<AdnsCaseUpdate>(u => u.Rbse == "010000001" && u.AdnsYear == 2024 && u.AdnsNumber == 1),
+            _connection,
+            _transaction);
+    }
+
     // ── PreviewGbExportAsync ──────────────────────────────────────────────────
 
     [Fact]
@@ -144,17 +159,13 @@ public sealed class AdnsExportServiceTests
     public async Task DispatchAsync_SaveAdnsData_CallsEditCaseAdnsPerCase()
     {
         var cases = new[] { MakeCase(1, "2024/00001"), MakeCase(2, "2024/00002") };
-        _repo.EditCaseAdnsAsync(Arg.Any<string>(), Arg.Any<DateTime>(), Arg.Any<int>(),
-            Arg.Any<short>(), Arg.Any<int>(), Arg.Any<byte[]>(),
-            Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>())
+        _repo.EditCaseAdnsAsync(Arg.Any<AdnsCaseUpdate>(), Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>())
             .Returns(0);
 
         var cmd = new DispatchAdnsCommand("GB", "DBSE2024/00001", cases, "user@test.com", SaveAdnsData: true);
         await _sut.DispatchAsync(cmd);
 
-        await _repo.Received(2).EditCaseAdnsAsync(Arg.Any<string>(), Arg.Any<DateTime>(),
-            Arg.Any<int>(), Arg.Any<short>(), Arg.Any<int>(), Arg.Any<byte[]>(),
-            Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>());
+        await _repo.Received(2).EditCaseAdnsAsync(Arg.Any<AdnsCaseUpdate>(), Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>());
     }
 
     [Fact]
@@ -165,18 +176,14 @@ public sealed class AdnsExportServiceTests
 
         await _sut.DispatchAsync(cmd);
 
-        await _repo.DidNotReceive().EditCaseAdnsAsync(Arg.Any<string>(), Arg.Any<DateTime>(),
-            Arg.Any<int>(), Arg.Any<short>(), Arg.Any<int>(), Arg.Any<byte[]>(),
-            Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>());
+        await _repo.DidNotReceive().EditCaseAdnsAsync(Arg.Any<AdnsCaseUpdate>(), Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>());
     }
 
     [Fact]
     public async Task DispatchAsync_MessageExplicitlyBlank_SendsBlankBody()
     {
         var cases = new[] { MakeCase(1, "2024/00001") };
-        _repo.EditCaseAdnsAsync(Arg.Any<string>(), Arg.Any<DateTime>(), Arg.Any<int>(),
-            Arg.Any<short>(), Arg.Any<int>(), Arg.Any<byte[]>(),
-            Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>())
+        _repo.EditCaseAdnsAsync(Arg.Any<AdnsCaseUpdate>(), Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>())
             .Returns(0);
 
         // Legacy parity: the user cleared the body on purpose before clicking send —
@@ -192,9 +199,7 @@ public sealed class AdnsExportServiceTests
     public async Task DispatchAsync_MessageNotSupplied_GeneratesBody()
     {
         var cases = new[] { MakeCase(1, "2024/00001") };
-        _repo.EditCaseAdnsAsync(Arg.Any<string>(), Arg.Any<DateTime>(), Arg.Any<int>(),
-            Arg.Any<short>(), Arg.Any<int>(), Arg.Any<byte[]>(),
-            Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>())
+        _repo.EditCaseAdnsAsync(Arg.Any<AdnsCaseUpdate>(), Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>())
             .Returns(0);
 
         var cmd = new DispatchAdnsCommand("GB", "DBSE2024/00001", cases, "user@test.com", SaveAdnsData: true);
@@ -208,9 +213,7 @@ public sealed class AdnsExportServiceTests
     public async Task DispatchAsync_Success_SendsTwoEmails()
     {
         var cases = new[] { MakeCase(1, "2024/00001") };
-        _repo.EditCaseAdnsAsync(Arg.Any<string>(), Arg.Any<DateTime>(), Arg.Any<int>(),
-            Arg.Any<short>(), Arg.Any<int>(), Arg.Any<byte[]>(),
-            Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>())
+        _repo.EditCaseAdnsAsync(Arg.Any<AdnsCaseUpdate>(), Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>())
             .Returns(0);
 
         var cmd = new DispatchAdnsCommand("GB", "DBSE2024/00001", cases, "user@test.com", SaveAdnsData: true);
@@ -224,9 +227,7 @@ public sealed class AdnsExportServiceTests
     public async Task DispatchAsync_Success_CommitsTransaction()
     {
         var cases = new[] { MakeCase(1, "2024/00001") };
-        _repo.EditCaseAdnsAsync(Arg.Any<string>(), Arg.Any<DateTime>(), Arg.Any<int>(),
-            Arg.Any<short>(), Arg.Any<int>(), Arg.Any<byte[]>(),
-            Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>())
+        _repo.EditCaseAdnsAsync(Arg.Any<AdnsCaseUpdate>(), Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>())
             .Returns(0);
 
         var cmd = new DispatchAdnsCommand("GB", "DBSE2024/00001", cases, "user@test.com", SaveAdnsData: true);
@@ -240,9 +241,7 @@ public sealed class AdnsExportServiceTests
     public async Task DispatchAsync_EditCaseAdnsReturnsConcurrency_ThrowsAndRollsBack()
     {
         var cases = new[] { MakeCase(1, "2024/00001") };
-        _repo.EditCaseAdnsAsync(Arg.Any<string>(), Arg.Any<DateTime>(), Arg.Any<int>(),
-            Arg.Any<short>(), Arg.Any<int>(), Arg.Any<byte[]>(),
-            Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>())
+        _repo.EditCaseAdnsAsync(Arg.Any<AdnsCaseUpdate>(), Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>())
             .Returns(1); // ConcurrencyConflict
 
         var cmd = new DispatchAdnsCommand("GB", "DBSE2024/00001", cases, "user@test.com", SaveAdnsData: true);
@@ -259,9 +258,7 @@ public sealed class AdnsExportServiceTests
     public async Task DispatchAsync_SendThrows_RollsBackTransaction()
     {
         var cases = new[] { MakeCase(1, "2024/00001") };
-        _repo.EditCaseAdnsAsync(Arg.Any<string>(), Arg.Any<DateTime>(), Arg.Any<int>(),
-            Arg.Any<short>(), Arg.Any<int>(), Arg.Any<byte[]>(),
-            Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>())
+        _repo.EditCaseAdnsAsync(Arg.Any<AdnsCaseUpdate>(), Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>())
             .Returns(0);
         _msGraphMail.SendAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
              .Returns<Task>(_ => throw new InvalidOperationException("Mail send failure"));
