@@ -1337,12 +1337,12 @@ body .bse-app-layout-container {
 /* Global UX decision: suppress inline field-level error text and rely on page-level
    error summaries instead. */
 .govuk-error-message {
-    display: none !important;
+    display: none;
 }
 
 /* Opt-in: keep the inline message visible next to the field it describes (WCAG 3.3.1). */
 .govuk-error-message.bse-error-message--visible {
-    display: block !important;
+    display: block;
 }
 
 .govuk-hint {
