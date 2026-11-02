@@ -197,11 +197,12 @@
 
 :root {
     --bse-app-left-gutter: 15px;
+    color-scheme: light dark;
 }
 
-.bse-app-layout-container {
-    margin-left: var(--bse-app-left-gutter) !important;
-    margin-right: auto !important;
+body .bse-app-layout-container {
+    margin-left: var(--bse-app-left-gutter);
+    margin-right: auto;
 }
 
 /* Use a single left boundary for all shared layout containers (header/nav/main/footer). */
@@ -3809,7 +3810,7 @@ img, svg, video { max-width: 100%; height: auto; }
 .govuk-input, .govuk-select, .govuk-textarea { max-width: 100%; }
 .govuk-main-wrapper, .govuk-grid-column-one-third, .govuk-grid-column-two-thirds, .govuk-grid-column-full { overflow-wrap: anywhere; }
 @media (max-width: 40.0525em) {
-    .bse-app-layout-container { margin-left: var(--bse-app-left-gutter) !important; margin-right: var(--bse-app-left-gutter) !important; }
+    body .bse-app-layout-container { margin-left: var(--bse-app-left-gutter); margin-right: var(--bse-app-left-gutter); }
     .govuk-grid-row, .bse-casework-entry-row { display: block; }
     .govuk-pagination__list { flex-wrap: wrap; }
     .bse-pagination-bar { flex-direction: column; align-items: flex-start; }
@@ -3825,7 +3826,6 @@ img, svg, video { max-width: 100%; height: auto; }
 button, input, select, textarea, .bse-inline-row-button { font-family: inherit; }
 
 /* Honour the user's light/dark preference. */
-:root { color-scheme: light dark; }
 @media (prefers-color-scheme: dark) {
     body, .govuk-template__body, .govuk-template { background-color: #0b0c0c; color: #ffffff; }
     .govuk-body, .govuk-label, .govuk-hint, .govuk-fieldset__legend, .govuk-heading-xl, .govuk-heading-l, .govuk-heading-m, .govuk-heading-s,
@@ -3855,16 +3855,16 @@ button, input, select, textarea, .bse-inline-row-button { font-family: inherit; 
 }
 /* Case pages use fixed-width legacy grids and wide data tables; collapse them for 320px reflow. */
 @media (max-width: 40.0525em) {
-    main [class*="bse-"], main [class*="bse-"] .govuk-form-group { grid-template-columns: minmax(0, 1fr) !important; min-width: 0 !important; }
+    main [class*="bse-"], main [class*="bse-"] .govuk-form-group { grid-template-columns: minmax(0, 1fr); min-width: 0; }
     main [class*="bse-"][class*="row"], main [class*="bse-"][class*="fields"], main [class*="bse-"][class*="columns"],
     main [class*="bse-"][class*="field"], main [class*="bse-"][class*="entry"], main [class*="bse-"][class*="group"] { flex-wrap: wrap; }
     main .govuk-input, main .govuk-select, main .govuk-textarea, main [class*="bse-"] input:not([type="checkbox"]):not([type="radio"]),
-    main [class*="bse-"] select, main [class*="bse-"] textarea { max-width: 100% !important; min-width: 0 !important; box-sizing: border-box; }
-    main .govuk-label { white-space: normal !important; }
+    main [class*="bse-"] select, main [class*="bse-"] textarea { max-width: 100%; min-width: 0; box-sizing: border-box; }
+    main .govuk-label { white-space: normal; }
     main fieldset { min-width: 0; }
     /* Tables scroll inside themselves; position:relative keeps absolutely placed hidden text inside the scroller. */
     main table { display: block; max-width: 100%; overflow-x: auto; position: relative; }
-    main .govuk-visually-hidden { left: 0 !important; }
+    main .govuk-visually-hidden { left: 0; }
 }
 
 /* Pagination: GOV.UK stacks the pager in a column on phones; keep it in a wrapping row with 24px+ targets. */
