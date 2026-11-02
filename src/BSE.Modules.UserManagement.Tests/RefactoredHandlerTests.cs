@@ -41,7 +41,13 @@ internal static class PageTestHelpers
     public static void Attach(PageModel model, params string[] roles)
     {
         var httpContext = new DefaultHttpContext { User = Principal(roles) };
+        httpContext.Request.ContentType = "application/x-www-form-urlencoded";
+        httpContext.Request.Form = new FormCollection(new Dictionary<string, Microsoft.Extensions.Primitives.StringValues>());
         model.PageContext = new PageContext { HttpContext = httpContext };
+        var url = Substitute.For<IUrlHelper>();
+        url.ActionContext.Returns(new ActionContext(httpContext, new Microsoft.AspNetCore.Routing.RouteData(),
+            new Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor()));
+        model.Url = url;
         model.PageContext.ViewData = new ViewDataDictionary(new EmptyModelMetadataProvider(), model.ModelState);
         model.TempData = new TempDataDictionary(httpContext, Substitute.For<ITempDataProvider>());
     }
