@@ -20,6 +20,8 @@ using NSubstitute;
 
 namespace BSE.Modules.UserManagement.Tests;
 
+#pragma warning disable xUnit1051 // NSubstitute's Arg.Any<CancellationToken>() is intentional here for default-token matching.
+
 public sealed class MinuteAndSearchCasesModelTests
 {
     private sealed class TestSession : ISession

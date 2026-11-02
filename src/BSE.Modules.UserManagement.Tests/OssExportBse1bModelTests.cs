@@ -85,7 +85,7 @@ public sealed class OssExportBse1bModelTests
 
         result.Should().BeOfType<PageResult>();
         model.ValidationMessage.Should().Be("Please enter a valid RBSE number (9 digits).");
-        service.DidNotReceive().CreateBatchNumber1989Async();
+        await service.DidNotReceive().CreateBatchNumber1989Async();
     }
 
     [Fact]

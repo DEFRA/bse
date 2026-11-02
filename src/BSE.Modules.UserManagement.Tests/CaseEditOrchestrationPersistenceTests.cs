@@ -20,6 +20,8 @@ using NSubstitute;
 
 namespace BSE.Modules.UserManagement.Tests;
 
+#pragma warning disable xUnit1051 // NSubstitute's Arg.Any<CancellationToken>() is intentional here for default-token matching.
+
 /// <summary>Covers the persistence paths of <see cref="CaseEditOrchestrationService.CommitAllAsync"/>:
 /// the early exit, the existing-case save, each staged grid, batch assignment and rollback.</summary>
 public sealed class CaseEditOrchestrationPersistenceTests
@@ -456,3 +458,4 @@ public sealed class CaseEditOrchestrationPersistenceTests
         await _batchRepository.DidNotReceive().AssignCaseToBatchAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<IDbConnection>(), Arg.Any<IDbTransaction>());
     }
 }
+#pragma warning restore xUnit1051

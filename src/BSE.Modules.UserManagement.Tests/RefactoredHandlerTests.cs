@@ -33,6 +33,8 @@ using NSubstitute;
 
 namespace BSE.Modules.UserManagement.Tests;
 
+#pragma warning disable xUnit1051 // NSubstitute's Arg.Any<CancellationToken>() is intentional here for default-token matching.
+
 internal static class PageTestHelpers
 {
     public static ClaimsPrincipal Principal(params string[] roles) =>

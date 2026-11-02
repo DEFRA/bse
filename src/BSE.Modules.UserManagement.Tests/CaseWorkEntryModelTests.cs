@@ -244,9 +244,9 @@ public sealed class CaseWorkEntryModelTests
     }
 
     [Theory]
-    [InlineData("ActiveMemo", "Clinical", "ActiveMemo")]
-    [InlineData("AnnexA", "Clinical", "AnnexA")]
-    public async Task OnPostSendMinuteAsync_SavesStampsTheSentDateAndOpensTheMinute(string minute, string survey, string expectedType)
+    [InlineData("ActiveMemo", "ActiveMemo")]
+    [InlineData("AnnexA", "AnnexA")]
+    public async Task OnPostSendMinuteAsync_SavesStampsTheSentDateAndOpensTheMinute(string minute, string expectedType)
     {
         var model = Create();
 
