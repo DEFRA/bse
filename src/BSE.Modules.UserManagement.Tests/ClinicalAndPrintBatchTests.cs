@@ -121,7 +121,7 @@ public sealed class ClinicalModelFlowTests
 
         await model.OnGetAsync();
 
-        model.Visits.First().VisitDate.Should().Be(new DateTime(2020, 7, 1));
+        model.Visits[0].VisitDate.Should().Be(new DateTime(2020, 7, 1));
         model.VisitsTotalCount.Should().Be(2);
         model.VPage.Should().Be(1);
         model.VisitsSortUrl().Should().Contain("VDir=asc");

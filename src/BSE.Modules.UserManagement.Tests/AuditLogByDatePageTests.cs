@@ -64,7 +64,7 @@ public sealed class AuditLogByDatePageTests
         result.Should().BeOfType<PageResult>();
         model.HasSearched.Should().BeTrue();
         model.PagedEntries().Should().HaveCount(2);
-        model.PagedEntries().First().UserName.Should().Be("B");
+        model.PagedEntries()[0].UserName.Should().Be("B");
     }
 
     [Fact]

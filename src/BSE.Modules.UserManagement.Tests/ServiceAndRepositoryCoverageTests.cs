@@ -35,6 +35,8 @@ public sealed class GeoLookupServiceTests
     }
 
 
+    private static readonly string[] GridRow = ["1234", "0300", "1234", "0310"];
+
     private static DataTable Grid(params string[][] rows)
     {
         var table = new DataTable();
@@ -67,7 +69,7 @@ public sealed class GeoLookupServiceTests
     public async Task Estimate_WithKnownGridSquare_BuildsTheReference(int rowCount)
     {
         var (connection, service) = CreateReal();
-        connection.Enqueue(Grid(Enumerable.Range(0, rowCount).Select(_ => new[] { "1234", "0300", "1234", "0310" }).ToArray()));
+        connection.Enqueue(Grid(Enumerable.Range(0, rowCount).Select(_ => GridRow).ToArray()));
         connection.Enqueue(PrefixCode("TQ"));
 
         var result = await service.EstimateMapReferenceAsync("01001000101");

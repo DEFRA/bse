@@ -64,7 +64,7 @@ public sealed class AdnsExportPageTests
         model.Message.Should().Be("body text");
         model.TotalCount.Should().Be(2);
         model.TotalPages.Should().Be(1);
-        model.PagedCases().First().Rbse.Should().Be("A");
+        model.PagedCases()[0].Rbse.Should().Be("A");
     }
 
     [Theory]
@@ -83,7 +83,7 @@ public sealed class AdnsExportPageTests
             .Returns(Preview(Case("A", 2, "R2", new DateTime(2026, 1, 2)), Case("B", 1, "R1", new DateTime(2026, 1, 3))));
         await model.OnPostGenerateReportAsync();
 
-        model.PagedCases().First().Rbse.Should().Be(expectedFirst);
+        model.PagedCases()[0].Rbse.Should().Be(expectedFirst);
     }
 
     [Fact]

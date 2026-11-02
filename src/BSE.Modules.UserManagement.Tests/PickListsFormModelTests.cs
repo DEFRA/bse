@@ -12,6 +12,7 @@ public sealed class PickListsFormModelTests
 {
     private readonly IEditableLookupAdminService _admin = Substitute.For<IEditableLookupAdminService>();
     private readonly ILookupDataService _lookups = Substitute.For<ILookupDataService>();
+    private static readonly string[] MaintenanceRoles = ["VLAMaintenance"];
 
     private static Dictionary<string, object?> Row(params (string Key, object? Value)[] values) =>
         values.ToDictionary(v => v.Key, v => v.Value);
@@ -30,14 +31,14 @@ public sealed class PickListsFormModelTests
     private PickListsAddModel Add(int tableId, Dictionary<string, string> fields, bool canEdit = true)
     {
         var m = new PickListsAddModel(_admin, _lookups) { TableId = tableId, Fields = fields };
-        PageTestHelpers.Attach(m, canEdit ? new[] { "VLAMaintenance" } : Array.Empty<string>());
+        PageTestHelpers.Attach(m, canEdit ? MaintenanceRoles : Array.Empty<string>());
         return m;
     }
 
     private PickListsEditModel Edit(int tableId, Dictionary<string, string> fields, string original = "", bool canEdit = true)
     {
         var m = new PickListsEditModel(_admin, _lookups) { TableId = tableId, Fields = fields, OriginalKey = original, Key = original };
-        PageTestHelpers.Attach(m, canEdit ? new[] { "VLAMaintenance" } : Array.Empty<string>());
+        PageTestHelpers.Attach(m, canEdit ? MaintenanceRoles : Array.Empty<string>());
         return m;
     }
 

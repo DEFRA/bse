@@ -350,8 +350,8 @@ public sealed class CaseWorkReportModelTests
 
         model.TotalPages.Should().Be(3);
         model.PagedCases().Should().HaveCount(10);
-        model.PagedCases().First().Rbse.Should().Be("0026000015");
-        model.PagedCases().Last().Rbse.Should().Be("0026000006");
+        model.PagedCases()[0].Rbse.Should().Be("0026000015");
+        model.PagedCases()[^1].Rbse.Should().Be("0026000006");
     }
 
     [Fact]

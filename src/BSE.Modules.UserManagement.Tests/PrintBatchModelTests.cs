@@ -19,7 +19,7 @@ public sealed class PrintBatchModelTests
         return model;
     }
 
-    private static IReadOnlyList<IDictionary<string, object?>> Rows(params Dictionary<string, object?>[] rows) =>
+    private static List<IDictionary<string, object?>> Rows(params Dictionary<string, object?>[] rows) =>
         rows.Cast<IDictionary<string, object?>>().ToList();
 
     private static string Html(IActionResult result) =>

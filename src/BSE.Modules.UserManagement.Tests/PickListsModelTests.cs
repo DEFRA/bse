@@ -11,6 +11,7 @@ public sealed class PickListsModelTests
 {
     private readonly IEditableLookupAdminService _admin = Substitute.For<IEditableLookupAdminService>();
     private readonly ILookupDataService _lookups = Substitute.For<ILookupDataService>();
+    private static readonly string[] MaintenanceRoles = ["VLAMaintenance"];
 
     private static Dictionary<string, object?> Row(params (string Key, object? Value)[] values) =>
         values.ToDictionary(v => v.Key, v => v.Value);
@@ -35,7 +36,7 @@ public sealed class PickListsModelTests
             .Returns(new[] { new LookupItem(1, "AH1", "Aho One") });
 
         var model = new PickListsModel(_admin, _lookups) { TableId = tableId };
-        PageTestHelpers.Attach(model, canEdit ? new[] { "VLAMaintenance" } : Array.Empty<string>());
+        PageTestHelpers.Attach(model, canEdit ? MaintenanceRoles : Array.Empty<string>());
         return model;
     }
 
