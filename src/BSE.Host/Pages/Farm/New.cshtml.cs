@@ -117,7 +117,7 @@ public class NewModel(
         return RedirectToPage("/Farm/Details", new { cphh = Farm.CPHH });
     }
 
-    private IActionResult RedirectFromPickFarmJourney(bool farmExists)
+    private RedirectToPageResult RedirectFromPickFarmJourney(bool farmExists)
     {
         if (string.IsNullOrWhiteSpace(ReturnRbse))
             return RedirectToPage("/Home");

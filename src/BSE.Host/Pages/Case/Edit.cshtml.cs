@@ -414,7 +414,7 @@ public class EditModel(
         return RedirectAfterSave(successRedirectPage, successRedirectPage);
     }
 
-    private IActionResult RedirectAfterSave(string successRedirectPage, string nonCaseWorkPage) =>
+    private RedirectToPageResult RedirectAfterSave(string successRedirectPage, string nonCaseWorkPage) =>
         successRedirectPage == CaseWorkEntryPage
             ? RedirectToPage(successRedirectPage, new { rbse = Rbse })
             : RedirectToPage(nonCaseWorkPage);

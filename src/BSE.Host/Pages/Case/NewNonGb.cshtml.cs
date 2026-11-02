@@ -102,18 +102,73 @@ public class NewNonGbModel : PageModel
             return RedirectToPage("/Home");
         }
 
+        ValidateEartag();
+        ValidateResultAndDates();
+
+        var normalizedCphh = CphhNormalizer.Normalize(Cphh);
+        Cphh = normalizedCphh;
+        ValidateCphh(normalizedCphh);
+        ValidateFarmFields();
+
+        if (!ModelState.IsValid)
+        {
+            await LoadLookupsAsync();
+            return Page();
+        }
+
+        // Legacy CreateCase() always passes today's date for RBSEDate.
+        RbseDate ??= DateTime.Today;
+
+        var userId = await _currentUser.GetUserIdAsync();
+
+        if (string.IsNullOrWhiteSpace(Barcode) || string.IsNullOrWhiteSpace(AhfReference))
+            await TryFillBarcodeFromBsessAsync();
+
+        var command = BuildCommand(normalizedCphh);
+
+        AddNonGbCaseResult result;
+        try
+        {
+            result = await _cases.CreateNonGbCaseAsync(command, userId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "AddNonGBCase stored procedure threw an exception");
+            ModelState.AddModelError(string.Empty, "Failed to save new case details.");
+            await LoadLookupsAsync();
+            return Page();
+        }
+
+        if (result != AddNonGbCaseResult.Success)
+        {
+            ModelState.AddModelError(string.Empty, DescribeFailure(result));
+            await LoadLookupsAsync();
+            return Page();
+        }
+
+        TempData["SuccessMessage"] = $"Non-GB case {Rbse} created successfully.";
+        return RedirectToPage("/Case/Farm", new { rbse = Rbse.Trim() });
+    }
+
+    private void ValidateEartag()
+    {
         if (string.IsNullOrWhiteSpace(EartagCountry)
             && string.IsNullOrWhiteSpace(EartagHerdmark)
             && string.IsNullOrWhiteSpace(Eartag))
-            ModelState.AddModelError(nameof(Eartag), "You need to enter an Eartag.");
-        else
         {
-            // Legacy ThreePartEartag.ascx.vb Validate() checks the eartag against BSELib.Eartag's
-            // country-specific format/checksum rules, not just presence.
-            var eartagError = EartagValidator.Validate(EartagCountry, EartagHerdmark, Eartag);
-            if (eartagError is not null)
-                ModelState.AddModelError(nameof(Eartag), eartagError);
+            ModelState.AddModelError(nameof(Eartag), "You need to enter an Eartag.");
+            return;
         }
+
+        // Legacy ThreePartEartag.ascx.vb Validate() checks the eartag against BSELib.Eartag's
+        // country-specific format/checksum rules, not just presence.
+        var eartagError = EartagValidator.Validate(EartagCountry, EartagHerdmark, Eartag);
+        if (eartagError is not null)
+            ModelState.AddModelError(nameof(Eartag), eartagError);
+    }
+
+    private void ValidateResultAndDates()
+    {
         if (string.IsNullOrWhiteSpace(Fate))
             ModelState.AddModelError(nameof(Fate), "You must choose a Fate.");
         if (string.IsNullOrWhiteSpace(FinalResult))
@@ -131,17 +186,21 @@ public class NewNonGbModel : PageModel
         if (FinalResultDate is not null && SlaughterDate is not null
             && (FinalResultDate.Value.Date < SlaughterDate.Value.Date || FinalResultDate.Value.Date > DateTime.Today))
             ModelState.AddModelError(nameof(FinalResultDate), "Final Result date must be between the Slaughter Date and today.");
+    }
 
-        var normalizedCphh = CphhNormalizer.Normalize(Cphh);
-        Cphh = normalizedCphh;
-
+    private void ValidateCphh(string normalizedCphh)
+    {
         if (string.IsNullOrWhiteSpace(normalizedCphh))
             ModelState.AddModelError(nameof(Cphh), "You need to enter a CPHH.");
         else if (normalizedCphh.Length != 11)
             ModelState.AddModelError(nameof(Cphh), "Enter CPHH as 11 digits in the format NN/NNN/NNNN/NN.");
         else if (!normalizedCphh.StartsWith("009999", StringComparison.Ordinal))
             ModelState.AddModelError(nameof(Cphh), "Please enter the CPHH of a non-GB farm.");
-        // Legacy rfvOwnerName/rfvAddress1 are enabled together with the farm fields once a CPHH is entered.
+    }
+
+    // Legacy rfvOwnerName/rfvAddress1 are enabled together with the farm fields once a CPHH is entered.
+    private void ValidateFarmFields()
+    {
         if (string.IsNullOrWhiteSpace(OwnerName))
             ModelState.AddModelError(nameof(OwnerName), "You must enter an Owner Name.");
         if (string.IsNullOrWhiteSpace(Address1))
@@ -151,32 +210,23 @@ public class NewNonGbModel : PageModel
         if (!string.IsNullOrWhiteSpace(NumericHerdmark1)
             && (NumericHerdmark1.Trim().Length != 6 || !NumericHerdmark1.Trim().All(char.IsDigit)))
             ModelState.AddModelError(nameof(NumericHerdmark1), "Numeric herdmark must be 6 digits.");
+    }
 
-        if (!ModelState.IsValid)
+    private async Task TryFillBarcodeFromBsessAsync()
+    {
+        try
         {
-            await LoadLookupsAsync();
-            return Page();
+            var bsessResult = await _bsessCheckService.GetCheckByRbseAsync(Rbse.Trim());
+            Barcode ??= bsessResult?.Barcode;
         }
-
-        // Legacy CreateCase() always passes today's date for RBSEDate.
-        RbseDate ??= DateTime.Today;
-
-        var userId = await _currentUser.GetUserIdAsync();
-
-        if (string.IsNullOrWhiteSpace(Barcode) || string.IsNullOrWhiteSpace(AhfReference))
+        catch (Exception ex)
         {
-            try
-            {
-                var bsessResult = await _bsessCheckService.GetCheckByRbseAsync(Rbse.Trim());
-                Barcode ??= bsessResult?.Barcode;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to retrieve BSESS barcode for non-GB case creation RBSE {Rbse}", Rbse);
-            }
+            _logger.LogWarning(ex, "Failed to retrieve BSESS barcode for non-GB case creation RBSE {Rbse}", Rbse);
         }
+    }
 
-        var command = new AddNonGbCaseCommand(
+    private AddNonGbCaseCommand BuildCommand(string normalizedCphh) =>
+        new(
             Rbse: Rbse.Trim(),
             Cphh: normalizedCphh,
             EartagCountry: EartagCountry,
@@ -198,40 +248,17 @@ public class NewNonGbModel : PageModel
             Barcode: Barcode,
             AhfReference: AhfReference);
 
-        AddNonGbCaseResult result;
-        try
-        {
-            result = await _cases.CreateNonGbCaseAsync(command, userId);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "AddNonGBCase stored procedure threw an exception");
-            ModelState.AddModelError(string.Empty, "Failed to save new case details.");
-            await LoadLookupsAsync();
-            return Page();
-        }
-
-        if (result != AddNonGbCaseResult.Success)
-        {
-            var message = result switch
-            {
-                AddNonGbCaseResult.AlreadyExists => $"Case '{Rbse}' already exists.",
-                AddNonGbCaseResult.FarmCreateError or AddNonGbCaseResult.FarmCreateAuditError
-                    or AddNonGbCaseResult.FarmUpdateError or AddNonGbCaseResult.FarmUpdateAuditError
-                    => "An error occurred saving the farm record.",
-                AddNonGbCaseResult.CaseInsertError or AddNonGbCaseResult.CaseAuditError
-                    => "An error occurred saving the case record.",
-                AddNonGbCaseResult.CaseWorkInsertError => "An error occurred saving the casework record.",
-                _ => $"Failed to create case (error {(int)result})."
-            };
-            ModelState.AddModelError(string.Empty, message);
-            await LoadLookupsAsync();
-            return Page();
-        }
-
-        TempData["SuccessMessage"] = $"Non-GB case {Rbse} created successfully.";
-        return RedirectToPage("/Case/Farm", new { rbse = Rbse.Trim() });
-    }
+    private string DescribeFailure(AddNonGbCaseResult result) => result switch
+    {
+        AddNonGbCaseResult.AlreadyExists => $"Case '{Rbse}' already exists.",
+        AddNonGbCaseResult.FarmCreateError or AddNonGbCaseResult.FarmCreateAuditError
+            or AddNonGbCaseResult.FarmUpdateError or AddNonGbCaseResult.FarmUpdateAuditError
+            => "An error occurred saving the farm record.",
+        AddNonGbCaseResult.CaseInsertError or AddNonGbCaseResult.CaseAuditError
+            => "An error occurred saving the case record.",
+        AddNonGbCaseResult.CaseWorkInsertError => "An error occurred saving the casework record.",
+        _ => $"Failed to create case (error {(int)result})."
+    };
 
     // Legacy btnLookUp_Click: validates the CPHH, then LoadFarmDetails()/LoadCaseDetails()
     // pre-fill Address1-3/Postcode/OwnerName/County from an existing farm (herdmark is left blank).

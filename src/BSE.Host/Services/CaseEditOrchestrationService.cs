@@ -71,7 +71,7 @@ public sealed class CaseEditOrchestrationService(
     private const string Bse1Document = "BSE1";
 
     private sealed record CommitWork(
-        bool Scalar, bool Feeds, bool Relations, bool CaseEdit, bool ClinicalVisits, bool FarmCollections, bool Batch)
+        bool Scalar, bool Feeds, bool Relations, bool CaseEdit, bool ClinicalVisits, bool FarmCollections, bool Batch, int? BatchId)
     {
         public bool Any => Scalar || Feeds || Relations || CaseEdit || ClinicalVisits || FarmCollections || Batch;
     }
@@ -79,7 +79,7 @@ public sealed class CaseEditOrchestrationService(
     private sealed record FarmFieldValues(
         string? OwnerName, string? Address1, string? Parish, string? County, string? Aho, int? AdnsRegionId);
 
-    private static CommitWork DetermineWork(CaseEditSessionState? session, bool hasBatchWork)
+    private static CommitWork DetermineWork(CaseEditSessionState? session, bool hasBatchWork, int? batchId)
     {
         var hasScalarWork = session is not null && session.HasPendingChanges
             && (session.Case is not null || session.Farm is not null || session.Bab is not null || session.Clinical is not null || session.DamSire is not null || session.CaseWork is not null);
@@ -93,7 +93,8 @@ public sealed class CaseEditOrchestrationService(
             session is not null && session.HasCaseEditChanges,
             session is not null && session.HasClinicalVisitsChanges,
             session is not null && session.HasFarmCollectionsChanges,
-            hasBatchWork);
+            hasBatchWork,
+            batchId);
     }
 
     public async Task<CaseCommitOutcome> CommitAllAsync(string rbse, int userId)
@@ -105,7 +106,7 @@ public sealed class CaseEditOrchestrationService(
         // CreateBatchLink runs inside UpdateCaseDetails regardless of whether the case itself changed.
         var hasBatchWork = pendingBatch is not null
             && string.Equals(pendingBatch.RbseNumber, rbse, StringComparison.OrdinalIgnoreCase);
-        var work = DetermineWork(session, hasBatchWork);
+        var work = DetermineWork(session, hasBatchWork, pendingBatch?.BatchId);
 
         if (!work.Any)
             return CaseCommitOutcome.Success([]);
@@ -164,7 +165,7 @@ public sealed class CaseEditOrchestrationService(
                 }
             }
 
-            await PersistStagedExtrasAsync(rbse, cphh, session, work, pendingBatch?.BatchId, connection, transaction, warnings);
+            await PersistStagedExtrasAsync(rbse, cphh, session, work, connection, transaction, warnings);
 
             transaction.Commit();
         }
@@ -183,9 +184,14 @@ public sealed class CaseEditOrchestrationService(
 
     private static string ResolveCphh(bool isNewCase, CaseEditSessionState? session, CaseRecord? existingCase)
     {
-        var source = isNewCase
-            ? session!.Farm!.CPHH
-            : session?.Farm?.CPHH is { Length: > 0 } stagedCphh ? stagedCphh : existingCase!.Cphh;
+        string source;
+        if (isNewCase)
+            source = session!.Farm!.CPHH;
+        else if (session?.Farm?.CPHH is { Length: > 0 } stagedCphh)
+            source = stagedCphh;
+        else
+            source = existingCase!.Cphh;
+
         return CphhNormalizer.Normalize(source);
     }
 
@@ -332,7 +338,7 @@ public sealed class CaseEditOrchestrationService(
     }
 
     private async Task PersistStagedExtrasAsync(
-        string rbse, string cphh, CaseEditSessionState? session, CommitWork work, int? batchId,
+        string rbse, string cphh, CaseEditSessionState? session, CommitWork work,
         IDbConnection connection, IDbTransaction transaction, List<string> warnings)
     {
         if (session?.DamSire is not null)
@@ -358,7 +364,7 @@ public sealed class CaseEditOrchestrationService(
             // Legacy parity: clsCase.CreateBatchLink wraps the SP call and throws on any
             // non-success/non-duplicate outcome, aborting the whole UpdateCaseDetails transaction.
             var batchResult = await batchRepository.AssignCaseToBatchAsync(
-                batchId!.Value, rbse, Bse1Document, connection, transaction);
+                work.BatchId!.Value, rbse, Bse1Document, connection, transaction);
             if (batchResult is not (BatchAssignmentResult.Success or BatchAssignmentResult.AlreadyAssigned))
                 throw new InvalidOperationException($"Failed to add the case to a batch (result: {batchResult}).");
         }
