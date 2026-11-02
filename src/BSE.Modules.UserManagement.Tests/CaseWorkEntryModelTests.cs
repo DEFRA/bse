@@ -309,3 +309,53 @@ public sealed class CaseWorkEntryModelTests
         return ex;
     }
 }
+
+public sealed class CaseWorkReportModelTests
+{
+    private readonly ICaseWorkService _service = Substitute.For<ICaseWorkService>();
+
+    private static CaseWorkEntryRecord Row(string rbse, string barcode, string? survey = "CL") => new()
+    {
+        Rbse = rbse,
+        Barcode = barcode,
+        Survey = survey,
+        Fate = "SL",
+        ActiveMemoDate = new DateTime(2024, 1, 1),
+        RbseDate = new DateTime(2024, 1, 2)
+    };
+
+    [Fact]
+    public async Task OpenCases_OnGetAsync_PaginatesAndSortsTheCaseList()
+    {
+        _service.GetOpenCasesAsync().Returns(Enumerable.Range(1, 25).Select(i => Row($"00260000{i:00}", $"B{i:00}")).ToArray());
+        var model = new OpenCasesModel(_service)
+        {
+            PageNumber = 2,
+            SortColumn = "Barcode",
+            SortDesc = true
+        };
+
+        await model.OnGetAsync();
+
+        model.TotalPages.Should().Be(3);
+        model.PagedCases().Should().HaveCount(10);
+        model.PagedCases().First().Rbse.Should().Be("0026000015");
+        model.PagedCases().Last().Rbse.Should().Be("0026000006");
+    }
+
+    [Fact]
+    public async Task ClosedCases_OnGetAsync_JumpsToTheSelectedRbsePage()
+    {
+        _service.GetClosedCasesAsync().Returns(Enumerable.Range(1, 25).Select(i => Row($"00260000{i:00}", $"C{i:00}")).ToArray());
+        var model = new ClosedCasesModel(_service)
+        {
+            Rbse = "0026000015",
+            PageNumber = 1
+        };
+
+        await model.OnGetAsync();
+
+        model.PageNumber.Should().Be(2);
+        model.PagedCases().Should().Contain(c => c.Rbse == "0026000015");
+    }
+}

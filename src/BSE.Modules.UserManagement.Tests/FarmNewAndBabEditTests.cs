@@ -1,13 +1,17 @@
 using BSE.Host.Models.ViewModels;
+using BSE.Host.Pages;
 using BSE.Host.Pages.Case;
 using BSE.Host.Pages.Farm;
 using BSE.Host.Services;
 using BSE.Infrastructure;
 using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Repositories;
+using BSE.Modules.Batch.Services;
 using BSE.Modules.CaseManagement.Commands;
+using BSE.Modules.CaseManagement.Enums;
 using BSE.Modules.CaseManagement.Models;
 using BSE.Modules.CaseManagement.Repositories;
+using BSE.Modules.CaseManagement.Services;
 using BSE.Modules.FarmManagement.Models;
 using BSE.Modules.FarmManagement.Services;
 using BSE.Modules.ReferenceData.Models;
@@ -15,7 +19,9 @@ using BSE.Modules.ReferenceData.Services;
 using BSE.SharedKernel;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using NSubstitute;
 using System.Data;
 using IReferenceGeoLookupService = BSE.Modules.ReferenceData.Services.IGeoLookupService;
@@ -286,5 +292,335 @@ public sealed class BabEditModelTests
         await _babRepository.Received(1).AddAsync(
             Arg.Is<AddCaseBabCommand>(c => c.NatalCphh == null && c.TracedName == null && c.TracedPostcode == null),
             "N", _connection, _transaction);
+    }
+}
+
+public sealed class MoveCaseNewFarmModelTests
+{
+    private readonly ICaseService _caseService = Substitute.For<ICaseService>();
+    private readonly IFarmService _farmService = Substitute.For<IFarmService>();
+    private readonly ICurrentUserService _currentUser = Substitute.For<ICurrentUserService>();
+    private readonly ILookupDataService _lookups = Substitute.For<ILookupDataService>();
+    private readonly BSE.Host.Services.IGeoLookupService _geo = Substitute.For<BSE.Host.Services.IGeoLookupService>();
+
+    private MoveCaseNewFarmModel Create()
+    {
+        _currentUser.GetUserIdAsync().Returns(4);
+        _lookups.GetLookupAsync(LookupTableId.BSECounty).Returns(Array.Empty<LookupItem>());
+        _lookups.GetLookupAsync(LookupTableId.AHO).Returns(Array.Empty<LookupItem>());
+        _lookups.GetHerdTypesAsync().Returns(Array.Empty<LuHerdType>());
+        _lookups.GetLookupAsync(LookupTableId.PedigreeType).Returns(Array.Empty<LookupItem>());
+        _lookups.GetLookupAsync(LookupTableId.AuthorityCounty).Returns(Array.Empty<LookupItem>());
+
+        var model = new MoveCaseNewFarmModel(_caseService, _farmService, _currentUser, _lookups, _geo);
+        PageTestHelpers.Attach(model, "DataEntry");
+        return model;
+    }
+
+    [Fact]
+    public async Task OnGetAsync_WhenCaseHasExistingFarm_PopulatesTheForm()
+    {
+        var model = Create();
+        model.ReturnRbse = "000500001";
+        model.ReturnCphh = "01/001/0007/01";
+        _caseService.GetCaseAsync("000500001").Returns(new CaseRecord { Cphh = "01001000701" });
+        _farmService.GetByCphhAsync("01001000701").Returns(new FarmRecord
+        {
+            OwnerName = "Owner",
+            Address1 = "1 The Lane",
+            Parish = "Parish",
+            County = "County",
+            AHO = "AHO",
+            AuthorityCountyID = 11,
+            AuthorityID = 12,
+            ADNSRegionID = 13
+        });
+
+        var result = await model.OnGetAsync();
+
+        result.Should().BeOfType<PageResult>();
+        model.Farm.CPHH.Should().Be("01001000701");
+        model.Farm.OwnerName.Should().Be("Owner");
+        model.Farm.Address1.Should().Be("1 The Lane");
+    }
+
+    [Fact]
+    public async Task OnPostAsync_WithInvalidCphh_ShowsValidationError()
+    {
+        var model = Create();
+        model.Farm.CPHH = "123";
+        model.Farm.OwnerName = "Owner";
+        model.Farm.Address1 = "1 The Lane";
+        model.Farm.AHO = "AHO";
+        model.Farm.Parish = "Parish";
+        model.Farm.County = "County";
+        model.Farm.ADNSRegionID = 6;
+
+        var result = await model.OnPostAsync();
+
+        result.Should().BeOfType<PageResult>();
+        PageTestHelpers.ErrorMessages(model, "Farm.CPHH").Should().ContainSingle(m => m.StartsWith("Enter CPHH as 11 digits"));
+    }
+
+    [Fact]
+    public async Task OnPostAsync_WhenFarmAlreadyExists_ShowsErrorAndDoesNotSave()
+    {
+        var model = Create();
+        model.Farm.CPHH = "01001000701";
+        model.Farm.OwnerName = "Owner";
+        model.Farm.Address1 = "1 The Lane";
+        model.Farm.AHO = "AHO";
+        model.Farm.Parish = "Parish";
+        model.Farm.County = "County";
+        model.Farm.ADNSRegionID = 6;
+        _farmService.GetByCphhAsync("01001000701").Returns(new FarmRecord { CPHH = "01001000701" });
+
+        var result = await model.OnPostAsync();
+
+        result.Should().BeOfType<PageResult>();
+        PageTestHelpers.ErrorMessages(model, "Farm.CPHH").Should().Contain("A farm with this CPHH already exists.");
+        await _farmService.DidNotReceive().AddAsync(Arg.Any<AddFarmCommand>(), Arg.Any<int>());
+    }
+
+    [Fact]
+    public async Task OnPostAsync_WhenValid_RedirectsToMoveCaseWithNewCphh()
+    {
+        var model = Create();
+        model.ReturnRbse = "000500001";
+        model.Farm.CPHH = "01001000701";
+        model.Farm.OwnerName = "Owner";
+        model.Farm.Address1 = "1 The Lane";
+        model.Farm.AHO = "AHO";
+        model.Farm.Parish = "Parish";
+        model.Farm.County = "County";
+        model.Farm.ADNSRegionID = 6;
+
+        var result = await model.OnPostAsync();
+
+        var redirect = result.Should().BeOfType<RedirectToPageResult>().Subject;
+        redirect.PageName.Should().Be("/Case/MoveCase");
+        redirect.RouteValues.Should().ContainKey("newCphh").WhoseValue.Should().Be("01001000701");
+        await _farmService.Received(1).AddAsync(Arg.Is<AddFarmCommand>(c => c.CPHH == "01001000701" && c.HerdType == null && c.PedigreeType == null && c.IsDealer == false), 4);
+    }
+}
+
+public sealed class MoveCaseModelTests
+{
+    private readonly ICaseService _caseService = Substitute.For<ICaseService>();
+    private readonly IFarmService _farmService = Substitute.For<IFarmService>();
+    private readonly ICurrentUserService _currentUser = Substitute.For<ICurrentUserService>();
+    private readonly ILogger<MoveCaseModel> _logger = Substitute.For<ILogger<MoveCaseModel>>();
+
+    private MoveCaseModel Create()
+    {
+        _currentUser.GetUserIdAsync().Returns(42);
+        var model = new MoveCaseModel(_caseService, _farmService, _currentUser, _logger);
+        PageTestHelpers.Attach(model, "DataEntry");
+        return model;
+    }
+
+    [Fact]
+    public async Task OnGetAsync_WhenDestinationFarmIsValid_SetsCanMoveAndLoadsFarmDetails()
+    {
+        var model = Create();
+        model.Rbse = "000500001";
+        model.NewCphh = "01001000202";
+        _caseService.GetCaseAsync("000500001").Returns(new CaseRecord { Rbse = "000500001", Cphh = "01001000101", IsNonGbCase = false });
+        _farmService.GetByCphhAsync("01001000101").Returns(new FarmRecord { CPHH = "01001000101", IsNonGBFarm = false });
+        _farmService.GetCaseCountByCphhAsync("01001000101").Returns(2);
+        _farmService.GetByCphhAsync("01001000202").Returns(new FarmRecord { CPHH = "01001000202", IsNonGBFarm = false });
+
+        var result = await model.OnGetAsync();
+
+        result.Should().BeOfType<PageResult>();
+        model.CaseFound.Should().BeTrue();
+        model.NewFarm.Should().NotBeNull();
+        model.CanMove.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task OnPostCheckAsync_WhenSameFarmSelected_SetsSameCphhError()
+    {
+        var model = Create();
+        model.Rbse = "000500001";
+        model.NewCphh = "01001000101";
+        _caseService.GetCaseAsync("000500001").Returns(new CaseRecord { Rbse = "000500001", Cphh = "01001000101", IsNonGbCase = false });
+        _farmService.GetByCphhAsync("01001000101").Returns(new FarmRecord { CPHH = "01001000101", IsNonGBFarm = false });
+
+        var result = await model.OnPostCheckAsync();
+
+        result.Should().BeOfType<PageResult>();
+        model.CphhError.Should().Be(MoveCaseModel.SameCphhMessage);
+        model.CanMove.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task OnPostMoveAsync_WhenServiceSucceeds_RedirectsToMaintenanceConfirmation()
+    {
+        var model = Create();
+        model.Rbse = "000500001";
+        model.NewCphh = "01001000202";
+        _caseService.GetCaseAsync("000500001").Returns(new CaseRecord { Rbse = "000500001", Cphh = "01001000101", IsNonGbCase = false });
+        _farmService.GetByCphhAsync("01001000101").Returns(new FarmRecord { CPHH = "01001000101", IsNonGBFarm = false });
+        _farmService.GetCaseCountByCphhAsync("01001000101").Returns(2);
+        _farmService.GetByCphhAsync("01001000202").Returns(new FarmRecord { CPHH = "01001000202", IsNonGBFarm = false });
+        _caseService.MoveCaseAsync("000500001", "01001000202", 42).Returns(MoveCaseResult.Success);
+
+        var result = await model.OnPostMoveAsync();
+
+        result.Should().BeOfType<RedirectToPageResult>().Which.PageName.Should().Be("/MaintenanceConfirmation");
+        model.TempData[MaintenanceConfirmationModel.TitleKey].Should().Be("Case move complete");
+    }
+}
+
+public sealed class DeleteModelTests
+{
+    private readonly ICaseService _caseService = Substitute.For<ICaseService>();
+    private readonly IFarmService _farmService = Substitute.For<IFarmService>();
+    private readonly IBatchService _batchService = Substitute.For<IBatchService>();
+    private readonly ICurrentUserService _currentUser = Substitute.For<ICurrentUserService>();
+    private readonly ILogger<DeleteModel> _logger = Substitute.For<ILogger<DeleteModel>>();
+
+    private DeleteModel Create()
+    {
+        _currentUser.GetUserIdAsync().Returns(42);
+        var model = new DeleteModel(_caseService, _farmService, _batchService, _currentUser, _logger);
+        PageTestHelpers.Attach(model, "DataEntry");
+        return model;
+    }
+
+    [Fact]
+    public async Task OnGetAsync_WhenCaseExists_LoadsCaseAndFarmDetails()
+    {
+        var model = Create();
+        model.Rbse = "000500001";
+        _caseService.GetCaseDetailsAsync("000500001").Returns(new CaseDetailRecord(
+            new CaseRecord { Rbse = "000500001", Cphh = "01001000101", EartagHerdmark = "AB", Eartag = "123" },
+            null,
+            null,
+            Array.Empty<OtherOwnerRecord>(),
+            Array.Empty<CaseFeedRecord>(),
+            Array.Empty<ClinicalVisitRecord>(),
+            null,
+            null,
+            Array.Empty<CaseRelationRecord>(),
+            Array.Empty<CaseTestRecord>(),
+            null));
+        _farmService.GetByCphhAsync("01001000101").Returns(new FarmRecord { CPHH = "01001000101", IsNonGBFarm = false });
+        _farmService.GetCaseCountByCphhAsync("01001000101").Returns(2);
+        _batchService.GetBatchNumbersByRbseAsync("000500001").Returns(Array.Empty<BatchNumberEntry>());
+
+        var result = await model.OnGetAsync();
+
+        result.Should().BeOfType<PageResult>();
+        model.CaseFound.Should().BeTrue();
+        model.Farm.Should().NotBeNull();
+        model.HasVlaData.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task OnPostDeleteAsync_WhenVlaDataExists_ReturnsPageWithError()
+    {
+        var model = Create();
+        model.Rbse = "000500001";
+        _caseService.GetCaseDetailsAsync("000500001").Returns(new CaseDetailRecord(
+            new CaseRecord { Rbse = "000500001", Cphh = "01001000101" },
+            null,
+            null,
+            Array.Empty<OtherOwnerRecord>(),
+            new[] { new CaseFeedRecord() },
+            Array.Empty<ClinicalVisitRecord>(),
+            null,
+            null,
+            Array.Empty<CaseRelationRecord>(),
+            Array.Empty<CaseTestRecord>(),
+            null));
+        _farmService.GetByCphhAsync("01001000101").Returns(new FarmRecord { CPHH = "01001000101", IsNonGBFarm = false });
+        _farmService.GetCaseCountByCphhAsync("01001000101").Returns(1);
+        _batchService.GetBatchNumbersByRbseAsync("000500001").Returns(Array.Empty<BatchNumberEntry>());
+
+        var result = await model.OnPostDeleteAsync();
+
+        result.Should().BeOfType<PageResult>();
+        model.ErrorMessage.Should().Be(DeleteModel.VlaDataMessage);
+    }
+
+    [Fact]
+    public async Task OnPostDeleteAsync_WhenDeleteSucceeds_RedirectsToMaintenanceConfirmation()
+    {
+        var model = Create();
+        model.Rbse = "000500001";
+        _caseService.GetCaseDetailsAsync("000500001").Returns(new CaseDetailRecord(
+            new CaseRecord { Rbse = "000500001", Cphh = "01001000101" },
+            null,
+            null,
+            Array.Empty<OtherOwnerRecord>(),
+            Array.Empty<CaseFeedRecord>(),
+            Array.Empty<ClinicalVisitRecord>(),
+            null,
+            null,
+            Array.Empty<CaseRelationRecord>(),
+            Array.Empty<CaseTestRecord>(),
+            null));
+        _farmService.GetByCphhAsync("01001000101").Returns(new FarmRecord { CPHH = "01001000101", IsNonGBFarm = false });
+        _farmService.GetCaseCountByCphhAsync("01001000101").Returns(2);
+        _batchService.GetBatchNumbersByRbseAsync("000500001").Returns(Array.Empty<BatchNumberEntry>());
+        _caseService.DeleteCaseAsync("000500001", 42).Returns(DeleteCaseResult.Success);
+
+        var result = await model.OnPostDeleteAsync();
+
+        var redirect = result.Should().BeOfType<RedirectToPageResult>().Subject;
+        redirect.PageName.Should().Be("/MaintenanceConfirmation");
+        model.TempData[MaintenanceConfirmationModel.TitleKey].Should().Be("Case deleted");
+    }
+}
+
+public sealed class FarmDetailsModelTests
+{
+    private readonly IFarmService _farmService = Substitute.For<IFarmService>();
+    private readonly ILookupDataService _lookups = Substitute.For<ILookupDataService>();
+
+    private DetailsModel Create() => new(_farmService, _lookups);
+
+    [Fact]
+    public async Task OnGetAsync_WhenFarmDoesNotExist_ReturnsPageWithoutData()
+    {
+        var model = Create();
+        _farmService.GetByCphhAsync("01001000101").Returns((FarmRecord?)null);
+
+        var result = await model.OnGetAsync("01001000101");
+
+        result.Should().BeOfType<PageResult>();
+        model.Farm.Should().BeNull();
+        model.RelatedFarms.Should().BeEmpty();
+        model.HerdSizes.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task OnGetAsync_WhenFarmExists_LoadsRelatedDataAndAdnsRegionName()
+    {
+        var model = Create();
+        _farmService.GetByCphhAsync("01001000101").Returns(new FarmRecord { CPHH = "01001000101", ADNSRegionID = 42 });
+        _farmService.GetRelatedFarmsAsync("01001000101").Returns(new[]
+        {
+            new FarmRelationRecord { ID = 1, CPHH = "01001000101", RelatedCPHH = "01001000102", Status = "BSE Free" }
+        });
+        _farmService.GetHerdSizesAsync("01001000101").Returns(new[]
+        {
+            new HerdSizeRecord { ID = 1, CPHH = "01001000101", HerdYear = 2025, TotalSize = 12 },
+            new HerdSizeRecord { ID = 2, CPHH = "01001000101", HerdYear = 2024, TotalSize = 10 }
+        });
+        _farmService.GetConfirmedCaseCountAsync("01001000101").Returns(3);
+        _lookups.GetADNSRegionsAsync().Returns(new[] { new LuAdnsRegion { Id = 42, Name = "North Region" } });
+
+        var result = await model.OnGetAsync("01001000101");
+
+        result.Should().BeOfType<PageResult>();
+        model.Farm.Should().NotBeNull();
+        model.RelatedFarms.Should().ContainSingle();
+        model.HerdSizes.Should().HaveCount(2);
+        model.HerdSizes.Select(h => h.HerdYear).Should().BeInDescendingOrder();
+        model.ConfirmedCaseCount.Should().Be(3);
+        model.ADNSRegionName.Should().Be("North Region");
     }
 }
