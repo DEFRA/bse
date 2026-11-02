@@ -8,16 +8,21 @@ public sealed class UnhandledExceptionLoggingMiddleware(RequestDelegate next, IL
         {
             await next(context);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (LogUnhandled(ex, context))
         {
-            logger.LogError(
-                ex,
-                "Unhandled exception during {Method} {Path}. TraceId: {TraceIdentifier}",
-                context.Request.Method,
-                context.Request.Path.Value,
-                context.TraceIdentifier);
-
             throw;
         }
+    }
+
+    // Always returns false so the exception filter logs without catching.
+    private bool LogUnhandled(Exception ex, HttpContext context)
+    {
+        logger.LogError(
+            ex,
+            "Unhandled exception during {Method} {Path}. TraceId: {TraceIdentifier}",
+            context.Request.Method,
+            context.Request.Path.Value,
+            context.TraceIdentifier);
+        return false;
     }
 }

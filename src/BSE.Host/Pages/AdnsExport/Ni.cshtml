@@ -20,7 +20,7 @@
             </div>
 
             <div class="bse-adns-form-row">
-                <div class="bse-adns-group" role="group" aria-labelledby="ni-adns-reference-legend">
+                <fieldset class="govuk-fieldset bse-adns-group" aria-labelledby="ni-adns-reference-legend">
                     <span id="ni-adns-reference-legend" class="govuk-label">ADNS Reference</span>
                     <div class="bse-inline-fields">
                         <div class="govuk-form-group bse-adns-field @(ViewContext.ModelState["InputAdnsYear"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
@@ -34,7 +34,7 @@
                             <span asp-validation-for="InputAdnsNumber" class="govuk-error-message"></span>
                         </div>
                     </div>
-                </div>
+                </fieldset>
                 <div class="govuk-form-group bse-adns-field bse-adns-field--with-hint @(ViewContext.ModelState["InputAdnsRegionId"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")" style="max-width: 480px;">
                     <label asp-for="InputAdnsRegionId" class="govuk-label">Region</label>
                     <input asp-for="InputAdnsRegionId" type="number" class="govuk-input govuk-input--width-5" aria-describedby="ni-region-hint" />
@@ -61,7 +61,6 @@
             </div>
         </form>
 
-        {
             var sortBase = "?" + string.Join("&", HttpContext.Request.Query
                 .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
                          && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase)
@@ -130,7 +129,6 @@
                 <input type="hidden" asp-for="InputAdnsYear" />
                 <button type="submit" class="govuk-button" data-module="govuk-button">Generate report</button>
             </form>
-        }
     }
     else
     {

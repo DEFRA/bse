@@ -80,26 +80,15 @@ public sealed class LoggingDbRepositoryDecorator : IDbRepository
 
     private async Task ExecuteWithLoggingAsync(string storedProcedure, string operation, Func<Task> execute, int? timeout = null)
     {
-        var sw = Stopwatch.StartNew();
-
-        try
-        {
-            await execute();
-            sw.Stop();
-            LogSuccess(storedProcedure, operation, sw.ElapsedMilliseconds, timeout);
-        }
-        catch (Exception ex)
-        {
-            sw.Stop();
-            _logger.LogError(
-                ex,
-                "Database {Operation} failed for {StoredProcedure} after {ElapsedMs}ms (Timeout={TimeoutSeconds})",
-                operation,
-                storedProcedure,
-                sw.ElapsedMilliseconds,
-                timeout);
-            throw;
-        }
+        await ExecuteWithLoggingAsync<object?>(
+            storedProcedure,
+            operation,
+            async () =>
+            {
+                await execute();
+                return null;
+            },
+            timeout);
     }
 
     private async Task<T> ExecuteWithLoggingAsync<T>(string storedProcedure, string operation, Func<Task<T>> execute, int? timeout = null)
@@ -113,20 +102,25 @@ public sealed class LoggingDbRepositoryDecorator : IDbRepository
             LogSuccess(storedProcedure, operation, sw.ElapsedMilliseconds, timeout);
             return result;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (LogFailure(ex, storedProcedure, operation, sw, timeout))
         {
-            sw.Stop();
-            _logger.LogError(
-                ex,
-                "Database {Operation} failed for {StoredProcedure} after {ElapsedMs}ms (Timeout={TimeoutSeconds})",
-                operation,
-                storedProcedure,
-                sw.ElapsedMilliseconds,
-                timeout);
             throw;
         }
     }
 
+    // Always returns false so the exception filter logs without catching.
+    private bool LogFailure(Exception ex, string storedProcedure, string operation, Stopwatch sw, int? timeout)
+    {
+        sw.Stop();
+        _logger.LogError(
+            ex,
+            "Database {Operation} failed for {StoredProcedure} after {ElapsedMs}ms (Timeout={TimeoutSeconds})",
+            operation,
+            storedProcedure,
+            sw.ElapsedMilliseconds,
+            timeout);
+        return false;
+    }
     private void LogSuccess(string storedProcedure, string operation, long elapsedMs, int? timeout)
     {
         if (elapsedMs >= _slowThresholdMs)

@@ -86,27 +86,7 @@ public class NewModel(
         // Legacy PickFarm -> NewFarm flow did not persist a new farm row directly from this
         // confirmation screen. "Create Farm" returns to CaseEntryFarm with seeded defaults.
         if (isPickFarmJourney)
-        {
-            if (string.IsNullOrWhiteSpace(ReturnRbse))
-                return RedirectToPage("/Home");
-
-            if (existingFarm is not null)
-                return RedirectToPage(CaseFarmPage, new { rbse = ReturnRbse, selectedCphh = Farm.CPHH });
-
-            return RedirectToPage(CaseFarmPage, new
-            {
-                rbse = ReturnRbse,
-                newCphh = Farm.CPHH,
-                forceNewFarmDetails = true,
-                seedParish = DerivedParish,
-                seedCounty = DerivedCounty,
-                seedAdnsRegionId = DerivedAdnsRegionId,
-                seedAuthorityId = DerivedAuthorityId,
-                seedAuthorityCountyId = DerivedAuthorityCountyId,
-                seedHerdmark1 = AcceptVetnetDetails && VetnetFound ? VetnetHerdmark : null,
-                seedNumericHerdmark1 = AcceptVetnetDetails && VetnetFound ? VetnetNumericHerdmark : null
-            });
-        }
+            return RedirectFromPickFarmJourney(existingFarm is not null);
 
         if (existingFarm is not null)
         {
@@ -135,6 +115,29 @@ public class NewModel(
             return RedirectToPage(CaseFarmPage, new { rbse = ReturnRbse, newCphh = ReturnCphh ?? Farm.CPHH });
 
         return RedirectToPage("/Farm/Details", new { cphh = Farm.CPHH });
+    }
+
+    private IActionResult RedirectFromPickFarmJourney(bool farmExists)
+    {
+        if (string.IsNullOrWhiteSpace(ReturnRbse))
+            return RedirectToPage("/Home");
+
+        if (farmExists)
+            return RedirectToPage(CaseFarmPage, new { rbse = ReturnRbse, selectedCphh = Farm.CPHH });
+
+        return RedirectToPage(CaseFarmPage, new
+        {
+            rbse = ReturnRbse,
+            newCphh = Farm.CPHH,
+            forceNewFarmDetails = true,
+            seedParish = DerivedParish,
+            seedCounty = DerivedCounty,
+            seedAdnsRegionId = DerivedAdnsRegionId,
+            seedAuthorityId = DerivedAuthorityId,
+            seedAuthorityCountyId = DerivedAuthorityCountyId,
+            seedHerdmark1 = AcceptVetnetDetails && VetnetFound ? VetnetHerdmark : null,
+            seedNumericHerdmark1 = AcceptVetnetDetails && VetnetFound ? VetnetNumericHerdmark : null
+        });
     }
 
     private async Task ApplyPickFarmVetnetDefaultsAsync()

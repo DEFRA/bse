@@ -1,4 +1,4 @@
-@page
+﻿@page
 @model GbModel
 @{
     ViewData["Title"] = "ADNS Export : GB Cases";
@@ -18,7 +18,7 @@
                     <span asp-validation-for="EmailReference" class="govuk-error-message"></span>
                 </div>
 
-                <div class="bse-adns-group" role="group" aria-labelledby="gb-adns-reference-legend">
+                <fieldset class="govuk-fieldset bse-adns-group" aria-labelledby="gb-adns-reference-legend">
                     <span id="gb-adns-reference-legend" class="govuk-label">ADNS Reference</span>
                     <div class="bse-inline-fields">
                         <div class="govuk-form-group bse-adns-field @(ViewContext.ModelState["AdnsYear"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
@@ -32,7 +32,7 @@
                             <span asp-validation-for="StartAdnsNumber" class="govuk-error-message"></span>
                         </div>
                     </div>
-                </div>
+                </fieldset>
             </div>
 
             <div class="govuk-button-group">

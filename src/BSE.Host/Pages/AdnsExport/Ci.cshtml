@@ -1,4 +1,4 @@
-@page
+﻿@page
 @model CiModel
 @{
     ViewData["Title"] = "ADNS Export : Channel Island Cases";
@@ -18,7 +18,7 @@
                     <span asp-validation-for="EmailReference" class="govuk-error-message"></span>
                 </div>
 
-                <div class="bse-adns-group" role="group" aria-labelledby="ci-adns-reference-legend">
+                <fieldset class="govuk-fieldset bse-adns-group" aria-labelledby="ci-adns-reference-legend">
                     <span id="ci-adns-reference-legend" class="govuk-label">ADNS Reference</span>
                     <div class="bse-inline-fields">
                         <div class="govuk-form-group bse-adns-field @(ViewContext.ModelState["AdnsYear"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
@@ -32,11 +32,11 @@
                             <span asp-validation-for="StartAdnsNumber" class="govuk-error-message"></span>
                         </div>
                     </div>
-                </div>
+                </fieldset>
             </div>
 
             <div class="bse-adns-form-row">
-                <div class="bse-adns-group" role="group" aria-labelledby="ci-cases-in-legend">
+                <fieldset class="govuk-fieldset bse-adns-group" aria-labelledby="ci-cases-in-legend">
                     <span id="ci-cases-in-legend" class="govuk-label">Number of cases in:</span>
                     <div class="bse-inline-fields">
                         <div class="govuk-form-group bse-adns-field @(ViewContext.ModelState["JerseyCases"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
@@ -55,7 +55,7 @@
                             <span asp-validation-for="IsleOfManCases" class="govuk-error-message"></span>
                         </div>
                     </div>
-                </div>
+                </fieldset>
             </div>
 
             <div class="bse-adns-form-row">

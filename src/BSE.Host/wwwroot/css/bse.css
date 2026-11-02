@@ -3339,7 +3339,7 @@ body .bse-app-layout-container {
 }
 
 .bse-batch-panel .govuk-details__text {
-    position: absolute;
+    position: relative;
     top: 100%;
     right: 0;
     z-index: 20;
@@ -3693,11 +3693,6 @@ body .bse-app-layout-container {
 /* Wide data tables scroll inside their own region instead of the whole page (WCAG 1.4.10). */
 .bse-table-scroll {
     max-width: 100%;
-    overflow-x: auto;
-    position: relative;
-}
-
-.bse-batch-panel .govuk-details__text {
     overflow-x: auto;
     position: relative;
 }

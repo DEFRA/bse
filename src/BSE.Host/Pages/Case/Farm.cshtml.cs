@@ -1687,53 +1687,11 @@ public class FarmModel(
         // CPHH that itself has no farm row yet (Farm stays null) never re-triggered it, so the first
         // CPHH's Herd Size/Linked Farms grids kept showing after switching to an unregistered CPHH.
         var requestedCphh = CphhNormalizer.Normalize(EditableFarm?.CPHH);
-        var needsSeedFromPersisted = !skipReseedCheck
-            && ((draft.LinkedFarms.Count == 0 && draft.HerdSizes.Count == 0 && !draft.HasFarmCollectionsChanges)
-                || (requestedCphh.Length > 0 && !string.Equals(draft.Cphh, requestedCphh, StringComparison.OrdinalIgnoreCase))
-                || (Farm is not null && !string.Equals(draft.Cphh, Farm.CPHH, StringComparison.OrdinalIgnoreCase)));
+        var needsSeedFromPersisted = !skipReseedCheck && NeedsFarmReseed(draft, requestedCphh);
 
         if (needsSeedFromPersisted)
         {
-            if (Farm is null)
-            {
-                // Track the CPHH being resolved (not blank) even though it has no farm row yet —
-                // otherwise every subsequent call here would see draft.Cphh ("") still differing
-                // from requestedCphh and keep wiping any Herd Size/Linked Farm rows the user had
-                // already added for this still-unregistered CPHH.
-                draft.Cphh = requestedCphh;
-                draft.LinkedFarms = [];
-                draft.HerdSizes = [];
-            }
-            else
-            {
-                draft.Cphh = Farm.CPHH;
-                draft.LinkedFarms = PersistedLinkedFarms.Select(x => new CaseFarmDraftLinkedFarmItem
-                {
-                    Id = x.ID,
-                    RelatedCphh = x.RelatedCPHH,
-                    RowStampBase64 = x.RowStamp is null ? string.Empty : Convert.ToBase64String(x.RowStamp),
-                    Status = x.Status ?? string.Empty
-                }).ToList();
-                draft.HerdSizes = PersistedHerdSizes.Select(x => new CaseFarmDraftHerdSizeItem
-                {
-                    ClientKey = Guid.NewGuid().ToString("N"),
-                    Id = x.ID,
-                    HerdYear = x.HerdYear,
-                    TotalSize = x.TotalSize,
-                    Lactation1Size = x.Lactation1Size,
-                    Lactation2Size = x.Lactation2Size,
-                    Lactation3Size = x.Lactation3Size,
-                    Lactation4Size = x.Lactation4Size,
-                    Lactation5Size = x.Lactation5Size,
-                    Lactation6Size = x.Lactation6Size,
-                    Lactation7Size = x.Lactation7Size,
-                    Lactation8Size = x.Lactation8Size,
-                    Lactation9Size = x.Lactation9Size,
-                    Lactation10Size = x.Lactation10Size,
-                    Lactation10PlusSize = x.Lactation10PlusSize,
-                    RowStampBase64 = x.RowStamp is null ? string.Empty : Convert.ToBase64String(x.RowStamp)
-                }).ToList();
-            }
+            SeedDraftFarmCollections(draft, requestedCphh);
             await sessionState.SetAsync(draft);
         }
 
@@ -1769,6 +1727,55 @@ public class FarmModel(
         HasUnsavedChanges = draft.HasFarmCollectionsChanges;
 
         return draft;
+    }
+
+    private bool NeedsFarmReseed(CaseEditSessionState draft, string requestedCphh) =>
+        (draft.LinkedFarms.Count == 0 && draft.HerdSizes.Count == 0 && !draft.HasFarmCollectionsChanges)
+        || (requestedCphh.Length > 0 && !string.Equals(draft.Cphh, requestedCphh, StringComparison.OrdinalIgnoreCase))
+        || (Farm is not null && !string.Equals(draft.Cphh, Farm.CPHH, StringComparison.OrdinalIgnoreCase));
+
+    private void SeedDraftFarmCollections(CaseEditSessionState draft, string requestedCphh)
+    {
+        if (Farm is null)
+        {
+            // Track the CPHH being resolved (not blank) even though it has no farm row yet —
+            // otherwise every subsequent call here would see draft.Cphh ("") still differing
+            // from requestedCphh and keep wiping any Herd Size/Linked Farm rows the user had
+            // already added for this still-unregistered CPHH.
+            draft.Cphh = requestedCphh;
+            draft.LinkedFarms = [];
+            draft.HerdSizes = [];
+        }
+        else
+        {
+            draft.Cphh = Farm.CPHH;
+            draft.LinkedFarms = PersistedLinkedFarms.Select(x => new CaseFarmDraftLinkedFarmItem
+            {
+                Id = x.ID,
+                RelatedCphh = x.RelatedCPHH,
+                RowStampBase64 = x.RowStamp is null ? string.Empty : Convert.ToBase64String(x.RowStamp),
+                Status = x.Status ?? string.Empty
+            }).ToList();
+            draft.HerdSizes = PersistedHerdSizes.Select(x => new CaseFarmDraftHerdSizeItem
+            {
+                ClientKey = Guid.NewGuid().ToString("N"),
+                Id = x.ID,
+                HerdYear = x.HerdYear,
+                TotalSize = x.TotalSize,
+                Lactation1Size = x.Lactation1Size,
+                Lactation2Size = x.Lactation2Size,
+                Lactation3Size = x.Lactation3Size,
+                Lactation4Size = x.Lactation4Size,
+                Lactation5Size = x.Lactation5Size,
+                Lactation6Size = x.Lactation6Size,
+                Lactation7Size = x.Lactation7Size,
+                Lactation8Size = x.Lactation8Size,
+                Lactation9Size = x.Lactation9Size,
+                Lactation10Size = x.Lactation10Size,
+                Lactation10PlusSize = x.Lactation10PlusSize,
+                RowStampBase64 = x.RowStamp is null ? string.Empty : Convert.ToBase64String(x.RowStamp)
+            }).ToList();
+        }
     }
 
     // ── Sort / pagination URL builders ─────────────────────────────────────────

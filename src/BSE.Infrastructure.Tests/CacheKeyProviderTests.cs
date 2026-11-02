@@ -41,9 +41,8 @@ public sealed class CacheKeyProviderTests
     [Fact]
     public void CacheKeyProvider_ImplementsInterface()
     {
-        ICacheKeyProvider provider = _sut;
-        provider.Should().NotBeNull();
-        provider.CaseWizard("x").Should().NotBeNullOrEmpty();
-        provider.FarmWizard("x").Should().NotBeNullOrEmpty();
+        _sut.Should().BeAssignableTo<ICacheKeyProvider>();
+        _sut.CaseWizard("x").Should().NotBeNullOrEmpty();
+        _sut.FarmWizard("x").Should().NotBeNullOrEmpty();
     }
 }
