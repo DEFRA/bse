@@ -410,7 +410,7 @@ public sealed class EditModelCoverageTests
 
     // ── Domain rules (through Save) ─────────────────────────────────────────────
 
-    public static IEnumerable<object[]> Rules()
+    private static IEnumerable<object[]> RuleCases()
     {
         var a = new DateTime(2024, 1, 1);
         yield return [(Action<EditModel>)(m => { m.Case.EartagCountry = "ZZ"; m.Case.EartagHerdmark = "1"; m.Case.Eartag = "2"; }), "Case.EartagCountry"];
@@ -431,10 +431,16 @@ public sealed class EditModelCoverageTests
         yield return [(Action<EditModel>)(m => { m.Case.HasCaseWork = true; m.Case.RbseDate = a; m.Case.PaperworkCompleteDate = DateTime.Today.AddDays(4); }), "Case.PaperworkCompleteDate"];
     }
 
+    private static readonly object[][] RuleRows = RuleCases().ToArray();
+
+    public static TheoryData<int> Rules() => [.. Enumerable.Range(0, RuleRows.Length)];
+
     [Theory]
     [MemberData(nameof(Rules))]
-    public async Task Save_ReportsLegacyRuleViolations(Action<EditModel> arrange, string key)
+    public async Task Save_ReportsLegacyRuleViolations(int caseIndex)
     {
+        var arrange = (Action<EditModel>)RuleRows[caseIndex][0];
+        var key = (string)RuleRows[caseIndex][1];
         var model = Create(Defra);
         FillValidCase(model);
         arrange(model);

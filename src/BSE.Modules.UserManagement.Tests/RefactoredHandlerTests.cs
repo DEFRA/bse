@@ -305,7 +305,7 @@ public sealed class VlaEditValidationTests
         (await model.OnPostAsync()).Should().BeOfType<ForbidResult>();
     }
 
-    public static IEnumerable<object[]> Scenarios()
+    private static IEnumerable<object[]> ScenarioCases()
     {
         var d = new DateTime(2020, 6, 1);
         yield return [(Action<VlaEditViewModel>)(c => c.BirthDate = new DateTime(1960, 1, 1)), "Case.BirthDate", "after 31/12/1969"];
@@ -327,10 +327,17 @@ public sealed class VlaEditValidationTests
         yield return [(Action<VlaEditViewModel>)(c => { c.BirthDate = new DateTime(2010, 1, 1); c.SlaughterDate = new DateTime(2000, 1, 1); }), "Case.SlaughterDate", "after the birth date"];
     }
 
+    private static readonly object[][] ScenarioRows = ScenarioCases().ToArray();
+
+    public static TheoryData<int> Scenarios() => [.. Enumerable.Range(0, ScenarioRows.Length)];
+
     [Theory]
     [MemberData(nameof(Scenarios))]
-    public async Task OnPostAsync_ReportsDomainRuleViolations(Action<VlaEditViewModel> arrange, string key, string expectedFragment)
+    public async Task OnPostAsync_ReportsDomainRuleViolations(int caseIndex)
     {
+        var arrange = (Action<VlaEditViewModel>)ScenarioRows[caseIndex][0];
+        var key = (string)ScenarioRows[caseIndex][1];
+        var expectedFragment = (string)ScenarioRows[caseIndex][2];
         var model = Create("DataEntry");
         arrange(model.Case);
 
@@ -380,7 +387,7 @@ public sealed class DefraEditValidationTests
 
     private static readonly DateTime FormA = new(2020, 6, 1);
 
-    public static IEnumerable<object[]> Scenarios()
+    private static IEnumerable<object[]> ScenarioCases()
     {
         yield return [(Action<CaseEditViewModel>)(_ => { }), "Case.EartagCountry", "Enter an eartag."];
         yield return [(Action<CaseEditViewModel>)(c => { c.EartagCountry = "ZZ"; c.EartagHerdmark = "1"; c.Eartag = "2"; }), "Case.EartagCountry", ""];
@@ -403,10 +410,17 @@ public sealed class DefraEditValidationTests
         yield return [(Action<CaseEditViewModel>)(c => { c.HasCaseWork = true; c.RbseDate = FormA; c.BreederBse1ReceivedDate = DateTime.Today.AddDays(3); }), "Case.BreederBse1ReceivedDate", "past date"];
     }
 
+    private static readonly object[][] ScenarioRows = ScenarioCases().ToArray();
+
+    public static TheoryData<int> Scenarios() => [.. Enumerable.Range(0, ScenarioRows.Length)];
+
     [Theory]
     [MemberData(nameof(Scenarios))]
-    public async Task OnPostAsync_ReportsDomainRuleViolations(Action<CaseEditViewModel> arrange, string key, string expectedFragment)
+    public async Task OnPostAsync_ReportsDomainRuleViolations(int caseIndex)
     {
+        var arrange = (Action<CaseEditViewModel>)ScenarioRows[caseIndex][0];
+        var key = (string)ScenarioRows[caseIndex][1];
+        var expectedFragment = (string)ScenarioRows[caseIndex][2];
         var model = Create();
         arrange(model.Case);
 

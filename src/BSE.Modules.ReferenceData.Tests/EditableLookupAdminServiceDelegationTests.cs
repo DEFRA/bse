@@ -17,7 +17,7 @@ public sealed class EditableLookupAdminServiceDelegationTests
 
     public EditableLookupAdminServiceDelegationTests() => _sut = new EditableLookupAdminService(_repo, _db);
 
-    public static TheoryData<string, Func<EditableLookupAdminService, Task>> ExecuteCalls() => new()
+    private static readonly TheoryData<string, Func<EditableLookupAdminService, Task>> Calls = new()
     {
         { "SpX", s => s.AddCodeDescriptionItemAsync("SpX", "C", "D") },
         { "SpX", s => s.EditCodeDescriptionItemAsync("SpX", "O", "C", "D") },
@@ -46,10 +46,16 @@ public sealed class EditableLookupAdminServiceDelegationTests
         { "DeluTSETestingSite", s => s.DeleteTSETestingSiteAsync("CPH") },
     };
 
+    public static TheoryData<int> ExecuteCalls() => [.. Enumerable.Range(0, Calls.Count)];
+
     [Theory]
     [MemberData(nameof(ExecuteCalls))]
-    public async Task Call_ExecutesTheExpectedStoredProcedure(string expectedSp, Func<EditableLookupAdminService, Task> call)
+    public async Task Call_ExecutesTheExpectedStoredProcedure(int caseIndex)
     {
+        var data = ((ITheoryDataRow)Calls.ElementAt(caseIndex)).GetData();
+        var expectedSp = (string)data[0]!;
+        var call = (Func<EditableLookupAdminService, Task>)data[1]!;
+
         if (expectedSp == "DeluTSETestingSite")
             expectedSp = "DeleteluTSETestingSite";
 
