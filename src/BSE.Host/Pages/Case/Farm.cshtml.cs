@@ -1278,19 +1278,11 @@ public class FarmModel(
             : "BSE Free";
     }
 
-    public async Task<IActionResult> OnGetAuthoritiesAsync(int? authorityCountyId)
-    {
-        if (authorityCountyId is null or 0) return new JsonResult(Array.Empty<object>());
-        var items = await lookups.GetAuthoritiesByCountyAsync(authorityCountyId.Value);
-        return new JsonResult(items.Select(a => new { id = a.Id, name = a.Name }));
-    }
+    public Task<IActionResult> OnGetAuthoritiesAsync(int? authorityCountyId) =>
+        FarmFormLookups.AuthoritiesAsync(lookups, authorityCountyId);
 
-    public async Task<IActionResult> OnGetAdnsRegionsAsync(int? authorityId)
-    {
-        if (authorityId is null or 0) return new JsonResult(Array.Empty<object>());
-        var items = await lookups.GetADNSRegionsByAuthorityAsync(authorityId.Value);
-        return new JsonResult(items.Select(r => new { id = r.Id, name = r.Name }));
-    }
+    public Task<IActionResult> OnGetAdnsRegionsAsync(int? authorityId) =>
+        FarmFormLookups.AdnsRegionsAsync(lookups, authorityId);
 
     public async Task<IActionResult> OnGetEstimateMapReferenceAsync(string? cphh)
     {
@@ -1590,30 +1582,8 @@ public class FarmModel(
         return trimmed.Length == 6 && trimmed.All(char.IsDigit);
     }
 
-    private async Task LoadLookupsForEditAsync()
-    {
-        var countyTask = lookups.GetLookupAsync(LookupTableId.BSECounty);
-        var ahoTask = lookups.GetLookupAsync(LookupTableId.AHO);
-        var herdTypeTask = lookups.GetHerdTypesAsync();
-        var pedigreeTask = lookups.GetLookupAsync(LookupTableId.PedigreeType);
-        var authCountyTask = lookups.GetLookupAsync(LookupTableId.AuthorityCounty);
-
-        await Task.WhenAll(countyTask, ahoTask, herdTypeTask, pedigreeTask, authCountyTask);
-
-        ViewData["CountyOptions"] = await countyTask;
-        ViewData["AhoOptions"] = await ahoTask;
-        ViewData["HerdTypeOptions"] = await herdTypeTask;
-        ViewData["PedigreeOptions"] = await pedigreeTask;
-        ViewData["AuthorityCountyOptions"] = await authCountyTask;
-
-        ViewData["AuthorityOptions"] = EditableFarm?.AuthorityCountyID is > 0
-            ? await lookups.GetAuthoritiesByCountyAsync(EditableFarm.AuthorityCountyID.Value)
-            : (IEnumerable<LuAuthority>)[];
-
-        ViewData["AdnsOptions"] = EditableFarm?.AuthorityID is > 0
-            ? await lookups.GetADNSRegionsByAuthorityAsync(EditableFarm.AuthorityID.Value)
-            : (IEnumerable<LuAdnsRegion>)[];
-    }
+    private Task LoadLookupsForEditAsync() =>
+        FarmFormLookups.LoadOptionsAsync(ViewData, lookups, EditableFarm?.AuthorityCountyID, EditableFarm?.AuthorityID);
 
     private bool TryValidateStagedCollections()
     {
