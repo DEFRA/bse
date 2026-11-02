@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using BSE.Host.Pages.Case;
+using BSE.Host.Models.ViewModels;
 using BSE.Host.Services;
 using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Repositories;
@@ -52,7 +53,7 @@ public sealed class VlaModelFlowTests
         _orchestration.CommitAllAsync(Rbse, 1).Returns(CaseCommitOutcome.Success([]));
     }
 
-    private VlaModel Create(bool editable = true, bool withRowStamp = true)
+    private VlaModel Create(bool editable = true, bool withRowStamp = true, bool dataEntry = true)
     {
         if (!editable)
             _batches.GetBatchNumbersByRbseAsync(Arg.Any<string>()).Returns(Array.Empty<BatchNumberEntry>());
@@ -65,7 +66,9 @@ public sealed class VlaModelFlowTests
         var http = new DefaultHttpContext
         {
             User = new ClaimsPrincipal(new ClaimsIdentity(
-                [new Claim(ClaimTypes.Role, "DataEntry"), new Claim(ClaimTypes.Role, "VLAAccess")], "TestAuth"))
+                dataEntry
+                    ? [new Claim(ClaimTypes.Role, "DataEntry"), new Claim(ClaimTypes.Role, "VLAAccess")]
+                    : [new Claim(ClaimTypes.Role, "VLAAccess")], "TestAuth"))
         };
         model.PageContext = new PageContext { HttpContext = http };
         model.PageContext.ViewData = new ViewDataDictionary(new EmptyModelMetadataProvider(), model.ModelState);
@@ -243,6 +246,50 @@ public sealed class VlaModelFlowTests
         await model.OnPostAsync();
 
         _stored!.Bab.Should().Be(blank);
+    }
+
+    [Fact]
+    public async Task StageAndGoto_NonDataEntryUser_RedirectsWithoutStaging()
+    {
+        var result = await Create(dataEntry: false).OnPostStageAndGotoAsync("/Case/Farm");
+
+        result.Should().BeOfType<RedirectToPageResult>().Which.PageName.Should().Be("/Case/Farm");
+        _stored.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task OnGet_StagedCase_OverlaysStagedValues()
+    {
+        _stored = new CaseEditSessionState
+        {
+            Rbse = Rbse,
+            Case = new VlaEditViewModel { Rbse = Rbse, Sex = "F" }.ToEditCommand([1])
+        };
+        var model = Create();
+
+        await model.OnGetAsync();
+
+        model.Case.Sex.Should().Be("F");
+    }
+
+    [Theory]
+    [InlineData("birth-epoch")]
+    [InlineData("slaughter-before-birth")]
+    [InlineData("slaughter-future")]
+    public async Task Post_DateRuleViolations_ReturnPage(string scenario)
+    {
+        var today = DateTime.Today;
+        var model = Create();
+        switch (scenario)
+        {
+            case "birth-epoch": model.Case.BirthDate = new DateTime(1960, 1, 1); break;
+            case "slaughter-before-birth": model.Case.BirthDate = today.AddDays(-10); model.Case.SlaughterDate = today.AddDays(-20); break;
+            case "slaughter-future": model.Case.SlaughterDate = today.AddDays(2); break;
+        }
+
+        (await model.OnPostAsync()).Should().BeOfType<PageResult>();
+
+        model.ModelState.IsValid.Should().BeFalse();
     }
 
     [Fact]

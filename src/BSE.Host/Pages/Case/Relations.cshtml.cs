@@ -1640,31 +1640,10 @@ public class RelationsModel(
 
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadAsync();
-        var draft = await LoadOrInitializeRelationsDraftAsync();
+        await LoadOrInitializeRelationsDraftAsync();
         PopulateDamSireFromDetails();
-        var appliedDam = await ApplyPendingParentFromTempData(isDam: true);
-        var appliedSire = await ApplyPendingParentFromTempData(isDam: false);
-
-        var draftChanged = false;
-        if (appliedDam && draft.RemoveDamPending)
-        {
-            draft.RemoveDamPending = false;
-            draftChanged = true;
-        }
-
-        if (appliedSire && draft.RemoveSirePending)
-        {
-            draft.RemoveSirePending = false;
-            draftChanged = true;
-        }
-
-        if (draftChanged)
-        {
-            draft.HasRelationsChanges = true;
-            await sessionState.SetAsync(draft);
-            RemoveDamPending = draft.RemoveDamPending;
-            RemoveSirePending = draft.RemoveSirePending;
-        }
+        await ApplyPendingParentFromTempData(isDam: true);
+        await ApplyPendingParentFromTempData(isDam: false);
 
         EditCaseHerdbook = editCaseHerdbook;
 

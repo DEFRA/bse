@@ -15,6 +15,7 @@ using BSE.Modules.FarmManagement.Models;
 using BSE.Modules.FarmManagement.Repositories;
 using BSE.SharedKernel;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 
@@ -57,11 +58,11 @@ public sealed class CaseEditOrchestrationPersistenceTests
         _farmRepository.GetByCphhAsync(Cphh).Returns(ExistingFarm());
     }
 
-    private CaseEditOrchestrationService CreateService() => new(
+    private CaseEditOrchestrationService CreateService(ILogger<CaseEditOrchestrationService>? logger = null) => new(
         _sessionState, _wizardState, _caseRepository, _farmRepository, _babRepository, _clinicalRepository,
         _feedRepository, _relationsRepository, _pedigreeRepository, _caseWorkRepository, _batchRepository,
         _testRepository, _otherOwnerRepository, _herdSizeRepository, _farmRelationRepository, _connectionFactory,
-        NullLogger<CaseEditOrchestrationService>.Instance);
+        logger ?? NullLogger<CaseEditOrchestrationService>.Instance);
 
     private static CaseRecord ExistingCase() => new()
     {
@@ -238,6 +239,76 @@ public sealed class CaseEditOrchestrationPersistenceTests
 
         await act.Should().ThrowAsync<InvalidOperationException>();
         _transaction.Received(1).Rollback();
+    }
+
+    [Fact]
+    public async Task StaleTestAndOwnerRowStamps_AreSoftWarnings()
+    {
+        _testRepository.GetByRbseAsync(Rbse).Returns(new[] { new CaseTestRecord(1, Rbse, "T1", "Type1", "P", "Pos", [1]) });
+        _otherOwnerRepository.GetByRbseAsync(Rbse).Returns(new[] { new OtherOwnerRecord(1, Rbse, "B", "Old", null, [1]) });
+        Stage(new CaseEditSessionState
+        {
+            HasCaseEditChanges = true,
+            Tests = [new() { Id = 1, TestType = "T1", TestResult = "N", RowStampBase64 = "AQ==" }],
+            OtherOwners = [new() { Id = 1, Type = "B", Name = "New", Cphh = "", RowStampBase64 = "AQ==" }]
+        });
+
+        var outcome = await CreateService().CommitAllAsync(Rbse, 1);
+
+        outcome.Warnings.Should().Contain(w => w.StartsWith("Failed to update test"))
+            .And.Contain(w => w.StartsWith("Failed to update owner"));
+    }
+
+    [Fact]
+    public async Task FormBWithoutAFate_IsRejectedByTheMandatoryCheck()
+    {
+        Stage(new CaseEditSessionState
+        {
+            HasPendingChanges = true,
+            Case = CaseCommand() with { FormBDate = DateTime.Today.AddDays(-1), Fate = null }
+        });
+
+        var act = () => CreateService().CommitAllAsync(Rbse, 1);
+
+        (await act.Should().ThrowAsync<MandatoryCaseFieldsMissingException>())
+            .Which.Errors.Should().Contain("Please specify a fate (Form B Reason) for the case.");
+    }
+
+    [Fact]
+    public async Task ExistingCaseWhoseFarmCannotBeFound_IsRejectedByTheMandatoryCheck()
+    {
+        _farmRepository.GetByCphhAsync(Cphh).Returns((FarmRecord?)null);
+        Stage(new CaseEditSessionState { HasPendingChanges = true, Case = CaseCommand() });
+
+        var act = () => CreateService().CommitAllAsync(Rbse, 1);
+
+        (await act.Should().ThrowAsync<MandatoryCaseFieldsMissingException>())
+            .Which.Errors.Should().Contain("No farm has been specified for the case.");
+    }
+
+    [Fact]
+    public async Task StagedFarmWithBlankMandatoryFields_ListsEveryFarmErrorAndLogsTheCheck()
+    {
+        var logger = Substitute.For<ILogger<CaseEditOrchestrationService>>();
+        logger.IsEnabled(Arg.Any<LogLevel>()).Returns(true);
+        Stage(new CaseEditSessionState
+        {
+            HasPendingChanges = true,
+            Farm = FarmCommand() with { OwnerName = null, Address1 = null, Parish = null, County = null, AHO = null, ADNSRegionID = null }
+        });
+
+        var act = () => CreateService(logger).CommitAllAsync(Rbse, 1);
+
+        (await act.Should().ThrowAsync<MandatoryCaseFieldsMissingException>()).Which.Errors.Should().BeEquivalentTo(
+        [
+            "Please enter an owner name for the farm.",
+            "Please enter the first line of the farm address.",
+            "Please enter a parish for the farm.",
+            "Please specify a county for the farm.",
+            "Please specify an AHO for the farm.",
+            "Please specify an ADNS Region for the farm."
+        ]);
+        logger.ReceivedWithAnyArgs().Log(default, default, default(object), default, default!);
     }
 
     [Fact]

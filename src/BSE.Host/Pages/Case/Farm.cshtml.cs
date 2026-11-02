@@ -1564,10 +1564,8 @@ public class FarmModel(
         if (model.ADNSRegionID is not > 0)
             return true;
 
-        if (ViewData["AdnsOptions"] is IEnumerable<LuAdnsRegion> options)
-            return options.Any(x => x.Id == model.ADNSRegionID.Value);
-
-        return true;
+        return ViewData["AdnsOptions"] is not IEnumerable<LuAdnsRegion> options
+               || options.Any(x => x.Id == model.ADNSRegionID.Value);
     }
 
     private static bool IsNonGbFarmCphh(string? cphh)

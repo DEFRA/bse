@@ -132,11 +132,7 @@ public sealed class CaseEditOrchestrationService(
         if (!isNewCase && caseCommand is null && session is not null && (session.Bab is not null || session.Clinical is not null))
             caseCommand = CaseEditViewModel.FromRecord(existingCase!).ToEditCommand(existingCase!.RowStamp ?? []);
 
-        // A brand-new case can only be created from the Farm tab's own staged fields — mirrors
-        // legacy requiring CaseEntryFarm.aspx as the mandatory first stop for a new RBSE.
-        if (isNewCase && session?.Farm is null)
-            return CaseCommitOutcome.Failure(EditCaseResult.RbseNotFound);
-
+        // The mandatory-fields check above already rejects a brand-new case without a staged Farm CPHH.
         using var connection = connectionFactory.CreateConnection();
         connection.Open();
         using var transaction = connection.BeginTransaction();

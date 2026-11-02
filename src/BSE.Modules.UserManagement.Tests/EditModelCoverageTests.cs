@@ -478,4 +478,54 @@ public sealed class EditModelCoverageTests
 
         model.Case.FormADate.Should().Be(record.FormADate);
     }
+
+    [Theory]
+    [InlineData(BSE.Modules.CaseManagement.Enums.EditCaseResult.AuditLogError, "Audit log error")]
+    [InlineData(BSE.Modules.CaseManagement.Enums.EditCaseResult.PostUpdateError, "Database error")]
+    [InlineData(BSE.Modules.CaseManagement.Enums.EditCaseResult.ConcurrencyConflict, "Update failed")]
+    public async Task Save_CommitFailure_SetsErrorMessage(BSE.Modules.CaseManagement.Enums.EditCaseResult failure, string expected)
+    {
+        _currentUser.GetUserIdAsync().Returns(7);
+        _orchestration.CommitAllAsync(Rbse, 7).Returns(CaseCommitOutcome.Failure(failure));
+        var model = Create(Defra);
+        FillValidCase(model);
+
+        var result = await model.OnPostAsync();
+
+        result.Should().BeOfType<RedirectToPageResult>().Which.PageName.Should().Be("/Home");
+        model.TempData["ErrorMessage"]!.ToString().Should().Contain(expected);
+    }
+
+    [Fact]
+    public async Task StageAndGoToAuditLog_InvalidCase_ReturnsPage()
+    {
+        var model = Create(Defra);
+        FillValidCase(model);
+        model.Case.BirthDate = new DateTime(1960, 1, 1);
+
+        (await model.OnPostStageAndGoToAuditLogAsync()).Should().BeOfType<PageResult>();
+    }
+
+    [Fact]
+    public async Task StageAndGoto_InvalidCase_ReturnsPage()
+    {
+        var model = Create(Defra);
+        FillValidCase(model);
+        model.Case.BirthDate = new DateTime(1960, 1, 1);
+
+        (await model.OnPostStageAndGotoAsync("/Case/Farm")).Should().BeOfType<PageResult>();
+        model.ModelState.Should().ContainKey("Case.BirthDate");
+    }
+
+    [Fact]
+    public async Task TestGridHandlers_WithPersistedCaseWork_StillReopenTheRow()
+    {
+        _caseWorkRepository.GetByRbseAsync(Rbse).Returns(new CaseWorkRecord { Rbse = Rbse, Barcode = "BC" });
+        var model = Create(Defra);
+        FillValidCase(model);
+
+        (await model.OnPostBeginEditTestRowAsync(1)).Should().BeOfType<PageResult>();
+
+        model.ReopenEditTestId.Should().Be(1);
+    }
 }

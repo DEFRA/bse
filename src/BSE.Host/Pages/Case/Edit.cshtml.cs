@@ -629,11 +629,8 @@ public class EditModel(
     /// last-persisted DB record, and re-stages the posted (in-progress, unsaved) scalar edit —
     /// otherwise a Tests grid operation (add/edit row) silently discards any not-yet-saved edit to
     /// the DEFRA tab's own fields.</summary>
-    private async Task RestoreAndRestageCaseEditAsync(CaseEditViewModel? postedCase)
+    private async Task RestoreAndRestageCaseEditAsync(CaseEditViewModel postedCase)
     {
-        if (postedCase is null)
-            return;
-
         Case = postedCase;
 
         var rowStampBase64 = TempData[string.Format(RowStampKey, Rbse)]?.ToString();

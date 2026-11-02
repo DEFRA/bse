@@ -83,6 +83,7 @@ public sealed class RelationsModelCoverageTests
     [InlineData("Sex", true)]
     [InlineData("BirthDate", false)]
     [InlineData("Fate", true)]
+    [InlineData("RelationFate", false)]
     [InlineData("LeftDate", false)]
     [InlineData("Eartag", true)]
     [InlineData("Sire", false)]
@@ -158,6 +159,33 @@ public sealed class RelationsModelCoverageTests
         var delete = Create(Editor);
         (await delete.OnPostDeleteRelationRowAsync(key)).Should().BeOfType<RedirectToPageResult>();
         _sessionState.Current!.Relations.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public async Task AddRow_WithARelatedRbse_ValidatesAgainstTheOtherStagedRelations()
+    {
+        var model = Create(Editor);
+        model.RelationType = "Twin";
+        model.RelationRbse = "002700011";
+
+        (await model.OnPostAddRelationRowAsync()).Should().BeOfType<PageResult>();
+
+        model.RelationFieldErrors.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public async Task StagedRelationRows_ReportWhetherTheyAreUnsaved()
+    {
+        var add = Create(Editor);
+        add.RelationType = "Twin";
+        add.Sex = "F";
+        await add.OnPostAddRelationRowAsync();
+
+        var model = Create(Editor);
+        await model.OnGetAsync();
+
+        model.PagedRelations.Should().ContainSingle(r => r.IsUnsaved);
+        model.PagedRelations.Should().Contain(r => !r.IsUnsaved);
     }
 
     [Fact]
