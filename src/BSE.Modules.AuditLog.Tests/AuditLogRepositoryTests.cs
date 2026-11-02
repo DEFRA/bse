@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics.CodeAnalysis;
 using BSE.Infrastructure;
 using BSE.Modules.AuditLog.Models;
 using BSE.Modules.AuditLog.Repositories;
@@ -95,6 +96,7 @@ public sealed class AuditLogRepositoryTests
         public List<string> CommandTexts { get; } = [];
         public FakeDbCommand? LastCommand { get; private set; }
 
+        [AllowNull]
         public override string ConnectionString { get; set; } = "Server=localhost;Database=BSETest;Trusted_Connection=True;";
         public override string Database => "BSETest";
         public override string DataSource => "localhost";
@@ -127,6 +129,7 @@ public sealed class AuditLogRepositoryTests
             _resultSet = resultSet;
         }
 
+        [AllowNull]
         public override string CommandText { get; set; } = string.Empty;
         public override int CommandTimeout { get; set; }
         public override CommandType CommandType { get; set; }
