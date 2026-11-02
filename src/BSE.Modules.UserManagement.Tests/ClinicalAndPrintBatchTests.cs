@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using BSE.Host.Pages.Batch;
 using BSE.Host.Pages.Case;
 using BSE.Host.Services;
@@ -104,7 +104,7 @@ public sealed class ClinicalModelFlowTests
     public async Task OnGet_PendingBatchAlreadyLinked_LocksVlaEdit()
     {
         _batches.GetBatchNumbersByRbseAsync(Rbse).Returns(new[] { new BatchNumberEntry(5, "B", Rbse, "BSE1") });
-        _wizard.GetAsync().Returns(new CaseWizardState(Rbse, "B", 5));
+        _wizard.GetAsync(Arg.Any<CancellationToken>()).Returns(new CaseWizardState(Rbse, "B", 5));
         var model = Create(Vla);
 
         await model.OnGetAsync();

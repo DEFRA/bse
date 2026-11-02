@@ -80,7 +80,7 @@ public sealed class EditableLookupAdminServiceDelegationTests
     [Fact]
     public async Task GetLookupRowsAsync_ReturnsRowsAsDictionaries()
     {
-        IDictionary<string, object> row = new System.Dynamic.ExpandoObject();
+        IDictionary<string, object?> row = new System.Dynamic.ExpandoObject();
         row["Code"] = "X";
         _db.QueryAsync<dynamic>("SelectSp", Arg.Any<object?>()).Returns(new List<dynamic> { row });
 

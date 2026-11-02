@@ -118,7 +118,7 @@ public sealed class VlaModelFlowTests
     public async Task OnGet_PendingBatchForCase_AllowsEdit()
     {
         _batches.GetBatchNumbersByRbseAsync(Arg.Any<string>()).Returns(Array.Empty<BatchNumberEntry>());
-        _wizard.GetAsync().Returns(new CaseWizardState(Rbse, "B9", 9));
+        _wizard.GetAsync(Arg.Any<CancellationToken>()).Returns(new CaseWizardState(Rbse, "B9", 9));
         var model = Create();
 
         await model.OnGetAsync();

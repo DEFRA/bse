@@ -70,7 +70,7 @@ public sealed class CasesSearchPageFlowTests
         await model.OnGetAsync();
 
         model.Filter.HasSearched.Should().BeFalse();
-        await _search.DidNotReceiveWithAnyArgs().SearchCasesAsync(default!);
+        await _search.DidNotReceiveWithAnyArgs().SearchCasesAsync(default!, TestContext.Current.CancellationToken);
     }
 
     [Fact]

@@ -31,7 +31,7 @@ public sealed class OssExportBse1ModelTests
     [Fact]
     public void OnGet_DoesNothing()
     {
-        Create().OnGet();
+        Create().Invoking(m => m.OnGet()).Should().NotThrow();
     }
 
     [Fact]

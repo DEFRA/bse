@@ -51,6 +51,7 @@ public sealed class MSGraphMailClientValidationTests
     [Fact]
     public void Dispose_DoesNotThrow()
     {
-        Create(Complete()).Dispose();
+        var act = () => Create(Complete()).Dispose();
+        act.Should().NotThrow();
     }
 }
