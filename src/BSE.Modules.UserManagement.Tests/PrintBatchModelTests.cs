@@ -83,6 +83,19 @@ public sealed class PrintBatchModelTests
     }
 
     [Fact]
+    public async Task UnrecognisedReportType_FallsBackToAGenericListOfEveryColumn()
+    {
+        _batchService.GetBatchIdAsync(Arg.Any<short?>(), 5).Returns(11);
+        _batchService.GetReportRowsAsync("GetCPHHRBSEForBatchID", 11)
+            .Returns(Rows(new Dictionary<string, object?> { ["CPHH"] = "01001000701", ["RBSE"] = "<R>" }));
+
+        var result = await Create("2026", "5", (PrintBatchModel.ReportType)99).OnPostDownloadAsync();
+
+        result.Should().BeOfType<FileContentResult>().Which.FileDownloadName.Should().Be("BatchReport.doc");
+        Html(result).Should().Contain("<h1>Batch Report</h1>").And.Contain("<th>CPHH</th>").And.Contain("&lt;R&gt;");
+    }
+
+    [Fact]
     public async Task ClinicalReport_ListsSymptomsPerCase()
     {
         _batchService.GetBatchIdAsync(Arg.Any<short?>(), 5).Returns(11);

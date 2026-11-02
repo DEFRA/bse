@@ -302,6 +302,17 @@ public sealed class CaseWorkEntryModelTests
         model.TempData["ErrorMessage"]!.ToString().Should().Contain("Annex B cannot be sent on the same day");
     }
 
+    [Fact]
+    public async Task OnPostSendMinuteAsync_WhenTheActiveMemoConstraintFires_NamesTheMemo()
+    {
+        var model = Create();
+        _service.SetMinuteSentDateAsync(Rbse, "ActiveMemo").Returns(Task.FromException(CreateSqlException("CK_CaseWork_AnnexA violated")));
+
+        await model.OnPostSendMinuteAsync("ActiveMemo");
+
+        model.TempData["ErrorMessage"]!.ToString().Should().Contain("Active Memo cannot be sent on the same day");
+    }
+
     private static SqlException CreateSqlException(string message)
     {
         var ex = (SqlException)RuntimeHelpers.GetUninitializedObject(typeof(SqlException));

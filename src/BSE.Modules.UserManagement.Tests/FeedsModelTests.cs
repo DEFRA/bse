@@ -123,6 +123,9 @@ public sealed class FeedsModelTests
     [InlineData("RationName", false)]
     [InlineData("Supplier", true)]
     [InlineData("Other", false)]
+    [InlineData("RationDescription", true)]
+    [InlineData("SupplierName", false)]
+    [InlineData("IsPrePurchase", true)]
     public async Task OnGetAsync_SortsTheGrid(string column, bool desc)
     {
         var model = Create(Editor);
@@ -241,6 +244,102 @@ public sealed class FeedsModelTests
         var invalid = Create(Editor);
         invalid.EditingClientKey = _sessionState.Current!.Feeds[0].ClientKey;
         (await invalid.OnPostUpdateFeedRowAsync()).Should().BeOfType<PageResult>();
+    }
+
+    [Fact]
+    public async Task UpdatingARowWithoutChangingAnyField_LeavesTheDraftClean()
+    {
+        await Create(Editor).OnGetAsync();
+        var key = _sessionState.Current!.Feeds.First(f => f.Id == 1).ClientKey;
+        var update = Create(Editor);
+        update.EditingClientKey = key;
+        update.YearFrom = 2000;
+        update.YearTo = 2001;
+        update.RationType = "R1";
+        update.RationName = "one";
+        update.SupplierId = 5;
+
+        (await update.OnPostUpdateFeedRowAsync()).Should().BeOfType<RedirectToPageResult>();
+
+        _sessionState.Current!.HasFeedsChanges.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task AddingThenDeletingARow_StillCountsAsAnUnsavedChange()
+    {
+        var add = Create(Editor);
+        add.YearFrom = 2010;
+        add.YearTo = 2011;
+        add.RationType = "R1";
+        add.RationName = "new ration";
+        add.SupplierId = 5;
+        await add.OnPostAddFeedRowAsync();
+        var key = _sessionState.Current!.Feeds.First(f => f.Id == 1).ClientKey;
+
+        await Create(Editor).OnPostDeleteFeedRowAsync(key);
+
+        _sessionState.Current!.Feeds.Should().HaveCount(2);
+        _sessionState.Current.HasFeedsChanges.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task DeletingARow_WhenAStagedRowIsNotPersisted_CountsAsAnUnsavedChange()
+    {
+        _sessionState.Current = new CaseEditSessionState
+        {
+            Rbse = Rbse,
+            HasFeedsChanges = true,
+            Feeds =
+            [
+                new() { ClientKey = "a", Id = 1, YearFrom = 2000, YearTo = 2001, RationType = "R1", RationName = "one", SupplierId = 5 },
+                new() { ClientKey = "b", Id = 99, YearFrom = 2005, YearTo = 2006, RationType = "R1" },
+                new() { ClientKey = "c", Id = 2, YearFrom = 2003, YearTo = 2004, RationType = "R2", RationName = "two", SupplierId = 5 }
+            ]
+        };
+
+        await Create(Editor).OnPostDeleteFeedRowAsync("c");
+
+        _sessionState.Current!.HasFeedsChanges.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task PanelValuesStashedByADelete_AreRestoredOnTheNextGet()
+    {
+        var model = Create(Editor);
+        await model.OnGetAsync();
+        var key = _sessionState.Current!.Feeds[0].ClientKey;
+        model.EditingClientKey = "k";
+        model.EditingFeedId = 3;
+        model.YearFrom = 2015;
+        model.YearTo = 2016;
+        model.RationType = "R1";
+        model.RationName = "typed";
+        model.IsPrePurchase = true;
+        model.SupplierId = 5;
+        model.SupplierName = "Acme";
+        await model.OnPostDeleteFeedRowAsync(key);
+        model.YearFrom = null;
+        model.RationName = null;
+
+        await model.OnGetAsync();
+
+        model.YearFrom.Should().Be(2015);
+        model.RationName.Should().Be("typed");
+        model.SupplierName.Should().Be("Acme");
+        model.IsPrePurchase.Should().BeTrue();
+        model.Feeds.Should().OnlyContain(f => !f.IsUnsaved);
+    }
+
+    [Fact]
+    public async Task AnUnreadableStashedPanel_IsIgnored()
+    {
+        var model = Create(Editor);
+        model.TempData[$"FeedsPanelState_{Rbse}"] = "null";
+        model.YearFrom = 1999;
+
+        (await model.OnGetAsync()).Should().BeOfType<PageResult>();
+
+        model.YearFrom.Should().Be(1999);
     }
 
     [Fact]

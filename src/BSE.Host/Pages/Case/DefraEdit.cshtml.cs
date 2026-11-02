@@ -256,23 +256,18 @@ public class DefraEditModel(
             ModelState.AddModelError("Case.Fate",
                 "Fate (Form B reason) is required when a Form B date is entered.");
 
-        // Form C Date: requires Form B Date (FormC ≠ FormB is a soft warning — not a hard block)
-        if (Case.FormCDate.HasValue && !Case.FormBDate.HasValue)
-            ModelState.AddModelError("Case.FormCDate",
-                "Form C date requires a Form B date to be set.");
-
+        // Form C date: ≤ today (FormC ≠ FormB is a soft warning — not a hard block)
         if (Case.FormCDate.HasValue && Case.FormCDate.Value.Date > today)
             ModelState.AddModelError("Case.FormCDate", "Invalid Date");
     }
 
     private void ValidateDateAfterFormA(DateTime? date, string field, string label, DateTime today)
     {
-        if (!date.HasValue)
+        // OnPostAsync already clears dates that depend on a missing Form A, so only the range checks remain.
+        if (!date.HasValue || !Case.FormADate.HasValue)
             return;
 
-        if (!Case.FormADate.HasValue)
-            ModelState.AddModelError(field, $"{label} requires a Form A date to be set.");
-        else if (date.Value.Date <= Case.FormADate.Value.Date)
+        if (date.Value.Date <= Case.FormADate.Value.Date)
             ModelState.AddModelError(field, $"{label} must be after the Form A date.");
         else if (date.Value.Date > today)
             ModelState.AddModelError(field, $"{label} must be a past date.");

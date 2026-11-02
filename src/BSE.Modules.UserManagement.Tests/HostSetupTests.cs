@@ -316,6 +316,46 @@ public sealed class HostSetupTests
     }
 
     [Fact]
+    public async Task AddBseAuthentication_Entra_TokenValidatedWithoutAClaimsIdentity_IsIgnored()
+    {
+        await using var app = BuildAuthApp(false, EntraConfig(false));
+        var oidc = app.Services.GetRequiredService<IOptionsMonitor<OpenIdConnectOptions>>().Get(OpenIdConnectDefaults.AuthenticationScheme);
+        var scheme = new AuthenticationScheme(OpenIdConnectDefaults.AuthenticationScheme, null, typeof(OpenIdConnectHandler));
+        var context = new TokenValidatedContext(
+            new DefaultHttpContext { RequestServices = app.Services }, scheme, oidc, new ClaimsPrincipal(), new AuthenticationProperties());
+
+        var act = () => oidc.Events.OnTokenValidated(context);
+
+        await act.Should().NotThrowAsync();
+    }
+
+    [Theory]
+    [InlineData("GET", "/Case/Farm", "?rbse=1", "/Case/Farm?rbse=1")]
+    [InlineData("POST", "/Case/Farm", "", HostSetup.HomePath)]
+    public async Task AddBseAuthentication_Entra_UnauthenticatedRequestChallengesOidcAndReturnsToTheRequestedPage(
+        string method, string path, string query, string expectedReturn)
+    {
+        await using var app = BuildAuthApp(false, EntraConfig(false));
+        var cookies = app.Services.GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>().Get(CookieAuthenticationDefaults.AuthenticationScheme);
+        var scheme = new AuthenticationScheme(CookieAuthenticationDefaults.AuthenticationScheme, null, typeof(CookieAuthenticationHandler));
+        var authService = Substitute.For<IAuthenticationService>();
+        var http = new DefaultHttpContext
+        {
+            RequestServices = new ServiceCollection().AddLogging().AddSingleton(authService).BuildServiceProvider()
+        };
+        http.Request.Method = method;
+        http.Request.Path = path;
+        http.Request.QueryString = new QueryString(query);
+
+        await cookies.Events.OnRedirectToLogin(new RedirectContext<CookieAuthenticationOptions>(
+            http, scheme, cookies, new AuthenticationProperties(), "/login"));
+
+        await authService.Received(1).ChallengeAsync(
+            http, OpenIdConnectDefaults.AuthenticationScheme,
+            Arg.Is<AuthenticationProperties>(p => p.RedirectUri == expectedReturn));
+    }
+
+    [Fact]
     public async Task AddBseAuthentication_Entra_CookieEventsRedirectToTimeoutAndUnauthorizedPages()
     {
         await using var app = BuildAuthApp(false, EntraConfig(false));

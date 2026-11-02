@@ -568,6 +568,42 @@ public sealed class NewNonGbModelTests
     }
 
     [Fact]
+    public async Task OnPostAsync_WithoutRbse_RedirectsHome()
+    {
+        var model = Create();
+        model.Rbse = "";
+
+        (await model.OnPostAsync()).Should().BeOfType<RedirectToPageResult>().Which.PageName.Should().Be("/Home");
+    }
+
+    [Fact]
+    public async Task OnPostAsync_WithAnUnmappedFailureResult_ShowsTheGenericMessage()
+    {
+        var model = Create();
+        FillValid(model);
+        _cases.CreateNonGbCaseAsync(Arg.Any<AddNonGbCaseCommand>(), 3).Returns((AddNonGbCaseResult)999);
+
+        (await model.OnPostAsync()).Should().BeOfType<PageResult>();
+
+        PageTestHelpers.ErrorMessages(model, string.Empty).Should().Contain("Failed to create case (error 999).");
+    }
+
+    [Fact]
+    public async Task OnGetAsync_ResolvesACountyDescriptionToItsCodeAndEnablesFarmControlsForACphh()
+    {
+        var model = Create();
+        _geo.GetNonGBCountyAsync().Returns(new[] { new LuBseCounty { Code = "JY", Description = "Jersey" } });
+        model.County = "Jersey";
+        model.FarmControlsEnabled.Should().BeFalse();
+        model.Cphh = "00999900101";
+
+        await model.OnGetAsync();
+
+        model.County.Should().Be("JY");
+        model.FarmControlsEnabled.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task OnPostAsync_WhenCreateThrows_ShowsGenericError()
     {
         var model = Create();

@@ -259,6 +259,47 @@ public sealed class AdnsExportPageTests
     }
 
     [Fact]
+    public async Task Ni_OnGetAsync_ForGridNavigation_RestoresTheStagedRowsInsteadOfStartingClean()
+    {
+        var model = CreateNi();
+        model.OnPostAddToGrid();
+        model.InputConfirmationDate = null;
+        model.Request.Query = new Microsoft.AspNetCore.Http.QueryCollection(
+            new Dictionary<string, Microsoft.Extensions.Primitives.StringValues> { ["PageNumber"] = "1" });
+
+        (await model.OnGetAsync()).Should().BeOfType<PageResult>();
+
+        model.TotalCount.Should().Be(1);
+        model.PagedRows().Single().AdnsRegionId.Should().Be(7300);
+        model.InputConfirmationDate.Should().Be(DateTime.Today.ToString("dd/MM/yyyy"));
+        await _service.DidNotReceive().GetLastReferenceAsync(Arg.Any<string>());
+    }
+
+    [Fact]
+    public void Ni_SaveAdnsData_IsOffByDefaultAndSettable()
+    {
+        var model = CreateNi();
+        model.SaveAdnsData.Should().BeFalse();
+
+        model.SaveAdnsData = true;
+
+        model.SaveAdnsData.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Ni_GenerateReport_IgnoresErrorsFromTheAddRowFields()
+    {
+        var model = CreateNi();
+        model.OnPostAddToGrid();
+        model.ModelState.AddModelError(nameof(NiModel.InputAdnsYear), "stale");
+        _service.PreviewNiExport(default!, default!).ReturnsForAnyArgs(Preview());
+
+        model.OnPostGenerateReport();
+
+        model.ModelState.ContainsKey(nameof(NiModel.InputAdnsYear)).Should().BeFalse();
+    }
+
+    [Fact]
     public async Task Ni_OnGetAsync_StartsCleanAndPrefillsTheReference()
     {
         _service.GetLastReferenceAsync("NI").Returns(new LastAdnsReferenceRecord { LastAdnsReferenceYear = 2025, LastAdnsReferenceNumber = 3 });
