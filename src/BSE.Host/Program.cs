@@ -231,7 +231,7 @@ try
     }
     else
     {
-        // ── SAML 2.0 / Entra ID ────────────────────────────────────────────
+        // ── OIDC / Entra ID ────────────────────────────────────────────
         var azureAdConfig = builder.Configuration
             .GetSection(AzureAdOidcConfiguration.SectionName)
             .Get<AzureAdOidcConfiguration>() ?? new AzureAdOidcConfiguration();
