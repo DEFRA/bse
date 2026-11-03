@@ -263,6 +263,14 @@ try
                 options.CallbackPath          = azureAdConfig.CallbackPath;
                 options.SignedOutCallbackPath = azureAdConfig.SignedOutCallbackPath;
 
+                // If this app registration has an optional-claims / claims-mapping policy assigned,
+                // Entra ID signs its tokens with an app-specific key that is NOT present in the
+                // tenant-wide JWKS document. Requesting the metadata with ?appid=<ClientId> makes
+                // Entra return the app-specific signing keys instead, which is required for
+                // signature validation to succeed in that scenario (IDX10503 otherwise).
+                options.MetadataAddress =
+                    $"{azureAdConfig.Instance.TrimEnd('/')}/{azureAdConfig.TenantId}/v2.0/.well-known/openid-configuration?appid={azureAdConfig.ClientId}";
+
                 // Force the hybrid flow (authorization code + id_token) explicitly rather than
                 // relying on Microsoft.Identity.Web's auto-detection, which has been observed to
                 // fall back to pure implicit flow (response_type=id_token) even when a valid
