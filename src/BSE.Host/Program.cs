@@ -271,12 +271,15 @@ try
                 options.MetadataAddress =
                     $"{azureAdConfig.Instance.TrimEnd('/')}/{azureAdConfig.TenantId}/v2.0/.well-known/openid-configuration?appid={azureAdConfig.ClientId}";
 
-                // Force the hybrid flow (authorization code + id_token) explicitly rather than
-                // relying on Microsoft.Identity.Web's auto-detection, which has been observed to
-                // fall back to pure implicit flow (response_type=id_token) even when a valid
-                // ClientSecret is configured — hybrid flow is required for a confidential client
-                // and avoids signing-key/JWKS mismatches seen with pure implicit tokens.
-                options.ResponseType = Microsoft.IdentityModel.Protocols.OpenIdConnect.OpenIdConnectResponseType.CodeIdToken;
+                // Force the pure authorization code flow explicitly rather than relying on
+                // Microsoft.Identity.Web's auto-detection, which has been observed to fall back
+                // to pure implicit flow (response_type=id_token) in some cases. With response_type=code,
+                // the id_token/access_token are only ever returned via the back-channel token exchange
+                // (using ClientSecret), never in the front-channel redirect — so the "ID tokens
+                // (implicit/hybrid flows)" setting in the Entra App Registration is not required.
+                options.ResponseType = Microsoft.IdentityModel.Protocols.OpenIdConnect.OpenIdConnectResponseType.Code;
+                options.UsePkce      = true;
+                options.SaveTokens   = true;
 
                 // Pin the public origin so the correct redirect_uri is sent to Entra ID
                 // regardless of which port/protocol the request arrives on locally, and so the
@@ -294,12 +297,12 @@ try
                     if (azureAdConfig.ForceAuthn)
                         ctx.ProtocolMessage.Prompt = "login";
 
-                    // Force the hybrid flow (authorization code + id_token) on the outgoing request
-                    // itself. Setting options.ResponseType above is not sufficient — Microsoft.Identity.Web
+                    // Force the pure authorization code flow on the outgoing request itself.
+                    // Setting options.ResponseType above is not sufficient — Microsoft.Identity.Web
                     // re-derives/overwrites ProtocolMessage.ResponseType internally before this event runs,
                     // so it must be reasserted here, immediately before the request is sent to Entra ID.
                     ctx.ProtocolMessage.ResponseType =
-                        Microsoft.IdentityModel.Protocols.OpenIdConnect.OpenIdConnectResponseType.CodeIdToken;
+                        Microsoft.IdentityModel.Protocols.OpenIdConnect.OpenIdConnectResponseType.Code;
 
                     ctx.ProtocolMessage.RedirectUri =
                         OidcHelpers.RewriteRedirectUriHost(ctx.ProtocolMessage.RedirectUri, publicOrigin);
