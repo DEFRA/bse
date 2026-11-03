@@ -201,6 +201,9 @@ try
         ? CookieSecurePolicy.SameAsRequest
         : CookieSecurePolicy.Always;
 
+    builder.Services.Configure<Microsoft.AspNetCore.Mvc.CookieTempDataProviderOptions>(options =>
+        options.Cookie.SecurePolicy = cookieSecurePolicy);
+
     builder.Services.AddAntiforgery(options =>
     {
         options.HeaderName = "RequestVerificationToken";
@@ -643,6 +646,21 @@ try
             new AuthenticationProperties { RedirectUri = HomePath },
             [OpenIdConnectDefaults.AuthenticationScheme]);
     }).AllowAnonymous();
+
+    // Header sign-out: clears the app cookies, then ends the Entra session when OIDC is in use.
+    app.MapPost("/signout", async (HttpContext ctx, IAntiforgery antiforgery) =>
+    {
+        if (!await antiforgery.IsRequestValidAsync(ctx))
+            return Results.BadRequest();
+
+        ctx.Session.Clear();
+        ctx.Response.Cookies.Delete(SessionCookieName);
+
+        var properties = new AuthenticationProperties { RedirectUri = HomePath };
+        return bypassAuthentication
+            ? Results.SignOut(properties, [CookieAuthenticationDefaults.AuthenticationScheme])
+            : Results.SignOut(properties, [CookieAuthenticationDefaults.AuthenticationScheme, OpenIdConnectDefaults.AuthenticationScheme]);
+    }).RequireAuthorization();
 
     app.MapRazorPages();
 

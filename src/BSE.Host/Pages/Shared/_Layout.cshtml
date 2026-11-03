@@ -57,6 +57,10 @@
                             <span class="bse-global-header__user-info govuk-body-s govuk-!-margin-bottom-0">
                                 @await Html.PartialAsync("_UserContextPartial")
                             </span>
+                            <form method="post" action="/signout" class="govuk-!-display-inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="govuk-header__link bse-signout-btn">Sign out</button>
+                            </form>
                         }
                     </nav>
                     <button type="button" class="bse-global-header__menu-button" aria-controls="global-header-navigation" aria-expanded="false">
