@@ -1284,17 +1284,8 @@ public class FarmModel(
     public Task<IActionResult> OnGetAdnsRegionsAsync(int? authorityId) =>
         FarmFormLookups.AdnsRegionsAsync(lookups, authorityId);
 
-    public async Task<IActionResult> OnGetEstimateMapReferenceAsync(string? cphh)
-    {
-        if (string.IsNullOrEmpty(cphh) || cphh.Length < 5)
-            return new JsonResult(new { error = "CPHH must be at least 5 characters to estimate a map reference." });
-
-        var estimate = await geoLookup.EstimateMapReferenceAsync(cphh);
-        if (estimate.Error is not null)
-            return new JsonResult(new { error = estimate.Error });
-
-        return new JsonResult(new { mapRef1 = estimate.MapRef1, mapRef2 = estimate.MapRef2, mapRef3 = estimate.MapRef3 });
-    }
+    public Task<IActionResult> OnGetEstimateMapReferenceAsync(string? cphh) =>
+        FarmFormLookups.EstimateMapReferenceAsync(geoLookup, cphh);
 
     public async Task<IActionResult> OnGetValidateMapReferenceAsync(string? cphh, string? mapRef)
     {

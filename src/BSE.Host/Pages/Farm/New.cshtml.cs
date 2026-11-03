@@ -207,30 +207,10 @@ public class NewModel(
         FarmFormLookups.AdnsRegionsAsync(lookups, authorityId);
 
     /// <summary>AJAX handler: estimates the map reference from the parish centre for the given CPHH.</summary>
-    public async Task<IActionResult> OnGetEstimateMapReferenceAsync(string? cphh)
-    {
-        cphh = CphhNormalizer.Normalize(cphh);
-        if (string.IsNullOrEmpty(cphh) || cphh.Length < 5)
-            return new JsonResult(new { error = "CPHH must be at least 5 characters to estimate a map reference." });
-
-        var estimate = await mapReferenceGeoLookup.EstimateMapReferenceAsync(cphh);
-        if (estimate.Error is not null)
-            return new JsonResult(new { error = estimate.Error });
-
-        return new JsonResult(new { mapRef1 = estimate.MapRef1, mapRef2 = estimate.MapRef2, mapRef3 = estimate.MapRef3 });
-    }
+    public Task<IActionResult> OnGetEstimateMapReferenceAsync(string? cphh) =>
+        FarmFormLookups.EstimateMapReferenceAsync(mapReferenceGeoLookup, CphhNormalizer.Normalize(cphh));
 
     /// <summary>AJAX handler: returns whether the supplied map reference lies within the parish boundaries.</summary>
-    public async Task<IActionResult> OnGetValidateMapReferenceAsync(string? cphh, string? mapRef)
-    {
-        cphh = CphhNormalizer.Normalize(cphh);
-        mapRef = (mapRef ?? "").Trim().ToUpperInvariant();
-        if (cphh.Length < 5 || mapRef.Length < 8)
-            return new JsonResult(new { valid = true });
-
-        var valid = await mapReferenceGeoLookup.IsMapReferenceWithinParishAsync(cphh, mapRef);
-        return valid
-            ? new JsonResult(new { valid = true })
-            : new JsonResult(new { valid = false, message = "Map reference does not lie within the parish boundaries for this CPHH." });
-    }
+    public Task<IActionResult> OnGetValidateMapReferenceAsync(string? cphh, string? mapRef) =>
+        FarmFormLookups.ValidateMapReferenceAsync(mapReferenceGeoLookup, cphh, mapRef);
 }

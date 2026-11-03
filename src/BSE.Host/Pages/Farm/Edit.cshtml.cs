@@ -107,17 +107,8 @@ public class EditModel : PageModel
         FarmFormLookups.AdnsRegionsAsync(_lookups, authorityId);
 
     /// <summary>AJAX GET: estimates the map reference from the centre of the CPHH parish.</summary>
-    public async Task<IActionResult> OnGetEstimateMapReferenceAsync(string? cphh)
-    {
-        if (string.IsNullOrEmpty(cphh) || cphh.Length < 5)
-            return new JsonResult(new { error = "CPHH must be at least 5 characters to estimate a map reference." });
-
-        var estimate = await _geoLookup.EstimateMapReferenceAsync(cphh);
-        if (estimate.Error is not null)
-            return new JsonResult(new { error = estimate.Error });
-
-        return new JsonResult(new { mapRef1 = estimate.MapRef1, mapRef2 = estimate.MapRef2, mapRef3 = estimate.MapRef3 });
-    }
+    public Task<IActionResult> OnGetEstimateMapReferenceAsync(string? cphh) =>
+        FarmFormLookups.EstimateMapReferenceAsync(_geoLookup, cphh);
 
     /// <summary>AJAX GET: returns whether the supplied map reference lies within the parish boundaries.</summary>
     public async Task<IActionResult> OnGetValidateMapReferenceAsync(string? cphh, string? mapRef)
