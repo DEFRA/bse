@@ -233,6 +233,19 @@ try
             .GetSection(AzureAdOidcConfiguration.SectionName)
             .Get<AzureAdOidcConfiguration>() ?? new AzureAdOidcConfiguration();
 
+        // TEMPORARY DIAGNOSTIC — remove once the OIDC Key Vault secret
+        // resolution investigation is complete. Logs ONLY whether ClientSecret
+        // is present/non-empty and its length — never the value itself.
+        Log.Information(
+            "AzureAd OIDC config at startup: TenantId={TenantId} ClientId={ClientId} " +
+            "ClientSecretPresent={ClientSecretPresent} ClientSecretLength={ClientSecretLength} " +
+            "ClientSecretLooksLikeUnresolvedKeyVaultRef={LooksUnresolved}",
+            azureAdConfig.TenantId,
+            azureAdConfig.ClientId,
+            !string.IsNullOrEmpty(azureAdConfig.ClientSecret),
+            azureAdConfig.ClientSecret?.Length ?? 0,
+            azureAdConfig.ClientSecret?.StartsWith("@Microsoft.KeyVault", StringComparison.OrdinalIgnoreCase) ?? false);
+
         builder.Services
             .AddAuthentication(options =>
             {
