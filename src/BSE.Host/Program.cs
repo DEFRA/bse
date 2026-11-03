@@ -263,6 +263,13 @@ try
                 options.CallbackPath          = azureAdConfig.CallbackPath;
                 options.SignedOutCallbackPath = azureAdConfig.SignedOutCallbackPath;
 
+                // Force the hybrid flow (authorization code + id_token) explicitly rather than
+                // relying on Microsoft.Identity.Web's auto-detection, which has been observed to
+                // fall back to pure implicit flow (response_type=id_token) even when a valid
+                // ClientSecret is configured — hybrid flow is required for a confidential client
+                // and avoids signing-key/JWKS mismatches seen with pure implicit tokens.
+                options.ResponseType = Microsoft.IdentityModel.Protocols.OpenIdConnect.OpenIdConnectResponseType.CodeIdToken;
+
                 // Pin the public origin so the correct redirect_uri is sent to Entra ID
                 // regardless of which port/protocol the request arrives on locally, and so the
                 // post-authentication redirect never leaks the raw azurewebsites.net hostname
