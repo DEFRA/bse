@@ -77,19 +77,5 @@ public class ByUserModel(IAuditLogService auditLogService, IUserManagementServic
     }
 
     private IEnumerable<AuditLogEntry> ApplySorting(IEnumerable<AuditLogEntry> entries)
-    {
-        Func<AuditLogEntry, object?> keySelector = SortColumn switch
-        {
-            "User" => e => e.UserName,
-            "Table" => e => e.TableName,
-            "Field" => e => e.FieldName,
-            "Key" => e => e.Key,
-            "Before" => e => e.BeforeValue,
-            "After" => e => e.AfterValue,
-            "Reason" => e => e.Reason,
-            _ => e => e.DateTime,
-        };
-
-        return SortDesc ? entries.OrderByDescending(keySelector) : entries.OrderBy(keySelector);
-    }
+        => AuditLogSorting.Apply(entries, SortColumn, SortDesc);
 }
