@@ -15,6 +15,8 @@ namespace BSE.Host.Helpers;
 /// </summary>
 public static class EartagParser
 {
+    private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
+
     // EU country codes whose two-letter prefix coincides with valid legacy British
     // pre-Barimo herdmark prefixes.  Such eartags must be entered with a leading
     // '-' or '*' to signal "no country code".
@@ -168,9 +170,9 @@ public static class EartagParser
     private static EartagParseResult? TryParseIsoNumeric(string input)
     {
         // Strip internal spaces and underscores for matching
-        var normalised = Regex.Replace(input, @"[\s_]", "");
+        var normalised = Regex.Replace(input, @"[\s_]", "", RegexOptions.None, RegexTimeout);
         // 3 digit country + separator char position 3 + 6 herd + 5 animal = 15 chars (with sep) or 14
-        var m = Regex.Match(normalised, @"^(\d{3})([012]?)(\d{6})(\d{5})$");
+        var m = Regex.Match(normalised, @"^(\d{3})([012]?)(\d{6})(\d{5})$", RegexOptions.None, RegexTimeout);
         if (!m.Success) return null;
 
         return new EartagParseResult(
@@ -184,8 +186,8 @@ public static class EartagParser
     // e.g. "GB0 703412 70001"
     private static EartagParseResult? TryParseIsoAlpha(string input)
     {
-        var normalised = Regex.Replace(input, @"[\s_]", "");
-        var m = Regex.Match(normalised, @"^([A-Za-z]{2})([012]?)(\d{6})(\d{5})$");
+        var normalised = Regex.Replace(input, @"[\s_]", "", RegexOptions.None, RegexTimeout);
+        var m = Regex.Match(normalised, @"^([A-Za-z]{2})([012]?)(\d{6})(\d{5})$", RegexOptions.None, RegexTimeout);
         if (!m.Success) return null;
 
         return new EartagParseResult(
@@ -199,7 +201,7 @@ public static class EartagParser
     // e.g. "UK123456789012" → country=UK, herdmark=123456, eartag=789012
     private static EartagParseResult? TryParseBarimo(string input)
     {
-        var m = Regex.Match(input, @"^([A-Za-z]{2})(\d{6})(\d{6})$");
+        var m = Regex.Match(input, @"^([A-Za-z]{2})(\d{6})(\d{6})$", RegexOptions.None, RegexTimeout);
         if (!m.Success) return null;
 
         var country = m.Groups[1].Value.ToUpperInvariant();

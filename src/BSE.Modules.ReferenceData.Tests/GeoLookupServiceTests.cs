@@ -59,7 +59,7 @@ public sealed class GeoLookupServiceTests
     [Fact]
     public async Task GetNonGBCountyAsync_DelegatesToRepository()
     {
-        var counties = new[] { new LuBSECounty { Id = 1, Code = "NL", Description = "Netherlands" } };
+        var counties = new[] { new LuBseCounty { Id = 1, Code = "NL", Description = "Netherlands" } };
         _repo.GetNonGBCountiesAsync().Returns(counties);
 
         var result = await _sut.GetNonGBCountyAsync();

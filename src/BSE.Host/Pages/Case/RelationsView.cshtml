@@ -17,11 +17,11 @@
 <p class="govuk-body">
     @if (!string.IsNullOrEmpty(Model.ReturnUrl))
     {
-        <a href="@Model.ReturnUrl" class="govuk-button govuk-button--secondary" role="button" draggable="false" data-module="govuk-button">Back</a>
+        <a href="@Model.ReturnUrl" class="govuk-button govuk-button--secondary" draggable="false" data-module="govuk-button">Back</a>
     }
     else
     {
-        <button type="button" class="govuk-button govuk-button--secondary" onclick="history.back()">Back</button>
+        <button type="button" class="govuk-button govuk-button--secondary" data-history-back>Back</button>
     }
 </p>
 

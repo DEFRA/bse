@@ -193,7 +193,7 @@ public class HomeModel(
 
         if (string.IsNullOrWhiteSpace(LookupRbse))
         {
-            ModelState.AddModelError(nameof(LookupRbse), "You must enter a RBSE number");
+            ModelState.AddModelError(nameof(LookupRbse), "Enter an RBSE number in the format 00/00/00000");
             await LoadPageDataAsync();
             return Page();
         }
@@ -271,7 +271,7 @@ public class HomeModel(
     public async Task<IActionResult> OnPostCreateBatchAsync()
     {
         var batch = await batchService.GetOrCreateBatchNumberAsync();
-        TempData["SuccessMessage"] = $"Batch {batch.BatchYear}/{batch.BatchNumber} has been created. Enter an RBSE number and press Go to assign the Batch to the case.";
+        TempData["SuccessMessage"] = $"Batch {batch.BatchYear}/{batch.BatchNumber} has been created. To add a case to this batch, enter an RBSE number in the RBSE Number section and select Go.";
         return RedirectToPage("/Home", new { batchYear = batch.BatchYear, batchNumber = batch.BatchNumber });
     }
 }

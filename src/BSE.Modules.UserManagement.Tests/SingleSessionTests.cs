@@ -27,11 +27,11 @@ public class SingleSessionTests
     {
         var registry = NewRegistry(out _);
 
-        var first = await registry.StartAsync("User@Defra.gov.uk");
-        var second = await registry.StartAsync("user@defra.gov.uk");
+        var first = await registry.StartAsync("User@Defra.gov.uk", TestContext.Current.CancellationToken);
+        var second = await registry.StartAsync("user@defra.gov.uk", TestContext.Current.CancellationToken);
 
-        (await registry.IsCurrentAsync("user@defra.gov.uk", first)).Should().BeFalse();
-        (await registry.IsCurrentAsync("user@defra.gov.uk", second)).Should().BeTrue();
+        (await registry.IsCurrentAsync("user@defra.gov.uk", first, TestContext.Current.CancellationToken)).Should().BeFalse();
+        (await registry.IsCurrentAsync("user@defra.gov.uk", second, TestContext.Current.CancellationToken)).Should().BeTrue();
     }
 
     [Fact]
@@ -39,10 +39,10 @@ public class SingleSessionTests
     {
         var registry = NewRegistry(out _);
 
-        var mine = await registry.StartAsync("a@defra.gov.uk");
-        await registry.StartAsync("b@defra.gov.uk");
+        var mine = await registry.StartAsync("a@defra.gov.uk", TestContext.Current.CancellationToken);
+        await registry.StartAsync("b@defra.gov.uk", TestContext.Current.CancellationToken);
 
-        (await registry.IsCurrentAsync("a@defra.gov.uk", mine)).Should().BeTrue();
+        (await registry.IsCurrentAsync("a@defra.gov.uk", mine, TestContext.Current.CancellationToken)).Should().BeTrue();
     }
 
     [Fact]
@@ -50,8 +50,8 @@ public class SingleSessionTests
     {
         var registry = NewRegistry(out _);
 
-        (await registry.IsCurrentAsync("a@defra.gov.uk", "abc")).Should().BeTrue();
-        (await registry.IsCurrentAsync("a@defra.gov.uk", "other")).Should().BeFalse();
+        (await registry.IsCurrentAsync("a@defra.gov.uk", "abc", TestContext.Current.CancellationToken)).Should().BeTrue();
+        (await registry.IsCurrentAsync("a@defra.gov.uk", "other", TestContext.Current.CancellationToken)).Should().BeFalse();
     }
 
     [Fact]
@@ -64,18 +64,18 @@ public class SingleSessionTests
 
         var sessionId = context.Principal!.FindFirstValue(SingleSessionCookieEvents.SessionIdClaimType);
         sessionId.Should().NotBeNullOrEmpty();
-        (await registry.IsCurrentAsync("a@defra.gov.uk", sessionId!)).Should().BeTrue();
+        (await registry.IsCurrentAsync("a@defra.gov.uk", sessionId!, TestContext.Current.CancellationToken)).Should().BeTrue();
 
         // A sliding-expiration renewal re-signs the same principal and must not start a new session.
         await SingleSessionCookieEvents.OnSigningIn(context);
-        context.Principal.FindFirstValue(SingleSessionCookieEvents.SessionIdClaimType).Should().Be(sessionId);
+        context.Principal!.FindFirstValue(SingleSessionCookieEvents.SessionIdClaimType).Should().Be(sessionId);
     }
 
     [Fact]
     public async Task OnValidatePrincipal_AcceptsLatestSession()
     {
         var registry = NewRegistry(out _);
-        var id = await registry.StartAsync("a@defra.gov.uk");
+        var id = await registry.StartAsync("a@defra.gov.uk", TestContext.Current.CancellationToken);
         var context = NewValidateContext(registry, Principal("a@defra.gov.uk", id), out var auth);
 
         await SingleSessionCookieEvents.OnValidatePrincipal(context);
@@ -88,8 +88,8 @@ public class SingleSessionTests
     public async Task OnValidatePrincipal_RejectsSupersededSession()
     {
         var registry = NewRegistry(out _);
-        var old = await registry.StartAsync("a@defra.gov.uk");
-        await registry.StartAsync("a@defra.gov.uk");
+        var old = await registry.StartAsync("a@defra.gov.uk", TestContext.Current.CancellationToken);
+        await registry.StartAsync("a@defra.gov.uk", TestContext.Current.CancellationToken);
         var context = NewValidateContext(registry, Principal("a@defra.gov.uk", old), out var auth);
 
         await SingleSessionCookieEvents.OnValidatePrincipal(context);
@@ -107,6 +107,90 @@ public class SingleSessionTests
         await SingleSessionCookieEvents.OnValidatePrincipal(context);
 
         context.Principal.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task OnSigningIn_PrincipalWithoutIdentity_DoesNotAddSessionClaim()
+    {
+        var registry = NewRegistry(out _);
+        var principal = new ClaimsPrincipal();
+        var context = NewSigningInContext(registry, principal);
+
+        await SingleSessionCookieEvents.OnSigningIn(context);
+
+        principal.Claims.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task OnSigningIn_NoUserKeyClaim_DoesNotAddSessionClaim()
+    {
+        var registry = NewRegistry(out _);
+        var principal = new ClaimsPrincipal(new ClaimsIdentity("test"));
+        var context = NewSigningInContext(registry, principal);
+
+        await SingleSessionCookieEvents.OnSigningIn(context);
+
+        principal.HasClaim(c => c.Type == SingleSessionCookieEvents.SessionIdClaimType).Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData(ClaimTypes.Email)]
+    [InlineData(ClaimTypes.NameIdentifier)]
+    public async Task OnSigningIn_FallsBackToOtherIdentityClaimsForUserKey(string claimType)
+    {
+        var registry = NewRegistry(out _);
+        var identity = new ClaimsIdentity("test");
+        identity.AddClaim(new Claim(claimType, "a@defra.gov.uk"));
+        var context = NewSigningInContext(registry, new ClaimsPrincipal(identity));
+
+        await SingleSessionCookieEvents.OnSigningIn(context);
+
+        var sessionId = identity.FindFirst(SingleSessionCookieEvents.SessionIdClaimType)?.Value;
+        sessionId.Should().NotBeNullOrEmpty();
+        (await registry.IsCurrentAsync("a@defra.gov.uk", sessionId!, TestContext.Current.CancellationToken)).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task OnValidatePrincipal_NoPrincipal_StaysRejectedAndSignsOut()
+    {
+        var registry = NewRegistry(out _);
+        var context = NewValidateContext(registry, Principal("a@defra.gov.uk", "abc"), out var auth);
+        context.RejectPrincipal();
+
+        await SingleSessionCookieEvents.OnValidatePrincipal(context);
+
+        context.Principal.Should().BeNull();
+        await auth.Received(1).SignOutAsync(Arg.Any<HttpContext>(), CookieAuthenticationDefaults.AuthenticationScheme, Arg.Any<AuthenticationProperties?>());
+    }
+
+    [Fact]
+    public async Task OnValidatePrincipal_SessionIdWithoutUserKey_IsRejected()
+    {
+        var registry = NewRegistry(out _);
+        var identity = new ClaimsIdentity("test");
+        identity.AddClaim(new Claim(SingleSessionCookieEvents.SessionIdClaimType, "abc"));
+        var context = NewValidateContext(registry, new ClaimsPrincipal(identity), out _);
+
+        await SingleSessionCookieEvents.OnValidatePrincipal(context);
+
+        context.Principal.Should().BeNull();
+    }
+
+    [Fact]
+    public void AuthCookieConfiguration_Apply_SetsSecureSlidingCookieAndSingleSessionEvents()
+    {
+        var options = new CookieAuthenticationOptions();
+
+        AuthCookieConfiguration.Apply(options, "BSE.Auth", TimeSpan.FromMinutes(20), CookieSecurePolicy.Always);
+
+        options.Cookie.Name.Should().Be("BSE.Auth");
+        options.Cookie.HttpOnly.Should().BeTrue();
+        options.Cookie.SameSite.Should().Be(SameSiteMode.Lax);
+        options.Cookie.SecurePolicy.Should().Be(CookieSecurePolicy.Always);
+        options.ExpireTimeSpan.Should().Be(TimeSpan.FromMinutes(20));
+        options.SlidingExpiration.Should().BeTrue();
+        options.Events.OnSigningIn.Should().Be((Func<CookieSigningInContext, Task>)SingleSessionCookieEvents.OnSigningIn);
+        options.Events.OnValidatePrincipal.Should().Be((Func<CookieValidatePrincipalContext, Task>)SingleSessionCookieEvents.OnValidatePrincipal);
     }
 
     private static ClaimsPrincipal Principal(string email, string? sessionId = null)

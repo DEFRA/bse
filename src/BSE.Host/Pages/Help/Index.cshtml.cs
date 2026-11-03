@@ -6,5 +6,8 @@ namespace BSE.Host.Pages.Help;
 [Authorize]
 public class HelpModel : PageModel
 {
-    public void OnGet() { }
+    public void OnGet()
+    {
+        // Static help page; nothing to load.
+    }
 }

@@ -533,7 +533,7 @@
 
 <div class="bse-case-tabs-wrap">
     <nav class="bse-case-tabs govuk-!-margin-bottom-6" aria-label="Case sections">
-        <ul class="bse-case-tabs__list" role="list">
+        <ul class="bse-case-tabs__list">
             @foreach (var tab in tabs)
             {
                 bool isActive = string.Equals(tab.Label, Model.ActiveTab, StringComparison.OrdinalIgnoreCase);

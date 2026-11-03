@@ -31,6 +31,6 @@ public class HomeCreateBatchMessageTests
         var redirect = result.Should().BeOfType<RedirectToPageResult>().Subject;
         redirect.RouteValues!["batchNumber"].Should().Be(26);
         model.TempData["SuccessMessage"].Should().Be(
-            "Batch 2026/26 has been created. Enter an RBSE number and press Go to assign the Batch to the case.");
+            "Batch 2026/26 has been created. To add a case to this batch, enter an RBSE number in the RBSE Number section and select Go.");
     }
 }

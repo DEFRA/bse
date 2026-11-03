@@ -6,10 +6,12 @@ namespace BSE.Host.Middleware;
 /// </summary>
 public sealed class SecurityHeadersMiddleware(RequestDelegate next, bool enableHsts)
 {
-    // Views still use inline scripts/styles, so 'unsafe-inline' stays until they move to nonces.
-    public const string ContentSecurityPolicy =
+    public const string NonceItemKey = "csp-nonce";
+
+    // Inline scripts must carry the per-request nonce (added by CspNonceTagHelper); inline styles remain allowed.
+    public static string BuildContentSecurityPolicy(string nonce) =>
         "default-src 'self'; " +
-        "script-src 'self' 'unsafe-inline'; " +
+        $"script-src 'self' 'nonce-{nonce}'; " +
         "style-src 'self' 'unsafe-inline'; " +
         "img-src 'self' data:; " +
         "font-src 'self' data:; " +
@@ -22,21 +24,24 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next, bool enableH
 
     public Task Invoke(HttpContext context)
     {
+        var nonce = Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(16));
+        context.Items[NonceItemKey] = nonce;
+
         context.Response.OnStarting(static state =>
         {
-            var (response, hsts) = ((HttpResponse, bool))state;
+            var (response, hsts, scriptNonce) = ((HttpResponse, bool, string))state;
             var headers = response.Headers;
 
-            headers["Content-Security-Policy"] = ContentSecurityPolicy;
-            headers["X-Frame-Options"] = "DENY";
-            headers["X-Content-Type-Options"] = "nosniff";
+            headers.ContentSecurityPolicy = BuildContentSecurityPolicy(scriptNonce);
+            headers.XFrameOptions = "DENY";
+            headers.XContentTypeOptions = "nosniff";
             headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
 
             if (hsts)
-                headers["Strict-Transport-Security"] = StrictTransportSecurity;
+                headers.StrictTransportSecurity = StrictTransportSecurity;
 
             return Task.CompletedTask;
-        }, (context.Response, enableHsts));
+        }, (context.Response, enableHsts, nonce));
 
         return next(context);
     }

@@ -24,7 +24,7 @@ public class BsessCheckServiceTests
 
         _repository.GetCheckByRbseAsync(rbse, Arg.Any<CancellationToken>()).Returns(expected);
 
-        var result = await _sut.GetCheckByRbseAsync(rbse);
+        var result = await _sut.GetCheckByRbseAsync(rbse, TestContext.Current.CancellationToken);
 
         result.Should().Be(expected);
         await _repository.Received(1).GetCheckByRbseAsync(rbse, Arg.Any<CancellationToken>());
@@ -36,7 +36,7 @@ public class BsessCheckServiceTests
         _repository.GetCheckByRbseAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns((BsessCheckByRbseResult?)null);
 
-        var result = await _sut.GetCheckByRbseAsync("000000000");
+        var result = await _sut.GetCheckByRbseAsync("000000000", TestContext.Current.CancellationToken);
 
         result.Should().BeNull();
     }
@@ -92,7 +92,7 @@ public class BsessCheckServiceTests
 
         _repository.GetCheckByDateAsync(start, end, Arg.Any<CancellationToken>()).Returns(expected);
 
-        var result = await _sut.GetCheckByDateAsync(start, end);
+        var result = await _sut.GetCheckByDateAsync(start, end, TestContext.Current.CancellationToken);
 
         result.Should().BeEquivalentTo(expected);
         await _repository.Received(1).GetCheckByDateAsync(start, end, Arg.Any<CancellationToken>());
@@ -105,7 +105,7 @@ public class BsessCheckServiceTests
         _repository.GetCheckByDateAsync(Arg.Any<DateTime>(), Arg.Any<DateTime>(), Arg.Any<CancellationToken>())
             .Returns(empty);
 
-        var result = await _sut.GetCheckByDateAsync(DateTime.Today, DateTime.Today);
+        var result = await _sut.GetCheckByDateAsync(DateTime.Today, DateTime.Today, TestContext.Current.CancellationToken);
 
         result.Should().BeEmpty();
     }

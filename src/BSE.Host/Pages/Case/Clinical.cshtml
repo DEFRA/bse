@@ -1,4 +1,4 @@
-﻿@page "{rbse}"
+@page "{rbse}"
 @model BSE.Host.Pages.Case.ClinicalModel
 @{
     ViewData["Title"] = $"Clinical signs and visits — {Model.Rbse}";
@@ -67,6 +67,7 @@
     }
 
     <fieldset class="bse-form-fieldset-reset" disabled="@(!canEditClinical ? "disabled" : null)">
+    <legend class="govuk-visually-hidden">Clinical signs and visit dates</legend>
 
 
     <div class="bse-clinical-grid bse-clinical-grid--18">
@@ -246,7 +247,7 @@
                 {
                     <button type="submit" form="case-clinical-inline-form" asp-page-handler="SaveSigns" class="govuk-button" data-module="govuk-button">Save</button>
                 }
-                <a asp-page="/Case/Clinical" asp-page-handler="CancelClinicalEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
+                <a asp-page="/Case/Clinical" asp-page-handler="CancelClinicalEdit" asp-route-rbse="@Model.Rbse" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
             </div>
         </div>
     </div>

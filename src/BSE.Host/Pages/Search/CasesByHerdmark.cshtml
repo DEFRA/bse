@@ -26,11 +26,10 @@
             </div>
 
             <div class="bse-farm-legacy__field bse-farm-legacy__field--dealer-left">
-                <label asp-for="IncludeNonGb" class="govuk-label">Include Non-GB Cases?</label>
                 <div class="govuk-checkboxes" data-module="govuk-checkboxes">
                     <div class="govuk-checkboxes__item">
                         <input asp-for="IncludeNonGb" class="govuk-checkboxes__input bse-farm-legacy__dealer-checkbox" />
-                        <label asp-for="IncludeNonGb" class="govuk-label govuk-checkboxes__label"><span class="govuk-visually-hidden">Include Non-GB Cases?</span></label>
+                        <label asp-for="IncludeNonGb" class="govuk-label govuk-checkboxes__label">Include Non-GB Cases?</label>
                     </div>
                 </div>
             </div>
@@ -38,7 +37,7 @@
 
         <div class="bse-farm-legacy__row">
             <div class="bse-farm-legacy__field bse-farm-legacy__field--continuation">
-                <label class="govuk-label" aria-hidden="true">&nbsp;</label>
+                <span class="govuk-label" aria-hidden="true">&nbsp;</span>
                 <div class="govuk-button-group">
                     <button type="submit" class="govuk-button" data-module="govuk-button">Search</button>
                     <a asp-page="/Search/Menu" class="govuk-link">Search Menu</a>
@@ -64,7 +63,7 @@
         ViewData["PageNumber"] = Model.PageNumber;
 
         @await Html.PartialAsync("_ExportLink")
-        <div class="bse-herdmark-search-table-wrap">
+        <section class="bse-herdmark-search-table-wrap" aria-label="Cases by herdmark results">
         <table class="govuk-table bse-herdmark-search-table">
             <caption class="govuk-visually-hidden">Cases by herdmark results</caption>
             <thead class="govuk-table__head">
@@ -108,7 +107,7 @@
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
-                @foreach (var r in Model.PagedResults)
+                @foreach (var r in Model.PagedResults())
                 {
                     <tr class="govuk-table__row">
                         <td class="govuk-table__cell bse-rbse">@BseFormat.FormatRbse(r.Rbse)</td>
@@ -133,7 +132,7 @@
                 }
             </tbody>
         </table>
-        </div>
+        </section>
         @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages, ["Fragment"] = "herdmark-search-results" })
     }
 }

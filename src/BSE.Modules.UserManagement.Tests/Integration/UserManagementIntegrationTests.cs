@@ -66,11 +66,11 @@ public sealed class UserManagementIntegrationTests : IClassFixture<UserManagemen
         var client = _factory.CreateClient();
 
         // Act: call a probe endpoint that echoes the bse:group claim.
-        var response = await client.GetAsync("/test/group-claim");
+        var response = await client.GetAsync("/test/group-claim", TestContext.Current.CancellationToken);
 
         // Assert: GroupClaimsTransformation resolved the correct group claim.
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.Content.ReadAsStringAsync();
+        var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         body.Should().Be("DEFRA Data Entry");
     }
 
@@ -90,10 +90,10 @@ public sealed class UserManagementIntegrationTests : IClassFixture<UserManagemen
 
         var client = _factory.CreateClient();
 
-        var response = await client.GetAsync("/test/group-claim");
+        var response = await client.GetAsync("/test/group-claim", TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.Content.ReadAsStringAsync();
+        var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         body.ToLowerInvariant().Should().Contain("not authorized");
 
         await _factory.MockUserRepository.Received().GetByEmailAsync(upn);

@@ -14,6 +14,8 @@ namespace BSE.Host.Pages.Case;
 [Authorize]
 public class SaveResultModel : PageModel
 {
+    private const string HomePage = "/Home";
+
     public const string MessagesKey = "SaveResult_Messages";
     public const string ModeKey = "SaveResult_Mode";
 
@@ -23,7 +25,7 @@ public class SaveResultModel : PageModel
     public string IntroText { get; private set; } = string.Empty;
     public IReadOnlyList<string> Messages { get; private set; } = [];
     public string ButtonText { get; private set; } = "OK";
-    public string ReturnPage { get; private set; } = "/Home";
+    public string ReturnPage { get; private set; } = HomePage;
 
     /// <summary>Stages the messages/mode for <see cref="SaveResultModel"/> to pick up after a redirect.</summary>
     public static void Stage(ITempDataDictionary tempData, SaveResultMode mode, IReadOnlyList<string> messages)
@@ -39,7 +41,7 @@ public class SaveResultModel : PageModel
         if (string.IsNullOrEmpty(messagesJson)
             || !Enum.TryParse<SaveResultMode>(modeText, out var mode))
         {
-            return RedirectToPage("/Home");
+            return RedirectToPage(HomePage);
         }
 
         Messages = JsonSerializer.Deserialize<List<string>>(messagesJson) ?? [];
@@ -49,9 +51,9 @@ public class SaveResultModel : PageModel
             SaveResultMode.MissingMandatoryFields =>
                 ("The case is missing the following items of data:", "Return", "/Case/Farm"),
             SaveResultMode.PartialSuccess =>
-                ("The database has been updated but some errors were encountered:", "OK", "/Home"),
+                ("The database has been updated but some errors were encountered:", "OK", HomePage),
             _ =>
-                ("The database has not been updated because the following error(s) occurred:", "OK", "/Home"),
+                ("The database has not been updated because the following error(s) occurred:", "OK", HomePage),
         };
 
         return Page();

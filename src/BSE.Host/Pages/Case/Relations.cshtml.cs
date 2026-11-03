@@ -410,7 +410,7 @@ public class RelationsModel(
         return Page();
     }
 
-    private IActionResult RedirectToPickSireDam(bool isDam)
+    private RedirectToPageResult RedirectToPickSireDam(bool isDam)
     {
         var eartag = isDam ? DamSire.DamSearchEartag : DamSire.SireSearchEartag;
         var name = isDam ? DamSire.DamSearchName : DamSire.SireSearchName;
@@ -1118,7 +1118,7 @@ public class RelationsModel(
 
         try
         {
-            _ = new DateTime(year.Value, month ?? 1, day ?? 1);
+            _ = new DateTime(year.Value, month ?? 1, day ?? 1, 0, 0, 0, DateTimeKind.Unspecified);
             return null;
         }
         catch (ArgumentOutOfRangeException)

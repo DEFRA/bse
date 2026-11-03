@@ -31,8 +31,6 @@ namespace BSE.Host.Pages.Case;
 public class FarmModel(
     ICaseService caseService,
     IFarmService farmService,
-    IFarmRelationRepository relationRepo,
-    IHerdSizeRepository herdSizeRepo,
     ILookupDataService lookups,
     IBatchRepository batchRepository,
     ICaseWizardStateService wizardState,
@@ -87,7 +85,7 @@ public class FarmModel(
     public bool RequireFarmDetails { get; private set; }
     public IReadOnlyList<LookupItem> NewCountyOptions { get; private set; } = [];
     public IReadOnlyList<LookupItem> NewAhoOptions { get; private set; } = [];
-    public IReadOnlyList<LuADNSRegion> NewAdnsOptions { get; private set; } = [];
+    public IReadOnlyList<LuAdnsRegion> NewAdnsOptions { get; private set; } = [];
 
     public CaseRecord? Case { get; private set; }
     public FarmRecord? Farm { get; private set; }
@@ -227,11 +225,11 @@ public class FarmModel(
         // request actually resolving to" check must come from the raw navigation parameters
         // instead — e.g. the Farm/New "Create Farm" redirect for an unmatched CPHH, which carries
         // NewCphh/ForceNewFarmDetails for a *different* CPHH than whatever was staged earlier.
-        var requestedCphh = !string.IsNullOrWhiteSpace(SelectedCphh)
-            ? CphhNormalizer.Normalize(SelectedCphh)
-            : !string.IsNullOrWhiteSpace(NewCphh)
-                ? CphhNormalizer.Normalize(NewCphh)
-                : null;
+        string? requestedCphh = null;
+        if (!string.IsNullOrWhiteSpace(SelectedCphh))
+            requestedCphh = CphhNormalizer.Normalize(SelectedCphh);
+        else if (!string.IsNullOrWhiteSpace(NewCphh))
+            requestedCphh = CphhNormalizer.Normalize(NewCphh);
 
         var stagedScalars = await sessionState.GetAsync(Rbse);
         if (stagedScalars?.Farm is not null
@@ -789,7 +787,7 @@ public class FarmModel(
             return;
 
         EditableFarm = postedEditableFarm;
-        EditableFarmRowStampBase64 = postedFarmRowStampBase64;
+        EditableFarmRowStampBase64 = postedFarmRowStampBase64 ?? string.Empty;
 
         byte[]? rowStamp = null;
         if (!string.IsNullOrWhiteSpace(postedFarmRowStampBase64))
@@ -1516,7 +1514,7 @@ public class FarmModel(
     // Resolves the display names for each FK/code column on the farm.
     private void ResolveFarmLookupNames(
         FarmRecord farm,
-        IEnumerable<LuADNSRegion> adnsRegions,
+        IEnumerable<LuAdnsRegion> adnsRegions,
         IEnumerable<LookupItem> counties,
         IEnumerable<LookupItem> ahos,
         IEnumerable<LuHerdType> herdTypes,
@@ -1559,7 +1557,7 @@ public class FarmModel(
         if (model.ADNSRegionID is not > 0)
             return true;
 
-        if (ViewData["AdnsOptions"] is IEnumerable<LuADNSRegion> options)
+        if (ViewData["AdnsOptions"] is IEnumerable<LuAdnsRegion> options)
             return options.Any(x => x.Id == model.ADNSRegionID.Value);
 
         return true;
@@ -1599,7 +1597,7 @@ public class FarmModel(
 
         ViewData["AdnsOptions"] = EditableFarm?.AuthorityID is > 0
             ? await lookups.GetADNSRegionsByAuthorityAsync(EditableFarm.AuthorityID.Value)
-            : (IEnumerable<LuADNSRegion>)[];
+            : (IEnumerable<LuAdnsRegion>)[];
     }
 
     private bool TryValidateStagedCollections()

@@ -571,7 +571,7 @@
                     {
                         <button type="submit" form="case-edit-inline-form" class="govuk-button" data-module="govuk-button">Save</button>
                     }
-                    <a asp-page="/Case/Edit" asp-page-handler="CancelEdit" asp-route-rbse="@Model.Rbse" role="button" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
+                    <a asp-page="/Case/Edit" asp-page-handler="CancelEdit" asp-route-rbse="@Model.Rbse" draggable="false" class="govuk-button govuk-button--secondary bse-cancel-link" data-module="govuk-button">Cancel</a>
                 </div>
             </div>
         </div>
@@ -880,6 +880,13 @@
         .defra-legacy-receipt-row {
             grid-template-columns: 1fr;
             row-gap: 0.3rem;
+        }
+    }
+
+    /* The two receipt columns need about 1260px; stack them below 1300px so the page does not scroll sideways. */
+    @@media (max-width: 1300px) {
+        .defra-legacy-receipts-grid {
+            grid-template-columns: 1fr;
         }
     }
 </style>

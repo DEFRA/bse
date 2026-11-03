@@ -109,16 +109,15 @@
 
         <div class="bse-farm-legacy__row">
             <div class="bse-farm-legacy__field bse-farm-legacy__field--dealer-left">
-                <label asp-for="Filter.IncludeNonGb" class="govuk-label">Include Non-GB Farms?</label>
                 <div class="govuk-checkboxes" data-module="govuk-checkboxes">
                     <div class="govuk-checkboxes__item">
                         <input asp-for="Filter.IncludeNonGb" class="govuk-checkboxes__input bse-farm-legacy__dealer-checkbox" />
-                        <label asp-for="Filter.IncludeNonGb" class="govuk-label govuk-checkboxes__label"><span class="govuk-visually-hidden">Include Non-GB Farms?</span></label>
+                        <label asp-for="Filter.IncludeNonGb" class="govuk-label govuk-checkboxes__label">Include Non-GB Farms?</label>
                     </div>
                 </div>
             </div>
             <div class="bse-farm-legacy__field bse-farm-legacy__field--continuation">
-                <label class="govuk-label" aria-hidden="true">&nbsp;</label>
+                <span class="govuk-label" aria-hidden="true">&nbsp;</span>
                 <div></div>
             </div>
         </div>
@@ -147,7 +146,7 @@
         ViewData["PageNumber"] = Model.Filter.PageNumber;
 
         @await Html.PartialAsync("_ExportLink")
-        <div class="bse-farm-search-table-wrap">
+        <section class="bse-farm-search-table-wrap" aria-label="Farm search results">
         <table class="govuk-table govuk-table--small-text-until-tablet bse-farm-search-table">
             <caption class="govuk-visually-hidden">Farm search results</caption>
             <thead class="govuk-table__head">
@@ -179,7 +178,7 @@
                 </tr>
             </thead>
             <tbody class="govuk-table__body">
-                @foreach (var r in Model.Filter.PagedResults)
+                @foreach (var r in Model.Filter.PagedResults())
                 {
                     <tr class="govuk-table__row">
                         <td class="govuk-table__cell">@r.Cphh</td>
@@ -198,7 +197,7 @@
                 }
             </tbody>
         </table>
-        </div>
+        </section>
         @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.Filter.PageNumber, ["TotalPages"] = Model.Filter.TotalPages, ["PageNumberKey"] = "Filter.PageNumber", ["Fragment"] = "farm-search-results" })
     }
 }

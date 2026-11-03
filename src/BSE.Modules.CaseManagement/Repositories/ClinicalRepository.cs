@@ -33,18 +33,18 @@ public sealed class ClinicalRepository : DapperRepository, IClinicalRepository
     public async Task<IReadOnlyList<ClinicalVisitRecord>> GetVisitsByRbseAsync(string rbse)
         => (await QueryAsync<ClinicalVisitRecord>("GetClinicalVisitByRBSE", new { RBSE = rbse })).ToList();
 
-    public Task AddAsync(AddCaseClinicalCommand c, IDbConnection conn, IDbTransaction tx)
-        => ExecuteAsync("AddCaseClinical", BuildClinicalParams(c.Rbse, c), conn, tx);
+    public Task AddAsync(AddCaseClinicalCommand command, IDbConnection connection, IDbTransaction transaction)
+        => ExecuteAsync("AddCaseClinical", BuildClinicalParams(command.Rbse, command), connection, transaction);
 
-    public async Task<string?> EditAsync(EditCaseClinicalCommand c, IDbConnection conn, IDbTransaction tx)
+    public async Task<string?> EditAsync(EditCaseClinicalCommand command, IDbConnection connection, IDbTransaction transaction)
     {
         try
         {
-            var p = new DynamicParameters(BuildClinicalParams(c.Rbse, c));
-            p.Add("@RowStamp", c.RowStamp, DbType.Binary);
+            var p = new DynamicParameters(BuildClinicalParams(command.Rbse, command));
+            p.Add("@RowStamp", command.RowStamp, DbType.Binary);
             p.Add("RETURN_VALUE", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
-            await ExecuteWithOutputAsync("EditCaseClinical", p, conn, tx);
-            return (int)p.Get<int>("RETURN_VALUE") switch
+            await ExecuteWithOutputAsync("EditCaseClinical", p, connection, transaction);
+            return p.Get<int>("RETURN_VALUE") switch
             {
                 0 => null,
                 1 => "Failed to update the Clinical table.  The data may have been changed by another user.",
@@ -60,14 +60,14 @@ public sealed class ClinicalRepository : DapperRepository, IClinicalRepository
         }
     }
 
-    public Task AddVisitAsync(AddClinicalVisitCommand c, IDbConnection conn, IDbTransaction tx)
-        => ExecuteAsync("AddClinicalVisit", new { RBSE = c.Rbse, VisitDate = c.VisitDate }, conn, tx);
+    public Task AddVisitAsync(AddClinicalVisitCommand command, IDbConnection connection, IDbTransaction transaction)
+        => ExecuteAsync("AddClinicalVisit", new { RBSE = command.Rbse, VisitDate = command.VisitDate }, connection, transaction);
 
-    public Task<int> EditVisitAsync(EditClinicalVisitCommand c, IDbConnection conn, IDbTransaction tx)
-        => ExecuteWithRowCountAsync("EditClinicalVisit", new { ID = c.Id, VisitDate = c.VisitDate, RowStamp = c.RowStamp }, conn, tx);
+    public Task<int> EditVisitAsync(EditClinicalVisitCommand command, IDbConnection connection, IDbTransaction transaction)
+        => ExecuteWithRowCountAsync("EditClinicalVisit", new { ID = command.Id, VisitDate = command.VisitDate, RowStamp = command.RowStamp }, connection, transaction);
 
-    public Task<int> DeleteVisitAsync(int id, byte[] rowStamp, IDbConnection conn, IDbTransaction tx)
-        => ExecuteWithRowCountAsync("DeleteClinicalVisit", new { ID = id, RowStamp = rowStamp }, conn, tx);
+    public Task<int> DeleteVisitAsync(int id, byte[] rowStamp, IDbConnection connection, IDbTransaction transaction)
+        => ExecuteWithRowCountAsync("DeleteClinicalVisit", new { ID = id, RowStamp = rowStamp }, connection, transaction);
 
     private static object BuildClinicalParams(string rbse, dynamic c) => new
     {

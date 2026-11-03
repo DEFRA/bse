@@ -50,7 +50,7 @@ public class RelatedAnimalsModel : PageModel
     public bool NoCriteria { get; private set; }
     public int TotalCount => Results.Count;
     public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
-    public IReadOnlyList<RelatedAnimalResult> PagedResults =>
+    public IReadOnlyList<RelatedAnimalResult> PagedResults() =>
         ApplySorting(Results)
             .Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
 

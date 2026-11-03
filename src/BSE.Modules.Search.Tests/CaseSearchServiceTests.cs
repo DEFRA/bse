@@ -24,9 +24,9 @@ public sealed class CaseSearchServiceTests
                 new DateTime(2018, 1, 1), "N", new DateTime(2020, 5, 1), "Slaughter",
                 "Neg", new DateTime(2020, 6, 1), "01/12345", null, null, "UK Bred", "Adult")
         };
-        _repo.SearchCasesAsync(query, default).Returns(expected);
+        _repo.SearchCasesAsync(query, TestContext.Current.CancellationToken).Returns(expected);
 
-        var result = await _sut.SearchCasesAsync(query);
+        var result = await _sut.SearchCasesAsync(query, TestContext.Current.CancellationToken);
 
         result.Should().BeEquivalentTo(expected);
     }
@@ -35,9 +35,9 @@ public sealed class CaseSearchServiceTests
     public async Task SearchCasesAsync_EmptyQuery_ReturnsEmpty()
     {
         var query = new CaseSearchQuery();
-        _repo.SearchCasesAsync(query, default).Returns(Array.Empty<CaseSearchResult>());
+        _repo.SearchCasesAsync(query, TestContext.Current.CancellationToken).Returns(Array.Empty<CaseSearchResult>());
 
-        var result = await _sut.SearchCasesAsync(query);
+        var result = await _sut.SearchCasesAsync(query, TestContext.Current.CancellationToken);
 
         result.Should().BeEmpty();
     }
@@ -58,9 +58,9 @@ public sealed class CaseSearchServiceTests
                 Fate = "Slaughter", FinalResult = "Neg", Survey = "Passive", Origin = "UK Bred"
             }
         };
-        _repo.GetCasesByCphhAsync("12345678901", "", "", false, default).Returns(detail);
+        _repo.GetCasesByCphhAsync("12345678901", "", "", false, TestContext.Current.CancellationToken).Returns(detail);
 
-        var result = await _sut.GetCasesByCphhAsync("12/345/6789/01", "", "", false);
+        var result = await _sut.GetCasesByCphhAsync("12/345/6789/01", "", "", false, TestContext.Current.CancellationToken);
 
         result.Should().HaveCount(1);
     }
@@ -68,22 +68,22 @@ public sealed class CaseSearchServiceTests
     [Fact]
     public async Task GetCasesByCphhAsync_CphhWithSlashes_NormalizesBeforeRepositoryCall()
     {
-        _repo.GetCasesByCphhAsync("14351011901", "", "", false, default)
+        _repo.GetCasesByCphhAsync("14351011901", "", "", false, TestContext.Current.CancellationToken)
             .Returns(Array.Empty<CaseDetailSearchResult>());
 
-        await _sut.GetCasesByCphhAsync("14/351/0119/01", "", "", false);
+        await _sut.GetCasesByCphhAsync("14/351/0119/01", "", "", false, TestContext.Current.CancellationToken);
 
         await _repo.Received(1)
-            .GetCasesByCphhAsync("14351011901", "", "", false, default);
+            .GetCasesByCphhAsync("14351011901", "", "", false, TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public async Task GetCasesByEartagHerdmarkAsync_DelegatesToRepository()
     {
-        _repo.GetCasesByEartagHerdmarkAsync("123456", false, default)
+        _repo.GetCasesByEartagHerdmarkAsync("123456", false, TestContext.Current.CancellationToken)
              .Returns(Array.Empty<CaseDetailSearchResult>());
 
-        var result = await _sut.GetCasesByEartagHerdmarkAsync("123456", false);
+        var result = await _sut.GetCasesByEartagHerdmarkAsync("123456", false, TestContext.Current.CancellationToken);
 
         result.Should().BeEmpty();
     }
@@ -96,9 +96,9 @@ public sealed class CaseSearchServiceTests
             new("01/23/12345", "12/345/6789/01", "Dam", "Female", "UK 123456 11111",
                 "01/01/2015", "Slaughter", null, "Bessie", "UK 123456 11111", "01/23/11111")
         };
-        _repo.GetRelatedAnimalsAsync("010000001", "", "", "", "", default).Returns(animals);
+        _repo.GetRelatedAnimalsAsync("010000001", "", "", "", "", TestContext.Current.CancellationToken).Returns(animals);
 
-        var result = await _sut.GetRelatedAnimalsAsync("010000001", "", "", "", "");
+        var result = await _sut.GetRelatedAnimalsAsync("010000001", "", "", "", "", TestContext.Current.CancellationToken);
 
         result.Should().HaveCount(1);
         result[0].RelationType.Should().Be("Dam");
@@ -108,48 +108,48 @@ public sealed class CaseSearchServiceTests
     public async Task SearchCasesAsync_WithNonGbFlag_PassesFlagToRepository()
     {
         var query = new CaseSearchQuery(IncludeNonGbCases: true);
-        _repo.SearchCasesAsync(query, default).Returns(Array.Empty<CaseSearchResult>());
+        _repo.SearchCasesAsync(query, TestContext.Current.CancellationToken).Returns(Array.Empty<CaseSearchResult>());
 
-        await _sut.SearchCasesAsync(query);
+        await _sut.SearchCasesAsync(query, TestContext.Current.CancellationToken);
 
         await _repo.Received(1).SearchCasesAsync(
-            Arg.Is<CaseSearchQuery>(q => q.IncludeNonGbCases == true), default);
+            Arg.Is<CaseSearchQuery>(q => q.IncludeNonGbCases == true), TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public async Task SearchCasesAsync_WithPassiveActiveFilter_PassesFilterToRepository()
     {
         var query = new CaseSearchQuery(PassiveActive: "P");
-        _repo.SearchCasesAsync(query, default).Returns(Array.Empty<CaseSearchResult>());
+        _repo.SearchCasesAsync(query, TestContext.Current.CancellationToken).Returns(Array.Empty<CaseSearchResult>());
 
-        await _sut.SearchCasesAsync(query);
+        await _sut.SearchCasesAsync(query, TestContext.Current.CancellationToken);
 
         await _repo.Received(1).SearchCasesAsync(
-            Arg.Is<CaseSearchQuery>(q => q.PassiveActive == "P"), default);
+            Arg.Is<CaseSearchQuery>(q => q.PassiveActive == "P"), TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public async Task SearchCasesAsync_WithImportedCaseFilter_PassesFilterToRepository()
     {
         var query = new CaseSearchQuery(IsImportedCase: true);
-        _repo.SearchCasesAsync(query, default).Returns(Array.Empty<CaseSearchResult>());
+        _repo.SearchCasesAsync(query, TestContext.Current.CancellationToken).Returns(Array.Empty<CaseSearchResult>());
 
-        await _sut.SearchCasesAsync(query);
+        await _sut.SearchCasesAsync(query, TestContext.Current.CancellationToken);
 
         await _repo.Received(1).SearchCasesAsync(
-            Arg.Is<CaseSearchQuery>(q => q.IsImportedCase), default);
+            Arg.Is<CaseSearchQuery>(q => q.IsImportedCase), TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public async Task SearchCasesAsync_WithSexAndNotesFilters_PassesFiltersToRepository()
     {
         var query = new CaseSearchQuery(Sex: "M", Notes: "urgent");
-        _repo.SearchCasesAsync(query, default).Returns(Array.Empty<CaseSearchResult>());
+        _repo.SearchCasesAsync(query, TestContext.Current.CancellationToken).Returns(Array.Empty<CaseSearchResult>());
 
-        await _sut.SearchCasesAsync(query);
+        await _sut.SearchCasesAsync(query, TestContext.Current.CancellationToken);
 
         await _repo.Received(1).SearchCasesAsync(
-            Arg.Is<CaseSearchQuery>(q => q.Sex == "M" && q.Notes == "urgent"), default);
+            Arg.Is<CaseSearchQuery>(q => q.Sex == "M" && q.Notes == "urgent"), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -158,22 +158,22 @@ public sealed class CaseSearchServiceTests
         var earliest = new DateTime(2020, 1, 1);
         var latest = new DateTime(2020, 12, 31);
         var query = new CaseSearchQuery(EarliestFormADate: earliest, LatestFormADate: latest);
-        _repo.SearchCasesAsync(query, default).Returns(Array.Empty<CaseSearchResult>());
+        _repo.SearchCasesAsync(query, TestContext.Current.CancellationToken).Returns(Array.Empty<CaseSearchResult>());
 
-        await _sut.SearchCasesAsync(query);
+        await _sut.SearchCasesAsync(query, TestContext.Current.CancellationToken);
 
         await _repo.Received(1).SearchCasesAsync(
             Arg.Is<CaseSearchQuery>(q =>
-                q.EarliestFormADate == earliest && q.LatestFormADate == latest), default);
+                q.EarliestFormADate == earliest && q.LatestFormADate == latest), TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public async Task GetRelatedAnimalsAsync_EmptyParams_ReturnsEmpty()
     {
-        _repo.GetRelatedAnimalsAsync("", "", "", "", "", default)
+        _repo.GetRelatedAnimalsAsync("", "", "", "", "", TestContext.Current.CancellationToken)
              .Returns(Array.Empty<RelatedAnimalResult>());
 
-        var result = await _sut.GetRelatedAnimalsAsync("", "", "", "", "");
+        var result = await _sut.GetRelatedAnimalsAsync("", "", "", "", "", TestContext.Current.CancellationToken);
 
         result.Should().BeEmpty();
     }

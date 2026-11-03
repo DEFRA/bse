@@ -12,6 +12,10 @@ public class PickListsEditModel(
     IEditableLookupAdminService lookupAdminService,
     ILookupDataService lookupDataService) : PageModel
 {
+    private const string BseRegionIdColumn = "BSERegionID";
+
+    private const string DescriptionColumn = "Description";
+
     private const int TestTypeId = 7;
     private const int BreedId = 13;
     private const int AhoId = 16;
@@ -40,7 +44,7 @@ public class PickListsEditModel(
 
     public EditableLookup? Lookup { get; private set; }
     public EditableLookupProcs? Procs { get; private set; }
-    public IReadOnlyList<LuBSERegion> BseRegionOptions { get; private set; } = [];
+    public IReadOnlyList<LuBseRegion> BseRegionOptions { get; private set; } = [];
     public IReadOnlyList<ILookupItem> AhoOptions { get; private set; } = [];
     public IReadOnlyList<FieldSpec> DisplayFields { get; private set; } = [];
 
@@ -113,7 +117,7 @@ public class PickListsEditModel(
             AhoOptions = (await lookupDataService.GetLookupAsync(BSE.SharedKernel.LookupTableId.AHO)).ToList();
     }
 
-    private IActionResult RedirectToTable() =>
+    private RedirectToPageResult RedirectToTable() =>
         RedirectToPage("/Admin/PickLists", new { tableId = TableId, sortColumn = SortColumn, sortDesc = SortDesc, pageNumber = PageNumber });
 
     private string Field(string column) => Fields.GetValueOrDefault(column, "").Trim();
@@ -129,30 +133,28 @@ public class PickListsEditModel(
         var original = OriginalKey;
         return TableId switch
         {
-            TestTypeId => lookupAdminService.EditTestTypeAsync(original, Field("Code"), Field("Description"), BoolField("IsActive")),
-            RelationFateId => lookupAdminService.EditRelationFateAsync(original, Field("Code"), Field("Description"), BoolField("IsActive")),
+            TestTypeId => lookupAdminService.EditTestTypeAsync(original, Field("Code"), Field(DescriptionColumn), BoolField("IsActive")),
+            RelationFateId => lookupAdminService.EditRelationFateAsync(original, Field("Code"), Field(DescriptionColumn), BoolField("IsActive")),
             BreedId => lookupAdminService.EditBreedAsync(original, Field("Code"), Field("FullName"), Field("AmalgamatedName")),
-            AhoId => lookupAdminService.EditAHOAsync(original, Field("Code"), Field("Name"), IntField("BSERegionID")),
+            AhoId => lookupAdminService.EditAHOAsync(original, Field("Code"), Field("Name"), IntField(BseRegionIdColumn)),
             SupplierId => lookupAdminService.EditSupplierAsync(ParseKey(original), Field("Name"), Field("Details")),
-            BseCountyId => lookupAdminService.EditBSECountyAsync(Field("IDColumn"), original, Field("Code"), Field("Description"), IntField("BSERegionID")),
+            BseCountyId => lookupAdminService.EditBSECountyAsync(Field("IDColumn"), original, Field("Code"), Field(DescriptionColumn), IntField(BseRegionIdColumn)),
             TseTestingSiteId => lookupAdminService.EditTSETestingSiteAsync(original, Field("Name"), Field("Address"), Field("CPH"), Field("AHO")),
             AhroId => lookupAdminService.EditAHROAsync(ParseKey(original), Field("Name")),
-            _ => lookupAdminService.EditCodeDescriptionItemAsync(Procs!.UpdateStoredProcedure, original, Field("Code"), Field("Description"))
+            _ => lookupAdminService.EditCodeDescriptionItemAsync(Procs!.UpdateStoredProcedure, original, Field("Code"), Field(DescriptionColumn))
         };
     }
 
     private void ValidateRequired()
     {
-        foreach (var field in DisplayFields.Where(f => !f.IsBoolean && !f.IsNumeric))
+        foreach (var field in DisplayFields.Where(f => !f.IsBoolean && !f.IsNumeric && string.IsNullOrWhiteSpace(Field(f.Column))))
         {
-            if (string.IsNullOrWhiteSpace(Field(field.Column)))
-                ModelState.AddModelError(field.Column, $"Enter a {field.Label.ToLowerInvariant()}");
+            ModelState.AddModelError(field.Column, $"Enter a {field.Label.ToLowerInvariant()}");
         }
 
-        foreach (var field in DisplayFields.Where(f => f.IsRegionLookup || f.IsAhoLookup))
+        foreach (var field in DisplayFields.Where(f => (f.IsRegionLookup || f.IsAhoLookup) && string.IsNullOrWhiteSpace(Field(f.Column))))
         {
-            if (string.IsNullOrWhiteSpace(Field(field.Column)))
-                ModelState.AddModelError(field.Column, $"Select a {field.Label.ToLowerInvariant()}");
+            ModelState.AddModelError(field.Column, $"Select a {field.Label.ToLowerInvariant()}");
         }
     }
 
@@ -185,7 +187,8 @@ public class PickListsEditModel(
     public static string RowValue(IDictionary<string, object?> row, string column)
     {
         if (!row.TryGetValue(column, out var value) || value is null) return "";
-        return value is bool flag ? (flag ? "Yes" : "No") : value.ToString() ?? "";
+        if (value is bool flag) return flag ? "Yes" : "No";
+        return value.ToString() ?? "";
     }
 
     private static IReadOnlyList<FieldSpec> FieldsFor(int tableId) => tableId switch
@@ -193,7 +196,7 @@ public class PickListsEditModel(
         TestTypeId or RelationFateId =>
         [
             new("Code", "Code"),
-            new("Description", "Description"),
+            new(DescriptionColumn, DescriptionColumn),
             new("IsActive", "Is Active", IsBoolean: true)
         ],
         BreedId =>
@@ -206,7 +209,7 @@ public class PickListsEditModel(
         [
             new("Code", "Code"),
             new("Name", "Name"),
-            new("BSERegionID", "BSE Region", IsNumeric: true, IsRegionLookup: true)
+            new(BseRegionIdColumn, "BSE Region", IsNumeric: true, IsRegionLookup: true)
         ],
         SupplierId =>
         [
@@ -217,8 +220,8 @@ public class PickListsEditModel(
         [
             new("IDColumn", "ID"),
             new("Code", "Code"),
-            new("Description", "Description"),
-            new("BSERegionID", "BSE Region", IsNumeric: true, IsRegionLookup: true)
+            new(DescriptionColumn, DescriptionColumn),
+            new(BseRegionIdColumn, "BSE Region", IsNumeric: true, IsRegionLookup: true)
         ],
         TseTestingSiteId =>
         [
@@ -231,7 +234,7 @@ public class PickListsEditModel(
         _ =>
         [
             new("Code", "Code"),
-            new("Description", "Description")
+            new(DescriptionColumn, DescriptionColumn)
         ]
     };
 }

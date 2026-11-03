@@ -20,6 +20,8 @@ namespace BSE.Modules.Batch.Repositories;
 /// </summary>
 public sealed class BatchRepository : DapperRepository, IBatchRepository
 {
+    private const string AddBatchNumberLinkProc = "AddBatchNumberLink";
+
     public BatchRepository(IDbConnectionFactory connectionFactory)
         : base(connectionFactory) { }
 
@@ -54,7 +56,7 @@ public sealed class BatchRepository : DapperRepository, IBatchRepository
     }
 
     public Task AddBatchNumberLinkAsync(int batchId, string rbse, string document)
-        => ExecuteAsync("AddBatchNumberLink", new
+        => ExecuteAsync(AddBatchNumberLinkProc, new
         {
             BatchID = batchId,
             RBSE = rbse,
@@ -64,7 +66,7 @@ public sealed class BatchRepository : DapperRepository, IBatchRepository
     public Task AddBatchNumberLinkAsync(
         int batchId, string rbse, string document,
         IDbConnection connection, IDbTransaction? transaction)
-        => ExecuteAsync("AddBatchNumberLink", new
+        => ExecuteAsync(AddBatchNumberLinkProc, new
         {
             BatchID = batchId,
             RBSE = rbse,
@@ -75,7 +77,7 @@ public sealed class BatchRepository : DapperRepository, IBatchRepository
         int batchId, string rbse, string document)
     {
         var param = BuildAssignmentParameters(batchId, rbse, document);
-        await ExecuteWithOutputAsync("AddBatchNumberLink", param);
+        await ExecuteWithOutputAsync(AddBatchNumberLinkProc, param);
         return (BatchAssignmentResult)param.Get<int>("@RETURN_VALUE");
     }
 
@@ -84,7 +86,7 @@ public sealed class BatchRepository : DapperRepository, IBatchRepository
         IDbConnection connection, IDbTransaction? transaction)
     {
         var param = BuildAssignmentParameters(batchId, rbse, document);
-        await ExecuteWithOutputAsync("AddBatchNumberLink", param, connection, transaction);
+        await ExecuteWithOutputAsync(AddBatchNumberLinkProc, param, connection, transaction);
         return (BatchAssignmentResult)param.Get<int>("@RETURN_VALUE");
     }
 

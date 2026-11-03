@@ -26,9 +26,9 @@ public sealed class FarmSearchServiceTests
             new("12/345/6789/01", "John Smith", "Main Farm, Ottery", "Devon",
                 "123456", "123456", null, "SW", "Beef", null, 5, 2)
         };
-        _repo.SearchFarmsAsync(query, default).Returns(expected);
+        _repo.SearchFarmsAsync(query, TestContext.Current.CancellationToken).Returns(expected);
 
-        var result = await _sut.SearchFarmsAsync(query);
+        var result = await _sut.SearchFarmsAsync(query, TestContext.Current.CancellationToken);
 
         result.Should().BeEquivalentTo(expected);
     }
@@ -37,9 +37,9 @@ public sealed class FarmSearchServiceTests
     public async Task SearchFarmsAsync_EmptyQuery_ReturnsEmpty()
     {
         var query = new FarmSearchQuery();
-        _repo.SearchFarmsAsync(query, default).Returns(Array.Empty<FarmSearchResult>());
+        _repo.SearchFarmsAsync(query, TestContext.Current.CancellationToken).Returns(Array.Empty<FarmSearchResult>());
 
-        var result = await _sut.SearchFarmsAsync(query);
+        var result = await _sut.SearchFarmsAsync(query, TestContext.Current.CancellationToken);
 
         result.Should().BeEmpty();
     }
@@ -48,72 +48,72 @@ public sealed class FarmSearchServiceTests
     public async Task SearchFarmsAsync_WithCountyFilter_PassesCountyToRepository()
     {
         var query = new FarmSearchQuery(County: "Devon");
-        _repo.SearchFarmsAsync(query, default).Returns(Array.Empty<FarmSearchResult>());
+        _repo.SearchFarmsAsync(query, TestContext.Current.CancellationToken).Returns(Array.Empty<FarmSearchResult>());
 
-        await _sut.SearchFarmsAsync(query);
+        await _sut.SearchFarmsAsync(query, TestContext.Current.CancellationToken);
 
         await _repo.Received(1).SearchFarmsAsync(
-            Arg.Is<FarmSearchQuery>(q => q.County == "Devon"), default);
+            Arg.Is<FarmSearchQuery>(q => q.County == "Devon"), TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public async Task SearchFarmsAsync_WithHerdmarkFilter_PassesHerdmarkToRepository()
     {
         var query = new FarmSearchQuery(Herdmark: "123456");
-        _repo.SearchFarmsAsync(query, default).Returns(Array.Empty<FarmSearchResult>());
+        _repo.SearchFarmsAsync(query, TestContext.Current.CancellationToken).Returns(Array.Empty<FarmSearchResult>());
 
-        await _sut.SearchFarmsAsync(query);
+        await _sut.SearchFarmsAsync(query, TestContext.Current.CancellationToken);
 
         await _repo.Received(1).SearchFarmsAsync(
-            Arg.Is<FarmSearchQuery>(q => q.Herdmark == "123456"), default);
+            Arg.Is<FarmSearchQuery>(q => q.Herdmark == "123456"), TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public async Task SearchFarmsAsync_IncludeNonGbFarms_PassesFlagToRepository()
     {
         var query = new FarmSearchQuery(IncludeNonGbFarms: true);
-        _repo.SearchFarmsAsync(query, default).Returns(Array.Empty<FarmSearchResult>());
+        _repo.SearchFarmsAsync(query, TestContext.Current.CancellationToken).Returns(Array.Empty<FarmSearchResult>());
 
-        await _sut.SearchFarmsAsync(query);
+        await _sut.SearchFarmsAsync(query, TestContext.Current.CancellationToken);
 
         await _repo.Received(1).SearchFarmsAsync(
-            Arg.Is<FarmSearchQuery>(q => q.IncludeNonGbFarms == true), default);
+            Arg.Is<FarmSearchQuery>(q => q.IncludeNonGbFarms == true), TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public async Task SearchFarmsAsync_DealerFilter_PassesFlagToRepository()
     {
         var query = new FarmSearchQuery(IsDealer: true);
-        _repo.SearchFarmsAsync(query, default).Returns(Array.Empty<FarmSearchResult>());
+        _repo.SearchFarmsAsync(query, TestContext.Current.CancellationToken).Returns(Array.Empty<FarmSearchResult>());
 
-        await _sut.SearchFarmsAsync(query);
+        await _sut.SearchFarmsAsync(query, TestContext.Current.CancellationToken);
 
         await _repo.Received(1).SearchFarmsAsync(
-            Arg.Is<FarmSearchQuery>(q => q.IsDealer == true), default);
+            Arg.Is<FarmSearchQuery>(q => q.IsDealer == true), TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public async Task SearchFarmsAsync_DealerAny_PassesNullToRepository()
     {
         var query = new FarmSearchQuery(IsDealer: null);
-        _repo.SearchFarmsAsync(query, default).Returns(Array.Empty<FarmSearchResult>());
+        _repo.SearchFarmsAsync(query, TestContext.Current.CancellationToken).Returns(Array.Empty<FarmSearchResult>());
 
-        await _sut.SearchFarmsAsync(query);
+        await _sut.SearchFarmsAsync(query, TestContext.Current.CancellationToken);
 
         await _repo.Received(1).SearchFarmsAsync(
-            Arg.Is<FarmSearchQuery>(q => q.IsDealer == null), default);
+            Arg.Is<FarmSearchQuery>(q => q.IsDealer == null), TestContext.Current.CancellationToken);
     }
 
     [Fact]
     public async Task SearchFarmsAsync_DealerNo_PassesFalseToRepository()
     {
         var query = new FarmSearchQuery(IsDealer: false);
-        _repo.SearchFarmsAsync(query, default).Returns(Array.Empty<FarmSearchResult>());
+        _repo.SearchFarmsAsync(query, TestContext.Current.CancellationToken).Returns(Array.Empty<FarmSearchResult>());
 
-        await _sut.SearchFarmsAsync(query);
+        await _sut.SearchFarmsAsync(query, TestContext.Current.CancellationToken);
 
         await _repo.Received(1).SearchFarmsAsync(
-            Arg.Is<FarmSearchQuery>(q => q.IsDealer == false), default);
+            Arg.Is<FarmSearchQuery>(q => q.IsDealer == false), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -125,9 +125,9 @@ public sealed class FarmSearchServiceTests
             new("12/345/6789/01", "John Smith", "Main Farm", "Devon", "111111", "111111", null, "SW", "Beef", null, 2, 1),
             new("12/345/6789/02", "Jane Doe", "Hill Farm", "Devon", "222222", "222222", null, "SW", "Dairy", null, 0, 0)
         };
-        _repo.SearchFarmsAsync(query, default).Returns(results);
+        _repo.SearchFarmsAsync(query, TestContext.Current.CancellationToken).Returns(results);
 
-        var result = await _sut.SearchFarmsAsync(query);
+        var result = await _sut.SearchFarmsAsync(query, TestContext.Current.CancellationToken);
 
         result.Should().HaveCount(2);
     }
@@ -136,11 +136,11 @@ public sealed class FarmSearchServiceTests
     public async Task SearchFarmsAsync_CphhWithSlashes_NormalizesBeforeRepositoryCall()
     {
         var query = new FarmSearchQuery(Cphh: "14/351/0119/01");
-        _repo.SearchFarmsAsync(Arg.Any<FarmSearchQuery>(), default).Returns(Array.Empty<FarmSearchResult>());
+        _repo.SearchFarmsAsync(Arg.Any<FarmSearchQuery>(), TestContext.Current.CancellationToken).Returns(Array.Empty<FarmSearchResult>());
 
-        await _sut.SearchFarmsAsync(query);
+        await _sut.SearchFarmsAsync(query, TestContext.Current.CancellationToken);
 
         await _repo.Received(1).SearchFarmsAsync(
-            Arg.Is<FarmSearchQuery>(q => q.Cphh == "14351011901"), default);
+            Arg.Is<FarmSearchQuery>(q => q.Cphh == "14351011901"), TestContext.Current.CancellationToken);
     }
 }

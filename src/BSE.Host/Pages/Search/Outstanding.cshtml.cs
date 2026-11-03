@@ -11,6 +11,8 @@ namespace BSE.Host.Pages.Search;
 [Authorize]
 public class OutstandingModel : PageModel
 {
+    private const string ResultsKey = "Results";
+
     private readonly IOutstandingDataSearchService _search;
 
     public OutstandingModel(IOutstandingDataSearchService search) => _search = search;
@@ -37,7 +39,7 @@ public class OutstandingModel : PageModel
         var results = Filter.SearchType switch
         {
             "Fates" => await _search.GetOutstandingFatesAsync(query),
-            "Results" => await _search.GetOutstandingResultsAsync(query),
+            ResultsKey => await _search.GetOutstandingResultsAsync(query),
             _ => await _search.GetOutstandingBse1sAsync(query)
         };
         Filter.Results = results.ToList().AsReadOnly();
@@ -55,16 +57,16 @@ public class OutstandingModel : PageModel
         var rows = Filter.SearchType switch
         {
             "Fates" => await _search.GetOutstandingFatesAsync(query),
-            "Results" => await _search.GetOutstandingResultsAsync(query),
+            ResultsKey => await _search.GetOutstandingResultsAsync(query),
             _ => await _search.GetOutstandingBse1sAsync(query)
         };
         Filter.Results = rows.ToList();
         // Legacy exported all three outstanding-data variants under the same fixed file name.
-        return BuildExcel(Filter.SortedResults, "outstandingdatasearchresults.xlsx");
+        return BuildExcel(Filter.SortedResults(), "outstandingdatasearchresults.xlsx");
     }
 
     private bool IsKnownSearchType() =>
-        Filter.SearchType is "BSE1" or "Fates" or "Results";
+        Filter.SearchType is "BSE1" or "Fates" or ResultsKey;
 
     private static FileContentResult BuildExcel(IEnumerable<OutstandingCaseResult> rows, string filename)
     {

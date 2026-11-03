@@ -15,8 +15,8 @@ namespace BSE.Host.Pages.Batch;
 public class PrintBatchModel(IBatchRepository batchRepository) : PageModel
 {
     // Matches legacy BatchNumber.ascx: 4-digit year, up to 6-digit numeric serial.
-    private static readonly Regex YearPattern = new(@"^\d{4}$", RegexOptions.Compiled);
-    private static readonly Regex NumberPattern = new(@"^\d{1,6}$", RegexOptions.Compiled);
+    private static readonly Regex YearPattern = new(@"^\d{4}$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
+    private static readonly Regex NumberPattern = new(@"^\d{1,6}$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
 
     public static readonly IReadOnlyList<(string Value, string Label)> ReportTypes =
     [
@@ -37,7 +37,7 @@ public class PrintBatchModel(IBatchRepository batchRepository) : PageModel
     public string? ReportType { get; set; }
 
     /// <summary>Set after a valid lookup — number of cases in the batch.</summary>
-    public int? BatchCaseCount { get; private set; }
+    public int? BatchCaseCount { get; }
 
     public Task<IActionResult> OnGetAsync() => Task.FromResult<IActionResult>(Page());
 

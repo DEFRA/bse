@@ -7,6 +7,8 @@ namespace BSE.Modules.OssExport.Repositories;
 
 public sealed class OssExportRepository : DapperRepository, IOssExportRepository
 {
+    private const string ReturnValueParam = "RETURN_VALUE";
+
     private readonly IDbConnectionFactory _connectionFactory;
 
     public OssExportRepository(IDbConnectionFactory connectionFactory) : base(connectionFactory)
@@ -38,13 +40,13 @@ public sealed class OssExportRepository : DapperRepository, IOssExportRepository
         param.Add("BatchID", dbType: DbType.Int32, direction: ParameterDirection.Output);
         param.Add("BatchYear", dbType: DbType.Int16, direction: ParameterDirection.Output);
         param.Add("BatchNumber", dbType: DbType.Int32, direction: ParameterDirection.Output);
-        param.Add("RETURN_VALUE", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+        param.Add(ReturnValueParam, dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
         using var connection = _connectionFactory.CreateConnection();
         connection.Open();
         await connection.ExecuteAsync("AddBatchNumber1989", param, commandType: CommandType.StoredProcedure);
 
-        var returnCode = param.Get<int>("RETURN_VALUE");
+        var returnCode = param.Get<int>(ReturnValueParam);
         if (returnCode != 0)
             return null;
 
@@ -63,7 +65,7 @@ public sealed class OssExportRepository : DapperRepository, IOssExportRepository
     public async Task<bool> AddBatchNumberLinkAsync(int batchId, string rbse, string document)
     {
         var param = new DynamicParameters();
-        param.Add("RETURN_VALUE", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
+        param.Add(ReturnValueParam, dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
         param.Add("BatchID", dbType: DbType.Int32, value: batchId);
         param.Add("RBSE", dbType: DbType.String, value: rbse, size: 9);
         param.Add("Document", dbType: DbType.String, value: document, size: 5);
@@ -72,7 +74,7 @@ public sealed class OssExportRepository : DapperRepository, IOssExportRepository
         connection.Open();
         await connection.ExecuteAsync("AddBatchNumberLink", param, commandType: CommandType.StoredProcedure);
 
-        var returnCode = param.Get<int>("RETURN_VALUE");
+        var returnCode = param.Get<int>(ReturnValueParam);
         return returnCode == 0;
     }
 }

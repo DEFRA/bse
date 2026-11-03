@@ -4,7 +4,7 @@ namespace BSE.Modules.ReferenceData.Models;
 /// Maps to luBSECounty via GetluBSECounty / GetNonGBCounty.
 /// IDColumn is the source table's char(2) ID (not the sequential identity returned by the SP).
 /// </summary>
-public record LuBSECounty
+public record LuBseCounty
 {
     public int Id { get; init; }
     /// <summary>Source table [ID] column (char 2) aliased as IDColumn in the SP result set.</summary>

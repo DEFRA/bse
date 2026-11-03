@@ -369,7 +369,6 @@ public sealed class PageModelCoverageTests
         var batchRepository = Substitute.For<IBatchRepository>();
         var ownerRepository = Substitute.For<IOtherOwnerRepository>();
         var testRepository = Substitute.For<ITestRepository>();
-        var connectionFactory = Substitute.For<IDbConnectionFactory>();
         var configuration = new ConfigurationBuilder().AddInMemoryCollection().Build();
 
         var model = new VlaModel(
@@ -384,7 +383,6 @@ public sealed class PageModelCoverageTests
             batchRepository,
             ownerRepository,
             testRepository,
-            connectionFactory,
             configuration);
 
         SetPrivateProperty(model, "OwnerTypeOptions", new ILookupItem[]
@@ -408,8 +406,6 @@ public sealed class PageModelCoverageTests
     {
         var caseService = Substitute.For<ICaseService>();
         var farmService = Substitute.For<IFarmService>();
-        var relationRepo = Substitute.For<IFarmRelationRepository>();
-        var herdSizeRepo = Substitute.For<IHerdSizeRepository>();
         var lookups = Substitute.For<ILookupDataService>();
         var batchRepository = Substitute.For<IBatchRepository>();
         var wizardState = Substitute.For<ICaseWizardStateService>();
@@ -421,8 +417,6 @@ public sealed class PageModelCoverageTests
         return new FarmModel(
             caseService,
             farmService,
-            relationRepo,
-            herdSizeRepo,
             lookups,
             batchRepository,
             wizardState,

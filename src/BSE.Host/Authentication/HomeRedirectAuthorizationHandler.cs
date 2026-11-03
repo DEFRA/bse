@@ -7,7 +7,7 @@ namespace BSE.Host.Authentication;
 /// Redirects authenticated users who lack the required role to the Unauthorized page
 /// instead of returning a bare 403 Forbidden response.
 /// Registered as the <see cref="IAuthorizationMiddlewareResultHandler"/> in Program.cs
-/// so it applies regardless of whether the bypass or SAML auth path is active.
+/// so it applies regardless of whether the bypass or OIDC auth path is active.
 /// </summary>
 public sealed class HomeRedirectAuthorizationHandler : IAuthorizationMiddlewareResultHandler
 {

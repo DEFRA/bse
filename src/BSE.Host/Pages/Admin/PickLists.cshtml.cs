@@ -10,6 +10,8 @@ public class PickListsModel(
     IEditableLookupAdminService lookupAdminService,
     ILookupDataService lookupDataService) : PageModel
 {
+    private const string DescriptionColumn = "Description";
+
     private const int PageSize = 10;
 
     // Legacy PickListMaintenance.aspx defaulted to table 11 (Valuation Age) when none was requested.
@@ -56,7 +58,7 @@ public class PickListsModel(
     public EditableLookup? Lookup { get; private set; }
     public EditableLookupProcs? Procs { get; private set; }
     public IReadOnlyList<IDictionary<string, object?>> Rows { get; private set; } = [];
-    public IReadOnlyList<LuBSERegion> BseRegionOptions { get; private set; } = [];
+    public IReadOnlyList<LuBseRegion> BseRegionOptions { get; private set; } = [];
     public IReadOnlyList<BSE.SharedKernel.ILookupItem> AhoOptions { get; private set; } = [];
 
     /// <summary>Columns rendered in the grid, in the order returned by the table's select procedure.</summary>
@@ -67,7 +69,7 @@ public class PickListsModel(
     public int TotalCount => Rows.Count;
     public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
 
-    public IReadOnlyList<IDictionary<string, object?>> PagedRows =>
+    public IReadOnlyList<IDictionary<string, object?>> PagedRows() =>
         ApplySorting(Rows).Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
 
     public async Task<IActionResult> OnGetAsync()
@@ -101,9 +103,8 @@ public class PickListsModel(
 
         if (TableId <= 0)
         {
-            TableId = Lookups.Any(l => l.Id == DefaultTableId)
-                ? DefaultTableId
-                : Lookups.FirstOrDefault()?.Id ?? 0;
+            var firstId = Lookups.Count > 0 ? Lookups[0].Id : 0;
+            TableId = Lookups.Any(l => l.Id == DefaultTableId) ? DefaultTableId : firstId;
         }
 
         Lookup = Lookups.FirstOrDefault(l => l.Id == TableId);
@@ -128,7 +129,7 @@ public class PickListsModel(
         if (PageNumber > TotalPages) PageNumber = TotalPages;
     }
 
-    private IActionResult RedirectToTable() =>
+    private RedirectToPageResult RedirectToTable() =>
         RedirectToPage(new { tableId = TableId, sortColumn = SortColumn, sortDesc = SortDesc, pageNumber = PageNumber });
 
     private IEnumerable<IDictionary<string, object?>> ApplySorting(IReadOnlyList<IDictionary<string, object?>> source)
@@ -168,7 +169,7 @@ public class PickListsModel(
         TestTypeId or RelationFateId =>
         [
             new("Code", "Code"),
-            new("Description", "Description"),
+            new(DescriptionColumn, DescriptionColumn),
             new("IsActive", "Is Active", IsBoolean: true)
         ],
         BreedId =>
@@ -192,7 +193,7 @@ public class PickListsModel(
         [
             new("IDColumn", "ID"),
             new("Code", "Code"),
-            new("Description", "Description"),
+            new(DescriptionColumn, DescriptionColumn),
             new("BSERegionID", "BSE Region", IsNumeric: true, IsRegionLookup: true)
         ],
         TseTestingSiteId =>
@@ -206,7 +207,7 @@ public class PickListsModel(
         _ =>
         [
             new("Code", "Code"),
-            new("Description", "Description")
+            new(DescriptionColumn, DescriptionColumn)
         ]
     };
 
@@ -221,12 +222,6 @@ public class PickListsModel(
     // ── Writes ───────────────────────────────────────────────────────────────
 
     private string Field(string column) => Fields.GetValueOrDefault(column, "").Trim();
-
-    private bool BoolField(string column) =>
-        Fields.TryGetValue(column, out var v) && (v == "true" || v == "on" || v == "1" || v == "True");
-
-    private int? IntField(string column) =>
-        int.TryParse(Field(column), out var value) ? value : null;
 
     private Task DeleteAsync()
     {
@@ -249,21 +244,11 @@ public class PickListsModel(
 
     // ── Validation ───────────────────────────────────────────────────────────
 
-    private void ValidateRequired()
-    {
-        foreach (var field in DisplayFields.Where(f => !f.IsBoolean && !f.IsNumeric))
-        {
-            if (string.IsNullOrWhiteSpace(Field(field.Column)))
-            {
-                ModelState.AddModelError(field.Column, $"Enter a {field.Label.ToLowerInvariant()}");
-            }
-        }
-    }
-
     public static string RowValue(IDictionary<string, object?> row, string column)
     {
         if (!row.TryGetValue(column, out var value) || value is null) return "";
-        return value is bool flag ? (flag ? "Yes" : "No") : value.ToString() ?? "";
+        if (value is bool flag) return flag ? "Yes" : "No";
+        return value.ToString() ?? "";
     }
 
     /// <summary>Legacy rendered the BSE Region as its name, not the stored ID — and, for the TSE

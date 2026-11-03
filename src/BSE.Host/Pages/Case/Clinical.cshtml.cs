@@ -27,6 +27,8 @@ public class ClinicalModel(
     ICurrentUserService currentUser,
     IConfiguration configuration) : PageModel
 {
+    private const string DataEntryRole = "DataEntry";
+
     private const int PageSize = 10;
     private const string VlaAccessRole = "VLAAccess";
     private List<ClinicalVisitRecord> _persistedVisits = [];
@@ -82,7 +84,7 @@ public class ClinicalModel(
         // (VLA-only edit) — matches the same DataEntry+VLAAccess gate already used by every other
         // handler in this file (Add/Update/Delete/BeginEdit visit row). A plain DataEntry check
         // alone would let a DEFRA-only POST of blank/disabled clinical-sign fields overwrite them.
-        if (!User.IsInRole("DataEntry") || !User.IsInRole(VlaAccessRole))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         var signs = BindSignsFromForm();
@@ -138,7 +140,7 @@ public class ClinicalModel(
     {
         // Legacy parity: UpdateSessionWithCaseDetails() has no role check at all — every role,
         // including DEFRA Viewer (no "DataEntry" claim), can always navigate away from this tab.
-        if (User.IsInRole("DataEntry"))
+        if (User.IsInRole(DataEntryRole))
             await StageSignsEditAsync(clinicalRowStampBase64);
 
         return RedirectToPage(targetPage, new { rbse = Rbse });
@@ -148,7 +150,7 @@ public class ClinicalModel(
     /// Save/tab-switch — never staged the in-progress Signs edit, silently discarding it.</summary>
     public async Task<IActionResult> OnPostResortVisitsAsync(string? clinicalRowStampBase64)
     {
-        if (User.IsInRole("DataEntry"))
+        if (User.IsInRole(DataEntryRole))
             await StageSignsEditAsync(clinicalRowStampBase64);
 
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
@@ -278,7 +280,7 @@ public class ClinicalModel(
     /// <summary>Adds a clinical visit to the draft only. Not persisted until Save.</summary>
     public async Task<IActionResult> OnPostAddVisitRowAsync(string? clinicalRowStampBase64)
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole(VlaAccessRole))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         var postedDate = NewVisitDate;
@@ -316,7 +318,7 @@ public class ClinicalModel(
     /// <summary>Opens the inline edit view for one staged clinical visit row (no changes saved yet).</summary>
     public async Task<IActionResult> OnPostBeginEditVisitRowAsync(string clientKey, string? clinicalRowStampBase64)
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole(VlaAccessRole))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         await LoadAsync();
@@ -337,7 +339,7 @@ public class ClinicalModel(
     /// <summary>Updates a staged clinical visit row in the draft only. Not persisted until Save.</summary>
     public async Task<IActionResult> OnPostUpdateVisitRowAsync(string? clinicalRowStampBase64)
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole(VlaAccessRole))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         var clientKey = EditingClientKey;
@@ -378,7 +380,7 @@ public class ClinicalModel(
     /// <summary>Removes a staged clinical visit row from the draft only. Not persisted until Save.</summary>
     public async Task<IActionResult> OnPostDeleteVisitAsync(string clientKey, string? clinicalRowStampBase64)
     {
-        if (!User.IsInRole("DataEntry") || !User.IsInRole(VlaAccessRole))
+        if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         await LoadAsync();
@@ -410,7 +412,7 @@ public class ClinicalModel(
 
         // Legacy's CalendarDate.Validate(ByRef, earliest, latest) treats the earliest bound as
         // inclusive (valid when dDate >= dEarliestDate) — a visit on the birth date itself is valid.
-        var minDate = BirthDate?.Date ?? new DateTime(1970, 1, 1);
+        var minDate = BirthDate?.Date ?? DateTime.UnixEpoch;
         if (date.Value.Date < minDate)
             ModelState.AddModelError(key, BirthDate.HasValue
                 ? "The visit date must be on or after the birth date."

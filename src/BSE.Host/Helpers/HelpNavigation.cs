@@ -2,27 +2,33 @@ namespace BSE.Host.Helpers;
 
 public static class HelpNavigation
 {
+    private const string CaseEntryFarmAnchor = "CaseEntryFarm";
+
+    private const string CaseEntryRelationsAnchor = "CaseEntryRelations";
+
+    private const string CaseEntryVlaAnchor = "CaseEntryVLA";
+
     private static readonly IReadOnlyList<(string Prefix, string Fragment)> RouteMap =
     [
         ("/Home", "home-page"),
 
-        ("/Case/Farm", "CaseEntryFarm"),
+        ("/Case/Farm", CaseEntryFarmAnchor),
         ("/Case/DefraEdit", "CaseEntryDEFRA"),
         ("/Case/Bab", "CaseEntryBAB"),
         ("/Case/BabEdit", "CaseEntryBAB"),
-        ("/Case/Vla", "CaseEntryVLA"),
-        ("/Case/VlaEdit", "CaseEntryVLA"),
+        ("/Case/Vla", CaseEntryVlaAnchor),
+        ("/Case/VlaEdit", CaseEntryVlaAnchor),
         ("/Case/Clinical", "CaseEntryClinical"),
         ("/Case/ClinicalEdit", "CaseEntryClinical"),
         ("/Case/Feeds", "CaseEntryFeeds"),
         ("/Case/FeedAdd", "CaseEntryFeeds"),
-        ("/Case/Relations", "CaseEntryRelations"),
-        ("/Case/RelationAdd", "CaseEntryRelations"),
-        ("/Case/RelationEdit", "CaseEntryRelations"),
-        ("/Case/PickSireDam", "CaseEntryRelations"),
-        ("/Case/RelationsView", "CaseEntryRelations"),
-        ("/Case/OtherOwnerAdd", "CaseEntryVLA"),
-        ("/Case/OtherOwnerEdit", "CaseEntryVLA"),
+        ("/Case/Relations", CaseEntryRelationsAnchor),
+        ("/Case/RelationAdd", CaseEntryRelationsAnchor),
+        ("/Case/RelationEdit", CaseEntryRelationsAnchor),
+        ("/Case/PickSireDam", CaseEntryRelationsAnchor),
+        ("/Case/RelationsView", CaseEntryRelationsAnchor),
+        ("/Case/OtherOwnerAdd", CaseEntryVlaAnchor),
+        ("/Case/OtherOwnerEdit", CaseEntryVlaAnchor),
         ("/Case/NewNonGb", "non-gb-case"),
         ("/Case/New", "case-details"),
         ("/Case/Edit", "case-details"),
@@ -33,10 +39,10 @@ public static class HelpNavigation
         ("/Case/RbseChange", "RBSEChange"),
 
         ("/Farm/CphhChange", "CPHHChange"),
-        ("/Farm/Lookup", "CaseEntryFarm"),
-        ("/Farm/Details", "CaseEntryFarm"),
-        ("/Farm/Edit", "CaseEntryFarm"),
-        ("/Farm/New", "CaseEntryFarm"),
+        ("/Farm/Lookup", CaseEntryFarmAnchor),
+        ("/Farm/Details", CaseEntryFarmAnchor),
+        ("/Farm/Edit", CaseEntryFarmAnchor),
+        ("/Farm/New", CaseEntryFarmAnchor),
         ("/Farm/MoveCaseNewFarm", "MoveCase"),
 
         ("/Search/Cases", "SearchCase"),

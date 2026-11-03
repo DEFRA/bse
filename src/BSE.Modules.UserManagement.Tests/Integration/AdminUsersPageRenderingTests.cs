@@ -38,10 +38,10 @@ public sealed class AdminUsersPageRenderingTests : IClassFixture<AdminUsersWebFa
     {
         var client = _factory.CreateClient();
 
-        var response = await client.GetAsync("/Admin/Users?IsAddingNew=true");
+        var response = await client.GetAsync("/Admin/Users?IsAddingNew=true", TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var html = await response.Content.ReadAsStringAsync();
+        var html = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 
         // Regression guard: before the fix, "ViewData[\"RowId\"] = addRowId;" was emitted as literal
         // page text because it sat inside the <tr> markup block instead of executing as C#.
@@ -58,10 +58,10 @@ public sealed class AdminUsersPageRenderingTests : IClassFixture<AdminUsersWebFa
     {
         var client = _factory.CreateClient();
 
-        var response = await client.GetAsync("/Admin/Users");
+        var response = await client.GetAsync("/Admin/Users", TestContext.Current.CancellationToken);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var html = await response.Content.ReadAsStringAsync();
+        var html = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         html.Should().Contain("User Maintenance");
     }
 }

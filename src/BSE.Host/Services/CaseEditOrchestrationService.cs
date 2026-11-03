@@ -130,9 +130,10 @@ public sealed class CaseEditOrchestrationService(
         // Needed by the Linked Farms/Herd Size persistence further down, which is CPHH-keyed, not
         // RBSE-keyed — resolved once here (staged CPHH in preference to the persisted Case's CPHH
         // FK) rather than re-deriving it separately for every grid.
-        var cphh = isNewCase
-            ? CphhNormalizer.Normalize(session!.Farm!.CPHH)
-            : CphhNormalizer.Normalize(session?.Farm?.CPHH is { Length: > 0 } stagedCphh ? stagedCphh : existingCase!.Cphh);
+        string? cphhSource;
+        if (isNewCase) cphhSource = session!.Farm!.CPHH;
+        else cphhSource = session?.Farm?.CPHH is { Length: > 0 } stagedCphh ? stagedCphh : existingCase!.Cphh;
+        var cphh = CphhNormalizer.Normalize(cphhSource);
 
         try
         {
@@ -140,7 +141,7 @@ public sealed class CaseEditOrchestrationService(
             {
                 var existingFarm = await farmRepository.GetByCphhAsync(cphh);
                 if (existingFarm is null)
-                    await farmRepository.AddAsync(MapToAddFarm(session.Farm, cphh), userId, connection, transaction);
+                    await farmRepository.AddAsync(MapToAddFarm(session!.Farm!, cphh), userId, connection, transaction);
 
                 var addResult = await caseRepository.AddCaseAsync(MapToAddCase(rbse, cphh, caseCommand), userId, connection, transaction);
                 if (addResult != AddCaseResult.Success)
@@ -152,7 +153,7 @@ public sealed class CaseEditOrchestrationService(
                 // which already does this via CaseService.CreateCaseAsync) never gets a CaseWork row.
                 // Uses whatever BSE1/Paperwork fields were staged from the Case (DEFRA) tab before
                 // the case itself existed, rather than hardcoding every optional field to null.
-                var cw = session.CaseWork;
+                var cw = session!.CaseWork;
                 await caseWorkRepository.AddAsync(
                     new AddCaseWorkCommand(
                         rbse,
@@ -734,11 +735,12 @@ public sealed class CaseEditOrchestrationService(
 
                 // Diagnostic: helps pin down reports of "only some of the missing fields show" by
                 // capturing exactly what each check saw this round, without changing behaviour.
-                logger.LogInformation(
-                    "CheckMandatoryFieldsAsync farm check for {Rbse}: isNewCase={IsNewCase} stagedFarmIsNull={StagedFarmIsNull} " +
-                    "isNonGbFarm={IsNonGbFarm} ownerName={OwnerName} address1={Address1} parish={Parish} " +
-                    "county={County} aho={Aho} adnsRegionId={AdnsRegionId}",
-                    rbse, isNewCase, stagedFarm is null, isNonGbFarm, ownerName, address1, parish, county, aho, adnsRegionId);
+                if (logger.IsEnabled(LogLevel.Information))
+                    logger.LogInformation(
+                        "CheckMandatoryFieldsAsync farm check for {Rbse}: isNewCase={IsNewCase} stagedFarmIsNull={StagedFarmIsNull} " +
+                        "isNonGbFarm={IsNonGbFarm} ownerName={OwnerName} address1={Address1} parish={Parish} " +
+                        "county={County} aho={Aho} adnsRegionId={AdnsRegionId}",
+                        rbse, isNewCase, stagedFarm is null, isNonGbFarm, ownerName, address1, parish, county, aho, adnsRegionId);
             }
         }
 
@@ -751,8 +753,9 @@ public sealed class CaseEditOrchestrationService(
         if (formBDate.HasValue && string.IsNullOrWhiteSpace(fate))
             errors.Add("Please specify a fate (Form B Reason) for the case.");
 
-        logger.LogInformation("CheckMandatoryFieldsAsync for {Rbse} returning {Count} error(s): {Errors}",
-            rbse, errors.Count, errors);
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("CheckMandatoryFieldsAsync for {Rbse} returning {Count} error(s): {Errors}",
+                rbse, errors.Count, errors);
 
         return errors;
     }

@@ -72,7 +72,7 @@
 
     <div class="govuk-form-group @(ViewData.ModelState[nameof(Model.RelationRbse)]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
         <label class="govuk-label" for="relation-rbse">Relation RBSE</label>
-        <div class="govuk-hint">Required if no eartag is provided. If supplied, Sex, Fate, Eartag, birth date and left date are taken from that case and override anything entered below.</div>
+        <div class="govuk-hint">Required if no eartag is provided. If supplied, Sex, Fate, Eartag, birth date and left date are taken from that case and override anything entered in the other fields.</div>
         @if (ViewData.ModelState[nameof(Model.RelationRbse)]?.Errors.Count > 0)
         {
             <p class="govuk-error-message"><span class="govuk-visually-hidden">Error:</span> @ViewData.ModelState[nameof(Model.RelationRbse)]!.Errors[0].ErrorMessage</p>

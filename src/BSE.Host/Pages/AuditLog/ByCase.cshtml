@@ -2,6 +2,12 @@
 @model ByCaseModel
 @{
     ViewData["Title"] = $"Audit log — {Model.Rbse}";
+
+    string AriaSort(string column)
+    {
+        if (Model.SortBy != column) return "none";
+        return Model.SortDir == "asc" ? "ascending" : "descending";
+    }
 }
 
 <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
@@ -34,14 +40,14 @@
                 <caption class="govuk-visually-hidden">Audit log entries for case @BseFormat.FormatRbse(Model.Rbse)</caption>
                 <thead class="govuk-table__head">
                     <tr class="govuk-table__row">
-                        <th scope="col" class="govuk-table__header" aria-sort="@(Model.SortBy=="table" ? (Model.SortDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("table")">Table</a></th>
-                        <th scope="col" class="govuk-table__header" aria-sort="@(Model.SortBy=="field" ? (Model.SortDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("field")">Field</a></th>
-                        <th scope="col" class="govuk-table__header" aria-sort="@(Model.SortBy=="datetime" ? (Model.SortDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("datetime")">Date/time</a></th>
-                        <th scope="col" class="govuk-table__header" aria-sort="@(Model.SortBy=="user" ? (Model.SortDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("user")">User</a></th>
-                        <th scope="col" class="govuk-table__header" aria-sort="@(Model.SortBy=="before" ? (Model.SortDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("before")">Before</a></th>
-                        <th scope="col" class="govuk-table__header" aria-sort="@(Model.SortBy=="after" ? (Model.SortDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("after")">After</a></th>
-                        <th scope="col" class="govuk-table__header" aria-sort="@(Model.SortBy=="reason" ? (Model.SortDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("reason")">Reason</a></th>
-                        <th scope="col" class="govuk-table__header" aria-sort="@(Model.SortBy=="key" ? (Model.SortDir=="asc" ? "ascending" : "descending") : "none")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("key")">Key</a></th>
+                        <th scope="col" class="govuk-table__header" aria-sort="@AriaSort("table")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("table")">Table</a></th>
+                        <th scope="col" class="govuk-table__header" aria-sort="@AriaSort("field")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("field")">Field</a></th>
+                        <th scope="col" class="govuk-table__header" aria-sort="@AriaSort("datetime")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("datetime")">Date/time</a></th>
+                        <th scope="col" class="govuk-table__header" aria-sort="@AriaSort("user")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("user")">User</a></th>
+                        <th scope="col" class="govuk-table__header" aria-sort="@AriaSort("before")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("before")">Before</a></th>
+                        <th scope="col" class="govuk-table__header" aria-sort="@AriaSort("after")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("after")">After</a></th>
+                        <th scope="col" class="govuk-table__header" aria-sort="@AriaSort("reason")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("reason")">Reason</a></th>
+                        <th scope="col" class="govuk-table__header" aria-sort="@AriaSort("key")"><a class="govuk-link govuk-link--no-visited-state" href="@Model.SortUrl("key")">Key</a></th>
                     </tr>
                 </thead>
                 <tbody class="govuk-table__body">

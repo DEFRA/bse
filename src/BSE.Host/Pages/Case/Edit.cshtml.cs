@@ -32,6 +32,12 @@ public class EditModel(
     IBatchRepository batchRepository,
     IConfiguration configuration) : PageModel
 {
+    private const string SpolSiteUrlKey = "SpolSiteUrl";
+
+    private const string BirthDateKey = "Case.BirthDate";
+
+    private const string CaseWorkEntryPage = "/CaseWork/Entry";
+
     private const string RowStampKey = "CaseEdit_RowStamp_{0}";
     private const string DataEntryRole = "DataEntry";
     private const string VlaAccessRole = "VLAAccess";
@@ -141,7 +147,7 @@ public class EditModel(
             // first-time-create path) can actually commit a brand-new case from here too.
             Case.Rbse = Rbse;
             var missingCaseBatchTask = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
-            SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+            SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
 
             // Legacy parity: Common.vb's GetCaseDetailsFromDatabase unconditionally calls
             // AddEmptyRow against CASEWORK_TABLE for a case not yet in the database — the CaseWork
@@ -184,7 +190,7 @@ public class EditModel(
                           || await caseWorkRepository.GetEntryByRbseAsync(Rbse) is not null;
 
         var batchTask = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
-        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+        SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
 
         await Task.WhenAll(LoadLookupsAsync(), batchTask);
         await LoadOrInitializeDraftStateAsync();
@@ -314,7 +320,7 @@ public class EditModel(
     /// it is not a bare navigation link. Reuses the same SaveAsync path so mandatory-field and
     /// concurrency handling behave identically to Save.
     /// </summary>
-    public Task<IActionResult> OnPostSaveAndGotoCaseworkAsync() => SaveAsync("/CaseWork/Entry");
+    public Task<IActionResult> OnPostSaveAndGotoCaseworkAsync() => SaveAsync(CaseWorkEntryPage);
 
     private async Task<IActionResult> SaveAsync(string successRedirectPage)
     {
@@ -322,7 +328,7 @@ public class EditModel(
         // unlike btnSave, which is disabled only for DEFRA Viewer. Forbidding here on the
         // Casework path blocked Viewer from using a button legacy always leaves reachable.
         if (!CanUserEditCase())
-            return successRedirectPage == "/CaseWork/Entry"
+            return successRedirectPage == CaseWorkEntryPage
                 ? RedirectToPage(successRedirectPage, new { rbse = Rbse })
                 : Forbid();
 
@@ -351,14 +357,14 @@ public class EditModel(
         // (disabled inputs are never submitted) — redirecting here without touching anything
         // avoids treating that blank post as a real edit and overwriting the persisted record.
         if (!CanEditCaseFields)
-            return RedirectToPage(successRedirectPage == "/CaseWork/Entry" ? successRedirectPage : "/Home",
-                successRedirectPage == "/CaseWork/Entry" ? new { rbse = Rbse } : null);
+            return RedirectToPage(successRedirectPage == CaseWorkEntryPage ? successRedirectPage : "/Home",
+                successRedirectPage == CaseWorkEntryPage ? new { rbse = Rbse } : null);
 
         // Legacy CaseEntryDEFRA behavior: Form A date is read-only for non-GB cases.
         if (IsNonGbCase)
             Case.FormADate = persistedRecord!.FormADate;
 
-        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+        SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
         await LoadLookupsAsync();
         await LoadOrInitializeDraftStateAsync();
 
@@ -403,7 +409,7 @@ public class EditModel(
         // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx (or the ?redirect=
         // target, e.g. CaseWorkEntry.aspx, when arrived via the Casework link) on a fully
         // successful save, clearing the session case state — not back to the tab the user was on.
-        return successRedirectPage == "/CaseWork/Entry"
+        return successRedirectPage == CaseWorkEntryPage
             ? RedirectToPage(successRedirectPage, new { rbse = Rbse })
             : RedirectToPage(successRedirectPage);
     }
@@ -471,7 +477,7 @@ public class EditModel(
         if (!CanEditCaseFields)
             return null;
 
-        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+        SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
         await LoadLookupsAsync();
         await LoadOrInitializeDraftStateAsync();
 
@@ -759,17 +765,17 @@ public class EditModel(
 
         var birthDate = Case.BirthDate.Value.Date;
         if (birthDate < DateTime.UnixEpoch)
-            ModelState.AddModelError("Case.BirthDate", "Date of Birth must be on or after 01/01/1970.");
+            ModelState.AddModelError(BirthDateKey, "Date of Birth must be on or after 01/01/1970.");
 
         var latestForFormA = Case.FormADate?.Date ?? today;
         if (birthDate > latestForFormA)
-            ModelState.AddModelError("Case.BirthDate", "Date of Birth must be before the Form A Date");
+            ModelState.AddModelError(BirthDateKey, "Date of Birth must be before the Form A Date");
 
         if (Case.PurchaseDate.HasValue && birthDate > Case.PurchaseDate.Value.Date)
-            ModelState.AddModelError("Case.BirthDate", "Date of Birth must be before the Purchase Date");
+            ModelState.AddModelError(BirthDateKey, "Date of Birth must be before the Purchase Date");
 
         if (Case.OnsetDate.HasValue && birthDate > Case.OnsetDate.Value.Date)
-            ModelState.AddModelError("Case.BirthDate", "Date of Birth must be before the Onset Date");
+            ModelState.AddModelError(BirthDateKey, "Date of Birth must be before the Onset Date");
     }
 
     private void ValidateCaseWorkDates(DateTime today)
@@ -884,7 +890,7 @@ public class EditModel(
                           || await caseWorkRepository.GetEntryByRbseAsync(Rbse) is not null;
 
         var batchTask = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
-        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+        SpolSiteUrl = configuration[SpolSiteUrlKey] ?? string.Empty;
 
         await Task.WhenAll(LoadLookupsAsync(), batchTask, LoadTestsAsync());
         await ApplyStagedCaseOverlayAsync();

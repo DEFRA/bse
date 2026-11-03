@@ -10,6 +10,10 @@ namespace BSE.SharedKernel;
 /// </summary>
 public static partial class EartagValidator
 {
+    private const string NumericalPartAllZeros = "Animal component is invalid: The numerical part contains only zeros";
+
+    private const string AllDigitsFromPosition2AreZero = "Animal component is invalid: All digits in position 2 onwards are zero";
+
     [GeneratedRegex("^[A-Z]{1,2}[0-9]{1,4}$", RegexOptions.CultureInvariant)]
     private static partial Regex PreBarimoHerdRegex();
 
@@ -305,7 +309,7 @@ public static partial class EartagValidator
         if (animal[..1] != (modulus + 1).ToString())
             return EartagChecksumFailed;
         if (long.Parse(animal[1..]) == 0)
-            return "Animal component is invalid: All digits in position 2 onwards are zero";
+            return AllDigitsFromPosition2AreZero;
 
         return null;
     }
@@ -326,7 +330,7 @@ public static partial class EartagValidator
         if (invalidLastChars.Contains(animal[^1]))
             return "Animal component is invalid: The last character cannot be I, O, P, R, U or X";
         if (AllZeroAnimalRegex().IsMatch(animal))
-            return "Animal component is invalid: The numerical part contains only zeros";
+            return NumericalPartAllZeros;
 
         return null;
     }
@@ -405,7 +409,7 @@ public static partial class EartagValidator
         if (animal[..1] != (modulus + 1).ToString())
             return EartagChecksumFailed;
         if (long.Parse(animal[1..]) == 0)
-            return "Animal component is invalid: All digits in position 2 onwards are zero";
+            return AllDigitsFromPosition2AreZero;
 
         return null;
     }
@@ -419,7 +423,7 @@ public static partial class EartagValidator
         if (!ShortNumericAnimalRegex().IsMatch(animal))
             return "Animal component is invalid: It should consist of 1 to 5 numerical digits";
         if (AllZeroAnimalRegex().IsMatch(animal))
-            return "Animal component is invalid: The numerical part contains only zeros";
+            return NumericalPartAllZeros;
 
         return null;
     }
@@ -439,7 +443,7 @@ public static partial class EartagValidator
         if (animal[..1] != (modulus + 1).ToString())
             return EartagChecksumFailed;
         if (long.Parse(animal[1..]) == 0)
-            return "Animal component is invalid: All digits in position 2 onwards are zero";
+            return AllDigitsFromPosition2AreZero;
 
         return null;
     }
@@ -453,7 +457,7 @@ public static partial class EartagValidator
         if (!ShortNumericAnimalRegex().IsMatch(animal))
             return "Animal component is invalid: It should consist of 1 to 5 numerical digits";
         if (AllZeroAnimalRegex().IsMatch(animal))
-            return "Animal component is invalid: The numerical part contains only zeros";
+            return NumericalPartAllZeros;
 
         return null;
     }
@@ -473,7 +477,7 @@ public static partial class EartagValidator
         if (animal[..1] != (modulus + 1).ToString())
             return EartagChecksumFailed;
         if (long.Parse(animal[1..]) == 0)
-            return "Animal component is invalid: All digits in position 2 onwards are zero";
+            return AllDigitsFromPosition2AreZero;
 
         return null;
     }
@@ -487,7 +491,7 @@ public static partial class EartagValidator
         if (!ShortNumericAnimalRegex().IsMatch(animal))
             return "Animal component is invalid: It should consist of 1 to 5 numerical digits";
         if (AllZeroAnimalRegex().IsMatch(animal))
-            return "Animal component is invalid: The numerical part contains only zeros";
+            return NumericalPartAllZeros;
 
         return null;
     }

@@ -6,14 +6,24 @@ namespace BSE.Infrastructure;
 public interface IDbRepository
 {
     Task<IEnumerable<T>> QueryAsync<T>(string storedProcedure, object? param = null);
-    Task ExecuteAsync(string storedProcedure, object? param = null);
-    Task<T?> QuerySingleOrDefaultAsync<T>(string storedProcedure, object? param = null) where T : class;
 
     /// <summary>
     /// Executes a query with an explicit command timeout (seconds).
     /// Use for long-running search SPs such as GetSearchCase and GetSearchFarm.
     /// </summary>
     Task<IEnumerable<T>> QueryAsync<T>(string storedProcedure, object? param, int commandTimeoutSeconds);
+
+    Task ExecuteAsync(string storedProcedure, object? param = null);
+
+    /// <summary>
+    /// Executes a stored procedure on a caller-supplied <paramref name="connection"/> and
+    /// optional <paramref name="transaction"/>. Use when the caller manages the transaction
+    /// boundary (e.g. Case Management enlisting <c>AddBatchNumberLink</c> in the case-save
+    /// transaction). The connection must already be open.
+    /// </summary>
+    Task ExecuteAsync(string storedProcedure, object? param, IDbConnection connection, IDbTransaction? transaction);
+
+    Task<T?> QuerySingleOrDefaultAsync<T>(string storedProcedure, object? param = null) where T : class;
 
     /// <summary>
     /// Executes a stored procedure that includes OUTPUT parameters.
@@ -28,14 +38,6 @@ public interface IDbRepository
     /// from a stored procedure enlisted in the caller's transaction.
     /// </summary>
     Task ExecuteWithOutputAsync(string storedProcedure, DynamicParameters param, IDbConnection connection, IDbTransaction? transaction);
-
-    /// <summary>
-    /// Executes a stored procedure on a caller-supplied <paramref name="connection"/> and
-    /// optional <paramref name="transaction"/>. Use when the caller manages the transaction
-    /// boundary (e.g. Case Management enlisting <c>AddBatchNumberLink</c> in the case-save
-    /// transaction). The connection must already be open.
-    /// </summary>
-    Task ExecuteAsync(string storedProcedure, object? param, IDbConnection connection, IDbTransaction? transaction);
 
     /// <summary>
     /// As <see cref="ExecuteAsync(string, object?, IDbConnection, IDbTransaction?)"/> but returns

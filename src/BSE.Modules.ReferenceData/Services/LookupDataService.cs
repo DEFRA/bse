@@ -17,14 +17,14 @@ public sealed class LookupDataService : ILookupDataService
     public Task<IEnumerable<LuAnimalOrigin>> GetAnimalOriginsAsync() => _repo.GetAnimalOriginsAsync();
     public Task<IEnumerable<LuSex>> GetSexesAsync() => _repo.GetSexesAsync();
     public Task<IEnumerable<LuHerdType>> GetHerdTypesAsync() => _repo.GetHerdTypesAsync();
-    public Task<IEnumerable<LuADNSRegion>> GetADNSRegionsAsync() => _repo.GetADNSRegionsAsync();
-    public Task<IEnumerable<LuBSECounty>> GetCountiesAsync() => _repo.GetBSECountiesAsync();
-    public Task<IEnumerable<LuBSERegion>> GetBSERegionsAsync() => _repo.GetBSERegionsAsync();
+    public Task<IEnumerable<LuAdnsRegion>> GetADNSRegionsAsync() => _repo.GetADNSRegionsAsync();
+    public Task<IEnumerable<LuBseCounty>> GetCountiesAsync() => _repo.GetBSECountiesAsync();
+    public Task<IEnumerable<LuBseRegion>> GetBSERegionsAsync() => _repo.GetBSERegionsAsync();
     public Task<IEnumerable<LuTestType>> GetTestTypesAsync() => _repo.GetTestTypesAsync();
     public Task<IEnumerable<LuTestResult>> GetTestResultsAsync() => _repo.GetTestResultsAsync();
     public Task<IEnumerable<LuUserGroup>> GetUserGroupsAsync() => _repo.GetUserGroupsAsync();
     public Task<IEnumerable<LuAuthority>> GetAuthoritiesByCountyAsync(int authorityCountyId) => _repo.GetAuthoritiesByCountyAsync(authorityCountyId);
-    public Task<IEnumerable<LuADNSRegion>> GetADNSRegionsByAuthorityAsync(int authorityId) => _repo.GetADNSRegionsByAuthorityAsync(authorityId);
+    public Task<IEnumerable<LuAdnsRegion>> GetADNSRegionsByAuthorityAsync(int authorityId) => _repo.GetADNSRegionsByAuthorityAsync(authorityId);
 
     public async Task<IEnumerable<LookupItem>> GetLookupAsync(LookupTableId tableId)
     {
