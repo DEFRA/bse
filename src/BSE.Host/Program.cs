@@ -286,6 +286,13 @@ try
                     if (azureAdConfig.ForceAuthn)
                         ctx.ProtocolMessage.Prompt = "login";
 
+                    // Force the hybrid flow (authorization code + id_token) on the outgoing request
+                    // itself. Setting options.ResponseType above is not sufficient — Microsoft.Identity.Web
+                    // re-derives/overwrites ProtocolMessage.ResponseType internally before this event runs,
+                    // so it must be reasserted here, immediately before the request is sent to Entra ID.
+                    ctx.ProtocolMessage.ResponseType =
+                        Microsoft.IdentityModel.Protocols.OpenIdConnect.OpenIdConnectResponseType.CodeIdToken;
+
                     ctx.ProtocolMessage.RedirectUri =
                         OidcHelpers.RewriteRedirectUriHost(ctx.ProtocolMessage.RedirectUri, publicOrigin);
 
