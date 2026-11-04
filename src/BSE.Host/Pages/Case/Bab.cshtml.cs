@@ -64,6 +64,7 @@ public class BabModel(
         return Page();
     }
 
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostSaveBabAsync(string? rowStampBase64)
     {
         if (!User.IsInRole("DataEntry"))
@@ -178,6 +179,7 @@ public class BabModel(
     /// "case doesn't exist yet" the same way OnPostSaveBabAsync does, so an edit made on this
     /// tab during brand-new-case creation is staged instead of silently discarded on tab switch.
     /// </summary>
+    [Authorize] // every role may navigate away; the handler stages only for DataEntry
     public async Task<IActionResult> OnPostStageAndGotoAsync(string targetPage, string? rowStampBase64)
     {
         // Legacy parity: UpdateSessionWithCaseDetails() has no role check at all — every role,

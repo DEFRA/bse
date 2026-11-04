@@ -60,6 +60,7 @@ public class PickFarmModel(IFarmService farmService) : PageModel
         return Page();
     }
 
+    [Authorize] // access rule is HasLegacyPickFarmAccess, which redirects Home rather than forbidding
     public async Task<IActionResult> OnPostUseSelectedAsync(string? selectedFarmCphh)
     {
         if (!HasLegacyPickFarmAccess())
@@ -99,6 +100,7 @@ public class PickFarmModel(IFarmService farmService) : PageModel
         return RedirectToPage("/Case/Farm", new { rbse = Rbse, selectedCphh = selected });
     }
 
+    [Authorize]
     public IActionResult OnPostNewAsync()
     {
         if (!HasLegacyPickFarmAccess())
@@ -111,6 +113,7 @@ public class PickFarmModel(IFarmService farmService) : PageModel
         return RedirectToPage("/Farm/New", new { returnRbse = Rbse, returnCphh = normalized, returnToCaseFarm = true });
     }
 
+    [Authorize]
     public IActionResult OnPostCancelAsync()
     {
         if (!HasLegacyPickFarmAccess())

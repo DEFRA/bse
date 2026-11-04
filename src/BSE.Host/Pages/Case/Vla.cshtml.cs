@@ -124,6 +124,7 @@ public class VlaModel(
         return Page();
     }
 
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostAsync()
     {
         if (!User.IsInRole(DataEntryRole))
@@ -206,6 +207,7 @@ public class VlaModel(
     /// Validates this tab's fields and, if valid, stages them into the shared cross-tab
     /// draft (without committing) before navigating to another tab.
     /// </summary>
+    [Authorize] // every role may navigate away; the handler stages only for DataEntry
     public async Task<IActionResult> OnPostStageAndGotoAsync(string targetPage)
     {
         var (stagingResult, caseRbse) = await StageVlaEditForNavigationAsync();
@@ -218,6 +220,7 @@ public class VlaModel(
     /// <summary>Case audit log link: legacy stages the in-progress edit before redirecting to the
     /// audit log report the same way every tab-switch does, so this must too — a plain navigation
     /// link here would silently discard an unsaved edit instead.</summary>
+    [Authorize] // every role may navigate away; the handler stages only for DataEntry
     public async Task<IActionResult> OnPostStageAndGoToAuditLogAsync()
     {
         var (stagingResult, caseRbse) = await StageVlaEditForNavigationAsync();
@@ -321,6 +324,7 @@ public class VlaModel(
         return RedirectToPage("/Home");
     }
 
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostBeginEditOwnerRowAsync(int ownerId)
     {
         if (!User.IsInRole(DataEntryRole))
@@ -351,6 +355,7 @@ public class VlaModel(
     // permission, owner not found) and returns Page() on success, so it never needs to stage —
     // Case remains whatever was model-bound from this exact POST when the page re-renders.
 
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostAddOwnerRowAsync()
     {
         if (!User.IsInRole(DataEntryRole))
@@ -390,6 +395,7 @@ public class VlaModel(
         return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
     }
 
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostUpdateOwnerRowAsync()
     {
         if (!User.IsInRole(DataEntryRole))
@@ -431,6 +437,7 @@ public class VlaModel(
         return RedirectToPage(new { rbse = caseRbse, OSort, ODir, OPage });
     }
 
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostDeleteOwnerAsync(int ownerId, string rowStampBase64)
     {
         if (!User.IsInRole(DataEntryRole))
@@ -775,6 +782,7 @@ public class VlaModel(
     /// Save/tab-switch/Audit Log — never staged the in-progress VLA edit, silently discarding it.
     /// Unlike the ModelState-invalid branch inside StageVlaEditForNavigationAsync, the success path
     /// doesn't reload the Owners draft itself, so it's done explicitly here with the new sort applied.</summary>
+    [Authorize] // sorting is open to every role
     public async Task<IActionResult> OnPostResortOwnersAsync()
     {
         var (stagingResult, _) = await StageVlaEditForNavigationAsync();

@@ -138,6 +138,7 @@ public class RelationsModel(
     }
 
     /// <summary>Legacy btnDamLookUp_Click.</summary>
+    [Authorize]
     public async Task<IActionResult> OnPostLookUpDamAsync()
     {
         await LoadAsync();
@@ -147,6 +148,7 @@ public class RelationsModel(
     }
 
     /// <summary>Legacy btnSireLookUp_Click.</summary>
+    [Authorize(Policy = "DataEntryVla")]
     public async Task<IActionResult> OnPostLookUpSireAsync()
     {
         if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
@@ -159,8 +161,10 @@ public class RelationsModel(
     }
 
     /// <summary>Legacy btnSave_Click (Dam/Sire section): persists whatever is currently populated.</summary>
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostSaveDamSireAsync() => await MarkDraftPendingAndRedirectAsync();
 
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostSaveCaseHerdbookAsync() => await MarkDraftPendingAndRedirectAsync();
 
     private async Task<IActionResult> MarkDraftPendingAndRedirectAsync()
@@ -187,6 +191,7 @@ public class RelationsModel(
     /// before navigating to another tab — mirrors every other scalar-field tab's StageAndGoto
     /// handler. Without this, typed-but-not-yet-saved values here were lost on tab switch, since
     /// Relations previously used a plain navigation link with no staging call at all.</summary>
+    [Authorize] // every role may navigate away; the handler stages only for DataEntry
     public async Task<IActionResult> OnPostStageAndGotoAsync(string targetPage)
     {
         if (!User.IsInRole(DataEntryRole))
@@ -204,6 +209,7 @@ public class RelationsModel(
     /// <summary>Other Relations sort-header/pagination links: plain same-page query-string links
     /// which, unlike every other action on this tab, never staged the in-progress Case Herdbook/
     /// Dam Status edit, silently discarding it.</summary>
+    [Authorize] // sorting is open to every role; the handler stages only for DataEntry
     public async Task<IActionResult> OnPostResortRelationsAsync()
     {
         if (!User.IsInRole(DataEntryRole))
@@ -237,6 +243,7 @@ public class RelationsModel(
         }
     }
 
+    [Authorize]
     public IActionResult OnPostDeleteRelationAsync(int relationId, string rowStampBase64)
     {
         // Superseded by OnPostDeleteRelationRowAsync (staged delete, committed on Save).
@@ -246,6 +253,7 @@ public class RelationsModel(
 
     /// <summary>Legacy RemoveDam: disassociates the dam, clears Case.DamStatus (ddlDamStatus)
     /// alongside it, and does not touch the sire.</summary>
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostRemoveDamAsync()
     {
         if (!User.IsInRole(DataEntryRole))
@@ -268,6 +276,7 @@ public class RelationsModel(
     }
 
     /// <summary>Legacy RemoveSire: disassociates the sire without touching the dam.</summary>
+    [Authorize(Policy = "DataEntryVla")]
     public async Task<IActionResult> OnPostRemoveSireAsync()
     {
         if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
@@ -719,6 +728,7 @@ public class RelationsModel(
     }
 
     /// <summary>Adds a related-animal row to the draft only. Not persisted until Save.</summary>
+    [Authorize(Policy = "DataEntryVla")]
     public async Task<IActionResult> OnPostAddRelationRowAsync()
     {
         if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
@@ -768,6 +778,7 @@ public class RelationsModel(
     }
 
     /// <summary>Populates the shared field panel from a staged row for editing (no changes saved yet).</summary>
+    [Authorize(Policy = "DataEntryVla")]
     public async Task<IActionResult> OnPostBeginEditRelationRowAsync(string clientKey)
     {
         if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
@@ -819,6 +830,7 @@ public class RelationsModel(
     }
 
     /// <summary>Updates the currently selected staged row from the shared field panel. Not persisted until Save.</summary>
+    [Authorize(Policy = "DataEntryVla")]
     public async Task<IActionResult> OnPostUpdateRelationRowAsync()
     {
         if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
@@ -871,6 +883,7 @@ public class RelationsModel(
     }
 
     /// <summary>Removes a staged related-animal row. Not persisted until Save.</summary>
+    [Authorize(Policy = "DataEntryVla")]
     public async Task<IActionResult> OnPostDeleteRelationRowAsync(string clientKey)
     {
         if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
@@ -896,6 +909,7 @@ public class RelationsModel(
     }
 
     /// <summary>Commits all staged related-animal changes to the database in one transaction.</summary>
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostSaveRelationsAsync()
     {
         if (!User.IsInRole(DataEntryRole))
@@ -1342,6 +1356,7 @@ public class RelationsModel(
     }
 
     /// <summary>Discards all staged related-animal changes without persisting them.</summary>
+    [Authorize]
     public async Task<IActionResult> OnPostCancelRelationsEditAsync() => await CancelRelationsEditAsync();
 
     public async Task<IActionResult> OnGetCancelRelationsEditAsync() => await CancelRelationsEditAsync();

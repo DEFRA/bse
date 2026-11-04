@@ -432,6 +432,7 @@ try
     builder.Services.AddRazorPages(options =>
     {
         options.Conventions.AuthorizeFolder("/");
+        options.Conventions.ConfigureFilter(_ => new Microsoft.AspNetCore.Mvc.TypeFilterAttribute(typeof(HandlerAuthorizationPageFilter)));
         options.Conventions.AllowAnonymousToPage(ErrorPath);
         options.Conventions.AllowAnonymousToPage(SessionErrorPath);
         options.Conventions.AllowAnonymousToPage(UnauthorizedPath);
@@ -475,6 +476,8 @@ try
     authorizationBuilder.AddPolicy("Authenticated", p => p.RequireAuthenticatedUser());
     authorizationBuilder.AddPolicy("ReadOnly", p => p.RequireRole("ReadOnly"));
     authorizationBuilder.AddPolicy("DataEntry", p => p.RequireRole("DataEntry"));
+    // Chained RequireRole calls are ANDed: the user must hold both roles.
+    authorizationBuilder.AddPolicy("DataEntryVla", p => p.RequireRole("DataEntry").RequireRole("VLAAccess"));
     authorizationBuilder.AddPolicy("DEFRAMaintenance", p => p.RequireRole("DEFRAMaintenance"));
     // Legacy MoveCase.aspx/MoveCaseNewFarm.aspx EnableControls(): DEFRA Maintenance OR VLA Maintenance
     // (docs/Legacy-Page-Level-Access-Control.md section 5.9 "Case Maintenance Operations").

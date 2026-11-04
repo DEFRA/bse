@@ -1,0 +1,3 @@
+[*.cs]
+# Handler-level [Authorize] is enforced by HandlerAuthorizationPageFilter, so the stock warning does not apply.
+dotnet_diagnostic.MVC1001.severity = none

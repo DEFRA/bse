@@ -199,6 +199,7 @@ public class EditModel(
         return Page();
     }
 
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostBeginEditTestRowAsync(int id)
     {
         if (!CanUserEditCase())
@@ -224,6 +225,7 @@ public class EditModel(
         return Page();
     }
 
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostAddTestRowAsync()
     {
         if (!CanUserEditCase())
@@ -275,6 +277,7 @@ public class EditModel(
     public IActionResult OnGetValidateEartag(string? country, string? herdmark, string? animal)
         => new JsonResult(new { error = EartagValidator.Validate(country, herdmark, animal) });
 
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostUpdateTestRowAsync()
     {
         if (!CanUserEditCase())
@@ -311,6 +314,7 @@ public class EditModel(
         return RedirectToTestsAnchor();
     }
 
+    [Authorize] // the Casework path is deliberately open to every role (see SaveAsync)
     public Task<IActionResult> OnPostAsync() => SaveAsync("/Home");
 
     /// <summary>
@@ -320,6 +324,7 @@ public class EditModel(
     /// it is not a bare navigation link. Reuses the same SaveAsync path so mandatory-field and
     /// concurrency handling behave identically to Save.
     /// </summary>
+    [Authorize] // the Casework path is deliberately open to every role (see SaveAsync)
     public Task<IActionResult> OnPostSaveAndGotoCaseworkAsync() => SaveAsync(CaseWorkEntryPage);
 
     private async Task<IActionResult> SaveAsync(string successRedirectPage)
@@ -420,6 +425,7 @@ public class EditModel(
     /// <c>UpdateSessionWithCaseDetails()</c> running on every tab-switch, so an invalid
     /// Form A/B/C/DOB chain blocks leaving this tab, not just blocks Save.
     /// </summary>
+    [Authorize]
     public async Task<IActionResult> OnPostStageAndGotoAsync(string targetPage)
     {
         var stagingResult = await StageCaseEditForNavigationAsync();
@@ -432,6 +438,7 @@ public class EditModel(
     /// <summary>Case audit log link: legacy stages the in-progress edit before redirecting to the
     /// audit log report the same way every tab-switch does, so this must too — a plain navigation
     /// link here would silently discard an unsaved edit instead.</summary>
+    [Authorize]
     public async Task<IActionResult> OnPostStageAndGoToAuditLogAsync()
     {
         var stagingResult = await StageCaseEditForNavigationAsync();
@@ -987,6 +994,7 @@ public class EditModel(
         HasUnsavedChanges = hasPendingChanges;
     }
 
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostDeleteTestAsync(int id, string? rowStampBase64)
     {
         if (!CanUserEditCase())
@@ -1013,6 +1021,7 @@ public class EditModel(
     /// StageCaseEditForNavigationAsync already reloads the Tests draft (sorted/paged from the
     /// TSort/TDir/TPage the link itself carries) as part of its own staging, so nothing else is
     /// needed here.</summary>
+    [Authorize]
     public async Task<IActionResult> OnPostResortTestsAsync()
     {
         var stagingResult = await StageCaseEditForNavigationAsync();

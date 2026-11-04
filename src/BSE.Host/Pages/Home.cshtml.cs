@@ -125,6 +125,7 @@ public class HomeModel(
     /// Validates the entered batch year/number. If found, redirects to New Case
     /// (the batch context is set by the case-entry page). Shows an error if not found.
     /// </summary>
+    [Authorize] // lookup only; the New Case page it redirects to enforces DataEntry
     public async Task<IActionResult> OnPostLookupBatchAsync()
     {
         if (BatchYear is null)
@@ -159,6 +160,7 @@ public class HomeModel(
     /// Mirrors legacy btnGo_Click's full branching: existing GB/non-GB case, new GB/non-GB
     /// case, and the per-group restrictions on each path.
     /// </summary>
+    [Authorize] // per-group rules are applied inside the handler (legacy btnGo_Click branching)
     public async Task<IActionResult> OnPostRbseLookupAsync()
     {
         // Legacy btnGo_Click validates the batch (BatchNumber1.Validate) before ever looking at
@@ -268,6 +270,7 @@ public class HomeModel(
     }
 
     /// <summary>Batch fields are pre-filled via redirect so the user sees the assigned number — matches legacy behaviour.</summary>
+    [Authorize(Policy = "VLAAccess")] // the Batch Number panel is only rendered for VLA users
     public async Task<IActionResult> OnPostCreateBatchAsync()
     {
         var batch = await batchService.GetOrCreateBatchNumberAsync();

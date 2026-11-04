@@ -60,6 +60,7 @@ public class VlaEditModel(
         return Page();
     }
 
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostAsync()
     {
         if (!User.IsInRole("DataEntry"))
