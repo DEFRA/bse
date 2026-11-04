@@ -100,7 +100,12 @@ public sealed class PickSireDamModelTests
     {
         var model = Create(sex: "F");
 
-        var result = model.OnPostUseSelected(7, " ", "E1", "Name", "HB", 1, 2, 2020, "AQ==", "fate", "res", 3);
+        var result = model.OnPostUseSelected(new PickedPedigreeForm
+        {
+            Id = 7, MatchedRbse = " ", Eartag = "E1", Name = "Name", Herdbook = "HB",
+            BirthDay = 1, BirthMonth = 2, BirthYear = 2020, RowStampBase64 = "AQ==",
+            Fate = "fate", FinalResult = "res", ChildCount = 3
+        });
 
         result.Should().BeOfType<RedirectToPageResult>().Which.PageName.Should().Be("/Case/Relations");
         model.TempData[PendingDamSireKeys.Dam]!.ToString().Should().Contain("\"Id\":7").And.Contain("\"Rbse\":null");
@@ -111,7 +116,7 @@ public sealed class PickSireDamModelTests
     {
         var model = Create(sex: "M");
 
-        model.OnPostUseSelected(8, "002600002", null, null, null, null, null, null, "", null, null, null);
+        model.OnPostUseSelected(new PickedPedigreeForm { Id = 8, MatchedRbse = "002600002", RowStampBase64 = "" });
 
         model.TempData.ContainsKey(PendingDamSireKeys.Sire).Should().BeTrue();
         model.TempData.ContainsKey(PendingDamSireKeys.Dam).Should().BeFalse();
