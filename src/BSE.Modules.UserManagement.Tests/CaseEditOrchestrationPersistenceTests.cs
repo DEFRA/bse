@@ -59,9 +59,12 @@ public sealed class CaseEditOrchestrationPersistenceTests
     }
 
     private CaseEditOrchestrationService CreateService(ILogger<CaseEditOrchestrationService>? logger = null) => new(
-        _sessionState, _wizardState, _caseRepository, _farmRepository, _babRepository, _clinicalRepository,
-        _feedRepository, _relationsRepository, _pedigreeRepository, _caseWorkRepository, _batchRepository,
-        _testRepository, _otherOwnerRepository, _herdSizeRepository, _farmRelationRepository, _connectionFactory,
+        _sessionState, _wizardState,
+        new CaseEditRepositories(
+            _caseRepository, _farmRepository, _babRepository, _clinicalRepository,
+            _feedRepository, _relationsRepository, _pedigreeRepository, _caseWorkRepository, _batchRepository,
+            _testRepository, _otherOwnerRepository, _herdSizeRepository, _farmRelationRepository),
+        _connectionFactory,
         logger ?? NullLogger<CaseEditOrchestrationService>.Instance);
 
     private static CaseRecord ExistingCase() => new()

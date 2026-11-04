@@ -121,7 +121,8 @@ try
     builder.Services.AddScoped<BSE.Host.Services.ICaseWizardStateService, BSE.Host.Services.CaseWizardStateService>();
     builder.Services.AddScoped<BSE.Host.Services.ICaseEditSessionStateService, BSE.Host.Services.CaseEditSessionStateService>();
     builder.Services.AddScoped<BSE.Host.Services.ICaseDraftDiscardService, BSE.Host.Services.CaseDraftDiscardService>();
-    builder.Services.AddScoped<BSE.Host.Services.ICaseEditOrchestrationService, BSE.Host.Services.CaseEditOrchestrationService>();
+    builder.Services.AddScoped<BSE.Host.Services.CaseEditRepositories>();
+builder.Services.AddScoped<BSE.Host.Services.ICaseEditOrchestrationService, BSE.Host.Services.CaseEditOrchestrationService>();
 
     builder.Services.AddBseAuthorization();
 

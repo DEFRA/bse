@@ -49,25 +49,68 @@ public sealed record CaseCommitOutcome(EditCaseResult Result, IReadOnlyList<stri
 }
 
 
-public sealed class CaseEditOrchestrationService(
-    ICaseEditSessionStateService sessionState,
-    ICaseWizardStateService wizardState,
-    ICaseRepository caseRepository,
-    IFarmRepository farmRepository,
-    IBabRepository babRepository,
-    IClinicalRepository clinicalRepository,
-    IFeedRepository feedRepository,
-    IAnimalRelationsRepository relationsRepository,
-    IPedigreeRepository pedigreeRepository,
-    ICaseWorkRepository caseWorkRepository,
-    IBatchRepository batchRepository,
-    ITestRepository testRepository,
-    IOtherOwnerRepository otherOwnerRepository,
-    IHerdSizeRepository herdSizeRepository,
-    IFarmRelationRepository farmRelationRepository,
-    IDbConnectionFactory connectionFactory,
-    ILogger<CaseEditOrchestrationService> logger) : ICaseEditOrchestrationService
+/// <summary>Repositories enlisted in the single case-save transaction; resolved from DI as one unit.</summary>
+public sealed record CaseEditRepositories(
+    ICaseRepository CaseRepository,
+    IFarmRepository FarmRepository,
+    IBabRepository BabRepository,
+    IClinicalRepository ClinicalRepository,
+    IFeedRepository FeedRepository,
+    IAnimalRelationsRepository RelationsRepository,
+    IPedigreeRepository PedigreeRepository,
+    ICaseWorkRepository CaseWorkRepository,
+    IBatchRepository BatchRepository,
+    ITestRepository TestRepository,
+    IOtherOwnerRepository OtherOwnerRepository,
+    IHerdSizeRepository HerdSizeRepository,
+    IFarmRelationRepository FarmRelationRepository);
+
+public sealed class CaseEditOrchestrationService : ICaseEditOrchestrationService
 {
+    private readonly ICaseEditSessionStateService sessionState;
+    private readonly ICaseWizardStateService wizardState;
+    private readonly ICaseRepository caseRepository;
+    private readonly IFarmRepository farmRepository;
+    private readonly IBabRepository babRepository;
+    private readonly IClinicalRepository clinicalRepository;
+    private readonly IFeedRepository feedRepository;
+    private readonly IAnimalRelationsRepository relationsRepository;
+    private readonly IPedigreeRepository pedigreeRepository;
+    private readonly ICaseWorkRepository caseWorkRepository;
+    private readonly IBatchRepository batchRepository;
+    private readonly ITestRepository testRepository;
+    private readonly IOtherOwnerRepository otherOwnerRepository;
+    private readonly IHerdSizeRepository herdSizeRepository;
+    private readonly IFarmRelationRepository farmRelationRepository;
+    private readonly IDbConnectionFactory connectionFactory;
+    private readonly ILogger<CaseEditOrchestrationService> logger;
+
+    public CaseEditOrchestrationService(
+        ICaseEditSessionStateService sessionState,
+        ICaseWizardStateService wizardState,
+        CaseEditRepositories repositories,
+        IDbConnectionFactory connectionFactory,
+        ILogger<CaseEditOrchestrationService> logger)
+    {
+        this.sessionState = sessionState;
+        this.wizardState = wizardState;
+        caseRepository = repositories.CaseRepository;
+        farmRepository = repositories.FarmRepository;
+        babRepository = repositories.BabRepository;
+        clinicalRepository = repositories.ClinicalRepository;
+        feedRepository = repositories.FeedRepository;
+        relationsRepository = repositories.RelationsRepository;
+        pedigreeRepository = repositories.PedigreeRepository;
+        caseWorkRepository = repositories.CaseWorkRepository;
+        batchRepository = repositories.BatchRepository;
+        testRepository = repositories.TestRepository;
+        otherOwnerRepository = repositories.OtherOwnerRepository;
+        herdSizeRepository = repositories.HerdSizeRepository;
+        farmRelationRepository = repositories.FarmRelationRepository;
+        this.connectionFactory = connectionFactory;
+        this.logger = logger;
+    }
+
     private const string Bse1Document = "BSE1";
 
     private sealed record CommitWork(
