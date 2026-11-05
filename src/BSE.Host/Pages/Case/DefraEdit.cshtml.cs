@@ -23,7 +23,7 @@ public class DefraEditModel(
     ILookupDataService lookups,
     ICaseWorkRepository caseWorkRepository,
     IBatchRepository batchRepository,
-    IConfiguration configuration) : PageModel
+    IConfiguration configuration) : PageModel, ICaseEditFormPage
 {
     private const string BirthDateKey = "Case.BirthDate";
 
@@ -198,26 +198,35 @@ public class DefraEditModel(
     // Mirrors legacy UpdateSessionWithCaseDetails validation (FormXDateValid, DateOfBirthValid, BSE1ReceivedDateValid)
     private void ValidateDomainRules()
     {
+        var today = DateTime.Today;
+
+        ValidateEartag();
+        ValidateFormADates(today);
+        ValidateFormBAndCDates(today);
+        ValidateBirthDate(today);
+        ValidateBse1ReceiptDates(today);
+    }
+
+    private void ValidateEartag()
+    {
         if (string.IsNullOrWhiteSpace(Case.EartagCountry)
             && string.IsNullOrWhiteSpace(Case.EartagHerdmark)
             && string.IsNullOrWhiteSpace(Case.Eartag))
         {
             ModelState.AddModelError("Case.EartagCountry", "Enter an eartag.");
-        }
-        else
-        {
-            // Mirrors BSELib.Eartag.GetEartag + .ErrorCode check from ThreePartEartag.Validate()
-            var eartagError = EartagValidator.Validate(Case.EartagCountry, Case.EartagHerdmark, Case.Eartag);
-            if (eartagError is not null)
-                ModelState.AddModelError("Case.EartagCountry", eartagError);
+            return;
         }
 
+        // Mirrors BSELib.Eartag.GetEartag + .ErrorCode check from ThreePartEartag.Validate()
+        var eartagError = EartagValidator.Validate(Case.EartagCountry, Case.EartagHerdmark, Case.Eartag);
+        if (eartagError is not null)
+            ModelState.AddModelError("Case.EartagCountry", eartagError);
+    }
+
+    private void ValidateFormADates(DateTime today)
+    {
         if (!IsNonGbCase && !Case.FormADate.HasValue)
-        {
             ModelState.AddModelError("Case.FormADate", "Enter a Form A date.");
-        }
-
-        var today = DateTime.Today;
 
         if (Case.Bse1ReceivedDate.HasValue && Case.Bse1ReceivedDate.Value.Date > today)
             ModelState.AddModelError("Case.Bse1ReceivedDate", "Invalid Date");
@@ -234,91 +243,87 @@ public class DefraEditModel(
         }
 
         // Form A Resubmitted Date: requires Form A, must be after Form A and ≤ today
-        if (Case.FormAResubmittedDate.HasValue)
-        {
-            if (!Case.FormADate.HasValue)
-                ModelState.AddModelError("Case.FormAResubmittedDate",
-                    "Form A resubmitted date requires a Form A date to be set.");
-            else if (Case.FormAResubmittedDate.Value.Date <= Case.FormADate.Value.Date)
-                ModelState.AddModelError("Case.FormAResubmittedDate",
-                    "Form A resubmitted date must be after the Form A date.");
-            else if (Case.FormAResubmittedDate.Value.Date > today)
-                ModelState.AddModelError("Case.FormAResubmittedDate",
-                    "Form A resubmitted date must be a past date.");
-        }
+        ValidateDateAfterFormA(Case.FormAResubmittedDate, "Case.FormAResubmittedDate", "Form A resubmitted date", today);
+    }
 
+    private void ValidateFormBAndCDates(DateTime today)
+    {
         // Form B Date: requires Form A, must be after Form A and ≤ today
-        if (Case.FormBDate.HasValue)
-        {
-            if (!Case.FormADate.HasValue)
-                ModelState.AddModelError("Case.FormBDate",
-                    "Form B date requires a Form A date to be set.");
-            else if (Case.FormBDate.Value.Date <= Case.FormADate.Value.Date)
-                ModelState.AddModelError("Case.FormBDate",
-                    "Form B date must be after the Form A date.");
-            else if (Case.FormBDate.Value.Date > today)
-                ModelState.AddModelError("Case.FormBDate",
-                    "Form B date must be a past date.");
-        }
+        ValidateDateAfterFormA(Case.FormBDate, "Case.FormBDate", "Form B date", today);
 
         // Fate required when Form B Date is filled (legacy treats "-1" as unselected)
         if (Case.FormBDate.HasValue && (string.IsNullOrWhiteSpace(Case.Fate) || Case.Fate == "-1"))
             ModelState.AddModelError("Case.Fate",
                 "Fate (Form B reason) is required when a Form B date is entered.");
 
-        // Form C Date: requires Form B Date (FormC ≠ FormB is a soft warning — not a hard block)
-        if (Case.FormCDate.HasValue && !Case.FormBDate.HasValue)
-            ModelState.AddModelError("Case.FormCDate",
-                "Form C date requires a Form B date to be set.");
-
+        // Form C date: ≤ today (FormC ≠ FormB is a soft warning — not a hard block)
         if (Case.FormCDate.HasValue && Case.FormCDate.Value.Date > today)
             ModelState.AddModelError("Case.FormCDate", "Invalid Date");
+    }
 
-        // Date of Birth: after 1 Jan 1970, before Form A date (or today), PurchaseDate, OnsetDate
-        if (Case.BirthDate.HasValue)
+    private void ValidateDateAfterFormA(DateTime? date, string field, string label, DateTime today)
+    {
+        // OnPostAsync already clears dates that depend on a missing Form A, so only the range checks remain.
+        if (!date.HasValue || !Case.FormADate.HasValue)
+            return;
+
+        if (date.Value.Date <= Case.FormADate.Value.Date)
+            ModelState.AddModelError(field, $"{label} must be after the Form A date.");
+        else if (date.Value.Date > today)
+            ModelState.AddModelError(field, $"{label} must be a past date.");
+    }
+
+    // Date of Birth: after 1 Jan 1970, before Form A date (or today), PurchaseDate, OnsetDate
+    private void ValidateBirthDate(DateTime today)
+    {
+        if (!Case.BirthDate.HasValue)
+            return;
+
+        var birthDate = Case.BirthDate.Value.Date;
+        if (birthDate < DateTime.UnixEpoch)
         {
-            if (Case.BirthDate.Value.Date < DateTime.UnixEpoch)
-                ModelState.AddModelError(BirthDateKey,
-                    "Date of birth must be after 1 January 1970.");
-            else
-            {
-                var formALimit = Case.FormADate.HasValue ? Case.FormADate.Value.Date : today;
-                if (Case.BirthDate.Value.Date >= formALimit)
-                    ModelState.AddModelError(BirthDateKey,
-                        Case.FormADate.HasValue
-                            ? "Date of birth must be before the Form A date."
-                            : "Date of birth must be a past date.");
-
-                if (Case.PurchaseDate.HasValue && Case.BirthDate.Value.Date >= Case.PurchaseDate.Value.Date)
-                    ModelState.AddModelError(BirthDateKey,
-                        "Date of birth must be before the purchase date.");
-
-                if (Case.OnsetDate.HasValue && Case.BirthDate.Value.Date >= Case.OnsetDate.Value.Date)
-                    ModelState.AddModelError(BirthDateKey,
-                        "Date of birth must be before the onset date.");
-            }
+            ModelState.AddModelError(BirthDateKey, "Date of birth must be after 1 January 1970.");
+            return;
         }
 
-        // BSE-1 receipt dates: if filled, must be after RBSEDate + 1 day and ≤ today
-        if (Case.HasCaseWork && Case.RbseDate.HasValue)
-        {
-            var minDate = Case.RbseDate.Value.Date.AddDays(1);
-            void CheckBse1Date(DateTime? date, string field, string label)
-            {
-                if (!date.HasValue) return;
-                if (date.Value.Date < minDate)
-                    ModelState.AddModelError(field,
-                        $"{label} must be after the RBSE date ({Case.RbseDate.Value:dd/MM/yyyy}).");
-                else if (date.Value.Date > today)
-                    ModelState.AddModelError(field, $"{label} must be a past date.");
-            }
-            CheckBse1Date(Case.PurchaserBse1ReceivedDate, "Case.PurchaserBse1ReceivedDate", "Purchaser BSE-1 received date");
-            CheckBse1Date(Case.BreederBse1ReceivedDate,   "Case.BreederBse1ReceivedDate",   "Breeder BSE-1 received date");
-            CheckBse1Date(Case.Vendor1Bse1ReceivedDate,   "Case.Vendor1Bse1ReceivedDate",   "Vendor 1 BSE-1 received date");
-            CheckBse1Date(Case.HomebredBse1ReceivedDate,  "Case.HomebredBse1ReceivedDate",  "Homebred BSE-1 received date");
-            CheckBse1Date(Case.SummarySheetReceivedDate,  "Case.SummarySheetReceivedDate",  "Summary sheet received date");
-            CheckBse1Date(Case.PaperworkCompleteDate,     "Case.PaperworkCompleteDate",     "Paperwork complete date");
-        }
+        var formALimit = Case.FormADate.HasValue ? Case.FormADate.Value.Date : today;
+        if (birthDate >= formALimit)
+            ModelState.AddModelError(BirthDateKey,
+                Case.FormADate.HasValue
+                    ? "Date of birth must be before the Form A date."
+                    : "Date of birth must be a past date.");
+
+        if (Case.PurchaseDate.HasValue && birthDate >= Case.PurchaseDate.Value.Date)
+            ModelState.AddModelError(BirthDateKey, "Date of birth must be before the purchase date.");
+
+        if (Case.OnsetDate.HasValue && birthDate >= Case.OnsetDate.Value.Date)
+            ModelState.AddModelError(BirthDateKey, "Date of birth must be before the onset date.");
+    }
+
+    // BSE-1 receipt dates: if filled, must be after RBSEDate + 1 day and ≤ today
+    private void ValidateBse1ReceiptDates(DateTime today)
+    {
+        if (!Case.HasCaseWork || !Case.RbseDate.HasValue)
+            return;
+
+        var rbseDate = Case.RbseDate.Value;
+        CheckBse1Date(Case.PurchaserBse1ReceivedDate, "Case.PurchaserBse1ReceivedDate", "Purchaser BSE-1 received date", rbseDate, today);
+        CheckBse1Date(Case.BreederBse1ReceivedDate,   "Case.BreederBse1ReceivedDate",   "Breeder BSE-1 received date", rbseDate, today);
+        CheckBse1Date(Case.Vendor1Bse1ReceivedDate,   "Case.Vendor1Bse1ReceivedDate",   "Vendor 1 BSE-1 received date", rbseDate, today);
+        CheckBse1Date(Case.HomebredBse1ReceivedDate,  "Case.HomebredBse1ReceivedDate",  "Homebred BSE-1 received date", rbseDate, today);
+        CheckBse1Date(Case.SummarySheetReceivedDate,  "Case.SummarySheetReceivedDate",  "Summary sheet received date", rbseDate, today);
+        CheckBse1Date(Case.PaperworkCompleteDate,     "Case.PaperworkCompleteDate",     "Paperwork complete date", rbseDate, today);
+    }
+
+    private void CheckBse1Date(DateTime? date, string field, string label, DateTime rbseDate, DateTime today)
+    {
+        if (!date.HasValue)
+            return;
+
+        if (date.Value.Date < rbseDate.Date.AddDays(1))
+            ModelState.AddModelError(field, $"{label} must be after the RBSE date ({rbseDate:dd/MM/yyyy}).");
+        else if (date.Value.Date > today)
+            ModelState.AddModelError(field, $"{label} must be a past date.");
     }
 
 }

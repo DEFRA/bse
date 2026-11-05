@@ -87,28 +87,7 @@
 <form method="post" novalidate id="case-edit-inline-form">
     <fieldset class="bse-form-fieldset-reset" disabled="@(!Model.CanEditCaseFields ? "disabled" : null)">
         <input type="hidden" name="Rbse" value="@Model.Rbse" />
-        <input type="hidden" asp-for="Case.Rbse" />
-        <input type="hidden" asp-for="Case.HasCaseWork" />
-        <input type="hidden" asp-for="Case.IsCaseClosed" />
-        <input type="hidden" asp-for="Case.RbseDate" />
-        <input type="hidden" asp-for="Case.Sex" />
-        <input type="hidden" asp-for="Case.Breed" />
-        <input type="hidden" asp-for="Case.Origin" />
-        <input type="hidden" asp-for="Case.DamStatus" />
-        <input type="hidden" asp-for="Case.SlaughterDate" />
-        <input type="hidden" asp-for="Case.OnsetDate" />
-        <input type="hidden" asp-for="Case.IsOnsetDateEst" />
-        <input type="hidden" asp-for="Case.PurchaseDate" />
-        <input type="hidden" asp-for="Case.PurchaseAgeInMonths" />
-        <input type="hidden" asp-for="Case.PurchasedCounty" />
-        <input type="hidden" asp-for="Case.HerdEntryDate" />
-        <input type="hidden" asp-for="Case.MonthsPregnant" />
-        <input type="hidden" asp-for="Case.MonthsPostCalving" />
-        <input type="hidden" asp-for="Case.OnsetAgeInMonths" />
-        <input type="hidden" asp-for="Case.AlternateDiagnosis" />
-        <input type="hidden" asp-for="Case.FinalResultDate" />
-        <input type="hidden" asp-for="Case.FinalResult" />
-        <input type="hidden" asp-for="Case.Dbse" />
+        @await Html.PartialAsync("_CaseHiddenFields", Model, new ViewDataDictionary(ViewData) { ["IncludeIsCaseClosed"] = true })
 
         <section class="defra-legacy-panel govuk-!-margin-bottom-6" aria-labelledby="defra-identification-heading">
             <h2 id="defra-identification-heading" class="govuk-visually-hidden">Animal identification</h2>
@@ -375,22 +354,7 @@
                 </div>
             </div>
 
-            <div class="defra-legacy-grid">
-                <div class="defra-legacy-field">
-                    <label asp-for="Case.CaseType" class="govuk-label">Case type</label>
-                    <select asp-for="Case.CaseType" class="govuk-select defra-legacy-input--sm">
-                        <option value="">-- Select --</option>
-                        @foreach (var o in Model.CaseTypeOptions)
-                        {
-                            <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.CaseType)">@o.Description</option>
-                        }
-                    </select>
-                </div>
-                <div class="defra-legacy-field">
-                    <label asp-for="Case.LabComment" class="govuk-label">Lab comment</label>
-                    <textarea asp-for="Case.LabComment" class="govuk-textarea defra-legacy-input--sm" rows="2" maxlength="255"></textarea>
-                </div>
-            </div>
+            @await Html.PartialAsync("_CaseTypeLabCommentRow", Model)
 
             <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
 
@@ -452,29 +416,11 @@
                     <label asp-for="Case.IsBirthDateEst" class="govuk-label">Is Date Of Birth Estimated?</label>
                     <input asp-for="Case.IsBirthDateEst" type="checkbox" class="defra-legacy-receipt-check defra-legacy-inline-checkbox" disabled="@(!hasBirthDate)" />
                 </div>
-                <div class="defra-legacy-field">
-                    <label asp-for="Case.Survey" class="govuk-label">Survey</label>
-                    <select asp-for="Case.Survey" class="govuk-select defra-legacy-input--sm">
-                        <option value="">-- Select --</option>
-                        @foreach (var o in Model.SurveyOptions)
-                        {
-                            <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.Survey)">@o.Description</option>
-                        }
-                    </select>
-                </div>
+                @await Html.PartialAsync("_CaseSurveyField", Model)
             </div>
 
             <div class="defra-legacy-grid">
-                <div class="defra-legacy-field">
-                    <label asp-for="Case.ValuationAge" class="govuk-label">Valuation age</label>
-                    <select asp-for="Case.ValuationAge" class="govuk-select defra-legacy-input--sm">
-                        <option value="">-- Select --</option>
-                        @foreach (var o in Model.ValuationAgeOptions)
-                        {
-                            <option value="@o.Code" selected="@IsSelected(o.Code, Model.Case.ValuationAge)">@o.Description</option>
-                        }
-                    </select>
-                </div>
+                @await Html.PartialAsync("_CaseValuationAgeField", Model)
                 <div class="defra-legacy-field">
                     <label asp-for="Case.Barcode" class="govuk-label">Barcode</label>
                     <input asp-for="Case.Barcode" class="govuk-input defra-legacy-input--sm" maxlength="20" readonly="@(!Model.CanEditVlaMaintenanceCaseworkFields ? "readonly" : null)" />
@@ -585,30 +531,7 @@
         min-width: 0;
     }
 
-    .bse-case-bottom-row {
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 16px;
-    }
-
-    .bse-case-bottom-row__left,
-    .bse-case-bottom-row__right {
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 15px;
-        margin: 0;
-    }
-
-    .bse-case-bottom-row__right {
-        gap: 20px;
-        margin-left: auto;
-    }
-
-    .bse-case-bottom-row__actions {
-        margin: 0;
-    }
+    @await Html.PartialAsync("_CaseBottomRowStyles")
 
     .defra-legacy-panel {
         max-width: 1160px;
@@ -627,25 +550,7 @@
         margin-bottom: 12px;
     }
 
-    .defra-legacy-grid--toprow {
-        margin-bottom: 1rem;
-    }
-
-    .defra-legacy-field {
-        display: grid;
-        grid-template-columns: 235px 252px;
-        column-gap: 10px;
-        align-items: start;
-        margin-bottom: 0;
-    }
-
-    .defra-legacy-field .govuk-label {
-        margin-bottom: 0;
-        font-weight: 400;
-        font-size: 19px;
-        line-height: 1.25;
-        white-space: nowrap;
-    }
+    @await Html.PartialAsync("_DefraLegacyFieldStyles")
 
     .defra-legacy-field .govuk-input,
     .defra-legacy-field .govuk-select,
@@ -748,40 +653,7 @@
         gap: 8px;
     }
 
-    .bse-inline-row-button {
-        border: 1px solid #0b0c0c;
-        background: #fff;
-        color: #0b0c0c;
-        padding: 4px 8px;
-        min-height: 36px;
-        font-size: 1rem;
-        line-height: 1.1;
-        cursor: pointer;
-    }
-
-    .bse-inline-row-button:hover {
-        background: #f3f2f1;
-    }
-
-    .bse-inline-row-button:focus {
-        outline: 3px solid #ffdd00;
-        outline-offset: 0;
-    }
-
-    .bse-inline-row-button--secondary {
-        border-color: #505a5f;
-    }
-
-    .bse-inline-row-button--confirm {
-        background: #00703c;
-        border-color: #00703c;
-        color: #fff;
-    }
-
-    .bse-inline-row-button--confirm:hover {
-        background: #005a30;
-        border-color: #005a30;
-    }
+    @await Html.PartialAsync("_InlineRowButtonStyles")
 
     .bse-eartag-help-inline {
         display: inline-flex;
@@ -822,20 +694,7 @@
         color: #d4351c;
     }
 
-    .bse-eartag-help__tooltip {
-        position: absolute;
-        left: calc(100% + 0.35rem);
-        top: 50%;
-        transform: translateY(-50%);
-        z-index: 20;
-        max-width: 24rem;
-        background: #ffffff;
-        border: 1px solid #b1b4b6;
-        box-shadow: 0 2px 6px rgba(11, 12, 12, 0.15);
-        padding: 0.5rem 0.65rem;
-        font-size: 0.95rem;
-        line-height: 1.3;
-    }
+    @await Html.PartialAsync("_EartagHelpTooltipStyles")
 
     .defra-formc-input-wrap {
         display: inline-flex;
@@ -977,30 +836,7 @@
 
         // Local, best-effort format name shown immediately while the authoritative check
         // (OnGetValidateEartag, below) confirms it — this never reports errors itself.
-        function resolveEartagHintText(country, herdmark, animal) {
-            if (!country && !herdmark && !animal) {
-                return 'Enter the animal eartag in parts: country, herdmark and animal number.';
-            }
-
-            if (!country) {
-                return herdmark ? 'PRE-Barimo' : 'Free format';
-            }
-
-            if (country.length > 2) {
-                return /^\d/.test(country) ? 'ISO Numeric Country' : 'ISO Alpha Country';
-            }
-
-            if (country === 'UK') {
-                return 'Mainland GB Numeric';
-            }
-
-            var ecCodes = ['AT', 'BE', 'DE', 'DK', 'EL', 'ES', 'FI', 'FR', 'IE', 'IT', 'LU', 'NL', 'PT', 'SE'];
-            if (ecCodes.indexOf(country) >= 0) {
-                return 'EC non-UK';
-            }
-
-            return 'Unknown format';
-        }
+        @await Html.PartialAsync("_EartagHintTextScript")
 
         function updateEartagTooltipText() {
             if (!eartagTooltip) {
@@ -1298,19 +1134,7 @@
             });
         }
 
-        document.querySelectorAll('.bse-cancel-link').forEach(function (lnk) {
-            lnk.addEventListener('click', function (e) {
-                e.preventDefault();
-                var hasUnsavedHere = formDirty || @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.HasUnsavedChanges));
-                // Legacy's dirty-check spans the whole shared session (every tab), not just this page.
-                (hasUnsavedHere ? Promise.resolve(true) : (window.hasUnsavedChangesAcrossTabs ? window.hasUnsavedChangesAcrossTabs() : Promise.resolve(false)))
-                    .then(function (hasUnsaved) {
-                        if (!hasUnsaved || window.confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
-                            window.location.href = lnk.href;
-                        }
-                    });
-            });
-        });
+        @await Html.PartialAsync("_CaseCancelConfirmScript", new BSE.Host.Models.CaseCancelConfirmViewModel("formDirty", Model.HasUnsavedChanges))
     })();
 </script>
 

@@ -1476,22 +1476,22 @@ public class RelationsModel(
         }
 
         return await conn.QuerySingleOrDefaultAsync<PedigreeSnapshot>(
-            @"SELECT [Eartag], [Name], [Herdbook], [BirthDay], [BirthMonth], [BirthYear], [RowStamp]
+            @"SELECT [Eartag], [Name], [Herdbook],
+                     CAST([BirthDay] AS int) AS [BirthDay], CAST([BirthMonth] AS int) AS [BirthMonth],
+                     CAST([BirthYear] AS int) AS [BirthYear], [RowStamp]
               FROM [Pedigree]
               WHERE [ID] = @ID",
             new { ID = pedigreeId });
     }
 
-    private sealed record PedigreeSnapshot
-    {
-        public string? Eartag { get; init; }
-        public string? Name { get; init; }
-        public string? Herdbook { get; init; }
-        public int? BirthDay { get; init; }
-        public int? BirthMonth { get; init; }
-        public int? BirthYear { get; init; }
-        public byte[]? RowStamp { get; init; }
-    }
+    private sealed record PedigreeSnapshot(
+        string? Eartag,
+        string? Name,
+        string? Herdbook,
+        int? BirthDay,
+        int? BirthMonth,
+        int? BirthYear,
+        byte[]? RowStamp);
 
     /// <summary>Populates DamSire from the freshly-loaded Details. GET requests only.</summary>
     private void PopulateDamSireFromDetails()
@@ -1640,31 +1640,10 @@ public class RelationsModel(
 
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadAsync();
-        var draft = await LoadOrInitializeRelationsDraftAsync();
+        await LoadOrInitializeRelationsDraftAsync();
         PopulateDamSireFromDetails();
-        var appliedDam = await ApplyPendingParentFromTempData(isDam: true);
-        var appliedSire = await ApplyPendingParentFromTempData(isDam: false);
-
-        var draftChanged = false;
-        if (appliedDam && draft.RemoveDamPending)
-        {
-            draft.RemoveDamPending = false;
-            draftChanged = true;
-        }
-
-        if (appliedSire && draft.RemoveSirePending)
-        {
-            draft.RemoveSirePending = false;
-            draftChanged = true;
-        }
-
-        if (draftChanged)
-        {
-            draft.HasRelationsChanges = true;
-            await sessionState.SetAsync(draft);
-            RemoveDamPending = draft.RemoveDamPending;
-            RemoveSirePending = draft.RemoveSirePending;
-        }
+        await ApplyPendingParentFromTempData(isDam: true);
+        await ApplyPendingParentFromTempData(isDam: false);
 
         EditCaseHerdbook = editCaseHerdbook;
 

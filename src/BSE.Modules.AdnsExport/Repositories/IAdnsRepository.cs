@@ -21,9 +21,9 @@ public interface IAdnsRepository
     /// Calls <c>EditCaseADNS</c>.
     /// </summary>
     Task<int> EditCaseAdnsAsync(
-        string rbse, DateTime sentDate, int adnsRegionId,
-        short adnsYear, int adnsNumber, byte[] rowStamp,
-        IDbConnection connection, IDbTransaction transaction);
+        AdnsCaseUpdate update,
+        IDbConnection connection,
+        IDbTransaction transaction);
 
     /// <summary>
     /// Upserts the last email reference and ADNS reference number for an area.

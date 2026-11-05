@@ -45,9 +45,11 @@ public sealed class CaseEditOrchestrationServiceTests
 
     private CaseEditOrchestrationService CreateService() => new(
         _sessionState, _wizardState,
-        _caseRepository, _farmRepository, _babRepository, _clinicalRepository,
-        _feedRepository, _relationsRepository, _pedigreeRepository, _caseWorkRepository, _batchRepository,
-        _testRepository, _otherOwnerRepository, _herdSizeRepository, _farmRelationRepository, _connectionFactory,
+        new CaseEditRepositories(
+            _caseRepository, _farmRepository, _babRepository, _clinicalRepository,
+            _feedRepository, _relationsRepository, _pedigreeRepository, _caseWorkRepository, _batchRepository,
+            _testRepository, _otherOwnerRepository, _herdSizeRepository, _farmRelationRepository),
+        _connectionFactory,
         NullLogger<CaseEditOrchestrationService>.Instance);
 
     private static CaseRecord ValidCaseRecord() => new()

@@ -20,17 +20,9 @@ public class FeedAddModel(
     ICaseService caseService,
     ILookupDataService lookups,
     IDbConnectionFactory connectionFactory,
-    IConfiguration configuration) : PageModel
+    IConfiguration configuration) : FeedPageModelBase(lookups)
 {
-    [BindProperty(SupportsGet = true)]
-    public string Rbse { get; set; } = string.Empty;
-
-    public IEnumerable<LookupItem> RationTypes { get; private set; } = [];
-    public IEnumerable<LookupItem> Suppliers { get; private set; } = [];
     public string SpolSiteUrl { get; private set; } = string.Empty;
-
-    /// <summary>Field-keyed validation messages, mirroring the legacy per-field markers.</summary>
-    public IDictionary<string, string> FieldErrors { get; private set; } = new Dictionary<string, string>();
 
     [BindProperty]
     public NewFeedViewModel NewFeed { get; set; } = new();
@@ -75,15 +67,6 @@ public class FeedAddModel(
 
         TempData["Success"] = "Feed record added.";
         return RedirectToPage("/Case/Feeds", new { rbse = Rbse });
-    }
-
-    private async Task LoadLookupsAsync()
-    {
-        var rtTask  = lookups.GetLookupAsync(LookupTableId.RationType);
-        var supTask = lookups.GetLookupAsync(LookupTableId.Supplier);
-        await Task.WhenAll(rtTask, supTask);
-        RationTypes = await rtTask;
-        Suppliers   = await supTask;
     }
 
     public class NewFeedViewModel

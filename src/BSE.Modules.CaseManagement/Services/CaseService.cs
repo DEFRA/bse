@@ -35,28 +35,18 @@ public sealed class CaseService : ICaseService
     private readonly IBatchRepository _batchRepository;
     private readonly ICaseWorkRepository _caseWorkRepository;
 
-    public CaseService(
-        IDbConnectionFactory connectionFactory,
-        ICaseRepository caseRepository,
-        IClinicalRepository clinicalRepository,
-        IBabRepository babRepository,
-        IFeedRepository feedRepository,
-        ITestRepository testRepository,
-        IOtherOwnerRepository otherOwnerRepository,
-        IPedigreeRepository pedigreeRepository,
-        IBatchRepository batchRepository,
-        ICaseWorkRepository caseWorkRepository)
+    public CaseService(CaseServiceDependencies dependencies)
     {
-        _connectionFactory = connectionFactory;
-        _caseRepository = caseRepository;
-        _clinicalRepository = clinicalRepository;
-        _babRepository = babRepository;
-        _feedRepository = feedRepository;
-        _testRepository = testRepository;
-        _otherOwnerRepository = otherOwnerRepository;
-        _pedigreeRepository = pedigreeRepository;
-        _batchRepository = batchRepository;
-        _caseWorkRepository = caseWorkRepository;
+        _connectionFactory = dependencies.ConnectionFactory;
+        _caseRepository = dependencies.CaseRepository;
+        _clinicalRepository = dependencies.ClinicalRepository;
+        _babRepository = dependencies.BabRepository;
+        _feedRepository = dependencies.FeedRepository;
+        _testRepository = dependencies.TestRepository;
+        _otherOwnerRepository = dependencies.OtherOwnerRepository;
+        _pedigreeRepository = dependencies.PedigreeRepository;
+        _batchRepository = dependencies.BatchRepository;
+        _caseWorkRepository = dependencies.CaseWorkRepository;
     }
 
     public Task<CaseDetailRecord?> GetCaseDetailsAsync(string rbse)

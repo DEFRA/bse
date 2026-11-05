@@ -47,24 +47,7 @@ public static class EartagParser
 
         // ── Legacy pre-Barimo British eartag (prefixed with '-' or '*') ──────────
         if (input.StartsWith('-') || input.StartsWith('*'))
-        {
-            var body = input[1..];
-            if (string.IsNullOrWhiteSpace(body))
-                return EartagParseResult.Invalid("Enter an eartag value after the '-' or '*' prefix.");
-
-            // Must contain a delimiter between herdmark and individual ID
-            var preBarimoSplit = SplitOnDelimiter(body);
-            if (preBarimoSplit is null)
-                return EartagParseResult.Invalid(
-                    "Pre-Barimo eartag must contain a '-' delimiter between herdmark and individual animal ID. " +
-                    $"For example: -{body}-12345");
-
-            return new EartagParseResult(
-                EartagCountry: null,
-                EartagHerdmark: preBarimoSplit.Value.herdmark,
-                Eartag: preBarimoSplit.Value.animalId,
-                ErrorMessage: null);
-        }
+            return ParsePreBarimo(input);
 
         // ── ISO numeric format: 3 digits + separator + 6-digit herd + 5-digit ID ─
         // Pattern: [3 numeric][0|1|2|_|space][Hn6][An5]  e.g. "826 703412 70001"
@@ -88,54 +71,7 @@ public static class EartagParser
         // ── Identifiable non-numeric (herdmark-delimiter-animalId) ───────────────
         // e.g. "AB123-234"
         if (input.Length <= 25)
-        {
-            // Check if it looks like it has a country code prefix
-            string? country = null;
-            string body = input;
-
-            if (input.Length >= 2 && IsAlpha(input[..2]))
-            {
-                var possibleCountry = input[..2].ToUpperInvariant();
-                if (KnownCountryCodes.Contains(possibleCountry))
-                {
-                    // Reject ambiguous legacy prefixes without '-'/'*' marker
-                    if (LegacyAmbiguousPrefixes.Contains(possibleCountry))
-                        return EartagParseResult.Invalid(
-                            $"Eartags beginning with '{possibleCountry}' may be interpreted as a country code. " +
-                            $"If this is a legacy pre-Barimo British eartag with no country code, " +
-                            $"prefix it with '-' or '*' (e.g. '-{input}').");
-
-                    country = possibleCountry;
-                    body = input[2..];
-                }
-            }
-
-            var split = SplitOnDelimiter(body);
-            if (split is not null)
-            {
-                return new EartagParseResult(
-                    EartagCountry: country,
-                    EartagHerdmark: split.Value.herdmark,
-                    Eartag: split.Value.animalId,
-                    ErrorMessage: null);
-            }
-
-            // No delimiter found – check if it's purely numeric (free numeric eartag)
-            if (IsNumeric(input))
-            {
-                return new EartagParseResult(
-                    EartagCountry: null,
-                    EartagHerdmark: null,
-                    Eartag: input,
-                    ErrorMessage: null);
-            }
-
-            // Non-numeric without delimiter → invalid (cannot determine format)
-            return EartagParseResult.Invalid(
-                "Unable to determine eartag format. " +
-                "For non-numeric eartags, include a '-' delimiter between herdmark and individual animal ID " +
-                "(e.g. AB123-234). For numeric eartags, enter digits only.");
-        }
+            return ParseIdentifiable(input);
 
         // ── Free-format fallback ─────────────────────────────────────────────────
         return new EartagParseResult(
@@ -143,6 +79,76 @@ public static class EartagParser
             EartagHerdmark: null,
             Eartag: input,
             ErrorMessage: null);
+    }
+
+    private static EartagParseResult ParsePreBarimo(string input)
+    {
+        var body = input[1..];
+        if (string.IsNullOrWhiteSpace(body))
+            return EartagParseResult.Invalid("Enter an eartag value after the '-' or '*' prefix.");
+
+        // Must contain a delimiter between herdmark and individual ID
+        var preBarimoSplit = SplitOnDelimiter(body);
+        if (preBarimoSplit is null)
+            return EartagParseResult.Invalid(
+                "Pre-Barimo eartag must contain a '-' delimiter between herdmark and individual animal ID. " +
+                $"For example: -{body}-12345");
+
+        return new EartagParseResult(
+            EartagCountry: null,
+            EartagHerdmark: preBarimoSplit.Value.herdmark,
+            Eartag: preBarimoSplit.Value.animalId,
+            ErrorMessage: null);
+    }
+
+    private static EartagParseResult ParseIdentifiable(string input)
+    {
+        // Check if it looks like it has a country code prefix
+        string? country = null;
+        string body = input;
+
+        if (input.Length >= 2 && IsAlpha(input[..2]))
+        {
+            var possibleCountry = input[..2].ToUpperInvariant();
+            if (KnownCountryCodes.Contains(possibleCountry))
+            {
+                // Reject ambiguous legacy prefixes without '-'/'*' marker
+                if (LegacyAmbiguousPrefixes.Contains(possibleCountry))
+                    return EartagParseResult.Invalid(
+                        $"Eartags beginning with '{possibleCountry}' may be interpreted as a country code. " +
+                        $"If this is a legacy pre-Barimo British eartag with no country code, " +
+                        $"prefix it with '-' or '*' (e.g. '-{input}').");
+
+                country = possibleCountry;
+                body = input[2..];
+            }
+        }
+
+        var split = SplitOnDelimiter(body);
+        if (split is not null)
+        {
+            return new EartagParseResult(
+                EartagCountry: country,
+                EartagHerdmark: split.Value.herdmark,
+                Eartag: split.Value.animalId,
+                ErrorMessage: null);
+        }
+
+        // No delimiter found – check if it's purely numeric (free numeric eartag)
+        if (IsNumeric(input))
+        {
+            return new EartagParseResult(
+                EartagCountry: null,
+                EartagHerdmark: null,
+                Eartag: input,
+                ErrorMessage: null);
+        }
+
+        // Non-numeric without delimiter → invalid (cannot determine format)
+        return EartagParseResult.Invalid(
+            "Unable to determine eartag format. " +
+            "For non-numeric eartags, include a '-' delimiter between herdmark and individual animal ID " +
+            "(e.g. AB123-234). For numeric eartags, enter digits only.");
     }
 
     /// <summary>

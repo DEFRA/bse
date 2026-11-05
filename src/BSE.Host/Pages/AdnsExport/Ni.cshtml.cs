@@ -14,7 +14,7 @@ namespace BSE.Host.Pages.AdnsExport;
 [Authorize(Policy = "DEFRAMaintenance")]
 public class NiModel(
     IAdnsExportService adnsExportService,
-    IOptions<AdnsMsGraphOptions> msGraphOptions) : PageModel
+    IOptions<AdnsMsGraphOptions> msGraphOptions) : AdnsExportPageModelBase(adnsExportService, msGraphOptions)
 {
     private const string DateFormat = "dd/MM/yyyy";
 
@@ -44,25 +44,13 @@ public class NiModel(
     public string? InputConfirmationDate { get; set; }
 
     [BindProperty]
-    public string UserEmailAddress { get; set; } = string.Empty;
-
-    [BindProperty]
-    public string Message { get; set; } = string.Empty;
-
-    [BindProperty]
     public bool SaveAdnsData { get; set; } = false;
 
     [BindProperty(SupportsGet = true)] public string SortColumn { get; set; } = "AdnsReference";
     [BindProperty(SupportsGet = true)] public bool SortDesc { get; set; }
     [BindProperty(SupportsGet = true)] public int PageNumber { get; set; } = 1;
 
-    public AdnsExportPreview? Preview { get; private set; }
     public List<NiCaseInput> DraftCases { get; private set; } = [];
-    public string? ErrorMessage { get; private set; }
-    private readonly AdnsMsGraphOptions _msGraphOptions = msGraphOptions.Value;
-
-    public string FromAddress => _msGraphOptions.FromAddress;
-    public string DefaultToEmailAddress => _msGraphOptions.ToAddress;
 
     public IReadOnlyList<NiGridRow> CurrentRows() =>
         Preview is null
@@ -99,7 +87,7 @@ public class NiModel(
 
         InputConfirmationDate = DateTime.Today.ToString(DateFormat, CultureInfo.InvariantCulture);
 
-        var lastReference = await adnsExportService.GetLastReferenceAsync("NI");
+        var lastReference = await ExportService.GetLastReferenceAsync("NI");
         if (lastReference is not null)
         {
             InputAdnsYear = lastReference.LastAdnsReferenceYear ?? DateTime.Today.Year;
@@ -107,8 +95,7 @@ public class NiModel(
             EmailReference = $"DBSE{InputAdnsNumber:00000}";
         }
 
-        if (string.IsNullOrWhiteSpace(UserEmailAddress))
-            UserEmailAddress = DefaultToEmailAddress;
+        ApplyDefaultRecipientIfBlank();
 
         return Page();
     }
@@ -127,8 +114,7 @@ public class NiModel(
         LoadDraftCases();
         LoadPreview();
 
-        if (string.IsNullOrWhiteSpace(UserEmailAddress))
-            UserEmailAddress = DefaultToEmailAddress;
+        ApplyDefaultRecipientIfBlank();
 
         if (string.IsNullOrWhiteSpace(InputConfirmationDate))
             InputConfirmationDate = DateTime.Today.ToString(DateFormat, CultureInfo.InvariantCulture);
@@ -241,13 +227,12 @@ public class NiModel(
             return Page();
         }
 
-        Preview = adnsExportService.PreviewNiExport(EmailReference, DraftCases);
+        Preview = ExportService.PreviewNiExport(EmailReference, DraftCases);
         Message = Preview.EmailBody;
         TempData[PreviewTempDataKey] = JsonSerializer.Serialize(Preview);
         PersistContext();
 
-        if (string.IsNullOrWhiteSpace(UserEmailAddress))
-            UserEmailAddress = DefaultToEmailAddress;
+        ApplyDefaultRecipientIfBlank();
 
         return Page();
     }
@@ -262,16 +247,8 @@ public class NiModel(
         RemoveModelStateFor(nameof(InputAdnsRegionId));
         RemoveModelStateFor(nameof(InputConfirmationDate));
 
-        if (string.IsNullOrWhiteSpace(UserEmailAddress))
+        if (!HasValidRecipient())
         {
-            ModelState.AddModelError(nameof(UserEmailAddress), "Enter your email address.");
-            LoadPreview();
-            return Page();
-        }
-
-        if (!new EmailAddressAttribute().IsValid(UserEmailAddress))
-        {
-            ModelState.AddModelError(nameof(UserEmailAddress), "Enter an email address in the correct format, like name@example.com.");
             LoadPreview();
             return Page();
         }
@@ -279,31 +256,24 @@ public class NiModel(
         var previewJson = TempData.Peek(PreviewTempDataKey)?.ToString();
         if (string.IsNullOrEmpty(previewJson))
         {
-            ErrorMessage = "Session expired — please generate the report again.";
+            SetSessionExpired();
             return Page();
         }
 
-        Preview = JsonSerializer.Deserialize<AdnsExportPreview>(previewJson);
+        Preview = DeserializePreview(previewJson);
         var cases = Preview?.Cases.ToList() ?? [];
 
         // NI export rows are manually entered and are not backed by persisted Case rows,
         // so ADNS case updates must remain disabled.
         var command = new DispatchAdnsCommand("NI", EmailReference, cases, UserEmailAddress, SaveAdnsData: false, Message: Message.Trim());
 
-        try
-        {
-            await adnsExportService.DispatchAsync(command);
-            TempData.Remove(PreviewTempDataKey);
-            TempData.Remove(DraftTempDataKey);
-            TempData.Remove(ContextTempDataKey);
-            TempData["SuccessMessage"] = "The message has been successfully sent. You should receive a confirmation e-mail shortly.";
-            return RedirectToPage();
-        }
-        catch (Exception ex)
-        {
-            ErrorMessage = $"Dispatch failed: {ex.Message}";
+        if (!await TryDispatchAsync(command))
             return Page();
-        }
+
+        TempData.Remove(PreviewTempDataKey);
+        TempData.Remove(DraftTempDataKey);
+        TempData.Remove(ContextTempDataKey);
+        return RedirectToPage();
     }
 
     // Accepts the MOJ date-picker's free-text d/M/yyyy format, independent of server locale.
@@ -344,10 +314,7 @@ public class NiModel(
 
     private void LoadPreview()
     {
-        var json = TempData.Peek(PreviewTempDataKey)?.ToString();
-        Preview = string.IsNullOrWhiteSpace(json)
-            ? null
-            : JsonSerializer.Deserialize<AdnsExportPreview>(json);
+        Preview = DeserializePreview(TempData.Peek(PreviewTempDataKey)?.ToString());
     }
 
     private void PersistContext()

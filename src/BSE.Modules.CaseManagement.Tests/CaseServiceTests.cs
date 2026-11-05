@@ -31,9 +31,9 @@ public sealed class CaseServiceTests
     {
         _connectionFactory.CreateConnection().Returns(_connection);
         _connection.BeginTransaction().Returns(_transaction);
-        _sut = new CaseService(
+        _sut = new CaseService(new CaseServiceDependencies(
             _connectionFactory, _caseRepo, _clinicalRepo, _babRepo,
-            _feedRepo, _testRepo, _otherOwnerRepo, _pedigreeRepo, _batchRepo, _caseWorkRepo);
+            _feedRepo, _testRepo, _otherOwnerRepo, _pedigreeRepo, _batchRepo, _caseWorkRepo));
     }
 
     private static AddCaseCommand MakeCase(string rbse = "010000001") => new(

@@ -177,6 +177,75 @@ public sealed class DefraEditModelHandlerTests
         model.TempData["Success"].Should().Be($"Case {Rbse} has been updated.");
     }
 
+    [Fact]
+    public void EmbedFlag_RoundTrips()
+    {
+        var model = CreateModel();
+        model.Embed = true;
+
+        model.Embed.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task OnGetAsync_WithPersistedCaseWork_AppliesItToTheCase()
+    {
+        _caseService.GetCaseAsync(Rbse).Returns(MakeValidCaseRecord());
+        _caseWorkRepository.GetByRbseAsync(Rbse).Returns(new BSE.Modules.CaseWork.Models.CaseWorkRecord { Rbse = Rbse, Barcode = "BC" });
+        var model = CreateModel();
+
+        await model.OnGetAsync();
+
+        model.Case.Barcode.Should().Be("BC");
+    }
+
+    [Fact]
+    public async Task OnPostAsync_ForANonGbCase_KeepsThePersistedFormADate()
+    {
+        _caseService.GetCaseAsync(Rbse).Returns(MakeValidCaseRecord() with { IsNonGbCase = true });
+        var model = CreateModel();
+        model.Case = new CaseEditViewModel { Rbse = Rbse, FormADate = null };
+
+        await model.OnPostAsync();
+
+        model.Case.FormADate.Should().Be(new DateTime(2024, 1, 1));
+    }
+
+    [Theory]
+    [InlineData(EditCaseResult.RbseNotFound, "not found")]
+    [InlineData(EditCaseResult.AuditLogError, "Audit log error")]
+    [InlineData(EditCaseResult.PostUpdateError, "Database error")]
+    [InlineData((EditCaseResult)999, "Update failed")]
+    public async Task OnPostAsync_WhenTheSaveFails_ShowsAMessage(EditCaseResult failure, string expected)
+    {
+        var model = CreateModel();
+        _caseService.GetCaseAsync(Rbse).Returns(MakeValidCaseRecord());
+        model.TempData[RowStampTempDataKey] = Convert.ToBase64String([1, 2, 3]);
+        model.Case = new CaseEditViewModel { Rbse = Rbse, FormADate = new DateTime(2024, 1, 1), Eartag = "1", EartagHerdmark = "GY1", EartagCountry = "UK" };
+        _caseService.EditCaseAsync(Arg.Any<EditCaseDetailsCommand>(), 7).Returns(failure);
+
+        (await model.OnPostAsync()).Should().BeOfType<PageResult>();
+
+        model.ModelState[string.Empty]!.Errors.Should().Contain(e => e.ErrorMessage.Contains(expected));
+    }
+
+    [Fact]
+    public async Task OnPostAsync_WhenTheCaseHasCaseWork_SavesItToo()
+    {
+        var model = CreateModel();
+        _caseService.GetCaseAsync(Rbse).Returns(MakeValidCaseRecord());
+        model.TempData[RowStampTempDataKey] = Convert.ToBase64String([1, 2, 3]);
+        model.Case = new CaseEditViewModel
+        {
+            Rbse = Rbse, FormADate = new DateTime(2024, 1, 1), Eartag = "1", EartagHerdmark = "GY1", EartagCountry = "UK",
+            HasCaseWork = true, Barcode = "BC"
+        };
+        _caseService.EditCaseAsync(Arg.Any<EditCaseDetailsCommand>(), 7).Returns(EditCaseResult.Success);
+
+        await model.OnPostAsync();
+
+        await _caseWorkRepository.Received(1).EditAsync(Arg.Is<BSE.Modules.CaseWork.Commands.EditCaseWorkCommand>(c => c.Barcode == "BC"));
+    }
+
     // Uncovered path: OnPostAsync's ConcurrencyConflict branch.
     [Fact]
     public async Task OnPostAsync_WhenConcurrencyConflict_SetsErrorAndRefreshesRowStamp()

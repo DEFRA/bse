@@ -275,11 +275,7 @@ public class ClinicalModel(
         return RedirectToPage("/Home");
     }
 
-    public async Task<IActionResult> OnGetCancelClinicalEditAsync()
-    {
-        await caseDraftDiscard.DiscardAllAsync(Rbse);
-        return RedirectToPage("/Home");
-    }
+    public Task<IActionResult> OnGetCancelClinicalEditAsync() => OnPostCancelClinicalEditAsync();
 
     /// <summary>Adds a clinical visit to the draft only. Not persisted until Save.</summary>
     [Authorize(Policy = "DataEntryVla")]

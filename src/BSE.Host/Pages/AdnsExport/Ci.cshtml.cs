@@ -14,10 +14,9 @@ namespace BSE.Host.Pages.AdnsExport;
 [Authorize(Policy = "DEFRAMaintenance")]
 public class CiModel(
     IAdnsExportService adnsExportService,
-    IOptions<AdnsMsGraphOptions> msGraphOptions) : PageModel
+    IOptions<AdnsMsGraphOptions> msGraphOptions) : AdnsExportPageModelBase(adnsExportService, msGraphOptions)
 {
     private const string PreviewTempDataKey = "AdnsCiPreview";
-    private readonly AdnsMsGraphOptions _msGraphOptions = msGraphOptions.Value;
 
     [BindProperty]
     [Required(ErrorMessage = "Enter an email reference.")]
@@ -48,21 +47,9 @@ public class CiModel(
     [Required(ErrorMessage = "Enter a confirmation date.")]
     public string ConfirmationDate { get; set; } = DateTime.Today.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
 
-    [BindProperty]
-    public string UserEmailAddress { get; set; } = string.Empty;
-
-    [BindProperty]
-    public string Message { get; set; } = string.Empty;
-
     // CI must remain false (no persisted Case rows for manual CI entries).
     [BindProperty]
     public bool SaveAdnsData { get; set; } = false;
-
-    public AdnsExportPreview? Preview { get; private set; }
-    public string? ErrorMessage { get; private set; }
-
-    public string FromEmailAddress => _msGraphOptions.FromAddress;
-    public string DefaultToEmailAddress => _msGraphOptions.ToAddress;
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -70,7 +57,7 @@ public class CiModel(
         // a previously generated report must not resurface just because TempData hadn't expired yet.
         TempData.Remove(PreviewTempDataKey);
 
-        var lastReference = await adnsExportService.GetLastReferenceAsync("CI");
+        var lastReference = await ExportService.GetLastReferenceAsync("CI");
         if (lastReference is not null)
         {
             AdnsYear = lastReference.LastAdnsReferenceYear ?? DateTime.Today.Year;
@@ -88,9 +75,7 @@ public class CiModel(
 
         if (!ModelState.IsValid)
         {
-            if (string.IsNullOrWhiteSpace(UserEmailAddress))
-                UserEmailAddress = DefaultToEmailAddress;
-
+            ApplyDefaultRecipientIfBlank();
             return Page();
         }
 
@@ -99,12 +84,11 @@ public class CiModel(
             if (!TryParseConfirmationDate(ConfirmationDate, out var confirmationDate))
             {
                 ModelState.AddModelError(nameof(ConfirmationDate), "Enter a confirmation date in the format 17/05/2024.");
-                if (string.IsNullOrWhiteSpace(UserEmailAddress))
-                    UserEmailAddress = DefaultToEmailAddress;
+                ApplyDefaultRecipientIfBlank();
                 return Page();
             }
 
-            Preview = adnsExportService.PreviewCiExport(
+            Preview = ExportService.PreviewCiExport(
                 EmailReference,
                 AdnsYear,
                 StartAdnsNumber,
@@ -121,8 +105,7 @@ public class CiModel(
             ErrorMessage = $"Report generation failed: {ex.Message}";
         }
 
-        if (string.IsNullOrWhiteSpace(UserEmailAddress))
-            UserEmailAddress = DefaultToEmailAddress;
+        ApplyDefaultRecipientIfBlank();
 
         return Page();
     }
@@ -131,7 +114,7 @@ public class CiModel(
     {
         if (!TryLoadPreview(out var preview))
         {
-            ErrorMessage = "Session expired — please generate the report again.";
+            SetSessionExpired();
             return Page();
         }
 
@@ -144,17 +127,8 @@ public class CiModel(
         // aren't posted from this form and their stale Required errors must not block sending.
         ModelState.Clear();
 
-        if (string.IsNullOrWhiteSpace(UserEmailAddress))
-        {
-            ModelState.AddModelError(nameof(UserEmailAddress), "Enter your email address.");
+        if (!HasValidRecipient())
             return Page();
-        }
-
-        if (!new EmailAddressAttribute().IsValid(UserEmailAddress))
-        {
-            ModelState.AddModelError(nameof(UserEmailAddress), "Enter an email address in the correct format, like name@example.com.");
-            return Page();
-        }
 
         var command = new DispatchAdnsCommand(
             Area: "CI",
@@ -164,18 +138,11 @@ public class CiModel(
             SaveAdnsData: SaveAdnsData,
             Message: Message.Trim());
 
-        try
-        {
-            await adnsExportService.DispatchAsync(command);
-            TempData.Remove(PreviewTempDataKey);
-            TempData["SuccessMessage"] = "The message has been successfully sent. You should receive a confirmation e-mail shortly.";
-            return RedirectToPage();
-        }
-        catch (Exception ex)
-        {
-            ErrorMessage = $"Dispatch failed: {ex.Message}";
+        if (!await TryDispatchAsync(command))
             return Page();
-        }
+
+        TempData.Remove(PreviewTempDataKey);
+        return RedirectToPage();
     }
 
     // Accepts the MOJ date-picker's free-text d/M/yyyy format, independent of server locale.
@@ -185,11 +152,7 @@ public class CiModel(
 
     private bool TryLoadPreview(out AdnsExportPreview? preview)
     {
-        var json = TempData[PreviewTempDataKey]?.ToString();
-        preview = string.IsNullOrWhiteSpace(json)
-            ? null
-            : JsonSerializer.Deserialize<AdnsExportPreview>(json);
-
+        preview = DeserializePreview(TempData[PreviewTempDataKey]?.ToString());
         return preview is not null;
     }
 }

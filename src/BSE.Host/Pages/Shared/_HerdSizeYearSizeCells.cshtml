@@ -1,0 +1,28 @@
+﻿@model BSE.Host.Pages.Case.FarmModel.StagedHerdSizeItem
+@{
+    var yearRepeated = ViewData["YearRepeated"] is true;
+}
+<td class="govuk-table__cell">
+    @Model.HerdYear
+    @if (yearRepeated)
+    {
+        <span class="bse-mismatch-warning" title="You have entered more than one row for this year.">
+            <span aria-hidden="true">*</span>
+            <span class="govuk-visually-hidden">Warning: You have entered more than one row for this year.</span>
+        </span>
+    }
+    @if (Model.IsUnsaved)
+    {
+        <strong class="govuk-tag govuk-tag--yellow govuk-!-margin-left-2">Unsaved</strong>
+    }
+</td>
+<td class="govuk-table__cell">
+    @Model.TotalSize
+    @if (Model.LactationMismatchWarning is not null)
+    {
+        <span class="bse-mismatch-warning" title="@Model.LactationMismatchWarning">
+            <span aria-hidden="true">*</span>
+            <span class="govuk-visually-hidden">Warning: @Model.LactationMismatchWarning</span>
+        </span>
+    }
+</td>

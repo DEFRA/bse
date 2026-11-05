@@ -13,7 +13,7 @@ namespace BSE.Host.Pages.Case;
 public class FarmHerdSizeEditModel(
     ICaseService caseService,
     IFarmService farmService,
-    IHerdSizeRepository herdSizeRepo) : PageModel
+    IHerdSizeRepository herdSizeRepo) : PageModel, IHerdSizeFormPage
 {
     private const string CaseFarmPage = "/Case/Farm";
 

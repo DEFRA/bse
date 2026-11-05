@@ -276,8 +276,7 @@ public class CaseWorkEntryModel(
         MinuteAnnexA => Entry?.AnnexADate,
         MinuteAnnexB => Entry?.AnnexBDate,
         MinuteAnnexC => Entry?.AnnexCDate,
-        MinuteAnnexD => Entry?.AnnexDDate,
-        _ => null,
+        _ => Entry?.AnnexDDate,
     };
 
     private static bool IsSendableMinuteType(string minuteType) =>
@@ -375,7 +374,6 @@ public class CaseWorkEntryModel(
         MinuteAnnexA => "Annex A",
         MinuteAnnexB => "Annex B",
         MinuteAnnexC => "Annex C",
-        MinuteAnnexD => "Annex D",
-        _ => minuteType
+        _ => "Annex D"
     };
 }

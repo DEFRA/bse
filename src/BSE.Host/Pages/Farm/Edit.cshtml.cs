@@ -1,3 +1,4 @@
+using BSE.Host.Helpers;
 using BSE.Host.Models.ViewModels;
 using BSE.Host.Services;
 using BSE.Modules.FarmManagement.Services;
@@ -93,60 +94,21 @@ public class EditModel : PageModel
         return RedirectToPage("/Case/Farm", new { rbse = Rbse });
     }
 
-    private async Task LoadLookupsAsync()
-    {
-        var countyTask     = _lookups.GetLookupAsync(LookupTableId.BSECounty);
-        var ahoTask        = _lookups.GetLookupAsync(LookupTableId.AHO);
-        var herdTypeTask   = _lookups.GetHerdTypesAsync();
-        var pedigreeTask   = _lookups.GetLookupAsync(LookupTableId.PedigreeType);
-        var authCountyTask = _lookups.GetLookupAsync(LookupTableId.AuthorityCounty);
-
-        await Task.WhenAll(countyTask, ahoTask, herdTypeTask, pedigreeTask, authCountyTask);
-
-        ViewData["CountyOptions"]          = await countyTask;
-        ViewData["AhoOptions"]             = await ahoTask;
-        ViewData["HerdTypeOptions"]        = await herdTypeTask;
-        ViewData["PedigreeOptions"]        = await pedigreeTask;
-        ViewData["AuthorityCountyOptions"] = await authCountyTask;
-
+    private Task LoadLookupsAsync() =>
         // Load authority and ADNS options pre-filtered for the currently selected values
-        ViewData["AuthorityOptions"] = Farm?.AuthorityCountyID is > 0
-            ? await _lookups.GetAuthoritiesByCountyAsync(Farm.AuthorityCountyID.Value)
-            : (IEnumerable<LuAuthority>)[];
-
-        ViewData["AdnsOptions"] = Farm?.AuthorityID is > 0
-            ? await _lookups.GetADNSRegionsByAuthorityAsync(Farm.AuthorityID.Value)
-            : (IEnumerable<LuAdnsRegion>)[];
-    }
+        FarmFormLookups.LoadOptionsAsync(ViewData, _lookups, Farm?.AuthorityCountyID, Farm?.AuthorityID);
 
     /// <summary>AJAX handler: returns authorities for a given authority county.</summary>
-    public async Task<IActionResult> OnGetAuthoritiesAsync(int? authorityCountyId)
-    {
-        if (authorityCountyId is null or 0) return new JsonResult(Array.Empty<object>());
-        var items = await _lookups.GetAuthoritiesByCountyAsync(authorityCountyId.Value);
-        return new JsonResult(items.Select(a => new { id = a.Id, name = a.Name }));
-    }
+    public Task<IActionResult> OnGetAuthoritiesAsync(int? authorityCountyId) =>
+        FarmFormLookups.AuthoritiesAsync(_lookups, authorityCountyId);
 
     /// <summary>AJAX handler: returns ADNS regions for a given local authority.</summary>
-    public async Task<IActionResult> OnGetAdnsRegionsAsync(int? authorityId)
-    {
-        if (authorityId is null or 0) return new JsonResult(Array.Empty<object>());
-        var items = await _lookups.GetADNSRegionsByAuthorityAsync(authorityId.Value);
-        return new JsonResult(items.Select(r => new { id = r.Id, name = r.Name }));
-    }
+    public Task<IActionResult> OnGetAdnsRegionsAsync(int? authorityId) =>
+        FarmFormLookups.AdnsRegionsAsync(_lookups, authorityId);
 
     /// <summary>AJAX GET: estimates the map reference from the centre of the CPHH parish.</summary>
-    public async Task<IActionResult> OnGetEstimateMapReferenceAsync(string? cphh)
-    {
-        if (string.IsNullOrEmpty(cphh) || cphh.Length < 5)
-            return new JsonResult(new { error = "CPHH must be at least 5 characters to estimate a map reference." });
-
-        var estimate = await _geoLookup.EstimateMapReferenceAsync(cphh);
-        if (estimate.Error is not null)
-            return new JsonResult(new { error = estimate.Error });
-
-        return new JsonResult(new { mapRef1 = estimate.MapRef1, mapRef2 = estimate.MapRef2, mapRef3 = estimate.MapRef3 });
-    }
+    public Task<IActionResult> OnGetEstimateMapReferenceAsync(string? cphh) =>
+        FarmFormLookups.EstimateMapReferenceAsync(_geoLookup, cphh);
 
     /// <summary>AJAX GET: returns whether the supplied map reference lies within the parish boundaries.</summary>
     public async Task<IActionResult> OnGetValidateMapReferenceAsync(string? cphh, string? mapRef)

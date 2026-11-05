@@ -108,14 +108,12 @@ public class PickSireDamModel(IAnimalRelationsRepository relationsRepository) : 
     /// <see cref="Rbse"/> property, and ASP.NET Core merges same-name form fields, which made
     /// this always bind to the case's own RBSE instead of the selected record's.
     /// </remarks>
-    public IActionResult OnPostUseSelected(
-        int id, string? matchedRbse, string? eartag, string? name, string? herdbook,
-        int? birthDay, int? birthMonth, int? birthYear, string rowStampBase64,
-        string? fate, string? finalResult, int? childCount)
+    public IActionResult OnPostUseSelected([FromForm] PickedPedigreeForm picked)
     {
         SetPendingParent(new PendingDamSire(
-            id, NullIfBlank(matchedRbse), eartag, name, herdbook, birthDay, birthMonth, birthYear, rowStampBase64,
-            fate, finalResult, childCount));
+            picked.Id, NullIfBlank(picked.MatchedRbse), picked.Eartag, picked.Name, picked.Herdbook,
+            picked.BirthDay, picked.BirthMonth, picked.BirthYear, picked.RowStampBase64 ?? string.Empty,
+            picked.Fate, picked.FinalResult, picked.ChildCount));
 
         return RedirectToPage(ReturnPage, new { rbse = Rbse, sex = Sex });
     }
@@ -138,6 +136,23 @@ public class PickSireDamModel(IAnimalRelationsRepository relationsRepository) : 
     private static string? NullIfBlank(string? s) => string.IsNullOrWhiteSpace(s) ? null : s;
 
     private const string ReturnPage = "/Case/Relations";
+}
+
+/// <summary>The pedigree row posted back by the picker's "Use selected" form (field names are the legacy hidden inputs).</summary>
+public sealed class PickedPedigreeForm
+{
+    public int Id { get; set; }
+    public string? MatchedRbse { get; set; }
+    public string? Eartag { get; set; }
+    public string? Name { get; set; }
+    public string? Herdbook { get; set; }
+    public int? BirthDay { get; set; }
+    public int? BirthMonth { get; set; }
+    public int? BirthYear { get; set; }
+    public string? RowStampBase64 { get; set; }
+    public string? Fate { get; set; }
+    public string? FinalResult { get; set; }
+    public int? ChildCount { get; set; }
 }
 
 /// <summary>TempData keys used to hand a picked/new pedigree row back to the Relations page.</summary>

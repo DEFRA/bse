@@ -13,12 +13,11 @@ namespace BSE.Host.Pages.AdnsExport;
 [Authorize(Policy = "DEFRAMaintenance")]
 public class GbModel(
     IAdnsExportService adnsExportService,
-    IOptions<AdnsMsGraphOptions> msGraphOptions) : PageModel
+    IOptions<AdnsMsGraphOptions> msGraphOptions) : AdnsExportPageModelBase(adnsExportService, msGraphOptions)
 {
     private const int PageSize = 10;
     private const string PreviewTempDataKey = "AdnsGbPreview";
     private const string ContextTempDataKey = "AdnsGbContext";
-    private readonly AdnsMsGraphOptions _msGraphOptions = msGraphOptions.Value;
 
     [BindProperty]
     [Required(ErrorMessage = "Enter an email reference.")]
@@ -33,24 +32,13 @@ public class GbModel(
     [Range(1, 99999, ErrorMessage = "Start ADNS number must be between 1 and 99999.")]
     public int StartAdnsNumber { get; set; } = 1;
 
-    [BindProperty]
-    public string UserEmailAddress { get; set; } = string.Empty;
-
-    [BindProperty]
-    public string Message { get; set; } = string.Empty;
-
     [BindProperty] public bool SaveAdnsData { get; set; } = true;
 
     [BindProperty(SupportsGet = true)] public string SortColumn { get; set; } = string.Empty;
     [BindProperty(SupportsGet = true)] public bool SortDesc { get; set; }
     [BindProperty(SupportsGet = true)] public int PageNumber { get; set; } = 1;
 
-    public AdnsExportPreview? Preview { get; private set; }
     public LastAdnsReferenceRecord? LastReference { get; private set; }
-    public string? ErrorMessage { get; private set; }
-
-    public string FromEmailAddress => _msGraphOptions.FromAddress;
-    public string DefaultToEmailAddress => _msGraphOptions.ToAddress;
 
     public int TotalCount => Preview?.Cases.Count ?? 0;
     public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
@@ -74,17 +62,14 @@ public class GbModel(
         TempData.Remove(PreviewTempDataKey);
         TempData.Remove(ContextTempDataKey);
 
-        LastReference = await adnsExportService.GetLastReferenceAsync("GB");
+        LastReference = await ExportService.GetLastReferenceAsync("GB");
         if (LastReference is not null)
         {
             AdnsYear = LastReference.LastAdnsReferenceYear ?? DateTime.Today.Year;
             StartAdnsNumber = (LastReference.LastAdnsReferenceNumber ?? 0) + 1;
             EmailReference = $"DBSE{StartAdnsNumber:00000}";
         }
-        if (string.IsNullOrWhiteSpace(UserEmailAddress))
-        {
-            UserEmailAddress = DefaultToEmailAddress;
-        }
+        ApplyDefaultRecipientIfBlank();
 
         return Page();
     }
@@ -95,17 +80,13 @@ public class GbModel(
 
         if (!ModelState.IsValid)
         {
-            if (string.IsNullOrWhiteSpace(UserEmailAddress))
-            {
-                UserEmailAddress = DefaultToEmailAddress;
-            }
+            ApplyDefaultRecipientIfBlank();
             return Page();
         }
-            
 
         try
         {
-            Preview = await adnsExportService.PreviewGbExportAsync(EmailReference, AdnsYear, StartAdnsNumber);
+            Preview = await ExportService.PreviewGbExportAsync(EmailReference, AdnsYear, StartAdnsNumber);
             Message = Preview.EmailBody;
             PersistPreview(Preview);
             PersistContext();
@@ -115,10 +96,7 @@ public class GbModel(
             ErrorMessage = $"Report generation failed: {ex.Message}";
         }
 
-        if (string.IsNullOrWhiteSpace(UserEmailAddress))
-        {
-            UserEmailAddress = DefaultToEmailAddress;
-        }
+        ApplyDefaultRecipientIfBlank();
         return Page();
     }
 
@@ -126,7 +104,7 @@ public class GbModel(
     {
         if (!TryLoadPreview(out var preview))
         {
-            ErrorMessage = "Session expired — please generate the report again.";
+            SetSessionExpired();
             return Page();
         }
 
@@ -137,17 +115,8 @@ public class GbModel(
         Preview = preview;
         RestoreContext();
 
-        if (string.IsNullOrWhiteSpace(UserEmailAddress))
-        {
-            ModelState.AddModelError(nameof(UserEmailAddress), "Enter your email address.");
+        if (!HasValidRecipient())
             return Page();
-        }
-
-        if (!new EmailAddressAttribute().IsValid(UserEmailAddress))
-        {
-            ModelState.AddModelError(nameof(UserEmailAddress), "Enter an email address in the correct format, like name@example.com.");
-            return Page();
-        }
 
         var command = new DispatchAdnsCommand(
             Area: "GB",
@@ -157,19 +126,12 @@ public class GbModel(
             SaveAdnsData: SaveAdnsData,
             Message: Message.Trim());
 
-        try
-        {
-            await adnsExportService.DispatchAsync(command);
-            TempData.Remove(PreviewTempDataKey);
-            TempData.Remove(ContextTempDataKey);
-            TempData["SuccessMessage"] = "The message has been successfully sent. You should receive a confirmation e-mail shortly.";
-            return RedirectToPage();
-        }
-        catch (Exception ex)
-        {
-            ErrorMessage = $"Dispatch failed: {ex.Message}";
+        if (!await TryDispatchAsync(command))
             return Page();
-        }
+
+        TempData.Remove(PreviewTempDataKey);
+        TempData.Remove(ContextTempDataKey);
+        return RedirectToPage();
     }
 
     private void PersistPreview(AdnsExportPreview preview) =>
@@ -177,10 +139,7 @@ public class GbModel(
 
     private bool TryLoadPreview(out AdnsExportPreview? preview)
     {
-        var previewJson = TempData[PreviewTempDataKey]?.ToString();
-        preview = string.IsNullOrWhiteSpace(previewJson)
-            ? null
-            : JsonSerializer.Deserialize<AdnsExportPreview>(previewJson);
+        preview = DeserializePreview(TempData[PreviewTempDataKey]?.ToString());
         return preview is not null;
     }
 

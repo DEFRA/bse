@@ -1278,31 +1278,14 @@ public class FarmModel(
             : "BSE Free";
     }
 
-    public async Task<IActionResult> OnGetAuthoritiesAsync(int? authorityCountyId)
-    {
-        if (authorityCountyId is null or 0) return new JsonResult(Array.Empty<object>());
-        var items = await lookups.GetAuthoritiesByCountyAsync(authorityCountyId.Value);
-        return new JsonResult(items.Select(a => new { id = a.Id, name = a.Name }));
-    }
+    public Task<IActionResult> OnGetAuthoritiesAsync(int? authorityCountyId) =>
+        FarmFormLookups.AuthoritiesAsync(lookups, authorityCountyId);
 
-    public async Task<IActionResult> OnGetAdnsRegionsAsync(int? authorityId)
-    {
-        if (authorityId is null or 0) return new JsonResult(Array.Empty<object>());
-        var items = await lookups.GetADNSRegionsByAuthorityAsync(authorityId.Value);
-        return new JsonResult(items.Select(r => new { id = r.Id, name = r.Name }));
-    }
+    public Task<IActionResult> OnGetAdnsRegionsAsync(int? authorityId) =>
+        FarmFormLookups.AdnsRegionsAsync(lookups, authorityId);
 
-    public async Task<IActionResult> OnGetEstimateMapReferenceAsync(string? cphh)
-    {
-        if (string.IsNullOrEmpty(cphh) || cphh.Length < 5)
-            return new JsonResult(new { error = "CPHH must be at least 5 characters to estimate a map reference." });
-
-        var estimate = await geoLookup.EstimateMapReferenceAsync(cphh);
-        if (estimate.Error is not null)
-            return new JsonResult(new { error = estimate.Error });
-
-        return new JsonResult(new { mapRef1 = estimate.MapRef1, mapRef2 = estimate.MapRef2, mapRef3 = estimate.MapRef3 });
-    }
+    public Task<IActionResult> OnGetEstimateMapReferenceAsync(string? cphh) =>
+        FarmFormLookups.EstimateMapReferenceAsync(geoLookup, cphh);
 
     public async Task<IActionResult> OnGetValidateMapReferenceAsync(string? cphh, string? mapRef)
     {
@@ -1572,10 +1555,8 @@ public class FarmModel(
         if (model.ADNSRegionID is not > 0)
             return true;
 
-        if (ViewData["AdnsOptions"] is IEnumerable<LuAdnsRegion> options)
-            return options.Any(x => x.Id == model.ADNSRegionID.Value);
-
-        return true;
+        return ViewData["AdnsOptions"] is not IEnumerable<LuAdnsRegion> options
+               || options.Any(x => x.Id == model.ADNSRegionID.Value);
     }
 
     private static bool IsNonGbFarmCphh(string? cphh)
@@ -1590,30 +1571,8 @@ public class FarmModel(
         return trimmed.Length == 6 && trimmed.All(char.IsDigit);
     }
 
-    private async Task LoadLookupsForEditAsync()
-    {
-        var countyTask = lookups.GetLookupAsync(LookupTableId.BSECounty);
-        var ahoTask = lookups.GetLookupAsync(LookupTableId.AHO);
-        var herdTypeTask = lookups.GetHerdTypesAsync();
-        var pedigreeTask = lookups.GetLookupAsync(LookupTableId.PedigreeType);
-        var authCountyTask = lookups.GetLookupAsync(LookupTableId.AuthorityCounty);
-
-        await Task.WhenAll(countyTask, ahoTask, herdTypeTask, pedigreeTask, authCountyTask);
-
-        ViewData["CountyOptions"] = await countyTask;
-        ViewData["AhoOptions"] = await ahoTask;
-        ViewData["HerdTypeOptions"] = await herdTypeTask;
-        ViewData["PedigreeOptions"] = await pedigreeTask;
-        ViewData["AuthorityCountyOptions"] = await authCountyTask;
-
-        ViewData["AuthorityOptions"] = EditableFarm?.AuthorityCountyID is > 0
-            ? await lookups.GetAuthoritiesByCountyAsync(EditableFarm.AuthorityCountyID.Value)
-            : (IEnumerable<LuAuthority>)[];
-
-        ViewData["AdnsOptions"] = EditableFarm?.AuthorityID is > 0
-            ? await lookups.GetADNSRegionsByAuthorityAsync(EditableFarm.AuthorityID.Value)
-            : (IEnumerable<LuAdnsRegion>)[];
-    }
+    private Task LoadLookupsForEditAsync() =>
+        FarmFormLookups.LoadOptionsAsync(ViewData, lookups, EditableFarm?.AuthorityCountyID, EditableFarm?.AuthorityID);
 
     private bool TryValidateStagedCollections()
     {
@@ -1717,53 +1676,11 @@ public class FarmModel(
         // CPHH that itself has no farm row yet (Farm stays null) never re-triggered it, so the first
         // CPHH's Herd Size/Linked Farms grids kept showing after switching to an unregistered CPHH.
         var requestedCphh = CphhNormalizer.Normalize(EditableFarm?.CPHH);
-        var needsSeedFromPersisted = !skipReseedCheck
-            && ((draft.LinkedFarms.Count == 0 && draft.HerdSizes.Count == 0 && !draft.HasFarmCollectionsChanges)
-                || (requestedCphh.Length > 0 && !string.Equals(draft.Cphh, requestedCphh, StringComparison.OrdinalIgnoreCase))
-                || (Farm is not null && !string.Equals(draft.Cphh, Farm.CPHH, StringComparison.OrdinalIgnoreCase)));
+        var needsSeedFromPersisted = !skipReseedCheck && NeedsFarmReseed(draft, requestedCphh);
 
         if (needsSeedFromPersisted)
         {
-            if (Farm is null)
-            {
-                // Track the CPHH being resolved (not blank) even though it has no farm row yet —
-                // otherwise every subsequent call here would see draft.Cphh ("") still differing
-                // from requestedCphh and keep wiping any Herd Size/Linked Farm rows the user had
-                // already added for this still-unregistered CPHH.
-                draft.Cphh = requestedCphh;
-                draft.LinkedFarms = [];
-                draft.HerdSizes = [];
-            }
-            else
-            {
-                draft.Cphh = Farm.CPHH;
-                draft.LinkedFarms = PersistedLinkedFarms.Select(x => new CaseFarmDraftLinkedFarmItem
-                {
-                    Id = x.ID,
-                    RelatedCphh = x.RelatedCPHH,
-                    RowStampBase64 = x.RowStamp is null ? string.Empty : Convert.ToBase64String(x.RowStamp),
-                    Status = x.Status ?? string.Empty
-                }).ToList();
-                draft.HerdSizes = PersistedHerdSizes.Select(x => new CaseFarmDraftHerdSizeItem
-                {
-                    ClientKey = Guid.NewGuid().ToString("N"),
-                    Id = x.ID,
-                    HerdYear = x.HerdYear,
-                    TotalSize = x.TotalSize,
-                    Lactation1Size = x.Lactation1Size,
-                    Lactation2Size = x.Lactation2Size,
-                    Lactation3Size = x.Lactation3Size,
-                    Lactation4Size = x.Lactation4Size,
-                    Lactation5Size = x.Lactation5Size,
-                    Lactation6Size = x.Lactation6Size,
-                    Lactation7Size = x.Lactation7Size,
-                    Lactation8Size = x.Lactation8Size,
-                    Lactation9Size = x.Lactation9Size,
-                    Lactation10Size = x.Lactation10Size,
-                    Lactation10PlusSize = x.Lactation10PlusSize,
-                    RowStampBase64 = x.RowStamp is null ? string.Empty : Convert.ToBase64String(x.RowStamp)
-                }).ToList();
-            }
+            SeedDraftFarmCollections(draft, requestedCphh);
             await sessionState.SetAsync(draft);
         }
 
@@ -1799,6 +1716,55 @@ public class FarmModel(
         HasUnsavedChanges = draft.HasFarmCollectionsChanges;
 
         return draft;
+    }
+
+    private bool NeedsFarmReseed(CaseEditSessionState draft, string requestedCphh) =>
+        (draft.LinkedFarms.Count == 0 && draft.HerdSizes.Count == 0 && !draft.HasFarmCollectionsChanges)
+        || (requestedCphh.Length > 0 && !string.Equals(draft.Cphh, requestedCphh, StringComparison.OrdinalIgnoreCase))
+        || (Farm is not null && !string.Equals(draft.Cphh, Farm.CPHH, StringComparison.OrdinalIgnoreCase));
+
+    private void SeedDraftFarmCollections(CaseEditSessionState draft, string requestedCphh)
+    {
+        if (Farm is null)
+        {
+            // Track the CPHH being resolved (not blank) even though it has no farm row yet —
+            // otherwise every subsequent call here would see draft.Cphh ("") still differing
+            // from requestedCphh and keep wiping any Herd Size/Linked Farm rows the user had
+            // already added for this still-unregistered CPHH.
+            draft.Cphh = requestedCphh;
+            draft.LinkedFarms = [];
+            draft.HerdSizes = [];
+        }
+        else
+        {
+            draft.Cphh = Farm.CPHH;
+            draft.LinkedFarms = PersistedLinkedFarms.Select(x => new CaseFarmDraftLinkedFarmItem
+            {
+                Id = x.ID,
+                RelatedCphh = x.RelatedCPHH,
+                RowStampBase64 = x.RowStamp is null ? string.Empty : Convert.ToBase64String(x.RowStamp),
+                Status = x.Status ?? string.Empty
+            }).ToList();
+            draft.HerdSizes = PersistedHerdSizes.Select(x => new CaseFarmDraftHerdSizeItem
+            {
+                ClientKey = Guid.NewGuid().ToString("N"),
+                Id = x.ID,
+                HerdYear = x.HerdYear,
+                TotalSize = x.TotalSize,
+                Lactation1Size = x.Lactation1Size,
+                Lactation2Size = x.Lactation2Size,
+                Lactation3Size = x.Lactation3Size,
+                Lactation4Size = x.Lactation4Size,
+                Lactation5Size = x.Lactation5Size,
+                Lactation6Size = x.Lactation6Size,
+                Lactation7Size = x.Lactation7Size,
+                Lactation8Size = x.Lactation8Size,
+                Lactation9Size = x.Lactation9Size,
+                Lactation10Size = x.Lactation10Size,
+                Lactation10PlusSize = x.Lactation10PlusSize,
+                RowStampBase64 = x.RowStamp is null ? string.Empty : Convert.ToBase64String(x.RowStamp)
+            }).ToList();
+        }
     }
 
     // ── Sort / pagination URL builders ─────────────────────────────────────────

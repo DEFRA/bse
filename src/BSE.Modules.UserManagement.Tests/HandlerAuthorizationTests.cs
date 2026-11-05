@@ -93,11 +93,11 @@ public class HandlerAuthorizationTests
     private sealed class Annotated : PageModel
     {
         [Authorize(Policy = "DataEntry")]
-        public IActionResult OnPostEdit() => Page();
+        public PageResult OnPostEdit() => Page();
 
         [Authorize(Policy = "DataEntryVla")]
-        public IActionResult OnPostBoth() => Page();
+        public PageResult OnPostBoth() => Page();
 
-        public IActionResult OnPostOpen() => Page();
+        public PageResult OnPostOpen() => Page();
     }
 }

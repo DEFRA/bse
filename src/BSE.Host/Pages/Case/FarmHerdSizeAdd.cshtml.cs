@@ -11,7 +11,7 @@ namespace BSE.Host.Pages.Case;
 [Authorize(Policy = "DataEntry")]
 public class FarmHerdSizeAddModel(
     ICaseService caseService,
-    IHerdSizeRepository herdSizeRepo) : PageModel
+    IHerdSizeRepository herdSizeRepo) : PageModel, IHerdSizeFormPage
 {
     [BindProperty(SupportsGet = true)] public string Rbse { get; set; } = string.Empty;
     [BindProperty] public FarmModel.HerdSizeFormViewModel HerdSize { get; set; } = new();

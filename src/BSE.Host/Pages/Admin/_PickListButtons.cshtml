@@ -1,0 +1,9 @@
+@model BSE.Host.Pages.Admin.IPickListFormModel
+    <div class="govuk-button-group">
+        <button type="submit" class="govuk-button" data-module="govuk-button">Save</button>
+        <a class="govuk-link" asp-page="/Admin/PickLists"
+           asp-route-tableId="@Model.TableId"
+           asp-route-sortColumn="@Model.SortColumn"
+           asp-route-sortDesc="@Model.SortDesc"
+           asp-route-pageNumber="@Model.PageNumber">Cancel</a>
+    </div>
