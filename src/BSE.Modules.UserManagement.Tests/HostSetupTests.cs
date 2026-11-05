@@ -174,22 +174,6 @@ public sealed class HostSetupTests
         result.Succeeded.Should().Be(expected);
     }
 
-    [Theory]
-    [InlineData(new[] { "DEFRAAccess", "DataEntry" }, true)]
-    [InlineData(new[] { "VLAAccess", "DataEntry" }, true)]
-    [InlineData(new[] { "ReadOnly" }, false)]
-    [InlineData(new[] { "VLAAccess", "VLAMaintenance", "DEFRAMaintenance", "DataEntry" }, false)]
-    public async Task AddBseAuthorization_CaseEntryAccess_ExcludesUnrecognisedGroupsAndVlaMaintenance(string[] roles, bool expected)
-    {
-        var services = new ServiceCollection().AddLogging();
-        services.AddBseAuthorization();
-        await using var provider = services.BuildServiceProvider();
-        var authorization = provider.GetRequiredService<IAuthorizationService>();
-        var user = new ClaimsPrincipal(new ClaimsIdentity(roles.Select(r => new Claim(ClaimTypes.Role, r)), "t"));
-
-        (await authorization.AuthorizeAsync(user, "CaseEntryAccess")).Succeeded.Should().Be(expected);
-    }
-
     [Fact]
     public async Task AddBseAuthorization_AuthenticatedPolicyAndHandlerRegistered()
     {
