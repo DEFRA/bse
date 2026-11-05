@@ -93,6 +93,9 @@ public class NewModel : PageModel
 
         RequireFarmDetails = farm is null;
 
+        if (RequireFarmDetails && !User.IsInRole("FarmCreation"))
+            return Forbid();
+
         if (RequireFarmDetails)
             ValidateNewFarmFields();
 
@@ -113,8 +116,12 @@ public class NewModel : PageModel
 
         var userId = await _currentUser.GetUserIdAsync();
 
+        Func<System.Data.IDbConnection, System.Data.IDbTransaction, Task>? enlistFarm = null;
         if (RequireFarmDetails)
-            await _farms.AddAsync(BuildAddFarmCommand(normalisedCphh), userId);
+        {
+            var addFarm = BuildAddFarmCommand(normalisedCphh);
+            enlistFarm = (connection, transaction) => _farms.AddAsync(addFarm, userId, connection, transaction);
+        }
 
         var addCase = new AddCaseCommand(
             Rbse: Rbse.Trim(), Cphh: normalisedCphh,
@@ -139,7 +146,7 @@ public class NewModel : PageModel
             Feeds: [], Tests: [], OtherOwners: [],
             DamSire: null, ClinicalVisits: []);
 
-        var result = await _cases.CreateCaseAsync(command, userId);
+        var result = await _cases.CreateCaseAsync(command, userId, enlistFarm);
 
         if (result != AddCaseResult.Success)
         {

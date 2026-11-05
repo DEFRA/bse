@@ -14,7 +14,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace BSE.Host.Pages.Case;
 
-[Authorize]
+[Authorize(Policy = "CaseEntryAccess")]
 public class VlaEditModel(
     ICaseService caseService,
     ICurrentUserService currentUserService,

@@ -27,7 +27,7 @@ namespace BSE.Host.Pages.Case;
 /// Shows: confirmed case count, full farm details, linked farms (add/delete),
 /// herd size history (add/delete), and supports inline staged Save/Cancel.
 /// </summary>
-[Authorize]
+[Authorize(Policy = "CaseEntryAccess")]
 public class FarmModel(
     ICaseService caseService,
     IFarmService farmService,
@@ -122,7 +122,7 @@ public class FarmModel(
     /// <summary>Legacy CPHH1.Enabled: DEFRA Data Entry/Maintenance and VLA Maintenance can look up a
     /// different farm for this case (VLA Data Entry and DEFRA Viewer cannot). Routed via the existing,
     /// validated /Case/MoveCase page rather than re-implementing farm-reassignment inline.</summary>
-    public bool CanChangeCphh => User.IsInRole("DEFRAMaintenance") || User.IsInRole("VLAMaintenance");
+    public bool CanChangeCphh => User.IsInRole("DEFRAMaintenance");
     private List<FarmRelationRecord> PersistedLinkedFarms { get; set; } = [];
     private List<HerdSizeRecord> PersistedHerdSizes { get; set; } = [];
 
@@ -143,7 +143,6 @@ public class FarmModel(
 
     private const string Bse1Document = "BSE1";
     private const string VlaAccessRole = "VLAAccess";
-    private const string VlaMaintenanceRole = "VLAMaintenance";
     private const string DataEntryRole = "DataEntry";
     private const string EnterCphhMessage = "Enter a CPHH.";
     private const string AdnsRegionField = "EditableFarm.ADNSRegionID";
@@ -521,7 +520,7 @@ public class FarmModel(
         if (User.IsInRole("DEFRAAccess") && !User.IsInRole(DataEntryRole))
             return false;
 
-        return User.IsInRole(DataEntryRole) || User.IsInRole("VLAMaintenance");
+        return User.IsInRole(DataEntryRole);
     }
 
     [Authorize(Policy = "DataEntry")]
@@ -1357,7 +1356,7 @@ public class FarmModel(
     {
         // Mirrors legacy CaseEntryFarm:
         // - DEFRA Data Entry / DEFRA Maintenance: joint controls writable, VLA controls read-only.
-        // - VLA Data Entry / VLA Maintenance: joint + VLA controls writable only when
+        // - VLA Data Entry: joint + VLA controls writable only when
         //   IsVLAAllowedMainCaseEdit(Session) is true.
         // - everyone else: read-only.
         if (!User.IsInRole(DataEntryRole))
@@ -1371,8 +1370,8 @@ public class FarmModel(
         var isVlaGroup = User.IsInRole(VlaAccessRole);
 
         // Legacy MakeDEFRAControlsReadOnly (VLADataEntryEnable) vs MakeDEFRAControlsWritable
-        // (VLAMaintenanceEnable) — only VLA Maintenance, not VLA Data Entry, may edit DEFRA fields.
-        CanEditDefraControls = !isVlaGroup || User.IsInRole(VlaMaintenanceRole);
+        // (VLAMaintenanceEnable, which has no case-entry access here): VLA groups never edit DEFRA fields.
+        CanEditDefraControls = !isVlaGroup;
 
         if (!isVlaGroup)
         {
@@ -1417,6 +1416,32 @@ public class FarmModel(
             EditableFarm.PedigreeType = Farm.PedigreeType;
             EditableFarm.IsDealer = Farm.IsDealer;
         }
+
+        if (!CanEditDefraControls)
+            RestoreDefraFarmFields(EditableFarm, Farm);
+    }
+
+    private static void RestoreDefraFarmFields(FarmEditViewModel target, FarmRecord source)
+    {
+        target.OwnerName = source.OwnerName;
+        target.Address1 = source.Address1;
+        target.Address2 = source.Address2;
+        target.Address3 = source.Address3;
+        target.Postcode = source.Postcode;
+        target.Parish = source.Parish;
+        target.District = source.District;
+        target.County = source.County;
+        target.CorrespondenceAddress1 = source.CorrespondenceAddress1;
+        target.CorrespondenceAddress2 = source.CorrespondenceAddress2;
+        target.CorrespondenceAddress3 = source.CorrespondenceAddress3;
+        target.CorrespondencePostcode = source.CorrespondencePostcode;
+        target.MapRef1 = source.MapReference?.Length >= 2 ? source.MapReference[..2] : source.MapReference;
+        target.MapRef2 = source.MapReference?.Length >= 5 ? source.MapReference[2..5] : null;
+        target.MapRef3 = source.MapReference?.Length >= 8 ? source.MapReference[5..8] : null;
+        target.AHO = source.AHO;
+        target.ADNSRegionID = source.ADNSRegionID;
+        target.AuthorityID = source.AuthorityID;
+        target.AuthorityCountyID = source.AuthorityCountyID;
     }
 
     private async Task LoadFromFarmCphhAsync(string? cphh)

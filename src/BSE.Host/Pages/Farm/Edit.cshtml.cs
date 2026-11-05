@@ -49,6 +49,7 @@ public class EditModel : PageModel
         return Page();
     }
 
+    [Authorize(Policy = "FarmDefraEdit")]
     public async Task<IActionResult> OnPostAsync()
     {
         if (Farm is not null)

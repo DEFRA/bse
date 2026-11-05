@@ -393,6 +393,20 @@ internal static class HostSetup
         authorizationBuilder.AddPolicy("PickListAccess", p => p.RequireRole("PickListAccess"));
         authorizationBuilder.AddPolicy("FarmCreation", p => p.RequireRole("FarmCreation"));
         authorizationBuilder.AddPolicy("AuditAccess", p => p.RequireRole("DEFRAAccess", VlaAccessPolicy));
+        // Case-entry tabs: only the recognised DEFRA/VLA groups (AHO and AI Wales/Scotland groups are excluded).
+        // VLA Maintenance works through CaseWork; legacy redirects it away from case entry.
+        authorizationBuilder.AddPolicy("CaseEntryAccess", p => p
+            .RequireRole("DEFRAAccess", VlaAccessPolicy)
+            .RequireAssertion(ctx => !ctx.User.IsInRole("VLAMaintenance")));
+        // Joint farm fields locked for VLA Data Entry: DEFRA groups or VLA Maintenance with DataEntry.
+        authorizationBuilder.AddPolicy("FarmDefraEdit", p => p
+            .RequireRole("DataEntry")
+            .RequireAssertion(ctx => !ctx.User.IsInRole(VlaAccessPolicy) || ctx.User.IsInRole("VLAMaintenance")));
+        // Sire/other-relations section: VLA-only, never a DEFRA-named group.
+        authorizationBuilder.AddPolicy("VlaSireEdit", p => p
+            .RequireRole("DataEntry")
+            .RequireRole(VlaAccessPolicy)
+            .RequireAssertion(ctx => ctx.User.FindFirst("bse:group")?.Value is not ("DEFRA Data Entry" or "DEFRA Maintenance" or "DEFRA Viewer")));
     }
 
     internal static void UseBseRequestLogging(this WebApplication app, int slowRequestThresholdMs)

@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.Case;
 
+[Authorize(Policy = "CaseEntryAccess")]
 [Authorize(Policy = "DataEntry")]
 public class OtherOwnerEditModel(
     IOtherOwnerRepository ownerRepository,
@@ -60,6 +61,9 @@ public class OtherOwnerEditModel(
             ModelState.AddModelError(nameof(OwnerCphh), "CPHH must be 11 digits.");
 
         var allOwners = await ownerRepository.GetByRbseAsync(caseRbse);
+        if (allOwners.All(o => o.Id != Id))
+            return NotFound();
+
         var typeDesc = OwnerTypes.FirstOrDefault(t => t.Code == OwnerType)?.Description ?? string.Empty;
         if (typeDesc.Contains("Previous", StringComparison.OrdinalIgnoreCase)
             && allOwners.Any(o => o.Type == OwnerType && o.Id != Id))

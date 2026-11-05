@@ -18,11 +18,14 @@ PRINT '--- Deploying stored procedures ---';
 :r ../StoredProcedures/GetUserByEmail.sql
 :r ../StoredProcedures/GetBatchIDForBatch.sql
 :r ../StoredProcedures/GetSearchRelatedAnimals.sql
+:r ../StoredProcedures/EditCaseFinalResult.sql
+:r ../StoredProcedures/HasCaseRemovalSince.sql
 GO
 
 -- Step 2: Deployment script to used to alter/create tables, columns etc
 PRINT '--- Create or Alter Table, Column  ---';
 :r ../Migrations/V20260914_01_User_Email_NotNull_NTLogin_Nullable.sql
+:r ../Migrations/V20261105_01_Case_DBSE_Unique_Index.sql
 GO
 
 PRINT '=== Database deployment completed ===';

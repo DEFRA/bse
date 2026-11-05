@@ -160,6 +160,14 @@ public sealed class CaseEditOrchestrationService : ICaseEditOrchestrationService
         var existingCase = await caseRepository.GetCaseByRbseAsync(rbse);
         var isNewCase = existingCase is null;
 
+        // A retained draft must not re-insert a case another user deleted or renamed after editing began.
+        if (isNewCase && session?.StartedUtc is { } draftStarted
+            && await caseRepository.HasCaseRemovalSinceAsync(rbse, draftStarted))
+        {
+            throw new MandatoryCaseFieldsMissingException(
+                ["This case was deleted or renamed by another user after you started editing. Discard your changes and start again."]);
+        }
+
         // Legacy parity: CaseEntrySave.aspx always runs CheckMandatoryFields across the whole case
         // (Case + Farm) before committing, regardless of which tab's Save triggered it, and regardless
         // of whether the case is being created or edited. Nothing is written if this fails.

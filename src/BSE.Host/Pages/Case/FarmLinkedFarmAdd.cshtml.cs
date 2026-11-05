@@ -9,7 +9,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.Case;
 
-[Authorize(Policy = "DataEntry")]
+[Authorize(Policy = "CaseEntryAccess")]
+[Authorize(Policy = "FarmDefraEdit")]
 public class FarmLinkedFarmAddModel(
     ICaseService caseService,
     IFarmService farmService,

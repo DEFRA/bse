@@ -8,7 +8,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.Case;
 
-[Authorize(Policy = "DataEntry")]
+[Authorize(Policy = "CaseEntryAccess")]
+[Authorize(Policy = "DataEntryVla")]
 public class ClinicalVisitEditModel(
     IClinicalRepository clinicalRepository,
     ICaseRepository caseRepository,
@@ -32,6 +33,10 @@ public class ClinicalVisitEditModel(
 
     public async Task<IActionResult> OnPostAsync()
     {
+        var allVisits = (await clinicalRepository.GetVisitsByRbseAsync(Rbse)).ToList();
+        if (allVisits.All(v => v.Id != Id))
+            return NotFound();
+
         // The DatePickerModelBinder already added "Please enter a valid date" when the posted
         // text failed to parse — don't stack a second, contradictory "blank" message on it.
         if (!VisitDate.HasValue && ModelState[nameof(VisitDate)] is not { Errors.Count: > 0 })
@@ -48,7 +53,6 @@ public class ClinicalVisitEditModel(
         if (VisitDate.HasValue && VisitDate.Value.Date > DateTime.Today)
             ModelState.AddModelError(nameof(VisitDate), "The visit date must not be in the future.");
 
-        var allVisits = (await clinicalRepository.GetVisitsByRbseAsync(Rbse)).ToList();
         if (VisitDate.HasValue && allVisits.Any(v => v.Id != Id && v.VisitDate?.Date == VisitDate.Value.Date))
             ModelState.AddModelError(nameof(VisitDate), "A visit on this date already exists. The visit date must be unique.");
 

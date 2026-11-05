@@ -12,6 +12,9 @@ public interface ICaseRepository
     Task<FinalResultRecord?> GetFinalResultByRbseAsync(string rbse);
     Task<IReadOnlyList<CaseFarmSummaryRecord>> GetCasesByBatchIdAsync(int batchId);
     Task<string?> GetLatestRbseForYearAsync(short year);
+
+    /// <summary>True when the case was deleted, or renamed away from this RBSE, at or after <paramref name="since"/>.</summary>
+    Task<bool> HasCaseRemovalSinceAsync(string rbse, DateTime since);
     Task<string?> GetLatestDbseForYearAsync(short year);
 
     /// <summary>

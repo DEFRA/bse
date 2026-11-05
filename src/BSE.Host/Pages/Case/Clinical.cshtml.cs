@@ -15,7 +15,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace BSE.Host.Pages.Case;
 
-[Authorize]
+[Authorize(Policy = "CaseEntryAccess")]
 public class ClinicalModel(
     IClinicalRepository clinicalRepository,
     ICaseRepository caseRepository,
@@ -91,6 +91,8 @@ public class ClinicalModel(
         var signs = BindSignsFromForm();
 
         await LoadAsync();
+        if (!IsVlaAllowedAdditionalCaseEdit)
+            return Forbid();
         await LoadOrInitializeDraftStateAsync();
 
         // Cross-tab staging (restores legacy's "one session, one commit" model): stage this
@@ -287,6 +289,8 @@ public class ClinicalModel(
         var postedDate = NewVisitDate;
 
         await LoadAsync();
+        if (!IsVlaAllowedAdditionalCaseEdit)
+            return Forbid();
         await RestoreAndRestageSignsEditAsync(clinicalRowStampBase64);
         var draft = await LoadOrInitializeDraftStateAsync();
 
@@ -324,6 +328,8 @@ public class ClinicalModel(
             return Forbid();
 
         await LoadAsync();
+        if (!IsVlaAllowedAdditionalCaseEdit)
+            return Forbid();
         await RestoreAndRestageSignsEditAsync(clinicalRowStampBase64);
         var draft = await LoadOrInitializeDraftStateAsync();
 
@@ -349,6 +355,8 @@ public class ClinicalModel(
         var postedDate = EditVisitDate;
 
         await LoadAsync();
+        if (!IsVlaAllowedAdditionalCaseEdit)
+            return Forbid();
         await RestoreAndRestageSignsEditAsync(clinicalRowStampBase64);
         var draft = await LoadOrInitializeDraftStateAsync();
 
@@ -388,6 +396,8 @@ public class ClinicalModel(
             return Forbid();
 
         await LoadAsync();
+        if (!IsVlaAllowedAdditionalCaseEdit)
+            return Forbid();
         await RestoreAndRestageSignsEditAsync(clinicalRowStampBase64);
         var draft = await LoadOrInitializeDraftStateAsync();
 

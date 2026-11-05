@@ -148,9 +148,24 @@ public sealed class OtherOwnerPagesTests
         m.RowStampBase64.Should().Be(Convert.ToBase64String([5]));
     }
 
+    private void SeedOwnedOwner() =>
+        _owners.GetByRbseAsync(Rbse).Returns(new[] { new OtherOwnerRecord(4, Rbse, "C", "Nm", null, null) });
+
+    [Fact]
+    public async Task Edit_Post_OwnerOfAnotherCase_ReturnsNotFound()
+    {
+        var m = Edit();
+        m.OwnerType = "C";
+        m.OwnerName = "n";
+
+        (await m.OnPostAsync()).Should().BeOfType<NotFoundResult>();
+        await _owners.DidNotReceiveWithAnyArgs().EditAsync(default!, default!, default!);
+    }
+
     [Fact]
     public async Task Edit_Post_Invalid_ReturnsPage()
     {
+        SeedOwnedOwner();
         var m = Edit();
         m.OwnerCphh = "12";
 
@@ -177,6 +192,7 @@ public sealed class OtherOwnerPagesTests
     [Fact]
     public async Task Edit_Post_Valid_SavesAndRedirects()
     {
+        SeedOwnedOwner();
         var m = Edit();
         m.OwnerType = "P";
         m.OwnerName = "n";
@@ -193,6 +209,7 @@ public sealed class OtherOwnerPagesTests
     [Fact]
     public async Task Edit_Post_Valid_WithoutRowStamp_StillSaves()
     {
+        SeedOwnedOwner();
         var m = Edit();
         m.OwnerType = "C";
         m.OwnerCphh = "12345678901";

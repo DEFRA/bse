@@ -9,7 +9,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace BSE.Host.Pages.Case;
 
-[Authorize(Policy = "DataEntry")]
+[Authorize(Policy = "CaseEntryAccess")]
+[Authorize(Policy = "VlaSireEdit")]
 public class RelationAddModel(
     IAnimalRelationsRepository relationsRepository,
     ILookupDataService lookups,

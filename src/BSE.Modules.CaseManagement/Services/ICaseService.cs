@@ -1,3 +1,4 @@
+using System.Data;
 using BSE.Modules.CaseManagement.Commands;
 using BSE.Modules.CaseManagement.Enums;
 using BSE.Modules.CaseManagement.Models;
@@ -15,7 +16,8 @@ public interface ICaseService
     /// All SP calls are enlisted in the same transaction — a failure at any step
     /// rolls back the entire operation (the transactional save fix, Slice 8 R01).
     /// </summary>
-    Task<AddCaseResult> CreateCaseAsync(UpdateCaseDetailsCommand command, int userId);
+    /// <param name="enlist">Optional work run inside the same transaction before the case row is inserted (e.g. creating the farm).</param>
+    Task<AddCaseResult> CreateCaseAsync(UpdateCaseDetailsCommand command, int userId, Func<IDbConnection, IDbTransaction, Task>? enlist = null);
 
     /// <summary>
     /// Updates the core case row and optional clinical/BAB/dam-sire child tables

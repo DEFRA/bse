@@ -102,6 +102,13 @@ public class NewNonGbModel : PageModel
             return RedirectToPage("/Home");
         }
 
+        var rawRbse = RbseHelper.ParseToRaw(Rbse);
+        if (!rawRbse.StartsWith("6300", StringComparison.Ordinal) && !rawRbse.StartsWith("2300", StringComparison.Ordinal))
+        {
+            TempData["ErrorMessage"] = "This is not a non-GB RBSE.";
+            return RedirectToPage("/Home");
+        }
+
         ValidateEartag();
         ValidateResultAndDates();
 
@@ -116,8 +123,8 @@ public class NewNonGbModel : PageModel
             return Page();
         }
 
-        // Legacy CreateCase() always passes today's date for RBSEDate.
-        RbseDate ??= DateTime.Today;
+        // Legacy CreateCase() always passes today's date for RBSEDate; never trust the client value.
+        RbseDate = DateTime.Today;
 
         var userId = await _currentUser.GetUserIdAsync();
 

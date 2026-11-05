@@ -19,7 +19,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace BSE.Host.Pages.Case;
 
-[Authorize]
+[Authorize(Policy = "CaseEntryAccess")]
 public class VlaModel(
     ICaseService caseService,
     IBabRepository babRepository,

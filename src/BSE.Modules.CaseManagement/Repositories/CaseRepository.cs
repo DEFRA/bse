@@ -45,6 +45,9 @@ public sealed class CaseRepository : DapperRepository, ICaseRepository
         return string.IsNullOrWhiteSpace(result) ? null : result.Trim();
     }
 
+    public async Task<bool> HasCaseRemovalSinceAsync(string rbse, DateTime since)
+        => (await QueryAsync<int>("HasCaseRemovalSince", new { RBSE = rbse, Since = since })).FirstOrDefault() == 1;
+
     public async Task<string?> GetLatestDbseForYearAsync(short year)
     {
         var p = new DynamicParameters();

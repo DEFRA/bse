@@ -13,7 +13,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.Case;
 
-[Authorize(Policy = "DataEntry")]
+[Authorize(Policy = "CaseEntryAccess")]
+[Authorize(Policy = "DataEntryVla")]
 public class FeedEditModel(
     IFeedRepository feedRepository,
     ICaseService caseService,
@@ -56,6 +57,9 @@ public class FeedEditModel(
         await LoadLookupsAsync();
 
         var rbse = RbseHelper.ParseToRaw(Rbse);
+        if ((await feedRepository.GetByRbseAsync(rbse)).All(f => f.Id != FeedId))
+            return NotFound();
+
         var caseRecord = await caseService.GetCaseAsync(rbse);
 
         FieldErrors = FeedValidation.Validate(

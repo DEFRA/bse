@@ -12,6 +12,7 @@ namespace BSE.Host.Pages.Case;
 /// user select an existing pedigree/case match, or create a new unlinked pedigree
 /// entry from the eartag/name/herdbook they typed (legacy btnNew_Click).
 /// </summary>
+[Authorize(Policy = "CaseEntryAccess")]
 [Authorize(Policy = "DataEntry")]
 public class PickSireDamModel(IAnimalRelationsRepository relationsRepository) : PageModel
 {

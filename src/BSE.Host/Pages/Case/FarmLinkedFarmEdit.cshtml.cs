@@ -8,7 +8,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.Case;
 
-[Authorize(Policy = "DataEntry")]
+[Authorize(Policy = "CaseEntryAccess")]
+[Authorize(Policy = "FarmDefraEdit")]
 public class FarmLinkedFarmEditModel(
     ICaseService caseService,
     IFarmService farmService,
@@ -42,6 +43,9 @@ public class FarmLinkedFarmEditModel(
         var @case = await caseService.GetCaseAsync(Rbse);
         if (@case?.Cphh is not { } cphh)
             return RedirectToPage(CaseFarmPage, new { rbse = Rbse });
+
+        if ((await farmService.GetRelatedFarmsAsync(cphh)).All(f => f.ID != Id))
+            return NotFound();
 
         if (string.IsNullOrWhiteSpace(RelatedCphh))
             ModelState.AddModelError(nameof(RelatedCphh), "Enter a CPHH.");

@@ -35,6 +35,18 @@ public sealed class CaseTestPagesTests
     public CaseTestPagesTests()
     {
         _lookups.GetLookupAsync(Arg.Any<LookupTableId>()).Returns(new[] { new LookupItem { Code = "X", Description = "X" } });
+        _tests.GetByRbseAsync(Rbse).Returns(new[] { new CaseTestRecord(3, Rbse, "T1", "Type", "Neg", "Negative", [4]) });
+    }
+
+    [Fact]
+    public async Task Edit_Post_RecordOfAnotherCase_ReturnsNotFound()
+    {
+        _tests.GetByRbseAsync(Rbse).Returns(Array.Empty<CaseTestRecord>());
+        var m = Edit();
+        m.TestType = "T1";
+
+        (await m.OnPostAsync()).Should().BeOfType<NotFoundResult>();
+        await _tests.DidNotReceiveWithAnyArgs().EditAsync(default!);
     }
 
     private static void Wire(PageModel m)

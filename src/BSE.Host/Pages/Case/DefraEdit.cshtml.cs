@@ -16,6 +16,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace BSE.Host.Pages.Case;
 
+[Authorize(Policy = "CaseEntryAccess")]
 [Authorize(Policy = "DataEntry")]
 public class DefraEditModel(
     ICaseService caseService,

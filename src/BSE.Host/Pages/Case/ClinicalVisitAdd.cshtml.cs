@@ -8,7 +8,8 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.Case;
 
-[Authorize(Policy = "DataEntry")]
+[Authorize(Policy = "CaseEntryAccess")]
+[Authorize(Policy = "DataEntryVla")]
 public class ClinicalVisitAddModel(
     IClinicalRepository clinicalRepository,
     ICaseRepository caseRepository,

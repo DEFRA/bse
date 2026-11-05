@@ -13,6 +13,7 @@ public interface IFarmService
     Task<FarmDetailRecord> GetDetailsByCphhAsync(string cphh);
     Task<IEnumerable<FarmSummaryRecord>> GetByCphAsync(string cph);
     Task AddAsync(AddFarmCommand command, int userId);
+    Task AddAsync(AddFarmCommand command, int userId, System.Data.IDbConnection connection, System.Data.IDbTransaction transaction);
     Task UpdateAsync(UpdateFarmCommand command, int userId);
     Task<ChangeCphhResult> ChangeCphhAsync(string oldCphh, string newCphh, int userId);
     Task<int> GetConfirmedCaseCountAsync(string cphh);
