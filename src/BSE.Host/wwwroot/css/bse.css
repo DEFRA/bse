@@ -2487,7 +2487,7 @@ body .bse-app-layout-container {
 }
 
 .bse-outstanding-search-page .bse-outstanding-legacy__field--include {
-    grid-template-columns: 235px 1fr;
+    grid-template-columns: 1fr;
     align-items: start;
 }
 
