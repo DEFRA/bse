@@ -122,7 +122,7 @@ public class FarmModel(
     /// <summary>Legacy CPHH1.Enabled: DEFRA Data Entry/Maintenance and VLA Maintenance can look up a
     /// different farm for this case (VLA Data Entry and DEFRA Viewer cannot). Routed via the existing,
     /// validated /Case/MoveCase page rather than re-implementing farm-reassignment inline.</summary>
-    public bool CanChangeCphh => User.IsInRole("DEFRAMaintenance") || User.IsInRole("VLAMaintenance");
+    public bool CanChangeCphh => User.IsInRole("DEFRAMaintenance");
     private List<FarmRelationRecord> PersistedLinkedFarms { get; set; } = [];
     private List<HerdSizeRecord> PersistedHerdSizes { get; set; } = [];
 
@@ -143,7 +143,6 @@ public class FarmModel(
 
     private const string Bse1Document = "BSE1";
     private const string VlaAccessRole = "VLAAccess";
-    private const string VlaMaintenanceRole = "VLAMaintenance";
     private const string DataEntryRole = "DataEntry";
     private const string EnterCphhMessage = "Enter a CPHH.";
     private const string AdnsRegionField = "EditableFarm.ADNSRegionID";
@@ -521,7 +520,7 @@ public class FarmModel(
         if (User.IsInRole("DEFRAAccess") && !User.IsInRole(DataEntryRole))
             return false;
 
-        return User.IsInRole(DataEntryRole) || User.IsInRole("VLAMaintenance");
+        return User.IsInRole(DataEntryRole);
     }
 
     [Authorize(Policy = "DataEntry")]
@@ -1357,7 +1356,7 @@ public class FarmModel(
     {
         // Mirrors legacy CaseEntryFarm:
         // - DEFRA Data Entry / DEFRA Maintenance: joint controls writable, VLA controls read-only.
-        // - VLA Data Entry / VLA Maintenance: joint + VLA controls writable only when
+        // - VLA Data Entry: joint + VLA controls writable only when
         //   IsVLAAllowedMainCaseEdit(Session) is true.
         // - everyone else: read-only.
         if (!User.IsInRole(DataEntryRole))
@@ -1371,8 +1370,8 @@ public class FarmModel(
         var isVlaGroup = User.IsInRole(VlaAccessRole);
 
         // Legacy MakeDEFRAControlsReadOnly (VLADataEntryEnable) vs MakeDEFRAControlsWritable
-        // (VLAMaintenanceEnable) — only VLA Maintenance, not VLA Data Entry, may edit DEFRA fields.
-        CanEditDefraControls = !isVlaGroup || User.IsInRole(VlaMaintenanceRole);
+        // (VLAMaintenanceEnable, which has no case-entry access here): VLA groups never edit DEFRA fields.
+        CanEditDefraControls = !isVlaGroup;
 
         if (!isVlaGroup)
         {

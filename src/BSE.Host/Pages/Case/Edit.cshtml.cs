@@ -41,7 +41,6 @@ public class EditModel(
     private const string RowStampKey = "CaseEdit_RowStamp_{0}";
     private const string DataEntryRole = "DataEntry";
     private const string VlaAccessRole = "VLAAccess";
-    private const string VlaMaintenanceRole = "VLAMaintenance";
 
     [BindProperty(SupportsGet = true)]
     public string Rbse { get; set; } = string.Empty;
@@ -54,34 +53,15 @@ public class EditModel(
     public bool HasCaseWorkLink { get; private set; }
     public bool CanEditDefraNotes { get; private set; }
 
-    /// <summary>Legacy EnableControls' writable roles: DEFRA Data Entry, DEFRA Maintenance and
-    /// VLA Maintenance all call MakeControlsWritable(); DEFRA Viewer and VLA Data Entry call
-    /// MakeControlsReadOnly(). Gates both the editable fieldset and the Save/Casework POST handlers.</summary>
+    /// <summary>Legacy EnableControls' writable roles: DEFRA Data Entry and DEFRA Maintenance call
+    /// MakeControlsWritable(); every other group is read-only here (VLA Maintenance has no
+    /// case-entry access). Gates both the editable fieldset and the Save/Casework POST handlers.</summary>
     public bool CanEditCaseFields { get; private set; }
-
-    /// <summary>Legacy VLAMaintenanceEnable's 3-way gate: Barcode/AHF Reference are writable only
-    /// for VLA Maintenance, only when a CaseWork row exists, and only while the case isn't closed.
-    /// DEFRA Data Entry/Maintenance never get these two fields (always disabled there, unambiguous
-    /// in legacy).</summary>
-    public bool CanEditVlaMaintenanceCaseworkFields { get; private set; }
 
     /// <summary>Legacy parity: ctlPaperworkCompleteDate.Enabled is never touched by
     /// DEFRADataEntryEnable/DEFRAMaintenanceEnable/MakeControlsWritable, so it keeps its control
-    /// default (always enabled, including for a brand-new case) for those two roles — unlike
-    /// Barcode/AHF Reference, which they explicitly disable. VLA Maintenance instead enables it
-    /// via the exact same 3-way gate as Barcode/AHF Reference (same If/Else block in
-    /// VLAMaintenanceEnable), so it shares <see cref="CanEditVlaMaintenanceCaseworkFields"/>.</summary>
+    /// default (always enabled, including for a brand-new case) for those two roles.</summary>
     public bool CanEditPaperworkCompleteDate { get; private set; }
-
-    /// <summary>True once an actual CaseWork row has been loaded from the database. A brand-new
-    /// case's <see cref="BSE.Host.Models.ViewModels.CaseEditViewModel.HasCaseWork"/>/IsCaseClosed
-    /// are forced-true/default-false purely so the Casework button/fields render from the moment
-    /// creation starts (legacy's AddEmptyRow placeholder row) — legacy's own CaseWork row in that
-    /// state has IsCaseClosed as DBNull, which fails VLAMaintenanceEnable's "Not IsDBNull(...)"
-    /// check and disables Barcode/AHF Reference/Paperwork Complete Date for VLA Maintenance until
-    /// the case is actually saved. Without this distinct flag, Case.IsCaseClosed's C# bool default
-    /// of false would wrongly satisfy "!IsCaseClosed" and enable them immediately for a new case.</summary>
-    private bool HasPersistedCaseWork { get; set; }
 
     public bool IsNonGbCase { get; private set; }
 
@@ -179,7 +159,6 @@ public class EditModel(
         if (caseWork is not null)
         {
             Case.ApplyCaseWork(caseWork);
-            HasPersistedCaseWork = true;
         }
 
         // Re-run now that Case.HasCaseWork/IsCaseClosed reflect the freshly-loaded record (the
@@ -551,20 +530,11 @@ public class EditModel(
 
         var persistedCaseWork = await caseWorkRepository.GetByRbseAsync(Rbse);
 
-        // Security: Barcode/AHF Reference render readonly (not disabled) to every role except
-        // VLA Maintenance on an open CaseWork row, and unlike legacy's disabled TextBox (never
-        // posted back), a readonly <input> still submits its value. Re-derive the write
-        // permission from the role claim (trustworthy) and the freshly-read CaseWork row (not the
-        // posted Case.IsCaseClosed hidden field, which a crafted POST could forge) rather than
-        // trusting CanEditVlaMaintenanceCaseworkFields, and restore the persisted values whenever
-        // it's false, so a crafted POST can't bypass the client-side readonly.
-        var isVlaMaintenance = User.IsInRole(VlaAccessRole) && User.IsInRole(VlaMaintenanceRole);
-        var canWriteCaseworkFields = isVlaMaintenance && persistedCaseWork is not null && !persistedCaseWork.IsCaseClosed;
-        if (!canWriteCaseworkFields)
-        {
-            Case.Barcode = persistedCaseWork?.Barcode;
-            Case.AhfReference = persistedCaseWork?.AhfReference;
-        }
+        // Security: Barcode/AHF Reference render readonly (not disabled) for every role on this tab
+        // (only VLA Maintenance could edit them, and it has no case-entry access), but a readonly
+        // <input> still submits its value, so always restore the persisted values against a crafted POST.
+        Case.Barcode = persistedCaseWork?.Barcode;
+        Case.AhfReference = persistedCaseWork?.AhfReference;
 
         // Legacy parity: Common.vb sets a brand-new case's in-memory RBSEDate to Today immediately
         // — if it somehow wasn't set yet by this point, fall back to the persisted value or Today
@@ -890,7 +860,6 @@ public class EditModel(
         if (caseWork is not null)
         {
             Case.ApplyCaseWork(caseWork);
-            HasPersistedCaseWork = true;
         }
 
         ApplyLegacyDefraPermissions();
@@ -920,13 +889,11 @@ public class EditModel(
         // DEFRA groups. So "DataEntry" alone cannot distinguish a DEFRA user from a VLA Data Entry
         // user; the "!VLAAccess" exclusion below is load-bearing, not redundant.
         var isVlaGroup = User.IsInRole(VlaAccessRole);
-        var isVlaMaintenance = isVlaGroup && User.IsInRole(VlaMaintenanceRole);
         var isDefraDataEntry = User.IsInRole(DataEntryRole) && !isVlaGroup;
 
         CanEditDefraNotes = isDefraDataEntry;
-        CanEditCaseFields = isDefraDataEntry || isVlaMaintenance;
-        CanEditVlaMaintenanceCaseworkFields = isVlaMaintenance && HasPersistedCaseWork && !Case.IsCaseClosed;
-        CanEditPaperworkCompleteDate = isDefraDataEntry || CanEditVlaMaintenanceCaseworkFields;
+        CanEditCaseFields = isDefraDataEntry;
+        CanEditPaperworkCompleteDate = isDefraDataEntry;
     }
 
     /// <summary>Legacy parity: every group except DEFRA Viewer holds the "DataEntry" role claim
