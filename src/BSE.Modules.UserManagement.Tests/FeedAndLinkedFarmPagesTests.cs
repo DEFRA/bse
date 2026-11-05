@@ -38,8 +38,18 @@ public sealed class FeedAddEditPagesTests
     {
         _lookups.GetLookupAsync(Arg.Any<LookupTableId>()).Returns(new[] { new LookupItem { Code = "X", Description = "X" } });
         _cases.GetCaseAsync(Rbse).Returns(new CaseRecord { Rbse = Rbse, BirthDate = new DateTime(2015, 1, 1) });
+        _feeds.GetByRbseAsync(Rbse).Returns(new[] { new CaseFeedRecord { Id = 3, Rbse = Rbse } });
         _conn.BeginTransaction().Returns(_tx);
         _factory.CreateConnection().Returns(_conn);
+    }
+
+    [Fact]
+    public async Task Edit_Post_FeedOfAnotherCase_ReturnsNotFound()
+    {
+        _feeds.GetByRbseAsync(Rbse).Returns(Array.Empty<CaseFeedRecord>());
+
+        (await Edit().OnPostAsync()).Should().BeOfType<NotFoundResult>();
+        await _feeds.DidNotReceiveWithAnyArgs().EditAsync(default!, default!, default!);
     }
 
     private static void Wire(PageModel m)

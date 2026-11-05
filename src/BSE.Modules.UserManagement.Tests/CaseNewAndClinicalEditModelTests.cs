@@ -44,8 +44,26 @@ public sealed class CaseNewModelTests
         {
             PageContext = new PageContext { HttpContext = new DefaultHttpContext() }
         };
-        PageTestHelpers.Attach(model, "DataEntry");
+        PageTestHelpers.Attach(model, "DataEntry", "FarmCreation");
         return model;
+    }
+
+    [Fact]
+    public async Task OnPostAsync_WhenFarmIsNewAndUserLacksFarmCreation_Forbids()
+    {
+        var model = Create();
+        PageTestHelpers.Attach(model, "DataEntry", "VLAAccess");
+        model.Rbse = "002600001";
+        model.Cphh = "01/001/0007/01";
+        model.EartagCountry = "UK";
+        model.EartagHerdmark = "H123";
+        model.Eartag = "E456";
+        model.FormADate = DateTime.Today.AddDays(-2);
+
+        var result = await model.OnPostAsync();
+
+        result.Should().BeOfType<ForbidResult>();
+        await _cases.DidNotReceiveWithAnyArgs().CreateCaseAsync(default!, default);
     }
 
     [Fact]
@@ -95,13 +113,17 @@ public sealed class CaseNewModelTests
         model.County = "BEDS";
         model.Aho = "AHO1";
         model.AdnsRegionId = 5;
-        _cases.CreateCaseAsync(Arg.Any<UpdateCaseDetailsCommand>(), 7).Returns(AddCaseResult.Success);
+        _cases.CreateCaseAsync(Arg.Any<UpdateCaseDetailsCommand>(), 7, Arg.Any<Func<IDbConnection, IDbTransaction, Task>?>()).Returns(AddCaseResult.Success);
 
         var result = await model.OnPostAsync();
 
         result.Should().BeOfType<RedirectToPageResult>();
-        await _farms.Received(1).AddAsync(Arg.Any<AddFarmCommand>(), 7);
-        await _cases.Received(1).CreateCaseAsync(Arg.Any<UpdateCaseDetailsCommand>(), 7);
+        var enlist = (Func<IDbConnection, IDbTransaction, Task>)_cases.ReceivedCalls().Single().GetArguments()[2]!;
+        var conn = Substitute.For<IDbConnection>();
+        var tx = Substitute.For<IDbTransaction>();
+        await enlist(conn, tx);
+        await _farms.Received(1).AddAsync(Arg.Any<AddFarmCommand>(), 7, conn, tx);
+        await _farms.DidNotReceive().AddAsync(Arg.Any<AddFarmCommand>(), Arg.Any<int>());
         model.RequireFarmDetails.Should().BeTrue();
         model.TempData["SuccessMessage"].Should().Be("Case 002600001 created successfully.");
     }

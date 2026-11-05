@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace BSE.Host.Pages.Case;
 
 /// <summary>Migrated equivalent of the legacy "Update Selected" action on CaseEntryRelations.aspx.</summary>
-[Authorize(Policy = "DataEntry")]
+[Authorize(Policy = "VlaSireEdit")]
 public class RelationEditModel(
     IAnimalRelationsRepository relationsRepository,
     ILookupDataService lookups,

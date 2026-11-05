@@ -529,6 +529,20 @@ public sealed class ClinicalVlaUsersHandlerTests
     }
 
     [Fact]
+    public async Task ClinicalModel_OnPostAddVisitRowAsync_Forbidden_WhenBatchAlreadyActive()
+    {
+        var pending = new CaseWizardState(Rbse, "2024/001", 5);
+        var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
+        _wizardState.GetAsync().Returns(pending);
+        _batchRepository.GetBatchNumbersByRbseAsync(Arg.Any<string>())
+            .Returns([new BatchNumberEntry(5, "2024/001", Rbse, "BSE1")]);
+
+        var result = await model.OnPostAddVisitRowAsync(null);
+
+        result.Should().BeOfType<ForbidResult>();
+    }
+
+    [Fact]
     public async Task ClinicalModel_OnPostSaveSignsAsync_Forbidden_WhenNotDataEntry()
     {
         var model = CreateClinicalModel();

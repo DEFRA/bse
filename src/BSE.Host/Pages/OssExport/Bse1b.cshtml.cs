@@ -184,6 +184,23 @@ public class OssExportBse1bModel(IOssExportService ossExportService) : PageModel
 
         try
         {
+            // Session rows can be stale (e.g. a case moved after the row was added): re-read current details.
+            var refreshed = new List<OssExportBatchEntryRecord>(GridEntries.Count);
+            foreach (var entry in GridEntries)
+            {
+                var current = await ossExportService.ValidateAndGetRbseDetailsAsync(entry.Rbse);
+                if (current?.Cphh is null)
+                {
+                    ValidationMessage = $"The RBSE {RbseHelper.Format(entry.Rbse)} was not found in the database.";
+                    return Page();
+                }
+
+                refreshed.Add(entry with { Cphh = current.Cphh, OwnerName = current.OwnerName, Address1 = current.Address1 });
+            }
+
+            GridEntries = refreshed;
+            SaveGridState();
+
             // Generate file content
             var fileContent = await ossExportService.GenerateOssExportFileAsync(
                 BatchResult.BatchId,

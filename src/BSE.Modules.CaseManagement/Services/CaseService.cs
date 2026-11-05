@@ -1,3 +1,4 @@
+using System.Data;
 using BSE.Infrastructure;
 using BSE.Modules.Batch.Repositories;
 using BSE.Modules.CaseManagement.Commands;
@@ -59,7 +60,8 @@ public sealed class CaseService : ICaseService
         => _caseRepository.GetFinalResultByRbseAsync(rbse);
 
     /// <inheritdoc/>
-    public async Task<AddCaseResult> CreateCaseAsync(UpdateCaseDetailsCommand command, int userId)
+    public async Task<AddCaseResult> CreateCaseAsync(
+        UpdateCaseDetailsCommand command, int userId, Func<IDbConnection, IDbTransaction, Task>? enlist = null)
     {
         using var connection = _connectionFactory.CreateConnection();
         connection.Open();
@@ -67,6 +69,9 @@ public sealed class CaseService : ICaseService
 
         try
         {
+            if (enlist is not null)
+                await enlist(connection, transaction);
+
             // ── 1. Core case row ─────────────────────────────────────────
             var addResult = await _caseRepository.AddCaseAsync(command.Case, userId, connection, transaction);
             if (addResult != AddCaseResult.Success)

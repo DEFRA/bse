@@ -38,14 +38,23 @@ DECLARE
 		RETURN 1
 	END
 
-	IF @FinalResult = 'Pos' BEGIN
-		--get the next DBSE
-		SET @TwoDigitYear = SUBSTRING(@RBSE, 3, 2)
-	
-		SELECT
-			@NextDBSENumber = ISNULL(MAX(CONVERT(int,RIGHT([DBSE],5))),0) + 1
-		FROM
-			[Case]
+DECLARE @ExistingDBSE char(7)
+
+        SELECT @ExistingDBSE = [DBSE]
+        FROM [Case] WITH (UPDLOCK, HOLDLOCK)
+        WHERE [RBSE] = @RBSE
+
+        IF @FinalResult = 'Pos' AND @ExistingDBSE IS NOT NULL BEGIN
+                -- already positive: keep the allocated DBSE
+                SET @DBSE = @ExistingDBSE
+        END ELSE IF @FinalResult = 'Pos' BEGIN
+                --get the next DBSE
+                SET @TwoDigitYear = SUBSTRING(@RBSE, 3, 2)
+
+                SELECT
+                        @NextDBSENumber = ISNULL(MAX(CONVERT(int,RIGHT([DBSE],5))),0) + 1
+                FROM
+                        [Case] WITH (UPDLOCK, HOLDLOCK)
 		WHERE
 			LEFT([DBSE],2) = @TwoDigitYear
 	
@@ -99,11 +108,25 @@ DECLARE
 		RETURN 5
 	END
 
-	-- perform the update
-	UPDATE
-		[Case]
-	SET
-		[FinalResult] = @FinalResult,
+        IF ISNULL(@ExistingDBSE, '') <> ISNULL(@DBSE, '') BEGIN
+                INSERT INTO [AuditLog]
+                        ([TableName], [FieldName], [UserID], [BeforeValue], [AfterValue], [Reason], [RBSE])
+                VALUES
+                        ('Case', 'DBSE', @UserID, @ExistingDBSE, @DBSE, 'Amendment', @RBSE)
+
+                SET @ErrorCode = @@ERROR
+
+                IF  @ErrorCode <> 0 BEGIN
+                        ROLLBACK TRANSACTION
+                        RETURN 5
+                END
+        END
+
+        -- perform the update
+        UPDATE
+                [Case]
+        SET
+                [FinalResult] = @FinalResult,
 		[FinalResultDate] = @FinalResultDate,
 		[RetrospectiveTestType] = @RetrospectiveTestType,
 		[RetrospectiveResult] = @RetrospectiveResult,

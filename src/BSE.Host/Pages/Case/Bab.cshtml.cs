@@ -17,7 +17,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace BSE.Host.Pages.Case;
 
-[Authorize]
+[Authorize(Policy = "CaseEntryAccess")]
 public class BabModel(
     IBabRepository babRepository,
     ICaseRepository caseRepository,

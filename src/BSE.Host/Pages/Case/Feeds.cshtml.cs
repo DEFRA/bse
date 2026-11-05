@@ -25,7 +25,7 @@ namespace BSE.Host.Pages.Case;
 /// operations are staged and only committed to the database when the user selects Save
 /// (matches /Case/Farm's inline editable grid behaviour).
 /// </summary>
-[Authorize]
+[Authorize(Policy = "CaseEntryAccess")]
 public class FeedsModel(
     IFeedRepository feedRepository,
     ICaseService caseService,

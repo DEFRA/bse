@@ -27,7 +27,7 @@ namespace BSE.Host.Pages.Case;
 /// Shows: confirmed case count, full farm details, linked farms (add/delete),
 /// herd size history (add/delete), and supports inline staged Save/Cancel.
 /// </summary>
-[Authorize]
+[Authorize(Policy = "CaseEntryAccess")]
 public class FarmModel(
     ICaseService caseService,
     IFarmService farmService,
@@ -1417,6 +1417,32 @@ public class FarmModel(
             EditableFarm.PedigreeType = Farm.PedigreeType;
             EditableFarm.IsDealer = Farm.IsDealer;
         }
+
+        if (!CanEditDefraControls)
+            RestoreDefraFarmFields(EditableFarm, Farm);
+    }
+
+    private static void RestoreDefraFarmFields(FarmEditViewModel target, FarmRecord source)
+    {
+        target.OwnerName = source.OwnerName;
+        target.Address1 = source.Address1;
+        target.Address2 = source.Address2;
+        target.Address3 = source.Address3;
+        target.Postcode = source.Postcode;
+        target.Parish = source.Parish;
+        target.District = source.District;
+        target.County = source.County;
+        target.CorrespondenceAddress1 = source.CorrespondenceAddress1;
+        target.CorrespondenceAddress2 = source.CorrespondenceAddress2;
+        target.CorrespondenceAddress3 = source.CorrespondenceAddress3;
+        target.CorrespondencePostcode = source.CorrespondencePostcode;
+        target.MapRef1 = source.MapReference?.Length >= 2 ? source.MapReference[..2] : source.MapReference;
+        target.MapRef2 = source.MapReference?.Length >= 5 ? source.MapReference[2..5] : null;
+        target.MapRef3 = source.MapReference?.Length >= 8 ? source.MapReference[5..8] : null;
+        target.AHO = source.AHO;
+        target.ADNSRegionID = source.ADNSRegionID;
+        target.AuthorityID = source.AuthorityID;
+        target.AuthorityCountyID = source.AuthorityCountyID;
     }
 
     private async Task LoadFromFarmCphhAsync(string? cphh)

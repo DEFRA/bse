@@ -40,6 +40,9 @@ public sealed class FarmService : IFarmService
     public Task AddAsync(AddFarmCommand command, int userId)
         => _farmRepository.AddAsync(command with { CPHH = CphhNormalizer.Normalize(command.CPHH) }, userId);
 
+    public Task AddAsync(AddFarmCommand command, int userId, System.Data.IDbConnection connection, System.Data.IDbTransaction transaction)
+        => _farmRepository.AddAsync(command with { CPHH = CphhNormalizer.Normalize(command.CPHH) }, userId, connection, transaction);
+
     public Task UpdateAsync(UpdateFarmCommand command, int userId)
         => _farmRepository.UpdateAsync(command with { CPHH = CphhNormalizer.Normalize(command.CPHH) }, userId);
 

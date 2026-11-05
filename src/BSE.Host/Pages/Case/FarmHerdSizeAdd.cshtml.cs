@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.Case;
 
-[Authorize(Policy = "DataEntry")]
+[Authorize(Policy = "FarmDefraEdit")]
 public class FarmHerdSizeAddModel(
     ICaseService caseService,
     IHerdSizeRepository herdSizeRepo) : PageModel, IHerdSizeFormPage

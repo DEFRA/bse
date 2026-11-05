@@ -238,6 +238,7 @@ public sealed class PageModelCoverageTests
         var httpContext = new DefaultHttpContext();
 
         caseService.GetCaseAsync("002600001").Returns(new CaseRecord { Cphh = "01001000101" });
+        farmService.GetHerdSizesAsync("01001000101").Returns(new[] { new HerdSizeRecord { ID = 9, CPHH = "01001000101" } });
 
         var model = new FarmHerdSizeEditModel(caseService, farmService, herdSizeRepo)
         {

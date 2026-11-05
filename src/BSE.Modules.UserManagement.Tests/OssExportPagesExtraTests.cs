@@ -288,6 +288,7 @@ public sealed class OssExportBse1bGridTests
     [Fact]
     public async Task Export_Success_ReturnsNamedFile()
     {
+        _service.ValidateAndGetRbseDetailsAsync(Arg.Any<string>()).Returns(new OssExportRecord { Cphh = "CUR" });
         _service.GenerateOssExportFileAsync(9, 2024, 5, Arg.Any<IEnumerable<OssExportBatchEntryRecord>>()).Returns("content");
         var model = Create();
         Seed(model, 2, new BatchNumber1989Result(9, 2024, 5));
@@ -296,11 +297,27 @@ public sealed class OssExportBse1bGridTests
 
         file.FileDownloadName.Should().Be("EPBSE_24.005");
         Encoding.ASCII.GetString(file.FileContents).Should().Be("content");
+        await _service.Received(1).GenerateOssExportFileAsync(9, 2024, 5,
+            Arg.Is<IEnumerable<OssExportBatchEntryRecord>>(e => e.All(r => r.Cphh == "CUR")));
+    }
+
+    [Fact]
+    public async Task Export_WhenCaseNoLongerExists_BlocksExport()
+    {
+        _service.ValidateAndGetRbseDetailsAsync(Arg.Any<string>()).Returns((OssExportRecord?)null);
+        var model = Create();
+        Seed(model, 2, new BatchNumber1989Result(9, 2024, 5));
+
+        (await model.OnPostExportAsync()).Should().BeOfType<PageResult>();
+
+        model.ValidationMessage.Should().Contain("was not found");
+        await _service.DidNotReceiveWithAnyArgs().GenerateOssExportFileAsync(default, default, default, default!);
     }
 
     [Fact]
     public async Task Export_ServiceThrows_ShowsMessageAndKeepsGrid()
     {
+        _service.ValidateAndGetRbseDetailsAsync(Arg.Any<string>()).Returns(new OssExportRecord { Cphh = "CUR" });
         _service.GenerateOssExportFileAsync(Arg.Any<int>(), Arg.Any<short>(), Arg.Any<int>(), Arg.Any<IEnumerable<OssExportBatchEntryRecord>>())
             .Returns<string>(_ => throw new InvalidOperationException("nope"));
         var model = Create();

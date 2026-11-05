@@ -23,7 +23,7 @@ using System.Text.Json;
 
 namespace BSE.Host.Pages.Case;
 
-[Authorize]
+[Authorize(Policy = "CaseEntryAccess")]
 public class RelationsModel(
     IAnimalRelationsRepository relationsRepository,
     ICaseService caseService,
@@ -1335,9 +1335,50 @@ public class RelationsModel(
             CaseRowStamp: caseRecord?.PedigreeRowStamp);
 
         var draft = await sessionState.GetAsync(Rbse) ?? new CaseEditSessionState { Rbse = Rbse };
+        if (!CanEditSireSection)
+            herdbookCommand = KeepExistingSire(herdbookCommand, draft.DamSire);
+
         draft.DamSire = herdbookCommand;
         draft.HasPendingChanges = true;
         await sessionState.SetAsync(draft);
+    }
+
+    // Mirrors the view's canEditSireSection rule: the sire section is VLA-only.
+    private bool CanEditSireSection
+    {
+        get
+        {
+            var group = User.FindFirst("bse:group")?.Value;
+            var isDefraGroup = group is not null
+                && (string.Equals(group, "DEFRA Data Entry", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(group, "DEFRA Maintenance", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(group, "DEFRA Viewer", StringComparison.OrdinalIgnoreCase));
+            return User.IsInRole(DataEntryRole) && User.IsInRole(VlaAccessRole) && !isDefraGroup;
+        }
+    }
+
+    private AddEditDamSireCommand KeepExistingSire(AddEditDamSireCommand posted, AddEditDamSireCommand? staged)
+    {
+        if (staged is not null)
+        {
+            return posted with
+            {
+                SireId = staged.SireId, SireRbse = staged.SireRbse, SireEartag = staged.SireEartag,
+                SireName = staged.SireName, SireHerdbook = staged.SireHerdbook,
+                SireBirthDay = staged.SireBirthDay, SireBirthMonth = staged.SireBirthMonth,
+                SireBirthYear = staged.SireBirthYear, SireRowStamp = staged.SireRowStamp
+            };
+        }
+
+        var sire = Details?.Sire;
+        var hasSire = sire is { Id: > 0 };
+        return posted with
+        {
+            SireId = hasSire ? sire!.Id : null, SireRbse = hasSire ? NullIfBlank(RbseHelper.Normalize(sire!.Rbse)) : null,
+            SireEartag = sire?.Eartag, SireName = sire?.Name, SireHerdbook = sire?.Herdbook,
+            SireBirthDay = sire?.BirthDay, SireBirthMonth = sire?.BirthMonth, SireBirthYear = sire?.BirthYear,
+            SireRowStamp = sire?.RowStamp
+        };
     }
 
     /// <summary>Re-stages the posted (in-progress, unsaved) Case Herdbook / Dam Status edits before a
