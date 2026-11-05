@@ -296,8 +296,8 @@ public class BabModel(
         if (!User.IsInRole("DataEntry"))
             return false;
 
-        // Legacy CaseEntryBAB: VLA groups are read-only (VLA Maintenance has no case-entry access).
-        if (User.IsInRole("VLAAccess"))
+        // Legacy CaseEntryBAB: VLA Data Entry always read-only; VLA Maintenance can edit.
+        if (User.IsInRole("VLAAccess") && !User.IsInRole("VLAMaintenance"))
             return false;
 
         // Legacy MakeControlsWritable: editable only when BirthDate exists and

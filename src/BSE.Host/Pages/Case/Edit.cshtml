@@ -423,7 +423,7 @@
                 @await Html.PartialAsync("_CaseValuationAgeField", Model)
                 <div class="defra-legacy-field">
                     <label asp-for="Case.Barcode" class="govuk-label">Barcode</label>
-                    <input asp-for="Case.Barcode" class="govuk-input defra-legacy-input--sm" maxlength="20" readonly="readonly" />
+                    <input asp-for="Case.Barcode" class="govuk-input defra-legacy-input--sm" maxlength="20" readonly="@(!Model.CanEditVlaMaintenanceCaseworkFields ? "readonly" : null)" />
                 </div>
             </div>
 
@@ -431,7 +431,7 @@
                 <div class="defra-legacy-field"></div>
                 <div class="defra-legacy-field">
                     <label asp-for="Case.AhfReference" class="govuk-label">AHF reference</label>
-                    <input asp-for="Case.AhfReference" class="govuk-input defra-legacy-input--sm" maxlength="40" readonly="readonly" />
+                    <input asp-for="Case.AhfReference" class="govuk-input defra-legacy-input--sm" maxlength="40" readonly="@(!Model.CanEditVlaMaintenanceCaseworkFields ? "readonly" : null)" />
                 </div>
             </div>
 

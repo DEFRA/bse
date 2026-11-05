@@ -24,6 +24,7 @@ public sealed class EditModelCoverageTests
     private const string Rbse = "002600001";
     private static readonly string RowStampKey = $"CaseEdit_RowStamp_{Rbse}";
     private static readonly string[] Defra = ["DataEntry"];
+    private static readonly string[] VlaMaintenance = ["DataEntry", "VLAAccess", "VLAMaintenance"];
     private static readonly string[] VlaDataEntry = ["DataEntry", "VLAAccess"];
 
     private readonly ICaseService _caseService = Substitute.For<ICaseService>();
@@ -116,13 +117,14 @@ public sealed class EditModelCoverageTests
             Rbse = Rbse,
             CaseWork = new BSE.Modules.CaseWork.Commands.EditCaseWorkCommand(Rbse, new DateTime(2025, 1, 1), "STAGED", "AHF", null, null, null, null, null, null)
         };
-        var model = Create(Defra);
+        var model = Create(VlaMaintenance);
         model.TSort = "type";
         model.TDir = "desc";
 
         await model.OnGetAsync();
 
         model.Case.Barcode.Should().Be("STAGED");
+        model.CanEditVlaMaintenanceCaseworkFields.Should().BeTrue();
         model.CanEditPaperworkCompleteDate.Should().BeTrue();
         model.Tests.Should().HaveCount(2);
         model.Tests[0].TestTypeDescription.Should().Be("Type two");
@@ -386,7 +388,7 @@ public sealed class EditModelCoverageTests
     // ── Case work staging ───────────────────────────────────────────────────────
 
     [Fact]
-    public async Task StageCaseWork_NoRoleCanChangeBarcodeAndAhfReference()
+    public async Task StageCaseWork_OnlyVlaMaintenanceCanChangeBarcodeAndAhfReference()
     {
         _caseWorkRepository.GetByRbseAsync(Rbse).Returns(new CaseWorkRecord { Rbse = Rbse, Barcode = "OLD", AhfReference = "OLDAHF", RbseDate = new DateTime(2023, 1, 1), IsCaseClosed = false });
 
@@ -396,6 +398,14 @@ public sealed class EditModelCoverageTests
         defra.Case.Barcode = "FORGED";
         await defra.OnPostStageAndGotoAsync("/Case/Farm");
         _sessionState.Current!.CaseWork!.Barcode.Should().Be("OLD");
+
+        _sessionState.Current = null;
+        var vla = Create(VlaMaintenance);
+        FillValidCase(vla);
+        vla.Case.HasCaseWork = true;
+        vla.Case.Barcode = "NEW";
+        await vla.OnPostStageAndGotoAsync("/Case/Farm");
+        _sessionState.Current!.CaseWork!.Barcode.Should().Be("NEW");
     }
 
     // ── Domain rules (through Save) ─────────────────────────────────────────────

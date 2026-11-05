@@ -104,7 +104,7 @@ public sealed class BabModelFlowTests
     [Theory]
     [InlineData(false, false, false, 2020, false, false)]   // no DataEntry
     [InlineData(true, true, false, 2020, false, false)]     // VLA read-only
-    [InlineData(true, true, true, 2020, false, false)]      // VLA maintenance: no case-entry access, read-only
+    [InlineData(true, true, true, 2020, false, true)]       // VLA maintenance
     [InlineData(true, false, false, 0, false, false)]       // no DOB
     [InlineData(true, false, false, 1980, false, false)]    // pre-threshold, no BAB row
     [InlineData(true, false, false, 1980, true, true)]      // pre-threshold, BAB row
