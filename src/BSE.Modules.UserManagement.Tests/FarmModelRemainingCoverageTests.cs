@@ -136,7 +136,7 @@ public sealed class FarmModelRemainingCoverageTests
         Create("DataEntry").IsConfidentialViewOnly.Should().BeFalse();
         Create("DataEntry").CanChangeCphh.Should().BeFalse();
         Create("DEFRAMaintenance").CanChangeCphh.Should().BeTrue();
-        Create("VLAMaintenance").CanChangeCphh.Should().BeFalse();
+        Create("VLAMaintenance").CanChangeCphh.Should().BeTrue();
     }
 
     [Fact]

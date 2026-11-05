@@ -394,10 +394,7 @@ internal static class HostSetup
         authorizationBuilder.AddPolicy("FarmCreation", p => p.RequireRole("FarmCreation"));
         authorizationBuilder.AddPolicy("AuditAccess", p => p.RequireRole("DEFRAAccess", VlaAccessPolicy));
         // Case-entry tabs: only the recognised DEFRA/VLA groups (AHO and AI Wales/Scotland groups are excluded).
-        // VLA Maintenance works through CaseWork; legacy redirects it away from case entry.
-        authorizationBuilder.AddPolicy("CaseEntryAccess", p => p
-            .RequireRole("DEFRAAccess", VlaAccessPolicy)
-            .RequireAssertion(ctx => !ctx.User.IsInRole("VLAMaintenance")));
+        authorizationBuilder.AddPolicy("CaseEntryAccess", p => p.RequireRole("DEFRAAccess", VlaAccessPolicy));
         // Joint farm fields locked for VLA Data Entry: DEFRA groups or VLA Maintenance with DataEntry.
         authorizationBuilder.AddPolicy("FarmDefraEdit", p => p
             .RequireRole("DataEntry")
