@@ -2871,6 +2871,11 @@ body .bse-app-layout-container {
     margin: 0;
 }
 
+/* Clear the 40px GOV.UK box (::before) that the 24px input no longer reserves space for. */
+.bse-farm-legacy__dealer-checkbox + .govuk-checkboxes__label {
+    padding-left: 28px;
+}
+
 @media (max-width: 900px) {
     .bse-farm-legacy-top__row {
         grid-template-columns: 1fr;
