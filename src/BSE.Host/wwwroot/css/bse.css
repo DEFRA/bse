@@ -276,8 +276,11 @@ body .bse-app-layout-container {
     margin-bottom: 0;
 }
 
+.govuk-input.bse-rbse-input {
+    width: 260px;
+}
+
 .bse-rbse-input {
-    width: 260px !important;
     max-width: 260px;
     min-width: 260px;
 }
@@ -2195,8 +2198,8 @@ body .bse-app-layout-container {
 }
 
 .bse-case-search-page .bse-farm-legacy__input {
-    width: 168px !important;
-    max-width: 168px !important;
+    width: 168px;
+    max-width: 168px;
 }
 
 .bse-case-search-page .bse-case-legacy__field--wide {
@@ -2290,8 +2293,8 @@ body .bse-app-layout-container {
 }
 
 .bse-herdmark-search-page .bse-farm-legacy__input {
-    width: 220px !important;
-    max-width: 220px !important;
+    width: 220px;
+    max-width: 220px;
 }
 
 .bse-herdmark-search-page .bse-farm-legacy__field {
@@ -2336,8 +2339,8 @@ body .bse-app-layout-container {
 }
 
 .bse-holding-herdmark-search-page .bse-farm-legacy__input {
-    width: 220px !important;
-    max-width: 220px !important;
+    width: 220px;
+    max-width: 220px;
 }
 
 .bse-holding-herdmark-search-page .bse-farm-legacy__field {
@@ -2390,8 +2393,8 @@ body .bse-app-layout-container {
 }
 
 .bse-related-animals-search-page .bse-farm-legacy__input {
-    width: 248px !important;
-    max-width: 248px !important;
+    width: 248px;
+    max-width: 248px;
 }
 
 .bse-related-animals-search-page .bse-farm-legacy__field {
@@ -2519,18 +2522,18 @@ body .bse-app-layout-container {
 
 @media (max-width: 900px) {
     .bse-herdmark-search-page .bse-farm-legacy__input {
-        width: 100% !important;
-        max-width: 100% !important;
+        width: 100%;
+        max-width: 100%;
     }
 
     .bse-holding-herdmark-search-page .bse-farm-legacy__input {
-        width: 100% !important;
-        max-width: 100% !important;
+        width: 100%;
+        max-width: 100%;
     }
 
     .bse-related-animals-search-page .bse-farm-legacy__input {
-        width: 100% !important;
-        max-width: 100% !important;
+        width: 100%;
+        max-width: 100%;
     }
 
     .bse-related-animals-search-page .bse-farm-legacy__row {
@@ -2597,8 +2600,8 @@ body .bse-app-layout-container {
     .bse-case-search-page .moj-datepicker__wrapper,
     .bse-case-search-page .bse-case-legacy__notes,
     .bse-case-search-page .bse-farm-legacy__input {
-        width: 100% !important;
-        max-width: 100% !important;
+        width: 100%;
+        max-width: 100%;
     }
 
     .bse-case-search-page .bse-case-legacy__field--actions {
@@ -2713,16 +2716,21 @@ body .bse-app-layout-container {
     margin-bottom: 0;
 }
 
-.bse-farm-legacy__input,
+/* Element-qualified so this outranks the generic width:100% rule below but stays under the page-specific search rules. */
+input.bse-farm-legacy__input,
+select.bse-farm-legacy__input,
+textarea.bse-farm-legacy__input,
 .bse-non-gb-case-page .moj-datepicker__wrapper {
-    width: 252px !important;
+    width: 252px;
 }
 
 /* Desktop only: below 40.0625em the mobile reflow rules own max-width, so they need no !important. */
 @media (min-width: 40.0625em) {
-    .bse-farm-legacy__input,
+    input.bse-farm-legacy__input,
+    select.bse-farm-legacy__input,
+    textarea.bse-farm-legacy__input,
     .bse-non-gb-case-page .moj-datepicker__wrapper {
-        max-width: 252px !important;
+        max-width: 252px;
     }
 }
 
@@ -3601,13 +3609,13 @@ body .bse-app-layout-container {
    same class renders at different sizes depending on the surrounding flex/block context.
    Force a fixed width here so Email reference is identical across GB/CI/NI regardless of layout. */
 .bse-adns-field > .govuk-input--width-10 {
-    width: 11.5em !important;
+    width: 11.5em;
     flex: 0 0 auto;
 }
 
 @media (min-width: 40.0625em) {
     .bse-adns-field > .govuk-input--width-10 {
-        max-width: 11.5em !important;
+        max-width: 11.5em;
     }
 }
 

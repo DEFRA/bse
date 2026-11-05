@@ -370,6 +370,8 @@ internal static class HostSetup
     // Source of truth: docs/Legacy-Page-Level-Access-Control.md (Section 5 access matrix)
     // Redirect authenticated-but-forbidden users to Home instead of returning 403.
     // Applies to both the dev-bypass path and the OIDC path.
+    private const string VlaAccessPolicy = "VLAAccess";
+
     internal static void AddBseAuthorization(this IServiceCollection services)
     {
         services.AddSingleton<IAuthorizationMiddlewareResultHandler, HomeRedirectAuthorizationHandler>();
@@ -380,17 +382,17 @@ internal static class HostSetup
         authorizationBuilder.AddPolicy("ReadOnly", p => p.RequireRole("ReadOnly"));
         authorizationBuilder.AddPolicy("DataEntry", p => p.RequireRole("DataEntry"));
         // Chained RequireRole calls are ANDed: the user must hold both roles.
-        authorizationBuilder.AddPolicy("DataEntryVla", p => p.RequireRole("DataEntry").RequireRole("VLAAccess"));
+        authorizationBuilder.AddPolicy("DataEntryVla", p => p.RequireRole("DataEntry").RequireRole(VlaAccessPolicy));
         authorizationBuilder.AddPolicy("DEFRAMaintenance", p => p.RequireRole("DEFRAMaintenance"));
         // Legacy MoveCase.aspx/MoveCaseNewFarm.aspx EnableControls(): DEFRA Maintenance OR VLA Maintenance
         // (docs/Legacy-Page-Level-Access-Control.md section 5.9 "Case Maintenance Operations").
         authorizationBuilder.AddPolicy("DEFRAOrVLAMaintenance", p => p.RequireRole("DEFRAMaintenance", "VLAMaintenance"));
         authorizationBuilder.AddPolicy("DEFRAAccess", p => p.RequireRole("DEFRAAccess"));
-        authorizationBuilder.AddPolicy("VLAAccess", p => p.RequireRole("VLAAccess"));
+        authorizationBuilder.AddPolicy(VlaAccessPolicy, p => p.RequireRole(VlaAccessPolicy));
         authorizationBuilder.AddPolicy("VLAMaintenance", p => p.RequireRole("VLAMaintenance"));
         authorizationBuilder.AddPolicy("PickListAccess", p => p.RequireRole("PickListAccess"));
         authorizationBuilder.AddPolicy("FarmCreation", p => p.RequireRole("FarmCreation"));
-        authorizationBuilder.AddPolicy("AuditAccess", p => p.RequireRole("DEFRAAccess", "VLAAccess"));
+        authorizationBuilder.AddPolicy("AuditAccess", p => p.RequireRole("DEFRAAccess", VlaAccessPolicy));
     }
 
     internal static void UseBseRequestLogging(this WebApplication app, int slowRequestThresholdMs)
