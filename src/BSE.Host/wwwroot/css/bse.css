@@ -2476,7 +2476,8 @@ body .bse-app-layout-container {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 18px;
+    flex: 0 0 auto;
+    white-space: nowrap;
     text-align: center;
     line-height: 1;
 }
@@ -2553,8 +2554,13 @@ body .bse-app-layout-container {
     }
 
     .bse-outstanding-search-page .bse-outstanding-legacy__date-range {
+        display: grid;
         grid-template-columns: 1fr;
         row-gap: 8px;
+    }
+
+    .bse-outstanding-search-page .bse-outstanding-legacy__and {
+        justify-self: start;
     }
 
     .bse-outstanding-search-page .bse-outstanding-legacy__date-input,
