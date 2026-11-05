@@ -99,10 +99,13 @@ try
         options.Conventions.AllowAnonymousToPage("/AccessibilityStatement");
     })
      .AddMvcOptions(o =>
+     {
         // ASP.NET Core 6+ treats non-nullable string properties as implicitly [Required]
         // when nullable context is enabled. The legacy .NET Framework app had no such
         // behaviour — all search filter fields are optional. Suppress to match legacy.
-        o.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true) ;
+        o.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
+        o.ModelBinderProviders.Insert(0, new BSE.Host.ModelBinding.LenientBooleanModelBinderProvider());
+     });
 
     // ── Session support (for grid state persistence in OSS Export and other pages) ──
     builder.Services.AddSession(options =>
