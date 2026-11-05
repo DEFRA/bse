@@ -647,6 +647,20 @@
         max-width: 11.5rem;
     }
 
+    /* The input must shrink inside the capped picker wrapper, otherwise the calendar button is squeezed to ~12px and overflows. */
+    .bse-casework-entry-left .govuk-form-group .moj-datepicker__wrapper input,
+    .bse-casework-entry-middle .govuk-form-group .moj-datepicker__wrapper input,
+    .bse-casework-entry-post2000-row .moj-datepicker__wrapper input {
+        flex: 0 1 auto;
+        min-width: 0;
+    }
+
+    .bse-casework-entry-left .moj-datepicker__toggle,
+    .bse-casework-entry-middle .moj-datepicker__toggle,
+    .bse-casework-entry-post2000-row .moj-datepicker__toggle {
+        flex: 0 0 auto;
+    }
+
     .bse-casework-entry-middle #TseTestingSite {
         width: 23rem;
         min-width: 0;
@@ -764,7 +778,7 @@
     /* Fixed width (not content-hugging) so "Chased on" / "Sent on" / "DEFRA informed on"
        all end at the same x, keeping their date inputs vertically aligned in one column. */
     .bse-casework-entry-middle .bse-minute-sent-on-label {
-        flex: 0 0 10rem;
+        flex: 0 0 8rem;
         min-width: 0;
         margin-bottom: 0;
         white-space: nowrap;
@@ -774,7 +788,7 @@
     .bse-casework-entry-middle .bse-casework-entry-minute-sent-row input[type="date"],
     .bse-casework-entry-middle .bse-casework-entry-minute-sent-row .moj-datepicker__wrapper {
         flex: 0 0 auto;
-        max-width: 8.5em;
+        max-width: 10.5rem;
     }
 
     /* Below ~1500px the fixed 12rem column gaps and the right-hand close-case checkbox no longer fit. */
