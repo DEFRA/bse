@@ -2716,7 +2716,14 @@ body .bse-app-layout-container {
 .bse-farm-legacy__input,
 .bse-non-gb-case-page .moj-datepicker__wrapper {
     width: 252px !important;
-    max-width: 252px !important;
+}
+
+/* Desktop only: below 40.0625em the mobile reflow rules own max-width, so they need no !important. */
+@media (min-width: 40.0625em) {
+    .bse-farm-legacy__input,
+    .bse-non-gb-case-page .moj-datepicker__wrapper {
+        max-width: 252px !important;
+    }
 }
 
 .bse-farm-legacy__field fieldset {
@@ -3590,8 +3597,13 @@ body .bse-app-layout-container {
    Force a fixed width here so Email reference is identical across GB/CI/NI regardless of layout. */
 .bse-adns-field > .govuk-input--width-10 {
     width: 11.5em !important;
-    max-width: 11.5em !important;
     flex: 0 0 auto;
+}
+
+@media (min-width: 40.0625em) {
+    .bse-adns-field > .govuk-input--width-10 {
+        max-width: 11.5em !important;
+    }
 }
 
 .bse-adns-group {
@@ -3850,16 +3862,19 @@ button, input, select, textarea, .bse-inline-row-button { font-family: inherit; 
 }
 /* Case pages use fixed-width legacy grids and wide data tables; collapse them for 320px reflow. */
 @media (max-width: 40.0525em) {
-    main [class*="bse-"], main [class*="bse-"] .govuk-form-group { grid-template-columns: minmax(0, 1fr) !important; min-width: 0 !important; }
+    /* Repeated attribute/class selectors raise specificity above the desktop rules instead of using !important. */
+    html body main [class*="bse-"][class*="bse-"][class*="bse-"][class*="bse-"],
+    html body main [class*="bse-"][class*="bse-"] .govuk-form-group.govuk-form-group { grid-template-columns: minmax(0, 1fr); min-width: 0; }
     main [class*="bse-"][class*="row"], main [class*="bse-"][class*="fields"], main [class*="bse-"][class*="columns"],
     main [class*="bse-"][class*="field"], main [class*="bse-"][class*="entry"], main [class*="bse-"][class*="group"] { flex-wrap: wrap; }
-    main .govuk-input, main .govuk-select, main .govuk-textarea, main [class*="bse-"] input:not([type="checkbox"]):not([type="radio"]),
-    main [class*="bse-"] select, main [class*="bse-"] textarea { max-width: 100% !important; min-width: 0 !important; box-sizing: border-box; }
-    main .govuk-label { white-space: normal !important; }
+    html body main .govuk-input.govuk-input, html body main .govuk-select.govuk-select, html body main .govuk-textarea.govuk-textarea,
+    html body main [class*="bse-"][class*="bse-"] input:not([type="checkbox"]):not([type="radio"]),
+    html body main [class*="bse-"][class*="bse-"] select, html body main [class*="bse-"][class*="bse-"] textarea { max-width: 100%; min-width: 0; box-sizing: border-box; }
+    html body main .govuk-label.govuk-label { white-space: normal; }
     main fieldset { min-width: 0; }
     /* Tables scroll inside themselves; position:relative keeps absolutely placed hidden text inside the scroller. */
     main table { display: block; max-width: 100%; overflow-x: auto; position: relative; }
-    main .govuk-visually-hidden { left: 0 !important; }
+    main .govuk-visually-hidden { left: 0; }
 }
 
 /* Pagination: GOV.UK stacks the pager in a column on phones; keep it in a wrapping row with 24px+ targets. */
