@@ -327,7 +327,7 @@
         }
 
         estimateBtn.disabled = true;
-        estimateBtn.textContent = 'Estimating…';
+        estimateBtn.setAttribute('aria-busy', 'true');
 
         fetch('?handler=EstimateMapReference&cphh=' + encodeURIComponent(cphh))
             .then(function (r) {
@@ -355,8 +355,8 @@
                 msgEl.style.display = '';
             })
             .finally(function () {
-                estimateBtn.disabled    = false;
-                estimateBtn.textContent = 'Estimate';
+                estimateBtn.disabled = false;
+                estimateBtn.removeAttribute('aria-busy');
             });
     });
 }());

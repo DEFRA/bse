@@ -2850,8 +2850,9 @@ textarea.bse-farm-legacy__input,
 }
 
 .bse-farm-legacy-btn--estimate {
-    width: 86px;
-    min-width: 86px;
+    width: auto;
+    min-width: 97px;
+    white-space: nowrap;
 }
 
 .bse-farm-legacy__field--continuation .govuk-label {
