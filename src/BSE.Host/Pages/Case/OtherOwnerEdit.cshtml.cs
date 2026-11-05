@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.Case;
 
+[Authorize(Policy = "CaseEntryAccess")]
 [Authorize(Policy = "DataEntry")]
 public class OtherOwnerEditModel(
     IOtherOwnerRepository ownerRepository,

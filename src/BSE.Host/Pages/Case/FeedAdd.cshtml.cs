@@ -14,6 +14,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace BSE.Host.Pages.Case;
 
+[Authorize(Policy = "CaseEntryAccess")]
 [Authorize(Policy = "DataEntryVla")]
 public class FeedAddModel(
     IFeedRepository feedRepository,
