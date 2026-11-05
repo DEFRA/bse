@@ -54,6 +54,7 @@ public class PickSupplierModel(
         return Page();
     }
 
+    [Authorize] // access rule is HasAccess, which redirects Home rather than forbidding
     public async Task<IActionResult> OnPostUseSelectedAsync(int id, string? selectedName)
     {
         if (!HasAccess())
@@ -85,6 +86,7 @@ public class PickSupplierModel(
         });
     }
 
+    [Authorize]
     public async Task<IActionResult> OnPostNewAsync()
     {
         if (!HasAccess())
@@ -139,6 +141,7 @@ public class PickSupplierModel(
         });
     }
 
+    [Authorize]
     public IActionResult OnPostCancel()
     {
         if (!HasAccess())

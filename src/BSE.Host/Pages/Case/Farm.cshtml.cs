@@ -300,6 +300,7 @@ public class FarmModel(
 
     /// <summary>Creates the case (and its farm, if the CPHH has none yet) for a brand-new GB case
     /// opened from the Home page — mirrors legacy CaseEntryFarm.aspx's create-mode behaviour.</summary>
+    [Authorize] // role rule is mode-dependent (CanEditCreateModeForCurrentUser)
     public async Task<IActionResult> OnPostCreateCaseAsync()
     {
         var postedEditableFarm = EditableFarm;
@@ -451,6 +452,7 @@ public class FarmModel(
         }
     }
 
+    [Authorize] // role rule is mode-dependent (CanEditCreateModeForCurrentUser)
     public async Task<IActionResult> OnPostLookupNewCaseAsync()
     {
         SpolSiteUrl = configuration[SpolSiteUrlConfigKey] ?? string.Empty;
@@ -522,6 +524,7 @@ public class FarmModel(
         return User.IsInRole(DataEntryRole) || User.IsInRole("VLAMaintenance");
     }
 
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostAddLinkedFarmRowAsync()
     {
         if (!User.IsInRole(DataEntryRole))
@@ -577,6 +580,7 @@ public class FarmModel(
         return RedirectToPage(new { rbse = Rbse });
     }
 
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostSaveFarmAsync()
     {
         if (!User.IsInRole(DataEntryRole))
@@ -649,6 +653,7 @@ public class FarmModel(
     /// (without committing) before navigating to another tab — restores legacy's
     /// "a tab's own validation blocks every navigation attempt, not just Save" behaviour.
     /// </summary>
+    [Authorize] // every role may navigate away; the handler stages only for DataEntry
     public async Task<IActionResult> OnPostStageAndGotoAsync(string targetPage)
     {
         // Legacy parity: UpdateSessionWithCaseDetails() has no role check at all — every role,
@@ -667,6 +672,7 @@ public class FarmModel(
     /// UpdateSessionWithCaseDetails() before redirecting to FarmAuditLogReport.aspx, so an
     /// in-progress edit survives the round trip — this must stage the same way every other
     /// cross-tab navigation does, not just plain-navigate and silently discard it.</summary>
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostStageAndGoToAuditLogAsync()
     {
         if (!User.IsInRole(DataEntryRole))
@@ -847,6 +853,7 @@ public class FarmModel(
             ModelState.AddModelError("EditableFarm.NumericHerdmark2", "Numeric herdmark 2 must be 6 digits.");
     }
 
+    [Authorize]
     public async Task<IActionResult> OnPostCancelFarmEditAsync() => await CancelFarmEditAsync();
 
     public async Task<IActionResult> OnGetCancelFarmEditAsync() => await CancelFarmEditAsync();
@@ -859,6 +866,7 @@ public class FarmModel(
 
     // ── POST: Linked farms ─────────────────────────────────────────────────────
 
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostBeginEditLinkedFarmRowAsync()
     {
         if (!User.IsInRole(DataEntryRole))
@@ -887,6 +895,7 @@ public class FarmModel(
         return Page();
     }
 
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostUpdateLinkedFarmRowAsync()
     {
         if (!User.IsInRole(DataEntryRole))
@@ -943,6 +952,7 @@ public class FarmModel(
         return RedirectToPage(new { rbse = Rbse });
     }
 
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostDeleteLinkedFarmAsync(string clientKey)
     {
         if (!User.IsInRole(DataEntryRole))
@@ -976,6 +986,7 @@ public class FarmModel(
     /// confirmed via Look Up/Save/tab-switch. HSort/HDir/HPage/LSort/LDir/LPage are themselves bound
     /// from the query string the link already carries, so nothing else needs to change here besides
     /// staging the posted edit before re-rendering with the new sort/page.</summary>
+    [Authorize] // sorting is open to every role
     public async Task<IActionResult> OnPostResortGridsAsync()
     {
         var postedEditableFarm = EditableFarm;
@@ -992,6 +1003,7 @@ public class FarmModel(
     // ── POST: Herd sizes (inline editable grid — GDS pattern) ─────────────────
 
     /// <summary>Opens the inline edit view for one staged herd size row (no changes saved yet).</summary>
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostBeginEditHerdRowAsync()
     {
         if (!User.IsInRole(DataEntryRole))
@@ -1036,6 +1048,7 @@ public class FarmModel(
     }
 
     /// <summary>Adds a new herd size row to the draft only. Not persisted until Save.</summary>
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostAddHerdSizeRowAsync()
     {
         if (!User.IsInRole(DataEntryRole))
@@ -1090,6 +1103,7 @@ public class FarmModel(
     }
 
     /// <summary>Updates a staged herd size row in the draft only. Not persisted until Save.</summary>
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostUpdateHerdSizeRowAsync()
     {
         if (!User.IsInRole(DataEntryRole))
@@ -1145,6 +1159,7 @@ public class FarmModel(
         return RedirectToPage(new { rbse = Rbse });
     }
 
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostDeleteHerdSizeAsync(string clientKey)
     {
         if (!User.IsInRole(DataEntryRole))

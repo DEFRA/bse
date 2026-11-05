@@ -201,6 +201,9 @@ try
         ? CookieSecurePolicy.SameAsRequest
         : CookieSecurePolicy.Always;
 
+    builder.Services.Configure<Microsoft.AspNetCore.Mvc.CookieTempDataProviderOptions>(options =>
+        options.Cookie.SecurePolicy = cookieSecurePolicy);
+
     builder.Services.AddAntiforgery(options =>
     {
         options.HeaderName = "RequestVerificationToken";
@@ -228,7 +231,7 @@ try
     }
     else
     {
-        // ── SAML 2.0 / Entra ID ────────────────────────────────────────────
+        // ── OIDC / Entra ID ────────────────────────────────────────────
         var azureAdConfig = builder.Configuration
             .GetSection(AzureAdOidcConfiguration.SectionName)
             .Get<AzureAdOidcConfiguration>() ?? new AzureAdOidcConfiguration();
@@ -429,6 +432,7 @@ try
     builder.Services.AddRazorPages(options =>
     {
         options.Conventions.AuthorizeFolder("/");
+        options.Conventions.ConfigureFilter(_ => new Microsoft.AspNetCore.Mvc.TypeFilterAttribute(typeof(HandlerAuthorizationPageFilter)));
         options.Conventions.AllowAnonymousToPage(ErrorPath);
         options.Conventions.AllowAnonymousToPage(SessionErrorPath);
         options.Conventions.AllowAnonymousToPage(UnauthorizedPath);
@@ -472,6 +476,8 @@ try
     authorizationBuilder.AddPolicy("Authenticated", p => p.RequireAuthenticatedUser());
     authorizationBuilder.AddPolicy("ReadOnly", p => p.RequireRole("ReadOnly"));
     authorizationBuilder.AddPolicy("DataEntry", p => p.RequireRole("DataEntry"));
+    // Chained RequireRole calls are ANDed: the user must hold both roles.
+    authorizationBuilder.AddPolicy("DataEntryVla", p => p.RequireRole("DataEntry").RequireRole("VLAAccess"));
     authorizationBuilder.AddPolicy("DEFRAMaintenance", p => p.RequireRole("DEFRAMaintenance"));
     // Legacy MoveCase.aspx/MoveCaseNewFarm.aspx EnableControls(): DEFRA Maintenance OR VLA Maintenance
     // (docs/Legacy-Page-Level-Access-Control.md section 5.9 "Case Maintenance Operations").
@@ -643,6 +649,21 @@ try
             new AuthenticationProperties { RedirectUri = HomePath },
             [OpenIdConnectDefaults.AuthenticationScheme]);
     }).AllowAnonymous();
+
+    // Header sign-out: clears the app cookies, then ends the Entra session when OIDC is in use.
+    app.MapPost("/signout", async (HttpContext ctx, IAntiforgery antiforgery) =>
+    {
+        if (!await antiforgery.IsRequestValidAsync(ctx))
+            return Results.BadRequest();
+
+        ctx.Session.Clear();
+        ctx.Response.Cookies.Delete(SessionCookieName);
+
+        var properties = new AuthenticationProperties { RedirectUri = HomePath };
+        return bypassAuthentication
+            ? Results.SignOut(properties, [CookieAuthenticationDefaults.AuthenticationScheme])
+            : Results.SignOut(properties, [CookieAuthenticationDefaults.AuthenticationScheme, OpenIdConnectDefaults.AuthenticationScheme]);
+    }).RequireAuthorization();
 
     app.MapRazorPages();
 

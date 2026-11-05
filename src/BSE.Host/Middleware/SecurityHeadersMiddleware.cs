@@ -20,6 +20,8 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next, bool enableH
         "base-uri 'self'; " +
         "frame-ancestors 'none'";
 
+    public const string PermissionsPolicy = "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()";
+
     public const string StrictTransportSecurity = "max-age=31536000; includeSubDomains";
 
     public Task Invoke(HttpContext context)
@@ -36,6 +38,7 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next, bool enableH
             headers.XFrameOptions = "DENY";
             headers.XContentTypeOptions = "nosniff";
             headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+            headers["Permissions-Policy"] = PermissionsPolicy;
 
             if (hsts)
                 headers.StrictTransportSecurity = StrictTransportSecurity;

@@ -135,6 +135,7 @@ public class FeedsModel(
     }
 
     /// <summary>Adds a feed record to the draft only. Not persisted until Save.</summary>
+    [Authorize(Policy = "DataEntryVla")]
     public async Task<IActionResult> OnPostAddFeedRowAsync()
     {
         if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
@@ -176,6 +177,7 @@ public class FeedsModel(
     }
 
     /// <summary>Populates the shared field panel from a staged row for editing (no changes saved yet).</summary>
+    [Authorize(Policy = "DataEntryVla")]
     public async Task<IActionResult> OnPostBeginEditFeedRowAsync(string clientKey)
     {
         if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
@@ -215,6 +217,7 @@ public class FeedsModel(
     }
 
     /// <summary>Updates the currently selected staged row from the shared field panel. Not persisted until Save.</summary>
+    [Authorize(Policy = "DataEntryVla")]
     public async Task<IActionResult> OnPostUpdateFeedRowAsync()
     {
         if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
@@ -268,6 +271,7 @@ public class FeedsModel(
     }
 
     /// <summary>Removes a staged feed row (mirrors legacy "Delete Selected"). Not persisted until Save.</summary>
+    [Authorize(Policy = "DataEntryVla")]
     public async Task<IActionResult> OnPostDeleteFeedRowAsync(string clientKey)
     {
         if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
@@ -291,6 +295,7 @@ public class FeedsModel(
     }
 
     /// <summary>Commits all staged feed changes to the database in one transaction.</summary>
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostSaveFeedsAsync()
     {
         if (!User.IsInRole(DataEntryRole))
@@ -320,6 +325,7 @@ public class FeedsModel(
     }
 
     /// <summary>Discards all staged feed changes without persisting them.</summary>
+    [Authorize]
     public async Task<IActionResult> OnPostCancelFeedsEditAsync() => await CancelFeedsEditAsync();
 
     // The Cancel button is a plain <a> (GET navigation), not a form submit — without this handler
@@ -333,6 +339,7 @@ public class FeedsModel(
         return RedirectToPage("/Home");
     }
 
+    [Authorize(Policy = "DataEntryVla")]
     public async Task<IActionResult> OnPostValidateSupplierNavigateAsync()
     {
         if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))

@@ -57,6 +57,7 @@ public sealed class SignInSessionRegistry(IDistributedCache cache) : ISignInSess
 public static class SingleSessionCookieEvents
 {
     public const string SessionIdClaimType = "bse:sessionId";
+    private const string SessionCookieName = "BSE.Session";
 
     public static async Task OnSigningIn(CookieSigningInContext context)
     {
@@ -67,6 +68,9 @@ public static class SingleSessionCookieEvents
         var userKey = GetUserKey(context.Principal);
         if (userKey is null)
             return;
+
+        // Drop any pre-authentication session cookie so a fresh session id is issued after sign-in.
+        context.HttpContext.Response.Cookies.Delete(SessionCookieName);
 
         var registry = context.HttpContext.RequestServices.GetRequiredService<ISignInSessionRegistry>();
         var sessionId = await registry.StartAsync(userKey, context.HttpContext.RequestAborted);
