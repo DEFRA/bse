@@ -5,11 +5,19 @@ using Microsoft.Data.SqlClient;
 namespace BSE.Host.Pages;
 
 [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+[Microsoft.AspNetCore.Mvc.IgnoreAntiforgeryToken]
 public class ErrorModel : PageModel
 {
     public string? Message { get; private set; }
 
-    public void OnGet(string? message = null)
+    // The exception handler re-executes the original request, so /Error must answer every verb.
+    public void OnGet(string? message = null) => Populate(message);
+    public void OnPost(string? message = null) => Populate(message);
+    public void OnPut(string? message = null) => Populate(message);
+    public void OnPatch(string? message = null) => Populate(message);
+    public void OnDelete(string? message = null) => Populate(message);
+
+    private void Populate(string? message)
     {
         var exceptionFeature = HttpContext.Features.Get<IExceptionHandlerFeature>();
         var exception = exceptionFeature?.Error;
