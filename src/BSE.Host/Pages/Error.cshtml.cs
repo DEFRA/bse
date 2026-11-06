@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Data.SqlClient;
+using System.Diagnostics.CodeAnalysis;
 
 namespace BSE.Host.Pages;
 
 [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+[SuppressMessage("Security", "S4502", Justification = "The exception handler re-executes the failed request on /Error; antiforgery validation would reject that re-execution (including when the failure was an antiforgery error). The page has no state-changing handler.")]
 [Microsoft.AspNetCore.Mvc.IgnoreAntiforgeryToken]
 public class ErrorModel : PageModel
 {
