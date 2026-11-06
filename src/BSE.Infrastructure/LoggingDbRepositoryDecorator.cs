@@ -28,11 +28,24 @@ public sealed class LoggingDbRepositoryDecorator : IDbRepository
             "Query",
             () => _inner.QueryAsync<T>(storedProcedure, param));
 
+    public Task<IEnumerable<T>> QueryAsync<T>(string storedProcedure, object? param, int commandTimeoutSeconds)
+        => ExecuteWithLoggingAsync(
+            storedProcedure,
+            "QueryWithTimeout",
+            () => _inner.QueryAsync<T>(storedProcedure, param, commandTimeoutSeconds),
+            commandTimeoutSeconds);
+
     public Task ExecuteAsync(string storedProcedure, object? param = null)
         => ExecuteWithLoggingAsync(
             storedProcedure,
             "Execute",
             () => _inner.ExecuteAsync(storedProcedure, param));
+
+    public Task ExecuteAsync(string storedProcedure, object? param, IDbConnection connection, IDbTransaction? transaction)
+        => ExecuteWithLoggingAsync(
+            storedProcedure,
+            "ExecuteInTransaction",
+            () => _inner.ExecuteAsync(storedProcedure, param, connection, transaction));
 
     public Task<T?> QuerySingleOrDefaultAsync<T>(string storedProcedure, object? param = null)
         where T : class
@@ -40,13 +53,6 @@ public sealed class LoggingDbRepositoryDecorator : IDbRepository
             storedProcedure,
             "QuerySingleOrDefault",
             () => _inner.QuerySingleOrDefaultAsync<T>(storedProcedure, param));
-
-    public Task<IEnumerable<T>> QueryAsync<T>(string storedProcedure, object? param, int commandTimeoutSeconds)
-        => ExecuteWithLoggingAsync(
-            storedProcedure,
-            "QueryWithTimeout",
-            () => _inner.QueryAsync<T>(storedProcedure, param, commandTimeoutSeconds),
-            commandTimeoutSeconds);
 
     public Task ExecuteWithOutputAsync(string storedProcedure, DynamicParameters param)
         => ExecuteWithLoggingAsync(
@@ -59,12 +65,6 @@ public sealed class LoggingDbRepositoryDecorator : IDbRepository
             storedProcedure,
             "ExecuteWithOutputInTransaction",
             () => _inner.ExecuteWithOutputAsync(storedProcedure, param, connection, transaction));
-
-    public Task ExecuteAsync(string storedProcedure, object? param, IDbConnection connection, IDbTransaction? transaction)
-        => ExecuteWithLoggingAsync(
-            storedProcedure,
-            "ExecuteInTransaction",
-            () => _inner.ExecuteAsync(storedProcedure, param, connection, transaction));
 
     public Task<int> ExecuteWithRowCountAsync(string storedProcedure, object? param, IDbConnection connection, IDbTransaction? transaction)
         => ExecuteWithLoggingAsync(
@@ -80,26 +80,15 @@ public sealed class LoggingDbRepositoryDecorator : IDbRepository
 
     private async Task ExecuteWithLoggingAsync(string storedProcedure, string operation, Func<Task> execute, int? timeout = null)
     {
-        var sw = Stopwatch.StartNew();
-
-        try
-        {
-            await execute();
-            sw.Stop();
-            LogSuccess(storedProcedure, operation, sw.ElapsedMilliseconds, timeout);
-        }
-        catch (Exception ex)
-        {
-            sw.Stop();
-            _logger.LogError(
-                ex,
-                "Database {Operation} failed for {StoredProcedure} after {ElapsedMs}ms (Timeout={TimeoutSeconds})",
-                operation,
-                storedProcedure,
-                sw.ElapsedMilliseconds,
-                timeout);
-            throw;
-        }
+        await ExecuteWithLoggingAsync<object?>(
+            storedProcedure,
+            operation,
+            async () =>
+            {
+                await execute();
+                return null;
+            },
+            timeout);
     }
 
     private async Task<T> ExecuteWithLoggingAsync<T>(string storedProcedure, string operation, Func<Task<T>> execute, int? timeout = null)
@@ -113,20 +102,25 @@ public sealed class LoggingDbRepositoryDecorator : IDbRepository
             LogSuccess(storedProcedure, operation, sw.ElapsedMilliseconds, timeout);
             return result;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (LogFailure(ex, storedProcedure, operation, sw, timeout))
         {
-            sw.Stop();
-            _logger.LogError(
-                ex,
-                "Database {Operation} failed for {StoredProcedure} after {ElapsedMs}ms (Timeout={TimeoutSeconds})",
-                operation,
-                storedProcedure,
-                sw.ElapsedMilliseconds,
-                timeout);
             throw;
         }
     }
 
+    // Always returns false so the exception filter logs without catching.
+    private bool LogFailure(Exception ex, string storedProcedure, string operation, Stopwatch sw, int? timeout)
+    {
+        sw.Stop();
+        _logger.LogError(
+            ex,
+            "Database {Operation} failed for {StoredProcedure} after {ElapsedMs}ms (Timeout={TimeoutSeconds})",
+            operation,
+            storedProcedure,
+            sw.ElapsedMilliseconds,
+            timeout);
+        return false;
+    }
     private void LogSuccess(string storedProcedure, string operation, long elapsedMs, int? timeout)
     {
         if (elapsedMs >= _slowThresholdMs)
@@ -140,6 +134,8 @@ public sealed class LoggingDbRepositoryDecorator : IDbRepository
                 timeout);
             return;
         }
+
+        if (!_logger.IsEnabled(LogLevel.Information)) return;
 
         _logger.LogInformation(
             "Database {Operation} for {StoredProcedure} completed in {ElapsedMs}ms (Timeout={TimeoutSeconds})",

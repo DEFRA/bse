@@ -70,13 +70,13 @@ public static class RbseHelper
         int secondIdx  = s.IndexOf('/', iFirstDash); // 0-based search starting after first slash
         int iSecondDash = secondIdx < 0 ? 0 : secondIdx + 1; // 1-based; 0 means only one slash
 
-        string sPartOne, sPartTwo;
+        string sPartOne;
 
         if (iSecondDash == 0) // Only one slash
         {
-            sPartOne = iFirstDash <= 3 ? "00"
-                     : iFirstDash == 4 ? "0" + s[..1]
-                     : s[..2];
+            if (iFirstDash <= 3) sPartOne = "00";
+            else if (iFirstDash == 4) sPartOne = "0" + s[..1];
+            else sPartOne = s[..2];
             iSecondDash = iFirstDash;
         }
         else // Two slashes
@@ -86,21 +86,22 @@ public static class RbseHelper
                 : "0" + s[..1];
         }
 
-        if (iSecondDash >= 3)
-        {
-            sPartTwo = iSecondDash - iFirstDash == 2
-                ? "0" + s.Substring(iSecondDash - 2, 1)    // Mid$(s, iSecondDash-1, 1)
-                : s.Substring(iSecondDash - 3, 2);           // Mid$(s, iSecondDash-2, 2)
-        }
-        else
-        {
-            sPartTwo = "0" + s[..1];
-        }
+        var sPartTwo = ComputePartTwo(s, iFirstDash, iSecondDash);
 
         // Right-justify sequence in 5 digits; Mid$(s, iSecondDash+1, Len(s)-iSecondDash)
-        var afterSecond = s.Substring(iSecondDash, s.Length - iSecondDash);
+        var afterSecond = s.Substring(iSecondDash);
         var sPartThree  = ("00000" + afterSecond)[^5..];
 
         return sPartOne + "/" + sPartTwo + "/" + sPartThree;
+    }
+
+    private static string ComputePartTwo(string s, int iFirstDash, int iSecondDash)
+    {
+        if (iSecondDash < 3)
+            return "0" + s[..1];
+
+        return iSecondDash - iFirstDash == 2
+            ? string.Concat("0", s.AsSpan(iSecondDash - 2, 1))    // Mid$(s, iSecondDash-1, 1)
+            : s.Substring(iSecondDash - 3, 2);           // Mid$(s, iSecondDash-2, 2)
     }
 }

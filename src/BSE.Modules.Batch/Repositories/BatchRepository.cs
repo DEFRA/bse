@@ -25,29 +25,18 @@ public sealed class BatchRepository : DapperRepository, IBatchRepository
     public BatchRepository(IDbConnectionFactory connectionFactory)
         : base(connectionFactory) { }
 
-    public async Task<BatchRecord> GetOrCreateBatchNumberAsync()
+    public Task<BatchRecord> GetOrCreateBatchNumberAsync() => ExecuteBatchNumberProcAsync("AddBatchNumber");
+
+    public Task<BatchRecord> CreateBatchNumber1989Async() => ExecuteBatchNumberProcAsync("AddBatchNumber1989");
+
+    private async Task<BatchRecord> ExecuteBatchNumberProcAsync(string procedure)
     {
         var param = new DynamicParameters();
         param.Add("@BatchID", dbType: DbType.Int32, direction: ParameterDirection.Output);
         param.Add("@BatchYear", dbType: DbType.Int16, direction: ParameterDirection.Output);
         param.Add("@BatchNumber", dbType: DbType.Int32, direction: ParameterDirection.Output);
 
-        await ExecuteWithOutputAsync("AddBatchNumber", param);
-
-        return new BatchRecord(
-            param.Get<int>("@BatchID"),
-            param.Get<short>("@BatchYear"),
-            param.Get<int>("@BatchNumber"));
-    }
-
-    public async Task<BatchRecord> CreateBatchNumber1989Async()
-    {
-        var param = new DynamicParameters();
-        param.Add("@BatchID", dbType: DbType.Int32, direction: ParameterDirection.Output);
-        param.Add("@BatchYear", dbType: DbType.Int16, direction: ParameterDirection.Output);
-        param.Add("@BatchNumber", dbType: DbType.Int32, direction: ParameterDirection.Output);
-
-        await ExecuteWithOutputAsync("AddBatchNumber1989", param);
+        await ExecuteWithOutputAsync(procedure, param);
 
         return new BatchRecord(
             param.Get<int>("@BatchID"),

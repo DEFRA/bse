@@ -53,18 +53,22 @@ public class ByCaseModel(IAuditLogService auditLogService) : PageModel
         return Page();
     }
 
-    private IEnumerable<AuditLogEntry> ApplySorting(IEnumerable<AuditLogEntry> entries) =>
-        SortBy switch
+    private IEnumerable<AuditLogEntry> ApplySorting(IEnumerable<AuditLogEntry> entries)
+    {
+        Func<AuditLogEntry, object?> sortKey = SortBy switch
         {
-            "table"   => SortDir == "desc" ? entries.OrderByDescending(e => e.TableName)   : entries.OrderBy(e => e.TableName),
-            "field"   => SortDir == "desc" ? entries.OrderByDescending(e => e.FieldName)   : entries.OrderBy(e => e.FieldName),
-            "user"    => SortDir == "desc" ? entries.OrderByDescending(e => e.UserName)    : entries.OrderBy(e => e.UserName),
-            "before"  => SortDir == "desc" ? entries.OrderByDescending(e => e.BeforeValue) : entries.OrderBy(e => e.BeforeValue),
-            "after"   => SortDir == "desc" ? entries.OrderByDescending(e => e.AfterValue)  : entries.OrderBy(e => e.AfterValue),
-            "reason"  => SortDir == "desc" ? entries.OrderByDescending(e => e.Reason)      : entries.OrderBy(e => e.Reason),
-            "key"     => SortDir == "desc" ? entries.OrderByDescending(e => e.Key)         : entries.OrderBy(e => e.Key),
-            _         => SortDir == "desc" ? entries.OrderByDescending(e => e.DateTime)    : entries.OrderBy(e => e.DateTime),
+            "table"  => e => e.TableName,
+            "field"  => e => e.FieldName,
+            "user"   => e => e.UserName,
+            "before" => e => e.BeforeValue,
+            "after"  => e => e.AfterValue,
+            "reason" => e => e.Reason,
+            "key"    => e => e.Key,
+            _        => e => e.DateTime,
         };
+
+        return SortDir == "desc" ? entries.OrderByDescending(sortKey) : entries.OrderBy(sortKey);
+    }
 
     public async Task<IActionResult> OnGetExportAsync()
     {

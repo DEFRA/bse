@@ -55,6 +55,7 @@ public class SecurityHeadersMiddlewareTests
         response.Headers.GetValues("X-Frame-Options").Single().Should().Be("DENY");
         response.Headers.GetValues("X-Content-Type-Options").Single().Should().Be("nosniff");
         response.Headers.GetValues("Referrer-Policy").Single().Should().NotBeNullOrEmpty();
+        response.Headers.GetValues("Permissions-Policy").Single().Should().Contain("geolocation=()");
         response.Headers.GetValues("Strict-Transport-Security").Single().Should().StartWith("max-age=");
     }
 

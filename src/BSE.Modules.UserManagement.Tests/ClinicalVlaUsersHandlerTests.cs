@@ -54,7 +54,7 @@ public sealed class ClinicalVlaUsersHandlerTests
         _lookups.GetBreedsAsync().Returns(Array.Empty<LuBreed>());
         _lookups.GetSexesAsync().Returns(Array.Empty<LuSex>());
         _lookups.GetAnimalOriginsAsync().Returns(Array.Empty<LuAnimalOrigin>());
-        _lookups.GetCountiesAsync().Returns(Array.Empty<LuBSECounty>());
+        _lookups.GetCountiesAsync().Returns(Array.Empty<LuBseCounty>());
         _lookups.GetLookupAsync(Arg.Any<LookupTableId>()).Returns(Array.Empty<LookupItem>());
         _batchRepository.GetBatchNumbersByRbseAsync(Arg.Any<string>()).Returns(Array.Empty<BatchNumberEntry>());
         _wizardState.GetAsync().Returns((CaseWizardState?)null);
@@ -526,6 +526,20 @@ public sealed class ClinicalVlaUsersHandlerTests
         var model = CreateClinicalModel();
         var result = await model.OnGetAsync();
         result.Should().BeOfType<PageResult>();
+    }
+
+    [Fact]
+    public async Task ClinicalModel_OnPostAddVisitRowAsync_Forbidden_WhenBatchAlreadyActive()
+    {
+        var pending = new CaseWizardState(Rbse, "2024/001", 5);
+        var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
+        _wizardState.GetAsync(Arg.Any<CancellationToken>()).Returns(pending);
+        _batchRepository.GetBatchNumbersByRbseAsync(Arg.Any<string>())
+            .Returns([new BatchNumberEntry(5, "2024/001", Rbse, "BSE1")]);
+
+        var result = await model.OnPostAddVisitRowAsync(null);
+
+        result.Should().BeOfType<ForbidResult>();
     }
 
     [Fact]

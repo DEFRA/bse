@@ -1,4 +1,5 @@
-﻿using BSE.Host.Models.ViewModels;
+﻿using BSE.Host.Helpers;
+using BSE.Host.Models.ViewModels;
 using BSE.Host.Services;
 using BSE.Modules.FarmManagement.Models;
 using BSE.Modules.FarmManagement.Services;
@@ -85,27 +86,7 @@ public class NewModel(
         // Legacy PickFarm -> NewFarm flow did not persist a new farm row directly from this
         // confirmation screen. "Create Farm" returns to CaseEntryFarm with seeded defaults.
         if (isPickFarmJourney)
-        {
-            if (string.IsNullOrWhiteSpace(ReturnRbse))
-                return RedirectToPage("/Home");
-
-            if (existingFarm is not null)
-                return RedirectToPage(CaseFarmPage, new { rbse = ReturnRbse, selectedCphh = Farm.CPHH });
-
-            return RedirectToPage(CaseFarmPage, new
-            {
-                rbse = ReturnRbse,
-                newCphh = Farm.CPHH,
-                forceNewFarmDetails = true,
-                seedParish = DerivedParish,
-                seedCounty = DerivedCounty,
-                seedAdnsRegionId = DerivedAdnsRegionId,
-                seedAuthorityId = DerivedAuthorityId,
-                seedAuthorityCountyId = DerivedAuthorityCountyId,
-                seedHerdmark1 = AcceptVetnetDetails && VetnetFound ? VetnetHerdmark : null,
-                seedNumericHerdmark1 = AcceptVetnetDetails && VetnetFound ? VetnetNumericHerdmark : null
-            });
-        }
+            return RedirectFromPickFarmJourney(existingFarm is not null);
 
         if (existingFarm is not null)
         {
@@ -134,6 +115,29 @@ public class NewModel(
             return RedirectToPage(CaseFarmPage, new { rbse = ReturnRbse, newCphh = ReturnCphh ?? Farm.CPHH });
 
         return RedirectToPage("/Farm/Details", new { cphh = Farm.CPHH });
+    }
+
+    private RedirectToPageResult RedirectFromPickFarmJourney(bool farmExists)
+    {
+        if (string.IsNullOrWhiteSpace(ReturnRbse))
+            return RedirectToPage("/Home");
+
+        if (farmExists)
+            return RedirectToPage(CaseFarmPage, new { rbse = ReturnRbse, selectedCphh = Farm.CPHH });
+
+        return RedirectToPage(CaseFarmPage, new
+        {
+            rbse = ReturnRbse,
+            newCphh = Farm.CPHH,
+            forceNewFarmDetails = true,
+            seedParish = DerivedParish,
+            seedCounty = DerivedCounty,
+            seedAdnsRegionId = DerivedAdnsRegionId,
+            seedAuthorityId = DerivedAuthorityId,
+            seedAuthorityCountyId = DerivedAuthorityCountyId,
+            seedHerdmark1 = AcceptVetnetDetails && VetnetFound ? VetnetHerdmark : null,
+            seedNumericHerdmark1 = AcceptVetnetDetails && VetnetFound ? VetnetNumericHerdmark : null
+        });
     }
 
     private async Task ApplyPickFarmVetnetDefaultsAsync()
@@ -190,73 +194,23 @@ public class NewModel(
         }
     }
 
-    private async Task LoadLookupsAsync()
-    {
-        var countyTask     = lookups.GetLookupAsync(LookupTableId.BSECounty);
-        var ahoTask        = lookups.GetLookupAsync(LookupTableId.AHO);
-        var herdTypeTask   = lookups.GetHerdTypesAsync();
-        var pedigreeTask   = lookups.GetLookupAsync(LookupTableId.PedigreeType);
-        var authCountyTask = lookups.GetLookupAsync(LookupTableId.AuthorityCounty);
-
-        await Task.WhenAll(countyTask, ahoTask, herdTypeTask, pedigreeTask, authCountyTask);
-
-        ViewData["CountyOptions"]          = await countyTask;
-        ViewData["AhoOptions"]             = await ahoTask;
-        ViewData["HerdTypeOptions"]        = await herdTypeTask;
-        ViewData["PedigreeOptions"]        = await pedigreeTask;
-        ViewData["AuthorityCountyOptions"] = await authCountyTask;
-
+    private Task LoadLookupsAsync() =>
         // New farm has no county/authority selected yet; dropdowns start empty and cascade via AJAX
-        ViewData["AuthorityOptions"] = Farm.AuthorityCountyID is > 0
-            ? await lookups.GetAuthoritiesByCountyAsync(Farm.AuthorityCountyID.Value)
-            : (IEnumerable<LuAuthority>)[];
-
-        ViewData["AdnsOptions"] = Farm.AuthorityID is > 0
-            ? await lookups.GetADNSRegionsByAuthorityAsync(Farm.AuthorityID.Value)
-            : (IEnumerable<LuADNSRegion>)[];
-    }
+        FarmFormLookups.LoadOptionsAsync(ViewData, lookups, Farm.AuthorityCountyID, Farm.AuthorityID);
 
     /// <summary>AJAX handler: returns authorities for a given authority county.</summary>
-    public async Task<IActionResult> OnGetAuthoritiesAsync(int? authorityCountyId)
-    {
-        if (authorityCountyId is null or 0) return new JsonResult(Array.Empty<object>());
-        var items = await lookups.GetAuthoritiesByCountyAsync(authorityCountyId.Value);
-        return new JsonResult(items.Select(a => new { id = a.Id, name = a.Name }));
-    }
+    public Task<IActionResult> OnGetAuthoritiesAsync(int? authorityCountyId) =>
+        FarmFormLookups.AuthoritiesAsync(lookups, authorityCountyId);
 
     /// <summary>AJAX handler: returns ADNS regions for a given local authority.</summary>
-    public async Task<IActionResult> OnGetAdnsRegionsAsync(int? authorityId)
-    {
-        if (authorityId is null or 0) return new JsonResult(Array.Empty<object>());
-        var items = await lookups.GetADNSRegionsByAuthorityAsync(authorityId.Value);
-        return new JsonResult(items.Select(r => new { id = r.Id, name = r.Name }));
-    }
+    public Task<IActionResult> OnGetAdnsRegionsAsync(int? authorityId) =>
+        FarmFormLookups.AdnsRegionsAsync(lookups, authorityId);
 
     /// <summary>AJAX handler: estimates the map reference from the parish centre for the given CPHH.</summary>
-    public async Task<IActionResult> OnGetEstimateMapReferenceAsync(string? cphh)
-    {
-        cphh = CphhNormalizer.Normalize(cphh);
-        if (string.IsNullOrEmpty(cphh) || cphh.Length < 5)
-            return new JsonResult(new { error = "CPHH must be at least 5 characters to estimate a map reference." });
-
-        var estimate = await mapReferenceGeoLookup.EstimateMapReferenceAsync(cphh);
-        if (estimate.Error is not null)
-            return new JsonResult(new { error = estimate.Error });
-
-        return new JsonResult(new { mapRef1 = estimate.MapRef1, mapRef2 = estimate.MapRef2, mapRef3 = estimate.MapRef3 });
-    }
+    public Task<IActionResult> OnGetEstimateMapReferenceAsync(string? cphh) =>
+        FarmFormLookups.EstimateMapReferenceAsync(mapReferenceGeoLookup, CphhNormalizer.Normalize(cphh));
 
     /// <summary>AJAX handler: returns whether the supplied map reference lies within the parish boundaries.</summary>
-    public async Task<IActionResult> OnGetValidateMapReferenceAsync(string? cphh, string? mapRef)
-    {
-        cphh = CphhNormalizer.Normalize(cphh);
-        mapRef = (mapRef ?? "").Trim().ToUpperInvariant();
-        if (cphh.Length < 5 || mapRef.Length < 8)
-            return new JsonResult(new { valid = true });
-
-        var valid = await mapReferenceGeoLookup.IsMapReferenceWithinParishAsync(cphh, mapRef);
-        return valid
-            ? new JsonResult(new { valid = true })
-            : new JsonResult(new { valid = false, message = "Map reference does not lie within the parish boundaries for this CPHH." });
-    }
+    public Task<IActionResult> OnGetValidateMapReferenceAsync(string? cphh, string? mapRef) =>
+        FarmFormLookups.ValidateMapReferenceAsync(mapReferenceGeoLookup, cphh, mapRef);
 }

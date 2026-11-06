@@ -19,7 +19,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace BSE.Host.Pages.Case;
 
-[Authorize]
+[Authorize(Policy = "CaseEntryAccess")]
 public class EditModel(
     ICaseService caseService,
     ICurrentUserService currentUserService,
@@ -30,7 +30,7 @@ public class EditModel(
     ICaseDraftDiscardService caseDraftDiscard,
     ICaseEditOrchestrationService caseEditOrchestration,
     IBatchRepository batchRepository,
-    IConfiguration configuration) : PageModel
+    IConfiguration configuration) : PageModel, ICaseEditFormPage
 {
     private const string SpolSiteUrlKey = "SpolSiteUrl";
 
@@ -199,6 +199,7 @@ public class EditModel(
         return Page();
     }
 
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostBeginEditTestRowAsync(int id)
     {
         if (!CanUserEditCase())
@@ -224,6 +225,7 @@ public class EditModel(
         return Page();
     }
 
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostAddTestRowAsync()
     {
         if (!CanUserEditCase())
@@ -275,6 +277,7 @@ public class EditModel(
     public IActionResult OnGetValidateEartag(string? country, string? herdmark, string? animal)
         => new JsonResult(new { error = EartagValidator.Validate(country, herdmark, animal) });
 
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostUpdateTestRowAsync()
     {
         if (!CanUserEditCase())
@@ -311,6 +314,7 @@ public class EditModel(
         return RedirectToTestsAnchor();
     }
 
+    [Authorize] // the Casework path is deliberately open to every role (see SaveAsync)
     public Task<IActionResult> OnPostAsync() => SaveAsync("/Home");
 
     /// <summary>
@@ -320,6 +324,7 @@ public class EditModel(
     /// it is not a bare navigation link. Reuses the same SaveAsync path so mandatory-field and
     /// concurrency handling behave identically to Save.
     /// </summary>
+    [Authorize] // the Casework path is deliberately open to every role (see SaveAsync)
     public Task<IActionResult> OnPostSaveAndGotoCaseworkAsync() => SaveAsync(CaseWorkEntryPage);
 
     private async Task<IActionResult> SaveAsync(string successRedirectPage)
@@ -347,9 +352,7 @@ public class EditModel(
         // Unlike Case.HasCaseWork (bound from a posted hidden field), this is server-only and
         // must be recomputed on every render that returns Page() directly — otherwise a
         // validation failure here silently defaults it to false and hides the Casework button.
-        HasCaseWorkLink = persistedRecord is null
-            || await caseWorkRepository.GetByRbseAsync(Rbse) is not null
-            || await caseWorkRepository.GetEntryByRbseAsync(Rbse) is not null;
+        HasCaseWorkLink = await HasCaseWorkLinkAsync(persistedRecord);
 
         // Legacy parity: VLA Data Entry's Save button is technically enabled (btnSave.Enabled =
         // True in VLADataEntryEnable) but every field is read-only, so Save is always a no-op for
@@ -357,8 +360,7 @@ public class EditModel(
         // (disabled inputs are never submitted) — redirecting here without touching anything
         // avoids treating that blank post as a real edit and overwriting the persisted record.
         if (!CanEditCaseFields)
-            return RedirectToPage(successRedirectPage == CaseWorkEntryPage ? successRedirectPage : "/Home",
-                successRedirectPage == CaseWorkEntryPage ? new { rbse = Rbse } : null);
+            return RedirectAfterSave(successRedirectPage, "/Home");
 
         // Legacy CaseEntryDEFRA behavior: Form A date is read-only for non-GB cases.
         if (IsNonGbCase)
@@ -409,10 +411,18 @@ public class EditModel(
         // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx (or the ?redirect=
         // target, e.g. CaseWorkEntry.aspx, when arrived via the Casework link) on a fully
         // successful save, clearing the session case state — not back to the tab the user was on.
-        return successRedirectPage == CaseWorkEntryPage
-            ? RedirectToPage(successRedirectPage, new { rbse = Rbse })
-            : RedirectToPage(successRedirectPage);
+        return RedirectAfterSave(successRedirectPage, successRedirectPage);
     }
+
+    private RedirectToPageResult RedirectAfterSave(string successRedirectPage, string nonCaseWorkPage) =>
+        successRedirectPage == CaseWorkEntryPage
+            ? RedirectToPage(successRedirectPage, new { rbse = Rbse })
+            : RedirectToPage(nonCaseWorkPage);
+
+    private async Task<bool> HasCaseWorkLinkAsync(CaseRecord? persistedRecord) =>
+        persistedRecord is null
+        || await caseWorkRepository.GetByRbseAsync(Rbse) is not null
+        || await caseWorkRepository.GetEntryByRbseAsync(Rbse) is not null;
 
     /// <summary>
     /// Validates this tab's fields and, if valid, stages them into the shared cross-tab
@@ -420,6 +430,7 @@ public class EditModel(
     /// <c>UpdateSessionWithCaseDetails()</c> running on every tab-switch, so an invalid
     /// Form A/B/C/DOB chain blocks leaving this tab, not just blocks Save.
     /// </summary>
+    [Authorize]
     public async Task<IActionResult> OnPostStageAndGotoAsync(string targetPage)
     {
         var stagingResult = await StageCaseEditForNavigationAsync();
@@ -432,6 +443,7 @@ public class EditModel(
     /// <summary>Case audit log link: legacy stages the in-progress edit before redirecting to the
     /// audit log report the same way every tab-switch does, so this must too — a plain navigation
     /// link here would silently discard an unsaved edit instead.</summary>
+    [Authorize]
     public async Task<IActionResult> OnPostStageAndGoToAuditLogAsync()
     {
         var stagingResult = await StageCaseEditForNavigationAsync();
@@ -617,11 +629,8 @@ public class EditModel(
     /// last-persisted DB record, and re-stages the posted (in-progress, unsaved) scalar edit —
     /// otherwise a Tests grid operation (add/edit row) silently discards any not-yet-saved edit to
     /// the DEFRA tab's own fields.</summary>
-    private async Task RestoreAndRestageCaseEditAsync(CaseEditViewModel? postedCase)
+    private async Task RestoreAndRestageCaseEditAsync(CaseEditViewModel postedCase)
     {
-        if (postedCase is null)
-            return;
-
         Case = postedCase;
 
         var rowStampBase64 = TempData[string.Format(RowStampKey, Rbse)]?.ToString();
@@ -987,6 +996,7 @@ public class EditModel(
         HasUnsavedChanges = hasPendingChanges;
     }
 
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostDeleteTestAsync(int id, string? rowStampBase64)
     {
         if (!CanUserEditCase())
@@ -1013,6 +1023,7 @@ public class EditModel(
     /// StageCaseEditForNavigationAsync already reloads the Tests draft (sorted/paged from the
     /// TSort/TDir/TPage the link itself carries) as part of its own staging, so nothing else is
     /// needed here.</summary>
+    [Authorize]
     public async Task<IActionResult> OnPostResortTestsAsync()
     {
         var stagingResult = await StageCaseEditForNavigationAsync();

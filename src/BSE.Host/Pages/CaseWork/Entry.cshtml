@@ -55,8 +55,8 @@
             }
 
             <div class="govuk-button-group bse-casework-entry-buttons">
-                <button type="submit" asp-page-handler="Save" class="govuk-button" data-module="govuk-button">Save</button>
-                <button type="submit" asp-page-handler="Cancel" class="govuk-button govuk-button--secondary" data-module="govuk-button" formnovalidate>Cancel</button>
+                <button type="submit" asp-page-handler="Save" class="govuk-button" data-module="govuk-button">Save<span class="govuk-visually-hidden"> casework entry (top of page)</span></button>
+                <button type="submit" asp-page-handler="Cancel" class="govuk-button govuk-button--secondary" data-module="govuk-button" formnovalidate>Cancel<span class="govuk-visually-hidden"> casework entry (top of page)</span></button>
             </div>
 
             <div class="govuk-grid-row bse-casework-entry-row">
@@ -263,7 +263,7 @@
                                 </div>
                             }
 
-                            <div class="bse-casework-entry-minutes-scroll" tabindex="0" role="region" aria-label="Minutes due and sent">
+                            <section class="bse-casework-entry-minutes-scroll" aria-label="Minutes due and sent">
                             <table class="govuk-table govuk-table--small-text-until-tablet bse-casework-entry-minutes-table">
                                 <caption class="govuk-visually-hidden">Minutes due and sent</caption>
                                 <thead class="govuk-table__head">
@@ -321,7 +321,7 @@
                                     }
                                 </tbody>
                             </table>
-                            </div>
+                            </section>
 
                             <div class="govuk-form-group bse-casework-entry-minute-sent-row @(Err("LabChasedDate") is not null ? "govuk-form-group--error" : "")">
                                 <span class="govuk-body bse-minute-name">Chase lab results</span>
@@ -396,8 +396,8 @@
             }
 
             <div class="govuk-button-group govuk-!-margin-top-4 bse-casework-entry-buttons">
-                <button type="submit" asp-page-handler="Save" class="govuk-button" data-module="govuk-button">Save</button>
-                <button type="submit" asp-page-handler="Cancel" class="govuk-button govuk-button--secondary" data-module="govuk-button" formnovalidate>Cancel</button>
+                <button type="submit" asp-page-handler="Save" class="govuk-button" data-module="govuk-button">Save<span class="govuk-visually-hidden"> casework entry (bottom of page)</span></button>
+                <button type="submit" asp-page-handler="Cancel" class="govuk-button govuk-button--secondary" data-module="govuk-button" formnovalidate>Cancel<span class="govuk-visually-hidden"> casework entry (bottom of page)</span></button>
             </div>
         </form>
     }
@@ -647,6 +647,20 @@
         max-width: 11.5rem;
     }
 
+    /* The input must shrink inside the capped picker wrapper, otherwise the calendar button is squeezed to ~12px and overflows. */
+    .bse-casework-entry-left .govuk-form-group .moj-datepicker__wrapper input,
+    .bse-casework-entry-middle .govuk-form-group .moj-datepicker__wrapper input,
+    .bse-casework-entry-post2000-row .moj-datepicker__wrapper input {
+        flex: 0 1 auto;
+        min-width: 0;
+    }
+
+    .bse-casework-entry-left .moj-datepicker__toggle,
+    .bse-casework-entry-middle .moj-datepicker__toggle,
+    .bse-casework-entry-post2000-row .moj-datepicker__toggle {
+        flex: 0 0 auto;
+    }
+
     .bse-casework-entry-middle #TseTestingSite {
         width: 23rem;
         min-width: 0;
@@ -764,7 +778,7 @@
     /* Fixed width (not content-hugging) so "Chased on" / "Sent on" / "DEFRA informed on"
        all end at the same x, keeping their date inputs vertically aligned in one column. */
     .bse-casework-entry-middle .bse-minute-sent-on-label {
-        flex: 0 0 10rem;
+        flex: 0 0 8rem;
         min-width: 0;
         margin-bottom: 0;
         white-space: nowrap;
@@ -774,7 +788,7 @@
     .bse-casework-entry-middle .bse-casework-entry-minute-sent-row input[type="date"],
     .bse-casework-entry-middle .bse-casework-entry-minute-sent-row .moj-datepicker__wrapper {
         flex: 0 0 auto;
-        max-width: 8.5em;
+        max-width: 10.5rem;
     }
 
     /* Below ~1500px the fixed 12rem column gaps and the right-hand close-case checkbox no longer fit. */
@@ -881,6 +895,93 @@
     .bse-casework-entry-minutes-scroll {
         max-width: 100%;
         overflow-x: auto;
+    }
+
+    /* Between 1200px and 1500px the columns are narrower than label + input, so wrap the label above its field. */
+    @@media (max-width: 1500px) {
+        .bse-casework-entry-left .govuk-form-group,
+        .bse-casework-entry-middle .govuk-form-group {
+            flex-wrap: wrap !important;
+        }
+
+        .bse-casework-entry-left .govuk-form-group:not(.bse-casework-entry-minute-sent-row) > .govuk-label,
+        .bse-casework-entry-middle .govuk-form-group:not(.bse-casework-entry-minute-sent-row) > .govuk-label {
+            flex: 1 1 100% !important;
+        }
+
+        .bse-casework-entry-left .govuk-summary-list__key {
+            width: 6.5rem;
+        }
+
+        .bse-casework-entry-left .govuk-summary-list__value {
+            white-space: normal;
+            overflow-wrap: anywhere;
+        }
+    }
+
+    /* Above 1200px the Minutes table fits its column (labels stay on one line) and may spill into the gap before the right-hand column instead of showing a scrollbar. */
+    @@media (min-width: 1201px) {
+        .bse-casework-entry-minutes-scroll {
+            overflow-x: visible;
+        }
+    }
+
+    @@media (min-width: 1201px) {
+        .bse-casework-entry-minutes-table {
+            min-width: 0 !important;
+            width: 100% !important;
+        }
+
+        .bse-casework-entry-minutes-table .govuk-table__cell,
+        .bse-casework-entry-minutes-table .govuk-table__header {
+            white-space: nowrap !important;
+            padding-right: 2px !important;
+            font-size: 0.9375rem !important;
+        }
+
+        .bse-casework-entry-minutes-table .govuk-table__head .govuk-table__header {
+            white-space: nowrap !important;
+        }
+
+        .bse-casework-entry-minutes-table thead th:nth-child(3) {
+            min-width: 5.2rem !important;
+        }
+
+        .bse-casework-entry-minutes-table tbody .govuk-table__header,
+        .bse-casework-entry-minutes-table tbody .govuk-table__cell {
+            width: auto !important;
+            min-width: 0 !important;
+        }
+
+        .bse-casework-entry-minutes-table .govuk-button {
+            min-width: 0 !important;
+            font-size: 0.9375rem !important;
+            padding: 2px 4px !important;
+            margin-bottom: 0 !important;
+        }
+    }
+
+    /* When the columns stack (up to 1200px) the post-2000 warning row must wrap instead of pushing the page wider. */
+    @@media (max-width: 1200px) {
+        .bse-casework-entry-post2000-row { flex-wrap: wrap; }
+        .bse-casework-entry-post2000-label,
+        .bse-casework-entry-post2000-row .bse-casework-entry-post2000-warning-inline { white-space: normal; }
+    }
+
+    /* WCAG 1.4.10: stack the three columns and release fixed widths on narrow screens. */
+    @@media (max-width: 40.0525em) {
+        .bse-casework-entry-row, .bse-casework-entry-main > .govuk-grid-row { flex-direction: column; column-gap: 0; }
+        .bse-casework-entry-main > .govuk-grid-row { min-width: 0; margin-left: 0; margin-right: 0; width: 100%; }
+        .bse-casework-entry-left, .bse-casework-entry-main, .bse-casework-entry-middle, .bse-casework-entry-right { width: 100%; max-width: 100%; flex: 1 1 auto; }
+        .bse-casework-entry-close-case { position: static; }
+        .bse-casework-entry-left .govuk-summary-list__key { width: auto; }
+        .bse-casework-entry-left .govuk-summary-list__value, .bse-casework-entry-left .govuk-form-group > .govuk-label,
+        .bse-casework-entry-middle .govuk-form-group > .govuk-label, .bse-casework-entry-comments-label, .bse-casework-entry-post2000-label,
+        .bse-casework-entry-post2000-row .bse-casework-entry-post2000-warning-inline { white-space: normal; flex: 1 1 100%; }
+        .bse-casework-entry-left .govuk-form-group, .bse-casework-entry-middle .govuk-form-group { flex-wrap: wrap !important; }
+        .bse-casework-entry-middle #TseTestingSite, .bse-casework-entry-middle #AhroId, .bse-casework-entry-left .govuk-form-group select,
+        .bse-casework-entry-comments .govuk-textarea { width: 100% !important; max-width: 100% !important; }
+        .bse-casework-entry-minutes-table { min-width: 0; display: block; overflow-x: auto; }
     }
 </style>
 

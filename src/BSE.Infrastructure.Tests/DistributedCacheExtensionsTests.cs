@@ -9,7 +9,7 @@ public sealed class DistributedCacheExtensionsTests
 {
     private sealed record TestPayload(string Name, int Value);
 
-    private static IDistributedCache CreateMemoryCache() =>
+    private static MemoryDistributedCache CreateMemoryCache() =>
         new MemoryDistributedCache(Options.Create(new MemoryDistributedCacheOptions()));
 
     [Fact]

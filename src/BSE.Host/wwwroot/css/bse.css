@@ -197,11 +197,12 @@
 
 :root {
     --bse-app-left-gutter: 15px;
+    color-scheme: light dark;
 }
 
-.bse-app-layout-container {
-    margin-left: var(--bse-app-left-gutter) !important;
-    margin-right: auto !important;
+body .bse-app-layout-container {
+    margin-left: var(--bse-app-left-gutter);
+    margin-right: auto;
 }
 
 /* Use a single left boundary for all shared layout containers (header/nav/main/footer). */
@@ -275,8 +276,11 @@
     margin-bottom: 0;
 }
 
+.govuk-input.bse-rbse-input {
+    width: 260px;
+}
+
 .bse-rbse-input {
-    width: 260px !important;
     max-width: 260px;
     min-width: 260px;
 }
@@ -1336,12 +1340,12 @@
 /* Global UX decision: suppress inline field-level error text and rely on page-level
    error summaries instead. */
 .govuk-error-message {
-    display: none !important;
+    display: none;
 }
 
 /* Opt-in: keep the inline message visible next to the field it describes (WCAG 3.3.1). */
 .govuk-error-message.bse-error-message--visible {
-    display: block !important;
+    display: block;
 }
 
 .govuk-hint {
@@ -2194,8 +2198,8 @@
 }
 
 .bse-case-search-page .bse-farm-legacy__input {
-    width: 168px !important;
-    max-width: 168px !important;
+    width: 168px;
+    max-width: 168px;
 }
 
 .bse-case-search-page .bse-case-legacy__field--wide {
@@ -2204,8 +2208,9 @@
 
 .bse-case-search-page .bse-case-legacy__date-range {
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    column-gap: 10px;
+    grid-template-columns: 216px auto 216px;
+    column-gap: 12px;
+    justify-content: start;
     align-items: center;
 }
 
@@ -2231,8 +2236,6 @@
 .bse-case-search-page .bse-case-legacy__and {
     font-weight: 400;
     line-height: 1;
-    margin-left: -6px;
-    margin-right: 6px;
 }
 
 .bse-case-search-page .bse-case-legacy__notes {
@@ -2289,8 +2292,8 @@
 }
 
 .bse-herdmark-search-page .bse-farm-legacy__input {
-    width: 220px !important;
-    max-width: 220px !important;
+    width: 220px;
+    max-width: 220px;
 }
 
 .bse-herdmark-search-page .bse-farm-legacy__field {
@@ -2335,8 +2338,8 @@
 }
 
 .bse-holding-herdmark-search-page .bse-farm-legacy__input {
-    width: 220px !important;
-    max-width: 220px !important;
+    width: 220px;
+    max-width: 220px;
 }
 
 .bse-holding-herdmark-search-page .bse-farm-legacy__field {
@@ -2389,8 +2392,8 @@
 }
 
 .bse-related-animals-search-page .bse-farm-legacy__input {
-    width: 248px !important;
-    max-width: 248px !important;
+    width: 248px;
+    max-width: 248px;
 }
 
 .bse-related-animals-search-page .bse-farm-legacy__field {
@@ -2473,7 +2476,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 18px;
+    flex: 0 0 auto;
+    white-space: nowrap;
     text-align: center;
     line-height: 1;
 }
@@ -2483,7 +2487,7 @@
 }
 
 .bse-outstanding-search-page .bse-outstanding-legacy__field--include {
-    grid-template-columns: 235px 1fr;
+    grid-template-columns: 1fr;
     align-items: start;
 }
 
@@ -2518,18 +2522,18 @@
 
 @media (max-width: 900px) {
     .bse-herdmark-search-page .bse-farm-legacy__input {
-        width: 100% !important;
-        max-width: 100% !important;
+        width: 100%;
+        max-width: 100%;
     }
 
     .bse-holding-herdmark-search-page .bse-farm-legacy__input {
-        width: 100% !important;
-        max-width: 100% !important;
+        width: 100%;
+        max-width: 100%;
     }
 
     .bse-related-animals-search-page .bse-farm-legacy__input {
-        width: 100% !important;
-        max-width: 100% !important;
+        width: 100%;
+        max-width: 100%;
     }
 
     .bse-related-animals-search-page .bse-farm-legacy__row {
@@ -2550,8 +2554,13 @@
     }
 
     .bse-outstanding-search-page .bse-outstanding-legacy__date-range {
+        display: grid;
         grid-template-columns: 1fr;
         row-gap: 8px;
+    }
+
+    .bse-outstanding-search-page .bse-outstanding-legacy__and {
+        justify-self: start;
     }
 
     .bse-outstanding-search-page .bse-outstanding-legacy__date-input,
@@ -2596,8 +2605,8 @@
     .bse-case-search-page .moj-datepicker__wrapper,
     .bse-case-search-page .bse-case-legacy__notes,
     .bse-case-search-page .bse-farm-legacy__input {
-        width: 100% !important;
-        max-width: 100% !important;
+        width: 100%;
+        max-width: 100%;
     }
 
     .bse-case-search-page .bse-case-legacy__field--actions {
@@ -2712,10 +2721,22 @@
     margin-bottom: 0;
 }
 
-.bse-farm-legacy__input,
+/* Element-qualified so this outranks the generic width:100% rule below but stays under the page-specific search rules. */
+input.bse-farm-legacy__input,
+select.bse-farm-legacy__input,
+textarea.bse-farm-legacy__input,
 .bse-non-gb-case-page .moj-datepicker__wrapper {
-    width: 252px !important;
-    max-width: 252px !important;
+    width: 252px;
+}
+
+/* Desktop only: below 40.0625em the mobile reflow rules own max-width, so they need no !important. */
+@media (min-width: 40.0625em) {
+    input.bse-farm-legacy__input,
+    select.bse-farm-legacy__input,
+    textarea.bse-farm-legacy__input,
+    .bse-non-gb-case-page .moj-datepicker__wrapper {
+        max-width: 252px;
+    }
 }
 
 .bse-farm-legacy__field fieldset {
@@ -2791,6 +2812,7 @@
 }
 
 .bse-farm-legacy__field--map {
+    grid-template-columns: 1fr;
     align-items: center;
 }
 
@@ -2828,8 +2850,9 @@
 }
 
 .bse-farm-legacy-btn--estimate {
-    width: 86px;
-    min-width: 86px;
+    width: auto;
+    min-width: 97px;
+    white-space: nowrap;
 }
 
 .bse-farm-legacy__field--continuation .govuk-label {
@@ -2861,6 +2884,11 @@
     width: 24px;
     height: 24px;
     margin: 0;
+}
+
+/* Clear the 40px GOV.UK box (::before) that the 24px input no longer reserves space for. */
+.bse-farm-legacy__dealer-checkbox + .govuk-checkboxes__label {
+    padding-left: 28px;
 }
 
 @media (max-width: 900px) {
@@ -3338,7 +3366,7 @@
 }
 
 .bse-batch-panel .govuk-details__text {
-    position: absolute;
+    position: relative;
     top: 100%;
     right: 0;
     z-index: 20;
@@ -3588,9 +3616,14 @@
    same class renders at different sizes depending on the surrounding flex/block context.
    Force a fixed width here so Email reference is identical across GB/CI/NI regardless of layout. */
 .bse-adns-field > .govuk-input--width-10 {
-    width: 11.5em !important;
-    max-width: 11.5em !important;
+    width: 11.5em;
     flex: 0 0 auto;
+}
+
+@media (min-width: 40.0625em) {
+    .bse-adns-field > .govuk-input--width-10 {
+        max-width: 11.5em;
+    }
 }
 
 .bse-adns-group {
@@ -3692,11 +3725,6 @@
 /* Wide data tables scroll inside their own region instead of the whole page (WCAG 1.4.10). */
 .bse-table-scroll {
     max-width: 100%;
-    overflow-x: auto;
-    position: relative;
-}
-
-.bse-batch-panel .govuk-details__text {
     overflow-x: auto;
     position: relative;
 }
@@ -3804,3 +3832,84 @@ body .bse-form-fieldset-reset {
     }
 }
 
+/* WCAG 1.4.10 reflow: nothing may force the page itself to scroll sideways at 320px / 400% zoom. */
+img, svg, video { max-width: 100%; height: auto; }
+.govuk-input, .govuk-select, .govuk-textarea { max-width: 100%; }
+.govuk-main-wrapper, .govuk-grid-column-one-third, .govuk-grid-column-two-thirds, .govuk-grid-column-full { overflow-wrap: anywhere; }
+@media (max-width: 40.0525em) {
+    body .bse-app-layout-container { margin-left: var(--bse-app-left-gutter); margin-right: var(--bse-app-left-gutter); }
+    .govuk-grid-row, .bse-casework-entry-row { display: block; }
+    .govuk-pagination__list { flex-wrap: wrap; }
+    .bse-pagination-bar { flex-direction: column; align-items: flex-start; }
+    .bse-pagination { flex-wrap: wrap; }
+}
+
+/* Wide tables scroll inside their own wrapper, not the whole page. Desktop keeps the full-window results width. */
+@media (max-width: 40.0525em) {
+    [class*="table-wrap"] { max-width: 100%; overflow-x: auto; }
+}
+
+/* Form controls and buttons must inherit the GOV.UK typeface, not the browser default. */
+button, input, select, textarea, .bse-inline-row-button { font-family: inherit; }
+
+/* Honour the user's light/dark preference. */
+@media (prefers-color-scheme: dark) {
+    body, .govuk-template__body, .govuk-template { background-color: #0b0c0c; color: #ffffff; }
+    .govuk-body, .govuk-label, .govuk-hint, .govuk-fieldset__legend, .govuk-heading-xl, .govuk-heading-l, .govuk-heading-m, .govuk-heading-s,
+    .govuk-table__header, .govuk-table__cell, .govuk-table__caption, .govuk-summary-list__key, .govuk-summary-list__value,
+    .govuk-list, .govuk-breadcrumbs__list-item, .govuk-inset-text { color: #ffffff; }
+    .govuk-hint { color: #b1b4b6; }
+    .govuk-link:link, .govuk-link:visited, .govuk-breadcrumbs__link { color: #5694ca; }
+    .govuk-link:hover { color: #99c2e5; }
+    .govuk-input, .govuk-select, .govuk-textarea { background-color: #0b0c0c; color: #ffffff; border-color: #ffffff; }
+    .govuk-table__header, .govuk-table__cell { border-color: #505a5f; }
+    .govuk-footer { background: #1d1f20; border-top-color: #505a5f; }
+    .govuk-footer__link, .govuk-footer__licence-description, .govuk-footer__copyright-logo { color: #ffffff; }
+    .bse-global-header-nav { background: #0b0c0c; border-bottom-color: #505a5f; }
+    .bse-autosuggest-list, .bse-autosuggest-panel, .bse-autosuggest-format-hint { background: #1d1f20; color: #ffffff; }
+    .bse-casework-report-row--selected { background-color: #594d00; }
+    .bse-user-maintenance-table .bse-row-selected { background-color: #003a63; color: #ffffff; }
+    .bse-user-maintenance-table .bse-row-editing { background-color: #1d3a56; }
+    .bse-user-maintenance-table .bse-row-select-link { color: #5694ca; }
+}
+
+/* Reflow fixes found at 320px. */
+@media (max-width: 40.0525em) {
+    .bse-home-rbse-table .govuk-table__header, .bse-home-rbse-table .govuk-table__cell { padding-right: 10px; }
+    .bse-date-search-row .govuk-form-group { grid-template-columns: minmax(0, 1fr); row-gap: 0.5rem; align-items: start; }
+    .bse-date-search-row .govuk-label { white-space: normal; }
+    .bse-date-search-row .bse-date-range-input-wrapper { flex-wrap: wrap; }
+}
+/* Case pages use fixed-width legacy grids and wide data tables; collapse them for 320px reflow. */
+@media (max-width: 40.0525em) {
+    /* Repeated attribute/class selectors raise specificity above the desktop rules instead of using !important. */
+    html body main [class*="bse-"][class*="bse-"][class*="bse-"][class*="bse-"],
+    html body main [class*="bse-"][class*="bse-"] .govuk-form-group.govuk-form-group { grid-template-columns: minmax(0, 1fr); min-width: 0; }
+    main [class*="bse-"][class*="row"], main [class*="bse-"][class*="fields"], main [class*="bse-"][class*="columns"],
+    main [class*="bse-"][class*="field"], main [class*="bse-"][class*="entry"], main [class*="bse-"][class*="group"] { flex-wrap: wrap; }
+    html body main .govuk-input.govuk-input, html body main .govuk-select.govuk-select, html body main .govuk-textarea.govuk-textarea,
+    html body main [class*="bse-"][class*="bse-"] input:not([type="checkbox"]):not([type="radio"]),
+    html body main [class*="bse-"][class*="bse-"] select, html body main [class*="bse-"][class*="bse-"] textarea { max-width: 100%; min-width: 0; box-sizing: border-box; }
+    html body main .govuk-label.govuk-label { white-space: normal; }
+    main fieldset { min-width: 0; }
+    /* Tables scroll inside themselves; position:relative keeps absolutely placed hidden text inside the scroller. */
+    main table { display: block; max-width: 100%; overflow-x: auto; position: relative; }
+    main .govuk-visually-hidden { left: 0; }
+}
+
+/* Pagination: GOV.UK stacks the pager in a column on phones; keep it in a wrapping row with 24px+ targets. */
+@media (max-width: 40.0525em) {
+    .bse-pagination { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 0.25rem; }
+    .bse-pagination .govuk-pagination__list { display: flex; flex-wrap: wrap; gap: 0.25rem; margin: 0; }
+    .bse-pagination .govuk-pagination__item { min-width: 0; margin: 0; padding: 0; }
+    .bse-pagination .govuk-pagination__prev, .bse-pagination .govuk-pagination__next { margin: 0; padding: 0; }
+    .bse-pagination .govuk-pagination__link { display: inline-flex; align-items: center; justify-content: center; min-width: 2rem; min-height: 2rem; }
+}
+
+/* The eartag help icon sits outside the GOV.UK text wrapper, so inherit would give the browser default font. */
+.bse-eartag-help__icon { font-family: "GDS Transport", arial, sans-serif; }
+
+/* The herd size grid is 1183px wide; scroll it inside its own area below 1240px instead of the whole page. */
+@media (max-width: 1240px) {
+    .case-farm-herd-table { display: block; max-width: 100%; overflow-x: auto; position: relative; }
+}

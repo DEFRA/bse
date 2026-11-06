@@ -24,17 +24,17 @@ public sealed class AdnsRepository : DapperRepository, IAdnsRepository
         => QuerySingleOrDefaultAsync<LastAdnsReferenceRecord>("GetLastADNSReferenceByArea", new { Area = area });
 
     public async Task<int> EditCaseAdnsAsync(
-        string rbse, DateTime sentDate, int adnsRegionId,
-        short adnsYear, int adnsNumber, byte[] rowStamp,
-        IDbConnection connection, IDbTransaction transaction)
+        AdnsCaseUpdate update,
+        IDbConnection connection,
+        IDbTransaction transaction)
     {
         var param = new DynamicParameters();
-        param.Add("RBSE", rbse);
-        param.Add("SentDate", sentDate);
-        param.Add("ADNSRegionID", adnsRegionId);
-        param.Add("ADNSYear", adnsYear);
-        param.Add("ADNSNumber", adnsNumber);
-        param.Add("RowStamp", rowStamp);
+        param.Add("RBSE", update.Rbse);
+        param.Add("SentDate", update.SentDate);
+        param.Add("ADNSRegionID", update.AdnsRegionId);
+        param.Add("ADNSYear", update.AdnsYear);
+        param.Add("ADNSNumber", update.AdnsNumber);
+        param.Add("RowStamp", update.RowStamp);
         param.Add("RETURN_VALUE", dbType: DbType.Int32, direction: ParameterDirection.ReturnValue);
 
         await connection.ExecuteAsync(

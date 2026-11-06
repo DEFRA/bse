@@ -1,0 +1,64 @@
+@model BSE.Host.Models.ViewModels.AuditResultsViewModel
+@{
+    var extras = Model.ExtraColumns ?? [];
+    var sortBase = "?" + string.Join("&", ViewContext.HttpContext.Request.Query
+        .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
+                 && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase)
+                 && !string.Equals(k.Key, "PageNumber", StringComparison.OrdinalIgnoreCase))
+        .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
+    ViewData["PageNumber"] = Model.PageNumber;
+    ViewData["SortColumn"] = Model.SortColumn;
+    ViewData["SortDesc"] = Model.SortDesc;
+    ViewData["BaseUrl"] = sortBase;
+    ViewData["Prefix"] = "";
+    ViewData["Fragment"] = Model.ResultsId;
+    var common = new (string Label, string Column)[]
+    {
+        ("Table", "Table"), ("Field", "Field"), ("Date Time", "DateTime"), ("User", "User"),
+        ("Before", "Before"), ("After", "After"), ("Reason", "Reason"), ("Key", "Key"),
+    };
+}
+        <div id="@Model.ResultsId" class="bse-audit-table-wrap">
+            <table class="govuk-table bse-audit-table">
+                <caption class="govuk-visually-hidden">@Model.Caption</caption>
+                <thead class="govuk-table__head">
+                    <tr class="govuk-table__row">
+                        @foreach (var (label, column) in common)
+                        {
+                            ViewData["Label"] = label;
+                            ViewData["Column"] = column;
+                            <partial name="_SortableHeader" />
+                        }
+                        @foreach (var extra in extras)
+                        {
+                            ViewData["Label"] = extra.Label;
+                            ViewData["LabelHtml"] = extra.LabelHtml;
+                            ViewData["Column"] = extra.Column;
+                            ViewData["HeaderClass"] = extra.HeaderClass;
+                            <partial name="_SortableHeader" />
+                        }
+                    </tr>
+                </thead>
+                <tbody class="govuk-table__body">
+                    @foreach (var e in Model.Rows)
+                    {
+                        <tr class="govuk-table__row">
+                            <td class="govuk-table__cell">@e.TableName</td>
+                            <td class="govuk-table__cell">@e.FieldName</td>
+                            <td class="govuk-table__cell">@e.DateTime.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                            <td class="govuk-table__cell">@e.UserName</td>
+                            <td class="govuk-table__cell">@e.BeforeValue</td>
+                            <td class="govuk-table__cell">@e.AfterValue</td>
+                            <td class="govuk-table__cell">@e.Reason</td>
+                            <td class="govuk-table__cell">@e.Key</td>
+                            @foreach (var extra in extras)
+                            {
+                                <td class="govuk-table__cell@(extra.CellClass is null ? "" : " " + extra.CellClass)">@extra.Value(e)</td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
+        @await Html.PartialAsync("_ExportLink")

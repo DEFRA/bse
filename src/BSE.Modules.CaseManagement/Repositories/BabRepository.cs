@@ -76,7 +76,7 @@ public sealed class BabRepository : DapperRepository, IBabRepository
     // Mirrors legacy EmptyPurchaseFields + Origin save in clsCase:
     // when Origin is not 'P', the CK_Case_PurchaseAgeInMonthsNullable and
     // CK_Case_PurchasedCounty constraints require purchase columns to be NULL.
-    private static Task UpdateOriginAsync(string rbse, string? origin, IDbConnection conn, IDbTransaction tx)
+    private static Task<int> UpdateOriginAsync(string rbse, string? origin, IDbConnection conn, IDbTransaction tx)
     {
         string? normalisedOrigin = string.IsNullOrEmpty(origin) ? null : origin;
         bool isPurchased = normalisedOrigin == "P";

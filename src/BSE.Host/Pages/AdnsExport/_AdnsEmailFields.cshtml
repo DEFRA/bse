@@ -1,0 +1,24 @@
+@model BSE.Host.Pages.AdnsExport.IAdnsExportPageModel
+@{
+    var prefix = ViewData["IdPrefix"];
+}
+<div class="govuk-form-group">
+    <label class="govuk-label" for="@prefix-email-from">From:</label>
+    <input id="@prefix-email-from" class="govuk-input govuk-!-width-two-thirds" value="@Model.FromEmailAddress" readonly />
+</div>
+
+<div class="govuk-form-group">
+    <label asp-for="UserEmailAddress" class="govuk-label">To:</label>
+    <input asp-for="UserEmailAddress" type="email" class="govuk-input govuk-!-width-two-thirds" />
+    <span asp-validation-for="UserEmailAddress" class="govuk-error-message"></span>
+</div>
+
+<div class="govuk-form-group">
+    <label class="govuk-label" for="@prefix-email-subject">Subject:</label>
+    <input id="@prefix-email-subject" class="govuk-input govuk-!-width-two-thirds" value="@Model.Preview!.EmailSubject" readonly />
+</div>
+
+<div class="govuk-form-group">
+    <label asp-for="Message" class="govuk-label">Message</label>
+    <textarea asp-for="Message" class="govuk-textarea govuk-!-width-two-thirds" rows="8"></textarea>
+</div>

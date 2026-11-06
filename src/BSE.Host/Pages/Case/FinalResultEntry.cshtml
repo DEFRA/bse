@@ -4,6 +4,12 @@
 @{
     ViewData["Title"] = "Final Result Entry";
 
+    string TestAriaSort(string column)
+    {
+        if (Model.TestSortColumn != column) return "none";
+        return Model.TestSortDesc ? "descending" : "ascending";
+    }
+
     var errors = new List<(string Anchor, string Message)>();
     if (Model.RbseError is not null) { errors.Add(("rbse", Model.RbseError)); }
     if (Model.FinalResultError is not null) { errors.Add(("final-result", Model.FinalResultError)); }
@@ -119,7 +125,7 @@
                 <tr class="govuk-table__row">
                     @{ var testTypeDesc = Model.TestSortColumn == "TestType" && !Model.TestSortDesc; }
                     @{ var testResultDesc = Model.TestSortColumn == "TestResult" && !Model.TestSortDesc; }
-                    <th scope="col" class="govuk-table__header bse-sortable-table__heading" aria-sort="@(Model.TestSortColumn == "TestType" ? (Model.TestSortDesc ? "descending" : "ascending") : "none")">
+                    <th scope="col" class="govuk-table__header bse-sortable-table__heading" aria-sort="@TestAriaSort("TestType")">
                         <a class="bse-sortable-table__button" href="@Model.TestsPageUrl(Model.TestPage, "TestType", testTypeDesc)">
                             Test Type
                             <span class="bse-sortable-table__icons" aria-hidden="true">
@@ -128,7 +134,7 @@
                             </span>
                         </a>
                     </th>
-                    <th scope="col" class="govuk-table__header bse-sortable-table__heading" aria-sort="@(Model.TestSortColumn == "TestResult" ? (Model.TestSortDesc ? "descending" : "ascending") : "none")">
+                    <th scope="col" class="govuk-table__header bse-sortable-table__heading" aria-sort="@TestAriaSort("TestResult")">
                         <a class="bse-sortable-table__button" href="@Model.TestsPageUrl(Model.TestPage, "TestResult", testResultDesc)">
                             Test Result
                             <span class="bse-sortable-table__icons" aria-hidden="true">

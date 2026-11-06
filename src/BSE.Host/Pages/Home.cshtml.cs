@@ -125,6 +125,7 @@ public class HomeModel(
     /// Validates the entered batch year/number. If found, redirects to New Case
     /// (the batch context is set by the case-entry page). Shows an error if not found.
     /// </summary>
+    [Authorize] // lookup only; the New Case page it redirects to enforces DataEntry
     public async Task<IActionResult> OnPostLookupBatchAsync()
     {
         if (BatchYear is null)
@@ -159,37 +160,15 @@ public class HomeModel(
     /// Mirrors legacy btnGo_Click's full branching: existing GB/non-GB case, new GB/non-GB
     /// case, and the per-group restrictions on each path.
     /// </summary>
+    [Authorize] // per-group rules are applied inside the handler (legacy btnGo_Click branching)
     public async Task<IActionResult> OnPostRbseLookupAsync()
     {
         // Legacy btnGo_Click validates the batch (BatchNumber1.Validate) before ever looking at
         // the RBSE box, so a simultaneously-invalid batch wins over an empty-RBSE error — matched
         // here by running this check first too. A batch is optional: blank year+number is valid.
-        int? batchId = null;
-        if (BatchNumber.HasValue)
-        {
-            // Legacy parity: BatchNumber.ascx's Validate() still calls GetBatchIDForBatch with a
-            // blank year when only the number is entered (the Batch table's BatchYear column is
-            // nullable, so a batch can genuinely exist with no year) — confirmed by legacy saving
-            // "/3001" as the case's batch number for a year-less lookup. GetBatchIdAsync already
-            // accepts a null year and passes it straight through to the same stored procedure.
-            batchId = await batchService.GetBatchIdAsync(BatchYear, BatchNumber.Value);
-            if (batchId is null)
-            {
-                BatchNotFound = true;
-                ModelState.AddModelError(nameof(BatchYear), $"Batch {BatchYear}/{BatchNumber} was not found.");
-                await LoadPageDataAsync();
-                return Page();
-            }
-        }
-        else if (BatchYear.HasValue)
-        {
-            // Legacy parity: BatchNumber.ascx's Validate() only ever looks up a batch when the
-            // number is present — a year with no number doesn't attempt a lookup at all, it just
-            // silently fails validation, so the user is still told what's missing here.
-            ModelState.AddModelError(nameof(BatchNumber), "Enter a batch number.");
-            await LoadPageDataAsync();
-            return Page();
-        }
+        var (batchFailure, batchId) = await ResolveBatchAsync();
+        if (batchFailure is not null)
+            return batchFailure;
 
         if (string.IsNullOrWhiteSpace(LookupRbse))
         {
@@ -232,33 +211,13 @@ public class HomeModel(
         }
 
         // Case doesn't exist — legacy's non-GB reference block is "63/00" or "23/00".
-        var isNonGbReference = normalized.StartsWith("6300", StringComparison.Ordinal)
-            || normalized.StartsWith("2300", StringComparison.Ordinal);
+        if (IsNonGbReference(normalized) && isVlaMaintenance)
+            return RedirectToPage("/Case/NewNonGb", new { rbse = normalized });
 
-        if (isNonGbReference)
+        var rejection = GetNewCaseRejection(normalized, isVlaDataEntry, isDefraViewer);
+        if (rejection is not null)
         {
-            if (isVlaMaintenance)
-                return RedirectToPage("/Case/NewNonGb", new { rbse = normalized });
-
-            ModelState.AddModelError(nameof(LookupRbse), isVlaDataEntry
-                ? "This case does not exist"
-                : "This is not a GB case");
-            await LoadPageDataAsync();
-            return Page();
-        }
-
-        // New GB case — DEFRA Viewer and VLA Data Entry cannot create new GB cases.
-        if (isDefraViewer || isVlaDataEntry)
-        {
-            ModelState.AddModelError(nameof(LookupRbse), "This case does not exist");
-            await LoadPageDataAsync();
-            return Page();
-        }
-
-        // Legacy: the RBSE year part (raw positions 2-3) must not contain 'X'.
-        if (normalized.Length >= 4 && (normalized[2] is 'X' or 'x' || normalized[3] is 'X' or 'x'))
-        {
-            ModelState.AddModelError(nameof(LookupRbse), "This RBSE is not valid for a new case");
+            ModelState.AddModelError(nameof(LookupRbse), rejection);
             await LoadPageDataAsync();
             return Page();
         }
@@ -267,11 +226,60 @@ public class HomeModel(
         return RedirectToPage("/Case/Farm", new { rbse = normalized });
     }
 
+    private static bool IsNonGbReference(string normalized) =>
+        normalized.StartsWith("6300", StringComparison.Ordinal)
+        || normalized.StartsWith("2300", StringComparison.Ordinal);
+
+    private static string? GetNewCaseRejection(string normalized, bool isVlaDataEntry, bool isDefraViewer)
+    {
+        if (IsNonGbReference(normalized))
+            return isVlaDataEntry ? "This case does not exist" : "This is not a GB case";
+
+        // New GB case — DEFRA Viewer and VLA Data Entry cannot create new GB cases.
+        if (isDefraViewer || isVlaDataEntry)
+            return "This case does not exist";
+
+        // Legacy: the RBSE year part (raw positions 2-3) must not contain 'X'.
+        if (normalized.Length >= 4 && (normalized[2] is 'X' or 'x' || normalized[3] is 'X' or 'x'))
+            return "This RBSE is not valid for a new case";
+
+        return null;
+    }
+
+    private async Task<(IActionResult? Failure, int? BatchId)> ResolveBatchAsync()
+    {
+        if (BatchNumber.HasValue)
+        {
+            // Legacy parity: a blank year is valid when only the number is entered (BatchYear is nullable).
+            var batchId = await batchService.GetBatchIdAsync(BatchYear, BatchNumber.Value);
+            if (batchId is null)
+            {
+                BatchNotFound = true;
+                ModelState.AddModelError(nameof(BatchYear), $"Batch {BatchYear}/{BatchNumber} was not found.");
+                await LoadPageDataAsync();
+                return (Page(), null);
+            }
+
+            return (null, batchId);
+        }
+
+        if (BatchYear.HasValue)
+        {
+            // Legacy parity: a year with no number never attempts a lookup; it just fails validation.
+            ModelState.AddModelError(nameof(BatchNumber), "Enter a batch number.");
+            await LoadPageDataAsync();
+            return (Page(), null);
+        }
+
+        return (null, null);
+    }
+
     /// <summary>Batch fields are pre-filled via redirect so the user sees the assigned number — matches legacy behaviour.</summary>
+    [Authorize(Policy = "VLAAccess")] // the Batch Number panel is only rendered for VLA users
     public async Task<IActionResult> OnPostCreateBatchAsync()
     {
         var batch = await batchService.GetOrCreateBatchNumberAsync();
-        TempData["SuccessMessage"] = $"Batch {batch.BatchYear}/{batch.BatchNumber} has been created. Enter an RBSE number and press Go to assign the Batch to the case.";
+        TempData["SuccessMessage"] = $"Batch {batch.BatchYear}/{batch.BatchNumber} has been created. To add a case to this batch, enter an RBSE number in the RBSE Number section and select Go.";
         return RedirectToPage("/Home", new { batchYear = batch.BatchYear, batchNumber = batch.BatchNumber });
     }
 }

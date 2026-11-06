@@ -1,42 +1,12 @@
-@page
+﻿@page
 @model GbModel
 @{
     ViewData["Title"] = "ADNS Export : GB Cases";
+    ViewData["Crumb"] = "GB";
 }
 
 <div>
-    <h1 class="govuk-heading-l">ADNS Export : GB Cases</h1>
-    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
-        <ol class="govuk-breadcrumbs__list">
-            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/AdnsExport/Menu">ADNS export</a></li>
-            <li class="govuk-breadcrumbs__list-item" aria-current="page">GB</li>
-        </ol>
-    </nav>
-
-    @if (!ViewContext.ModelState.IsValid || !string.IsNullOrWhiteSpace(Model.ErrorMessage))
-    {
-        <div class="govuk-error-summary" data-module="govuk-error-summary">
-            <div role="alert">
-                <h2 class="govuk-error-summary__title">There is a problem</h2>
-                <div class="govuk-error-summary__body">
-                    <ul class="govuk-list govuk-error-summary__list">
-                        @foreach (var entry in ViewContext.ModelState.Where(x => x.Value?.Errors.Count > 0))
-                        {
-                            foreach (var err in entry.Value!.Errors)
-                            {
-                                <li>@err.ErrorMessage</li>
-                            }
-                        }
-                        @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
-                        {
-                            <li>@Model.ErrorMessage</li>
-                        }
-                    </ul>
-                </div>
-            </div>
-        </div>
-    }
+    <partial name="_AdnsHeading" model="Model" />
 
     @if (Model.Preview is null)
     {
@@ -48,7 +18,7 @@
                     <span asp-validation-for="EmailReference" class="govuk-error-message"></span>
                 </div>
 
-                <div class="bse-adns-group" role="group" aria-labelledby="gb-adns-reference-legend">
+                <fieldset class="govuk-fieldset bse-adns-group" aria-labelledby="gb-adns-reference-legend">
                     <span id="gb-adns-reference-legend" class="govuk-label">ADNS Reference</span>
                     <div class="bse-inline-fields">
                         <div class="govuk-form-group bse-adns-field @(ViewContext.ModelState["AdnsYear"]?.Errors.Count > 0 ? "govuk-form-group--error" : "")">
@@ -62,7 +32,7 @@
                             <span asp-validation-for="StartAdnsNumber" class="govuk-error-message"></span>
                         </div>
                     </div>
-                </div>
+                </fieldset>
             </div>
 
             <div class="govuk-button-group">
@@ -84,43 +54,7 @@
             </div>
         }
 
-        <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible" />
-
-        <div class="govuk-grid-row">
-            <div class="govuk-grid-column-one-half">
-                <p class="govuk-body">Starting ADNS Reference: @Model.Preview.StartAdnsReference</p>
-            </div>
-            <div class="govuk-grid-column-one-half">
-                <p class="govuk-body">Ending ADNS Reference: @Model.Preview.EndAdnsReference</p>
-            </div>
-        </div>
-
-        <table class="govuk-table">
-            <caption class="govuk-visually-hidden">Generated report summary by ADNS region</caption>
-            <thead class="govuk-table__head">
-                <tr class="govuk-table__row">
-                    <th scope="col" class="govuk-table__header">ADNS Number</th>
-                    <th scope="col" class="govuk-table__header">Region Name</th>
-                    <th scope="col" class="govuk-table__header">Reported Cases</th>
-                </tr>
-            </thead>
-            <tbody class="govuk-table__body">
-                @foreach (var s in Model.Preview.Summary)
-                {
-                    var firstNumber = Model.Preview.Cases
-                        .Where(c => c.AdnsRegionId == s.AdnsRegionId)
-                        .Select(c => c.AdnsNumber)
-                        .OrderBy(n => n)
-                        .FirstOrDefault();
-
-                    <tr class="govuk-table__row">
-                        <td class="govuk-table__cell">@firstNumber.ToString("00000")</td>
-                        <td class="govuk-table__cell">@s.AdnsRegionName</td>
-                        <td class="govuk-table__cell">@s.CasesCount</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+        <partial name="_AdnsPreviewSummary" model="Model" />
 
         <form method="post" asp-page-handler="Dispatch" novalidate>
             <input type="hidden" asp-for="EmailReference" />
@@ -128,26 +62,7 @@
             <input type="hidden" asp-for="StartAdnsNumber" />
             <input type="hidden" asp-for="SaveAdnsData" value="true" />
 
-            <div class="govuk-form-group">
-                <label class="govuk-label" for="gb-email-from">From:</label>
-                <input id="gb-email-from" class="govuk-input govuk-!-width-two-thirds" value="@Model.FromEmailAddress" readonly />
-            </div>
-
-            <div class="govuk-form-group">
-                <label asp-for="UserEmailAddress" class="govuk-label">To:</label>
-                <input asp-for="UserEmailAddress" type="email" class="govuk-input govuk-!-width-two-thirds" />
-                <span asp-validation-for="UserEmailAddress" class="govuk-error-message"></span>
-            </div>
-
-            <div class="govuk-form-group">
-                <label class="govuk-label" for="gb-email-subject">Subject:</label>
-                <input id="gb-email-subject" class="govuk-input govuk-!-width-two-thirds" value="@Model.Preview.EmailSubject" readonly />
-            </div>
-
-            <div class="govuk-form-group">
-                <label asp-for="Message" class="govuk-label">Message</label>
-                <textarea asp-for="Message" class="govuk-textarea govuk-!-width-two-thirds" rows="8"></textarea>
-            </div>
+            <partial name="_AdnsEmailFields" model="Model" view-data='new ViewDataDictionary(ViewData) { ["IdPrefix"] = "gb" }' />
 
             <div class="govuk-button-group">
                 <button type="submit" class="govuk-button" data-module="govuk-button">Send Email</button>

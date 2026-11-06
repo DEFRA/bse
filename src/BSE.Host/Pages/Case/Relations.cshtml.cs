@@ -23,7 +23,7 @@ using System.Text.Json;
 
 namespace BSE.Host.Pages.Case;
 
-[Authorize]
+[Authorize(Policy = "CaseEntryAccess")]
 public class RelationsModel(
     IAnimalRelationsRepository relationsRepository,
     ICaseService caseService,
@@ -138,6 +138,7 @@ public class RelationsModel(
     }
 
     /// <summary>Legacy btnDamLookUp_Click.</summary>
+    [Authorize]
     public async Task<IActionResult> OnPostLookUpDamAsync()
     {
         await LoadAsync();
@@ -147,6 +148,7 @@ public class RelationsModel(
     }
 
     /// <summary>Legacy btnSireLookUp_Click.</summary>
+    [Authorize(Policy = "DataEntryVla")]
     public async Task<IActionResult> OnPostLookUpSireAsync()
     {
         if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
@@ -159,8 +161,10 @@ public class RelationsModel(
     }
 
     /// <summary>Legacy btnSave_Click (Dam/Sire section): persists whatever is currently populated.</summary>
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostSaveDamSireAsync() => await MarkDraftPendingAndRedirectAsync();
 
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostSaveCaseHerdbookAsync() => await MarkDraftPendingAndRedirectAsync();
 
     private async Task<IActionResult> MarkDraftPendingAndRedirectAsync()
@@ -187,6 +191,7 @@ public class RelationsModel(
     /// before navigating to another tab — mirrors every other scalar-field tab's StageAndGoto
     /// handler. Without this, typed-but-not-yet-saved values here were lost on tab switch, since
     /// Relations previously used a plain navigation link with no staging call at all.</summary>
+    [Authorize] // every role may navigate away; the handler stages only for DataEntry
     public async Task<IActionResult> OnPostStageAndGotoAsync(string targetPage)
     {
         if (!User.IsInRole(DataEntryRole))
@@ -204,6 +209,7 @@ public class RelationsModel(
     /// <summary>Other Relations sort-header/pagination links: plain same-page query-string links
     /// which, unlike every other action on this tab, never staged the in-progress Case Herdbook/
     /// Dam Status edit, silently discarding it.</summary>
+    [Authorize] // sorting is open to every role; the handler stages only for DataEntry
     public async Task<IActionResult> OnPostResortRelationsAsync()
     {
         if (!User.IsInRole(DataEntryRole))
@@ -237,6 +243,7 @@ public class RelationsModel(
         }
     }
 
+    [Authorize]
     public IActionResult OnPostDeleteRelationAsync(int relationId, string rowStampBase64)
     {
         // Superseded by OnPostDeleteRelationRowAsync (staged delete, committed on Save).
@@ -246,6 +253,7 @@ public class RelationsModel(
 
     /// <summary>Legacy RemoveDam: disassociates the dam, clears Case.DamStatus (ddlDamStatus)
     /// alongside it, and does not touch the sire.</summary>
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostRemoveDamAsync()
     {
         if (!User.IsInRole(DataEntryRole))
@@ -268,6 +276,7 @@ public class RelationsModel(
     }
 
     /// <summary>Legacy RemoveSire: disassociates the sire without touching the dam.</summary>
+    [Authorize(Policy = "DataEntryVla")]
     public async Task<IActionResult> OnPostRemoveSireAsync()
     {
         if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
@@ -410,7 +419,7 @@ public class RelationsModel(
         return Page();
     }
 
-    private IActionResult RedirectToPickSireDam(bool isDam)
+    private RedirectToPageResult RedirectToPickSireDam(bool isDam)
     {
         var eartag = isDam ? DamSire.DamSearchEartag : DamSire.SireSearchEartag;
         var name = isDam ? DamSire.DamSearchName : DamSire.SireSearchName;
@@ -719,6 +728,7 @@ public class RelationsModel(
     }
 
     /// <summary>Adds a related-animal row to the draft only. Not persisted until Save.</summary>
+    [Authorize(Policy = "DataEntryVla")]
     public async Task<IActionResult> OnPostAddRelationRowAsync()
     {
         if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
@@ -768,6 +778,7 @@ public class RelationsModel(
     }
 
     /// <summary>Populates the shared field panel from a staged row for editing (no changes saved yet).</summary>
+    [Authorize(Policy = "DataEntryVla")]
     public async Task<IActionResult> OnPostBeginEditRelationRowAsync(string clientKey)
     {
         if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
@@ -819,6 +830,7 @@ public class RelationsModel(
     }
 
     /// <summary>Updates the currently selected staged row from the shared field panel. Not persisted until Save.</summary>
+    [Authorize(Policy = "DataEntryVla")]
     public async Task<IActionResult> OnPostUpdateRelationRowAsync()
     {
         if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
@@ -871,6 +883,7 @@ public class RelationsModel(
     }
 
     /// <summary>Removes a staged related-animal row. Not persisted until Save.</summary>
+    [Authorize(Policy = "DataEntryVla")]
     public async Task<IActionResult> OnPostDeleteRelationRowAsync(string clientKey)
     {
         if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
@@ -896,6 +909,7 @@ public class RelationsModel(
     }
 
     /// <summary>Commits all staged related-animal changes to the database in one transaction.</summary>
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostSaveRelationsAsync()
     {
         if (!User.IsInRole(DataEntryRole))
@@ -1118,7 +1132,7 @@ public class RelationsModel(
 
         try
         {
-            _ = new DateTime(year.Value, month ?? 1, day ?? 1);
+            _ = new DateTime(year.Value, month ?? 1, day ?? 1, 0, 0, 0, DateTimeKind.Unspecified);
             return null;
         }
         catch (ArgumentOutOfRangeException)
@@ -1321,9 +1335,50 @@ public class RelationsModel(
             CaseRowStamp: caseRecord?.PedigreeRowStamp);
 
         var draft = await sessionState.GetAsync(Rbse) ?? new CaseEditSessionState { Rbse = Rbse };
+        if (!CanEditSireSection)
+            herdbookCommand = KeepExistingSire(herdbookCommand, draft.DamSire);
+
         draft.DamSire = herdbookCommand;
         draft.HasPendingChanges = true;
         await sessionState.SetAsync(draft);
+    }
+
+    // Mirrors the view's canEditSireSection rule: the sire section is VLA-only.
+    private bool CanEditSireSection
+    {
+        get
+        {
+            var group = User.FindFirst("bse:group")?.Value;
+            var isDefraGroup = group is not null
+                && (string.Equals(group, "DEFRA Data Entry", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(group, "DEFRA Maintenance", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(group, "DEFRA Viewer", StringComparison.OrdinalIgnoreCase));
+            return User.IsInRole(DataEntryRole) && User.IsInRole(VlaAccessRole) && !isDefraGroup;
+        }
+    }
+
+    private AddEditDamSireCommand KeepExistingSire(AddEditDamSireCommand posted, AddEditDamSireCommand? staged)
+    {
+        if (staged is not null)
+        {
+            return posted with
+            {
+                SireId = staged.SireId, SireRbse = staged.SireRbse, SireEartag = staged.SireEartag,
+                SireName = staged.SireName, SireHerdbook = staged.SireHerdbook,
+                SireBirthDay = staged.SireBirthDay, SireBirthMonth = staged.SireBirthMonth,
+                SireBirthYear = staged.SireBirthYear, SireRowStamp = staged.SireRowStamp
+            };
+        }
+
+        var sire = Details?.Sire;
+        var hasSire = sire is { Id: > 0 };
+        return posted with
+        {
+            SireId = hasSire ? sire!.Id : null, SireRbse = hasSire ? NullIfBlank(RbseHelper.Normalize(sire!.Rbse)) : null,
+            SireEartag = sire?.Eartag, SireName = sire?.Name, SireHerdbook = sire?.Herdbook,
+            SireBirthDay = sire?.BirthDay, SireBirthMonth = sire?.BirthMonth, SireBirthYear = sire?.BirthYear,
+            SireRowStamp = sire?.RowStamp
+        };
     }
 
     /// <summary>Re-stages the posted (in-progress, unsaved) Case Herdbook / Dam Status edits before a
@@ -1342,6 +1397,7 @@ public class RelationsModel(
     }
 
     /// <summary>Discards all staged related-animal changes without persisting them.</summary>
+    [Authorize]
     public async Task<IActionResult> OnPostCancelRelationsEditAsync() => await CancelRelationsEditAsync();
 
     public async Task<IActionResult> OnGetCancelRelationsEditAsync() => await CancelRelationsEditAsync();
@@ -1461,22 +1517,22 @@ public class RelationsModel(
         }
 
         return await conn.QuerySingleOrDefaultAsync<PedigreeSnapshot>(
-            @"SELECT [Eartag], [Name], [Herdbook], [BirthDay], [BirthMonth], [BirthYear], [RowStamp]
+            @"SELECT [Eartag], [Name], [Herdbook],
+                     CAST([BirthDay] AS int) AS [BirthDay], CAST([BirthMonth] AS int) AS [BirthMonth],
+                     CAST([BirthYear] AS int) AS [BirthYear], [RowStamp]
               FROM [Pedigree]
               WHERE [ID] = @ID",
             new { ID = pedigreeId });
     }
 
-    private sealed record PedigreeSnapshot
-    {
-        public string? Eartag { get; init; }
-        public string? Name { get; init; }
-        public string? Herdbook { get; init; }
-        public int? BirthDay { get; init; }
-        public int? BirthMonth { get; init; }
-        public int? BirthYear { get; init; }
-        public byte[]? RowStamp { get; init; }
-    }
+    private sealed record PedigreeSnapshot(
+        string? Eartag,
+        string? Name,
+        string? Herdbook,
+        int? BirthDay,
+        int? BirthMonth,
+        int? BirthYear,
+        byte[]? RowStamp);
 
     /// <summary>Populates DamSire from the freshly-loaded Details. GET requests only.</summary>
     private void PopulateDamSireFromDetails()
@@ -1625,31 +1681,10 @@ public class RelationsModel(
 
         SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
         await LoadAsync();
-        var draft = await LoadOrInitializeRelationsDraftAsync();
+        await LoadOrInitializeRelationsDraftAsync();
         PopulateDamSireFromDetails();
-        var appliedDam = await ApplyPendingParentFromTempData(isDam: true);
-        var appliedSire = await ApplyPendingParentFromTempData(isDam: false);
-
-        var draftChanged = false;
-        if (appliedDam && draft.RemoveDamPending)
-        {
-            draft.RemoveDamPending = false;
-            draftChanged = true;
-        }
-
-        if (appliedSire && draft.RemoveSirePending)
-        {
-            draft.RemoveSirePending = false;
-            draftChanged = true;
-        }
-
-        if (draftChanged)
-        {
-            draft.HasRelationsChanges = true;
-            await sessionState.SetAsync(draft);
-            RemoveDamPending = draft.RemoveDamPending;
-            RemoveSirePending = draft.RemoveSirePending;
-        }
+        await ApplyPendingParentFromTempData(isDam: true);
+        await ApplyPendingParentFromTempData(isDam: false);
 
         EditCaseHerdbook = editCaseHerdbook;
 

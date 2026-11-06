@@ -25,7 +25,7 @@ public class ByDateModel(IAuditLogService auditLogService) : PageModel
     public string? LogDateError { get; private set; }
     public int TotalCount => Entries.Count();
     public int TotalPages => TotalCount == 0 ? 1 : (int)Math.Ceiling(TotalCount / (double)PageSize);
-    public IReadOnlyList<AuditLogEntry> PagedEntries => Entries.Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
+    public IReadOnlyList<AuditLogEntry> PagedEntries() => Entries.Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList();
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -52,19 +52,5 @@ public class ByDateModel(IAuditLogService auditLogService) : PageModel
     }
 
     private IEnumerable<AuditLogEntry> ApplySorting(IEnumerable<AuditLogEntry> entries)
-    {
-        Func<AuditLogEntry, object?> keySelector = SortColumn switch
-        {
-            "User" => e => e.UserName,
-            "Table" => e => e.TableName,
-            "Field" => e => e.FieldName,
-            "Key" => e => e.Key,
-            "Before" => e => e.BeforeValue,
-            "After" => e => e.AfterValue,
-            "Reason" => e => e.Reason,
-            _ => e => e.DateTime,
-        };
-
-        return SortDesc ? entries.OrderByDescending(keySelector) : entries.OrderBy(keySelector);
-    }
+        => AuditLogSorting.Apply(entries, SortColumn, SortDesc);
 }

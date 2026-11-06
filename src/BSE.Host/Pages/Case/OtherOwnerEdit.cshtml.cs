@@ -14,7 +14,7 @@ namespace BSE.Host.Pages.Case;
 public class OtherOwnerEditModel(
     IOtherOwnerRepository ownerRepository,
     ILookupDataService lookups,
-    IDbConnectionFactory connectionFactory) : PageModel
+    IDbConnectionFactory connectionFactory) : PageModel, IOtherOwnerFormPage
 {
     [BindProperty(SupportsGet = true)] public string Rbse { get; set; } = string.Empty;
     [BindProperty(SupportsGet = true)] public int Id { get; set; }
@@ -60,6 +60,9 @@ public class OtherOwnerEditModel(
             ModelState.AddModelError(nameof(OwnerCphh), "CPHH must be 11 digits.");
 
         var allOwners = await ownerRepository.GetByRbseAsync(caseRbse);
+        if (allOwners.All(o => o.Id != Id))
+            return NotFound();
+
         var typeDesc = OwnerTypes.FirstOrDefault(t => t.Code == OwnerType)?.Description ?? string.Empty;
         if (typeDesc.Contains("Previous", StringComparison.OrdinalIgnoreCase)
             && allOwners.Any(o => o.Type == OwnerType && o.Id != Id))

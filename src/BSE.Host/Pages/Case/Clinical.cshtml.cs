@@ -15,7 +15,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace BSE.Host.Pages.Case;
 
-[Authorize]
+[Authorize(Policy = "CaseEntryAccess")]
 public class ClinicalModel(
     IClinicalRepository clinicalRepository,
     ICaseRepository caseRepository,
@@ -78,6 +78,7 @@ public class ClinicalModel(
     }
 
     /// <summary>Commits clinical signs and all staged visit changes to the database in one go.</summary>
+    [Authorize(Policy = "DataEntryVla")]
     public async Task<IActionResult> OnPostSaveSignsAsync(string? clinicalRowStampBase64)
     {
         // Legacy parity: DEFRA Data Entry/Maintenance are always MakeControlsReadOnly on this tab
@@ -90,6 +91,8 @@ public class ClinicalModel(
         var signs = BindSignsFromForm();
 
         await LoadAsync();
+        if (!IsVlaAllowedAdditionalCaseEdit)
+            return Forbid();
         await LoadOrInitializeDraftStateAsync();
 
         // Cross-tab staging (restores legacy's "one session, one commit" model): stage this
@@ -136,6 +139,7 @@ public class ClinicalModel(
     /// draft (without committing) before navigating to another tab. Only applies once a
     /// Clinical row already exists — there is nothing to stage before the row is first created.
     /// </summary>
+    [Authorize] // every role may navigate away; the handler stages only for DataEntry
     public async Task<IActionResult> OnPostStageAndGotoAsync(string targetPage, string? clinicalRowStampBase64)
     {
         // Legacy parity: UpdateSessionWithCaseDetails() has no role check at all — every role,
@@ -148,6 +152,7 @@ public class ClinicalModel(
 
     /// <summary>Visits sort-header link: a plain same-page query-string link, which — unlike
     /// Save/tab-switch — never staged the in-progress Signs edit, silently discarding it.</summary>
+    [Authorize] // sorting is open to every role; the handler stages only for DataEntry
     public async Task<IActionResult> OnPostResortVisitsAsync(string? clinicalRowStampBase64)
     {
         if (User.IsInRole(DataEntryRole))
@@ -265,19 +270,17 @@ public class ClinicalModel(
     }
 
     /// <summary>Discards all staged visit changes without persisting them.</summary>
+    [Authorize]
     public async Task<IActionResult> OnPostCancelClinicalEditAsync()
     {
         await caseDraftDiscard.DiscardAllAsync(Rbse);
         return RedirectToPage("/Home");
     }
 
-    public async Task<IActionResult> OnGetCancelClinicalEditAsync()
-    {
-        await caseDraftDiscard.DiscardAllAsync(Rbse);
-        return RedirectToPage("/Home");
-    }
+    public Task<IActionResult> OnGetCancelClinicalEditAsync() => OnPostCancelClinicalEditAsync();
 
     /// <summary>Adds a clinical visit to the draft only. Not persisted until Save.</summary>
+    [Authorize(Policy = "DataEntryVla")]
     public async Task<IActionResult> OnPostAddVisitRowAsync(string? clinicalRowStampBase64)
     {
         if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
@@ -286,6 +289,8 @@ public class ClinicalModel(
         var postedDate = NewVisitDate;
 
         await LoadAsync();
+        if (!IsVlaAllowedAdditionalCaseEdit)
+            return Forbid();
         await RestoreAndRestageSignsEditAsync(clinicalRowStampBase64);
         var draft = await LoadOrInitializeDraftStateAsync();
 
@@ -316,12 +321,15 @@ public class ClinicalModel(
     }
 
     /// <summary>Opens the inline edit view for one staged clinical visit row (no changes saved yet).</summary>
+    [Authorize(Policy = "DataEntryVla")]
     public async Task<IActionResult> OnPostBeginEditVisitRowAsync(string clientKey, string? clinicalRowStampBase64)
     {
         if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         await LoadAsync();
+        if (!IsVlaAllowedAdditionalCaseEdit)
+            return Forbid();
         await RestoreAndRestageSignsEditAsync(clinicalRowStampBase64);
         var draft = await LoadOrInitializeDraftStateAsync();
 
@@ -337,6 +345,7 @@ public class ClinicalModel(
     }
 
     /// <summary>Updates a staged clinical visit row in the draft only. Not persisted until Save.</summary>
+    [Authorize(Policy = "DataEntryVla")]
     public async Task<IActionResult> OnPostUpdateVisitRowAsync(string? clinicalRowStampBase64)
     {
         if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
@@ -346,6 +355,8 @@ public class ClinicalModel(
         var postedDate = EditVisitDate;
 
         await LoadAsync();
+        if (!IsVlaAllowedAdditionalCaseEdit)
+            return Forbid();
         await RestoreAndRestageSignsEditAsync(clinicalRowStampBase64);
         var draft = await LoadOrInitializeDraftStateAsync();
 
@@ -378,12 +389,15 @@ public class ClinicalModel(
     }
 
     /// <summary>Removes a staged clinical visit row from the draft only. Not persisted until Save.</summary>
+    [Authorize(Policy = "DataEntryVla")]
     public async Task<IActionResult> OnPostDeleteVisitAsync(string clientKey, string? clinicalRowStampBase64)
     {
         if (!User.IsInRole(DataEntryRole) || !User.IsInRole(VlaAccessRole))
             return Forbid();
 
         await LoadAsync();
+        if (!IsVlaAllowedAdditionalCaseEdit)
+            return Forbid();
         await RestoreAndRestageSignsEditAsync(clinicalRowStampBase64);
         var draft = await LoadOrInitializeDraftStateAsync();
 

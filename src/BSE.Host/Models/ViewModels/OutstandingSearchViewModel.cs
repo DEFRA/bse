@@ -60,8 +60,8 @@ public class OutstandingSearchViewModel : SearchViewModelBase<OutstandingCaseRes
 
     public OutstandingSearchQuery ToQuery()
     {
-        SearchDateField.TryParse(EarliestFormADate, out var earliest, out _);
-        SearchDateField.TryParse(LatestFormADate, out var latest, out _);
+        _ = SearchDateField.TryParse(EarliestFormADate, out var earliest, out _);
+        _ = SearchDateField.TryParse(LatestFormADate, out var latest, out _);
         return new(
             EarliestFormADate: earliest,
             LatestFormADate: latest,

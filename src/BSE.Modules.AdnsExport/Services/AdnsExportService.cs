@@ -93,10 +93,18 @@ public sealed class AdnsExportService : IAdnsExportService
             {
                 foreach (var c in command.Cases)
                 {
+                    var update = new AdnsCaseUpdate(
+                        c.Rbse,
+                        sentDate,
+                        c.AdnsRegionId,
+                        (short)c.AdnsYear,
+                        c.AdnsNumber,
+                        c.RowStamp ?? Array.Empty<byte>());
+
                     var returnCode = await _repository.EditCaseAdnsAsync(
-                        c.Rbse, sentDate, c.AdnsRegionId,
-                        (short)c.AdnsYear, c.AdnsNumber, c.RowStamp!,
-                        connection, transaction);
+                        update,
+                        connection,
+                        transaction);
 
                     if (returnCode != 0)
                     {
@@ -167,13 +175,13 @@ public sealed class AdnsExportService : IAdnsExportService
     private static string BuildSubject(string emailReference)
         => $"t=DATA;r={emailReference}";
 
-    private static IReadOnlyList<AdnsRegionSummaryRecord> BuildSummary(IReadOnlyList<AdnsCaseRecord> cases)
+    private static List<AdnsRegionSummaryRecord> BuildSummary(IReadOnlyList<AdnsCaseRecord> cases)
         => cases
             .GroupBy(c => new { c.AdnsRegionId, c.AdnsRegionName })
             .Select(g => new AdnsRegionSummaryRecord(g.Key.AdnsRegionId, g.Key.AdnsRegionName ?? string.Empty, g.Count()))
             .ToList();
 
-    private static IReadOnlyList<AdnsCaseRecord> BuildCiCases(
+    private static List<AdnsCaseRecord> BuildCiCases(
         int adnsYear, int startAdnsNumber,
         int jerseyCases, int guernseyCases, int isleOfManCases,
         DateTime confirmationDate)

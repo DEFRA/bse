@@ -39,6 +39,9 @@ public class CaseTestEditModel(
 
     public async Task<IActionResult> OnPostAsync()
     {
+        if ((await testRepository.GetByRbseAsync(Rbse)).All(t => t.Id != Id))
+            return NotFound();
+
         await LoadLookupsAsync();
 
         if (string.IsNullOrWhiteSpace(TestType))

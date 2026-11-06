@@ -9,11 +9,11 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace BSE.Host.Pages.Case;
 
-[Authorize(Policy = "DataEntry")]
+[Authorize(Policy = "FarmDefraEdit")]
 public class FarmHerdSizeEditModel(
     ICaseService caseService,
     IFarmService farmService,
-    IHerdSizeRepository herdSizeRepo) : PageModel
+    IHerdSizeRepository herdSizeRepo) : PageModel, IHerdSizeFormPage
 {
     private const string CaseFarmPage = "/Case/Farm";
 
@@ -57,8 +57,11 @@ public class FarmHerdSizeEditModel(
     public async Task<IActionResult> OnPostAsync()
     {
         var @case = await caseService.GetCaseAsync(Rbse);
-        if (@case?.Cphh is null)
+        if (@case?.Cphh is not { } cphh)
             return RedirectToPage(CaseFarmPage, new { rbse = Rbse });
+
+        if ((await farmService.GetHerdSizesAsync(cphh)).All(h => h.ID != Id))
+            return NotFound();
 
         if (HerdSize.HerdYear < 1975 || HerdSize.HerdYear > DateTime.UtcNow.Year)
             ModelState.AddModelError("HerdSize.HerdYear", $"Year must be between 1975 and {DateTime.UtcNow.Year}.");

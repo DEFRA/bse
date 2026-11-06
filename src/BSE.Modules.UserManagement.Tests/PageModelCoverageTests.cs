@@ -238,6 +238,7 @@ public sealed class PageModelCoverageTests
         var httpContext = new DefaultHttpContext();
 
         caseService.GetCaseAsync("002600001").Returns(new CaseRecord { Cphh = "01001000101" });
+        farmService.GetHerdSizesAsync("01001000101").Returns(new[] { new HerdSizeRecord { ID = 9, CPHH = "01001000101" } });
 
         var model = new FarmHerdSizeEditModel(caseService, farmService, herdSizeRepo)
         {
@@ -357,6 +358,45 @@ public sealed class PageModelCoverageTests
         model.LinkedFarmAriaSort("status").Should().Be("none");
     }
 
+    [Fact]
+    public async Task FarmLookupModel_OnGetAsync_EmptyCphh_ReturnsThePage()
+    {
+        var farmService = Substitute.For<IFarmService>();
+        var model = new BSE.Host.Pages.Farm.LookupModel(farmService);
+
+        var result = await model.OnGetAsync();
+
+        result.Should().BeOfType<PageResult>();
+        model.IsNotFound.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task FarmLookupModel_OnGetAsync_MissingFarm_SetsNotFoundFlag()
+    {
+        var farmService = Substitute.For<IFarmService>();
+        farmService.GetByCphhAsync("01001000101").Returns((FarmRecord?)null);
+        var model = new BSE.Host.Pages.Farm.LookupModel(farmService) { Cphh = "01/001/0001/01" };
+
+        var result = await model.OnGetAsync();
+
+        result.Should().BeOfType<PageResult>();
+        model.IsNotFound.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task FarmLookupModel_OnGetAsync_FoundFarm_RedirectsToDetails()
+    {
+        var farmService = Substitute.For<IFarmService>();
+        farmService.GetByCphhAsync("01001000101").Returns(new FarmRecord { CPHH = "01001000101" });
+        var model = new BSE.Host.Pages.Farm.LookupModel(farmService) { Cphh = "01/001/0001/01" };
+
+        var result = await model.OnGetAsync();
+
+        var redirect = result.Should().BeOfType<RedirectToPageResult>().Subject;
+        redirect.PageName.Should().Be("/Farm/Details");
+        redirect.RouteValues.Should().ContainKey("cphh").WhoseValue.Should().Be("01001000101");
+    }
+
     private static VlaModel CreateVlaModel()
     {
         var caseService = Substitute.For<ICaseService>();
@@ -406,8 +446,6 @@ public sealed class PageModelCoverageTests
     {
         var caseService = Substitute.For<ICaseService>();
         var farmService = Substitute.For<IFarmService>();
-        var relationRepo = Substitute.For<IFarmRelationRepository>();
-        var herdSizeRepo = Substitute.For<IHerdSizeRepository>();
         var lookups = Substitute.For<ILookupDataService>();
         var batchRepository = Substitute.For<IBatchRepository>();
         var wizardState = Substitute.For<ICaseWizardStateService>();
@@ -419,8 +457,6 @@ public sealed class PageModelCoverageTests
         return new FarmModel(
             caseService,
             farmService,
-            relationRepo,
-            herdSizeRepo,
             lookups,
             batchRepository,
             wizardState,

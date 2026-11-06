@@ -9,9 +9,13 @@
         .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
     var batchSortColumn = Context.Request.Query["BSortColumn"].ToString();
     var batchSortDesc = bool.TryParse(Context.Request.Query["BSortDesc"], out var desc) && desc;
-    var sortedBatchNumbers = batchSortColumn == "Document"
-        ? (batchSortDesc ? Model.BatchNumbers.OrderByDescending(b => b.Document) : Model.BatchNumbers.OrderBy(b => b.Document))
-        : (batchSortDesc ? Model.BatchNumbers.OrderByDescending(b => b.BatchNumber) : Model.BatchNumbers.OrderBy(b => b.BatchNumber));
+    var sortedBatchNumbers = (batchSortColumn == "Document", batchSortDesc) switch
+    {
+        (true, true) => Model.BatchNumbers.OrderByDescending(b => b.Document),
+        (true, false) => Model.BatchNumbers.OrderBy(b => b.Document),
+        (false, true) => Model.BatchNumbers.OrderByDescending(b => b.BatchNumber),
+        _ => Model.BatchNumbers.OrderBy(b => b.BatchNumber),
+    };
 
     <div class="bse-batch-panel govuk-!-margin-bottom-4">
         <details class="govuk-details" data-module="govuk-details">

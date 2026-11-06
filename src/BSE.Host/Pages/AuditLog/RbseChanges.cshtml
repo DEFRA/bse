@@ -5,102 +5,22 @@
 }
 
 <div>
-    <h1 class="govuk-heading-l">RBSE Changes Audit Log Report</h1>
-    <nav class="govuk-breadcrumbs" aria-label="Breadcrumb">
-        <ol class="govuk-breadcrumbs__list">
-            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/Home">Home</a></li>
-            <li class="govuk-breadcrumbs__list-item"><a class="govuk-breadcrumbs__link" asp-page="/AuditLog/Menu">Audit log</a></li>
-            <li class="govuk-breadcrumbs__list-item" aria-current="page">RBSE changes</li>
-        </ol>
-    </nav>
+    @await Html.PartialAsync("_AuditReportHeading", new BSE.Host.Models.ViewModels.AuditReportHeading("RBSE Changes Audit Log Report", "RBSE changes"))
 
-    @if (Model.StartDateError is not null || Model.EndDateError is not null)
-    {
-        <div class="govuk-error-summary" data-module="govuk-error-summary">
-            <div role="alert">
-                <h2 class="govuk-error-summary__title">There is a problem</h2>
-                <div class="govuk-error-summary__body">
-                    <ul class="govuk-list govuk-error-summary__list">
-                        @if (Model.StartDateError is not null)
-                        {
-                            <li><a href="#audit-start-date">@Model.StartDateError</a></li>
-                        }
-                        @if (Model.EndDateError is not null)
-                        {
-                            <li><a href="#audit-end-date">@Model.EndDateError</a></li>
-                        }
-                    </ul>
-                </div>
-            </div>
-        </div>
-    }
-    <partial name="_AuditDateRangeForm" model="@(new BSE.Host.Models.ViewModels.AuditDateRangeViewModel(Model.StartDate, Model.EndDate, Model.StartDateError, Model.EndDateError))" />
+    @{ var dateRange = new BSE.Host.Models.ViewModels.AuditDateRangeViewModel(Model.StartDate, Model.EndDate, Model.StartDateError, Model.EndDateError); }
+    @await Html.PartialAsync("_AuditDateErrors", dateRange)
+    <partial name="_AuditDateRangeForm" model="dateRange" />
 
     @if (Model.Entries.Any())
     {
-        var sortBase = "?" + string.Join("&", HttpContext.Request.Query
-            .Where(k => !string.Equals(k.Key, "SortColumn", StringComparison.OrdinalIgnoreCase)
-                     && !string.Equals(k.Key, "SortDesc", StringComparison.OrdinalIgnoreCase)
-                     && !string.Equals(k.Key, "PageNumber", StringComparison.OrdinalIgnoreCase))
-            .SelectMany(k => k.Value, (k, v) => $"{Uri.EscapeDataString(k.Key)}={Uri.EscapeDataString(v ?? "")}"));
-        var sortCol  = Model.SortColumn;
-        var sortDesc = Model.SortDesc;
-        ViewData["PageNumber"] = Model.PageNumber;
-        <div class="bse-audit-table-wrap">
-            <table class="govuk-table bse-audit-table">
-                <caption class="govuk-visually-hidden">RBSE change audit log entries</caption>
-                <thead class="govuk-table__head">
-                    <tr class="govuk-table__row">
-                        @{ ViewData["Label"] = "Table";      ViewData["Column"] = "Table";   ViewData["SortColumn"] = sortCol; ViewData["SortDesc"] = sortDesc; ViewData["BaseUrl"] = sortBase; ViewData["Prefix"] = ""; }
-                        <partial name="_SortableHeader" />
-                        @{ ViewData["Label"] = "Field";      ViewData["Column"] = "Field"; }
-                        <partial name="_SortableHeader" />
-                        @{ ViewData["Label"] = "Date Time";  ViewData["Column"] = "DateTime"; }
-                        <partial name="_SortableHeader" />
-                        @{ ViewData["Label"] = "User";       ViewData["Column"] = "User"; }
-                        <partial name="_SortableHeader" />
-                        @{ ViewData["Label"] = "Before";     ViewData["Column"] = "Before"; }
-                        <partial name="_SortableHeader" />
-                        @{ ViewData["Label"] = "After";      ViewData["Column"] = "After"; }
-                        <partial name="_SortableHeader" />
-                        @{ ViewData["Label"] = "Reason";     ViewData["Column"] = "Reason"; }
-                        <partial name="_SortableHeader" />
-                        @{ ViewData["Label"] = "Key";        ViewData["Column"] = "Key"; }
-                        <partial name="_SortableHeader" />
-                        @{ ViewData["Label"] = "Recorded in batch?"; ViewData["LabelHtml"] = "Recorded<br />in batch?"; ViewData["Column"] = "HasBatches"; ViewData["HeaderClass"] = "bse-batch-header"; }
-                        <partial name="_SortableHeader" />
-                    </tr>
-                </thead>
-                <tbody class="govuk-table__body">
-                    @foreach (var e in Model.PagedEntries)
-                    {
-                        <tr class="govuk-table__row">
-                            <td class="govuk-table__cell">@e.TableName</td>
-                            <td class="govuk-table__cell">@e.FieldName</td>
-                            <td class="govuk-table__cell">@e.DateTime.ToString("dd/MM/yyyy HH:mm:ss")</td>
-                            <td class="govuk-table__cell">@e.UserName</td>
-                            <td class="govuk-table__cell">@e.BeforeValue</td>
-                            <td class="govuk-table__cell">@e.AfterValue</td>
-                            <td class="govuk-table__cell">@e.Reason</td>
-                            <td class="govuk-table__cell">@e.Key</td>
-                            <td class="govuk-table__cell bse-batch-flag-column">@e.HasBatches</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-        @await Html.PartialAsync("_Pagination", null, new ViewDataDictionary(ViewData) { ["CurrentPage"] = Model.PageNumber, ["TotalPages"] = Model.TotalPages })
-        @await Html.PartialAsync("_ExportLink")
+        @await Html.PartialAsync("_AuditResults", new BSE.Host.Models.ViewModels.AuditResultsViewModel(
+            Model.PagedEntries(), Model.SortColumn, Model.SortDesc, Model.PageNumber, Model.TotalPages,
+            "RBSE change audit log entries", null,
+            [BSE.Host.Models.ViewModels.AuditExtraColumn.Of<BSE.Modules.AuditLog.Models.AuditLogRbseChangeEntry>("Recorded in batch?", "HasBatches", e => e.HasBatches,
+                labelHtml: "Recorded<br />in batch?", headerClass: "bse-batch-header", cellClass: "bse-batch-flag-column")]))
     }
     else if (Model.HasSearched)
     {
-        <div class="govuk-notification-banner" role="region" aria-labelledby="rbse-changes-info-title" data-module="govuk-notification-banner">
-            <div class="govuk-notification-banner__header">
-                <h2 class="govuk-notification-banner__title" id="rbse-changes-info-title">Information</h2>
-            </div>
-            <div class="govuk-notification-banner__content">
-                <p class="govuk-notification-banner__heading">No RBSE changes found in this period.</p>
-            </div>
-        </div>
+        @await Html.PartialAsync("_AuditNoResults", new BSE.Host.Models.ViewModels.AuditNoResults("rbse-changes-info-title", "No RBSE changes found in this period."))
     }
 </div>

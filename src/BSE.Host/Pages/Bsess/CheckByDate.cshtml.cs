@@ -98,7 +98,7 @@ public class CheckByDateModel(IBsessCheckService bsessCheckService) : PageModel
     /// <summary>Legacy fixed-width columns pad eartags and test groups, which would otherwise dominate the sort.</summary>
     private static string SortKey(string? value) => value?.Trim() ?? string.Empty;
 
-    private IReadOnlyList<BsessDiscrepancyRecord> ApplySort(IReadOnlyList<BsessDiscrepancyRecord> source)
+    private List<BsessDiscrepancyRecord> ApplySort(IReadOnlyList<BsessDiscrepancyRecord> source)
     {
         List<BsessDiscrepancyRecord> ByText(Func<BsessDiscrepancyRecord, string?> selector) =>
             (SortDesc

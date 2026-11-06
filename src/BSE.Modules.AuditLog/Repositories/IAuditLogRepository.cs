@@ -14,7 +14,7 @@ public interface IAuditLogRepository
     Task<IEnumerable<AuditLogEntry>> GetByFarmAsync(string cphh);
     Task<IEnumerable<AuditLogEntry>> GetByUserAsync(DateTime startDate, DateTime endDate, int userId);
     Task<IEnumerable<AuditLogCaseMoveEntry>> GetCaseMovesAsync(DateTime startDate, DateTime endDate);
-    Task<IEnumerable<AuditLogCPHHChangeEntry>> GetCphhChangesAsync(DateTime startDate, DateTime endDate);
+    Task<IEnumerable<AuditLogCphhChangeEntry>> GetCphhChangesAsync(DateTime startDate, DateTime endDate);
     Task<IEnumerable<AuditLogNewFarmEntry>> GetNewFarmsAsync(DateTime startDate, DateTime endDate);
-    Task<IEnumerable<AuditLogRBSEChangeEntry>> GetRbseChangesAsync(DateTime startDate, DateTime endDate);
+    Task<IEnumerable<AuditLogRbseChangeEntry>> GetRbseChangesAsync(DateTime startDate, DateTime endDate);
 }

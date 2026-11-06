@@ -14,7 +14,7 @@ namespace BSE.Host.Pages.Case;
 public class OtherOwnerAddModel(
     IOtherOwnerRepository ownerRepository,
     ILookupDataService lookups,
-    IDbConnectionFactory connectionFactory) : PageModel
+    IDbConnectionFactory connectionFactory) : PageModel, IOtherOwnerFormPage
 {
     [BindProperty(SupportsGet = true)] public string Rbse { get; set; } = string.Empty;
 

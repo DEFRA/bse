@@ -17,7 +17,7 @@ namespace BSE.Modules.UserManagement.Identity;
 /// <remarks>
 /// Lookup strategy (email-only):
 /// <list type="number">
-///   <item>Read email from <c>emailaddress</c> claim (added by AcsCommandResultCreated from Entra SAML assertion),
+///   <item>Read email from <c>emailaddress</c> claim (added by OnTokenValidated from the Entra OIDC token),
 ///         falling back to <c>ClaimTypes.Email</c>, <c>preferred_username</c>, then <c>ClaimTypes.Upn</c>.</item>
 ///   <item>Call <see cref="IUserRepository.GetByEmailAsync"/>.</item>
 /// </list>

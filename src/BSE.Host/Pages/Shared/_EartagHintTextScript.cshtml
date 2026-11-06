@@ -1,0 +1,24 @@
+﻿function resolveEartagHintText(country, herdmark, animal) {
+    if (!country && !herdmark && !animal) {
+        return 'Enter the animal eartag in parts: country, herdmark and animal number.';
+    }
+
+    if (!country) {
+        return herdmark ? 'PRE-Barimo' : 'Free format';
+    }
+
+    if (country.length > 2) {
+        return /^\d/.test(country) ? 'ISO Numeric Country' : 'ISO Alpha Country';
+    }
+
+    if (country === 'UK') {
+        return 'Mainland GB Numeric';
+    }
+
+    var ecCodes = ['AT', 'BE', 'DE', 'DK', 'EL', 'ES', 'FI', 'FR', 'IE', 'IT', 'LU', 'NL', 'PT', 'SE'];
+    if (ecCodes.indexOf(country) >= 0) {
+        return 'EC non-UK';
+    }
+
+    return 'Unknown format';
+}

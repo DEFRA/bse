@@ -1,10 +1,9 @@
-﻿using BSE.Host.Cache;
+using BSE.Host;
 using BSE.Host.Authentication;
 using BSE.Host.HealthChecks;
 using BSE.Host.Middleware;
 using BSE.Infrastructure;
 using BSE.Infrastructure.Cache;
-using BSE.SharedKernel;
 using BSE.Modules.AuditLog;
 using BSE.Modules.Batch;
 using BSE.Modules.AdnsExport;
@@ -17,23 +16,9 @@ using BSE.Modules.FarmManagement;
 using BSE.Modules.ReferenceData;
 using BSE.Modules.Search;
 using BSE.Modules.UserManagement;
-using BSE.Modules.UserManagement.Identity;
-using BSE.Host.Services;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Antiforgery;
-using Microsoft.AspNetCore.Authorization.Policy;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.AspNetCore.HttpOverrides;
-using Sustainsys.Saml2;
-using Sustainsys.Saml2.AspNetCore2;
-using Sustainsys.Saml2.Metadata;
 using Serilog;
 using Serilog.Events;
-using Serilog.Formatting.Json;
-using Serilog.Sinks.ApplicationInsights.TelemetryConverters;
 
 // Bootstrap logger captures startup errors before full Serilog is configured.
 Log.Logger = new LoggerConfiguration()
@@ -43,45 +28,11 @@ Log.Logger = new LoggerConfiguration()
 
 try
 {
-    const string UnauthorizedPath = "/Unauthorized";
-    const string SessionErrorPath = "/SessionError";
-    const string HomePath = "/Home";
-    const string ErrorPath = "/Error";
-    const string SessionCookieName = "BSE.Session";
-    const string AuthCookieName = "BSE.Auth";
-
     var builder = WebApplication.CreateBuilder(args);
 
     builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
 
-    // ── Structured logging ──────────────────────────────────────────────────
-    builder.Host.UseSerilog((context, _, config) =>
-    {
-        var appInsightsConnectionString = context.Configuration["ApplicationInsights:ConnectionString"];
-
-        config
-            .MinimumLevel.Information()
-            .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
-            .ReadFrom.Configuration(context.Configuration)   // ← picks up Serilog:MinimumLevel:Override from appsettings
-            .Enrich.FromLogContext();
-
-        var isNonProduction = !context.HostingEnvironment.IsProduction();
-        var hasAppInsights = !string.IsNullOrWhiteSpace(appInsightsConnectionString);
-
-        if (isNonProduction && hasAppInsights)
-        {
-            config.WriteTo.ApplicationInsights(appInsightsConnectionString!, TelemetryConverter.Traces);
-            return;
-        }
-
-        // Structured JSON in non-Development environments; plain text locally.
-        if (context.HostingEnvironment.IsDevelopment())
-            config.WriteTo.Console();
-        else
-            config.WriteTo.Console(new JsonFormatter());
-
-        config.WriteTo.File("logs/bse-.txt", rollingInterval: RollingInterval.Day);
-    });
+    builder.Host.UseSerilog((context, _, config) => HostSetup.ConfigureSerilog(context, config));
 
     // ── Data access infrastructure ──────────────────────────────────────────
     builder.Services.AddSingleton<IDbConnectionFactory, SqlConnectionFactory>();
@@ -92,67 +43,21 @@ try
             sp.GetRequiredService<ILogger<LoggingDbRepositoryDecorator>>(),
             sp.GetRequiredService<IConfiguration>()));
 
-    // ── Distributed cache (Redis primary / MemoryCache fallback) ────────────
-    // When Redis__ConnectionString is set the app runs in distributed mode;
-    // otherwise it falls back to MemoryCache (single-replica, local dev safe).
-    var redisConnectionString = builder.Configuration["Redis:ConnectionString"];
-    if (!string.IsNullOrWhiteSpace(redisConnectionString))
-    {
-        var redisCache = new Microsoft.Extensions.Caching.StackExchangeRedis.RedisCache(
-            Microsoft.Extensions.Options.Options.Create(
-                new Microsoft.Extensions.Caching.StackExchangeRedis.RedisCacheOptions
-                {
-                    Configuration = redisConnectionString,
-                    InstanceName = "bse:"
-                }));
-        var memoryCache = new Microsoft.Extensions.Caching.Distributed.MemoryDistributedCache(
-            Microsoft.Extensions.Options.Options.Create(
-                new Microsoft.Extensions.Caching.Memory.MemoryDistributedCacheOptions()));
-        builder.Services.AddSingleton<ResilientDistributedCache>(sp =>
-            new ResilientDistributedCache(
-                redisCache, memoryCache,
-                sp.GetRequiredService<ILogger<ResilientDistributedCache>>()));
-        builder.Services.AddSingleton<Microsoft.Extensions.Caching.Distributed.IDistributedCache>(
-            sp => sp.GetRequiredService<ResilientDistributedCache>());
-    }
-    else
-    {
-        builder.Services.AddDistributedMemoryCache();
-    }
+    builder.Services.AddDistributedCaching(builder.Configuration);
 
     builder.Services.AddSingleton<ICacheKeyProvider, CacheKeyProvider>();
 
-    // ── Reference Data module ───────────────────────────────────────────────
+    // ── Feature modules ─────────────────────────────────────────────────────
     builder.Services.AddReferenceDataModule(builder.Configuration);
-
-    // ── User Management module ──────────────────────────────────────────────
     builder.Services.AddUserManagementModule(builder.Configuration);
-
-    // ── Audit Log module ────────────────────────────────────────────────────
     builder.Services.AddAuditLogModule();
-
-    // ── Farm Management module ──────────────────────────────────────────────
     builder.Services.AddFarmManagementModule();
-
-    // ── Search module ───────────────────────────────────────────────────────
     builder.Services.AddSearchModule(builder.Configuration);
-
-    // ── Batch module ────────────────────────────────────────────────────────
     builder.Services.AddBatchModule();
-
-    // ── Case Management module ───────────────────────────────────────────
     builder.Services.AddCaseManagementModule();
-
-    // ── Animal Relations module ──────────────────────────────────────────
     builder.Services.AddAnimalRelationsModule();
-
-    // ── CaseWork module ──────────────────────────────────────────────
     builder.Services.AddCaseWorkModule();
-
-    // ── ADNS Export module ─────────────────────────────────────────
     builder.Services.AddAdnsExportModule(builder.Configuration);
-
-    // ── OSS Export module ──────────────────────────────────────────
     builder.Services.AddOssExportModule();
 
     // ── BSESS Integration module ───────────────────────────────────
@@ -169,14 +74,6 @@ try
         .AddCheck<SqlReadinessCheck>("sql", tags: ["ready"])
         .AddCheck<RedisReadinessCheck>("redis", tags: ["ready"]);
 
-    // ── Authentication ──────────────────────────────────────────────────────────
-    // Two paths:
-    //   Authentication:BypassEnabled = true  — DevelopmentAuthHandler (local, no Entra)
-    //   Authentication:BypassEnabled = false — SAML 2.0 via Sustainsys + Entra ID
-    //
-    // SAML config is read from the Saml2 section in appsettings.json /
-    // appsettings.{Environment}.json or environment variables SAML2__*.
-    
     var bypassAuthentication = builder.Environment.IsDevelopment()
         && builder.Configuration.GetValue<bool>("Authentication:BypassEnabled");
 
@@ -184,253 +81,37 @@ try
     var idleTimeout = TimeSpan.FromMinutes(
         Math.Max(1, builder.Configuration.GetValue("Session:IdleTimeoutMinutes", 20)));
 
-    // Shared key ring so auth/session cookies survive restarts and scale-out (e.g. a /home share on App Service).
-    var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"];
-    if (!string.IsNullOrWhiteSpace(dataProtectionKeysPath))
-    {
-        builder.Services.AddDataProtection()
-            .SetApplicationName("BSE")
-            .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath));
-    }
-
-    builder.Services.Configure<Saml2Configuration>(
-        builder.Configuration.GetSection(Saml2Configuration.SectionName));
-
-    builder.Services.AddSingleton<ISignInSessionRegistry, SignInSessionRegistry>();
-
     var cookieSecurePolicy = builder.Environment.IsDevelopment()
         ? CookieSecurePolicy.SameAsRequest
         : CookieSecurePolicy.Always;
 
-    builder.Services.AddAntiforgery(options =>
-    {
-        options.HeaderName = "RequestVerificationToken";
-        options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = SameSiteMode.Lax;
-        options.Cookie.SecurePolicy = cookieSecurePolicy;
-    });
-
-    if (bypassAuthentication)
-    {
-        builder.Services
-            .AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = DevelopmentAuthHandler.SchemeName;
-                options.DefaultChallengeScheme    = DevelopmentAuthHandler.SchemeName;
-                options.DefaultScheme             = DevelopmentAuthHandler.SchemeName;
-            })
-            .AddScheme<DevelopmentAuthOptions, DevelopmentAuthHandler>(
-                DevelopmentAuthHandler.SchemeName,
-                opts =>
-                {
-                    opts.Email              = builder.Configuration["Authentication:DevUserEmail"] ?? "dev-user@defra.gov.uk";
-                    opts.UseWindowsIdentity = builder.Configuration.GetValue<bool>("Authentication:UseWindowsIdentity", defaultValue: true);
-                });
-    }
-    else
-    {
-        // ── SAML 2.0 / Entra ID ────────────────────────────────────────────
-        var saml2Config = builder.Configuration
-            .GetSection(Saml2Configuration.SectionName)
-            .Get<Saml2Configuration>() ?? new Saml2Configuration();
-
-        builder.Services
-            .AddAuthentication(options =>
-            {
-                options.DefaultScheme          = CookieAuthenticationDefaults.AuthenticationScheme;
-                // Cookie challenge runs OnRedirectToLogin (timeout page, else Entra); a Saml2 default would skip it.
-                options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-            })
-            .AddCookie(options =>
-            {
-                AuthCookieConfiguration.Apply(options, AuthCookieName, idleTimeout, cookieSecurePolicy);
-
-                options.Events.OnRedirectToLogin = async ctx =>
-
-                {
-                    var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>()
-                        .CreateLogger("AuthSecurity");
-                    logger.LogWarning(
-                        "Authentication challenge redirect for {Path}. ReturnUrl={ReturnUrl}",
-                        ctx.Request.Path.Value,
-                        ctx.Request.Query["ReturnUrl"].ToString());
-
-                    // A stale auth cookie means the sign-in timed out: tell the user instead of jumping straight to Entra.
-                    if (ctx.Request.Cookies.ContainsKey(AuthCookieName)
-                        && ctx.Request.Headers.Accept.ToString().Contains("text/html", StringComparison.OrdinalIgnoreCase))
-                    {
-                        ctx.Response.Redirect(SessionErrorPath);
-                        return;
-                    }
-
-                    // Return to the page that triggered the challenge after re-authentication (GET only).
-                    var returnUri = HttpMethods.IsGet(ctx.Request.Method)
-                        ? $"{ctx.Request.PathBase}{ctx.Request.Path}{ctx.Request.QueryString}"
-                        : HomePath;
-
-                    await ctx.HttpContext.ChallengeAsync(
-                        Saml2Defaults.Scheme,
-                        new AuthenticationProperties
-                        {
-                            RedirectUri = returnUri
-                        });
-                };
-                // Redirect authenticated users with insufficient permissions to Unauthorized, not a 403.
-                options.Events.OnRedirectToAccessDenied = ctx =>
-                {
-                    var logger = ctx.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>()
-                        .CreateLogger("AuthSecurity");
-                    logger.LogWarning(
-                        "Access denied redirect for {Path} (User={User})",
-                        ctx.Request.Path.Value,
-                        ctx.HttpContext.User.Identity?.Name ?? "unknown");
-
-                    ctx.Response.Redirect(UnauthorizedPath);
-                    return Task.CompletedTask;
-                };
-            })
-            .AddSaml2(options =>
-            {
-                options.SPOptions.EntityId = new EntityId(saml2Config.SPEntityId);
-
-                // Pin the public origin so the correct ACS Reply URL is sent to Entra ID
-                // regardless of which port/protocol the request arrives on locally.
-                if (!string.IsNullOrWhiteSpace(saml2Config.PublicOrigin))
-                    options.SPOptions.PublicOrigin = new Uri(saml2Config.PublicOrigin);
-
-                // SP signing certificate — placeholder; wire Key Vault reference before production deploy.
-                // Leaving ServiceCertificates empty is acceptable for local SAML testing only.
-                // Production tracking item: once saml2Config.SPCertificateThumbprint is provisioned, resolve the
-                // certificate from the certificate store/Key Vault and add it to options.SPOptions.ServiceCertificates.
-
-                var idp = new IdentityProvider(
-                    new EntityId(saml2Config.IdPEntityId),
-                    options.SPOptions)
-                {
-                    MetadataLocation = saml2Config.IdPMetadataUrl,
-                    LoadMetadata     = true,
-                };
-
-                options.IdentityProviders.Add(idp);
-
-                // Without ForceAuthn, Entra's SSO session silently re-signs the user in after the idle timeout.
-                if (saml2Config.ForceAuthn)
-                {
-                    options.Notifications.AuthenticationRequestCreated = (request, _, _) =>
-                    {
-                        request.ForceAuthentication = true;
-                    };
-                }
-
-                // Extract the user's email from the Entra ID SAML assertion and add it
-                // as the canonical 'emailaddress' claim so GroupClaimsTransformation
-                // can look up the user in the database.
-                //
-                // Also rewrite the post-ACS Location redirect to use PublicOrigin.
-                // Sustainsys builds the redirect URL from Request.Host, which behind
-                // Azure Front Door can resolve to devbsewebaw1401.azurewebsites.net
-                // before UseForwardedHeaders() corrects Request.Host. This guarantees
-                // the 303 Location header always uses dev-bse.azure.defra.cloud.
-                // Assertion payloads are never logged (GDPR / Defra SDS Logging Standards).
-                options.Notifications.AcsCommandResultCreated = (result, _) =>
-                {
-                    // Fix post-ACS redirect hostname ----------------------------
-                    if (!string.IsNullOrWhiteSpace(saml2Config.PublicOrigin)
-                        && result.Location is { IsAbsoluteUri: true } location)
-                    {
-                        var origin = new Uri(saml2Config.PublicOrigin);
-                        if (!string.Equals(location.Host, origin.Host, StringComparison.OrdinalIgnoreCase))
-                        {
-                            result.Location = new UriBuilder(location)
-                            {
-                                Scheme = origin.Scheme,
-                                Host   = origin.Host,
-                                Port   = origin.IsDefaultPort ? -1 : origin.Port
-                            }.Uri;
-                        }
-                    }
-
-                    // Extract email claim ---------------------------------------
-                    if (result.Principal?.Identity is not System.Security.Claims.ClaimsIdentity identity)
-                        return;
-
-                    var email =
-                        identity.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
-                        ?? identity.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress")?.Value
-                        ?? identity.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-                    if (!string.IsNullOrWhiteSpace(email)
-                        && !identity.HasClaim(c => c.Type == ClaimsUserContext.EmailClaimType))
-                    {
-                        identity.AddClaim(new System.Security.Claims.Claim(ClaimsUserContext.EmailClaimType, email));
-                    }
-                };
-            });
-    }
-
-    // ── Forwarded headers (service registration) ────────────────────────────────
-    // Registered here (before Build) so the options are available to all middleware.
-    // dev-bse.azure.defra.cloud terminates TLS and forwards to the App Service's
-    // default hostname. Without this, Request.Scheme/Request.Host reflect the
-    // raw azurewebsites.net origin, causing absolute redirects to leak that hostname.
-    // Azure's edge proxy IPs are not fixed, so KnownIPNetworks/KnownProxies are cleared
-    // to trust forwarded headers regardless of hop address — safe because the
-    // azurewebsites.net endpoint is access-restricted to Front Door / App Gateway only.
-    builder.Services.Configure<ForwardedHeadersOptions>(options =>
-    {
-        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor
-                                 | ForwardedHeaders.XForwardedProto
-                                 | ForwardedHeaders.XForwardedHost;
-        options.KnownIPNetworks.Clear();
-        options.KnownProxies.Clear();
-    });
-
-    // ── Cookie redirect URIs — force relative ─────────────────────────────────────
-    // The default cookie challenge/forbid handlers build an ABSOLUTE redirect URI from
-    // Request.Scheme/Request.Host. Behind a reverse proxy, that can leak the App
-    // Service origin hostname instead of the public custom domain. Forcing a relative
-    // redirect removes the dependency on Request.Host entirely — the browser resolves
-    // it against whatever host is in the address bar. Mirrors Histo.
-    builder.Services.PostConfigure<CookieAuthenticationOptions>(
-        CookieAuthenticationDefaults.AuthenticationScheme, options =>
-    {
-        var originalLogin = options.Events.OnRedirectToLogin;
-        options.Events.OnRedirectToLogin = context =>
-        {
-            if (Uri.TryCreate(context.RedirectUri, UriKind.Absolute, out var abs))
-                context.RedirectUri = abs.PathAndQuery;
-            return originalLogin(context);
-        };
-
-        var originalDenied = options.Events.OnRedirectToAccessDenied;
-        options.Events.OnRedirectToAccessDenied = context =>
-        {
-            if (Uri.TryCreate(context.RedirectUri, UriKind.Absolute, out var abs))
-                context.RedirectUri = abs.PathAndQuery;
-            return originalDenied(context);
-        };
-    });
+    builder.AddBseAuthentication(bypassAuthentication, idleTimeout, cookieSecurePolicy);
+    builder.Services.AddProxyAwareness();
 
     // ── Razor Pages
     builder.Services.AddRazorPages(options =>
     {
         options.Conventions.AuthorizeFolder("/");
-        options.Conventions.AllowAnonymousToPage(ErrorPath);
-        options.Conventions.AllowAnonymousToPage(SessionErrorPath);
-        options.Conventions.AllowAnonymousToPage(UnauthorizedPath);
+        options.Conventions.ConfigureFilter(_ => new Microsoft.AspNetCore.Mvc.TypeFilterAttribute(typeof(HandlerAuthorizationPageFilter)));
+        options.Conventions.AllowAnonymousToPage(HostSetup.ErrorPath);
+        options.Conventions.AllowAnonymousToPage(HostSetup.SessionErrorPath);
+        options.Conventions.AllowAnonymousToPage(HostSetup.UnauthorizedPath);
         options.Conventions.AllowAnonymousToPage("/AccessibilityStatement");
     })
      .AddMvcOptions(o =>
+     {
         // ASP.NET Core 6+ treats non-nullable string properties as implicitly [Required]
         // when nullable context is enabled. The legacy .NET Framework app had no such
         // behaviour — all search filter fields are optional. Suppress to match legacy.
-        o.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true) ;
+        o.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
+        o.ModelBinderProviders.Insert(0, new BSE.Host.ModelBinding.LenientBooleanModelBinderProvider());
+     });
 
     // ── Session support (for grid state persistence in OSS Export and other pages) ──
     builder.Services.AddSession(options =>
     {
         options.IdleTimeout = idleTimeout;
-        options.Cookie.Name = SessionCookieName;
+        options.Cookie.Name = HostSetup.SessionCookieName;
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax;
         options.Cookie.SecurePolicy = cookieSecurePolicy;
@@ -443,31 +124,10 @@ try
     builder.Services.AddScoped<BSE.Host.Services.ICaseWizardStateService, BSE.Host.Services.CaseWizardStateService>();
     builder.Services.AddScoped<BSE.Host.Services.ICaseEditSessionStateService, BSE.Host.Services.CaseEditSessionStateService>();
     builder.Services.AddScoped<BSE.Host.Services.ICaseDraftDiscardService, BSE.Host.Services.CaseDraftDiscardService>();
-    builder.Services.AddScoped<BSE.Host.Services.ICaseEditOrchestrationService, BSE.Host.Services.CaseEditOrchestrationService>();
+    builder.Services.AddScoped<BSE.Host.Services.CaseEditRepositories>();
+builder.Services.AddScoped<BSE.Host.Services.ICaseEditOrchestrationService, BSE.Host.Services.CaseEditOrchestrationService>();
 
-    // -- Authorisation policies
-    // Each policy requires exactly its own name as a role claim.
-    // GroupClaimsTransformation currently derives policy claims from a hardcoded switch on luUserGroup.Name
-    // Source of truth: docs/Legacy-Page-Level-Access-Control.md (Section 5 access matrix)
-    // Redirect authenticated-but-forbidden users to Home instead of returning 403.
-    // Applies to both the dev-bypass path and the SAML path.
-    builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, HomeRedirectAuthorizationHandler>();
-
-    var authorizationBuilder = builder.Services.AddAuthorizationBuilder();
-
-    authorizationBuilder.AddPolicy("Authenticated", p => p.RequireAuthenticatedUser());
-    authorizationBuilder.AddPolicy("ReadOnly", p => p.RequireRole("ReadOnly"));
-    authorizationBuilder.AddPolicy("DataEntry", p => p.RequireRole("DataEntry"));
-    authorizationBuilder.AddPolicy("DEFRAMaintenance", p => p.RequireRole("DEFRAMaintenance"));
-    // Legacy MoveCase.aspx/MoveCaseNewFarm.aspx EnableControls(): DEFRA Maintenance OR VLA Maintenance
-    // (docs/Legacy-Page-Level-Access-Control.md section 5.9 "Case Maintenance Operations").
-    authorizationBuilder.AddPolicy("DEFRAOrVLAMaintenance", p => p.RequireRole("DEFRAMaintenance", "VLAMaintenance"));
-    authorizationBuilder.AddPolicy("DEFRAAccess", p => p.RequireRole("DEFRAAccess"));
-    authorizationBuilder.AddPolicy("VLAAccess", p => p.RequireRole("VLAAccess"));
-    authorizationBuilder.AddPolicy("VLAMaintenance", p => p.RequireRole("VLAMaintenance"));
-    authorizationBuilder.AddPolicy("PickListAccess", p => p.RequireRole("PickListAccess"));
-    authorizationBuilder.AddPolicy("FarmCreation", p => p.RequireRole("FarmCreation"));
-    authorizationBuilder.AddPolicy("AuditAccess", p => p.RequireRole("DEFRAAccess", "VLAAccess"));
+    builder.Services.AddBseAuthorization();
 
     var app = builder.Build();
 
@@ -476,93 +136,15 @@ try
     app.UseForwardedHeaders(); // options registered via builder.Services.Configure<ForwardedHeadersOptions> above
 
     app.UseMiddleware<UnhandledExceptionLoggingMiddleware>();
-    app.UseExceptionHandler(ErrorPath);
+    app.UseExceptionHandler(HostSetup.ErrorPath);
 
-    var slowRequestThresholdMs = builder.Configuration.GetValue<int?>("Serilog:SlowRequestThresholdMs") ?? 1000;
-    app.UseSerilogRequestLogging(options =>
-    {
-        options.EnrichDiagnosticContext = (diag, http) =>
-        {
-            diag.Set("RequestHost", http.Request.Host.Value);
-            diag.Set("RequestScheme", http.Request.Scheme);
-            diag.Set("UserAgent", http.Request.Headers.UserAgent.ToString());
-            diag.Set("User", http.User.Identity?.Name ?? "anonymous");
-        };
-
-        options.GetLevel = (http, elapsed, ex) =>
-        {
-            if (ex is not null || http.Response.StatusCode >= 500)
-                return LogEventLevel.Error;
-
-            if (elapsed >= slowRequestThresholdMs)
-                return LogEventLevel.Warning;
-
-            return LogEventLevel.Information;
-        };
-    });
+    app.UseBseRequestLogging(builder.Configuration.GetValue<int?>("Serilog:SlowRequestThresholdMs") ?? 1000);
 
     app.UseAuthentication();
     app.UseSession(); // Session middleware must come after Authentication
 
-    app.Use(async (context, next) =>
-    {
-        var path = context.Request.Path;
-        var isExcludedPath =
-            path.StartsWithSegments(UnauthorizedPath, StringComparison.OrdinalIgnoreCase)
-            || path.StartsWithSegments(ErrorPath, StringComparison.OrdinalIgnoreCase)
-            || path.StartsWithSegments(SessionErrorPath, StringComparison.OrdinalIgnoreCase)
-            || path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase)
-            || path.StartsWithSegments("/Saml2", StringComparison.OrdinalIgnoreCase)
-            || path.StartsWithSegments("/signin", StringComparison.OrdinalIgnoreCase)
-            || path.StartsWithSegments("/signout", StringComparison.OrdinalIgnoreCase);
-
-        var isStaticAssetRequest = System.IO.Path.HasExtension(path.Value);
-
-        if (!isExcludedPath
-            && !isStaticAssetRequest
-            && context.User.Identity?.IsAuthenticated == true
-            && !context.User.HasClaim(c => c.Type == ClaimsUserContext.BseGroupIdClaimType))
-        {
-            context.Response.Redirect(UnauthorizedPath);
-            return;
-        }
-
-        await next();
-    });
-
-    // The ASP.NET session cookie outlives its server-side state, so a cookie with no marker means the
-    // session idled out. The case/wizard pages only reach /SessionError on a blank RBSE, never on timeout.
-    app.Use(async (context, next) =>
-    {
-        var path = context.Request.Path;
-        var isExcludedPath =
-            path.StartsWithSegments(UnauthorizedPath, StringComparison.OrdinalIgnoreCase)
-            || path.StartsWithSegments(ErrorPath, StringComparison.OrdinalIgnoreCase)
-            || path.StartsWithSegments(SessionErrorPath, StringComparison.OrdinalIgnoreCase)
-            || path.StartsWithSegments("/health", StringComparison.OrdinalIgnoreCase)
-            || path.StartsWithSegments("/Saml2", StringComparison.OrdinalIgnoreCase)
-            || path.StartsWithSegments("/signin", StringComparison.OrdinalIgnoreCase)
-            || path.StartsWithSegments("/signout", StringComparison.OrdinalIgnoreCase)
-            || System.IO.Path.HasExtension(path.Value);
-
-        var wantsHtml = context.Request.Headers.Accept.ToString().Contains("text/html", StringComparison.OrdinalIgnoreCase);
-
-        if (!isExcludedPath && wantsHtml && context.User.Identity?.IsAuthenticated == true)
-        {
-            const string marker = "bse.session.started";
-            if (context.Session.GetString(marker) is null)
-            {
-                context.Session.SetString(marker, "1");
-                if (context.Request.Cookies.ContainsKey(SessionCookieName))
-                {
-                    context.Response.Redirect(SessionErrorPath);
-                    return;
-                }
-            }
-        }
-
-        await next();
-    });
+    app.UseGroupClaimGuard();
+    app.UseSessionTimeoutGuard();
 
     app.UseAuthorization();
 
@@ -582,51 +164,7 @@ try
     app.UseStaticFiles();
     app.UseMiddleware<UserActivityLoggingMiddleware>();
 
-    app.MapGet("/case/{rbse}/unsaved-status", async (
-        string rbse,
-        ICaseEditSessionStateService sessionState) =>
-    {
-        var normalizedRbse = RbseHelper.ParseToRaw(rbse);
-
-        var session = await sessionState.GetAsync(normalizedRbse);
-        var hasUnsavedChanges = session is not null
-            && (session.HasPendingChanges || session.HasCaseEditChanges || session.HasClinicalVisitsChanges
-                || session.HasFarmCollectionsChanges || session.HasFeedsChanges || session.HasRelationsChanges);
-
-        return Results.Json(new { hasUnsavedChanges });
-    }).RequireAuthorization();
-
-    app.MapPost("/case/{rbse}/discard-unsaved", async (
-        HttpContext httpContext,
-        IAntiforgery antiforgery,
-        string rbse,
-        ICaseDraftDiscardService caseDraftDiscard) =>
-    {
-        if (!await antiforgery.IsRequestValidAsync(httpContext))
-            return Results.BadRequest();
-
-        var normalizedRbse = RbseHelper.ParseToRaw(rbse);
-
-        await caseDraftDiscard.DiscardAllAsync(normalizedRbse);
-
-        return Results.Ok(new { cleared = true });
-    }).RequireAuthorization();
-
-    app.MapGet("/", () => Results.Redirect(HomePath));
-
-    // Target of "Sign in again" on the session-timeout page: drops stale cookies, then starts Entra sign-in.
-    app.MapGet("/signin", (HttpContext ctx) =>
-    {
-        ctx.Response.Cookies.Delete(AuthCookieName);
-        ctx.Response.Cookies.Delete(SessionCookieName);
-
-        if (bypassAuthentication)
-            return Results.Redirect(HomePath);
-
-        return Results.Challenge(
-            new AuthenticationProperties { RedirectUri = HomePath },
-            [Saml2Defaults.Scheme]);
-    }).AllowAnonymous();
+    app.MapBseEndpoints(bypassAuthentication);
 
     app.MapRazorPages();
 

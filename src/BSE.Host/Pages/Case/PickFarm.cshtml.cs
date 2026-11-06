@@ -60,6 +60,7 @@ public class PickFarmModel(IFarmService farmService) : PageModel
         return Page();
     }
 
+    [Authorize] // access rule is HasLegacyPickFarmAccess, which redirects Home rather than forbidding
     public async Task<IActionResult> OnPostUseSelectedAsync(string? selectedFarmCphh)
     {
         if (!HasLegacyPickFarmAccess())
@@ -70,35 +71,29 @@ public class PickFarmModel(IFarmService farmService) : PageModel
             return RedirectToPage(HomePage);
 
         if (string.IsNullOrWhiteSpace(selectedFarmCphh))
-        {
-            var cphPrefix = normalized.Length <= 9 ? normalized : normalized[..9];
-            var farms = (await farmService.GetByCphAsync(cphPrefix)).ToList();
-            var sorted = Sort(farms);
-            TotalFarmCount = sorted.Count;
-            TotalPages = Math.Max(1, (int)Math.Ceiling(TotalFarmCount / (double)PageSize));
-            PageNumber = Math.Clamp(PageNumber, 1, TotalPages);
-            Farms = sorted.Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList().AsReadOnly();
-            FormattedRequestedCphh = BseFormat.FormatCphh(normalized) ?? normalized;
-            return Page();
-        }
+            return await ShowFarmsAsync(normalized);
 
         var selected = CphhNormalizer.Normalize(selectedFarmCphh);
         if (string.IsNullOrWhiteSpace(selected))
-        {
-            var cphPrefix = normalized.Length <= 9 ? normalized : normalized[..9];
-            var farms = (await farmService.GetByCphAsync(cphPrefix)).ToList();
-            var sorted = Sort(farms);
-            TotalFarmCount = sorted.Count;
-            TotalPages = Math.Max(1, (int)Math.Ceiling(TotalFarmCount / (double)PageSize));
-            PageNumber = Math.Clamp(PageNumber, 1, TotalPages);
-            Farms = sorted.Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList().AsReadOnly();
-            FormattedRequestedCphh = BseFormat.FormatCphh(normalized) ?? normalized;
-            return Page();
-        }
+            return await ShowFarmsAsync(normalized);
 
         return RedirectToPage("/Case/Farm", new { rbse = Rbse, selectedCphh = selected });
     }
 
+    private async Task<IActionResult> ShowFarmsAsync(string normalized)
+    {
+        var cphPrefix = normalized.Length <= 9 ? normalized : normalized[..9];
+        var farms = (await farmService.GetByCphAsync(cphPrefix)).ToList();
+        var sorted = Sort(farms);
+        TotalFarmCount = sorted.Count;
+        TotalPages = Math.Max(1, (int)Math.Ceiling(TotalFarmCount / (double)PageSize));
+        PageNumber = Math.Clamp(PageNumber, 1, TotalPages);
+        Farms = sorted.Skip((PageNumber - 1) * PageSize).Take(PageSize).ToList().AsReadOnly();
+        FormattedRequestedCphh = BseFormat.FormatCphh(normalized) ?? normalized;
+        return Page();
+    }
+
+    [Authorize]
     public IActionResult OnPostNewAsync()
     {
         if (!HasLegacyPickFarmAccess())
@@ -111,6 +106,7 @@ public class PickFarmModel(IFarmService farmService) : PageModel
         return RedirectToPage("/Farm/New", new { returnRbse = Rbse, returnCphh = normalized, returnToCaseFarm = true });
     }
 
+    [Authorize]
     public IActionResult OnPostCancelAsync()
     {
         if (!HasLegacyPickFarmAccess())
@@ -129,7 +125,7 @@ public class PickFarmModel(IFarmService farmService) : PageModel
         return !isDefraViewer && !isVlaDataEntry;
     }
 
-    private IReadOnlyList<FarmSummaryRecord> Sort(IReadOnlyList<FarmSummaryRecord> farms)
+    private List<FarmSummaryRecord> Sort(IReadOnlyList<FarmSummaryRecord> farms)
     {
         IEnumerable<FarmSummaryRecord> q = farms;
         q = SortColumn switch

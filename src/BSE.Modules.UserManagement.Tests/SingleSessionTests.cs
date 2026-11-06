@@ -72,6 +72,23 @@ public class SingleSessionTests
     }
 
     [Fact]
+    public async Task OnSigningIn_ExpiresAspNetSessionCookie_OnlyOnFirstSignIn()
+    {
+        var registry = NewRegistry(out _);
+        var context = NewSigningInContext(registry, Principal(email: "a@defra.gov.uk"));
+
+        await SingleSessionCookieEvents.OnSigningIn(context);
+
+        var setCookie = context.HttpContext.Response.Headers.SetCookie.ToString();
+        setCookie.Should().Contain("BSE.Session=").And.Contain("expires=Thu, 01 Jan 1970");
+
+        // A sliding-expiration renewal must not drop the live session.
+        context.HttpContext.Response.Headers.Remove("Set-Cookie");
+        await SingleSessionCookieEvents.OnSigningIn(context);
+        context.HttpContext.Response.Headers.SetCookie.ToString().Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task OnValidatePrincipal_AcceptsLatestSession()
     {
         var registry = NewRegistry(out _);

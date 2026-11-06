@@ -71,7 +71,7 @@ public class MoveCaseNewFarmModel(ICaseService caseService, IFarmService farmSer
         // the save with "You have not entered an ADNS Region." Reproduce that same rejection here
         // (never ported to this page) instead of silently moving the case with a now-stale ADNS Region.
         if (Farm.AuthorityID is > 0 && Farm.ADNSRegionID is > 0
-            && ViewData["AdnsOptions"] is IEnumerable<LuADNSRegion> adnsOptions
+            && ViewData["AdnsOptions"] is IEnumerable<LuAdnsRegion> adnsOptions
             && !adnsOptions.Any(x => x.Id == Farm.ADNSRegionID.Value))
         {
             ModelState.AddModelError("Farm.ADNSRegionID", "Specify an ADNS region for the farm.");
@@ -111,70 +111,20 @@ public class MoveCaseNewFarmModel(ICaseService caseService, IFarmService farmSer
         return RedirectToPage("/Farm/Details", new { cphh = Farm.CPHH });
     }
 
-    private async Task LoadLookupsAsync()
-    {
-        var countyTask = lookups.GetLookupAsync(LookupTableId.BSECounty);
-        var ahoTask = lookups.GetLookupAsync(LookupTableId.AHO);
-        var herdTypeTask = lookups.GetHerdTypesAsync();
-        var pedigreeTask = lookups.GetLookupAsync(LookupTableId.PedigreeType);
-        var authCountyTask = lookups.GetLookupAsync(LookupTableId.AuthorityCounty);
+    private Task LoadLookupsAsync() =>
+        FarmFormLookups.LoadOptionsAsync(ViewData, lookups, Farm.AuthorityCountyID, Farm.AuthorityID);
 
-        await Task.WhenAll(countyTask, ahoTask, herdTypeTask, pedigreeTask, authCountyTask);
+    public Task<IActionResult> OnGetAuthoritiesAsync(int? authorityCountyId) =>
+        FarmFormLookups.AuthoritiesAsync(lookups, authorityCountyId);
 
-        ViewData["CountyOptions"] = await countyTask;
-        ViewData["AhoOptions"] = await ahoTask;
-        ViewData["HerdTypeOptions"] = await herdTypeTask;
-        ViewData["PedigreeOptions"] = await pedigreeTask;
-        ViewData["AuthorityCountyOptions"] = await authCountyTask;
+    public Task<IActionResult> OnGetAdnsRegionsAsync(int? authorityId) =>
+        FarmFormLookups.AdnsRegionsAsync(lookups, authorityId);
 
-        ViewData["AuthorityOptions"] = Farm.AuthorityCountyID is > 0
-            ? await lookups.GetAuthoritiesByCountyAsync(Farm.AuthorityCountyID.Value)
-            : (IEnumerable<LuAuthority>)[];
+    public Task<IActionResult> OnGetEstimateMapReferenceAsync(string? cphh) =>
+        FarmFormLookups.EstimateMapReferenceAsync(geoLookup, CphhNormalizer.Normalize(cphh));
 
-        ViewData["AdnsOptions"] = Farm.AuthorityID is > 0
-            ? await lookups.GetADNSRegionsByAuthorityAsync(Farm.AuthorityID.Value)
-            : (IEnumerable<LuADNSRegion>)[];
-    }
-
-    public async Task<IActionResult> OnGetAuthoritiesAsync(int? authorityCountyId)
-    {
-        if (authorityCountyId is null or 0) return new JsonResult(Array.Empty<object>());
-        var items = await lookups.GetAuthoritiesByCountyAsync(authorityCountyId.Value);
-        return new JsonResult(items.Select(a => new { id = a.Id, name = a.Name }));
-    }
-
-    public async Task<IActionResult> OnGetAdnsRegionsAsync(int? authorityId)
-    {
-        if (authorityId is null or 0) return new JsonResult(Array.Empty<object>());
-        var items = await lookups.GetADNSRegionsByAuthorityAsync(authorityId.Value);
-        return new JsonResult(items.Select(r => new { id = r.Id, name = r.Name }));
-    }
-
-    public async Task<IActionResult> OnGetEstimateMapReferenceAsync(string? cphh)
-    {
-        cphh = CphhNormalizer.Normalize(cphh);
-        if (string.IsNullOrEmpty(cphh) || cphh.Length < 5)
-            return new JsonResult(new { error = "CPHH must be at least 5 characters to estimate a map reference." });
-
-        var estimate = await geoLookup.EstimateMapReferenceAsync(cphh);
-        if (estimate.Error is not null)
-            return new JsonResult(new { error = estimate.Error });
-
-        return new JsonResult(new { mapRef1 = estimate.MapRef1, mapRef2 = estimate.MapRef2, mapRef3 = estimate.MapRef3 });
-    }
-
-    public async Task<IActionResult> OnGetValidateMapReferenceAsync(string? cphh, string? mapRef)
-    {
-        cphh = CphhNormalizer.Normalize(cphh);
-        mapRef = (mapRef ?? "").Trim().ToUpperInvariant();
-        if (cphh.Length < 5 || mapRef.Length < 8)
-            return new JsonResult(new { valid = true });
-
-        var valid = await geoLookup.IsMapReferenceWithinParishAsync(cphh, mapRef);
-        return valid
-            ? new JsonResult(new { valid = true })
-            : new JsonResult(new { valid = false, message = "Map reference does not lie within the parish boundaries for this CPHH." });
-    }
+    public Task<IActionResult> OnGetValidateMapReferenceAsync(string? cphh, string? mapRef) =>
+        FarmFormLookups.ValidateMapReferenceAsync(geoLookup, cphh, mapRef);
 
     private async Task PrepopulateFromExistingCaseFarmAsync()
     {

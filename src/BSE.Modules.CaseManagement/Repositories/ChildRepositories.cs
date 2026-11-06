@@ -9,15 +9,14 @@ namespace BSE.Modules.CaseManagement.Repositories;
 public interface ITestRepository
 {
     Task<IReadOnlyList<CaseTestRecord>> GetByRbseAsync(string rbse);
+    Task AddAsync(AddTestCommand command);
     Task AddAsync(AddTestCommand command, IDbConnection connection, IDbTransaction transaction);
+    Task EditAsync(EditTestCommand command);
     /// <summary>Returns rows affected — 0 means the row's RowStamp was stale (changed by another user).</summary>
     Task<int> EditAsync(EditTestCommand command, IDbConnection connection, IDbTransaction transaction);
+    Task DeleteAsync(int id, byte[] rowStamp);
     /// <summary>Returns rows affected — 0 means the row's RowStamp was stale (changed by another user).</summary>
     Task<int> DeleteAsync(int id, byte[] rowStamp, IDbConnection connection, IDbTransaction transaction);
-    // Standalone variants for direct Razor Page CRUD handlers (no external transaction)
-    Task AddAsync(AddTestCommand command);
-    Task EditAsync(EditTestCommand command);
-    Task DeleteAsync(int id, byte[] rowStamp);
 }
 
 public sealed class TestRepository : DapperRepository, ITestRepository
@@ -27,23 +26,23 @@ public sealed class TestRepository : DapperRepository, ITestRepository
     public async Task<IReadOnlyList<CaseTestRecord>> GetByRbseAsync(string rbse)
         => (await QueryAsync<CaseTestRecord>("GetTestByRBSE", new { RBSE = rbse })).ToList();
 
-    public Task AddAsync(AddTestCommand command, IDbConnection connection, IDbTransaction transaction)
-        => ExecuteAsync("AddTest", new { RBSE = command.Rbse, TestType = command.TestType, TestResult = command.TestResult }, connection, transaction);
-
-    public Task<int> EditAsync(EditTestCommand command, IDbConnection connection, IDbTransaction transaction)
-        => ExecuteWithRowCountAsync("EditTest", new { ID = command.Id, TestType = command.TestType, TestResult = command.TestResult, RowStamp = command.RowStamp }, connection, transaction);
-
-    public Task<int> DeleteAsync(int id, byte[] rowStamp, IDbConnection connection, IDbTransaction transaction)
-        => ExecuteWithRowCountAsync("DeleteTest", new { ID = id, RowStamp = rowStamp }, connection, transaction);
-
     public Task AddAsync(AddTestCommand command)
         => ExecuteAsync("AddTest", new { RBSE = command.Rbse, TestType = command.TestType, TestResult = command.TestResult });
+
+    public Task AddAsync(AddTestCommand command, IDbConnection connection, IDbTransaction transaction)
+        => ExecuteAsync("AddTest", new { RBSE = command.Rbse, TestType = command.TestType, TestResult = command.TestResult }, connection, transaction);
 
     public Task EditAsync(EditTestCommand command)
         => ExecuteAsync("EditTest", new { ID = command.Id, TestType = command.TestType, TestResult = command.TestResult, RowStamp = command.RowStamp });
 
+    public Task<int> EditAsync(EditTestCommand command, IDbConnection connection, IDbTransaction transaction)
+        => ExecuteWithRowCountAsync("EditTest", new { ID = command.Id, TestType = command.TestType, TestResult = command.TestResult, RowStamp = command.RowStamp }, connection, transaction);
+
     public Task DeleteAsync(int id, byte[] rowStamp)
         => ExecuteAsync("DeleteTest", new { ID = id, RowStamp = rowStamp });
+
+    public Task<int> DeleteAsync(int id, byte[] rowStamp, IDbConnection connection, IDbTransaction transaction)
+        => ExecuteWithRowCountAsync("DeleteTest", new { ID = id, RowStamp = rowStamp }, connection, transaction);
 }
 
 public interface IOtherOwnerRepository

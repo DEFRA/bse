@@ -51,7 +51,7 @@ public class MinuteDocumentModel(ICaseWorkService caseWorkService) : PageModel
         if (!IsPrintMode)
         {
             Response.ContentType = "application/vnd.ms-word";
-            Response.Headers["Content-Disposition"] = $"attachment; filename=\"{GetLegacyFileName(minuteType, rbse)}\"";
+            Response.Headers.ContentDisposition = $"attachment; filename=\"{GetLegacyFileName(minuteType, rbse)}\"";
         }
 
         if (minuteType is AnnexCType or AnnexDType)
@@ -60,7 +60,7 @@ public class MinuteDocumentModel(ICaseWorkService caseWorkService) : PageModel
         return Page();
     }
 
-    private IReadOnlyList<string> ReadOutstandingForms()
+    private List<string> ReadOutstandingForms()
     {
         bool B(string key) => bool.TryParse(HttpContext.Session.GetString(key), out var v) && v;
         var result = new List<string>();

@@ -36,12 +36,15 @@
     if (!string.IsNullOrWhiteSpace(fragment))
         href += "#" + Uri.EscapeDataString(fragment);
 
-    string ariaSort = isActive ? (sortDesc ? "descending" : "ascending") : "none";
-    string screenReaderText = isActive
-        ? (sortDesc
-            ? $"Sorted descending. Activate to sort {label} ascending."
-            : $"Sorted ascending. Activate to sort {label} descending.")
-        : $"Not sorted. Activate to sort {label} ascending.";
+    string ariaSort;
+    if (!isActive) ariaSort = "none";
+    else if (sortDesc) ariaSort = "descending";
+    else ariaSort = "ascending";
+
+    string screenReaderText;
+    if (!isActive) screenReaderText = $"Not sorted. Activate to sort {label} ascending.";
+    else if (sortDesc) screenReaderText = $"Sorted descending. Activate to sort {label} ascending.";
+    else screenReaderText = $"Sorted ascending. Activate to sort {label} descending.";
 }
 <th scope="col" class="govuk-table__header bse-sortable-table__heading @headerClass" aria-sort="@ariaSort">
     <a class="bse-sortable-table__button" href="@href">

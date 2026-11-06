@@ -1,4 +1,5 @@
 ﻿using BSE.Host.Helpers;
+using BSE.Host.Models.ViewModels;
 using BSE.Host.Services;
 using BSE.Modules.Batch.Models;
 using BSE.Modules.Batch.Repositories;
@@ -16,7 +17,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace BSE.Host.Pages.Case;
 
-[Authorize]
+[Authorize(Policy = "CaseEntryAccess")]
 public class BabModel(
     IBabRepository babRepository,
     ICaseRepository caseRepository,
@@ -26,29 +27,12 @@ public class BabModel(
     ICaseDraftDiscardService caseDraftDiscard,
     ICaseEditOrchestrationService caseEditOrchestration,
     ICurrentUserService currentUser,
-    IConfiguration configuration) : PageModel
+    IConfiguration configuration) : BabPageModelBase(babRepository, caseRepository, lookups, batchRepository, configuration)
 {
     private static readonly DateTime BabBirthDateThreshold = new(1988, 7, 18, 0, 0, 0, DateTimeKind.Unspecified);
 
-    [BindProperty(SupportsGet = true)]
-    public string Rbse { get; set; } = string.Empty;
-
-    public string? RowStampBase64 { get; private set; }
-    public string SpolSiteUrl { get; private set; } = string.Empty;
-    public IReadOnlyList<BatchNumberEntry> BatchNumbers { get; private set; } = [];
     public bool CanEditBabControls { get; private set; }
     public bool HasPurchaseData { get; private set; }
-
-    public IEnumerable<LookupItem> AnimalOrigins { get; private set; } = [];
-    public IEnumerable<LookupItem> FeedRisks { get; private set; } = [];
-    public IEnumerable<LookupItem> HorizontalRisks { get; private set; } = [];
-    public IEnumerable<LookupItem> MaternalRisks { get; private set; } = [];
-
-    [BindProperty]
-    public string? Origin { get; set; }
-
-    [BindProperty]
-    public BabFormViewModel Bab { get; set; } = new();
 
     public async Task<IActionResult> OnGetAsync()
     {
@@ -57,20 +41,21 @@ public class BabModel(
         if (string.IsNullOrWhiteSpace(Rbse))
             return RedirectToPage("/SessionError");
 
-        SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
+        LoadSpolSiteUrl();
 
         await LoadAsync();
         await ApplyStagedBabOverlayAsync();
         return Page();
     }
 
+    [Authorize(Policy = "DataEntry")]
     public async Task<IActionResult> OnPostSaveBabAsync(string? rowStampBase64)
     {
         if (!User.IsInRole("DataEntry"))
             return Forbid();
 
-        var currentBabTask = babRepository.GetByRbseAsync(Rbse);
-        var currentCaseTask = caseRepository.GetCaseByRbseAsync(Rbse);
+        var currentBabTask = BabRepository.GetByRbseAsync(Rbse);
+        var currentCaseTask = CaseRepository.GetCaseByRbseAsync(Rbse);
         await Task.WhenAll(currentBabTask, currentCaseTask);
 
         var currentBab = await currentBabTask;
@@ -88,28 +73,8 @@ public class BabModel(
         if (!canEdit)
             return await CommitStagedChangesOnlyAsync();
 
-        var normalisedNatalCphh = CphhNormalizer.Normalize(Bab.NatalCphh);
-        if (!string.IsNullOrWhiteSpace(normalisedNatalCphh) && normalisedNatalCphh.Length != 11)
-        {
-            ModelState.AddModelError("Bab.NatalCphh", "Enter CPHH as 11 digits in the format NN/NNN/NNNN/NN.");
-            SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
-            await LoadAsync();
-            Bab.NatalCphh = normalisedNatalCphh;
-            return Page();
-        }
-
-        Bab.NatalCphh = string.IsNullOrWhiteSpace(normalisedNatalCphh) ? null : normalisedNatalCphh;
-
-        if (Origin != "P")
-        {
-            Bab.NatalCphh = Bab.TracedName = Bab.TracedAddress1 =
-                Bab.TracedAddress2 = Bab.TracedAddress3 = Bab.TracedPostcode = null;
-
-            // Legacy EmptyPurchaseFields: changing Origin away from Purchased on this tab also
-            // clears the VLA tab's Purchase Date/County/Age fields, even though they aren't
-            // rendered here — both pages clear the same shared session Case row.
-            await ClearPurchaseFieldsIfPresentAsync();
-        }
+        if (await NormaliseBabFieldsAsync() is { } invalidPage)
+            return invalidPage;
 
         // Cross-tab staging (restores legacy's "one session, one commit" model): stage this
         // tab's fields and commit through CommitAllAsync regardless of whether a BAB row already
@@ -120,12 +85,7 @@ public class BabModel(
         // the only thing that creates them), either throwing an FK violation or, when some other
         // tab's Save had already created the case, silently committing only this tab's row while
         // leaving whatever Farm/Case fields were still staged (never committed) uncommitted.
-        var rowStamp = string.IsNullOrEmpty(rowStampBase64) ? [] : Convert.FromBase64String(rowStampBase64);
-        var edit = new EditCaseBabCommand(
-            Rbse, Bab.NatalCphh, Bab.Notes,
-            Bab.TracedName, Bab.TracedAddress1, Bab.TracedAddress2, Bab.TracedAddress3,
-            Bab.TracedPostcode, Bab.FeedRisk, Bab.HorizontalRisk, Bab.MaternalRisk,
-            rowStamp);
+        var edit = BuildEditCommand(rowStampBase64);
 
         var draft = await sessionState.GetAsync(Rbse) ?? new CaseEditSessionState { Rbse = Rbse };
         // Always trust the freshly posted rowstamp over any earlier-pinned one — a stale pin
@@ -138,24 +98,14 @@ public class BabModel(
         draft.HasPendingChanges = true;
         await sessionState.SetAsync(draft);
 
-        var userId = await currentUser.GetUserIdAsync();
-        var (failureRedirect, commitOutcome) = await CaseCommitHelper.CommitAllAsync(
-            this, caseEditOrchestration, Rbse, userId,
-            result => $"Unable to save BAB changes: {result}.");
-        if (failureRedirect is not null)
-            return failureRedirect;
-
-        if (CaseCommitHelper.TryStageWarnings(this, commitOutcome!, Rbse) is { } warningRedirect)
-            return warningRedirect;
-
         // Legacy parity: CaseEntrySave.aspx auto-redirects to Home.aspx on a fully successful
         // save, clearing the session case state — not back to the tab the user was on.
-        return RedirectToPage("/Home");
+        return await CommitStagedChangesOnlyAsync();
     }
 
     /// <summary>Commits whatever is already staged for this RBSE across every tab, without
-    /// touching BAB's own fields — used when this tab's own fields are read-only (see
-    /// <see cref="OnPostSaveBabAsync"/>).</summary>
+    /// touching BAB's own fields — also the tail of <see cref="OnPostSaveBabAsync"/>, and used there
+    /// alone when this tab's own fields are read-only.</summary>
     private async Task<IActionResult> CommitStagedChangesOnlyAsync()
     {
         var userId = await currentUser.GetUserIdAsync();
@@ -171,6 +121,24 @@ public class BabModel(
         return RedirectToPage("/Home");
     }
 
+    /// <summary>Validates and normalises the posted CPHH and clears Purchased-only fields. Returns the
+    /// page to redisplay when the CPHH is invalid, otherwise null.</summary>
+    private async Task<IActionResult?> NormaliseBabFieldsAsync()
+    {
+        if (await NormaliseNatalCphhAsync() is { } invalidPage)
+            return invalidPage;
+
+        if (ClearTracedFieldsUnlessPurchased())
+        {
+            // Legacy EmptyPurchaseFields: changing Origin away from Purchased on this tab also
+            // clears the VLA tab's Purchase Date/County/Age fields, even though they aren't
+            // rendered here — both pages clear the same shared session Case row.
+            await ClearPurchaseFieldsIfPresentAsync();
+        }
+
+        return null;
+    }
+
     /// <summary>
     /// Validates this tab's fields and, if valid, stages them into the shared cross-tab
     /// draft (without committing) before navigating to another tab. Applies even before a BAB
@@ -178,6 +146,7 @@ public class BabModel(
     /// "case doesn't exist yet" the same way OnPostSaveBabAsync does, so an edit made on this
     /// tab during brand-new-case creation is staged instead of silently discarded on tab switch.
     /// </summary>
+    [Authorize] // every role may navigate away; the handler stages only for DataEntry
     public async Task<IActionResult> OnPostStageAndGotoAsync(string targetPage, string? rowStampBase64)
     {
         // Legacy parity: UpdateSessionWithCaseDetails() has no role check at all — every role,
@@ -185,8 +154,8 @@ public class BabModel(
         if (!User.IsInRole("DataEntry"))
             return RedirectToPage(targetPage, new { rbse = Rbse });
 
-        var currentBabTask = babRepository.GetByRbseAsync(Rbse);
-        var currentCaseTask = caseRepository.GetCaseByRbseAsync(Rbse);
+        var currentBabTask = BabRepository.GetByRbseAsync(Rbse);
+        var currentCaseTask = CaseRepository.GetCaseByRbseAsync(Rbse);
         await Task.WhenAll(currentBabTask, currentCaseTask);
 
         var currentBab = await currentBabTask;
@@ -196,35 +165,10 @@ public class BabModel(
         if (!EvaluateLegacyBabEditPermission(currentBirthDate, currentBab))
             return RedirectToPage(targetPage, new { rbse = Rbse });
 
-        var normalisedNatalCphh = CphhNormalizer.Normalize(Bab.NatalCphh);
-        if (!string.IsNullOrWhiteSpace(normalisedNatalCphh) && normalisedNatalCphh.Length != 11)
-        {
-            ModelState.AddModelError("Bab.NatalCphh", "Enter CPHH as 11 digits in the format NN/NNN/NNNN/NN.");
-            SpolSiteUrl = configuration["SpolSiteUrl"] ?? string.Empty;
-            await LoadAsync();
-            Bab.NatalCphh = normalisedNatalCphh;
-            return Page();
-        }
+        if (await NormaliseBabFieldsAsync() is { } invalidPage)
+            return invalidPage;
 
-        Bab.NatalCphh = string.IsNullOrWhiteSpace(normalisedNatalCphh) ? null : normalisedNatalCphh;
-
-        if (Origin != "P")
-        {
-            Bab.NatalCphh = Bab.TracedName = Bab.TracedAddress1 =
-                Bab.TracedAddress2 = Bab.TracedAddress3 = Bab.TracedPostcode = null;
-
-            // Legacy EmptyPurchaseFields: changing Origin away from Purchased on this tab also
-            // clears the VLA tab's Purchase Date/County/Age fields, even though they aren't
-            // rendered here — both pages clear the same shared session Case row.
-            await ClearPurchaseFieldsIfPresentAsync();
-        }
-
-        var rowStamp = string.IsNullOrEmpty(rowStampBase64) ? [] : Convert.FromBase64String(rowStampBase64);
-        var edit = new EditCaseBabCommand(
-            Rbse, Bab.NatalCphh, Bab.Notes,
-            Bab.TracedName, Bab.TracedAddress1, Bab.TracedAddress2, Bab.TracedAddress3,
-            Bab.TracedPostcode, Bab.FeedRisk, Bab.HorizontalRisk, Bab.MaternalRisk,
-            rowStamp);
+        var edit = BuildEditCommand(rowStampBase64);
 
         var draft = await sessionState.GetAsync(Rbse) ?? new CaseEditSessionState { Rbse = Rbse };
         // Always trust the freshly posted rowstamp over any earlier-pinned one — see the Save
@@ -256,6 +200,16 @@ public class BabModel(
         await sessionState.SetAsync(draft);
 
         return RedirectToPage(targetPage, new { rbse = Rbse });
+    }
+
+    private EditCaseBabCommand BuildEditCommand(string? rowStampBase64)
+    {
+        var rowStamp = string.IsNullOrEmpty(rowStampBase64) ? [] : Convert.FromBase64String(rowStampBase64);
+        return new EditCaseBabCommand(
+            Rbse, Bab.NatalCphh, Bab.Notes,
+            Bab.TracedName, Bab.TracedAddress1, Bab.TracedAddress2, Bab.TracedAddress3,
+            Bab.TracedPostcode, Bab.FeedRisk, Bab.HorizontalRisk, Bab.MaternalRisk,
+            rowStamp);
     }
 
     private async Task ApplyStagedBabOverlayAsync()
@@ -301,7 +255,7 @@ public class BabModel(
         var baseCommand = draft.Case;
         if (baseCommand is null)
         {
-            var caseRecord = await caseRepository.GetCaseByRbseAsync(Rbse);
+            var caseRecord = await CaseRepository.GetCaseByRbseAsync(Rbse);
             if (caseRecord is null)
                 return;
             if (caseRecord.PurchaseDate is null && string.IsNullOrWhiteSpace(caseRecord.PurchasedCounty) && caseRecord.PurchaseAgeInMonths is null)
@@ -327,32 +281,14 @@ public class BabModel(
         return RedirectToPage("/Home");
     }
 
-    private async Task LoadAsync()
+    protected override async Task LoadAsync()
     {
-        var babTask     = babRepository.GetByRbseAsync(Rbse);
-        var caseTask    = caseRepository.GetCaseByRbseAsync(Rbse);
-        var batchTask   = batchRepository.GetBatchNumbersByRbseAsync(Rbse);
-        var originsTask = lookups.GetAnimalOriginsAsync();
-        var frTask      = lookups.GetLookupAsync(LookupTableId.FeedRisk);
-        var hrTask      = lookups.GetLookupAsync(LookupTableId.HorizontalRisk);
-        var mrTask      = lookups.GetLookupAsync(LookupTableId.MaternalRisk);
-
-        await Task.WhenAll(babTask, caseTask, batchTask, originsTask, frTask, hrTask, mrTask);
-
-        var bab        = await babTask;
-        var caseRecord = await caseTask;
-        Bab            = bab is not null ? BabFormViewModel.FromRecord(bab) : new BabFormViewModel();
-        RowStampBase64 = bab?.RowStamp is not null ? Convert.ToBase64String(bab.RowStamp) : null;
+        var (bab, caseRecord) = await LoadSharedAsync();
 
         var (effectiveBirthDate, effectiveOrigin, hasPurchaseData) = await ResolveEffectiveCaseScalarsAsync(caseRecord);
         Origin              = effectiveOrigin;
         HasPurchaseData     = hasPurchaseData;
         CanEditBabControls  = EvaluateLegacyBabEditPermission(effectiveBirthDate, bab);
-        BatchNumbers   = (await batchTask).ToList().AsReadOnly();
-        AnimalOrigins  = (await originsTask).Select(x => new LookupItem(x.Id, x.Code, x.Description)).ToList();
-        FeedRisks      = await frTask;
-        HorizontalRisks = await hrTask;
-        MaternalRisks  = await mrTask;
     }
 
     private bool EvaluateLegacyBabEditPermission(DateTime? birthDate, CaseBabRecord? babRecord)
@@ -395,45 +331,5 @@ public class BabModel(
             || purchaseAgeInMonths.HasValue;
 
         return (birthDate, origin, hasPurchaseData);
-    }
-
-    public class BabFormViewModel
-    {
-        public string? NatalCphh { get; set; }
-        public string? Notes { get; set; }
-        public string? TracedName { get; set; }
-        public string? TracedAddress1 { get; set; }
-        public string? TracedAddress2 { get; set; }
-        public string? TracedAddress3 { get; set; }
-        public string? TracedPostcode { get; set; }
-        public string? FeedRisk { get; set; }
-        public string? HorizontalRisk { get; set; }
-        public string? MaternalRisk { get; set; }
-
-        public static BabFormViewModel FromRecord(CaseBabRecord r) => new()
-        {
-            NatalCphh      = r.NatalCphh,      Notes          = r.Notes,
-            TracedName     = r.TracedName,      TracedAddress1 = r.TracedAddress1,
-            TracedAddress2 = r.TracedAddress2,  TracedAddress3 = r.TracedAddress3,
-            TracedPostcode = r.TracedPostcode,  FeedRisk       = r.FeedRisk,
-            HorizontalRisk = r.HorizontalRisk,  MaternalRisk   = r.MaternalRisk
-        };
-
-        /// <summary>Overlays a staged-but-not-yet-committed BAB edit (from another tab's
-        /// cross-tab draft) so revisiting this tab shows the pending edit instead of the
-        /// last-committed DB values.</summary>
-        public void ApplyStagedCommand(EditCaseBabCommand c)
-        {
-            NatalCphh = c.NatalCphh;
-            Notes = c.Notes;
-            TracedName = c.TracedName;
-            TracedAddress1 = c.TracedAddress1;
-            TracedAddress2 = c.TracedAddress2;
-            TracedAddress3 = c.TracedAddress3;
-            TracedPostcode = c.TracedPostcode;
-            FeedRisk = c.FeedRisk;
-            HorizontalRisk = c.HorizontalRisk;
-            MaternalRisk = c.MaternalRisk;
-        }
     }
 }

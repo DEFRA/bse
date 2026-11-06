@@ -20,6 +20,9 @@ public sealed class CaseEditSessionState
 {
     public string Rbse { get; set; } = string.Empty;
 
+    /// <summary>UTC time this draft was first stored; used to detect a delete/rename of the case after editing began.</summary>
+    public DateTime? StartedUtc { get; set; }
+
     // ── Scalars ──────────────────────────────────────────────────────────────
 
     /// <summary>Staged Case-row edit. Shared by the Case (DEFRA) and Case (APHA) tabs, since both

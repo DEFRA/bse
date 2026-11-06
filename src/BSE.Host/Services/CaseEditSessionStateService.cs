@@ -12,7 +12,10 @@ public sealed class CaseEditSessionStateService(
         => await cache.GetJsonAsync<CaseEditSessionState>(await KeyAsync(rbse), ct);
 
     public async Task SetAsync(CaseEditSessionState state, CancellationToken ct = default)
-        => await cache.SetJsonAsync(await KeyAsync(state.Rbse), state, cancellationToken: ct);
+    {
+        state.StartedUtc ??= DateTime.UtcNow;
+        await cache.SetJsonAsync(await KeyAsync(state.Rbse), state, cancellationToken: ct);
+    }
 
     public async Task ClearAsync(string rbse, CancellationToken ct = default)
         => await cache.RemoveAsync(await KeyAsync(rbse), ct);
