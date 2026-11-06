@@ -533,7 +533,7 @@ public sealed class ClinicalVlaUsersHandlerTests
     {
         var pending = new CaseWizardState(Rbse, "2024/001", 5);
         var model = CreateClinicalModel(["DataEntry", "VLAAccess"]);
-        _wizardState.GetAsync().Returns(pending);
+        _wizardState.GetAsync(Arg.Any<CancellationToken>()).Returns(pending);
         _batchRepository.GetBatchNumbersByRbseAsync(Arg.Any<string>())
             .Returns([new BatchNumberEntry(5, "2024/001", Rbse, "BSE1")]);
 

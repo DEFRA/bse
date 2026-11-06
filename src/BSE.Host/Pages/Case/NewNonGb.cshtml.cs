@@ -18,6 +18,8 @@ namespace BSE.Host.Pages.Case;
 [Authorize(Policy = "VLAMaintenance")]
 public class NewNonGbModel : PageModel
 {
+    private const string NoRbseMessage = "No RBSE was supplied. Look up an RBSE from the home page to create a non-GB case.";
+
     private readonly ICaseService _cases;
     private readonly ICurrentUserService _currentUser;
     private readonly IFarmService _farmService;
@@ -76,13 +78,16 @@ public class NewNonGbModel : PageModel
     public IReadOnlyList<LuTestResult> FinalResultOptions { get; private set; } = [];
     public IReadOnlyList<LuBseCounty> CountyOptions { get; private set; } = [];
 
+    private RedirectToPageResult RedirectHomeWithError(string message)
+    {
+        TempData["ErrorMessage"] = message;
+        return RedirectToPage("/Home");
+    }
+
     public async Task<IActionResult> OnGetAsync()
     {
         if (string.IsNullOrWhiteSpace(Rbse))
-        {
-            TempData["ErrorMessage"] = "No RBSE was supplied. Look up an RBSE from the home page to create a non-GB case.";
-            return RedirectToPage("/Home");
-        }
+            return RedirectHomeWithError(NoRbseMessage);
 
         RbseDate ??= DateTime.Today;
         await LoadLookupsAsync();
@@ -97,17 +102,11 @@ public class NewNonGbModel : PageModel
     public async Task<IActionResult> OnPostAsync()
     {
         if (string.IsNullOrWhiteSpace(Rbse))
-        {
-            TempData["ErrorMessage"] = "No RBSE was supplied. Look up an RBSE from the home page to create a non-GB case.";
-            return RedirectToPage("/Home");
-        }
+            return RedirectHomeWithError(NoRbseMessage);
 
         var rawRbse = RbseHelper.ParseToRaw(Rbse);
         if (!rawRbse.StartsWith("6300", StringComparison.Ordinal) && !rawRbse.StartsWith("2300", StringComparison.Ordinal))
-        {
-            TempData["ErrorMessage"] = "This is not a non-GB RBSE.";
-            return RedirectToPage("/Home");
-        }
+            return RedirectHomeWithError("This is not a non-GB RBSE.");
 
         ValidateEartag();
         ValidateResultAndDates();
@@ -274,10 +273,7 @@ public class NewNonGbModel : PageModel
         FarmFoundOnLookup = null;
 
         if (string.IsNullOrWhiteSpace(Rbse))
-        {
-            TempData["ErrorMessage"] = "No RBSE was supplied. Look up an RBSE from the home page to create a non-GB case.";
-            return RedirectToPage("/Home");
-        }
+            return RedirectHomeWithError(NoRbseMessage);
 
         if (string.IsNullOrWhiteSpace(Cphh))
         {

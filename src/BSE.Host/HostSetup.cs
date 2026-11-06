@@ -371,6 +371,9 @@ internal static class HostSetup
     // Redirect authenticated-but-forbidden users to Home instead of returning 403.
     // Applies to both the dev-bypass path and the OIDC path.
     private const string VlaAccessPolicy = "VLAAccess";
+    private const string DataEntryPolicy = "DataEntry";
+    private const string VlaMaintenancePolicy = "VLAMaintenance";
+    private const string DefraAccessPolicy = "DEFRAAccess";
 
     internal static void AddBseAuthorization(this IServiceCollection services)
     {
@@ -380,28 +383,28 @@ internal static class HostSetup
 
         authorizationBuilder.AddPolicy("Authenticated", p => p.RequireAuthenticatedUser());
         authorizationBuilder.AddPolicy("ReadOnly", p => p.RequireRole("ReadOnly"));
-        authorizationBuilder.AddPolicy("DataEntry", p => p.RequireRole("DataEntry"));
+        authorizationBuilder.AddPolicy(DataEntryPolicy, p => p.RequireRole(DataEntryPolicy));
         // Chained RequireRole calls are ANDed: the user must hold both roles.
-        authorizationBuilder.AddPolicy("DataEntryVla", p => p.RequireRole("DataEntry").RequireRole(VlaAccessPolicy));
+        authorizationBuilder.AddPolicy("DataEntryVla", p => p.RequireRole(DataEntryPolicy).RequireRole(VlaAccessPolicy));
         authorizationBuilder.AddPolicy("DEFRAMaintenance", p => p.RequireRole("DEFRAMaintenance"));
         // Legacy MoveCase.aspx/MoveCaseNewFarm.aspx EnableControls(): DEFRA Maintenance OR VLA Maintenance
         // (docs/Legacy-Page-Level-Access-Control.md section 5.9 "Case Maintenance Operations").
-        authorizationBuilder.AddPolicy("DEFRAOrVLAMaintenance", p => p.RequireRole("DEFRAMaintenance", "VLAMaintenance"));
-        authorizationBuilder.AddPolicy("DEFRAAccess", p => p.RequireRole("DEFRAAccess"));
+        authorizationBuilder.AddPolicy("DEFRAOrVLAMaintenance", p => p.RequireRole("DEFRAMaintenance", VlaMaintenancePolicy));
+        authorizationBuilder.AddPolicy(DefraAccessPolicy, p => p.RequireRole(DefraAccessPolicy));
         authorizationBuilder.AddPolicy(VlaAccessPolicy, p => p.RequireRole(VlaAccessPolicy));
-        authorizationBuilder.AddPolicy("VLAMaintenance", p => p.RequireRole("VLAMaintenance"));
+        authorizationBuilder.AddPolicy(VlaMaintenancePolicy, p => p.RequireRole(VlaMaintenancePolicy));
         authorizationBuilder.AddPolicy("PickListAccess", p => p.RequireRole("PickListAccess"));
         authorizationBuilder.AddPolicy("FarmCreation", p => p.RequireRole("FarmCreation"));
-        authorizationBuilder.AddPolicy("AuditAccess", p => p.RequireRole("DEFRAAccess", VlaAccessPolicy));
+        authorizationBuilder.AddPolicy("AuditAccess", p => p.RequireRole(DefraAccessPolicy, VlaAccessPolicy));
         // Case-entry tabs: only the recognised DEFRA/VLA groups (AHO and AI Wales/Scotland groups are excluded).
-        authorizationBuilder.AddPolicy("CaseEntryAccess", p => p.RequireRole("DEFRAAccess", VlaAccessPolicy));
+        authorizationBuilder.AddPolicy("CaseEntryAccess", p => p.RequireRole(DefraAccessPolicy, VlaAccessPolicy));
         // Joint farm fields locked for VLA Data Entry: DEFRA groups or VLA Maintenance with DataEntry.
         authorizationBuilder.AddPolicy("FarmDefraEdit", p => p
-            .RequireRole("DataEntry")
-            .RequireAssertion(ctx => !ctx.User.IsInRole(VlaAccessPolicy) || ctx.User.IsInRole("VLAMaintenance")));
+            .RequireRole(DataEntryPolicy)
+            .RequireAssertion(ctx => !ctx.User.IsInRole(VlaAccessPolicy) || ctx.User.IsInRole(VlaMaintenancePolicy)));
         // Sire/other-relations section: VLA-only, never a DEFRA-named group.
         authorizationBuilder.AddPolicy("VlaSireEdit", p => p
-            .RequireRole("DataEntry")
+            .RequireRole(DataEntryPolicy)
             .RequireRole(VlaAccessPolicy)
             .RequireAssertion(ctx => ctx.User.FindFirst("bse:group")?.Value is not ("DEFRA Data Entry" or "DEFRA Maintenance" or "DEFRA Viewer")));
     }
