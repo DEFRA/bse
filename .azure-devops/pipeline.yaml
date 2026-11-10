@@ -50,12 +50,12 @@ variables:
     value: 'src/BSE.Host/BSE.Host.csproj'
   - name: databaseScriptsPath
     value: 'src/Database'
-# NOTE: Each deployment stage (DEV/TST/PRE/PRD) resolves the OIDC client secret directly from Azure
-# Key Vault via an App Service Key Vault reference: -AzureAd__ClientSecret
-# "@Microsoft.KeyVault(SecretUri=$(oidcClientSecretUri))". The App Service's managed identity must
-# have 'Key Vault Secrets User' (get) access on the referenced vault, and $(oidcClientSecretUri)
-# below is a PLACEHOLDER — replace 'CHANGEME-<env>-kv' with the real Key Vault name/secret URI for
-# each environment before deploying. Never commit the actual secret value to this file.
+# NOTE: Each deployment stage (DEV/TST/PRE/PRD) resolves its secrets directly from the environment's
+# Azure Key Vault via App Service Key Vault references:
+#   -AzureAd__ClientSecret              "@Microsoft.KeyVault(SecretUri=$(oidcClientSecretUri))"
+#   -AdnsMsGraph__MsGraphClientSecret   "@Microsoft.KeyVault(SecretUri=$(msGraphClientSecretUri))"
+# The App Service's managed identity must have 'Key Vault Secrets User' (get) access on the
+# referenced vault. Never commit the actual secret values to this file.
 
 stages:
 
@@ -191,6 +191,8 @@ stages:
       value: '3eeeb482-eea0-4bb5-85a9-9a6fefb27a23'
     - name: oidcClientSecretUri
       value: 'https://devbseinfkv1401.vault.azure.net/secrets/oidc-client-secret/'
+    - name: msGraphClientSecretUri
+      value: 'https://DEVBSEINFKV1401.vault.azure.net/secrets/MsGraphClientSecret/'
     - name: sqlServer
       value: 'devbseinfsq1401.database.windows.net,1433'
     - name: sqlServerHost
@@ -199,7 +201,9 @@ stages:
       value: 'BSE'
     - name: msGraphClientId
       value: '3eeeb482-eea0-4bb5-85a9-9a6fefb27a23'
-    - name: msGraphSender
+    - name: msGraphSenderUserId
+      value: 'tse.queries@apha.gov.uk'
+    - name: msGraphFromAddress
       value: 'tse.queries@apha.gov.uk'
     - name: dbScriptsChanged
       value: $[ stageDependencies.Build.build.outputs['detectDbChanges.dbScriptsChanged'] ]
@@ -273,8 +277,9 @@ stages:
                 -ConnectionStrings__BSE "Server=tcp:$(sqlServer);Database=$(dbName);Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Managed Identity;"
                 -AdnsMsGraph__MsGraphTenantId "$(tenantId)"
                 -AdnsMsGraph__MsGraphClientId "$(msGraphClientId)"
-                -AdnsMsGraph__MsGraphSenderUserId "$(msGraphSender)"
-                -AdnsMsGraph__FromAddress "$(msGraphSender)"
+                -AdnsMsGraph__MsGraphClientSecret "@Microsoft.KeyVault(SecretUri=$(msGraphClientSecretUri))"
+                -AdnsMsGraph__MsGraphSenderUserId "$(msGraphSenderUserId)"
+                -AdnsMsGraph__FromAddress "$(msGraphFromAddress)"
 - stage: TST
   displayName: TST
   dependsOn: DEV
@@ -295,6 +300,8 @@ stages:
       value: '831094e6-109b-4555-b73f-c49e07d2d5d3'
     - name: oidcClientSecretUri
       value: 'https://tstbseinfkv1401.vault.azure.net/secrets/oidc-client-secret/'
+    - name: msGraphClientSecretUri
+      value: 'https://TSTBSEINFKV1401.vault.azure.net/secrets/MsGraphClientSecret/'
     - name: sqlServer
       value: 'tstbseinfsq1401.database.windows.net,1433'
     - name: sqlServerHost
@@ -303,6 +310,8 @@ stages:
       value: 'BSE'
     - name: dbScriptsChanged
       value: $[ stageDependencies.Build.build.outputs['detectDbChanges.dbScriptsChanged'] ]
+    - name: msGraphClientId
+      value: '831094e6-109b-4555-b73f-c49e07d2d5d3'
     - name: msGraphSenderUserId
       value: 'tse.queries@apha.gov.uk'
     - name: msGraphFromAddress
@@ -376,7 +385,8 @@ stages:
                 -Authentication__BypassEnabled "false"
                 -ConnectionStrings__BSE "Server=tcp:$(sqlServer);Database=$(dbName);Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Managed Identity;"
                 -AdnsMsGraph__MsGraphTenantId "$(tenantId)"
-                -AdnsMsGraph__MsGraphClientId "$(appId)"
+                -AdnsMsGraph__MsGraphClientId "$(msGraphClientId)"
+                -AdnsMsGraph__MsGraphClientSecret "@Microsoft.KeyVault(SecretUri=$(msGraphClientSecretUri))"
                 -AdnsMsGraph__MsGraphSenderUserId "$(msGraphSenderUserId)"
                 -AdnsMsGraph__FromAddress "$(msGraphFromAddress)"
 
@@ -409,12 +419,20 @@ stages:
       value: 'b5bd1613-6e97-466b-b5aa-dfce852f8268'
     - name: oidcClientSecretUri
       value: 'https://prebseinfkv1401.vault.azure.net/secrets/oidc-client-secret/'
+    - name: msGraphClientSecretUri
+      value: 'https://PREBSEINFKV1401.vault.azure.net/secrets/MsGraphClientSecret/'
     - name: sqlServer
       value: 'prebseinfsq1401.database.windows.net,1433'
     - name: sqlServerHost
       value: 'prebseinfsq1401.database.windows.net'
     - name: dbName
       value: 'BSE'
+    - name: msGraphClientId
+      value: 'b5bd1613-6e97-466b-b5aa-dfce852f8268'
+    - name: msGraphSenderUserId
+      value: 'tse.queries@apha.gov.uk'
+    - name: msGraphFromAddress
+      value: 'tse.queries@apha.gov.uk'
     - name: dbScriptsChanged
       value: $[ stageDependencies.Build.build.outputs['detectDbChanges.dbScriptsChanged'] ]
   jobs:
@@ -517,6 +535,11 @@ stages:
                 -AzureAd__PublicOrigin "https://pre-bse.azure.defra.cloud"
                 -Authentication__BypassEnabled "false"
                 -ConnectionStrings__BSE "Server=tcp:$(sqlServer);Database=$(dbName);Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Managed Identity;"
+                -AdnsMsGraph__MsGraphTenantId "$(tenantId)"
+                -AdnsMsGraph__MsGraphClientId "$(msGraphClientId)"
+                -AdnsMsGraph__MsGraphClientSecret "@Microsoft.KeyVault(SecretUri=$(msGraphClientSecretUri))"
+                -AdnsMsGraph__MsGraphSenderUserId "$(msGraphSenderUserId)"
+                -AdnsMsGraph__FromAddress "$(msGraphFromAddress)"
                 
 # -------------------------------------------------------------------------
 # PROD deploys only require a manual approval before the deployment job runs.
@@ -547,13 +570,19 @@ stages:
       value: 'a08f1c74-e9de-491b-9b69-30908b3b0e7c'
     - name: oidcClientSecretUri
       value: 'https://prdbseinfkv1401.vault.azure.net/secrets/oidc-client-secret/'
+    - name: msGraphClientSecretUri
+      value: 'https://PRDBSEINFKV1401.vault.azure.net/secrets/MsGraphClientSecret/'
     - name: sqlServer
       value: 'prdbseinfsq1401.database.windows.net,1433'
     - name: sqlServerHost
       value: 'prdbseinfsq1401.database.windows.net'
     - name: dbName
       value: 'BSE'
-    - name: msGraphSender
+    - name: msGraphClientId
+      value: 'a08f1c74-e9de-491b-9b69-30908b3b0e7c'
+    - name: msGraphSenderUserId
+      value: 'tse.queries@apha.gov.uk'
+    - name: msGraphFromAddress
       value: 'tse.queries@apha.gov.uk'
     - name: dbScriptsChanged
       value: $[ stageDependencies.Build.build.outputs['detectDbChanges.dbScriptsChanged'] ]
@@ -659,6 +688,7 @@ stages:
                 -Authentication__BypassEnabled "false"
                 -ConnectionStrings__BSE "Server=tcp:$(sqlServer);Database=$(dbName);Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;Authentication=Active Directory Managed Identity;"
                 -AdnsMsGraph__MsGraphTenantId "$(tenantId)"
-                -AdnsMsGraph__MsGraphClientId "$(appId)"
-                -AdnsMsGraph__MsGraphSenderUserId "$(msGraphSender)"
-                -AdnsMsGraph__FromAddress "$(msGraphSender)"
+                -AdnsMsGraph__MsGraphClientId "$(msGraphClientId)"
+                -AdnsMsGraph__MsGraphClientSecret "@Microsoft.KeyVault(SecretUri=$(msGraphClientSecretUri))"
+                -AdnsMsGraph__MsGraphSenderUserId "$(msGraphSenderUserId)"
+                -AdnsMsGraph__FromAddress "$(msGraphFromAddress)"
