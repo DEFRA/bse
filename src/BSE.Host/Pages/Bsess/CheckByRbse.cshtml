@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = "TSESS Check : Compare Details By RBSE";
     // Empty comparison cells otherwise read as nothing at all to a screen reader.
-    Microsoft.AspNetCore.Html.IHtmlContent Val(object? v)
+    static Microsoft.AspNetCore.Html.IHtmlContent Val(object? v)
     {
         var s = v?.ToString();
         return string.IsNullOrWhiteSpace(s)

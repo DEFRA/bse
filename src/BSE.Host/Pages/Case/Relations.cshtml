@@ -102,7 +102,7 @@
     var sireLinked = !string.IsNullOrWhiteSpace(d.SireRbse);
 
     // Extracted from a nested ternary (Sonar: "Extract this nested ternary operation").
-    string ParentIdDisplay(bool hasParent, int id)
+    static string ParentIdDisplay(bool hasParent, int id)
     {
         if (!hasParent)
             return "";
@@ -110,7 +110,7 @@
     }
 
     // (New) is shown in bold to draw attention to an unsaved Sire/Dam pedigree row.
-    bool IsNewParent(bool hasParent, int id) => hasParent && id <= 0;
+    static bool IsNewParent(bool hasParent, int id) => hasParent && id <= 0;
 }
 
 @if (canEditRelations)

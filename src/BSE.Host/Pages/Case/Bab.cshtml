@@ -6,7 +6,7 @@
     var viewDocsUrl = string.IsNullOrWhiteSpace(Model.SpolSiteUrl)
         ? null
         : $"{Model.SpolSiteUrl}{rbseNoSlash}";
-    bool IsPurchasedOrigin(string? o) => string.Equals(o, "P", StringComparison.OrdinalIgnoreCase)
+    static bool IsPurchasedOrigin(string? o) => string.Equals(o, "P", StringComparison.OrdinalIgnoreCase)
                                       || string.Equals(o, "Purchased", StringComparison.OrdinalIgnoreCase);
     var babReadOnly = !Model.CanEditBabControls;
     var tracedReadOnly = babReadOnly || !IsPurchasedOrigin(Model.Origin);

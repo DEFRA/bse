@@ -3,7 +3,7 @@
 @using BSE.Modules.CaseManagement.Models
 @{
     ViewData["Title"] = $"Case {Model.Case.Rbse} — DEFRA tab";
-    string DateVal(DateTime? d) => d?.ToString("dd/MM/yyyy") ?? "";
+    static string DateVal(DateTime? d) => d?.ToString("dd/MM/yyyy") ?? "";
     static bool IsSelected(string? optionCode, string? currentValue) =>
         string.Equals(optionCode, currentValue, StringComparison.OrdinalIgnoreCase);
 
